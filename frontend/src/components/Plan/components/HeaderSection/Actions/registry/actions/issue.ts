@@ -15,6 +15,7 @@ export const ISSUE_CREATE: ActionDefinition = {
 
   isVisible: (ctx) =>
     !ctx.isIssueOnly &&
+    !ctx.isReleasePlan &&
     ctx.plan.issue === "" &&
     !ctx.plan.hasRollout &&
     ctx.planState === State.ACTIVE,

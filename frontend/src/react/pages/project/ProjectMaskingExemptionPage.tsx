@@ -32,14 +32,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -311,7 +303,7 @@ export function ProjectMaskingExemptionPage({
         render: () => (
           <span className="inline-flex items-center gap-x-1.5">
             <span
-              className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center shrink-0"
+              className="size-5 rounded-full text-accent-text text-xs flex items-center justify-center shrink-0"
               style={{
                 backgroundColor: `hsl(${Math.abs(hashString(u.title)) % 360}, 55%, 55%)`,
               }}
@@ -320,7 +312,7 @@ export function ProjectMaskingExemptionPage({
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-green-100 text-green-700 rounded-full px-1.5">
+              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
                 {t("common.you")}
               </span>
             )}
@@ -404,7 +396,7 @@ export function ProjectMaskingExemptionPage({
             placeholder={t("issue.advanced-search.filter")}
           />
           <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
-            <ShieldCheck className="w-4 h-4" />
+            <ShieldCheck className="size-4" />
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATA_MASKING}
               className="text-white"
@@ -434,7 +426,7 @@ export function ProjectMaskingExemptionPage({
       {isWide ? (
         <div className="flex" style={{ height: "calc(100vh - 11rem)" }}>
           <ExemptionMemberList
-            className="w-[360px] shrink-0 border-r border-gray-200 overflow-y-auto"
+            className="w-[360px] shrink-0 border-r border-block-border overflow-y-auto"
             members={filteredMembers}
             disabled={!hasPermission}
             loading={membersFromVue.loading}
@@ -806,7 +798,7 @@ function ExemptionMemberList({
     return (
       <div className={cn("overflow-y-auto", className)}>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-5 w-5 border-2 border-accent border-t-transparent" />
+          <div className="animate-spin rounded-full size-5 border-2 border-accent border-t-transparent" />
         </div>
       </div>
     );
@@ -824,7 +816,7 @@ function ExemptionMemberList({
 
   return (
     <div className={cn("overflow-y-auto", className)}>
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-block-border">
         {members.map((member) => (
           <div key={member.member}>
             <ExemptionMemberItem
@@ -841,7 +833,7 @@ function ExemptionMemberList({
             />
             {/* Inline detail panel in narrow/expandable mode */}
             {expandable && expandedMemberKey === member.member && (
-              <div className="border-t border-b border-gray-200">
+              <div className="border-t border-b border-block-border">
                 <ExemptionDetailPanel
                   member={member}
                   disabled={disabled}
@@ -929,7 +921,7 @@ function ExemptionMemberItem({
     <div
       className={cn(
         "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer rounded-xs transition-colors",
-        selected ? "bg-blue-50" : "hover:bg-gray-50"
+        selected ? "bg-accent/5" : "hover:bg-control-bg"
       )}
       onClick={handleClick}
     >
@@ -937,7 +929,7 @@ function ExemptionMemberItem({
       {expandable && (
         <ChevronRight
           className={cn(
-            "w-4 h-4 shrink-0 text-control-placeholder transition-transform",
+            "size-4 shrink-0 text-control-placeholder transition-transform",
             expanded && "rotate-90"
           )}
         />
@@ -945,7 +937,7 @@ function ExemptionMemberItem({
 
       {/* Avatar */}
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0"
+        className="size-8 rounded-full flex items-center justify-center text-accent-text text-sm font-medium shrink-0"
         style={{
           backgroundColor: `hsl(${Math.abs(hashString(displayName)) % 360}, 55%, 55%)`,
         }}
@@ -958,17 +950,17 @@ function ExemptionMemberItem({
         <div className="flex items-center gap-x-1.5">
           <span className="font-medium text-sm truncate">{displayName}</span>
           {member.type === "group" && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-gray-300 bg-white">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-control-border bg-background">
               {t("common.groups")}
             </span>
           )}
           {isServiceAccount && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-blue-300 bg-blue-50 text-blue-700">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent">
               {t("settings.members.service-account")}
             </span>
           )}
           {isWorkloadIdentity && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-blue-300 bg-blue-50 text-blue-700">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent">
               {t("settings.members.workload-identity")}
             </span>
           )}
@@ -1065,7 +1057,7 @@ function ExemptionDetailPanel({
         {member.grants.map((grant, idx) => (
           <div
             key={grant.id}
-            className="border border-gray-200 rounded-sm overflow-hidden pt-4"
+            className="border border-block-border rounded-sm overflow-hidden pt-4"
           >
             <ExemptionGrantSection
               grant={grant}
@@ -1132,7 +1124,7 @@ function ExemptionGrantSection({
         <div className="flex items-center gap-x-3">
           <ChevronRight
             className={cn(
-              "w-4 h-4 shrink-0 text-control-placeholder transition-transform",
+              "size-4 shrink-0 text-control-placeholder transition-transform",
               expanded && "rotate-90"
             )}
           />
@@ -1179,8 +1171,8 @@ function ExemptionGrantSection({
       {expanded && (
         <div className="px-4 pb-4">
           {/* Reason */}
-          <div className="mb-3 text-sm border-l-2 border-gray-300 pl-3 py-1 textinfolabel">
-            <span className="font-medium text-gray-600">
+          <div className="mb-3 text-sm border-l-2 border-control-border pl-3 py-1 textinfolabel">
+            <span className="font-medium text-control-light">
               {t("common.reason")}:
             </span>{" "}
             {grant.description || t("project.masking-exemption.no-reason")}
@@ -1229,40 +1221,43 @@ function ExemptionResourceTable({
 
   return (
     <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-xs whitespace-nowrap">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-block-border">
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.instance")}
-            </TableHead>
-            <TableHead className="text-xs whitespace-nowrap">
+            </th>
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.database")}
-            </TableHead>
-            <TableHead className="text-xs whitespace-nowrap">
+            </th>
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.schema")}
-            </TableHead>
-            <TableHead className="text-xs whitespace-nowrap">
+            </th>
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.table")}
-            </TableHead>
-            <TableHead className="text-xs whitespace-nowrap">
+            </th>
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("database.columns")}
-            </TableHead>
-            <TableHead className="text-xs whitespace-nowrap">
+            </th>
+            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
               {t("common.classification-level")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {databaseResources.map((resource, idx) => {
             const { instanceName, databaseName } = extractDatabaseResourceName(
               resource.databaseFullName
             );
             return (
-              <TableRow key={idx}>
-                <TableCell className="text-control-light whitespace-nowrap">
+              <tr
+                key={idx}
+                className="border-b border-block-border last:border-b-0"
+              >
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
                   {isSentinel(instanceName) ? t("database.all") : instanceName}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
+                </td>
+                <td className="py-2 px-2 whitespace-nowrap">
                   {isSentinel(databaseName) ? (
                     <span className="text-control-placeholder">
                       {t("database.all")}
@@ -1277,30 +1272,30 @@ function ExemptionResourceTable({
                   ) : (
                     <span className="text-control-light">{databaseName}</span>
                   )}
-                </TableCell>
-                <TableCell className="text-control-light whitespace-nowrap">
+                </td>
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
                   {resource.schema || "-"}
-                </TableCell>
-                <TableCell className="text-control-light whitespace-nowrap">
+                </td>
+                <td className="py-2 px-2 text-control-light whitespace-nowrap">
                   {resource.table || "-"}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="py-2 px-2">
                   {resource.columns && resource.columns.length > 0
                     ? resource.columns.join(", ")
                     : "-"}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="py-2 px-2">
                   <LevelBadge
                     level={classificationLevel?.value}
                     operator={classificationLevel?.operator}
                     noLimit={!classificationLevel}
                   />
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             );
           })}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -1317,7 +1312,7 @@ function ExemptionLevelCard({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-x-6 px-4 py-3 bg-gray-50 rounded-xs border border-gray-200">
+    <div className="flex items-center gap-x-6 px-4 py-3 bg-control-bg rounded-xs border border-block-border">
       <div className="flex items-center gap-x-2">
         <span className="textinfolabel font-medium uppercase text-xs">
           {t("common.scope")}
@@ -1380,10 +1375,10 @@ function LevelBadge({
 
   const colorClass = useMemo(() => {
     if (noLimit || level === undefined) {
-      return "bg-gray-200 text-gray-600";
+      return "bg-control-bg-hover text-control-light";
     }
     const idx = Math.min(level - 1, bgColorList.length - 1);
-    const bg = bgColorList[Math.max(0, idx)] ?? "bg-gray-200";
+    const bg = bgColorList[Math.max(0, idx)] ?? "bg-control-bg-hover";
     return level >= 4 ? `${bg} text-white` : bg;
   }, [noLimit, level]);
 

@@ -1,5 +1,6 @@
 import { refreshTokens } from "@/connect/refreshToken";
-import { getEndpointPath } from "./searchApi";
+import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
+import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
 
 const baseAddress = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 const REFRESH_PATH = "/bytebase.v1.AuthService/Refresh";
@@ -14,6 +15,97 @@ interface ParsedApiResponse {
   response: unknown;
   error?: string;
 }
+
+const textEncoder = new TextEncoder();
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const encodeUtf8ToBase64 = (value: string): string => {
+  const bytes = textEncoder.encode(value);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+};
+
+const getArrayItemSchema = (
+  property: PropertyInfo
+): PropertyInfo | undefined => {
+  if (property.items) {
+    return property.items;
+  }
+
+  if (property.type.startsWith("array<") && property.type.endsWith(">")) {
+    return {
+      name: "item",
+      type: property.type.slice(6, -1),
+    };
+  }
+
+  return undefined;
+};
+
+const coerceRequestValue = (
+  value: unknown,
+  property?: PropertyInfo,
+  schema?: SchemaInfo
+): unknown => {
+  if (property?.type === "string" && property.format === "byte") {
+    return typeof value === "string" ? encodeUtf8ToBase64(value) : value;
+  }
+
+  const resolvedSchema =
+    schema ??
+    (property && !property.type.startsWith("array<")
+      ? getSchema(property.type)
+      : undefined);
+
+  if (Array.isArray(value)) {
+    const itemSchema = property ? getArrayItemSchema(property) : undefined;
+    return itemSchema
+      ? value.map((item) => coerceRequestValue(item, itemSchema))
+      : value;
+  }
+
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  if (property?.additionalProperties) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, itemValue]) => [
+        key,
+        coerceRequestValue(itemValue, property.additionalProperties),
+      ])
+    );
+  }
+
+  if (resolvedSchema?.type !== "object" || !resolvedSchema.properties) {
+    return value;
+  }
+
+  const propertiesByName = new Map(
+    resolvedSchema.properties.map((prop) => [prop.name, prop])
+  );
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, itemValue]) => {
+      const childProperty = propertiesByName.get(key);
+      return [key, coerceRequestValue(itemValue, childProperty)];
+    })
+  );
+};
+
+const coerceRequestBody = (
+  body: Record<string, unknown>,
+  schema?: SchemaInfo
+): unknown => coerceRequestValue(body, undefined, schema);
+
+export const __testOnly = {
+  coerceRequestBody,
+};
 
 const parseResponse = async (
   response: Response
@@ -87,7 +179,9 @@ export async function callApi(args: CallApiArgs): Promise<string> {
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30_000);
-  const body = JSON.stringify(args.body ?? {});
+  const body = JSON.stringify(
+    coerceRequestBody(args.body ?? {}, getRequestSchema(args.operationId))
+  );
 
   try {
     let result = await fetchApi({

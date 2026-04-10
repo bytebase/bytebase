@@ -26,14 +26,6 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -320,7 +312,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
                 disabled={!canCreate}
                 onClick={() => setShowAddSpecDrawer(true)}
               >
-                <Plus className="w-4 h-4 mr-1" />
+                <Plus className="size-4 mr-1" />
                 {t("plan.new-plan")}
               </Button>
             </PermissionGuard>
@@ -332,7 +324,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
       <div className="mt-2">
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           </div>
         ) : paged.dataList.length === 0 ? (
           <div className="flex justify-center py-8 text-control-light">
@@ -380,13 +372,13 @@ function DismissibleAlert({
 }) {
   return (
     <div className="relative w-full rounded-xs border border-accent/30 bg-accent/5 text-accent px-4 py-3 text-sm flex gap-x-3 items-start">
-      <Info className="h-5 w-5 shrink-0 mt-0.5" />
+      <Info className="size-5 shrink-0 mt-0.5" />
       <div className="flex-1">{children}</div>
       <button
         className="p-0.5 hover:bg-accent/10 rounded-xs shrink-0"
         onClick={onClose}
       >
-        <X className="h-4 w-4" />
+        <X className="size-4" />
       </button>
     </div>
   );
@@ -420,25 +412,35 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[1000px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-80">{t("issue.table.name")}</TableHead>
-            <TableHead className="w-50">{t("plan.checks.self")}</TableHead>
-            <TableHead className="w-35">{t("plan.navigator.review")}</TableHead>
-            <TableHead className="w-65">
+      <table className="w-full text-sm min-w-[1000px]">
+        <thead>
+          <tr className="border-b text-left text-control-light">
+            <th className="py-2 px-4 font-medium min-w-80">
+              {t("issue.table.name")}
+            </th>
+            <th className="py-2 px-4 font-medium w-50">
+              {t("plan.checks.self")}
+            </th>
+            <th className="py-2 px-4 font-medium w-35">
+              {t("plan.navigator.review")}
+            </th>
+            <th className="py-2 px-4 font-medium w-65">
               {t("rollout.stage.self", { count: 2 })}
-            </TableHead>
-            <TableHead className="w-38">{t("issue.table.updated")}</TableHead>
-            <TableHead className="w-38">{t("issue.table.creator")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+            <th className="py-2 px-4 font-medium w-38">
+              {t("issue.table.updated")}
+            </th>
+            <th className="py-2 px-4 font-medium w-38">
+              {t("issue.table.creator")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {plans.map((plan) => (
             <PlanRow key={plan.name} plan={plan} projectId={projectId} />
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -535,12 +537,15 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   };
 
   return (
-    <TableRow
-      className={cn("cursor-pointer", isDeleted && "opacity-60")}
+    <tr
+      className={cn(
+        "border-b cursor-pointer hover:bg-control-bg",
+        isDeleted && "opacity-60"
+      )}
       onClick={onRowClick}
     >
       {/* Title */}
-      <TableCell>
+      <td className="py-2 px-4">
         <div className="flex items-center gap-x-2 overflow-hidden">
           <span className="whitespace-nowrap text-control opacity-60">
             {extractPlanUID(plan.name)}
@@ -561,33 +566,33 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             </span>
           )}
         </div>
-      </TableCell>
+      </td>
 
       {/* Checks */}
-      <TableCell>
+      <td className="py-2 px-4">
         {hasAnyCheck ? (
           <div className="flex items-center gap-3 flex-wrap">
             {checkSummary.running > 0 && (
               <div className="flex items-center gap-1 text-control">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
                 <span>{t("task.status.running")}</span>
               </div>
             )}
             {checkSummary.error > 0 && (
               <div className="flex items-center gap-1 text-error">
-                <XCircle className="w-4 h-4" />
+                <XCircle className="size-4" />
                 <span>{checkSummary.error}</span>
               </div>
             )}
             {checkSummary.warning > 0 && (
               <div className="flex items-center gap-1 text-warning">
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="size-4" />
                 <span>{checkSummary.warning}</span>
               </div>
             )}
             {checkSummary.success > 0 && (
               <div className="flex items-center gap-1 text-success">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="size-4" />
                 <span>{checkSummary.success}</span>
               </div>
             )}
@@ -595,19 +600,19 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Approval */}
-      <TableCell>
+      <td className="py-2 px-4">
         {approvalTag ? (
           <StatusTag label={approvalTag.label} variant={approvalTag.variant} />
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </TableCell>
+      </td>
 
       {/* Stages */}
-      <TableCell>
+      <td className="py-2 px-4">
         {plan.rolloutStageSummaries.length === 0 ? (
           <span className="text-control-light">-</span>
         ) : (
@@ -635,24 +640,24 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             })}
           </div>
         )}
-      </TableCell>
+      </td>
 
       {/* Updated */}
-      <TableCell>
+      <td className="py-2 px-4">
         <Tooltip content={formatAbsoluteDateTime(updateTimeTs * 1000)}>
           <span className="text-control-light whitespace-nowrap">
             {humanizeTs(updateTimeTs)}
           </span>
         </Tooltip>
-      </TableCell>
+      </td>
 
       {/* Creator */}
-      <TableCell>
+      <td className="py-2 px-4">
         <div className="flex items-center gap-x-1.5">
           <span className="text-sm truncate">{creator.title}</span>
         </div>
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 }
 
@@ -668,7 +673,7 @@ function StatusTag({
   variant?: "default" | "success" | "warning" | "info";
 }) {
   const variantClasses: Record<string, string> = {
-    default: "bg-gray-100 text-gray-600",
+    default: "bg-control-bg text-control-light",
     success: "bg-success/10 text-success",
     warning: "bg-warning/10 text-warning",
     info: "bg-accent/10 text-accent",
@@ -690,7 +695,7 @@ function StatusTag({
 // ---------------------------------------------------------------------------
 
 function TaskStatusIcon({ status }: { status: Task_Status }) {
-  const size = "w-4 h-4";
+  const size = "size-4";
   switch (status) {
     case Task_Status.DONE:
       return <CheckCircle className={cn(size, "text-success")} />;
@@ -699,14 +704,14 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
     case Task_Status.FAILED:
       return <XCircle className={cn(size, "text-error")} />;
     case Task_Status.CANCELED:
-      return <XCircle className={cn(size, "text-gray-400")} />;
+      return <XCircle className={cn(size, "text-control-placeholder")} />;
     case Task_Status.PENDING:
     case Task_Status.NOT_STARTED:
       return (
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full border-2 border-gray-300"
+            "inline-flex items-center justify-center rounded-full border-2 border-control-border"
           )}
         />
       );
@@ -715,10 +720,10 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full bg-gray-200 text-gray-500"
+            "inline-flex items-center justify-center rounded-full bg-control-bg-hover text-control-light"
           )}
         >
-          <span className="w-2 h-0.5 bg-current" />
+          <span className="w-2 h-px bg-current" />
         </span>
       );
     default:
@@ -726,7 +731,7 @@ function TaskStatusIcon({ status }: { status: Task_Status }) {
         <span
           className={cn(
             size,
-            "inline-flex items-center justify-center rounded-full border-2 border-gray-200"
+            "inline-flex items-center justify-center rounded-full border-2 border-block-border"
           )}
         />
       );
@@ -822,8 +827,8 @@ function AddSpecDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-control-border flex items-center justify-between">
           <span className="text-lg font-semibold">{title}</span>
@@ -831,7 +836,7 @@ function AddSpecDrawer({
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -854,7 +859,7 @@ function AddSpecDrawer({
             {t("common.close")}
           </Button>
           <Button disabled={!canSubmit || creating} onClick={handleConfirm}>
-            {creating && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            {creating && <Loader2 className="size-4 mr-1 animate-spin" />}
             {t("common.confirm")}
           </Button>
         </div>
@@ -900,7 +905,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("DATABASE")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <DatabaseIcon className="w-4 h-4" />
+            <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
         </button>
@@ -915,7 +920,7 @@ function DatabaseAndGroupSelector({
           onClick={() => onChangeSourceChange("GROUP")}
         >
           <span className="inline-flex items-center gap-x-1.5">
-            <FolderTree className="w-4 h-4" />
+            <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
         </button>
@@ -1040,7 +1045,7 @@ function DatabaseSelector({
 
       {loading ? (
         <div className="flex justify-center py-8 text-control-light">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="size-5 animate-spin" />
         </div>
       ) : databases.length === 0 ? (
         <div className="flex justify-center py-8 text-control-light">
@@ -1048,10 +1053,10 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-control-light">
+                <th className="py-2 pr-2 w-8">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -1061,72 +1066,78 @@ function DatabaseSelector({
                     onChange={toggleAll}
                     className="accent-accent"
                   />
-                </TableHead>
-                <TableHead>{t("common.database")}</TableHead>
-                <TableHead>{t("common.instance")}</TableHead>
-                <TableHead>{t("common.environment")}</TableHead>
-                <TableHead className="whitespace-nowrap">
+                </th>
+                <th className="py-2 pr-4 font-medium">
+                  {t("common.database")}
+                </th>
+                <th className="py-2 pr-4 font-medium">
+                  {t("common.instance")}
+                </th>
+                <th className="py-2 pr-4 font-medium">
+                  {t("common.environment")}
+                </th>
+                <th className="py-2 pr-4 font-medium whitespace-nowrap">
                   {t("common.status")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
               {databases.map((db) => {
                 const { databaseName } = extractDatabaseResourceName(db.name);
                 const inst = getInstanceResource(db);
                 const env = getDatabaseEnvironment(db);
                 const isSelected = selectedNames.has(db.name);
                 return (
-                  <TableRow
+                  <tr
                     key={db.name}
                     className={cn(
-                      "cursor-pointer",
+                      "border-b cursor-pointer hover:bg-control-bg",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <TableCell>
+                    <td className="py-2 pr-2">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         readOnly
                         className="accent-accent"
                       />
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">
                         {inst && EngineIconPath[inst.engine] && (
                           <img
-                            className="h-4 w-4 shrink-0"
+                            className="size-4 shrink-0"
                             src={EngineIconPath[inst.engine]}
                             alt=""
                           />
                         )}
                         <span>{databaseName}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>{inst?.title}</TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pr-4">{inst?.title}</td>
+                    <td className="py-2 pr-4">
                       {env && <EnvironmentLabel environmentName={env.name} />}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="py-2 pr-4">
                       {db.syncStatus === SyncStatus.FAILED ? (
                         <Tooltip
                           content={
                             db.syncError || t("database.sync-status-failed")
                           }
                         >
-                          <XCircle className="w-4 h-4 text-error" />
+                          <XCircle className="size-4 text-error" />
                         </Tooltip>
                       ) : (
-                        <CheckCircle className="w-4 h-4 text-success" />
+                        <CheckCircle className="size-4 text-success" />
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
               })}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
 
           {hasMore && (
             <div className="flex justify-center">
@@ -1177,7 +1188,7 @@ function DatabaseGroupSelector({
   if (loading) {
     return (
       <div className="flex justify-center py-8 text-control-light">
-        <Loader2 className="w-5 h-5 animate-spin" />
+        <Loader2 className="size-5 animate-spin" />
       </div>
     );
   }
@@ -1191,42 +1202,47 @@ function DatabaseGroupSelector({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-8" />
-          <TableHead>{t("common.database-group")}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b text-left text-control-light">
+          <th className="py-2 pr-2 w-8" />
+          <th className="py-2 pr-4 font-medium">
+            {t("common.database-group")}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
         {groups.map((group) => {
           const isSelected = selectedGroup === group.name;
           return (
-            <TableRow
+            <tr
               key={group.name}
-              className={cn("cursor-pointer", isSelected && "bg-accent/5")}
+              className={cn(
+                "border-b cursor-pointer hover:bg-control-bg",
+                isSelected && "bg-accent/5"
+              )}
               onClick={() =>
                 onSelectedGroupChange(isSelected ? undefined : group.name)
               }
             >
-              <TableCell>
+              <td className="py-2 pr-2">
                 <input
                   type="radio"
                   checked={isSelected}
                   readOnly
                   className="accent-accent"
                 />
-              </TableCell>
-              <TableCell>
+              </td>
+              <td className="py-2 pr-4">
                 <div className="flex items-center gap-x-1.5">
-                  <FolderTree className="w-4 h-4 text-control-light shrink-0" />
+                  <FolderTree className="size-4 text-control-light shrink-0" />
                   <span>{extractDatabaseGroupName(group.name)}</span>
                 </div>
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           );
         })}
-      </TableBody>
-    </Table>
+      </tbody>
+    </table>
   );
 }

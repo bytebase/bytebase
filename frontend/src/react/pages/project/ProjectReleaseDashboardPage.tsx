@@ -7,14 +7,6 @@ import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -128,7 +120,7 @@ export function ProjectReleaseDashboardPage({
       <div className="mt-2">
         {paged.isLoading ? (
           <div className="flex justify-center py-8 text-control-light">
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="size-5 animate-spin" />
           </div>
         ) : paged.dataList.length === 0 ? (
           <div className="flex justify-center py-8 text-control-light">
@@ -172,7 +164,7 @@ function CategorySelect({
 }) {
   return (
     <select
-      className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-white focus:outline-none focus:border-accent"
+      className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-background focus:outline-none focus:border-accent"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || undefined)}
       disabled={loading}
@@ -196,20 +188,22 @@ function ReleaseTable({ releases }: { releases: Release[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-75">{t("common.name")}</TableHead>
-            <TableHead>{t("release.files")}</TableHead>
-            <TableHead className="w-32">{t("common.created-at")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-control-light">
+            <th className="py-2 px-4 font-medium w-75">{t("common.name")}</th>
+            <th className="py-2 px-4 font-medium">{t("release.files")}</th>
+            <th className="py-2 px-4 font-medium w-32">
+              {t("common.created-at")}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {releases.map((release) => (
             <ReleaseRow key={release.name} release={release} />
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -246,8 +240,11 @@ function ReleaseRow({ release }: { release: Release }) {
   );
 
   return (
-    <TableRow className="cursor-pointer" onClick={onRowClick}>
-      <TableCell>
+    <tr
+      className="border-b cursor-pointer hover:bg-control-bg"
+      onClick={onRowClick}
+    >
+      <td className="py-2 px-4">
         <span
           className={cn(
             "truncate",
@@ -256,8 +253,8 @@ function ReleaseRow({ release }: { release: Release }) {
         >
           {releaseName}
         </span>
-      </TableCell>
-      <TableCell>
+      </td>
+      <td className="py-2 px-4">
         <div className="flex flex-col items-start gap-1">
           {showFiles.map((file, idx) => (
             <p key={idx} className="w-full truncate">
@@ -270,15 +267,15 @@ function ReleaseRow({ release }: { release: Release }) {
             </p>
           ))}
           {release.files.length > MAX_SHOW_FILES_COUNT && (
-            <p className="text-control-light text-xs italic">
+            <p className="text-control-placeholder text-xs italic">
               {t("release.total-files", { count: release.files.length })}
             </p>
           )}
         </div>
-      </TableCell>
-      <TableCell>
+      </td>
+      <td className="py-2 px-4">
         <HumanizeTs ts={createTimeTs} />
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 }

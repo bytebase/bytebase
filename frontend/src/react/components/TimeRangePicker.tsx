@@ -99,16 +99,16 @@ export function TimeRangePicker({
         {displayFrom && displayTo ? (
           <>
             <span>{displayFrom}</span>
-            <ArrowRight className="w-3.5 h-3.5 text-control-light shrink-0" />
+            <ArrowRight className="size-3.5 text-control-light shrink-0" />
             <span>{displayTo}</span>
           </>
         ) : (
           <span className="text-control-placeholder">{t("common.select")}</span>
         )}
-        <Calendar className="w-4 h-4 text-control-light ml-1 shrink-0" />
+        <Calendar className="size-4 text-control-light ml-1 shrink-0" />
       </button>
       {showPicker && (
-        <div className="absolute right-0 top-[42px] bg-white border border-control-border rounded-sm shadow-lg z-50 p-3 flex flex-col gap-y-2 min-w-[300px]">
+        <div className="absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg z-50 p-3 flex flex-col gap-y-2 min-w-[300px]">
           <div className="flex items-center gap-x-2">
             <label className="text-sm text-control-light whitespace-nowrap w-10">
               {t("common.from")}

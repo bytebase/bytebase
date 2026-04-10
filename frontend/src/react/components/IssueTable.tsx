@@ -140,11 +140,11 @@ function IssueSortDropdown({
         )}
         onClick={() => setOpen(!open)}
       >
-        <ArrowUpDown className="w-4 h-4" />
+        <ArrowUpDown className="size-4" />
         <span className="hidden md:inline ml-1">{t("issue.sort.sort")}</span>
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-sm shadow-lg min-w-[180px] py-1">
+        <div className="absolute right-0 top-full mt-1 z-50 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1">
           {sortOptions.map((group) => (
             <div key={group.label}>
               <div className="px-3 py-1.5 text-xs text-control-light font-medium">
@@ -154,12 +154,12 @@ function IssueSortDropdown({
                 <button
                   key={opt.key}
                   type="button"
-                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 flex items-center gap-x-2"
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg flex items-center gap-x-2"
                   onClick={() => handleSelect(opt.key)}
                 >
                   <Check
                     className={cn(
-                      "w-3 h-3",
+                      "size-3",
                       orderBy === opt.key ? "text-accent" : "text-transparent"
                     )}
                   />
@@ -502,7 +502,7 @@ export function useIssueSearchScopeOptions(
           render: () => (
             <div className="flex items-center gap-x-2">
               <div
-                className="w-4 h-4 rounded-sm"
+                className="size-4 rounded-sm"
                 style={{ backgroundColor: label.color }}
               />
               {label.value}
@@ -633,7 +633,7 @@ export function IssueListItem({
 
   return (
     <div
-      className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50"
+      className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-control-bg hover:bg-control-bg"
       onClick={onRowClick}
     >
       <input
@@ -663,7 +663,7 @@ export function IssueListItem({
             ) : (
               <a
                 href={issueUrl}
-                className="font-medium text-base truncate hover:underline italic text-gray-400"
+                className="font-medium text-base truncate hover:underline italic text-control-placeholder"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("common.untitled")}
@@ -676,7 +676,7 @@ export function IssueListItem({
                 className="inline-flex items-center gap-x-1 px-1.5 py-0.5 rounded-xs text-xs whitespace-nowrap border shrink-0"
               >
                 <span
-                  className="w-2.5 h-2.5 rounded-sm shrink-0"
+                  className="size-2.5 rounded-sm shrink-0"
                   style={{ backgroundColor: label.color }}
                 />
                 {label.value}
@@ -749,14 +749,14 @@ export function IssueStatusIcon({ status }: { status: IssueStatus }) {
   switch (status) {
     case IssueStatus.OPEN:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-white border-2 border-info text-info shrink-0">
+        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 border-info text-info shrink-0">
           <span className="h-1.5 w-1.5 bg-info rounded-full" />
         </span>
       );
     case IssueStatus.DONE:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-success text-white shrink-0">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <span className="flex items-center justify-center rounded-full size-5 bg-success text-accent-text shrink-0">
+          <svg className="size-4" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -767,8 +767,8 @@ export function IssueStatusIcon({ status }: { status: IssueStatus }) {
       );
     case IssueStatus.CANCELED:
       return (
-        <span className="flex items-center justify-center rounded-full w-5 h-5 bg-white border-2 text-gray-400 border-gray-400 shrink-0">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <span className="flex items-center justify-center rounded-full size-5 bg-background border-2 text-control-placeholder border-control-placeholder shrink-0">
+          <svg className="size-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
@@ -803,7 +803,7 @@ function RiskLevelIcon({ riskLevel }: { riskLevel: RiskLevel }) {
   return (
     <Tooltip content={`${label} (${t("issue.risk-level.self")})`}>
       <svg
-        className={`w-4 h-4 shrink-0 ${color}`}
+        className={`size-4 shrink-0 ${color}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -829,7 +829,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (issue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
     return (
-      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+      <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
       </span>
     );
@@ -872,7 +872,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
       const roleName = role ? displayRoleTitle(role) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+          <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
             {progressText}
           </span>
           {roleName && (
@@ -886,7 +886,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   }
 
   return (
-    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-500">
+    <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
       {t("custom-approval.approval-flow.skip")}
     </span>
   );
@@ -921,7 +921,7 @@ export function BatchActionBar({
     !statuses.has(IssueStatus.OPEN) && !statuses.has(IssueStatus.DONE);
 
   return (
-    <div className="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-3 sm:px-4 py-2 border-y">
+    <div className="sticky bottom-0 w-full bg-background flex items-center gap-x-2 px-3 sm:px-4 py-2 border-y">
       <input
         type="checkbox"
         checked={allSelected}
@@ -1034,15 +1034,15 @@ export function BatchIssueStatusActionDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[calc(100vw-8rem)] lg:w-160 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-160 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
         <div className="px-6 py-4 border-b border-control-border flex items-center justify-between">
           <span className="text-lg font-semibold">{title}</span>
           <button
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -1079,7 +1079,7 @@ export function BatchIssueStatusActionDrawer({
             {t("common.cancel")}
           </Button>
           <Button disabled={loading} onClick={handleConfirm}>
-            {loading && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            {loading && <Loader2 className="size-4 mr-1 animate-spin" />}
             {t("common.confirm")}
           </Button>
         </div>

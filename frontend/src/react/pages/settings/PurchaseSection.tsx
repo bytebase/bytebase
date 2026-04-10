@@ -363,7 +363,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       {!isFreePlan && !isExpired && (
         <>
           {paymentInfo && (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <div className="text-lg font-medium">
                 {t("subscription.purchase.payment-info")}
               </div>
@@ -461,10 +461,10 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                       <span className="text-main">
                         {t("subscription.purchase.seats")}
                       </span>
-                      <div className="ml-auto flex items-center h-7 rounded-xs bg-gray-200 text-gray-600">
+                      <div className="ml-auto flex items-center h-7 rounded-xs bg-control-bg-hover text-control-light">
                         <button
                           type="button"
-                          className="px-2 h-full rounded-l hover:bg-gray-300 disabled:opacity-50 cursor-pointer"
+                          className="px-2 h-full rounded-l hover:bg-control-border disabled:opacity-50 cursor-pointer"
                           disabled={
                             seats <= (card.userAdditional.minimumCount || 1)
                           }
@@ -482,7 +482,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                         <span className="w-8 text-center text-sm">{seats}</span>
                         <button
                           type="button"
-                          className="px-2 h-full rounded-r hover:bg-gray-300 disabled:opacity-50 cursor-pointer"
+                          className="px-2 h-full rounded-r hover:bg-control-border disabled:opacity-50 cursor-pointer"
                           disabled={
                             card.userAdditional.maximumCount > 0 &&
                             seats >= card.userAdditional.maximumCount
@@ -605,7 +605,7 @@ function PlanCard({
       <h3 className="text-3xl font-semibold text-main">{title}</h3>
       <p className="text-control-placeholder mt-1 text-sm">{description}</p>
       <div className="mt-4 mb-2 flex items-baseline">{pricing}</div>
-      <div className="mb-4 space-y-1 text-sm">
+      <div className="mb-4 flex flex-col gap-1 text-sm">
         {features.map((f, i) => (
           <div key={i} className="flex items-start">
             <Check className="h-3.5 w-3.5 text-control-light mr-2 mt-0.5 shrink-0" />

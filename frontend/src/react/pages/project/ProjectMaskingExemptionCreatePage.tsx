@@ -303,7 +303,7 @@ export function ProjectMaskingExemptionCreatePage({
         <h2 className="text-lg font-medium">
           {t("project.masking-exemption.grant-exemption")}
         </h2>
-        <div className="border-b border-gray-200 mt-3" />
+        <div className="border-b border-block-border mt-3" />
       </div>
 
       {/* Body */}
@@ -315,7 +315,7 @@ export function ProjectMaskingExemptionCreatePage({
           <div className="w-full">
             <div className="flex items-center gap-x-1 mb-2">
               <span className="text-main">{t("common.resources")}</span>
-              <span className="text-red-500">*</span>
+              <span className="text-error">*</span>
             </div>
 
             {/* Radio group */}
@@ -414,9 +414,9 @@ export function ProjectMaskingExemptionCreatePage({
           <div className="w-full flex flex-col gap-y-2">
             <div className="flex text-main items-center gap-x-1">
               {t("settings.members.select-account", { count: 2 })}
-              <span className="text-red-500">*</span>
+              <span className="text-error">*</span>
               <Tooltip content={t("settings.members.select-account-hint")}>
-                <CircleHelp className="w-4 h-4 textinfolabel" />
+                <CircleHelp className="size-4 textinfolabel" />
               </Tooltip>
             </div>
             <AccountMultiSelect value={memberList} onChange={setMemberList} />
@@ -425,7 +425,7 @@ export function ProjectMaskingExemptionCreatePage({
       </div>
 
       {/* Footer */}
-      <div className="sticky bottom-0 z-10 border-t bg-white">
+      <div className="sticky bottom-0 z-10 border-t bg-background">
         <div className="flex justify-end items-center px-4 py-3">
           <div className="flex items-center gap-x-2">
             <Button variant="outline" onClick={onDismiss}>

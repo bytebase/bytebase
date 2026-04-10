@@ -245,7 +245,7 @@ export const AIAugmentationSection = forwardRef<
                       )}
                     </span>
                   </div>
-                  <div className="mt-1 mb-3 text-sm text-gray-400">
+                  <div className="mt-1 mb-3 text-sm text-control-placeholder">
                     {t("settings.general.workspace.ai-assistant.description")}{" "}
                     <LearnMoreLink
                       href="https://docs.bytebase.com/ai-assistant?source=console"
@@ -267,7 +267,7 @@ export const AIAugmentationSection = forwardRef<
                         </span>
                       </label>
                       <select
-                        className="w-48 border border-control-border rounded-xs px-3 py-1.5 text-sm bg-white disabled:opacity-50"
+                        className="w-48 border border-control-border rounded-xs px-3 py-1.5 text-sm bg-background disabled:opacity-50"
                         value={state.provider}
                         disabled={!canEdit}
                         onChange={(e) =>
@@ -308,7 +308,7 @@ export const AIAugmentationSection = forwardRef<
                           )}
                         </span>
                       </label>
-                      <div className="mb-3 text-sm text-gray-400">
+                      <div className="mb-3 text-sm text-control-placeholder">
                         {t(
                           "settings.general.workspace.ai-assistant.api-key.description",
                           {
@@ -356,7 +356,7 @@ export const AIAugmentationSection = forwardRef<
                           )}
                         </span>
                       </label>
-                      <div className="mb-3 text-sm text-gray-400">
+                      <div className="mb-3 text-sm text-control-placeholder">
                         {t(
                           "settings.general.workspace.ai-assistant.endpoint.description"
                         )}
@@ -381,7 +381,7 @@ export const AIAugmentationSection = forwardRef<
                           )}
                         </span>
                       </label>
-                      <div className="mb-3 text-sm text-gray-400">
+                      <div className="mb-3 text-sm text-control-placeholder">
                         {t(
                           "settings.general.workspace.ai-assistant.model.description"
                         )}

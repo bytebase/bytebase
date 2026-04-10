@@ -113,9 +113,9 @@ function ApprovalFlowIndicator({
       }
     >
       {configured ? (
-        <ShieldCheck className="w-4 h-4 text-success" />
+        <ShieldCheck className="size-4 text-success" />
       ) : (
-        <TriangleAlert className="w-4 h-4 text-warning" />
+        <TriangleAlert className="size-4 text-warning" />
       )}
     </Tooltip>
   );
@@ -675,7 +675,7 @@ export function ProjectSettingsPage() {
                   <div className="font-medium">
                     {t("project.settings.project-labels.self")}
                   </div>
-                  <div className="text-sm text-gray-500 mb-3">
+                  <div className="text-sm text-control-light mb-3">
                     {t("project.settings.project-labels.description")}
                   </div>
                   <LabelListEditor
@@ -745,7 +745,7 @@ export function ProjectSettingsPage() {
                                   setEnforceReview(false);
                                 }}
                               >
-                                <X className="w-4 h-4" />
+                                <X className="size-4" />
                               </Button>
                             )}
                           </div>
@@ -777,7 +777,7 @@ export function ProjectSettingsPage() {
                         feature={PlanFeature.FEATURE_QUERY_POLICY}
                       />
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-control-placeholder mt-1">
                       {t(
                         "settings.general.workspace.maximum-sql-result.rows.description"
                       )}{" "}
@@ -824,7 +824,7 @@ export function ProjectSettingsPage() {
                     source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ROLE}
                   />
                 </div>
-                <div className="mt-1 text-sm text-gray-400">
+                <div className="mt-1 text-sm text-control-placeholder">
                   {t(
                     "project.settings.issue-related.allow-request-role.description"
                   )}
@@ -846,7 +846,7 @@ export function ProjectSettingsPage() {
                     source={WorkspaceApprovalSetting_Rule_Source.REQUEST_ACCESS}
                   />
                 </div>
-                <div className="mt-1 text-sm text-gray-400">
+                <div className="mt-1 text-sm text-control-placeholder">
                   {t("project.settings.issue-related.allow-jit.description")}
                 </div>
               </div>
@@ -869,7 +869,7 @@ export function ProjectSettingsPage() {
               <div className="flex flex-col gap-y-2">
                 <div className="font-medium">
                   {t("project.settings.issue-related.labels.self")}
-                  <div className="text-sm text-gray-500 font-normal">
+                  <div className="text-sm text-control-light font-normal">
                     {t("project.settings.issue-related.labels.description")}
                   </div>
                 </div>
@@ -895,7 +895,7 @@ export function ProjectSettingsPage() {
                           className="text-control-light hover:text-main"
                           onClick={() => removeIssueLabel(index)}
                         >
-                          <X className="w-3 h-3" />
+                          <X className="size-3" />
                         </button>
                       )}
                     </span>
@@ -1137,7 +1137,7 @@ export function ProjectSettingsPage() {
         {/* ============================================================= */}
         {allowEdit && isDirty && (
           <div className="sticky bottom-0 z-10">
-            <div className="flex justify-between w-full py-4 border-t border-block-border bg-white">
+            <div className="flex justify-between w-full py-4 border-t border-block-border bg-background">
               <Button variant="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>
@@ -1294,11 +1294,11 @@ function ToggleRow({
         <span className="text-sm font-medium">{label}</span>
         {warning && (
           <Tooltip content={warning}>
-            <TriangleAlert className="w-4 h-4 text-warning" />
+            <TriangleAlert className="size-4 text-warning" />
           </Tooltip>
         )}
       </div>
-      <div className="mt-1 text-sm text-gray-400">{description}</div>
+      <div className="mt-1 text-sm text-control-placeholder">{description}</div>
     </div>
   );
 }
@@ -1321,7 +1321,7 @@ function NumericRow({
   return (
     <div>
       <p className="text-sm font-medium">{label}</p>
-      <p className="mb-3 text-sm text-gray-400">{description}</p>
+      <p className="mb-3 text-sm text-control-placeholder">{description}</p>
       <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
         <Input
           type="number"

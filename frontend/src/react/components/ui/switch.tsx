@@ -26,7 +26,7 @@ function Switch({
       className={cn(
         "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
         isSmall ? "h-4 w-7" : "h-5 w-9",
-        "bg-gray-300 data-[checked]:bg-blue-600",
+        "bg-control-border data-[checked]:bg-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
@@ -34,7 +34,7 @@ function Switch({
     >
       <BaseSwitch.Thumb
         className={cn(
-          "block rounded-full bg-white shadow-sm transition-transform",
+          "block rounded-full bg-background shadow-sm transition-transform",
           isSmall
             ? "h-3 w-3 translate-x-0.5 data-[checked]:translate-x-[12px]"
             : "h-4 w-4 translate-x-0.5 data-[checked]:translate-x-[18px]"

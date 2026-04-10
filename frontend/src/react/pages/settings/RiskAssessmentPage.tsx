@@ -14,7 +14,7 @@ export function RiskAssessmentPage() {
         {t("custom-approval.risk.description")}
       </div>
 
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <div>
           <h3 className="text-lg font-medium text-main mb-2">
             {t("custom-approval.risk.how-it-works")}
@@ -28,7 +28,7 @@ export function RiskAssessmentPage() {
           <h3 className="text-lg font-medium text-main mb-3">
             {t("custom-approval.risk.risk-levels")}
           </h3>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <div className="flex items-start gap-x-3">
               <Badge variant="destructive">
                 {t("custom-approval.risk-rule.risk.risk-level.high")}

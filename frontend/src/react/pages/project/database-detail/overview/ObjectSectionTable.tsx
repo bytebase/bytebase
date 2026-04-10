@@ -1,13 +1,5 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 
 export interface ObjectSectionRow {
   key: string;
@@ -46,19 +38,21 @@ export function ObjectSectionTable({
 
   return (
     <div className="overflow-hidden rounded border border-block-border">
-      <Table>
-        <TableHeader className="bg-control-bg">
-          <TableRow>
-            <TableHead>{t("common.name")}</TableHead>
-            <TableHead>{t("common.definition")}</TableHead>
-            <TableHead>{t("common.comment")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <table className="min-w-full divide-y divide-block-border">
+        <thead className="bg-control-bg">
+          <tr className="text-left text-sm text-control-light">
+            <th className="px-4 py-2 font-medium">{t("common.name")}</th>
+            <th className="px-4 py-2 font-medium">{t("common.definition")}</th>
+            <th className="px-4 py-2 font-medium">{t("common.comment")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-block-border bg-background">
           {rows.map((row) => (
-            <TableRow
+            <tr
               key={row.key}
-              className={row.onClick ? "cursor-pointer" : ""}
+              className={
+                row.onClick ? "cursor-pointer hover:bg-control-bg" : ""
+              }
               role={row.onClick ? "button" : undefined}
               tabIndex={row.onClick ? 0 : undefined}
               onClick={row.onClick}
@@ -73,13 +67,17 @@ export function ObjectSectionTable({
                   : undefined
               }
             >
-              <TableCell className="text-main">{row.name}</TableCell>
-              <TableCell>{row.description}</TableCell>
-              <TableCell>{row.comment || "-"}</TableCell>
-            </TableRow>
+              <td className="px-4 py-3 text-sm text-main">{row.name}</td>
+              <td className="px-4 py-3 text-sm text-control">
+                {row.description}
+              </td>
+              <td className="px-4 py-3 text-sm text-control">
+                {row.comment || "-"}
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }

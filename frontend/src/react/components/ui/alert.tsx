@@ -49,7 +49,7 @@ function Alert({
       className={cn(alertVariants({ variant, className }))}
       {...props}
     >
-      {showIcon && <Icon className="h-5 w-5 shrink-0 mt-0.5" />}
+      {showIcon && <Icon className="size-5 shrink-0 mt-0.5" />}
       <div>{children}</div>
     </div>
   );

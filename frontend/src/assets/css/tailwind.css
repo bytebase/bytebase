@@ -165,6 +165,11 @@
     --color-block-border: 229 231 235; /* #e5e7eb */
     /* gray-300 */
     --color-control-border: 209 213 219; /* #d1d5db */
+
+    /* white - page/card/panel background */
+    --color-background: 255 255 255; /* #ffffff */
+    /* black - overlay backdrop, use with opacity e.g. bg-overlay/50 */
+    --color-overlay: 0 0 0; /* #000000 */
   }
   :root {
     /* same as vs-dark theme's bg, not pure black. */
@@ -235,11 +240,11 @@
   }
 
   .textlabeltip {
-    @apply text-xs font-normal text-red-500 ml-2;
+    @apply text-xs font-normal text-error ml-2;
   }
 
   .textfield {
-    @apply text-main disabled:text-control disabled:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70 focus:ring-control focus:border-control sm:text-sm border-control-border rounded-sm;
+    @apply text-main disabled:text-control disabled:bg-control-bg disabled:cursor-not-allowed disabled:opacity-70 focus:ring-control focus:border-control sm:text-sm border-control-border rounded-sm;
   }
 
   .textarea {
@@ -259,11 +264,11 @@
   }
 
   .radio .btn {
-    @apply focus:ring-accent h-4 w-4 text-accent select-none;
+    @apply focus:ring-accent size-4 text-accent select-none;
   }
 
   .radio .label {
-    @apply ml-1.5 block text-sm font-medium text-gray-700 select-none;
+    @apply ml-1.5 block text-sm font-medium text-control select-none;
   }
 
   .outline-title {
@@ -295,7 +300,7 @@
   }
 
   .normal-link {
-    @apply cursor-pointer text-blue-600 hover:underline hover:text-blue-800 focus:outline-hidden;
+    @apply cursor-pointer text-info hover:underline hover:text-info-hover focus:outline-hidden;
   }
 
   .light-link {

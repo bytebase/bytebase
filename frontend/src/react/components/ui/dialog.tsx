@@ -17,7 +17,7 @@ function DialogOverlay({
   return (
     <BaseDialog.Backdrop
       ref={ref}
-      className={cn("fixed inset-0 z-50 bg-black/50", className)}
+      className={cn("fixed inset-0 z-50 bg-overlay/50", className)}
       {...props}
     />
   );
@@ -39,7 +39,7 @@ function DialogContent({
           "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
           "w-[calc(100vw-8rem)] max-w-3xl 2xl:max-w-[55vw]",
           "max-h-[calc(100vh-10rem)] overflow-y-auto",
-          "rounded-sm bg-white shadow-lg",
+          "rounded-sm bg-background shadow-lg",
           className
         )}
         {...props}
@@ -74,7 +74,7 @@ function DialogDescription({
   return (
     <BaseDialog.Description
       ref={ref}
-      className={cn("text-sm text-gray-500", className)}
+      className={cn("text-sm text-control-light", className)}
       {...props}
     />
   );

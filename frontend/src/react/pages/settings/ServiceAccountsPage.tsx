@@ -9,14 +9,6 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -146,35 +138,38 @@ function ServiceAccountTable({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-control-bg">
-            <TableHead className="whitespace-nowrap">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-control-bg">
+            <th className="px-4 py-2 text-left font-medium whitespace-nowrap">
               {t("settings.members.table.account")}
-            </TableHead>
-            <TableHead className="text-right whitespace-nowrap">
+            </th>
+            <th className="px-4 py-2 text-right font-medium whitespace-nowrap">
               {t("common.operations")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
           {users.length === 0 ? (
-            <TableRow>
-              <TableCell
+            <tr>
+              <td
                 colSpan={2}
-                className="py-8 text-center text-control-light"
+                className="py-8 text-center text-control-light text-sm"
               >
                 {t("common.no-data")}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
-            users.map((user) => {
+            users.map((user, i) => {
               const isDeleted = user.state === State.DELETED;
 
               return (
-                <TableRow key={user.name}>
+                <tr
+                  key={user.name}
+                  className={`border-b last:border-b-0 ${i % 2 === 1 ? "bg-control-bg" : ""}`}
+                >
                   {/* Account column */}
-                  <TableCell>
+                  <td className="px-4 py-2">
                     <div className="flex items-center gap-x-3">
                       <UserAvatar title={user.title || user.email} />
                       <div className="flex flex-col min-w-0">
@@ -256,10 +251,10 @@ function ServiceAccountTable({
                         </div>
                       )}
                     </div>
-                  </TableCell>
+                  </td>
 
                   {/* Operations column */}
-                  <TableCell>
+                  <td className="px-4 py-2">
                     <div className="flex justify-end gap-x-1">
                       {!isDeleted && (
                         <>
@@ -332,13 +327,13 @@ function ServiceAccountTable({
                           </Tooltip>
                         )}
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               );
             })
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -501,13 +496,13 @@ function CreateServiceAccountDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
 
       {/* Drawer */}
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -734,7 +729,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         {/* Active list */}
         {activeData.isLoading && activeData.dataList.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+            <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         ) : (
           <>
@@ -776,7 +771,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
             {inactiveData.isLoading && inactiveData.dataList.length === 0 ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+                <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
               </div>
             ) : (
               <>

@@ -29,14 +29,6 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { SearchInput } from "@/react/components/ui/search-input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -419,7 +411,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
 
   return (
     <div className="w-full h-full overflow-hidden flex flex-col px-4 py-4">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-control-light">
         {t("database.sync-schema.description")}{" "}
         <LearnMoreLink
           href="https://docs.bytebase.com/change-database/synchronize-schema?source=console"
@@ -428,8 +420,8 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       </p>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-2 text-gray-400 text-sm">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400" />
+        <div className="flex items-center justify-center py-2 text-control-placeholder text-sm">
+          <div className="animate-spin rounded-full size-5 border-b-2 border-control-placeholder" />
         </div>
       ) : (
         <div className="pt-4 flex-1 overflow-hidden flex flex-col gap-y-4">
@@ -479,7 +471,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
                   variant="outline"
                   onClick={() => handleStepChange(currentStep - 1)}
                 >
-                  <ChevronLeft className="-ml-1 mr-1 h-5 w-5 text-control-light" />
+                  <ChevronLeft className="-ml-1 mr-1 size-5 text-control-light" />
                   <span>{t("common.back")}</span>
                 </Button>
               )}
@@ -534,14 +526,14 @@ function StepIndicator({
     <div className="flex items-center gap-x-2 px-0.5">
       {steps.map((step, i) => (
         <div key={i} className="flex items-center gap-x-2">
-          {i > 0 && <div className="w-8 h-px bg-gray-300" />}
+          {i > 0 && <div className="w-8 h-px bg-control-border" />}
           <div className="flex items-center gap-x-2">
             <div
               className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                "size-6 rounded-full flex items-center justify-center text-xs font-medium",
                 i <= currentIndex
-                  ? "bg-accent text-white"
-                  : "bg-gray-200 text-gray-500"
+                  ? "bg-accent text-accent-text"
+                  : "bg-control-bg-hover text-control-light"
               )}
             >
               {i + 1}
@@ -549,7 +541,9 @@ function StepIndicator({
             <span
               className={cn(
                 "text-sm",
-                i <= currentIndex ? "text-accent font-medium" : "text-gray-500"
+                i <= currentIndex
+                  ? "text-accent font-medium"
+                  : "text-control-light"
               )}
             >
               {step.title}
@@ -848,14 +842,19 @@ function ChangelogSelector({
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between gap-2 border border-gray-300 rounded-xs h-9 px-3 text-sm bg-white text-left transition-colors",
-          "hover:border-gray-400",
+          "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs h-9 px-3 text-sm bg-background text-left transition-colors",
+          "hover:border-control-border",
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
         )}
         onClick={() => !disabled && setOpen(!open)}
       >
-        <span className={cn("truncate", !selectedEntry && "text-gray-400")}>
+        <span
+          className={cn(
+            "truncate",
+            !selectedEntry && "text-control-placeholder"
+          )}
+        >
           {selectedEntry ? (
             <ChangelogLabel entry={selectedEntry} />
           ) : (
@@ -864,13 +863,13 @@ function ChangelogSelector({
         </span>
         <ChevronDown
           className={cn(
-            "w-4 h-4 text-gray-400 shrink-0 transition-transform",
+            "size-4 text-control-placeholder shrink-0 transition-transform",
             open && "rotate-180"
           )}
         />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 min-w-full w-max bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 min-w-full w-max bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
           <div className="max-h-60 overflow-y-auto">
             {entries.map((entry) => (
               <button
@@ -878,7 +877,7 @@ function ChangelogSelector({
                 type="button"
                 className={cn(
                   "w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors",
-                  "hover:bg-gray-50",
+                  "hover:bg-control-bg",
                   entry.name === value && "bg-accent/5"
                 )}
                 onClick={() => {
@@ -892,7 +891,7 @@ function ChangelogSelector({
             {nextPageToken && (
               <button
                 type="button"
-                className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-gray-50 transition-colors"
+                className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-control-bg transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   loadMore();
@@ -916,7 +915,7 @@ function ChangelogLabel({ entry }: { entry: ChangelogEntry }) {
         {entry.date ? humanizeDate(entry.date) : "Latest version"}
       </span>
       {entry.planTitle && (
-        <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-gray-100 text-xs">
+        <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-control-bg text-xs">
           {entry.planTitle}
         </span>
       )}
@@ -1100,7 +1099,7 @@ function SourceSchemaInfo({
       {changelogSourceSchema ? (
         <>
           <button
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition-colors"
+            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
@@ -1119,7 +1118,7 @@ function SourceSchemaInfo({
             </span>
           </button>
           <button
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition-colors"
+            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
@@ -1128,10 +1127,10 @@ function SourceSchemaInfo({
         </>
       ) : (
         <>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-sm">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
             {t("schema-editor.raw-sql")}
           </span>
-          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-gray-100 text-sm">
+          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
             <span className="opacity-60 mr-1">{t("database.engine")}</span>
             {EngineIconPath[sourceEngine] && (
               <img
@@ -1443,12 +1442,12 @@ function SelectTargetDatabasesView({
         <div className="w-1/4 min-w-[256px] max-w-xs h-full border-r">
           <div className="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2">
             <div className="w-full h-auto flex flex-col justify-start items-start sticky top-0 z-[1]">
-              <div className="w-full bg-white border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-[1]">
+              <div className="w-full bg-background border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-[1]">
                 <span className="text-sm">
                   {t("database.sync-schema.target-databases")}
                 </span>
                 <button
-                  className="p-0.5 rounded-sm bg-gray-100 hover:shadow-sm hover:opacity-80"
+                  className="p-0.5 rounded-sm bg-control-bg hover:shadow-sm hover:opacity-80"
                   onClick={() => setShowSelectPanel(true)}
                 >
                   <Plus className="w-4 h-auto" />
@@ -1456,18 +1455,18 @@ function SelectTargetDatabasesView({
               </div>
               {targetDatabaseList.length > 0 && (
                 <div className="w-full mt-2 px-2">
-                  <div className="flex rounded-xs bg-gray-100 p-0.5">
+                  <div className="flex rounded-xs bg-control-bg p-0.5">
                     <button
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         showDatabaseWithDiff
-                          ? "bg-white shadow-sm font-medium"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-background shadow-sm font-medium"
+                          : "text-control-light hover:text-control"
                       )}
                       onClick={() => setShowDatabaseWithDiff(true)}
                     >
                       {t("database.sync-schema.with-diff")}{" "}
-                      <span className="text-gray-400">
+                      <span className="text-control-placeholder">
                         ({databaseListWithDiff.length})
                       </span>
                     </button>
@@ -1475,13 +1474,13 @@ function SelectTargetDatabasesView({
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         !showDatabaseWithDiff
-                          ? "bg-white shadow-sm font-medium"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-background shadow-sm font-medium"
+                          : "text-control-light hover:text-control"
                       )}
                       onClick={() => setShowDatabaseWithDiff(false)}
                     >
                       {t("database.sync-schema.no-diff")}{" "}
-                      <span className="text-gray-400">
+                      <span className="text-control-placeholder">
                         ({databaseListWithoutDiff.length})
                       </span>
                     </button>
@@ -1494,8 +1493,10 @@ function SelectTargetDatabasesView({
                 <div
                   key={database.name}
                   className={cn(
-                    "w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded-sm hover:bg-gray-50",
-                    database.name === selectedDatabaseName ? "bg-gray-100" : ""
+                    "w-full group flex flex-row justify-start items-center px-2 py-1 leading-8 cursor-pointer text-sm text-ellipsis whitespace-nowrap rounded-sm hover:bg-control-bg",
+                    database.name === selectedDatabaseName
+                      ? "bg-control-bg"
+                      : ""
                   )}
                   onClick={() => onSelectedDatabaseNameChange(database.name)}
                 >
@@ -1507,31 +1508,31 @@ function SelectTargetDatabasesView({
                     />
                   )}
                   <span className="truncate ml-1">
-                    <span className="mx-0.5 text-gray-400">
+                    <span className="mx-0.5 text-control-placeholder">
                       ({getDatabaseEnvironment(database).title})
                     </span>
                     <span>
                       {extractDatabaseResourceName(database.name).databaseName}
                     </span>
-                    <span className="ml-0.5 text-gray-400">
+                    <span className="ml-0.5 text-control-placeholder">
                       ({getInstanceResource(database).title})
                     </span>
                   </span>
                   <div className="grow" />
                   <button
-                    className="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded-sm bg-white hover:shadow-sm"
+                    className="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded-sm bg-background hover:shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleUnselectDatabase(database);
                     }}
                   >
-                    <Minus className="w-4 h-auto text-gray-500" />
+                    <Minus className="w-4 h-auto text-control-light" />
                   </button>
                 </div>
               ))}
               {targetDatabaseList.length === 0 && (
                 <div className="w-full h-full -mt-4 flex flex-col justify-center items-center">
-                  <span className="text-gray-400">
+                  <span className="text-control-placeholder">
                     {t("database.sync-schema.message.no-target-databases")}
                   </span>
                   <Button
@@ -1565,8 +1566,8 @@ function SelectTargetDatabasesView({
             </div>
           )}
           {(isLoadingDiff || isSourceSchemaLoading) && (
-            <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-xs w-full h-full flex flex-col justify-center items-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+            <div className="absolute inset-0 z-10 bg-background/40 backdrop-blur-xs w-full h-full flex flex-col justify-center items-center">
+              <div className="animate-spin rounded-full size-6 border-b-2 border-control-placeholder" />
               <span className="mt-1">{t("common.loading")}</span>
             </div>
           )}
@@ -1815,8 +1816,8 @@ function SchemaDiffViewerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full h-screen flex flex-col p-4">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="relative bg-background w-full h-screen flex flex-col p-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -1913,7 +1914,7 @@ function CopyButton({ content }: { content: string }) {
 
   return (
     <Button variant="ghost" size="sm" onClick={handleCopy}>
-      <Copy className="w-4 h-4" />
+      <Copy className="size-4" />
     </Button>
   );
 }
@@ -2026,8 +2027,8 @@ function TargetDatabasesSelectPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[64rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[64rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
@@ -2054,14 +2055,14 @@ function TargetDatabasesSelectPanel({
         <div className="flex-1 overflow-y-auto px-6 py-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+              <div className="animate-spin rounded-full size-6 border-b-2 border-control-placeholder" />
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 px-2 w-8 text-left">
                       <input
                         type="checkbox"
                         checked={
@@ -2070,27 +2071,36 @@ function TargetDatabasesSelectPanel({
                         }
                         onChange={toggleAll}
                       />
-                    </TableHead>
-                    <TableHead>{t("common.database")}</TableHead>
-                    <TableHead>{t("common.environment")}</TableHead>
-                    <TableHead>{t("common.instance")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.database")}
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.environment")}
+                    </th>
+                    <th className="py-2 px-2 text-left font-medium">
+                      {t("common.instance")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
                   {filteredDatabases.map((db) => (
-                    <TableRow
+                    <tr
                       key={db.name}
-                      className="cursor-pointer"
+                      className="border-b hover:bg-control-bg cursor-pointer"
                       onClick={() => toggleDatabase(db.name)}
                     >
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="py-2 px-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={selected.has(db.name)}
                           onChange={() => toggleDatabase(db.name)}
                         />
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="py-2 px-2">
                         <div className="flex items-center gap-x-1">
                           {EngineIconPath[getInstanceResource(db).engine] && (
                             <img
@@ -2103,13 +2113,17 @@ function TargetDatabasesSelectPanel({
                           )}
                           {extractDatabaseResourceName(db.name).databaseName}
                         </div>
-                      </TableCell>
-                      <TableCell>{getDatabaseEnvironment(db).title}</TableCell>
-                      <TableCell>{getInstanceResource(db).title}</TableCell>
-                    </TableRow>
+                      </td>
+                      <td className="py-2 px-2">
+                        {getDatabaseEnvironment(db).title}
+                      </td>
+                      <td className="py-2 px-2">
+                        {getInstanceResource(db).title}
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
               {dbNextPageToken && (
                 <div className="flex justify-center py-3">
                   <Button

@@ -92,7 +92,7 @@ export function AgentChat({ className }: AgentChatProps) {
   return (
     <div
       ref={chatContainerRef}
-      className={`overflow-y-auto space-y-3 p-3 ${className ?? ""}`}
+      className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
     >
       {displayMessages.map((msg) =>
         msg.role === "user" ? (
@@ -104,7 +104,7 @@ export function AgentChat({ className }: AgentChatProps) {
         ) : (
           <div key={msg.id} className="flex flex-col gap-y-2">
             {msg.content && (
-              <div className="max-w-[80%] rounded-lg bg-gray-50 px-3 py-2 text-sm">
+              <div className="max-w-[80%] rounded-lg bg-control-bg px-3 py-2 text-sm">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -112,12 +112,12 @@ export function AgentChat({ className }: AgentChatProps) {
                       <p className="my-1 first:mt-0 last:mb-0">{children}</p>
                     ),
                     pre: ({ children }) => (
-                      <pre className="my-1 overflow-x-auto rounded-xs bg-gray-100 p-2 text-xs">
+                      <pre className="my-1 overflow-x-auto rounded-xs bg-control-bg p-2 text-xs">
                         {children}
                       </pre>
                     ),
                     code: ({ children }) => (
-                      <code className="rounded bg-gray-200 px-1 text-xs">
+                      <code className="rounded bg-control-bg-hover px-1 text-xs">
                         {children}
                       </code>
                     ),
@@ -141,7 +141,7 @@ export function AgentChat({ className }: AgentChatProps) {
                     ),
                     a: ({ children, href }) => (
                       <a
-                        className="text-blue-600 underline"
+                        className="text-accent underline"
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -150,7 +150,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       </a>
                     ),
                     blockquote: ({ children }) => (
-                      <blockquote className="my-1 border-l-2 border-gray-300 pl-2 text-gray-600">
+                      <blockquote className="my-1 border-l-2 border-control-border pl-2 text-control-light">
                         {children}
                       </blockquote>
                     ),
@@ -160,12 +160,12 @@ export function AgentChat({ className }: AgentChatProps) {
                       </table>
                     ),
                     th: ({ children }) => (
-                      <th className="border border-gray-300 px-2 py-1">
+                      <th className="border border-control-border px-2 py-1">
                         {children}
                       </th>
                     ),
                     td: ({ children }) => (
-                      <td className="border border-gray-300 px-2 py-1">
+                      <td className="border border-control-border px-2 py-1">
                         {children}
                       </td>
                     ),
@@ -187,7 +187,7 @@ export function AgentChat({ className }: AgentChatProps) {
       )}
 
       {loading && (
-        <div className="flex items-center gap-x-2 text-sm text-gray-400">
+        <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
           <span className="animate-pulse">&#9679;</span> {t("common.loading")}
         </div>
       )}
@@ -216,7 +216,7 @@ export function AgentChat({ className }: AgentChatProps) {
         </div>
       ) : (
         error && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-error">
             {error}
           </div>
         )

@@ -36,8 +36,8 @@ export function EditEnvironmentDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ml-auto relative bg-white w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
+      <div className="ml-auto relative bg-background w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">
             {t("database.edit-environment")}
@@ -46,7 +46,7 @@ export function EditEnvironmentDrawer({
             className="p-1 hover:bg-control-bg rounded-xs"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
@@ -58,7 +58,7 @@ export function EditEnvironmentDrawer({
                   "flex items-center gap-x-3 px-3 py-2.5 rounded-sm cursor-pointer border transition-colors",
                   selected === env.name
                     ? "border-accent bg-accent/5"
-                    : "border-transparent hover:bg-gray-50"
+                    : "border-transparent hover:bg-control-bg"
                 )}
               >
                 <input

@@ -3,6 +3,7 @@ import { sortBy, uniq } from "lodash-es";
 import {
   Archive,
   Check,
+  ChevronDown,
   EllipsisVertical,
   Plus,
   Trash2,
@@ -24,14 +25,6 @@ import {
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -169,15 +162,15 @@ function ConfirmDialog({
   const borderColor = variant === "error" ? "border-error" : "border-warning";
   const okBg =
     variant === "error"
-      ? "bg-error hover:bg-error-hover text-white"
-      : "bg-warning hover:bg-warning-hover text-white";
+      ? "bg-error hover:bg-error-hover text-accent-text"
+      : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={onCancel} />
+      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
       <div
         className={cn(
-          "relative bg-white rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
+          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
           borderColor
         )}
       >
@@ -307,8 +300,8 @@ function CreateProjectDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-black/50" onClick={closeDrawer} />
-      <div className="ml-auto relative bg-white w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+      <div className="fixed inset-0 bg-overlay/50" onClick={closeDrawer} />
+      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
           <h2 className="text-lg font-semibold">{t("common.project")}</h2>
           <button
@@ -347,8 +340,8 @@ function CreateProjectDrawer({
           </div>
 
           {isCreating && (
-            <div className="absolute inset-0 bg-white/50 flex justify-center items-center">
-              <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+            <div className="absolute inset-0 bg-background/50 flex justify-center items-center">
+              <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
             </div>
           )}
         </div>
@@ -522,7 +515,7 @@ function BatchOperationsBar({
       >
         <ProjectListPreview
           projects={selectedProjects}
-          iconColor="text-green-600"
+          iconColor="text-success"
         />
       </ConfirmDialog>
 
@@ -537,7 +530,7 @@ function BatchOperationsBar({
       >
         <ProjectListPreview
           projects={selectedProjects}
-          iconColor="text-green-600"
+          iconColor="text-success"
         />
       </ConfirmDialog>
 
@@ -555,7 +548,7 @@ function BatchOperationsBar({
         <div className="flex flex-col gap-y-3">
           <ProjectListPreview
             projects={selectedProjects}
-            iconColor="text-red-600"
+            iconColor="text-error"
           />
           <div className="rounded-sm border border-error bg-error/5 p-3">
             <p className="text-sm font-medium text-error">
@@ -579,13 +572,13 @@ function ProjectListPreview({
   iconColor: string;
 }) {
   return (
-    <div className="max-h-40 overflow-y-auto border rounded-sm p-2 bg-gray-50">
+    <div className="max-h-40 overflow-y-auto border rounded-sm p-2 bg-control-bg">
       <div className="flex flex-col gap-y-1">
         {projects.map((project) => (
           <div key={project.name} className="text-sm flex items-center gap-x-2">
-            <Check className={cn("w-3 h-3", iconColor)} />
+            <Check className={cn("size-3", iconColor)} />
             <span>{project.title}</span>
-            <span className="text-gray-500">
+            <span className="text-control-light">
               ({extractProjectResourceName(project.name)})
             </span>
           </div>
@@ -675,7 +668,7 @@ function ProjectActionDropdown({
         <EllipsisVertical className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
+        <div className="absolute right-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
           {isActive && canDelete && (
             <button
               className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
@@ -1027,6 +1020,20 @@ export function ProjectsPage() {
     fetchProjects(true);
   }, [fetchProjects]);
 
+  const renderSortIndicator = (columnKey: string) => {
+    if (sortKey !== columnKey) {
+      return <ChevronDown className="size-3 text-control-border" />;
+    }
+    return (
+      <ChevronDown
+        className={cn(
+          "h-3 w-3 text-accent transition-transform",
+          sortOrder === "asc" && "rotate-180"
+        )}
+      />
+    );
+  };
+
   const selectableProjects = useMemo(
     () =>
       projects.filter((p) => extractProjectResourceName(p.name) !== "default"),
@@ -1071,59 +1078,59 @@ export function ProjectsPage() {
       {/* Table */}
       <div className="border rounded-sm">
         <div className="overflow-x-auto">
-          <Table className="min-w-[700px]">
-            <TableHeader>
-              <TableRow className="bg-gray-50">
+          <table className="w-full text-sm min-w-[700px]">
+            <thead>
+              <tr className="bg-control-bg border-b border-control-border">
                 {canDelete && (
-                  <TableHead className="w-12">
+                  <th className="w-12 px-4 py-2">
                     <input
                       type="checkbox"
                       checked={allSelected}
                       onChange={toggleSelectAll}
                       className="rounded-xs border-control-border"
                     />
-                  </TableHead>
+                  </th>
                 )}
-                <TableHead className="min-w-[128px]">
+                <th className="px-4 py-2 text-left font-medium min-w-[128px]">
                   {t("common.id")}
-                </TableHead>
-                <TableHead
-                  sortable
-                  sortActive={sortKey === "title"}
-                  sortDir={sortOrder}
-                  onSort={() => toggleSort("title")}
-                  className="min-w-[200px]"
+                </th>
+                <th
+                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
+                  onClick={() => toggleSort("title")}
                 >
-                  {t("project.table.name")}
-                </TableHead>
-                <TableHead className="min-w-[240px] hidden md:table-cell">
+                  <div className="flex items-center gap-x-1">
+                    {t("project.table.name")}
+                    {renderSortIndicator("title")}
+                  </div>
+                </th>
+                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
                   {t("common.labels")}
-                </TableHead>
-                <TableHead className="w-[50px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </th>
+                <th className="w-[50px]" />
+              </tr>
+            </thead>
+            <tbody>
               {loading && projects.length === 0 ? (
-                <TableRow>
-                  <TableCell
+                <tr>
+                  <td
                     colSpan={canDelete ? 5 : 4}
-                    className="py-8 text-center text-control-placeholder"
+                    className="px-4 py-8 text-center text-control-placeholder"
                   >
                     <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                      <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
                       {t("common.loading")}
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : projects.length === 0 ? (
-                <TableRow>
-                  <TableCell
+                <tr>
+                  <td
                     colSpan={canDelete ? 5 : 4}
-                    className="py-8 text-center text-control-placeholder"
+                    className="px-4 py-8 text-center text-control-placeholder"
                   >
                     {t("common.no-data")}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
                 projects.map((project, i) => {
                   const resourceName = extractProjectResourceName(project.name);
@@ -1131,17 +1138,17 @@ export function ProjectsPage() {
                   const isSelected = selectedNames.has(project.name);
 
                   return (
-                    <TableRow
+                    <tr
                       key={project.name}
                       className={cn(
-                        "cursor-pointer",
-                        i % 2 === 1 && "bg-gray-50/50"
+                        "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
+                        i % 2 === 1 && "bg-control-bg/50"
                       )}
                       onClick={(e) => handleRowClick(project, e)}
                     >
                       {canDelete && (
-                        <TableCell
-                          className="w-12"
+                        <td
+                          className="w-12 px-4 py-2"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
@@ -1151,15 +1158,15 @@ export function ProjectsPage() {
                             onChange={() => toggleSelection(project.name)}
                             className="rounded-xs border-control-border disabled:opacity-50"
                           />
-                        </TableCell>
+                        </td>
                       )}
-                      <TableCell>
+                      <td className="px-4 py-2">
                         <HighlightText
                           text={resourceName}
                           keyword={searchText}
                         />
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-x-2">
                           <HighlightText
                             text={project.title}
@@ -1171,11 +1178,11 @@ export function ProjectsPage() {
                             </Badge>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      </td>
+                      <td className="px-4 py-2 hidden md:table-cell">
                         <LabelsDisplay labels={project.labels} />
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="px-4 py-2">
                         <div
                           className="flex justify-end"
                           onClick={(e) => e.stopPropagation()}
@@ -1185,13 +1192,13 @@ export function ProjectsPage() {
                             onAction={handleProjectAction}
                           />
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   );
                 })
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1232,7 +1239,10 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
   return (
     <div className="flex items-center gap-x-1">
       {displayEntries.map(([key, value]) => (
-        <span key={key} className="rounded-xs bg-gray-100 py-0.5 px-2 text-sm">
+        <span
+          key={key}
+          className="rounded-xs bg-control-bg py-0.5 px-2 text-sm"
+        >
           {key}:{value}
         </span>
       ))}

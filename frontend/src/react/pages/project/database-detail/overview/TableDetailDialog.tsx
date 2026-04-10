@@ -289,7 +289,7 @@ function MiniActionButton({
       type="button"
       aria-label={ariaLabel}
       data-testid={dataTestId}
-      className={`inline-flex h-5 w-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
+      className={`inline-flex size-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
       disabled={disabled}
       onKeyDown={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
@@ -320,7 +320,7 @@ function ClassificationLevelBadge({
     (level) => level.level === classificationEntry?.level
   );
   const levelColor =
-    bgColorList[(classificationEntry?.level ?? 0) - 1] ?? "bg-gray-200";
+    bgColorList[(classificationEntry?.level ?? 0) - 1] ?? "bg-control-bg-hover";
 
   return (
     <span className="flex min-w-0 items-center gap-x-1">
@@ -594,7 +594,7 @@ export function EditableClassificationCell({
               void onApply("");
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </MiniActionButton>
         )}
         {!readonly && classificationConfig && (
@@ -606,7 +606,7 @@ export function EditableClassificationCell({
               setShowPicker(true);
             }}
           >
-            <Pencil className="h-3 w-3" />
+            <Pencil className="size-3" />
           </MiniActionButton>
         )}
       </div>
@@ -691,7 +691,7 @@ function EditableSemanticTypeCell({
               void onApply("");
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </MiniActionButton>
         )}
         {!readonly && (
@@ -707,7 +707,7 @@ function EditableSemanticTypeCell({
               setShowPicker(true);
             }}
           >
-            <Pencil className="h-3 w-3" />
+            <Pencil className="size-3" />
           </MiniActionButton>
         )}
       </div>
@@ -940,7 +940,7 @@ export function TableDetailDialog({
                     <TableHead>{t("database.expression")}</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="bg-white">
+                <TableBody className="bg-background">
                   {partitionRows.map(({ depth, partition }) => (
                     <TableRow key={`${partition.name}-${depth}`}>
                       <TableCell className="text-main">
@@ -1011,7 +1011,7 @@ export function TableDetailDialog({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-block-border bg-white">
+                <tbody className="divide-y divide-block-border bg-background">
                   {filteredColumns.map((column) => (
                     <tr key={column.name}>
                       <td className="px-4 py-3 text-sm text-main">
@@ -1135,7 +1135,7 @@ export function TableDetailDialog({
                       )}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-block-border bg-white">
+                  <tbody className="divide-y divide-block-border bg-background">
                     <tr>
                       <td className="px-4 py-3 text-sm text-control">
                         {index.expressions.join(", ") || "-"}
@@ -1173,7 +1173,7 @@ export function TableDetailDialog({
                     <TableHead>{t("db.trigger.body")}</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="bg-white">
+                <TableBody className="bg-background">
                   {table.triggers?.map((trigger) => (
                     <TableRow key={trigger.name}>
                       <TableCell className="text-main">

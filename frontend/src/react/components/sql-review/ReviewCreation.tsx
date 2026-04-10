@@ -286,21 +286,21 @@ export function ReviewCreation({
   return (
     <div className="w-full h-full flex flex-col">
       {/* Step bar */}
-      <div className="sticky top-0 z-10 bg-white border-b px-6 py-4">
+      <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
         <div className="flex items-center gap-x-2">
           {steps.map((step, index) => (
             <div key={index} className="flex items-center gap-x-2">
-              {index > 0 && <div className="w-8 h-px bg-gray-300" />}
+              {index > 0 && <div className="w-8 h-px bg-control-border" />}
               <div
                 className={`flex items-center gap-x-2 px-3 py-1.5 rounded-full text-sm font-medium ${
                   index === currentStep
-                    ? "bg-accent text-white"
+                    ? "bg-accent text-accent-text"
                     : index < currentStep
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-500"
+                      ? "bg-success/10 text-success"
+                      : "bg-control-bg text-control-light"
                 }`}
               >
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs bg-white/20">
+                <span className="inline-flex items-center justify-center size-5 rounded-full text-xs bg-background/20">
                   {index + 1}
                 </span>
                 {step.label}
@@ -318,7 +318,7 @@ export function ReviewCreation({
             <div>
               <label className="textlabel">
                 {t("sql-review.create.basic-info.display-name")}
-                <span className="text-red-500 ml-0.5">*</span>
+                <span className="text-error ml-0.5">*</span>
               </label>
               <p className="mt-1 textinfolabel">
                 {t("sql-review.create.basic-info.display-name-label")}
@@ -374,10 +374,10 @@ export function ReviewCreation({
                 </TabsByEngine>
               </>
             ) : (
-              <div className="py-12 border rounded-sm flex flex-col items-center gap-y-4 text-gray-500">
+              <div className="py-12 border rounded-sm flex flex-col items-center gap-y-4 text-control-light">
                 <p>{t("common.no-data")}</p>
                 <Button onClick={() => setShowRuleSelectPanel(true)}>
-                  <Plus className="w-4 h-4 mr-1" />
+                  <Plus className="size-4 mr-1" />
                   {t("sql-review.add-rules")}
                 </Button>
               </div>

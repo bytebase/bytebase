@@ -1,14 +1,6 @@
 import { Check } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { router } from "@/router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
@@ -21,9 +13,9 @@ import { changelogLink } from "@/utils/v1/changelog";
 function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
   if (status === Changelog_Status.PENDING) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-info bg-white text-info">
+      <span className="flex size-5 items-center justify-center rounded-full border-2 border-info bg-background text-info">
         <span
-          className="h-2 w-2 rounded-full bg-info"
+          className="size-2 rounded-full bg-info"
           style={{
             animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
           }}
@@ -33,14 +25,14 @@ function ChangelogStatusIcon({ status }: { status: Changelog_Status }) {
   }
   if (status === Changelog_Status.DONE) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success text-white">
-        <Check className="h-4 w-4" />
+      <span className="flex size-5 items-center justify-center rounded-full bg-success text-accent-text">
+        <Check className="size-4" />
       </span>
     );
   }
   if (status === Changelog_Status.FAILED) {
     return (
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-error text-white">
+      <span className="flex size-5 items-center justify-center rounded-full bg-error text-accent-text">
         <span className="text-base font-normal">!</span>
       </span>
     );
@@ -77,52 +69,52 @@ export function DatabaseChangelogTable({
 
   return (
     <div className="overflow-hidden rounded border border-block-border">
-      <Table>
-        <TableHeader className="bg-control-bg">
-          <TableRow>
-            <TableHead className="w-12" />
-            <TableHead className="w-[180px]">
+      <table className="min-w-full divide-y divide-block-border">
+        <thead className="bg-control-bg">
+          <tr className="text-left text-sm text-control-light">
+            <th className="w-12 px-4 py-2" />
+            <th className="w-[180px] px-4 py-2 font-medium">
               {t("common.created-at")}
-            </TableHead>
-            <TableHead className="min-w-[200px]">
+            </th>
+            <th className="min-w-[200px] px-4 py-2 font-medium">
               {t("common.rollout")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-block-border bg-background">
           {changelogs.map((changelog) => (
-            <TableRow
+            <tr
               key={changelog.name}
-              className="cursor-pointer"
+              className="cursor-pointer hover:bg-control-bg"
               onClick={(e) => handleRowClick(changelog, e)}
             >
-              <TableCell className="text-center">
+              <td className="px-4 py-3 text-center">
                 <ChangelogStatusIcon status={changelog.status} />
-              </TableCell>
-              <TableCell>
+              </td>
+              <td className="px-4 py-3 text-sm text-main">
                 {getDateForPbTimestampProtoEs(changelog.createTime)
                   ? humanizeDate(
                       getDateForPbTimestampProtoEs(changelog.createTime) as Date
                     )
                   : "-"}
-              </TableCell>
-              <TableCell className="truncate">
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-main">
                 {changelog.planTitle || "-"}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
           {changelogs.length === 0 && (
-            <TableRow>
-              <TableCell
-                className="py-6 text-center text-control-light"
+            <tr>
+              <td
+                className="px-4 py-6 text-center text-sm text-control-light"
                 colSpan={3}
               >
                 {t("common.no-data")}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }

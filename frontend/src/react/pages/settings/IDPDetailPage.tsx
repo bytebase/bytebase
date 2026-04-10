@@ -79,15 +79,15 @@ function TestConnectionResultDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-overlay/50"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
+      <div className="bg-background rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-x-2">
-            <div className="w-6 h-6 text-green-500">&#10003;</div>
+            <div className="size-6 text-success">&#10003;</div>
             <h3 className="text-lg font-medium">
               {t("identity-provider.test-connection-success")}
             </h3>
@@ -101,12 +101,12 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
-          <div className="bg-gray-50 rounded-xs p-4">
+          <div className="bg-control-bg rounded-xs p-4">
             <div className="flex flex-col gap-y-1">
               {Object.entries(response.userInfo).map(([key, value]) => (
                 <div
                   key={key}
-                  className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
+                  className="grid grid-cols-3 gap-2 py-1 border-b border-block-border last:border-b-0"
                 >
                   <div
                     className="text-sm font-medium text-control truncate"
@@ -128,7 +128,7 @@ function TestConnectionResultDialog({
           <p className="text-sm text-control-light">
             {t("identity-provider.claims-description")}
           </p>
-          <div className="bg-gray-50 rounded-xs p-4">
+          <div className="bg-control-bg rounded-xs p-4">
             {Object.keys(response.claims).length === 0 ? (
               <div className="text-sm text-control-light italic">
                 {t("identity-provider.no-claims")}
@@ -138,7 +138,7 @@ function TestConnectionResultDialog({
                 {Object.entries(response.claims).map(([key, value]) => (
                   <div
                     key={key}
-                    className="grid grid-cols-3 gap-2 py-1 border-b border-gray-200 last:border-b-0"
+                    className="grid grid-cols-3 gap-2 py-1 border-b border-block-border last:border-b-0"
                   >
                     <div
                       className="text-sm font-medium text-control truncate"
@@ -342,14 +342,14 @@ function DeleteConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-overlay/50"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-sm shadow-lg w-96 p-6">
+      <div className="bg-background rounded-sm shadow-lg w-96 p-6">
         <h3 className="text-lg font-medium mb-2">{t("settings.sso.delete")}</h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-control-light mb-6">
           {t("identity-provider.delete-warning")}
         </p>
         <div className="flex justify-end gap-x-2">
@@ -399,7 +399,7 @@ function ProviderConfigForm({
       <div className="flex flex-col gap-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Client ID <span className="text-error">*</span>
             </label>
             <Input
@@ -414,7 +414,7 @@ function ProviderConfigForm({
             />
           </div>
           <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Client Secret{" "}
               {!isEditMode && <span className="text-error">*</span>}
             </label>
@@ -437,7 +437,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.auth-url")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -448,13 +448,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.auth-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.auth-url-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.token-url")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -465,13 +465,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.token-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.token-url-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.user-info-url")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -485,13 +485,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.user-info-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.user-info-url-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.scopes")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -500,13 +500,13 @@ function ProviderConfigForm({
             onChange={(e) => onUpdateScopes(e.target.value)}
             placeholder={t("settings.sso.form.scopes-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.scopes-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.authentication-style")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -530,7 +530,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
@@ -554,7 +554,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
@@ -563,7 +563,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
@@ -579,7 +579,7 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <p className="text-sm text-control-light mt-1 ml-6">
             {t("settings.sso.form.skip-tls-warning")}
           </p>
         </div>
@@ -591,7 +591,7 @@ function ProviderConfigForm({
     return (
       <div className="flex flex-col gap-y-6">
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             Issuer URL <span className="text-error">*</span>
           </label>
           <Input
@@ -601,14 +601,14 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.issuer-url-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.issuer-url-description")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Client ID <span className="text-error">*</span>
             </label>
             <Input
@@ -620,7 +620,7 @@ function ProviderConfigForm({
             />
           </div>
           <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Client Secret{" "}
               {!isEditMode && <span className="text-error">*</span>}
             </label>
@@ -643,7 +643,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.scopes")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -652,13 +652,13 @@ function ProviderConfigForm({
             onChange={(e) => onUpdateScopes(e.target.value)}
             placeholder={t("settings.sso.form.scopes-placeholder-oidc")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.openid-scopes-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.authentication-style")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -680,7 +680,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
@@ -702,7 +702,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
@@ -711,7 +711,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
@@ -727,7 +727,7 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <p className="text-sm text-control-light mt-1 ml-6">
             {t("settings.sso.form.skip-tls-warning")}
           </p>
         </div>
@@ -740,7 +740,7 @@ function ProviderConfigForm({
       <div className="flex flex-col gap-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Host <span className="text-error">*</span>
             </label>
             <Input
@@ -752,7 +752,7 @@ function ProviderConfigForm({
             />
           </div>
           <div>
-            <label className="block text-base font-semibold text-gray-800 mb-2">
+            <label className="block text-base font-semibold text-main mb-2">
               Port <span className="text-error">*</span>
             </label>
             <Input
@@ -772,7 +772,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.bind-dn")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -783,13 +783,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.bind-dn-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.bind-dn-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.bind-password")}{" "}
             {!isEditMode && <span className="text-error">*</span>}
           </label>
@@ -811,7 +811,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.base-dn")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -822,13 +822,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.base-dn-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.base-dn-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-2">
+          <label className="block text-base font-semibold text-main mb-2">
             {t("settings.sso.form.user-filter")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -839,13 +839,13 @@ function ProviderConfigForm({
             }
             placeholder={t("settings.sso.form.user-filter-placeholder")}
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-control-light mt-1">
             {t("settings.sso.form.user-filter-description")}
           </p>
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.security-protocol")}{" "}
             <span className="text-error">*</span>
           </label>
@@ -871,7 +871,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.starttls")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.starttls-description")}
                 </div>
               </div>
@@ -897,7 +897,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.ldaps")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.ldaps-description")}
                 </div>
               </div>
@@ -921,7 +921,7 @@ function ProviderConfigForm({
               />
               <div>
                 <div className="font-medium">{t("settings.sso.form.none")}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-control-light">
                   {t("settings.sso.form.none-description")}
                 </div>
               </div>
@@ -930,7 +930,7 @@ function ProviderConfigForm({
         </div>
 
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-3">
+          <label className="block text-base font-semibold text-main mb-3">
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
@@ -946,7 +946,7 @@ function ProviderConfigForm({
             />
             <span>{t("settings.sso.form.skip-tls-verification")}</span>
           </label>
-          <p className="text-sm text-gray-600 mt-1 ml-6">
+          <p className="text-sm text-control-light mt-1 ml-6">
             {t("settings.sso.form.skip-tls-warning")}
           </p>
         </div>
@@ -983,15 +983,15 @@ function FieldMappingForm({
           placeholder={t("settings.sso.form.identifier-placeholder")}
         />
         <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="flex items-center font-semibold text-gray-800">
+          <ArrowRight className="mx-2 h-5 w-5 text-control-placeholder" />
+          <p className="flex items-center font-semibold text-main">
             {t("settings.sso.form.identifier")}
             <span className="ml-0.5 text-error">*</span>
             <span
               className="ml-1"
               title={t("settings.sso.form.identifier-tips")}
             >
-              <Info className="w-4 h-4 text-blue-500" />
+              <Info className="size-4 text-accent" />
             </span>
           </p>
         </div>
@@ -1006,8 +1006,8 @@ function FieldMappingForm({
           placeholder={t("settings.sso.form.display-name-placeholder")}
         />
         <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="font-semibold text-gray-800">
+          <ArrowRight className="mx-2 h-5 w-5 text-control-placeholder" />
+          <p className="font-semibold text-main">
             {t("settings.sso.form.display-name")}
           </p>
         </div>
@@ -1020,8 +1020,8 @@ function FieldMappingForm({
           placeholder={t("settings.sso.form.phone-placeholder")}
         />
         <div className="flex items-center text-base">
-          <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-          <p className="font-semibold text-gray-800">
+          <ArrowRight className="mx-2 h-5 w-5 text-control-placeholder" />
+          <p className="font-semibold text-main">
             {t("settings.sso.form.phone")}
           </p>
         </div>
@@ -1038,13 +1038,13 @@ function FieldMappingForm({
               placeholder={t("settings.sso.form.groups-placeholder")}
             />
             <div className="flex items-center text-base">
-              <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-              <p className="font-semibold text-gray-800">
+              <ArrowRight className="mx-2 h-5 w-5 text-control-placeholder" />
+              <p className="font-semibold text-main">
                 {t("settings.sso.form.groups")}
               </p>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-control-light">
             {t("settings.sso.form.groups-description")}
           </p>
         </>
@@ -1461,7 +1461,7 @@ export function IDPDetailPage() {
   if (isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+        <div className="animate-spin rounded-full size-8 border-b-2 border-accent" />
       </div>
     );
   }
@@ -1494,16 +1494,16 @@ export function IDPDetailPage() {
           </div>
           <div className="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
             <div>
-              <p className="text-base font-semibold text-gray-800 mb-2">
+              <p className="text-base font-semibold text-main mb-2">
                 {t("common.type")}
               </p>
-              <div className="flex items-center gap-x-3 p-3 bg-gray-50 rounded-xs">
-                <ProviderIcon className="w-5 h-5 text-gray-600" />
-                <span className="text-base font-medium text-gray-800">
+              <div className="flex items-center gap-x-3 p-3 bg-control-bg rounded-xs">
+                <ProviderIcon className="w-5 h-5 text-control-light" />
+                <span className="text-base font-medium text-main">
                   {identityProviderTypeToString(localIdp.type)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-control-light mt-1">
                 {t("settings.sso.form.provider-type-readonly-hint")}
               </p>
             </div>
@@ -1533,7 +1533,7 @@ export function IDPDetailPage() {
             </div>
 
             <div>
-              <p className="text-base font-semibold text-gray-800 mb-2">
+              <p className="text-base font-semibold text-main mb-2">
                 {t("settings.sso.form.domain")}
               </p>
               <Input
@@ -1544,7 +1544,7 @@ export function IDPDetailPage() {
                 }
                 placeholder={t("settings.sso.form.domain-description")}
               />
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-control-light mt-1">
                 {t("settings.sso.form.domain-optional-hint")}
               </p>
             </div>
@@ -1557,7 +1557,7 @@ export function IDPDetailPage() {
             <h1 className="text-2xl font-bold">
               {t("settings.sso.form.configuration")}
             </h1>
-            <p className="text-base text-gray-600 mt-3">
+            <p className="text-base text-control-light mt-3">
               {t("settings.sso.form.configuration-description")}
             </p>
           </div>
@@ -1583,7 +1583,7 @@ export function IDPDetailPage() {
             <h1 className="text-2xl font-bold">
               {t("settings.sso.form.user-information-mapping")}
             </h1>
-            <p className="text-base text-gray-600 mt-3">
+            <p className="text-base text-control-light mt-3">
               {t("settings.sso.form.user-information-mapping-description")}
             </p>
           </div>

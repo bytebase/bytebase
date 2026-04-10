@@ -590,7 +590,7 @@ export function AdvancedSearch({
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex min-w-0 items-center h-9 overflow-hidden border border-gray-300 rounded-xs bg-white transition-colors"
+        className="flex min-w-0 items-center h-9 overflow-hidden border border-control-border rounded-xs bg-background transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
         <div className="flex min-w-0 max-w-[60%] items-center shrink">
@@ -610,7 +610,7 @@ export function AdvancedSearch({
                   data-search-scope-id={scope.id}
                   data-search-scope-index={originalIndex}
                   className={cn(
-                    "inline-flex max-w-[16rem] min-w-0 shrink-0 items-center gap-1 rounded-xs bg-gray-100 px-1.5 py-0.5 text-xs whitespace-nowrap",
+                    "inline-flex max-w-[16rem] min-w-0 shrink-0 items-center gap-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs whitespace-nowrap",
                     focusedTagIndex === originalIndex && "ring-1 ring-accent"
                   )}
                   onClick={(e) => {
@@ -638,10 +638,16 @@ export function AdvancedSearch({
               ))}
             </div>
             {tagFade.showStart && (
-              <ScrollFade edge="left" className="from-white to-transparent" />
+              <ScrollFade
+                edge="left"
+                className="from-background to-transparent"
+              />
             )}
             {tagFade.showEnd && (
-              <ScrollFade edge="right" className="from-white to-transparent" />
+              <ScrollFade
+                edge="right"
+                className="from-background to-transparent"
+              />
             )}
           </div>
         </div>
@@ -674,7 +680,7 @@ export function AdvancedSearch({
       {/* Dropdown menu */}
       {showMenu && (
         <div
-          className="absolute top-[38px] w-full bg-gray-100 shadow-xl origin-top-left rounded-sm overflow-hidden z-50"
+          className="absolute top-[38px] w-full bg-control-bg shadow-xl origin-top-left rounded-sm overflow-hidden z-50"
           onMouseDown={(e) => e.preventDefault()}
         >
           {/* Scope menu */}
@@ -690,7 +696,7 @@ export function AdvancedSearch({
                     className={cn(
                       "flex gap-x-2 px-3 py-2 cursor-pointer text-sm items-center",
                       index > 0 && "border-t border-block-border",
-                      index === menuIndex && "bg-gray-200/75"
+                      index === menuIndex && "bg-control-bg-hover/75"
                     )}
                     onMouseEnter={() => setMenuIndex(index)}
                     onClick={() => selectScope(option.id)}
@@ -707,13 +713,13 @@ export function AdvancedSearch({
               {scopeMenuFade.showStart && (
                 <ScrollFade
                   edge="top"
-                  className="from-gray-100 to-transparent"
+                  className="from-control-bg to-transparent"
                 />
               )}
               {scopeMenuFade.showEnd && (
                 <ScrollFade
                   edge="bottom"
-                  className="from-gray-100 to-transparent"
+                  className="from-control-bg to-transparent"
                 />
               )}
             </div>
@@ -743,7 +749,7 @@ export function AdvancedSearch({
                         key={option.value}
                         className={cn(
                           "h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden",
-                          index === menuIndex && "bg-gray-200/75"
+                          index === menuIndex && "bg-control-bg-hover/75"
                         )}
                         onMouseEnter={() => setMenuIndex(index)}
                         onClick={() => selectValue(option.value)}
@@ -782,13 +788,13 @@ export function AdvancedSearch({
               {valueMenuFade.showStart && (
                 <ScrollFade
                   edge="top"
-                  className="top-[41px] from-gray-100 to-transparent"
+                  className="top-[41px] from-control-bg to-transparent"
                 />
               )}
               {valueMenuFade.showEnd && (
                 <ScrollFade
                   edge="bottom"
-                  className="from-gray-100 to-transparent"
+                  className="from-control-bg to-transparent"
                 />
               )}
             </div>
