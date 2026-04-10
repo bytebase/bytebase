@@ -40,7 +40,7 @@ import {
   useProjectV1Store,
   useWorkspaceV1Store,
 } from "@/store";
-import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -260,6 +260,8 @@ export function ProjectSidebar() {
   // Create a Vue effectScope so we can call the Vue composable useRecentVisit.
   const recordVisitRef = useRef<((path: string) => void) | null>(null);
   useEffect(() => {
+    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
+    // recent-visit helper so React components don't need a Vue effect scope.
     const scope = effectScope();
     scope.run(() => {
       const { record } = useRecentVisit();
@@ -278,13 +280,6 @@ export function ProjectSidebar() {
       );
     }
   }, [projectId, projectStore]);
-
-  const project = useVueState(() => {
-    const pid =
-      (router.currentRoute.value.params.projectId as string | undefined) ?? "";
-    const projectName = pid ? `${projectNamePrefix}${pid}` : "";
-    return projectStore.getProjectByName(projectName);
-  });
 
   // -- Expand / collapse state -----------------------------------------------
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());
@@ -341,13 +336,6 @@ export function ProjectSidebar() {
 
   // -- Navigation ------------------------------------------------------------
 
-  const navigateToHome = useCallback(() => {
-    router.push({
-      name: PROJECT_V1_ROUTE_DETAIL,
-      params: { projectId },
-    });
-  }, [projectId]);
-
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
     if (item.children && item.children.length > 0) {
       manualToggledRef.current.add(key);
@@ -368,16 +356,16 @@ export function ProjectSidebar() {
     (path: string) =>
       router.resolve({
         name: path,
-        params: { projectId: getProjectName(project.name) },
+        params: { projectId },
       }).fullPath,
-    [project.name]
+    [projectId]
   );
 
   const handleItemClick = useCallback(
     (e: React.MouseEvent, path: string) => {
       const route = router.resolve({
         name: path,
-        params: { projectId: getProjectName(project.name) },
+        params: { projectId },
       });
       recordVisitRef.current?.(route.fullPath);
       if (e.ctrlKey || e.metaKey) {
@@ -387,12 +375,33 @@ export function ProjectSidebar() {
       e.preventDefault();
       router.push(route);
     },
-    [project.name]
+    [projectId]
+  );
+
+  const resolveHomeRoute = useCallback(() => {
+    return router.resolve({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId },
+    });
+  }, [projectId]);
+
+  const handleHomeClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      const route = resolveHomeRoute();
+      recordVisitRef.current?.(route.fullPath);
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      e.preventDefault();
+      router.push(route);
+    },
+    [resolveHomeRoute]
   );
 
   // -- Logo ------------------------------------------------------------------
 
   const logoSrc = customLogo || logoFull;
+  const homeHref = resolveHomeRoute().fullPath;
 
   // -- Render ----------------------------------------------------------------
 
@@ -468,12 +477,13 @@ export function ProjectSidebar() {
 
   return (
     <nav className="flex-1 flex flex-col overflow-y-hidden border-r border-block-border">
-      <div
+      <a
+        href={homeHref}
         className="p-2 shrink-0 m-auto cursor-pointer"
-        onClick={navigateToHome}
+        onClick={handleHomeClick}
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
-      </div>
+      </a>
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>
