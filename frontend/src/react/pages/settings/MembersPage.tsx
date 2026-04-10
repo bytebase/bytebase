@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import {
   Building2,
@@ -1648,6 +1649,14 @@ function RequestRoleDialog({
     string | undefined
   >(undefined);
   const [labels, setLabels] = useState<string[]>([]);
+  // Role-scope fields — only rendered for roles that require them, but kept
+  // in state so switching roles back and forth preserves user input.
+  const [databaseMode, setDatabaseMode] = useState<DatabaseMode>("ALL");
+  const [databaseResources, setDatabaseResources] = useState<
+    DatabaseResource[]
+  >([]);
+  const [celExpression, setCelExpression] = useState("");
+  const [environments, setEnvironments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Bind the datetime-local picker's min to the current minute so users
@@ -1667,12 +1676,25 @@ function RequestRoleDialog({
   // title). Otherwise the title is auto-generated and the reason is optional.
   const reasonRequired = project.enforceIssueTitle;
 
+  // SQL-permission roles need a database scope (and sometimes an environment
+  // scope). Submitting without one produces a project-wide binding which is
+  // broader than the user typically intends.
+  const showDatabases = !!role && roleHasDatabaseLimitation(role);
+  const showEnvironments = !!role && roleHasEnvironmentLimitation(role);
+
+  const databaseScopeComplete =
+    !showDatabases ||
+    databaseMode === "ALL" ||
+    (databaseMode === "SELECT" && databaseResources.length > 0) ||
+    (databaseMode === "EXPRESSION" && celExpression.trim().length > 0);
+
   const canSubmit =
     !submitting &&
     !!role &&
     (!reasonRequired || reason.trim().length > 0) &&
     !expirationIsInPast &&
     !labelsMisconfigured &&
+    databaseScopeComplete &&
     (!project.forceIssueLabels || labels.length > 0);
 
   const handleSubmit = async () => {
@@ -1680,24 +1702,65 @@ function RequestRoleDialog({
     setSubmitting(true);
     try {
       const trimmedReason = reason.trim();
+      const expirationTimestampInMS = expirationTimestamp
+        ? dayjs(expirationTimestamp).valueOf()
+        : undefined;
 
-      // Encode expiration into the CEL condition (as
-      // `request.time < timestamp("...")`) — the backend's
-      // UpdateProjectPolicyFromRoleGrantIssue uses `condition.expression`
-      // to gate access and ignores `roleGrant.expiration` entirely, so the
-      // expiration must live in the condition to actually take effect.
-      const condition = buildConditionExpr({
-        role,
-        description: trimmedReason,
-        expirationTimestampInMS: expirationTimestamp
-          ? dayjs(expirationTimestamp).valueOf()
-          : undefined,
-      });
+      // Only pass scope filters when the selected role actually requires
+      // them, matching EditMemberRoleDrawer's submit logic.
+      const scopedDatabaseResources =
+        showDatabases &&
+        databaseMode === "SELECT" &&
+        databaseResources.length > 0
+          ? databaseResources
+          : undefined;
+      const scopedEnvironments = showEnvironments ? environments : undefined;
+
+      // The backend uses two fields on the RoleGrant message:
+      //   1. `condition.expression` — CEL evaluated by
+      //      UpdateProjectPolicyFromRoleGrantIssue to gate the resulting
+      //      project IAM binding (access control).
+      //   2. `expiration` — Duration consumed by
+      //      backend/runner/approval/runner.go (request.expiration_days) to
+      //      route the approval chain; unset defaults to math.MaxInt32 days.
+      // Both must be populated — the condition controls what the grant
+      // allows, the expiration controls which approvers review it.
+      let condition;
+      if (showDatabases && databaseMode === "EXPRESSION" && celExpression) {
+        const extraParts = stringifyConditionExpression({
+          expirationTimestampInMS,
+          environments: scopedEnvironments,
+        });
+        const fullExpression = extraParts
+          ? `(${celExpression}) && ${extraParts}`
+          : celExpression;
+        condition = create(ConditionExprSchema, {
+          expression: fullExpression,
+          description: trimmedReason,
+        });
+      } else {
+        condition = buildConditionExpr({
+          role,
+          description: trimmedReason,
+          expirationTimestampInMS,
+          databaseResources: scopedDatabaseResources,
+          environments: scopedEnvironments,
+        });
+      }
+
+      const expiration = expirationTimestamp
+        ? create(DurationSchema, {
+            seconds: BigInt(
+              Math.max(0, dayjs(expirationTimestamp).unix() - dayjs().unix())
+            ),
+          })
+        : undefined;
 
       const roleGrant = create(RoleGrantSchema, {
         role,
         user: `users/${currentUser.email}`,
         condition,
+        expiration,
       });
 
       // When the project enforces issue titles, the user-provided reason is
@@ -1774,7 +1837,15 @@ function RequestRoleDialog({
               scope="project"
               multiple={false}
               value={role ? [role] : []}
-              onChange={(roles) => setRole(roles[0] ?? "")}
+              onChange={(roles) => {
+                setRole(roles[0] ?? "");
+                // Reset scope when switching roles since DB/env fields only
+                // apply to some roles and the new role may not use them.
+                setDatabaseMode("ALL");
+                setDatabaseResources([]);
+                setCelExpression("");
+                setEnvironments([]);
+              }}
             />
           </div>
           <div className="flex flex-col gap-y-1">
@@ -1789,6 +1860,33 @@ function RequestRoleDialog({
               rows={3}
             />
           </div>
+          {showDatabases && (
+            <DatabaseResourceSection
+              projectName={project.name}
+              mode={databaseMode}
+              onModeChange={(mode) => {
+                setDatabaseMode(mode);
+                setDatabaseResources([]);
+                setCelExpression("");
+              }}
+              databaseResources={databaseResources}
+              onDatabaseResourcesChange={setDatabaseResources}
+              celExpression={celExpression}
+              onCelExpressionChange={setCelExpression}
+              formId="request-role"
+            />
+          )}
+          {showEnvironments && (
+            <div className="flex flex-col gap-y-1">
+              <label className="text-sm font-medium">
+                {t("common.environments")}
+              </label>
+              <EnvironmentMultiSelect
+                value={environments}
+                onChange={setEnvironments}
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
               {t("common.expiration")}
