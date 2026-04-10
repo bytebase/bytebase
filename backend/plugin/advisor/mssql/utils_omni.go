@@ -6,9 +6,8 @@ import (
 	"github.com/bytebase/omni/mssql/ast"
 )
 
-// normalizeTableRef joins non-empty parts of a TableRef into a lowercase dot-separated string.
-// SQL Server identifiers are case-insensitive by default, so we lowercase for consistent
-// map keys and equality checks.
+// normalizeTableRef joins non-empty parts of a TableRef into a dot-separated string.
+// Case is preserved to match the original NormalizeTSQLTableName behavior.
 func normalizeTableRef(ref *ast.TableRef, fallbackDB, fallbackSchema string) string {
 	if ref == nil {
 		return ""
@@ -22,13 +21,13 @@ func normalizeTableRef(ref *ast.TableRef, fallbackDB, fallbackSchema string) str
 	}
 	var parts []string
 	if db != "" {
-		parts = append(parts, strings.ToLower(db))
+		parts = append(parts, db)
 	}
 	if schema != "" {
-		parts = append(parts, strings.ToLower(schema))
+		parts = append(parts, schema)
 	}
 	if obj != "" {
-		parts = append(parts, strings.ToLower(obj))
+		parts = append(parts, obj)
 	}
 	return strings.Join(parts, ".")
 }
