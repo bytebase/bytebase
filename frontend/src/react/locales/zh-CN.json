@@ -361,6 +361,7 @@
   "common.username": "用户名",
   "common.value": "值",
   "common.version": "版本",
+  "common.view-doc": "查看文档",
   "common.warning": "警告",
   "common.write-only": "仅写入",
   "create-db": {
@@ -622,6 +623,7 @@
     "triggers": "触发器",
     "views": "视图"
   },
+  "db.catalog.description": "编辑并上传表的 Catalog",
   "db.failed-to-sync-schema": "同步 schema 失败",
   "db.failed-to-sync-schema-for-database-database-value-name": "为数据库 '{{0}}' 同步 schema 失败。",
   "db.n-databases-had-sync-errors": "{{0}} 个数据库同步出错",

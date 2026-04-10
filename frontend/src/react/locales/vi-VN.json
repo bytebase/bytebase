@@ -361,6 +361,7 @@
   "common.username": "Tên người dùng",
   "common.value": "Giá trị",
   "common.version": "Phiên bản",
+  "common.view-doc": "Xem tài liệu",
   "common.warning": "Cảnh báo",
   "common.write-only": "chỉ ghi",
   "create-db": {
@@ -622,6 +623,7 @@
     "triggers": "Trình kích hoạt",
     "views": "Khung nhìn"
   },
+  "db.catalog.description": "Chỉnh sửa và tải lên danh mục bảng.",
   "db.failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
   "db.failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",

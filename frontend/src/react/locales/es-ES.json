@@ -361,6 +361,7 @@
   "common.username": "Nombre de usuario",
   "common.value": "Valor",
   "common.version": "Versión",
+  "common.view-doc": "Ver doc",
   "common.warning": "Advertencia",
   "common.write-only": "solo escritura",
   "create-db": {
@@ -622,6 +623,7 @@
     "triggers": "Desencadenantes",
     "views": "Vistas"
   },
+  "db.catalog.description": "Editar y cargar el catálogo de tablas.",
   "db.failed-to-sync-schema": "No se pudo sincronizar el esquema",
   "db.failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
