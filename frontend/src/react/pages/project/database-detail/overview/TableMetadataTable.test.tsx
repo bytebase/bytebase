@@ -198,6 +198,14 @@ const press = (element: HTMLElement) => {
   });
 };
 
+const keydown = (element: HTMLElement, key: string) => {
+  act(() => {
+    element.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key })
+    );
+  });
+};
+
 const makeDatabase = (): Database =>
   ({
     name: "instances/inst1/databases/db",
@@ -396,6 +404,42 @@ describe("TableMetadataTable", () => {
     expect(actionRegion).not.toBeNull();
 
     press(actionRegion as HTMLElement);
+    await flush();
+
+    expect(onRowClick).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("pressing enter on the classification edit button does not trigger row open", async () => {
+    const onRowClick = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableMetadataTable, {
+        database: makeDatabase(),
+        schemaName: "public",
+        rows: [
+          {
+            name: "audit",
+            rowCount: 0,
+            dataSize: 128n,
+            indexSize: 64n,
+            comment: "audit table",
+            partitions: [],
+          } as never,
+        ],
+        onRowClick,
+      })
+    );
+
+    render();
+    await flush();
+
+    const editButton = container.querySelector(
+      '[data-testid="table-row-classification-audit-edit"]'
+    );
+    expect(editButton).not.toBeNull();
+
+    keydown(editButton as HTMLElement, "Enter");
     await flush();
 
     expect(onRowClick).not.toHaveBeenCalled();

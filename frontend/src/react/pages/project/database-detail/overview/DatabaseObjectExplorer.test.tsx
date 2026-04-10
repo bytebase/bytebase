@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsIndex: vi.fn(() => true),
     instanceV1SupportsPackage: vi.fn(() => false),
     instanceV1SupportsSequence: vi.fn(() => false),
+    instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
     hasProjectPermissionV2: vi.fn(() => true),
     dialogProps: [] as unknown[],
@@ -90,6 +91,7 @@ vi.mock("@/utils", () => ({
   instanceV1SupportsIndex: mocks.instanceV1SupportsIndex,
   instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
   instanceV1SupportsSequence: mocks.instanceV1SupportsSequence,
+  instanceV1SupportsTrigger: mocks.instanceV1SupportsTrigger,
 }));
 
 vi.mock("@/react/components/ui/input", () => ({
@@ -154,6 +156,23 @@ const makeTable = (name: string) =>
     dataSize: 64n,
     indexSize: 32n,
     comment: `${name} comment`,
+    partitions: [
+      {
+        name: `${name}_2026`,
+        type: 1,
+        expression: "FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')",
+        subpartitions: [],
+      },
+    ],
+    triggers: [
+      {
+        name: `${name}_before_insert`,
+        event: "INSERT",
+        timing: "BEFORE",
+        body: "EXECUTE FUNCTION demo()",
+        sqlMode: "",
+      },
+    ],
     columns: [
       {
         name: "id",
@@ -178,6 +197,8 @@ beforeEach(async () => {
   mocks.instanceV1SupportsPackage.mockReturnValue(false);
   mocks.instanceV1SupportsSequence.mockReset();
   mocks.instanceV1SupportsSequence.mockReturnValue(false);
+  mocks.instanceV1SupportsTrigger.mockReset();
+  mocks.instanceV1SupportsTrigger.mockReturnValue(false);
   mocks.bytesToString.mockReset();
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
   mocks.hasProjectPermissionV2.mockReset();
@@ -269,6 +290,24 @@ describe("DatabaseObjectExplorer", () => {
 
     const latestDialogProps = mocks.dialogProps.at(-1);
     expect(() => JSON.stringify(latestDialogProps)).not.toThrow();
+    expect(latestDialogProps).toEqual(
+      expect.objectContaining({
+        table: expect.objectContaining({
+          partitions: [
+            expect.objectContaining({
+              name: "orders_2026",
+            }),
+          ],
+          showPartitionTables: true,
+          showTriggers: false,
+          triggers: [
+            expect.objectContaining({
+              name: "orders_before_insert",
+            }),
+          ],
+        }),
+      })
+    );
 
     unmount();
   });

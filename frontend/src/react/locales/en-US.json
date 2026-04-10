@@ -525,6 +525,7 @@
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "nullable": "Nullable",
+    "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
     "row-count-estimate": "Row count estimate",
@@ -613,6 +614,12 @@
     "syncing-databases-for-instance": "Syncing databases for {{0}}...",
     "tables": "Tables",
     "tasks": "Tasks",
+    "trigger": {
+      "body": "Body",
+      "event": "Event",
+      "timing": "Timing"
+    },
+    "triggers": "Triggers",
     "views": "Views"
   },
   "db.failed-to-sync-schema": "Failed to sync schema",

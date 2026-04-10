@@ -62,6 +62,7 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsIndex: vi.fn(() => true),
     instanceV1SupportsPackage: vi.fn(() => false),
     instanceV1SupportsSequence: vi.fn(() => false),
+    instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
     humanizeDate: vi.fn(() => "5 minutes ago"),
   };
@@ -113,6 +114,7 @@ vi.mock("@/utils", () => ({
   instanceV1SupportsIndex: mocks.instanceV1SupportsIndex,
   instanceV1SupportsPackage: mocks.instanceV1SupportsPackage,
   instanceV1SupportsSequence: mocks.instanceV1SupportsSequence,
+  instanceV1SupportsTrigger: mocks.instanceV1SupportsTrigger,
 }));
 
 vi.mock("@/react/components/ui/input", () => ({

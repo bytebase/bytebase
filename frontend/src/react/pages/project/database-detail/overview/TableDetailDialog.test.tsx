@@ -72,6 +72,45 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/react/components/ui/table", () => ({
+  Table: ({
+    children,
+    ...props
+  }: React.TableHTMLAttributes<HTMLTableElement>) => (
+    <table {...props}>{children}</table>
+  ),
+  TableBody: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <tbody {...props}>{children}</tbody>
+  ),
+  TableCell: ({
+    children,
+    ...props
+  }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+    <td {...props}>{children}</td>
+  ),
+  TableHead: ({
+    children,
+    ...props
+  }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+    <th {...props}>{children}</th>
+  ),
+  TableHeader: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead {...props}>{children}</thead>
+  ),
+  TableRow: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableRowElement>) => (
+    <tr {...props}>{children}</tr>
+  ),
+}));
+
 vi.mock("@/react/components/FeatureAttention", () => ({
   FeatureAttention: ({ feature }: { feature: PlanFeature }) => (
     <div>{PlanFeature[feature]}</div>
@@ -520,6 +559,87 @@ describe("TableDetailDialog", () => {
       Setting_SettingName.DATA_CLASSIFICATION,
       true
     );
+
+    unmount();
+  });
+
+  test("shows unknown classification ids instead of replacing them with a placeholder", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableDetailDialog as unknown as ElementType, {
+        open: true,
+        onOpenChange: vi.fn(),
+        table: {
+          database: makeDatabase(),
+          editable: false,
+          name: '"public"."audit"',
+          schema: "public",
+          tableName: "audit",
+          classification: "LEGACY_PII",
+          columns: [],
+          rowCount: "0",
+          dataSize: "8 KB",
+          indexSize: "32 KB",
+          indexes: [],
+          showIndexes: false,
+        },
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("LEGACY_PII");
+
+    unmount();
+  });
+
+  test("restores partition and trigger sections in the React table detail dialog", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableDetailDialog as unknown as ElementType, {
+        open: true,
+        onOpenChange: vi.fn(),
+        table: {
+          database: makeDatabase(),
+          editable: true,
+          name: '"public"."audit"',
+          schema: "public",
+          tableName: "audit",
+          columns: [],
+          rowCount: "0",
+          dataSize: "8 KB",
+          indexSize: "32 KB",
+          indexes: [],
+          partitions: [
+            {
+              name: "audit_2026",
+              type: "RANGE",
+              expression: "FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')",
+              children: [],
+            },
+          ],
+          triggers: [
+            {
+              name: "audit_before_insert",
+              event: "INSERT",
+              timing: "BEFORE",
+              body: "EXECUTE FUNCTION audit_insert()",
+            },
+          ],
+          showIndexes: false,
+          showPartitionTables: true,
+          showTriggers: true,
+        },
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.textContent).toContain("database.partition-tables");
+    expect(container.textContent).toContain("audit_2026");
+    expect(container.textContent).toContain("db.triggers");
+    expect(container.textContent).toContain("audit_before_insert");
+    expect(container.textContent).toContain("EXECUTE FUNCTION audit_insert()");
 
     unmount();
   });

@@ -525,6 +525,7 @@
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "nullable": "null も可能",
+    "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
     "row-count-est": "推定行数",
     "row-count-estimate": "推定行数",
@@ -613,6 +614,12 @@
     "syncing-databases-for-instance": "{{0}} のデータベースを同期中...",
     "tables": "テーブル",
     "tasks": "タスク",
+    "trigger": {
+      "body": "本文",
+      "event": "イベント",
+      "timing": "タイミング"
+    },
+    "triggers": "トリガー",
     "views": "ビュー"
   },
   "db.failed-to-sync-schema": "スキーマの同期に失敗しました",

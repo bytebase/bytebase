@@ -15,6 +15,14 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSettingV1Store, useSubscriptionV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -40,6 +48,21 @@ interface TableColumnDetail {
   nullable: boolean;
   semanticType?: string;
   type: string;
+}
+
+interface TablePartitionDetail {
+  children: TablePartitionDetail[];
+  expression: string;
+  name: string;
+  type: string;
+}
+
+interface TriggerDetail {
+  body: string;
+  event: string;
+  name: string;
+  sqlMode?: string;
+  timing: string;
 }
 
 export interface TableDetailDialogData {
@@ -72,8 +95,12 @@ export interface TableDetailDialogData {
   showIndexes?: boolean;
   showIndexSize?: boolean;
   showIndexVisible?: boolean;
+  showPartitionTables?: boolean;
   showSemanticType?: boolean;
+  showTriggers?: boolean;
   tableName?: string;
+  partitions?: TablePartitionDetail[];
+  triggers?: TriggerDetail[];
 }
 
 interface ClassificationTreeNode {
@@ -264,6 +291,7 @@ function MiniActionButton({
       data-testid={dataTestId}
       className={`inline-flex h-5 w-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
       disabled={disabled}
+      onKeyDown={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={onClick}
@@ -298,7 +326,7 @@ function ClassificationLevelBadge({
     <span className="flex min-w-0 items-center gap-x-1">
       {showText && (
         <span className="min-w-0 truncate">
-          {classificationEntry?.title || (
+          {classificationEntry?.title || classification || (
             <span className="text-control-placeholder italic">
               {placeholder}
             </span>
@@ -312,6 +340,31 @@ function ClassificationLevelBadge({
       )}
     </span>
   );
+}
+
+function DetailSection({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="mt-6 flex flex-col gap-y-4">
+      <div className="text-sm font-medium text-control-light">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function flattenPartitionRows(
+  partitions: TablePartitionDetail[],
+  depth = 0
+): Array<{ depth: number; partition: TablePartitionDetail }> {
+  return partitions.flatMap((partition) => [
+    { depth, partition },
+    ...flattenPartitionRows(partition.children, depth + 1),
+  ]);
 }
 
 function ClassificationPickerDialog({
@@ -750,9 +803,13 @@ export function TableDetailDialog({
   const showColumns = table.showColumns ?? true;
   const showIndexCommentColumn = table.showIndexComment;
   const showIndexVisibleColumn = table.showIndexVisible;
+  const showPartitionTables =
+    table.showPartitionTables && (table.partitions?.length ?? 0) > 0;
   const showSemanticTypeColumn = table.showSemanticType;
   const showSummaryCollation = table.showCollation;
+  const showTriggers = table.showTriggers && (table.triggers?.length ?? 0) > 0;
   const readonly = !table.editable;
+  const partitionRows = flattenPartitionRows(table.partitions ?? []);
 
   const handleTableClassificationApply = async (classificationId: string) => {
     if (!table.database || !table.tableName) {
@@ -872,12 +929,38 @@ export function TableDetailDialog({
           )}
         </div>
 
+        {showPartitionTables && (
+          <DetailSection title={t("database.partition-tables")}>
+            <div className="rounded-lg border border-block-border">
+              <Table className="min-w-full">
+                <TableHeader className="bg-control-bg">
+                  <TableRow className="hover:bg-control-bg">
+                    <TableHead>{t("common.name")}</TableHead>
+                    <TableHead>{t("common.type")}</TableHead>
+                    <TableHead>{t("database.expression")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="bg-white">
+                  {partitionRows.map(({ depth, partition }) => (
+                    <TableRow key={`${partition.name}-${depth}`}>
+                      <TableCell className="text-main">
+                        <span style={{ paddingLeft: `${depth * 16}px` }}>
+                          {partition.name}
+                        </span>
+                      </TableCell>
+                      <TableCell>{partition.type}</TableCell>
+                      <TableCell>{partition.expression || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </DetailSection>
+        )}
+
         {showColumns && (
-          <div className="mt-6 flex flex-col gap-y-4">
+          <DetailSection title={t("database.columns")}>
             <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-medium text-control-light">
-                {t("database.columns")}
-              </div>
               <Input
                 className="w-full max-w-sm"
                 placeholder={t("common.filter-by-name")}
@@ -1018,14 +1101,11 @@ export function TableDetailDialog({
                 </tbody>
               </table>
             </div>
-          </div>
+          </DetailSection>
         )}
 
         {table.showIndexes && table.indexes.length > 0 && (
-          <div className="mt-6 flex flex-col gap-y-4">
-            <div className="text-sm font-medium text-control-light">
-              {t("database.indexes")}
-            </div>
+          <DetailSection title={t("database.indexes")}>
             {table.indexes.map((index) => (
               <div
                 key={index.name}
@@ -1078,7 +1158,38 @@ export function TableDetailDialog({
                 </table>
               </div>
             ))}
-          </div>
+          </DetailSection>
+        )}
+
+        {showTriggers && (
+          <DetailSection title={t("db.triggers")}>
+            <div className="rounded-lg border border-block-border">
+              <Table className="min-w-full">
+                <TableHeader className="bg-control-bg">
+                  <TableRow className="hover:bg-control-bg">
+                    <TableHead>{t("common.name")}</TableHead>
+                    <TableHead>{t("db.trigger.event")}</TableHead>
+                    <TableHead>{t("db.trigger.timing")}</TableHead>
+                    <TableHead>{t("db.trigger.body")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="bg-white">
+                  {table.triggers?.map((trigger) => (
+                    <TableRow key={trigger.name}>
+                      <TableCell className="text-main">
+                        {trigger.name}
+                      </TableCell>
+                      <TableCell>{trigger.event || "-"}</TableCell>
+                      <TableCell>{trigger.timing || "-"}</TableCell>
+                      <TableCell className="max-w-xl whitespace-pre-wrap break-all">
+                        {trigger.body || trigger.sqlMode || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </DetailSection>
         )}
       </DialogContent>
     </Dialog>

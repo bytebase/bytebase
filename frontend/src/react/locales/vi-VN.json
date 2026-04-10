@@ -525,6 +525,7 @@
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "nullable": "Có thể null",
+    "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
     "row-count-est": "Ước tính số hàng",
     "row-count-estimate": "Ước tính số hàng",
@@ -613,6 +614,12 @@
     "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
     "tables": "Bảng",
     "tasks": "Tác vụ",
+    "trigger": {
+      "body": "Nội dung",
+      "event": "Sự kiện",
+      "timing": "Thời điểm"
+    },
+    "triggers": "Trình kích hoạt",
     "views": "Khung nhìn"
   },
   "db.failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",

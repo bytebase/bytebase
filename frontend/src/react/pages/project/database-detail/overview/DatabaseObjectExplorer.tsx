@@ -20,6 +20,7 @@ import type {
   StreamMetadata,
   TaskMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { TablePartitionMetadata_Type } from "@/types/proto-es/v1/database_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -35,6 +36,7 @@ import {
   instanceV1SupportsIndex,
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
+  instanceV1SupportsTrigger,
 } from "@/utils";
 import {
   type ObjectSectionRow,
@@ -201,6 +203,21 @@ export function DatabaseObjectExplorer({
           comment: index.comment,
         })),
         indexSize: bytesToString(Number(selectedTable.indexSize)),
+        partitions: (selectedTable.partitions ?? []).map(
+          function mapPartition(
+            partition
+          ): NonNullable<TableDetailDialogData["partitions"]>[number] {
+            return {
+              name: partition.name,
+              type:
+                TablePartitionMetadata_Type[partition.type]
+                  ?.replace("TYPE_UNSPECIFIED", "UNKNOWN")
+                  .replaceAll("_", " ") || "UNKNOWN",
+              expression: partition.expression,
+              children: (partition.subpartitions ?? []).map(mapPartition),
+            };
+          }
+        ),
         name:
           supportsSchema && selectedSchemaName
             ? `"${selectedSchemaName}"."${selectedTable.name}"`
@@ -221,8 +238,21 @@ export function DatabaseObjectExplorer({
         showIndexVisible:
           databaseEngine !== Engine.POSTGRES &&
           databaseEngine !== Engine.MONGODB,
+        showPartitionTables:
+          databaseEngine === Engine.POSTGRES &&
+          (selectedTable.partitions?.length ?? 0) > 0,
         showSemanticType: showSemanticTypeColumn,
+        showTriggers:
+          instanceV1SupportsTrigger(databaseEngine) &&
+          (selectedTable.triggers?.length ?? 0) > 0,
         tableName: selectedTable.name,
+        triggers: (selectedTable.triggers ?? []).map((trigger) => ({
+          name: trigger.name,
+          event: trigger.event,
+          timing: trigger.timing,
+          body: trigger.body,
+          sqlMode: trigger.sqlMode,
+        })),
       }
     : undefined;
 

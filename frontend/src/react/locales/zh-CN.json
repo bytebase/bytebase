@@ -525,6 +525,7 @@
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "nullable": "可为空",
+    "partition-tables": "分区表",
     "partitioned": "分区",
     "row-count-est": "估算行数",
     "row-count-estimate": "估计行数",
@@ -613,6 +614,12 @@
     "syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
     "tables": "表",
     "tasks": "任务",
+    "trigger": {
+      "body": "主体",
+      "event": "事件",
+      "timing": "时机"
+    },
+    "triggers": "触发器",
     "views": "视图"
   },
   "db.failed-to-sync-schema": "同步 schema 失败",
