@@ -1,4 +1,4 @@
-import { Terminal } from "lucide-react";
+import { SquareTerminal } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/router";
@@ -74,7 +74,7 @@ export function DatabaseSQLEditorButton({
       className="flex cursor-pointer items-center text-sm textlabel hover:text-accent md:mr-4"
       onClick={handleClick}
     >
-      <Terminal className="mr-1 h-4 w-4" />
+      <SquareTerminal className="mr-1 size-4" />
       {t("sql-editor.self")}
     </dd>
   );
