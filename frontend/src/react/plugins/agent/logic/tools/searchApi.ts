@@ -73,9 +73,29 @@ class OpenAPIIndex {
 
 const index = new OpenAPIIndex();
 
+function getSchemaNameFromRef(schemaRef: string): string {
+  const parts = schemaRef.split("/");
+  return parts[parts.length - 1];
+}
+
 // Resolve operationId to HTTP path (used by callApi).
 export function getEndpointPath(operationId: string): string | undefined {
   return index.getEndpoint(operationId)?.path;
+}
+
+export function getSchema(schemaNameOrRef: string): SchemaInfo | undefined {
+  const schemaName = schemaNameOrRef.startsWith("#/")
+    ? getSchemaNameFromRef(schemaNameOrRef)
+    : schemaNameOrRef;
+  return schemas[schemaName];
+}
+
+export function getRequestSchema(operationId: string): SchemaInfo | undefined {
+  const schemaRef = index.getEndpoint(operationId)?.requestSchemaRef;
+  if (!schemaRef) {
+    return undefined;
+  }
+  return getSchema(schemaRef);
 }
 
 // --- Formatting helpers (matching Go tool_search.go) ---
@@ -85,19 +105,77 @@ function truncate(s: string, max: number): string {
   return s.slice(0, max) + "...";
 }
 
+function formatPropertyType(prop: PropertyInfo): string {
+  if (prop.format === "byte") {
+    return "bytes";
+  }
+  return prop.type;
+}
+
 function formatProperty(prop: PropertyInfo): string {
   const required = prop.required ? " (required)" : "";
+  const type = formatPropertyType(prop);
 
   let desc = "";
+
   const shortDesc = TYPE_DESCRIPTIONS[prop.type];
   if (shortDesc) {
-    desc = ` // ${shortDesc}`;
+    desc = desc ? `${desc}; ${shortDesc}` : ` // ${shortDesc}`;
   } else if (prop.description) {
     const clean = prop.description.replace(/[\n\r]/g, " ");
-    desc = ` // ${truncate(clean, 97)}`;
+    desc = desc
+      ? `${desc}; ${truncate(clean, 97)}`
+      : ` // ${truncate(clean, 97)}`;
   }
 
-  return `  "${prop.name}": ${prop.type}${required}${desc}`;
+  return `  "${prop.name}": ${type}${required}${desc}`;
+}
+
+function hasBytesFieldInProperty(
+  prop: PropertyInfo,
+  seen: Set<string>
+): boolean {
+  if (prop.format === "byte") {
+    return true;
+  }
+
+  if (prop.items && hasBytesFieldInProperty(prop.items, seen)) {
+    return true;
+  }
+
+  if (
+    prop.additionalProperties &&
+    hasBytesFieldInProperty(prop.additionalProperties, seen)
+  ) {
+    return true;
+  }
+
+  const schema = getSchema(prop.type);
+  if (!schema || schema.type !== "object") {
+    return false;
+  }
+
+  if (seen.has(prop.type)) {
+    return false;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(prop.type);
+
+  return (
+    schema.properties?.some((child) =>
+      hasBytesFieldInProperty(child, nextSeen)
+    ) ?? false
+  );
+}
+
+function schemaContainsBytesField(schemaRef: string): boolean {
+  const schema = getSchema(schemaRef);
+  if (!schema || schema.type !== "object" || !schema.properties) {
+    return false;
+  }
+
+  const seen = new Set<string>();
+  return schema.properties.some((prop) => hasBytesFieldInProperty(prop, seen));
 }
 
 function formatServiceList(): string {
@@ -137,10 +215,7 @@ function formatEndpoints(eps: EndpointInfo[], limit: number): string {
 }
 
 function getSchemaProps(schemaRef: string): PropertyInfo[] | undefined {
-  // Extract name from ref: "#/components/schemas/bytebase.v1.QueryRequest"
-  const parts = schemaRef.split("/");
-  const name = parts[parts.length - 1];
-  const info = schemas[name];
+  const info = getSchema(schemaRef);
   if (!info) return undefined;
   return info.properties;
 }
@@ -159,6 +234,7 @@ function formatEndpointDetail(operationId: string): string {
   if (ep.requestSchemaRef) {
     const props = getSchemaProps(ep.requestSchemaRef);
     if (props && props.length > 0) {
+      const hasBytesField = schemaContainsBytesField(ep.requestSchemaRef);
       lines.push("### Request Body");
       lines.push("```json");
       lines.push("{");
@@ -167,6 +243,11 @@ function formatEndpointDetail(operationId: string): string {
       }
       lines.push("}");
       lines.push("```\n");
+      if (hasBytesField) {
+        lines.push(
+          "Note: request body includes protobuf bytes fields; plain strings passed to call_api are UTF-8 encoded automatically.\n"
+        );
+      }
     }
   }
 
