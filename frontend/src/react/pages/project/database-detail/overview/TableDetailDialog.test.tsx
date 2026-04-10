@@ -128,6 +128,17 @@ const click = (element: HTMLElement) => {
   });
 };
 
+const press = (element: HTMLElement) => {
+  act(() => {
+    element.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+    );
+    element.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+  });
+};
+
 const makeDatabase = (): Database =>
   ({
     name: "instances/inst1/databases/db",
@@ -394,7 +405,7 @@ describe("TableDetailDialog", () => {
     expect(classificationEditButton).not.toBeNull();
     expect(classificationRemoveButton).not.toBeNull();
 
-    click(tableEditButton as HTMLElement);
+    press(tableEditButton as HTMLElement);
     await flush();
     click(
       container.querySelector(
@@ -403,7 +414,7 @@ describe("TableDetailDialog", () => {
     );
     await flush();
 
-    click(semanticTypeEditButton as HTMLElement);
+    press(semanticTypeEditButton as HTMLElement);
     await flush();
     click(
       container.querySelector(
@@ -492,7 +503,7 @@ describe("TableDetailDialog", () => {
       )
     ).not.toBeNull();
 
-    click(
+    press(
       container.querySelector(
         '[data-testid="column-classification-query-edit"]'
       ) as HTMLElement

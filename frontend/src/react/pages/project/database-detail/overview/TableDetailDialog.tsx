@@ -262,8 +262,10 @@ function MiniActionButton({
       type="button"
       aria-label={ariaLabel}
       data-testid={dataTestId}
-      className={`inline-flex h-5 w-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
+      className={`inline-flex h-5 w-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
       disabled={disabled}
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       onClick={onClick}
     >
       {children}

@@ -109,6 +109,45 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/react/components/ui/table", () => ({
+  Table: ({
+    children,
+    ...props
+  }: React.TableHTMLAttributes<HTMLTableElement>) => (
+    <table {...props}>{children}</table>
+  ),
+  TableBody: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <tbody {...props}>{children}</tbody>
+  ),
+  TableCell: ({
+    children,
+    ...props
+  }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+    <td {...props}>{children}</td>
+  ),
+  TableHead: ({
+    children,
+    ...props
+  }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+    <th {...props}>{children}</th>
+  ),
+  TableHeader: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead {...props}>{children}</thead>
+  ),
+  TableRow: ({
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLTableRowElement>) => (
+    <tr {...props}>{children}</tr>
+  ),
+}));
+
 vi.mock("@/react/components/FeatureAttention", () => ({
   FeatureAttention: ({ feature }: { feature: PlanFeature }) => (
     <div>{PlanFeature[feature]}</div>
@@ -142,6 +181,17 @@ const flush = async () => {
 
 const click = (element: HTMLElement) => {
   act(() => {
+    element.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+  });
+};
+
+const press = (element: HTMLElement) => {
+  act(() => {
+    element.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+    );
     element.dispatchEvent(
       new MouseEvent("click", { bubbles: true, cancelable: true })
     );
@@ -291,7 +341,7 @@ describe("TableMetadataTable", () => {
     );
     expect(editButton).not.toBeNull();
 
-    click(editButton as HTMLElement);
+    press(editButton as HTMLElement);
     await flush();
     click(
       container.querySelector(
@@ -313,6 +363,42 @@ describe("TableMetadataTable", () => {
       Setting_SettingName.DATA_CLASSIFICATION,
       true
     );
+
+    unmount();
+  });
+
+  test("clicking the classification action region does not trigger row open", async () => {
+    const onRowClick = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableMetadataTable, {
+        database: makeDatabase(),
+        schemaName: "public",
+        rows: [
+          {
+            name: "audit",
+            rowCount: 0,
+            dataSize: 128n,
+            indexSize: 64n,
+            comment: "audit table",
+            partitions: [],
+          } as never,
+        ],
+        onRowClick,
+      })
+    );
+
+    render();
+    await flush();
+
+    const actionRegion = container.querySelector(
+      '[data-testid="table-row-classification-audit-action"]'
+    );
+    expect(actionRegion).not.toBeNull();
+
+    press(actionRegion as HTMLElement);
+    await flush();
+
+    expect(onRowClick).not.toHaveBeenCalled();
 
     unmount();
   });
