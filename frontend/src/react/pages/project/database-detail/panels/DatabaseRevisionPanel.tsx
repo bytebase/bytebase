@@ -9,6 +9,13 @@ import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue
 import { revisionServiceClientConnect } from "@/connect";
 import i18n from "@/plugins/i18n";
 import NaiveUI from "@/plugins/naive-ui";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { router } from "@/router";
@@ -95,6 +102,7 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
   const [drawerEverOpened, setDrawerEverOpened] = useState(false);
+  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const fetchRevisionList = useCallback(
     async ({
       pageToken,
@@ -134,16 +142,24 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
     refreshRef.current();
   }, []);
 
-  const handleDelete = useCallback(
-    async (name: string) => {
-      if (!window.confirm(t("database.revision.delete-confirm-dialog"))) {
-        return;
-      }
-      await revisionStore.deleteRevision(name);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteSelected = useCallback(async () => {
+    try {
+      await Promise.allSettled(
+        [...selectedNames].map((name) => revisionStore.deleteRevision(name))
+      );
+    } finally {
+      setSelectedNames(new Set());
+      setShowDeleteConfirm(false);
       handleRevisionDeleted();
-    },
-    [handleRevisionDeleted, revisionStore, t]
-  );
+    }
+  }, [selectedNames, handleRevisionDeleted, revisionStore]);
+
+  // Clear selection on page size change or database switch, but not on loadMore.
+  useEffect(() => {
+    setSelectedNames(new Set());
+  }, [paged.pageSize, database.name]);
 
   return (
     <>
@@ -162,9 +178,20 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
         <DatabaseRevisionTable
           revisions={paged.dataList}
           loading={paged.isLoading}
-          onDelete={handleDelete}
+          selectedNames={selectedNames}
+          onSelectedNamesChange={setSelectedNames}
         />
-        <div className="mt-2">
+        <div className="mt-2 flex items-center justify-between">
+          {selectedNames.size > 0 ? (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              {t("common.delete")} ({selectedNames.size})
+            </Button>
+          ) : (
+            <div />
+          )}
           <PagedTableFooter
             pageSize={paged.pageSize}
             pageSizeOptions={paged.pageSizeOptions}
@@ -175,6 +202,34 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           />
         </div>
       </div>
+
+      <AlertDialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => {
+          if (!open) setShowDeleteConfirm(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {t("database.revision.delete-confirm-dialog")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("common.cannot-undo-this-action")}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSelected}>
+              {t("common.delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {drawerEverOpened && (
         <VueCreateRevisionDrawerMount
           databaseName={database.name}
