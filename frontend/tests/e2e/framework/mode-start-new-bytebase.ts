@@ -135,6 +135,26 @@ export async function startServer(): Promise<{
     );
   }
 
+  // Reconcile sample instance data source ports.
+  // The demo dump has ports from when it was captured (e.g. 8083/8084).
+  // The actual sample Postgres runs on PORT+3/PORT+4.
+  const sampleInstances = [
+    { id: "test-sample-instance", port: String(port + 3) },
+    { id: "prod-sample-instance", port: String(port + 4) },
+  ];
+  for (const si of sampleInstances) {
+    try {
+      const instance = await api.getInstance(`instances/${si.id}`);
+      for (const ds of instance.dataSources ?? []) {
+        if (ds.port !== si.port) {
+          await api.updateInstanceDataSource(`instances/${si.id}`, ds.id, si.port);
+        }
+      }
+    } catch {
+      // Instance may not exist — skip
+    }
+  }
+
   return { baseURL, adminEmail: ADMIN_EMAIL, adminPassword: ADMIN_PASSWORD };
 }
 

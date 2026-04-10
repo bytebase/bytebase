@@ -90,6 +90,17 @@ export class BytebaseApiClient {
     return this.request<unknown>("PATCH", `/v1/${dbName}/catalog`, catalog);
   }
 
+  // Instances
+  async getInstance(instanceName: string) {
+    return this.request<{ name: string; dataSources: { id: string; port: string; host: string }[] }>("GET", `/v1/${instanceName}`);
+  }
+
+  async updateInstanceDataSource(instanceName: string, dataSourceId: string, port: string) {
+    return this.request<unknown>("PATCH",
+      `/v1/${instanceName}/dataSources/${dataSourceId}?updateMask=port`,
+      { port });
+  }
+
   // Query — endpoint is /v1/instances/{instance}/databases/{database}:query
   async query(databaseFullName: string, statement: string) {
     return this.request<{ results: unknown[] }>("POST", `/v1/${databaseFullName}:query`, {
