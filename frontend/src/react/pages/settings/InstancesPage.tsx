@@ -35,6 +35,14 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -489,10 +497,10 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
 }
 
 // ============================================================
-// EditEnvironmentDrawer
+// EditEnvironmentSheet
 // ============================================================
 
-function EditEnvironmentDrawer({
+function EditEnvironmentSheet({
   open,
   onClose,
   onUpdate,
@@ -507,27 +515,17 @@ function EditEnvironmentDrawer({
     () => environmentStore.environmentList ?? []
   );
   const [selected, setSelected] = useState("");
-  useEscapeKey(open, onClose);
   useEffect(() => {
     if (open) setSelected("");
   }, [open]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">{t("common.environment")}</h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            &times;
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <SheetHeader>
+          <SheetTitle>{t("common.environment")}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
           <div className="flex flex-col gap-y-2">
             {environments.map((env) => (
               <label
@@ -558,8 +556,8 @@ function EditEnvironmentDrawer({
               </label>
             ))}
           </div>
-        </div>
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t border-control-border">
+        </SheetBody>
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -572,9 +570,9 @@ function EditEnvironmentDrawer({
           >
             {t("common.update")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1179,7 +1177,7 @@ export function InstancesPage() {
         showAssignLicense={subscriptionStore.currentPlan !== PlanType.FREE}
       />
 
-      <EditEnvironmentDrawer
+      <EditEnvironmentSheet
         open={showEditEnvDrawer}
         onClose={() => setShowEditEnvDrawer(false)}
         onUpdate={handleEnvironmentUpdate}

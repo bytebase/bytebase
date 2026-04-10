@@ -23,6 +23,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Table,
   TableBody,
   TableCell,
@@ -371,13 +379,15 @@ function DeleteConfirmModal({
 // RoleDrawer
 // ============================================================
 
-function RoleDrawer({
+function RoleSheet({
+  open,
   role,
   mode,
   hasCustomRoleFeature,
   onClose,
   onShowFeatureModal,
 }: {
+  open: boolean;
   role: Role | undefined;
   mode: "ADD" | "EDIT";
   hasCustomRoleFeature: boolean;
@@ -386,7 +396,6 @@ function RoleDrawer({
 }) {
   const { t } = useTranslation();
   const roleStore = useRoleStore();
-  useEscapeKey(onClose);
 
   const [editRole, setEditRole] = useState<Role>(
     create(RoleSchema, { permissions: [...BASIC_WORKSPACE_PERMISSIONS] })
@@ -542,25 +551,14 @@ function RoleDrawer({
     }
   };
 
-  if (!role) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("common.role.self")}</SheetTitle>
+        </SheetHeader>
 
-      {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 z-50 w-[44rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.role.self")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-5">
             {/* Title */}
             <div className="flex flex-col gap-y-1.5">
@@ -665,11 +663,10 @@ function RoleDrawer({
               />
             </div>
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
         {!isBuiltin && (
-          <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+          <SheetFooter>
             <Button variant="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
@@ -681,25 +678,24 @@ function RoleDrawer({
             >
               {mode === "ADD" ? t("common.create") : t("common.update")}
             </Button>
-          </div>
+          </SheetFooter>
         )}
 
-        {/* Loading overlay */}
         {loading && (
-          <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center">
+          <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center">
             <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         )}
-      </div>
 
-      {/* Import modal */}
-      {showImportModal && (
-        <ImportPermissionModal
-          onCancel={() => setShowImportModal(false)}
-          onImport={handleImportPermissions}
-        />
-      )}
-    </>
+        {/* Import modal */}
+        {showImportModal && (
+          <ImportPermissionModal
+            onCancel={() => setShowImportModal(false)}
+            onImport={handleImportPermissions}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -903,8 +899,9 @@ export function RolesPage() {
         </div>
       )}
 
-      {/* Role Drawer */}
-      <RoleDrawer
+      {/* Role Sheet */}
+      <RoleSheet
+        open={detailRole !== undefined}
         role={detailRole}
         mode={detailMode}
         hasCustomRoleFeature={hasCustomRoleFeature}
