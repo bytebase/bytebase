@@ -3933,7 +3933,7 @@ The severity level for SQL review rules.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
+| file | [string](#string) |  | The file filepath. Can be empty. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  | The type of the revision. |

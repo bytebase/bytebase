@@ -27,7 +27,7 @@ type RevisionPayload struct {
 	// Format: projects/{project}/releases/{release}
 	// Can be empty.
 	Release string `protobuf:"bytes,1,opt,name=release,proto3" json:"release,omitempty"`
-	// Format: projects/{project}/releases/{release}/files/{id}
+	// The file filepath.
 	// Can be empty.
 	File string `protobuf:"bytes,2,opt,name=file,proto3" json:"file,omitempty"`
 	// The SHA256 hash of the sheet content (hex-encoded).
