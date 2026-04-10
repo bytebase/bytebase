@@ -76,9 +76,21 @@ vi.mock("@/components/ColumnDataTable/utils", () => ({
 
 vi.mock("@/react/components/ui/dialog", () => ({
   Dialog: ({ open, children }: { open: boolean; children: ReactNode }) =>
-    open ? <div>{children}</div> : null,
+    open ? (
+      <div
+        onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        {children}
+      </div>
+    ) : null,
   DialogContent: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
+    <div
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      {children}
+    </div>
   ),
   DialogTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
 }));
@@ -215,7 +227,7 @@ beforeEach(async () => {
 });
 
 describe("TableMetadataTable", () => {
-  test("opens table detail from the explicit view action", async () => {
+  test("opens table detail when clicking a row", async () => {
     const onRowClick = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
       createElement(TableMetadataTable, {
@@ -238,51 +250,15 @@ describe("TableMetadataTable", () => {
     render();
     await flush();
 
-    const viewButton = container.querySelector(
-      '[data-testid="table-row-view-audit"]'
+    const row = Array.from(container.querySelectorAll("tr")).find((row) =>
+      row.textContent?.includes("audit")
     );
-    expect(viewButton).not.toBeNull();
+    expect(row).not.toBeNull();
 
-    click(viewButton as HTMLElement);
+    click(row as HTMLElement);
     await flush();
 
     expect(onRowClick).toHaveBeenCalledTimes(1);
-
-    unmount();
-  });
-
-  test("clicking the row does not open table detail", async () => {
-    const onRowClick = vi.fn();
-    const { container, render, unmount } = renderIntoContainer(
-      createElement(TableMetadataTable, {
-        database: makeDatabase(),
-        schemaName: "public",
-        rows: [
-          {
-            name: "audit",
-            rowCount: 0,
-            dataSize: 128n,
-            indexSize: 64n,
-            comment: "audit table",
-            partitions: [],
-          } as never,
-        ],
-        onRowClick,
-      })
-    );
-
-    render();
-    await flush();
-
-    const nameCell = Array.from(container.querySelectorAll("td")).find((cell) =>
-      cell.textContent?.includes("audit")
-    );
-    expect(nameCell).not.toBeNull();
-
-    click(nameCell as HTMLElement);
-    await flush();
-
-    expect(onRowClick).not.toHaveBeenCalled();
 
     unmount();
   });

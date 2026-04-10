@@ -550,11 +550,11 @@ describe("DatabaseOverviewPanel", () => {
     );
     router.currentRoute.value.query = { schema: "public" };
 
-    const viewButton = container.querySelector(
-      '[data-testid="table-row-view-orders"]'
+    const ordersCell = Array.from(container.querySelectorAll("td")).find(
+      (cell) => cell.textContent === "orders"
     );
-    expect(viewButton).not.toBeNull();
-    clickElement(viewButton as HTMLButtonElement);
+    expect(ordersCell?.closest("tr")).toBeTruthy();
+    clickElement(ordersCell?.closest("tr") as HTMLTableRowElement);
     await flush();
 
     expect(mocks.routerReplace).toHaveBeenCalledWith(

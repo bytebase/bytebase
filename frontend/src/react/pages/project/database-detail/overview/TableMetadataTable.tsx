@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
-import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   featureToRef,
@@ -97,12 +96,8 @@ export function TableMetadataTable({
         { key: "dataSize", label: t("database.data-size") },
         { key: "indexSize", label: t("database.index-size") },
         { key: "comment", label: t("common.comment") },
-        onRowClick
-          ? { key: "operations", label: t("common.operations") }
-          : undefined,
       ].filter((column) => column !== undefined),
     [
-      onRowClick,
       showClassificationColumn,
       showEngineColumn,
       showPartitionedColumn,
@@ -150,7 +145,24 @@ export function TableMetadataTable({
             return (
               <tr
                 key={`${database.name}.${schemaName}.${table.name}`}
-                className="hover:bg-control-bg"
+                className={
+                  onRowClick
+                    ? "cursor-pointer hover:bg-control-bg"
+                    : "hover:bg-control-bg"
+                }
+                role={onRowClick ? "button" : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                onClick={onRowClick ? () => onRowClick(table) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(table);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {showSchemaColumn && (
                   <td className="px-4 py-3 text-sm text-main">
@@ -200,20 +212,6 @@ export function TableMetadataTable({
                 <td className="px-4 py-3 text-sm text-control">
                   {table.comment || "-"}
                 </td>
-                {onRowClick && (
-                  <td className="px-4 py-3 text-sm text-control">
-                    <div className="flex items-center gap-x-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        data-testid={`table-row-view-${table.name}`}
-                        onClick={() => onRowClick(table)}
-                      >
-                        {t("common.view-details")}
-                      </Button>
-                    </div>
-                  </td>
-                )}
               </tr>
             );
           })}
