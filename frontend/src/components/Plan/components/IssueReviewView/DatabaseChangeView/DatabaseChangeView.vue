@@ -4,7 +4,7 @@
     <SpecTabs v-model:selected-spec-id="selectedSpecId">
       <div v-if="selectedSpec" class="flex flex-col gap-2">
         <TargetListSection />
-        <div class="h-72 flex flex-col">
+        <div class="flex flex-col" :class="isReleaseView ? '' : 'h-72'">
           <StatementSection header-variant="section" />
         </div>
         <OptionsSection />
@@ -36,6 +36,13 @@ const selectedSpecId = ref<string>(plan.value.specs[0]?.id ?? "");
 
 const selectedSpec = computed(() => {
   return plan.value.specs.find((spec) => spec.id === selectedSpecId.value);
+});
+
+const isReleaseView = computed(() => {
+  return (
+    selectedSpec.value?.config?.case === "changeDatabaseConfig" &&
+    !!selectedSpec.value.config.value.release
+  );
 });
 
 provideSelectedSpec(

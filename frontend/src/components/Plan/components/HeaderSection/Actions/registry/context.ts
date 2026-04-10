@@ -174,6 +174,11 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   const isExportPlan = plan.specs.some(
     (spec) => spec.config?.case === "exportDataConfig"
   );
+  const isReleasePlan = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" &&
+      !!spec.config.value.release
+  );
   // Plans where rollout is created on-demand when user clicks action button
   const hasDeferredRollout = plan.specs.some(
     (spec) =>
@@ -254,6 +259,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     isCreating,
     isIssueOnly,
     isExportPlan,
+    isReleasePlan,
     hasDeferredRollout,
     isCreator,
     issueApproved,

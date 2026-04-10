@@ -70,6 +70,7 @@ export interface ActionContext {
   isCreating: boolean;
   isIssueOnly: boolean;
   isExportPlan: boolean;
+  isReleasePlan: boolean;
   // Plans where rollout is created on-demand (export, create database)
   hasDeferredRollout: boolean;
   isCreator: boolean;
