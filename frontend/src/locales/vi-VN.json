@@ -2724,8 +2724,11 @@
       }
     },
     "delete": "Xóa chính sách đánh giá SQL",
+    "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
     "description": "Định nghĩa các quy tắc lint SQL để áp dụng các phương pháp tốt nhất và tính nhất quán của lược đồ. Các quy tắc chỉ áp dụng cho các thay đổi DDL/DML, không áp dụng cho truy vấn trong SQL Editor.",
+    "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
+    "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
     "enabled-rules": "Quy tắc được bật",
     "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
     "level": {

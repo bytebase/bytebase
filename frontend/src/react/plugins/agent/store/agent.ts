@@ -566,11 +566,11 @@ export const createAgentStore = () => {
         // Window state
         visible: false,
         position: {
-          x: typeof window !== "undefined" ? window.innerWidth - 420 : 0,
-          y: typeof window !== "undefined" ? window.innerHeight - 520 : 0,
+          x: typeof window !== "undefined" ? window.innerWidth - 500 : 0,
+          y: typeof window !== "undefined" ? window.innerHeight - 560 : 0,
         },
-        size: { width: 400, height: 500 },
-        sidebarWidth: 256,
+        size: { width: 480, height: 540 },
+        sidebarWidth: 200,
         minimized: false,
 
         // Chat state (from persisted/initial)

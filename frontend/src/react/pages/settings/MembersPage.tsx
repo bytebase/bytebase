@@ -1,4 +1,6 @@
 import { create } from "@bufbuild/protobuf";
+import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import dayjs from "dayjs";
 import {
   Building2,
   Check,
@@ -7,6 +9,7 @@ import {
   Info,
   Pencil,
   Plus,
+  ShieldUser,
   Trash2,
   Users,
   X,
@@ -25,9 +28,12 @@ import {
   roleHasDatabaseLimitation,
   roleHasEnvironmentLimitation,
 } from "@/components/ProjectMember/utils";
+import { issueServiceClientConnect } from "@/connect";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
@@ -39,6 +45,12 @@ import {
 } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
+import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -47,10 +59,13 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import { Textarea } from "@/react/components/ui/textarea";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/router";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -72,10 +87,21 @@ import {
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import {
+  CreateIssueRequestSchema,
+  Issue_Type,
+  IssueSchema,
+  RoleGrantSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   displayRoleTitle,
+  extractIssueUID,
+  extractProjectResourceName,
   formatAbsoluteDateTime,
+  formatIssueTitle,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   sortRoles,
@@ -1601,6 +1627,200 @@ function EditMemberRoleDrawer({
 }
 
 // ============================================================
+// RequestRoleDialog — lets a project member without
+// `bb.projects.setIamPolicy` open a role-grant issue to request
+// access for themselves. This is the React equivalent of the old
+// Vue `RoleGrantPanel` entry point that lived on the project
+// members page before the React migration.
+// ============================================================
+
+function RequestRoleDialog({
+  project,
+  onClose,
+}: {
+  project: Project;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const [role, setRole] = useState("");
+  const [reason, setReason] = useState("");
+  const [expirationTimestamp, setExpirationTimestamp] = useState<
+    string | undefined
+  >(undefined);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Bind the datetime-local picker's min to the current minute so users
+  // can't silently pick a time earlier today and submit a zero-duration
+  // role grant.
+  const minDatetime = useMemo(() => dayjs().format("YYYY-MM-DDTHH:mm"), []);
+
+  const expirationIsInPast =
+    !!expirationTimestamp &&
+    dayjs(expirationTimestamp).unix() <= dayjs().unix();
+
+  const labelsMisconfigured =
+    project.forceIssueLabels && project.issueLabels.length === 0;
+
+  const canSubmit =
+    !submitting &&
+    !!role &&
+    reason.trim().length > 0 &&
+    !expirationIsInPast &&
+    !labelsMisconfigured &&
+    (!project.forceIssueLabels || labels.length > 0);
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      // Compute expiration as a Duration from now until the picked timestamp.
+      const expiration = expirationTimestamp
+        ? create(DurationSchema, {
+            seconds: BigInt(
+              Math.max(0, dayjs(expirationTimestamp).unix() - dayjs().unix())
+            ),
+          })
+        : undefined;
+
+      const roleGrant = create(RoleGrantSchema, {
+        role,
+        user: `users/${currentUser.email}`,
+        expiration,
+      });
+
+      // When the project enforces issue titles, the user-provided reason is
+      // treated as the title (matching the old Vue RoleGrantPanel behavior).
+      // In that mode we leave the description empty so the same text doesn't
+      // appear twice on the resulting issue.
+      const trimmedReason = reason.trim();
+      const title = project.enforceIssueTitle
+        ? `[${t("issue.title.request-role")}] ${trimmedReason}`
+        : formatIssueTitle(
+            t("issue.title.request-specific-role", {
+              role: displayRoleTitle(role),
+            }),
+            []
+          );
+      const description = project.enforceIssueTitle ? "" : trimmedReason;
+
+      const newIssue = create(IssueSchema, {
+        title,
+        description,
+        type: Issue_Type.ROLE_GRANT,
+        roleGrant,
+        labels,
+      });
+      const response = await issueServiceClientConnect.createIssue(
+        create(CreateIssueRequestSchema, {
+          parent: project.name,
+          issue: newIssue,
+        })
+      );
+      const route = router.resolve({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(response.name),
+          issueId: extractIssueUID(response.name),
+        },
+      });
+      window.open(route.fullPath, "_blank", "noopener,noreferrer");
+      onClose();
+    } catch {
+      // Error notification is pushed by the client middleware.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const showLabelSelect =
+    project.issueLabels.length > 0 || project.forceIssueLabels;
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="max-w-lg p-6">
+        <DialogTitle>{t("issue.title.request-role")}</DialogTitle>
+        <div className="flex flex-col gap-y-4 mt-4">
+          {labelsMisconfigured && (
+            <Alert variant="warning">
+              <AlertTitle>
+                {t("project.members.request-role.labels-misconfigured.title")}
+              </AlertTitle>
+              <AlertDescription>
+                {t(
+                  "project.members.request-role.labels-misconfigured.description"
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col gap-y-1">
+            <label className="text-sm font-medium">
+              {t("common.role.self")}
+              <span className="text-error ml-0.5">*</span>
+            </label>
+            <RoleSelect
+              scope="project"
+              multiple={false}
+              value={role ? [role] : []}
+              onChange={(roles) => setRole(roles[0] ?? "")}
+            />
+          </div>
+          <div className="flex flex-col gap-y-1">
+            <label className="text-sm font-medium">
+              {t("common.reason")}
+              <span className="text-error ml-0.5">*</span>
+            </label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={t("common.reason")}
+              rows={3}
+            />
+          </div>
+          <div className="flex flex-col gap-y-1">
+            <label className="text-sm font-medium">
+              {t("common.expiration")}
+            </label>
+            <ExpirationPicker
+              value={expirationTimestamp}
+              onChange={setExpirationTimestamp}
+              minDate={minDatetime}
+            />
+            {expirationIsInPast && (
+              <p className="text-xs text-error">
+                {t("project.members.request-role.expiration-must-be-future")}
+              </p>
+            )}
+          </div>
+          {showLabelSelect && (
+            <IssueLabelSelect
+              labels={project.issueLabels}
+              selected={labels}
+              required={project.forceIssueLabels}
+              onChange={setLabels}
+            />
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-x-2 mt-6">
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={!canSubmit} onClick={handleSubmit}>
+            {t("common.submit")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================
 // MembersPage
 // ============================================================
 
@@ -1636,6 +1856,11 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const [editingMember, setEditingMember] = useState<
     MemberBinding | undefined
   >();
+  const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
+
+  const hasRequestRoleFeature = useVueState(() =>
+    subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+  );
 
   // Fetch project IAM policy on mount
   useEffect(() => {
@@ -1747,6 +1972,20 @@ export function MembersPage({ projectId }: { projectId?: string }) {
 
   const scope = projectName ? "project" : "workspace";
 
+  // A project member without `bb.projects.setIamPolicy` cannot grant access
+  // to themselves, so they need to request it instead. The old Vue
+  // ProjectMemberPanel showed a "Request Role" button in this case; we
+  // restore the same behavior here.
+  const canRequestRole = useMemo(() => {
+    if (!project || !projectName) return false;
+    if (!project.allowRequestRole) return false;
+    if (canSetIamPolicy) return false;
+    return (
+      hasProjectPermissionV2(project, "bb.issues.create") &&
+      hasProjectPermissionV2(project, "bb.roles.list")
+    );
+  }, [project, projectName, canSetIamPolicy]);
+
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {!projectName && remainingUserCount <= 3 && (
@@ -1781,29 +2020,48 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           value={memberSearchText}
           onChange={(e) => setMemberSearchText(e.target.value)}
         />
-        <PermissionGuard permissions={["bb.workspaces.setIamPolicy"]}>
-          <div className="flex items-center gap-x-2">
-            {memberViewTab === "MEMBERS" && (
+        <div className="flex items-center gap-x-2">
+          <PermissionGuard permissions={["bb.workspaces.setIamPolicy"]}>
+            <div className="flex items-center gap-x-2">
+              {memberViewTab === "MEMBERS" && (
+                <Button
+                  variant="outline"
+                  disabled={!canSetIamPolicy || selectedMembers.length === 0}
+                  onClick={handleRevokeSelected}
+                >
+                  {t("settings.members.revoke-access")}
+                </Button>
+              )}
               <Button
-                variant="outline"
-                disabled={!canSetIamPolicy || selectedMembers.length === 0}
-                onClick={handleRevokeSelected}
+                disabled={!canSetIamPolicy}
+                onClick={() => {
+                  setEditingMember(undefined);
+                  setShowEditMemberDrawer(true);
+                }}
               >
-                {t("settings.members.revoke-access")}
+                <Plus className="h-4 w-4 mr-1" />
+                {t("settings.members.grant-access")}
               </Button>
-            )}
+            </div>
+          </PermissionGuard>
+          {canRequestRole && (
             <Button
-              disabled={!canSetIamPolicy}
-              onClick={() => {
-                setEditingMember(undefined);
-                setShowEditMemberDrawer(true);
-              }}
+              disabled={!hasRequestRoleFeature}
+              onClick={() => setShowRequestRoleDialog(true)}
             >
-              <Plus className="h-4 w-4 mr-1" />
-              {t("settings.members.grant-access")}
+              {hasRequestRoleFeature ? (
+                <ShieldUser className="size-4 mr-1" />
+              ) : (
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW}
+                  clickable={false}
+                  className="mr-1"
+                />
+              )}
+              {t("issue.title.request-role")}
             </Button>
-          </div>
-        </PermissionGuard>
+          )}
+        </div>
       </div>
 
       <Tabs
@@ -1843,6 +2101,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           </div>
         </TabsPanel>
       </Tabs>
+
+      {showRequestRoleDialog && project && (
+        <RequestRoleDialog
+          project={project}
+          onClose={() => setShowRequestRoleDialog(false)}
+        />
+      )}
 
       {showEditMemberDrawer && (
         <EditMemberRoleDrawer

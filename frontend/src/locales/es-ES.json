@@ -2724,8 +2724,11 @@
       }
     },
     "delete": "Eliminar política de revisión SQL",
+    "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
     "description": "Define reglas de lint SQL para aplicar buenas prácticas y consistencia de esquema. Las reglas se aplican solo a cambios DDL/DML, no a consultas en SQL Editor.",
+    "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
     "disabled": "La revisión de SQL está deshabilitada",
+    "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
     "enabled-rules": "Reglas habilitadas",
     "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
     "level": {

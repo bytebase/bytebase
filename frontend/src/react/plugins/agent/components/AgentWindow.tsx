@@ -22,11 +22,19 @@ import {
 import { AgentChat } from "./AgentChat";
 import { AgentInput } from "./AgentInput";
 
-const MIN_WIDTH = 300;
-const MIN_HEIGHT = 400;
-const WINDOW_MARGIN = 16;
 const MIN_SIDEBAR_WIDTH = 180;
 const MIN_MAIN_PANEL_WIDTH = 240;
+// Budget for the sidebar resize handle, borders, and a small breathing
+// room so the main panel actually reaches its minimum width without the
+// input row collapsing.
+const WINDOW_CHROME_BUDGET = 40;
+// Keep the total window wide enough so both the sidebar and the main panel
+// can render at their minimums side by side; otherwise the input row gets
+// squeezed and the placeholder wraps onto multiple lines.
+const MIN_WIDTH =
+  MIN_SIDEBAR_WIDTH + MIN_MAIN_PANEL_WIDTH + WINDOW_CHROME_BUDGET;
+const MIN_HEIGHT = 400;
+const WINDOW_MARGIN = 16;
 
 const tokenFormatter = new Intl.NumberFormat();
 

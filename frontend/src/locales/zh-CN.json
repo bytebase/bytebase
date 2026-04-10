@@ -2724,8 +2724,11 @@
       }
     },
     "delete": "删除审核策略",
+    "delete-description": "SQL 审核策略及其所有规则将被永久删除，此操作无法撤销。",
     "description": "定义 SQL lint 规则以实施最佳实践和 schema 一致性。规则仅适用于 DDL/DML 变更，不适用于 SQL 编辑器中的查询。",
+    "disable-description": "禁用此策略将停止对已关联资源应用规则。您可以稍后重新启用。",
     "disabled": "SQL 审核策略已禁用",
+    "enable-description": "启用此策略将开始对已关联资源应用规则。",
     "enabled-rules": "开启的规则数",
     "input-then-press-enter": "输入后按下回车来添加",
     "level": {

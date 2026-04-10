@@ -281,6 +281,7 @@
     "state": "状态",
     "statement": "语句",
     "status": "状态",
+    "submit": "提交",
     "system": "系统",
     "table": "表",
     "title": "标题",
@@ -1109,6 +1110,10 @@
       "updated": "更新于",
       "waiting-role": "等待: {{role}}"
     },
+    "title": {
+      "request-role": "申请角色",
+      "request-specific-role": "申请 \"{{role}}\" 角色"
+    },
     "upload-sql": "上传 SQL",
     "waiting-approval": "等待审批"
   },
@@ -1213,6 +1218,13 @@
       "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
       "edit-member": "编辑成员 - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "expiration-must-be-future": "过期时间必须是将来的时间。",
+        "labels-misconfigured": {
+          "description": "此项目要求选择工单标签，但尚未配置任何标签。请联系项目所有者添加标签后再申请角色。",
+          "title": "项目要求工单标签但未配置"
+        }
+      },
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
     "settings": {
@@ -1953,8 +1965,11 @@
       }
     },
     "delete": "删除审核策略",
+    "delete-description": "SQL 审核策略及其所有规则将被永久删除，此操作无法撤销。",
     "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
+    "disable-description": "禁用此策略将停止对已关联资源应用规则。您可以稍后重新启用。",
     "disabled": "SQL 审核策略已禁用",
+    "enable-description": "启用此策略将开始对已关联资源应用规则。",
     "enabled-rules": "开启的规则数",
     "engine": {
       "mariadb": "MariaDB",

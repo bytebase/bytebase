@@ -281,6 +281,7 @@
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
+    "submit": "Enviar",
     "system": "Sistema",
     "table": "Tabla",
     "title": "Título",
@@ -1109,6 +1110,10 @@
       "updated": "Actualizado",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Solicitar rol",
+      "request-specific-role": "Solicitar rol \"{{role}}\""
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "A la espera de la aprobación"
   },
@@ -1213,6 +1218,13 @@
       "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "expiration-must-be-future": "La expiración debe ser una fecha futura.",
+        "labels-misconfigured": {
+          "description": "Este proyecto requiere etiquetas de incidencia, pero no se ha configurado ninguna etiqueta. Contacte con el propietario del proyecto para añadir etiquetas antes de solicitar un rol.",
+          "title": "Se requieren etiquetas de incidencia pero no están configuradas"
+        }
+      },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
     "settings": {
@@ -1953,8 +1965,11 @@
       }
     },
     "delete": "Eliminar política de revisión SQL",
+    "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+    "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
     "disabled": "La revisión de SQL está deshabilitada",
+    "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
     "enabled-rules": "Reglas habilitadas",
     "engine": {
       "mariadb": "MariaDB",
