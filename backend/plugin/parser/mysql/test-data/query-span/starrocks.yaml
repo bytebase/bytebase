@@ -38,9 +38,9 @@
             - server: ""
               database: db
               schema: ""
-              table: products
+              table: v2
               column: product_info
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -86,9 +86,9 @@
             - server: ""
               database: db
               schema: ""
-              table: products
+              table: v1
               column: product_info
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:

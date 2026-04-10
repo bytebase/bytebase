@@ -50,20 +50,8 @@
           isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
-        - name: |-
-            JSON_ARRAYAGG(
-                REPLACE(
-                  JSON_UNQUTED(product_name),
-                  'G',
-                  'GN'
-                )
-              )
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
+        - name: JSON_ARRAYAGG
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -118,36 +106,6 @@
           isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
-        - name: product_id
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: product_name
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
-        - name: product_price
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: products
-              column: product_info
-          isplainfield: true
-          sourcefieldpaths: []
-          selectasterisk: false
     sourcecolumns:
         - server: ""
           database: db
@@ -187,7 +145,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: a
@@ -197,7 +155,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -261,7 +219,7 @@
     results:
         - name: "1"
           sourcecolumns: []
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns: []
@@ -307,7 +265,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -317,7 +275,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -327,7 +285,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -337,7 +295,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: a
@@ -347,7 +305,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -398,7 +356,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -408,7 +366,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -418,7 +376,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -428,7 +386,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -479,7 +437,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -489,7 +447,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -499,7 +457,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -509,7 +467,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -555,7 +513,7 @@
     results:
         - name: col_1
           sourcecolumns: []
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: col_2
@@ -626,7 +584,7 @@
     results:
         - name: "1"
           sourcecolumns: []
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -688,7 +646,7 @@
               schema: ""
               table: galleries
               column: city
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: total_paintings
@@ -701,11 +659,6 @@
           database: db
           schema: ""
           table: galleries
-          column: ""
-        - server: ""
-          database: db
-          schema: ""
-          table: paintings
           column: ""
     predicatecolumns: []
 - description: Test for functions
@@ -742,7 +695,7 @@
   querySpan:
     type: 1
     results:
-        - name: max(a)
+        - name: MAX
           sourcecolumns:
             - server: ""
               database: db
@@ -782,7 +735,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: a>b
+        - name: '?'
           sourcecolumns:
             - server: ""
               database: db
@@ -797,7 +750,7 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-        - name: b in (a, c, d)
+        - name: '?'
           sourcecolumns:
             - server: ""
               database: db
@@ -875,7 +828,7 @@
               schema: ""
               table: t1
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -885,7 +838,7 @@
               schema: ""
               table: t1
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -895,12 +848,12 @@
               schema: ""
               table: t2
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: "0"
           sourcecolumns: []
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -956,7 +909,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -966,7 +919,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -976,7 +929,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -986,7 +939,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -996,7 +949,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -1006,7 +959,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -1016,7 +969,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -1067,7 +1020,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -1077,7 +1030,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -1087,7 +1040,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: d
@@ -1097,7 +1050,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -1146,7 +1099,7 @@
   querySpan:
     type: 1
     results:
-        - name: MAX(a)
+        - name: MAX
           sourcecolumns:
             - server: ""
               database: db
@@ -1209,7 +1162,7 @@
               schema: ""
               table: t
               column: a
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c
@@ -1219,7 +1172,7 @@
               schema: ""
               table: t
               column: b
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: b
@@ -1229,7 +1182,7 @@
               schema: ""
               table: t
               column: c
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: a
@@ -1239,7 +1192,7 @@
               schema: ""
               table: t
               column: d
-          isplainfield: true
+          isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
@@ -1289,52 +1242,17 @@
     type: 1
     results:
         - name: cc1
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: cc2
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: cc3
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -1344,11 +1262,6 @@
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
         - server: ""
           database: db
           schema: ""
@@ -1390,51 +1303,26 @@
     type: 1
     results:
         - name: c1
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c2
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: b
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c3
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: d
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c4
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: c
+          sourcecolumns: []
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
     sourcecolumns:
-        - server: ""
-          database: db
-          schema: ""
-          table: t
-          column: ""
         - server: ""
           database: db
           schema: ""
