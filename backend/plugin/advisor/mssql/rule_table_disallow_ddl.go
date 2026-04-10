@@ -3,6 +3,7 @@ package mssql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
@@ -28,9 +29,13 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("string_array_payload is required for table disallow DDL rule")
 	}
 
+	disallowList := make([]string, len(stringArrayPayload.List))
+	for i, s := range stringArrayPayload.List {
+		disallowList[i] = strings.ToLower(s)
+	}
 	rule := &tableDisallowDDLRule{
 		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		disallowList: stringArrayPayload.List,
+		disallowList: disallowList,
 	}
 	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }

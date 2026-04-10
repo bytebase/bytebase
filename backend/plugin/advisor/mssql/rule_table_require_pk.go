@@ -131,14 +131,21 @@ func (r *tableRequirePkOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
 			continue
 		}
 		switch action.Type {
+		case ast.ATAddColumn:
+			// Check inline PK on added column: ALTER TABLE t ADD id INT PRIMARY KEY.
+			if action.Column != nil && action.Column.Constraints != nil {
+				for _, cItem := range action.Column.Constraints.Items {
+					if cd, ok := cItem.(*ast.ConstraintDef); ok && cd.Type == ast.ConstraintPrimaryKey {
+						r.tableHasPK[norm] = true
+					}
+				}
+			}
 		case ast.ATAddConstraint:
 			if action.Constraint != nil && action.Constraint.Type == ast.ConstraintPrimaryKey {
 				r.tableHasPK[norm] = true
 			}
 		case ast.ATDropConstraint:
 			// Conservatively mark as no PK when a constraint is dropped.
-			// We can't know for sure if it's the PK constraint being dropped,
-			// but this mirrors the old behavior.
 		default:
 		}
 	}

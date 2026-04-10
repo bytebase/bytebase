@@ -34,15 +34,35 @@ func (*selectNoSelectAllRule) Name() string {
 }
 
 func (r *selectNoSelectAllRule) OnStatement(node ast.Node) {
+	// Find all SelectStmt nodes, then check their TargetList for StarExpr.
+	// This avoids false positives from COUNT(*) and similar expressions.
 	ast.Inspect(node, func(n ast.Node) bool {
-		if star, ok := n.(*ast.StarExpr); ok {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.StatementSelectAll.Int32(),
-				Title:         r.Title,
-				Content:       "Avoid using SELECT *.",
-				StartPosition: &storepb.Position{Line: r.LocToLine(star.Loc)},
-			})
+		sel, ok := n.(*ast.SelectStmt)
+		if !ok || sel.TargetList == nil {
+			return true
+		}
+		for _, item := range sel.TargetList.Items {
+			switch v := item.(type) {
+			case *ast.StarExpr:
+				r.AddAdvice(&storepb.Advice{
+					Status:        r.Level,
+					Code:          code.StatementSelectAll.Int32(),
+					Title:         r.Title,
+					Content:       "Avoid using SELECT *.",
+					StartPosition: &storepb.Position{Line: r.LocToLine(v.Loc)},
+				})
+			case *ast.ResTarget:
+				if star, ok := v.Val.(*ast.StarExpr); ok {
+					r.AddAdvice(&storepb.Advice{
+						Status:        r.Level,
+						Code:          code.StatementSelectAll.Int32(),
+						Title:         r.Title,
+						Content:       "Avoid using SELECT *.",
+						StartPosition: &storepb.Position{Line: r.LocToLine(star.Loc)},
+					})
+				}
+			default:
+			}
 		}
 		return true
 	})

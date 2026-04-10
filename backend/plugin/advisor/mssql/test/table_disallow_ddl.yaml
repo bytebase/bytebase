@@ -12,7 +12,7 @@
     - status: 2
       code: 613
       title: TABLE_DISALLOW_DDL
-      content: DDL is disallowed on table MySchema.Identifier.
+      content: DDL is disallowed on table myschema.identifier.
       startposition:
         line: 5
         column: 0

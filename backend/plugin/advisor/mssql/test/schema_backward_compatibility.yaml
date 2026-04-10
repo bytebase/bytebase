@@ -15,7 +15,7 @@
     - status: 2
       code: 112
       title: SCHEMA_BACKWARD_COMPATIBILITY
-      content: Drop table master.dbo.MyTable may cause incompatibility with the existing data and code
+      content: Drop table master.dbo.mytable may cause incompatibility with the existing data and code
       startposition:
         line: 1
         column: 0
