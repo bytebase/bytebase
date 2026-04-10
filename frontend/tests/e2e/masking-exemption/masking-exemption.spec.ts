@@ -18,6 +18,11 @@ interface MaskingTestData {
 let env: TestEnv & { api: BytebaseApiClient };
 let maskingData: MaskingTestData;
 
+// Shared browser context and page — reused across ALL tests.
+// Avoids browser open/close overhead and NVirtualList first-render issues.
+let sharedContext: BrowserContext;
+let page: Page;
+
 // ── Feature-specific discovery ──
 
 async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
@@ -26,7 +31,6 @@ async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): P
   const getRows = (result: { results: unknown[] }) =>
     ((result.results?.[0] as { rows?: Row[] })?.rows ?? []);
 
-  // Find text columns in tables that have a primary key
   const colResult = await env.api.query(
     env.database,
     `SELECT c.table_schema, c.table_name, c.column_name, pk.pk_column
@@ -51,7 +55,6 @@ async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): P
     throw new Error(`Could not find a suitable text column in ${env.database}`);
   }
 
-  // Try each candidate — get PK value + text value for a row with data
   for (const row of colRows) {
     const schema = getStr(row, 0);
     const table = getStr(row, 1);
@@ -79,7 +82,6 @@ async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): P
 }
 
 async function configureMasking(env: TestEnv & { api: BytebaseApiClient }, data: MaskingTestData): Promise<void> {
-  // Construct catalog payload to set masking on the discovered column
   const catalog = {
     schemas: [{
       name: data.sampleSchema,
@@ -121,14 +123,22 @@ async function revokeAllExemptions(): Promise<void> {
 
 // ── Setup/Teardown ──
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
   maskingData = await discoverMaskingData(env);
   await configureMasking(env, maskingData);
+
+  // Create a shared browser context/page for all tests
+  sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
+  page = await sharedContext.newPage();
 });
 
-// ── Tests from masking-exemption-list.spec.ts ──
+test.afterAll(async () => {
+  await sharedContext?.close();
+});
+
+// ── Exemption List Page ──
 
 test.describe("Exemption List Page", () => {
   test.beforeAll(async () => {
@@ -136,7 +146,7 @@ test.describe("Exemption List Page", () => {
     await grantExemption("Test grant B");
   });
 
-  test("loads and displays member list with grant details", async ({ page }) => {
+  test("loads and displays member list with grant details", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
@@ -148,7 +158,7 @@ test.describe("Exemption List Page", () => {
     await expect(page.getByText(env.adminEmail).first()).toBeVisible();
   });
 
-  test("Active tab shows only active grants", async ({ page }) => {
+  test("Active tab shows only active grants", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
@@ -159,7 +169,7 @@ test.describe("Exemption List Page", () => {
     await expect(page.getByText("(Expired)")).toHaveCount(0);
   });
 
-  test("selecting a member shows their grants in detail panel", async ({ page }) => {
+  test("selecting a member shows their grants in detail panel", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
@@ -167,11 +177,10 @@ test.describe("Exemption List Page", () => {
     await page.waitForTimeout(500);
 
     await expect(page.getByText(/\d+ masking exemption/)).toBeVisible();
-    // Verify grant details are shown (reason field is visible)
     await expect(page.getByText("Reason:").first()).toBeVisible();
   });
 
-  test("grant card shows reason", async ({ page }) => {
+  test("grant card shows reason", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
@@ -181,73 +190,50 @@ test.describe("Exemption List Page", () => {
     await expect(page.getByText("Reason:").first()).toBeVisible();
   });
 
-  test("clicking All tab removes Active filter and shows all data", async ({ page }) => {
+  test("clicking All tab removes Active filter and shows all data", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
 
-    // Click "All" tab
     await exemptionPage.allTab.click();
     await page.waitForTimeout(500);
 
-    // The "status: Active" filter chip should NOT be present
     await expect(page.getByText("status: Active")).not.toBeVisible();
-    // The "status: Expired" filter chip should NOT be present either (All = no filter)
     await expect(page.getByText("status: Expired")).not.toBeVisible();
   });
 
-  test("grant card has no excessive top padding", async ({ page }) => {
+  test("grant card has no excessive top padding", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.selectMember(env.adminEmail);
     await page.waitForTimeout(500);
 
-    // The grant card's top padding should be minimal (no pt-4 = 16px gap)
     const grantCard = page.locator("[class*='border border-gray']").first();
     const cardBox = await grantCard.boundingBox();
     const header = grantCard.locator("> div").first();
     const headerBox = await header.boundingBox();
     if (cardBox && headerBox) {
       const topGap = headerBox.y - cardBox.y;
-      // Border (1px) + py-2 (8px) = ~10px. Old pt-4 added 16px on top.
       expect(topGap).toBeLessThanOrEqual(12);
     }
   });
 });
 
-// ── Service Account / Workload Identity badge ──
+// ── Service Account badge ──
 
 test.describe("Member Type Badges", () => {
   const saId = "e2e-test-sa";
   let saEmail = "";
-  const wiId = "e2e-test-wi";
-  let wiEmail = "";
 
   test.beforeAll(async () => {
-    const projectId = env.project.split("/").pop()!;
-    // Create service account
     const sa = await env.api.createServiceAccount(env.project, saId, "E2E Test SA");
     saEmail = sa.email;
-    // Create workload identity
-    try {
-      const wi = await env.api.createWorkloadIdentity(
-        env.project, wiId, "E2E Test WI",
-        "e2e-provider", "https://e2e.example.com", "e2e-subject"
-      );
-      wiEmail = wi.email;
-    } catch {
-      // Workload identity creation may not be available in demo mode
-    }
-    // Grant exemptions to both
     const existing = await env.api.getPolicy(`${env.project}/policies/masking_exemption`) as {
       maskingExemptionPolicy?: { exemptions: { members: string[]; condition?: { expression: string; description: string } }[] };
     } | null;
     const exemptions = existing?.maskingExemptionPolicy?.exemptions ?? [];
     exemptions.push({ members: [`serviceAccount:${saEmail}`], condition: { expression: "", description: "SA test" } });
-    if (wiEmail) {
-      exemptions.push({ members: [`workloadIdentity:${wiEmail}`], condition: { expression: "", description: "WI test" } });
-    }
     await env.api.upsertPolicy(env.project, "masking_exemption", {
       type: "MASKING_EXEMPTION",
       maskingExemptionPolicy: { exemptions },
@@ -255,37 +241,33 @@ test.describe("Member Type Badges", () => {
   });
 
   test.afterAll(async () => {
-    // Cleanup: revoke exemptions, delete SA and WI
     await revokeAllExemptions();
     await env.api.deleteServiceAccount(saEmail);
-    if (wiEmail) await env.api.deleteWorkloadIdentity(wiEmail);
   });
 
-  test("service account badge renders on single line", async ({ page }) => {
+  test("service account badge renders on single line", async () => {
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
     const projectId = env.project.split("/").pop()!;
     await exemptionPage.goto(projectId);
     await exemptionPage.allTab.click();
     await page.waitForTimeout(500);
 
-    // Find the "Service Account" badge text
     const badge = page.getByText("Service Account", { exact: true }).first();
     await expect(badge).toBeVisible();
     const box = await badge.boundingBox();
-    // Single-line badge with padding is ~20-40px. Two-line wrapping would be 50px+.
     expect(box).toBeTruthy();
     expect(box!.height).toBeLessThan(45);
   });
 });
 
-// ── Tests from masking-exemption-grant-revoke.spec.ts ──
+// ── Grant and Revoke ──
 
 test.describe("Grant and Revoke", () => {
   test.beforeEach(async () => {
     await revokeAllExemptions();
   });
 
-  test("grant exemption via UI and verify it appears in list", async ({ page }) => {
+  test("grant exemption via UI and verify it appears in list", async () => {
     const projectId = env.project.split("/").pop()!;
     const grantPage = new GrantExemptionPage(page, env.baseURL);
     const listPage = new MaskingExemptionPage(page, env.baseURL);
@@ -295,7 +277,6 @@ test.describe("Grant and Revoke", () => {
     await expect(grantPage.confirmButton).toBeDisabled();
 
     await grantPage.reasonInput.fill("E2E test grant");
-    // Select the admin user — name varies by mode (e.g. "Admin", "Demo")
     const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
     await grantPage.selectAccount(adminName);
     await expect(grantPage.confirmButton).toBeEnabled();
@@ -308,7 +289,7 @@ test.describe("Grant and Revoke", () => {
     await expect(page.getByText("E2E test grant")).toBeVisible();
   });
 
-  test("revoke exemption via UI and verify it disappears", async ({ page }) => {
+  test("revoke exemption via UI and verify it disappears", async () => {
     const projectId = env.project.split("/").pop()!;
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
@@ -328,7 +309,7 @@ test.describe("Grant and Revoke", () => {
     await expect(page.getByText("To be revoked")).not.toBeVisible();
   });
 
-  test("revoke confirmation can be cancelled", async ({ page }) => {
+  test("revoke confirmation can be cancelled", async () => {
     const projectId = env.project.split("/").pop()!;
     const listPage = new MaskingExemptionPage(page, env.baseURL);
 
@@ -346,34 +327,16 @@ test.describe("Grant and Revoke", () => {
   });
 });
 
-// ── Tests from masking-exemption-e2e-masking.spec.ts ──
+// ── E2E Masking Verification ──
 
 test.describe("E2E Masking Verification", () => {
-  test.setTimeout(120_000);
-
-  // Share a single browser page across all tests in this block.
-  // NVirtualList has a first-render timing issue where Playwright's locator
-  // can't detect text in the virtual-scrolled result grid on the very first
-  // page load. Reusing the page avoids this.
-  let sharedContext: BrowserContext;
-  let sharedPage: Page;
-
-  test.beforeAll(async ({ browser }) => {
-    sharedContext = await browser.newContext({ storageState: ".auth/state.json" });
-    sharedPage = await sharedContext.newPage();
-  });
-
-  test.afterAll(async () => {
-    await sharedContext.close();
-  });
-
   test("masked → grant exemption → unmasked → revoke → masked", async () => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
-    const sqlEditor = new SqlEditorPage(sharedPage, env.baseURL);
-    const grantPage = new GrantExemptionPage(sharedPage, env.baseURL);
-    const listPage = new MaskingExemptionPage(sharedPage, env.baseURL);
+    const sqlEditor = new SqlEditorPage(page, env.baseURL);
+    const grantPage = new GrantExemptionPage(page, env.baseURL);
+    const listPage = new MaskingExemptionPage(page, env.baseURL);
     const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
     const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
 
@@ -388,7 +351,7 @@ test.describe("E2E Masking Verification", () => {
     await grantPage.reasonInput.fill("e2e masking cycle test");
     await grantPage.selectAccount(adminName);
     await grantPage.submit();
-    await sharedPage.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
@@ -397,10 +360,10 @@ test.describe("E2E Masking Verification", () => {
     // Step 3: Revoke exemption via UI → data becomes masked again
     await listPage.goto(projectId);
     await listPage.selectMember(env.adminEmail);
-    await sharedPage.waitForTimeout(500);
-    await sharedPage.getByRole("button", { name: "Revoke" }).first().click();
-    await sharedPage.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
-    await sharedPage.waitForTimeout(500);
+    await page.waitForTimeout(500);
+    await page.getByRole("button", { name: "Revoke" }).first().click();
+    await page.getByRole("dialog").getByRole("button", { name: "Confirm" }).click();
+    await page.waitForTimeout(500);
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
@@ -415,7 +378,7 @@ test.describe("Responsive Layout", () => {
     await grantExemption("Layout test grant");
   });
 
-  test("wide screen shows split-panel layout", async ({ page }) => {
+  test("wide screen shows split-panel layout", async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     const projectId = env.project.split("/").pop()!;
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);
@@ -425,7 +388,7 @@ test.describe("Responsive Layout", () => {
     await expect(page.getByText("Reason:").first()).toBeVisible();
   });
 
-  test("narrow screen shows expandable list", async ({ page }) => {
+  test("narrow screen shows expandable list", async () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     const projectId = env.project.split("/").pop()!;
     const exemptionPage = new MaskingExemptionPage(page, env.baseURL);

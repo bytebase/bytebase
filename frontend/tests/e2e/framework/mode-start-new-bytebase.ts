@@ -147,11 +147,12 @@ export async function startServer(): Promise<{
       const instance = await api.getInstance(`instances/${si.id}`);
       for (const ds of instance.dataSources ?? []) {
         if (ds.port !== si.port) {
+          console.log(`Reconciling ${si.id} data source port: ${ds.port} → ${si.port}`);
           await api.updateInstanceDataSource(`instances/${si.id}`, ds.id, si.port);
         }
       }
-    } catch {
-      // Instance may not exist — skip
+    } catch (err) {
+      console.warn(`Failed to reconcile instance ${si.id}:`, err);
     }
   }
 
