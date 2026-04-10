@@ -6,7 +6,7 @@ import { Combobox } from "@/react/components/ui/combobox";
 import { useInstanceV1Store } from "@/store";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { extractInstanceResourceName } from "@/utils";
+import { extractInstanceResourceName, getDefaultPagination } from "@/utils";
 
 export interface InstanceSelectProps {
   value: string;
@@ -50,7 +50,7 @@ export function InstanceSelect({
     (query: string) => {
       instanceStore
         .fetchInstanceList({
-          pageSize: 50,
+          pageSize: getDefaultPagination(),
           filter: { query, engines: stableEngines },
         })
         .then((result) => setInstances(result.instances));

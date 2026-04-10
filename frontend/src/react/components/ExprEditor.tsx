@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
 
 // ============================================================
@@ -294,7 +295,7 @@ function SearchableSelect({
         const resp = await optionConfig.search({
           search: q,
           pageToken: "",
-          pageSize: 20,
+          pageSize: getDefaultPagination(),
         });
         setOptions(resp.options as SearchableSelectOption[]);
       } finally {
@@ -484,7 +485,7 @@ function MultiSearchableSelect({
         const resp = await optionConfig.search({
           search: q,
           pageToken: "",
-          pageSize: 20,
+          pageSize: getDefaultPagination(),
         });
         setSearchOptions(resp.options as SearchableSelectOption[]);
       } finally {

@@ -65,7 +65,7 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { getDefaultPagination, hasProjectPermissionV2 } from "@/utils";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -270,7 +270,7 @@ export function ProjectMaskingExemptionPage({
     async (keyword: string): Promise<ValueOption[]> => {
       const result = await databaseStore.fetchDatabases({
         parent: projectName,
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
       return result.databases.map((db) => {
@@ -293,7 +293,7 @@ export function ProjectMaskingExemptionPage({
   const searchUsers = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       const result = await userStore.fetchUserList({
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
       return result.users.map((u) => ({

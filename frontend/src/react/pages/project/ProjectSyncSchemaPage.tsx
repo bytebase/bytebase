@@ -66,6 +66,7 @@ import {
   extractProjectResourceName,
   generatePlanTitle,
   getDatabaseEnvironment,
+  getDefaultPagination,
   getInstanceResource,
   humanizeDate,
 } from "@/utils";
@@ -788,7 +789,7 @@ function ChangelogSelector({
       const { changelogs: fetchedChangelogs, nextPageToken: token } =
         await changelogStore.fetchChangelogList({
           parent: database,
-          pageSize: 50,
+          pageSize: getDefaultPagination(),
           filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
         });
 
@@ -823,7 +824,7 @@ function ChangelogSelector({
       await changelogStore.fetchChangelogList({
         parent: database,
         pageToken: nextPageToken,
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
       });
     setEntries((prev) => [...prev, ...more.map(toEntry)]);
@@ -1946,7 +1947,7 @@ function TargetDatabasesSelectPanel({
       const { databases: fetched, nextPageToken: token } =
         await databaseStore.fetchDatabases({
           parent: project,
-          pageSize: 100,
+          pageSize: getDefaultPagination(),
         });
       setDatabases(fetched);
       setDbNextPageToken(token);
@@ -1960,7 +1961,7 @@ function TargetDatabasesSelectPanel({
     const { databases: more, nextPageToken: token } =
       await databaseStore.fetchDatabases({
         parent: project,
-        pageSize: 100,
+        pageSize: getDefaultPagination(),
         pageToken: dbNextPageToken,
       });
     setDatabases((prev) => [...prev, ...more]);

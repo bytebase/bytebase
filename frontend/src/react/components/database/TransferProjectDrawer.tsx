@@ -12,6 +12,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
+  getDefaultPagination,
   getInstanceResource,
 } from "@/utils";
 
@@ -50,7 +51,7 @@ export function TransferProjectDrawer({
       try {
         const { projects: result } = await projectStore.fetchProjectList({
           filter: { query, excludeDefault: true },
-          pageSize: 50,
+          pageSize: getDefaultPagination(),
         });
         setProjects(result.map((p) => ({ name: p.name, title: p.title })));
       } finally {

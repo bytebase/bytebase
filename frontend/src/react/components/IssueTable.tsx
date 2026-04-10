@@ -44,6 +44,7 @@ import {
   displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
+  getDefaultPagination,
   getHighlightHTMLByRegExp,
   getIssueRoute,
   getValueFromSearchParams,
@@ -330,7 +331,7 @@ export function useIssueSearchScopeOptions(
   const searchPrincipal = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       const resp = await userStore.fetchUserList({
-        pageSize: 50,
+        pageSize: getDefaultPagination(),
         filter: { query: keyword },
       });
       return resp.users.map<ValueOption>((user) => ({

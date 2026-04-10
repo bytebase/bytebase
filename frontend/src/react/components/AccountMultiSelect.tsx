@@ -10,7 +10,7 @@ import { extractUserEmail, groupNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL, userBindingPrefix } from "@/types";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { isValidEmail } from "@/utils";
+import { getDefaultPagination, isValidEmail } from "@/utils";
 
 import { getAvatarColor, getInitials } from "./UserAvatar";
 
@@ -174,10 +174,10 @@ export function AccountMultiSelect({
     debounceRef.current = setTimeout(() => {
       const query = search.trim();
       userStore
-        .fetchUserList({ pageSize: 50, filter: { query } })
+        .fetchUserList({ pageSize: getDefaultPagination(), filter: { query } })
         .then(({ users: fetched }) => setUsers(fetched));
       groupStore
-        .fetchGroupList({ pageSize: 50, filter: { query } })
+        .fetchGroupList({ pageSize: getDefaultPagination(), filter: { query } })
         .then(({ groups: fetched }) => setGroups(fetched));
     }, 300);
     return () => {

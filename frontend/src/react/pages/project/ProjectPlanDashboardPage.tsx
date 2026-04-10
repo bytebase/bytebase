@@ -83,6 +83,7 @@ import {
   formatAbsoluteDateTime,
   generatePlanTitle,
   getDatabaseEnvironment,
+  getDefaultPagination,
   getInstanceResource,
   humanizeTs,
   type SearchParams as VueSearchParams,
@@ -170,7 +171,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         }) => {
           const resp = await userStore.fetchUserList({
             pageToken: nextPageToken,
-            pageSize: 50,
+            pageSize: getDefaultPagination(),
             filter: { query: keyword },
           });
           return {

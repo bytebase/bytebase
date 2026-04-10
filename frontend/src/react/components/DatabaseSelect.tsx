@@ -9,6 +9,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
+  getDefaultPagination,
   getInstanceResource,
 } from "@/utils";
 
@@ -64,7 +65,7 @@ export function DatabaseSelect({
             engines: stableEngines,
             query,
           },
-          pageSize: 50,
+          pageSize: getDefaultPagination(),
           silent: true,
         })
         .then((result) => setDatabases(result.databases));

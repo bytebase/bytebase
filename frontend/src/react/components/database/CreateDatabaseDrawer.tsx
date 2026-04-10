@@ -37,6 +37,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
+  getDefaultPagination,
   getIssueRoute,
   instanceV1HasCollationAndCharacterSet,
 } from "@/utils";
@@ -254,7 +255,7 @@ export function CreateDatabaseDrawer({
       projectStore
         .fetchProjectList({
           filter: { query, excludeDefault: true },
-          pageSize: 50,
+          pageSize: getDefaultPagination(),
         })
         .then(({ projects: result }) =>
           setProjects(result.map((p) => ({ name: p.name, title: p.title })))
