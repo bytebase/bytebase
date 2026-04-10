@@ -1898,11 +1898,19 @@
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
+    "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
-    "view-issue": "View Issue"
+    "view-issue": "View Issue",
+    "web-socket": {
+      "errors": {
+        "description": "Auto Completion might be limited or disabled.",
+        "disconnected": "WebSocket disconnected",
+        "title": "WebSocket connection failed"
+      }
+    }
   },
   "sql-review": {
     "add-or-remove-rules": "Add or remove rules",

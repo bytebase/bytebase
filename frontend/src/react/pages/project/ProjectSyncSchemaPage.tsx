@@ -14,13 +14,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
-import {
-  createMonacoDiffEditor,
-  createMonacoEditor,
-} from "@/components/MonacoEditor/editor";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
+import {
+  createMonacoDiffEditor,
+  createMonacoEditor,
+  loadMonacoEditor,
+  setMonacoModelLanguage,
+} from "@/react/components/monaco/core";
 import { Button } from "@/react/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
 import {
@@ -45,10 +47,10 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
-  dialectOfEngineV1,
   getDateForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidEnvironmentName,
+  languageOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -965,7 +967,7 @@ function RawSQLEditor({
       const editor = await createMonacoEditor({
         container: containerRef.current,
         options: {
-          language: dialectOfEngineV1(localEngine),
+          language: languageOfEngineV1(localEngine),
           value: localStatement,
         },
       });
@@ -992,10 +994,7 @@ function RawSQLEditor({
   useEffect(() => {
     const model = editorRef.current?.getModel();
     if (model) {
-      (async () => {
-        const { editor: monacoEditor } = await import("monaco-editor");
-        monacoEditor.setModelLanguage(model, dialectOfEngineV1(localEngine));
-      })();
+      void setMonacoModelLanguage(model, languageOfEngineV1(localEngine));
     }
   }, [localEngine]);
 
@@ -1666,7 +1665,7 @@ function DiffViewPanel({
             </div>
             <MonacoEditorPanel
               content={statement}
-              language={dialectOfEngineV1(engine)}
+              language={languageOfEngineV1(engine)}
               onChange={onStatementChange}
             />
           </>
@@ -1720,10 +1719,10 @@ function SchemaDiffViewer({
         return;
       }
       editorRef.current = editor;
-      const { editor: monacoEditor } = await import("monaco-editor");
+      const monaco = await loadMonacoEditor();
       editor.setModel({
-        original: monacoEditor.createModel(normalizedOriginal, "sql"),
-        modified: monacoEditor.createModel(normalizedModified, "sql"),
+        original: monaco.editor.createModel(normalizedOriginal, "sql"),
+        modified: monaco.editor.createModel(normalizedModified, "sql"),
       });
     })();
     return () => {

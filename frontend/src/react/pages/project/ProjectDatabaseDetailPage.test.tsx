@@ -370,17 +370,14 @@ vi.mock("@/react/components/ui/dialog", () => ({
   )),
 }));
 
-vi.mock("@/components/MonacoEditor/editor", () => ({
+vi.mock("@/react/components/monaco/core", () => ({
   createMonacoDiffEditor: vi.fn(),
   createMonacoEditor: vi.fn(),
+  initializeMonacoServices: vi.fn(),
 }));
 
 vi.mock("@/react/components/monaco", () => ({
   ReadonlyMonaco: vi.fn(() => null),
-}));
-
-vi.mock("@/components/MonacoEditor/services", () => ({
-  initializeMonacoServices: vi.fn(),
 }));
 
 vi.mock("monaco-editor", () => ({}));
