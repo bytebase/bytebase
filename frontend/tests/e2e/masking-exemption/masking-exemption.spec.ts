@@ -35,26 +35,53 @@ let page: Page;
 
 // Fixed values we control: the test creates its own schema/table/rows,
 // applies masking, and drops everything in teardown.
+// All identifiers below must be validated by isSafeIdentifier before being
+// interpolated into SQL strings passed to psql. The constants are static
+// literals verified at load time; any dynamic values MUST go through the
+// validator.
 const TEST_SCHEMA = "e2e_masking";
 const TEST_TABLE = "t";
 const CLASSIFICATION_COLUMN = "col_classification";
 const SEMANTIC_TYPE_COLUMN = "col_semantic";
-const ROW_PK = "1";
+const ROW_PK = 1;
 const CLASSIFICATION_VALUE = "ClassValueABCDE";
 const SEMANTIC_TYPE_VALUE = "SemValueABCDE";
 const CLASSIFICATION_LEVEL = "1-2"; // matches demo classification rules
 
+// Validate SQL identifiers/literal values. Only permits characters safe to
+// inline into a SQL string without escaping: letters, digits, underscores.
+// Any caller that interpolates into SQL MUST call this first.
+function assertSafeSqlIdentifier(value: string, kind: string): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
+    throw new Error(`Unsafe SQL ${kind}: ${JSON.stringify(value)}`);
+  }
+}
+// Validate-on-load so a typo in a constant fails fast, not at test runtime
+for (const [name, value] of Object.entries({
+  TEST_SCHEMA, TEST_TABLE, CLASSIFICATION_COLUMN, SEMANTIC_TYPE_COLUMN,
+  CLASSIFICATION_VALUE, SEMANTIC_TYPE_VALUE,
+})) {
+  assertSafeSqlIdentifier(value, name);
+}
+
+// Get the Postgres port for the database's instance by reading the data source
+// from the API. Avoids hardcoding offsets (PORT+3 vs PORT+4) which would break
+// if discovery picks the "test" sample instance instead of "prod".
+async function getInstancePgPort(env: TestEnv & { api: BytebaseApiClient }): Promise<string> {
+  const instance = await env.api.getInstance(env.instance);
+  const port = instance.dataSources?.[0]?.port;
+  if (!port) {
+    throw new Error(`Instance ${env.instance} has no data source port`);
+  }
+  return port;
+}
+
 // Execute SQL via psql over Unix socket on the sample Postgres instance.
 // Used for DDL/DML setup and teardown — Bytebase's query API is read-only.
-function execSql(env: TestEnv & { api: BytebaseApiClient }, dbName: string, sql: string): void {
-  // Sample instance Postgres runs on PORT+4 via Unix socket at /tmp.
-  // Parse port from baseURL (http://localhost:PORT).
-  const match = env.baseURL.match(/localhost:(\d+)/);
-  if (!match) throw new Error(`Cannot parse port from baseURL: ${env.baseURL}`);
-  const sampleInstancePort = String(parseInt(match[1], 10) + 4);
+function execSql(dbName: string, port: string, sql: string): void {
   execFileSync("psql", [
     "-h", "/tmp",
-    "-p", sampleInstancePort,
+    "-p", port,
     "-U", "bbsample",
     "-d", dbName,
     "-v", "ON_ERROR_STOP=1",
@@ -63,25 +90,25 @@ function execSql(env: TestEnv & { api: BytebaseApiClient }, dbName: string, sql:
 }
 
 async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  const dbName = env.database.split("/").pop()!;
+  const dbName = env.databaseId;
+  const port = await getInstancePgPort(env);
 
-  // Drop anything leftover from a previous run, then create fresh schema/table/row
-  execSql(env, dbName, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
-  execSql(env, dbName, `CREATE SCHEMA ${TEST_SCHEMA}`);
-  execSql(env, dbName, `CREATE TABLE ${TEST_SCHEMA}.${TEST_TABLE} (
+  // Drop anything leftover from a previous run, then create fresh schema/table/row.
+  // All interpolated identifiers are validated constants (see assertSafeSqlIdentifier above).
+  execSql(dbName, port, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+  execSql(dbName, port, `CREATE SCHEMA ${TEST_SCHEMA}`);
+  execSql(dbName, port, `CREATE TABLE ${TEST_SCHEMA}.${TEST_TABLE} (
     id INTEGER PRIMARY KEY,
     ${CLASSIFICATION_COLUMN} TEXT NOT NULL,
     ${SEMANTIC_TYPE_COLUMN} TEXT NOT NULL
   )`);
-  execSql(env, dbName, `INSERT INTO ${TEST_SCHEMA}.${TEST_TABLE} (id, ${CLASSIFICATION_COLUMN}, ${SEMANTIC_TYPE_COLUMN})
+  execSql(dbName, port, `INSERT INTO ${TEST_SCHEMA}.${TEST_TABLE} (id, ${CLASSIFICATION_COLUMN}, ${SEMANTIC_TYPE_COLUMN})
     VALUES (${ROW_PK}, '${CLASSIFICATION_VALUE}', '${SEMANTIC_TYPE_VALUE}')`);
 
-  // Sync the database schema so Bytebase picks up the new table
-  try {
-    await env.api.syncDatabase(env.database);
-  } catch {
-    // sync endpoint may not be available; catalog update will still work
-  }
+  // Sync the database schema so Bytebase picks up the new table.
+  // Errors here are real — without sync, the catalog update will target a
+  // table Bytebase doesn't know about and silently drop the configuration.
+  await env.api.syncDatabase(env.database);
 
   // Configure catalog: classification on one column, semanticType on the other
   await env.api.updateCatalog(env.database, {
@@ -104,7 +131,7 @@ async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }):
     sampleTable: TEST_TABLE,
     sampleSchema: TEST_SCHEMA,
     primaryKeyColumn: "id",
-    primaryKeyValue: ROW_PK,
+    primaryKeyValue: String(ROW_PK),
   };
   return {
     classificationColumn: {
@@ -120,12 +147,14 @@ async function createMaskingTestData(env: TestEnv & { api: BytebaseApiClient }):
   };
 }
 
-function dropMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): void {
-  const dbName = env.database.split("/").pop()!;
+async function dropMaskingTestData(env: TestEnv & { api: BytebaseApiClient }): Promise<void> {
   try {
-    execSql(env, dbName, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
-  } catch {
-    // best effort — server may already be torn down
+    const port = await getInstancePgPort(env);
+    execSql(env.databaseId, port, `DROP SCHEMA IF EXISTS ${TEST_SCHEMA} CASCADE`);
+  } catch (err) {
+    // Server may have been torn down by globalTeardown before afterAll ran.
+    // Surface the error so genuine cleanup failures are visible.
+    console.warn(`dropMaskingTestData: ${err instanceof Error ? err.message : err}`);
   }
 }
 
@@ -168,8 +197,10 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => {
   await sharedContext?.close();
-  await revokeAllExemptions().catch(() => { /* ignore */ });
-  dropMaskingTestData(env);
+  await revokeAllExemptions().catch((err) => {
+    console.warn(`afterAll revokeAllExemptions: ${err instanceof Error ? err.message : err}`);
+  });
+  await dropMaskingTestData(env);
 });
 
 // ── Exemption List Page ──
