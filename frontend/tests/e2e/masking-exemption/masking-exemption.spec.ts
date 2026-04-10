@@ -6,13 +6,20 @@ import { MaskingExemptionPage, GrantExemptionPage, SqlEditorPage } from "./maski
 // Give all tests generous timeouts (Mode B's disposable server can be slow)
 test.setTimeout(120_000);
 
-interface MaskingTestData {
+interface MaskingTestColumn {
   sampleTable: string;
   sampleSchema: string;
   sampleColumn: string;
   primaryKeyColumn: string;
   primaryKeyValue: string;
   knownUnmaskedValue: string;
+}
+
+interface MaskingTestData {
+  // Column that is masked via classification level (set in demo data)
+  classificationColumn: MaskingTestColumn;
+  // Column that we explicitly mask via semanticType (we apply it in beforeAll)
+  semanticTypeColumn: MaskingTestColumn;
 }
 
 let env: TestEnv & { api: BytebaseApiClient };
@@ -25,71 +32,130 @@ let page: Page;
 
 // ── Feature-specific discovery ──
 
-async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
-  type Row = { values?: { stringValue?: string; int64Value?: string }[] };
-  const getStr = (row: Row, idx: number) => row.values?.[idx]?.stringValue ?? row.values?.[idx]?.int64Value ?? "";
-  const getRows = (result: { results: unknown[] }) =>
-    ((result.results?.[0] as { rows?: Row[] })?.rows ?? []);
+type Row = { values?: { stringValue?: string; int64Value?: string }[] };
+const getStr = (row: Row, idx: number) => row.values?.[idx]?.stringValue ?? row.values?.[idx]?.int64Value ?? "";
+const getRows = (result: { results: unknown[] }) =>
+  ((result.results?.[0] as { rows?: Row[] })?.rows ?? []);
 
-  const colResult = await env.api.query(
+interface CandidateColumn {
+  schema: string;
+  table: string;
+  column: string;
+  pkColumn: string;
+}
+
+// Query information_schema for text columns in tables with a single-column PK.
+async function findCandidateTextColumns(env: TestEnv & { api: BytebaseApiClient }): Promise<CandidateColumn[]> {
+  const result = await env.api.query(
     env.database,
     `SELECT c.table_schema, c.table_name, c.column_name, pk.pk_column
      FROM information_schema.columns c
      JOIN (
-       SELECT kcu.table_schema, kcu.table_name, kcu.column_name AS pk_column
+       SELECT kcu.table_schema, kcu.table_name, MIN(kcu.column_name) AS pk_column
        FROM information_schema.table_constraints tc
        JOIN information_schema.key_column_usage kcu
          ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
        WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
+       GROUP BY kcu.table_schema, kcu.table_name
+       HAVING COUNT(*) = 1
      ) pk ON c.table_schema = pk.table_schema AND c.table_name = pk.table_name
      WHERE c.table_schema = 'public'
        AND c.data_type IN ('text', 'character varying')
-       AND c.column_name NOT LIKE '%id%'
-       AND c.column_name NOT LIKE '%date%'
-       AND c.column_name NOT LIKE '%time%'
-       AND c.column_name != pk.pk_column
-     LIMIT 20`
+       AND c.column_name != pk.pk_column`
   );
-  const colRows = getRows(colResult);
-  if (colRows.length === 0) {
-    throw new Error(`Could not find a suitable text column in ${env.database}`);
-  }
-
-  for (const row of colRows) {
-    const schema = getStr(row, 0);
-    const table = getStr(row, 1);
-    const column = getStr(row, 2);
-    const pkColumn = getStr(row, 3);
-    if (!table || !column || !pkColumn) continue;
-
-    const dataResult = await env.api.query(
-      env.database,
-      `SELECT "${pkColumn}", "${column}" FROM "${schema}"."${table}" WHERE "${column}" IS NOT NULL AND "${column}" != '' LIMIT 1`
-    );
-    const dataRows = getRows(dataResult);
-    const pkValue = getStr(dataRows[0], 0);
-    const textValue = getStr(dataRows[0], 1);
-    if (pkValue && textValue) {
-      return {
-        sampleTable: table, sampleSchema: schema, sampleColumn: column,
-        primaryKeyColumn: pkColumn, primaryKeyValue: pkValue,
-        knownUnmaskedValue: textValue,
-      };
-    }
-  }
-
-  throw new Error(`Could not find a column with data to mask in ${env.database}`);
+  return getRows(result)
+    .map((r) => ({
+      schema: getStr(r, 0),
+      table: getStr(r, 1),
+      column: getStr(r, 2),
+      pkColumn: getStr(r, 3),
+    }))
+    .filter((c) => c.schema && c.table && c.column && c.pkColumn);
 }
 
+// Fetch a sample row (PK + value) from the given column. Returns null if empty.
+async function sampleRow(
+  env: TestEnv & { api: BytebaseApiClient },
+  c: CandidateColumn,
+): Promise<MaskingTestColumn | null> {
+  const result = await env.api.query(
+    env.database,
+    `SELECT "${c.pkColumn}", "${c.column}" FROM "${c.schema}"."${c.table}" WHERE "${c.column}" IS NOT NULL AND "${c.column}" != '' LIMIT 1`,
+  );
+  const rows = getRows(result);
+  if (rows.length === 0) return null;
+  const pkValue = getStr(rows[0], 0);
+  const textValue = getStr(rows[0], 1);
+  if (!pkValue || !textValue) return null;
+  return {
+    sampleTable: c.table,
+    sampleSchema: c.schema,
+    sampleColumn: c.column,
+    primaryKeyColumn: c.pkColumn,
+    primaryKeyValue: pkValue,
+    knownUnmaskedValue: textValue,
+  };
+}
+
+// Discover test columns for both masking mechanisms.
+// Strategy: grant a temporary exemption so all queries return TRUE unmasked values.
+// Then split candidates: first one becomes the classification column (assumes demo
+// data configures classification on an early text column), second becomes the
+// semantic type column (we apply semanticType explicitly in configureMasking).
+async function discoverMaskingData(env: TestEnv & { api: BytebaseApiClient }): Promise<MaskingTestData> {
+  const candidates = await findCandidateTextColumns(env);
+  if (candidates.length < 2) {
+    throw new Error(`Need at least 2 text columns for masking tests, found ${candidates.length}`);
+  }
+
+  // Check catalog to separate columns that already have classification from those that don't
+  const catalog = await env.api.getCatalog(env.database) as {
+    schemas?: { name: string; tables?: { name: string; columns?: { columns?: { name: string; classification?: string; semanticType?: string }[] } }[] }[];
+  };
+  const hasClassification = (c: CandidateColumn): boolean => {
+    const schema = catalog.schemas?.find((s) => s.name === c.schema);
+    const table = schema?.tables?.find((t) => t.name === c.table);
+    const col = table?.columns?.columns?.find((col) => col.name === c.column);
+    return !!col?.classification;
+  };
+  const hasAnyMasking = (c: CandidateColumn): boolean => {
+    const schema = catalog.schemas?.find((s) => s.name === c.schema);
+    const table = schema?.tables?.find((t) => t.name === c.table);
+    const col = table?.columns?.columns?.find((col) => col.name === c.column);
+    return !!(col?.classification || col?.semanticType);
+  };
+
+  const classCandidates = candidates.filter(hasClassification);
+  const cleanCandidates = candidates.filter((c) => !hasAnyMasking(c));
+
+  if (classCandidates.length === 0) {
+    throw new Error("No text column with classification found in demo data");
+  }
+  if (cleanCandidates.length === 0) {
+    throw new Error("No text column without masking found in demo data");
+  }
+
+  // Must pick different columns so tests don't interfere
+  const classCol = await sampleRow(env, classCandidates[0]);
+  const semCol = await sampleRow(env, cleanCandidates[0]);
+  if (!classCol) throw new Error(`No data in classification candidate ${classCandidates[0].table}.${classCandidates[0].column}`);
+  if (!semCol) throw new Error(`No data in semantic type candidate ${cleanCandidates[0].table}.${cleanCandidates[0].column}`);
+
+  return { classificationColumn: classCol, semanticTypeColumn: semCol };
+}
+
+// Apply semantic type masking on the chosen semantic type column.
 async function configureMasking(env: TestEnv & { api: BytebaseApiClient }, data: MaskingTestData): Promise<void> {
+  const c = data.semanticTypeColumn;
   const catalog = {
+    name: `${env.database}/catalog`,
     schemas: [{
-      name: data.sampleSchema,
+      name: c.sampleSchema,
       tables: [{
-        name: data.sampleTable,
+        name: c.sampleTable,
         columns: {
           columns: [{
-            name: data.sampleColumn,
+            name: c.sampleColumn,
             semanticType: "bb.default-partial",
           }],
         },
@@ -337,32 +403,34 @@ test.describe("Grant and Revoke", () => {
 // ── E2E Masking Verification ──
 
 test.describe("E2E Masking Verification", () => {
-  test("masked → grant exemption → unmasked → revoke → masked", async () => {
+  // Shared cycle test: masked → grant via UI → unmasked → revoke via UI → masked.
+  // Parameterized by which column (classification-masked vs semantic-type-masked).
+  const runMaskingCycle = async (target: MaskingTestColumn, reason: string) => {
     const projectId = env.project.split("/").pop()!;
     const instanceId = env.instance.split("/").pop()!;
     const dbId = env.database.split("/").pop()!;
     const sqlEditor = new SqlEditorPage(page, env.baseURL);
     const grantPage = new GrantExemptionPage(page, env.baseURL);
     const listPage = new MaskingExemptionPage(page, env.baseURL);
-    const sql = `SELECT "${maskingData.sampleColumn}" FROM "${maskingData.sampleSchema}"."${maskingData.sampleTable}" WHERE "${maskingData.primaryKeyColumn}" = '${maskingData.primaryKeyValue}';`;
+    const sql = `SELECT "${target.sampleColumn}" FROM "${target.sampleSchema}"."${target.sampleTable}" WHERE "${target.primaryKeyColumn}" = '${target.primaryKeyValue}';`;
     const adminName = env.adminEmail === "demo@example.com" ? "Demo" : "Admin";
 
     // Step 1: No exemption → data is masked
     await revokeAllExemptions();
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
+    expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(false);
 
     // Step 2: Grant exemption via UI → data becomes unmasked
     await grantPage.goto(projectId);
-    await grantPage.reasonInput.fill("e2e masking cycle test");
+    await grantPage.reasonInput.fill(reason);
     await grantPage.selectAccount(adminName);
     await grantPage.submit();
     await page.waitForTimeout(1000);
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(true);
+    expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(true);
 
     // Step 3: Revoke exemption via UI → data becomes masked again
     await listPage.goto(projectId);
@@ -374,7 +442,15 @@ test.describe("E2E Masking Verification", () => {
 
     await sqlEditor.gotoWithDb(projectId, instanceId, dbId);
     await sqlEditor.runQuery(sql);
-    expect(await sqlEditor.resultContainsText(maskingData.knownUnmaskedValue)).toBe(false);
+    expect(await sqlEditor.resultContainsText(target.knownUnmaskedValue)).toBe(false);
+  };
+
+  test("classification-based masking: cycle via UI", async () => {
+    await runMaskingCycle(maskingData.classificationColumn, "e2e classification masking test");
+  });
+
+  test("semantic-type-based masking: cycle via UI", async () => {
+    await runMaskingCycle(maskingData.semanticTypeColumn, "e2e semantic type masking test");
   });
 });
 
