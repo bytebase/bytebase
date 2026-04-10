@@ -1,7 +1,7 @@
 import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
@@ -418,22 +418,21 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         )}
       </div>
 
-      {showDrawer && (
-        <CreateWorkloadIdentityDrawer
-          workloadIdentity={editingWI}
-          project={projectName}
-          onClose={() => {
-            setShowDrawer(false);
-            setEditingWI(undefined);
-          }}
-          onCreated={(wi) => {
-            activeData.updateCache([workloadIdentityToUser(wi)]);
-          }}
-          onUpdated={(wi) => {
-            activeData.updateCache([workloadIdentityToUser(wi)]);
-          }}
-        />
-      )}
+      <CreateWorkloadIdentitySheet
+        open={showDrawer}
+        workloadIdentity={editingWI}
+        project={projectName}
+        onClose={() => {
+          setShowDrawer(false);
+          setEditingWI(undefined);
+        }}
+        onCreated={(wi) => {
+          activeData.updateCache([workloadIdentityToUser(wi)]);
+        }}
+        onUpdated={(wi) => {
+          activeData.updateCache([workloadIdentityToUser(wi)]);
+        }}
+      />
     </div>
   );
 }

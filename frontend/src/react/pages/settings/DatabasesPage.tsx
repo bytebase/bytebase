@@ -11,13 +11,13 @@ import {
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
 import {
-  CreateDatabaseDrawer,
+  CreateDatabaseSheet,
   DatabaseBatchOperationsBar,
   DatabaseTable,
-  LabelEditorDrawer,
-  TransferProjectDrawer,
+  LabelEditorSheet,
+  TransferProjectSheet,
 } from "@/react/components/database";
-import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
+import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
@@ -438,18 +438,18 @@ export function DatabasesPage() {
           onEditEnvironment={() => setShowEditEnvDrawer(true)}
           onTransferProject={() => setShowTransferDrawer(true)}
         />
-        <EditEnvironmentDrawer
+        <EditEnvironmentSheet
           open={showEditEnvDrawer}
           onClose={() => setShowEditEnvDrawer(false)}
           onUpdate={handleEnvironmentUpdate}
         />
-        <LabelEditorDrawer
+        <LabelEditorSheet
           open={showLabelEditor}
           databases={selectedDatabases}
           onClose={() => setShowLabelEditor(false)}
           onApply={handleLabelsApply}
         />
-        <TransferProjectDrawer
+        <TransferProjectSheet
           open={showTransferDrawer}
           databases={selectedDatabases}
           onClose={() => setShowTransferDrawer(false)}
@@ -465,7 +465,7 @@ export function DatabasesPage() {
         />
       </div>
 
-      <CreateDatabaseDrawer
+      <CreateDatabaseSheet
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
       />

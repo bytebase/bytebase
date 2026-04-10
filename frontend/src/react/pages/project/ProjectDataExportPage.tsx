@@ -36,7 +36,7 @@ import {
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
   type SearchParams as VueSearchParams,
 } from "@/utils";
-import { DataExportPrepDrawer } from "./export-center/DataExportPrepDrawer";
+import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -224,7 +224,7 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
         )}
       </div>
 
-      <DataExportPrepDrawer
+      <DataExportPrepSheet
         open={showDrawer}
         onClose={() => setShowDrawer(false)}
         projectName={project?.name ?? projectName}

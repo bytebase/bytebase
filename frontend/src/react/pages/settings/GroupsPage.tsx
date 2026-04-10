@@ -53,7 +53,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
-import { AADSyncDrawer } from "./shared/AADSyncDrawer";
+import { AADSyncSheet } from "./shared/AADSyncSheet";
 
 // ============================================================
 // Helpers
@@ -1099,9 +1099,10 @@ export function GroupsPage() {
         />
       )}
 
-      {showAadSyncDrawer && (
-        <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
-      )}
+      <AADSyncSheet
+        open={showAadSyncDrawer}
+        onClose={() => setShowAadSyncDrawer(false)}
+      />
     </div>
   );
 }

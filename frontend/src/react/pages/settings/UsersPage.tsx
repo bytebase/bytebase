@@ -68,7 +68,7 @@ import {
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { AADSyncDrawer } from "./shared/AADSyncDrawer";
+import { AADSyncSheet } from "./shared/AADSyncSheet";
 
 // ============================================================
 // UserTable
@@ -1064,9 +1064,10 @@ export function UsersPage() {
         />
       )}
 
-      {showAadSyncDrawer && (
-        <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
-      )}
+      <AADSyncSheet
+        open={showAadSyncDrawer}
+        onClose={() => setShowAadSyncDrawer(false)}
+      />
     </div>
   );
 }

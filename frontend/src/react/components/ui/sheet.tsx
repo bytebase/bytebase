@@ -1,5 +1,6 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cva, type VariantProps } from "class-variance-authority";
+import { X } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
 
@@ -89,6 +90,15 @@ function SheetContent({
         {...props}
       >
         {children}
+        {/* Built-in close affordance in the top-right corner. Callers should
+            not render their own close button — Base UI's Close component
+            handles click and dismisses the Sheet via the Root's onOpenChange. */}
+        <BaseDialog.Close
+          aria-label="Close"
+          className="absolute right-4 top-4 rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
+        >
+          <X className="size-4" />
+        </BaseDialog.Close>
       </BaseDialog.Popup>
     </BaseDialog.Portal>
   );
@@ -96,12 +106,13 @@ function SheetContent({
 
 // ---- Header ----
 // Sticky top region with a bottom border. Typically contains SheetTitle and
-// an optional SheetDescription.
+// an optional SheetDescription. `pr-12` reserves space on the right edge for
+// the absolute-positioned close button in SheetContent.
 function SheetHeader({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-y-1 border-b border-control-border px-6 py-4",
+        "flex flex-col gap-y-1 border-b border-control-border px-6 py-4 pr-12",
         className
       )}
       {...props}

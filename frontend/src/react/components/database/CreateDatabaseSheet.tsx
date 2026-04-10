@@ -8,8 +8,15 @@ import { InstanceSelect } from "@/react/components/InstanceSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -162,18 +169,18 @@ function IssueLabelSelect({
   );
 }
 
-export interface CreateDatabaseDrawerProps {
+export interface CreateDatabaseSheetProps {
   open: boolean;
   onClose: () => void;
   // If provided, lock project selection to this project
   projectName?: string;
 }
 
-export function CreateDatabaseDrawer({
+export function CreateDatabaseSheet({
   open,
   onClose,
   projectName: fixedProjectName,
-}: CreateDatabaseDrawerProps) {
+}: CreateDatabaseSheetProps) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
   const instanceStore = useInstanceV1Store();
@@ -249,8 +256,6 @@ export function CreateDatabaseDrawer({
     !isReservedName &&
     (!requireOwner || !!ownerName) &&
     (!forceIssueLabels || issueLabels.length > 0);
-
-  useEscapeKey(open, onClose);
 
   const searchProjects = useCallback(
     (query: string) => {
@@ -372,22 +377,13 @@ export function CreateDatabaseDrawer({
     selectedInstance && instanceV1HasCollationAndCharacterSet(selectedInstance);
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">
-            {t("quick-action.create-db")}
-          </h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("quick-action.create-db")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-y-4">
+        <SheetBody className="gap-y-4">
           {!fixedProjectName && (
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -541,23 +537,23 @@ export function CreateDatabaseDrawer({
               </div>
             </>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t border-control-border">
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!allowCreate || creating} onClick={handleCreate}>
             {t("common.create")}
           </Button>
-        </div>
+        </SheetFooter>
 
         {creating && (
           <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
             <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         )}
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

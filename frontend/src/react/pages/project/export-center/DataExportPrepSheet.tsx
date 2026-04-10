@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { Database as DatabaseIcon, FolderTree, Loader2, X } from "lucide-react";
+import { Database as DatabaseIcon, FolderTree, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
@@ -9,8 +9,15 @@ import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -51,7 +58,7 @@ import {
 } from "@/utils";
 
 // ---------------------------------------------------------------------------
-// Main Drawer
+// Main Sheet
 // ---------------------------------------------------------------------------
 
 export interface DataExportPrepSeed {
@@ -61,7 +68,7 @@ export interface DataExportPrepSeed {
   step?: 1 | 2;
 }
 
-export interface DataExportPrepDrawerProps {
+export interface DataExportPrepSheetProps {
   open: boolean;
   onClose: () => void;
   projectName: string;
@@ -77,12 +84,12 @@ const EXPORT_FORMATS = [
   { value: ExportFormat.XLSX, label: "XLSX" },
 ] as const;
 
-export function DataExportPrepDrawer({
+export function DataExportPrepSheet({
   open,
   onClose,
   projectName,
   seed,
-}: DataExportPrepDrawerProps) {
+}: DataExportPrepSheetProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUserV1();
   const sheetStore = useSheetV1Store();
@@ -197,14 +204,12 @@ export function DataExportPrepDrawer({
     }
   }, [open, seedKey, seedStep]);
 
-  // Close the drawer if the project context changes while open
+  // Close the sheet if the project context changes while open
   useEffect(() => {
     if (open) {
       onClose();
     }
   }, [projectName]);
-
-  useEscapeKey(open, onClose);
 
   // Limits
   const maximumResultSize = useVueState(() => {
@@ -289,26 +294,14 @@ export function DataExportPrepDrawer({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-control-border">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="wide">
+        <SheetHeader>
           <div className="flex flex-col gap-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold">
-                {t("custom-approval.risk-rule.risk.namespace.data_export")}
-              </span>
-              <button
-                className="p-1 hover:bg-control-bg rounded-xs"
-                onClick={onClose}
-              >
-                <X className="size-4" />
-              </button>
-            </div>
+            <SheetTitle>
+              {t("custom-approval.risk-rule.risk.namespace.data_export")}
+            </SheetTitle>
             {/* Steps indicator */}
             <div className="flex items-center gap-x-4 text-sm">
               <StepIndicator
@@ -326,10 +319,9 @@ export function DataExportPrepDrawer({
               />
             </div>
           </div>
-        </div>
+        </SheetHeader>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <SheetBody>
           {step === 1 ? (
             <DatabaseAndGroupSelector
               projectName={projectName}
@@ -481,10 +473,9 @@ export function DataExportPrepDrawer({
               </div>
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-control-border flex items-center justify-end gap-x-2">
+        <SheetFooter>
           <Button variant="outline" onClick={handleCancel}>
             {step === 1 ? t("common.cancel") : t("common.back")}
           </Button>
@@ -498,9 +489,9 @@ export function DataExportPrepDrawer({
               {t("common.create")}
             </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

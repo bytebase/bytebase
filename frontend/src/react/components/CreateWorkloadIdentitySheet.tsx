@@ -1,12 +1,19 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   ensureWorkloadIdentityFullName,
@@ -73,13 +80,15 @@ function computeSubjectPattern(
   return "";
 }
 
-export function CreateWorkloadIdentityDrawer({
+export function CreateWorkloadIdentitySheet({
+  open,
   workloadIdentity,
   project,
   onClose,
   onCreated,
   onUpdated,
 }: {
+  open: boolean;
   workloadIdentity?: WorkloadIdentity;
   project?: string;
   onClose: () => void;
@@ -190,8 +199,6 @@ export function CreateWorkloadIdentityDrawer({
       isUpdatingFromPatternRef.current = false;
     }
   }, [subjectPattern]);
-
-  useEscapeKey(true, onClose);
 
   const handlePlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
     setProviderType(value);
@@ -340,28 +347,13 @@ export function CreateWorkloadIdentityDrawer({
   const isTagRefType = isGitLab && refType === "tag";
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("settings.members.workload-identity")}</SheetTitle>
+        </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("settings.members.workload-identity")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="size-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Title */}
             <div className="flex flex-col gap-y-2">
@@ -601,10 +593,9 @@ export function CreateWorkloadIdentityDrawer({
                 </div>
               )}
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -614,8 +605,8 @@ export function CreateWorkloadIdentityDrawer({
           >
             {isEditMode ? t("common.update") : t("common.create")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
