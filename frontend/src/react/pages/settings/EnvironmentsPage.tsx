@@ -1,4 +1,21 @@
 import { create } from "@bufbuild/protobuf";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cloneDeep, isEqual } from "lodash-es";
 import { GripVertical, ListOrdered, Plus, ShieldAlert, X } from "lucide-react";
 import {
@@ -1198,6 +1215,54 @@ function CreateSheet({
 // ============================================================
 // ReorderSheet
 // ============================================================
+function SortableEnvironmentRow({
+  env,
+  index,
+}: {
+  env: Environment;
+  index: number;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: env.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center justify-between p-2 rounded-xs border border-transparent",
+        !isDragging && "hover:bg-control-bg"
+      )}
+    >
+      <div className="flex items-center gap-x-2">
+        <span className="textinfo">{index + 1}.</span>
+        <EnvironmentName environment={env} />
+      </div>
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing touch-none p-1 text-control-light hover:text-control"
+        aria-label="Drag to reorder"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-5" />
+      </button>
+    </div>
+  );
+}
+
 function ReorderSheet({
   open,
   environments,
@@ -1211,15 +1276,26 @@ function ReorderSheet({
 }) {
   const { t } = useTranslation();
   const [list, setList] = useState(() => [...environments]);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  // Reset list state whenever the Sheet is (re)opened. Sheet is always mounted
-  // so useState initializer only runs on first mount.
+  // Reset list state whenever the Sheet is (re)opened. Sheet is always
+  // mounted so the useState initializer only runs on first mount.
   useEffect(() => {
     if (!open) return;
     setList([...environments]);
-    setDragIndex(null);
   }, [open, environments]);
+
+  // dnd-kit sensors — Pointer handles mouse/touch, Keyboard enables
+  // Tab+Space/Arrow accessible reordering.
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Small activation distance prevents click-vs-drag ambiguity on
+      // the grip handle while still feeling responsive.
+      activationConstraint: { distance: 4 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const orderChanged = useMemo(() => {
     for (let i = 0; i < list.length; i++) {
@@ -1228,45 +1304,13 @@ function ReorderSheet({
     return false;
   }, [list, environments]);
 
-  // Track the hovered-over target separately so the on-screen list only
-  // reorders on drop — mutating `list` mid-drag causes re-renders that
-  // can abort the HTML5 drag session (seen in Chrome when the Sheet's
-  // Dialog.Popup re-renders).
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    // HTML5 DnD requires dataTransfer.setData to start a drag in Firefox,
-    // and effectAllowed/dropEffect is needed for the drop cursor in Chrome.
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(index));
-    setDragIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    // preventDefault here is what actually signals "this element is a
-    // valid drop target" — without it onDrop never fires.
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    const source = Number(e.dataTransfer.getData("text/plain"));
-    if (Number.isNaN(source) || source === targetIndex) {
-      return;
-    }
-    const newList = [...list];
-    const [item] = newList.splice(source, 1);
-    newList.splice(targetIndex, 0, item);
-    setList(newList);
-  };
-
-  const handleDragEnd = () => {
-    setDragIndex(null);
-    setDragOverIndex(null);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = list.findIndex((e) => e.id === active.id);
+    const newIndex = list.findIndex((e) => e.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setList(arrayMove(list, oldIndex, newIndex));
   };
 
   return (
@@ -1277,30 +1321,26 @@ function ReorderSheet({
         </SheetHeader>
 
         <SheetBody>
-          {list.map((env, index) => (
-            <div
-              key={env.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
-              className={cn(
-                "flex items-center justify-between p-2 rounded-xs cursor-grab border border-transparent",
-                dragIndex === index && "opacity-50",
-                dragOverIndex === index &&
-                  dragIndex !== index &&
-                  "border-accent bg-accent/5",
-                dragIndex !== index && "hover:bg-control-bg"
-              )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={list.map((e) => e.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <div className="flex items-center gap-x-2">
-                <span className="textinfo">{index + 1}.</span>
-                <EnvironmentName environment={env} />
+              <div className="flex flex-col gap-y-1">
+                {list.map((env, index) => (
+                  <SortableEnvironmentRow
+                    key={env.id}
+                    env={env}
+                    index={index}
+                  />
+                ))}
               </div>
-              <GripVertical className="w-5 h-5 text-gray-500" />
-            </div>
-          ))}
+            </SortableContext>
+          </DndContext>
         </SheetBody>
 
         <SheetFooter>
