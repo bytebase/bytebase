@@ -1875,6 +1875,16 @@ function RequestRoleDialog({
         expiration,
       });
 
+      // Collect the scoped database names so the auto-generated title shows
+      // `[db1]` / `[N databases]` instead of defaulting to `[All databases]`
+      // — matches the old Vue RoleGrantPanel behavior. EXPRESSION mode
+      // currently falls through to `[All databases]` since parsing CEL back
+      // into concrete database names would require an async round-trip.
+      const titleDatabaseNames =
+        scopedDatabaseResources && scopedDatabaseResources.length > 0
+          ? [...new Set(scopedDatabaseResources.map((r) => r.databaseFullName))]
+          : undefined;
+
       // When the project enforces issue titles, the user-provided reason is
       // treated as the title (matching the old Vue RoleGrantPanel behavior).
       const title = project.enforceIssueTitle
@@ -1883,7 +1893,7 @@ function RequestRoleDialog({
             t("issue.title.request-specific-role", {
               role: displayRoleTitle(role),
             }),
-            []
+            titleDatabaseNames
           );
 
       const newIssue = create(IssueSchema, {

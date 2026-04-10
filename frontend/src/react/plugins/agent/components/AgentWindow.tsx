@@ -75,24 +75,38 @@ export function AgentWindow() {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // --- Clamping helpers ---
+  //
+  // On wide viewports we keep MIN_WIDTH/MIN_HEIGHT as the preferred floor so
+  // the sidebar and main panel both hit their minimums. On narrow viewports
+  // (split panes, mobile-like widths), forcing those minimums would render
+  // the window partially off-screen — so the floor drops to whatever the
+  // viewport can accommodate minus the standard margins. At very narrow
+  // widths the main panel gets cramped, but that's strictly better than
+  // hiding controls.
 
   const maxWidth = useCallback(
-    () => Math.max(MIN_WIDTH, viewportSize.width - WINDOW_MARGIN * 2),
+    () => Math.max(1, viewportSize.width - WINDOW_MARGIN * 2),
     [viewportSize.width]
   );
   const maxHeight = useCallback(
-    () => Math.max(MIN_HEIGHT, viewportSize.height - WINDOW_MARGIN * 2),
+    () => Math.max(1, viewportSize.height - WINDOW_MARGIN * 2),
     [viewportSize.height]
   );
 
   const clampWidth = useCallback(
-    (width: number) =>
-      Math.min(maxWidth(), Math.max(MIN_WIDTH, Math.round(width))),
+    (width: number) => {
+      const max = maxWidth();
+      const min = Math.min(MIN_WIDTH, max);
+      return Math.min(max, Math.max(min, Math.round(width)));
+    },
     [maxWidth]
   );
   const clampHeight = useCallback(
-    (height: number) =>
-      Math.min(maxHeight(), Math.max(MIN_HEIGHT, Math.round(height))),
+    (height: number) => {
+      const max = maxHeight();
+      const min = Math.min(MIN_HEIGHT, max);
+      return Math.min(max, Math.max(min, Math.round(height)));
+    },
     [maxHeight]
   );
 
@@ -510,13 +524,21 @@ export function AgentWindow() {
         const vh = window.innerHeight;
         const dx = e.clientX - resizeStartRef.current.x;
         const dy = e.clientY - resizeStartRef.current.y;
+        // Same viewport-aware clamp as clampWidth/clampHeight: floor at
+        // MIN_WIDTH/MIN_HEIGHT, but drop the floor when the viewport
+        // itself is narrower/shorter so the window never exceeds the
+        // visible area.
+        const maxW = Math.max(1, vw - WINDOW_MARGIN * 2);
+        const minW = Math.min(MIN_WIDTH, maxW);
+        const maxH = Math.max(1, vh - WINDOW_MARGIN * 2);
+        const minH = Math.min(MIN_HEIGHT, maxH);
         const clW = Math.min(
-          Math.max(MIN_WIDTH, vw - WINDOW_MARGIN * 2),
-          Math.max(MIN_WIDTH, Math.round(resizeStartRef.current.w + dx))
+          maxW,
+          Math.max(minW, Math.round(resizeStartRef.current.w + dx))
         );
         const clH = Math.min(
-          Math.max(MIN_HEIGHT, vh - WINDOW_MARGIN * 2),
-          Math.max(MIN_HEIGHT, Math.round(resizeStartRef.current.h + dy))
+          maxH,
+          Math.max(minH, Math.round(resizeStartRef.current.h + dy))
         );
         el.style.width = `${clW}px`;
         el.style.height = `${clH}px`;
@@ -633,14 +655,13 @@ export function AgentWindow() {
       if (width === store.size.width && height === store.size.height) return;
 
       useAgentStore.setState((state) => {
-        const clW = Math.min(
-          Math.max(MIN_WIDTH, viewportSize.width - WINDOW_MARGIN * 2),
-          Math.max(MIN_WIDTH, Math.round(width))
-        );
-        const clH = Math.min(
-          Math.max(MIN_HEIGHT, viewportSize.height - WINDOW_MARGIN * 2),
-          Math.max(MIN_HEIGHT, Math.round(height))
-        );
+        // Same viewport-aware floor as clampWidth/clampHeight.
+        const maxW = Math.max(1, viewportSize.width - WINDOW_MARGIN * 2);
+        const minW = Math.min(MIN_WIDTH, maxW);
+        const maxH = Math.max(1, viewportSize.height - WINDOW_MARGIN * 2);
+        const minH = Math.min(MIN_HEIGHT, maxH);
+        const clW = Math.min(maxW, Math.max(minW, Math.round(width)));
+        const clH = Math.min(maxH, Math.max(minH, Math.round(height)));
         state.size.width = clW;
         state.size.height = clH;
         const maxX = Math.max(
