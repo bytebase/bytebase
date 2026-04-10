@@ -67,6 +67,9 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
+	// Generate minimal DDL from metadata to load into the catalog.
+	// We build DDL inline (rather than calling schema.GetDatabaseDefinition)
+	// to avoid a circular import: schema/mysql imports parser/mysql.
 	ddl := buildMinimalDDLMySQL(meta.GetProto(), dbName)
 	if ddl != "" {
 		if _, err := e.cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
@@ -779,6 +782,9 @@ func buildPlainFieldMaskMySQL(selStmt *ast.SelectStmt, q *catalog.Query) []bool 
 
 // buildMinimalDDLMySQL generates CREATE TABLE / CREATE VIEW statements
 // from metadata, sufficient for omni's AnalyzeSelectStmt to resolve columns.
+// buildMinimalDDLMySQL generates CREATE TABLE / CREATE VIEW statements from
+// metadata proto, sufficient for omni's AnalyzeSelectStmt to resolve columns.
+// Built inline to avoid circular import (schema/mysql imports parser/mysql).
 func buildMinimalDDLMySQL(meta *storepb.DatabaseSchemaMetadata, dbName string) string {
 	if meta == nil {
 		return ""
