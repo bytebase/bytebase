@@ -10,7 +10,6 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "composite": true,
     "paths": {
       "@/*": ["./src/*"]
     }

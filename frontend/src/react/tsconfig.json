@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.react.json",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.tsx", "./react-env.d.ts"]
+}
