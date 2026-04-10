@@ -3,16 +3,13 @@ package mssql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -34,180 +31,113 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String())
+	rule := &columnNoNullOmniRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	}
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+}
 
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
+type columnNoNullOmniRule struct {
+	OmniBaseRule
+}
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
+func (*columnNoNullOmniRule) Name() string {
+	return "ColumnNoNullOmniRule"
+}
+
+func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.handleCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTable(n)
+	default:
+	}
+}
+
+func (r *columnNoNullOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+	if n.Name == nil {
+		return
+	}
+
+	// Collect columns that are part of table-level PK constraints.
+	pkColumns := make(map[string]bool)
+	if n.Constraints != nil {
+		for _, item := range n.Constraints.Items {
+			cd, ok := item.(*ast.ConstraintDef)
+			if !ok {
+				continue
+			}
+			if cd.Type == ast.ConstraintPrimaryKey && cd.Columns != nil {
+				for _, colItem := range cd.Columns.Items {
+					if ic, ok := colItem.(*ast.IndexColumn); ok {
+						pkColumns[strings.ToLower(ic.Name)] = true
+					}
+				}
+			}
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+	}
+
+	if n.Columns == nil {
+		return
+	}
+	for _, item := range n.Columns.Items {
+		col, ok := item.(*ast.ColumnDef)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
-}
-
-// ColumnNoNullRule checks for column no NULL value.
-type ColumnNoNullRule struct {
-	BaseRule
-
-	// currentNormalizedTableName is the normalized table name of the current table.
-	currentNormalizedTableName string
-	// isCurrentTableColumnNullable is the map of column name to whether the column is nullable.
-	isCurrentTableColumnNullable map[string]bool
-	// currentTableColumnIsNullableLine is the map of column name to the line number of the column definition.
-	currentTableColumnIsNullableLine map[string]int
-}
-
-// NewColumnNoNullRule creates a new ColumnNoNullRule.
-func NewColumnNoNullRule(level storepb.Advice_Status, title string) *ColumnNoNullRule {
-	return &ColumnNoNullRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		isCurrentTableColumnNullable:     make(map[string]bool),
-		currentTableColumnIsNullableLine: make(map[string]int),
+		r.checkColumnDef(col, pkColumns)
 	}
 }
 
-// Name returns the rule name.
-func (*ColumnNoNullRule) Name() string {
-	return "ColumnNoNullRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *ColumnNoNullRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeTableConstraint:
-		r.enterTableConstraint(ctx.(*parser.Table_constraintContext))
-	case NodeTypeColumnDefinition:
-		r.enterColumnDefinition(ctx.(*parser.Column_definitionContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (r *ColumnNoNullRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-	}
-	return nil
-}
-
-func (r *ColumnNoNullRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := ctx.Table_name()
-	if tableName == nil {
+func (r *columnNoNullOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+	if n.Actions == nil {
 		return
 	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
-	r.currentNormalizedTableName = normalizedTableName
-}
-
-func (r *ColumnNoNullRule) exitCreateTable(_ *parser.Create_tableContext) {
-	r.currentNormalizedTableName = ""
-	for columnName, isNullable := range r.isCurrentTableColumnNullable {
-		if !isNullable {
+	for _, item := range n.Actions.Items {
+		action, ok := item.(*ast.AlterTableAction)
+		if !ok {
 			continue
 		}
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.ColumnCannotNull.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.currentTableColumnIsNullableLine[columnName]),
-		})
-	}
-
-	r.isCurrentTableColumnNullable = make(map[string]bool)
-	r.currentTableColumnIsNullableLine = make(map[string]int)
-}
-
-func (r *ColumnNoNullRule) enterTableConstraint(ctx *parser.Table_constraintContext) {
-	parent := ctx.GetParent()
-	switch parent.(type) {
-	case *parser.Column_def_table_constraintContext:
-	default:
-		return
-	}
-	if ctx.PRIMARY() != nil {
-		allColumns := ctx.Column_name_list_with_order().AllColumn_name_with_order()
-		for _, column := range allColumns {
-			_, columnName := tsqlparser.NormalizeTSQLIdentifier(column.Id_())
-			r.isCurrentTableColumnNullable[columnName] = false
+		if action.Type != ast.ATAddColumn && action.Type != ast.ATAlterColumn {
+			continue
+		}
+		if action.Column != nil {
+			r.checkColumnDef(action.Column, nil)
 		}
 	}
 }
 
-func (r *ColumnNoNullRule) enterColumnDefinition(ctx *parser.Column_definitionContext) {
-	parent := ctx.GetParent()
-	switch parent.(type) {
-	case *parser.Alter_tableContext:
-	case *parser.Column_def_table_constraintContext:
-	default:
+func (r *columnNoNullOmniRule) checkColumnDef(col *ast.ColumnDef, pkColumns map[string]bool) {
+	// If column is in table-level PK, it's implicitly NOT NULL.
+	if pkColumns != nil && pkColumns[strings.ToLower(col.Name)] {
 		return
 	}
-	_, columnName := tsqlparser.NormalizeTSQLIdentifier(ctx.Id_())
-	r.isCurrentTableColumnNullable[columnName] = true
-	r.currentTableColumnIsNullableLine[columnName] = ctx.Id_().GetStart().GetLine()
-	allColumnDefinitionElements := ctx.AllColumn_definition_element()
-	for _, columnDefinitionElement := range allColumnDefinitionElements {
-		if v := columnDefinitionElement.Column_constraint(); v != nil {
-			if v.PRIMARY() != nil {
-				r.isCurrentTableColumnNullable[columnName] = false
-				break
+
+	// Check column-level constraints for PK or NOT NULL.
+	if col.Constraints != nil {
+		for _, cItem := range col.Constraints.Items {
+			cd, ok := cItem.(*ast.ConstraintDef)
+			if !ok {
+				continue
 			}
-			if (v.Null_notnull() != nil && v.Null_notnull().NOT() != nil) || v.Null_notnull() == nil {
-				r.isCurrentTableColumnNullable[columnName] = false
-				break
+			if cd.Type == ast.ConstraintPrimaryKey || cd.Type == ast.ConstraintNotNull {
+				return
 			}
 		}
 	}
-}
 
-func (r *ColumnNoNullRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	tableName := ctx.Table_name(0)
-	if tableName == nil {
+	// Check the Nullable spec.
+	if col.Nullable != nil && col.Nullable.NotNull {
 		return
 	}
-	if (len(ctx.AllALTER()) == 2 && ctx.COLUMN() != nil) /* ALTER COLUMN */ || (len(ctx.AllALTER()) == 1 && ctx.ADD() != nil && ctx.WITH() == nil) /* ALTER */ {
-		normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
-		r.currentNormalizedTableName = normalizedTableName
-	}
-}
 
-func (r *ColumnNoNullRule) exitAlterTable(_ *parser.Alter_tableContext) {
-	r.currentNormalizedTableName = ""
-	for columnName, isNullable := range r.isCurrentTableColumnNullable {
-		if !isNullable {
-			continue
-		}
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.level,
-			Code:          code.ColumnCannotNull.Int32(),
-			Title:         r.title,
-			Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", columnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.currentTableColumnIsNullableLine[columnName]),
-		})
-	}
-
-	r.isCurrentTableColumnNullable = make(map[string]bool)
-	r.currentTableColumnIsNullableLine = make(map[string]int)
+	// Column is nullable.
+	r.AddAdvice(&storepb.Advice{
+		Status:        r.Level,
+		Code:          code.ColumnCannotNull.Int32(),
+		Title:         r.Title,
+		Content:       fmt.Sprintf("Column [%s] is nullable, which is not allowed.", strings.ToLower(col.Name)),
+		StartPosition: &storepb.Position{Line: r.LocToLine(col.Loc)},
+	})
 }

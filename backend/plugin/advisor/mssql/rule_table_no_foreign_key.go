@@ -4,16 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
-
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
@@ -35,178 +30,128 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableNoForeignKeyOmniRule{
+		OmniBaseRule:  OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		tableHasFK:    make(map[string]bool),
+		tableOriginal: make(map[string]string),
+		tableLine:     make(map[string]int32),
+		tableBaseLine: make(map[string]int),
 	}
 
-	// Process the final advice after walking
-	rule.generateFinalAdvice()
-
-	return checker.GetAdviceList(), nil
+	advice := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice = append(advice, rule.generateFinalAdvice()...)
+	return advice, nil
 }
 
-// TableNoForeignKeyRule is the rule for table disallow foreign key.
-type TableNoForeignKeyRule struct {
-	BaseRule
+type tableNoForeignKeyOmniRule struct {
+	OmniBaseRule
 
-	// currentNormalizedTableName is the normalized table name of the current table.
-	currentNormalizedTableName string
-	// currentConstraintAction is the current constraint action.
-	currentConstraintAction currentConstraintAction
-	// tableHasForeignKey is true if the current table has foreign key.
-	tableHasForeignKey map[string]bool
-	// tableOriginalName is the original table name of the current table.
-	tableOriginalName map[string]string
-	// tableLine is the line number of the current table.
-	tableLine map[string]int
+	tableHasFK    map[string]bool
+	tableOriginal map[string]string
+	tableLine     map[string]int32
+	tableBaseLine map[string]int
 }
 
-// NewTableNoForeignKeyRule creates a new TableNoForeignKeyRule.
-func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string) *TableNoForeignKeyRule {
-	return &TableNoForeignKeyRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		currentConstraintAction: currentConstraintActionNone,
-		tableHasForeignKey:      make(map[string]bool),
-		tableOriginalName:       make(map[string]string),
-		tableLine:               make(map[string]int),
-	}
+func (*tableNoForeignKeyOmniRule) Name() string {
+	return "TableNoForeignKeyOmniRule"
 }
 
-// Name returns the rule name.
-func (*TableNoForeignKeyRule) Name() string {
-	return "TableNoForeignKeyRule"
-}
-
-// OnEnter is called when entering a parse tree node.
-func (r *TableNoForeignKeyRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.enterCreateTable(ctx.(*parser.Create_tableContext))
-	case "Column_def_table_constraints":
-		r.enterColumnDefTableConstraints(ctx.(*parser.Column_def_table_constraintsContext))
-	case NodeTypeAlterTable:
-		r.enterAlterTable(ctx.(*parser.Alter_tableContext))
+func (r *tableNoForeignKeyOmniRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		r.handleCreateTable(n)
+	case *ast.AlterTableStmt:
+		r.handleAlterTable(n)
 	default:
 	}
-	return nil
 }
 
-// OnExit is called when exiting a parse tree node.
-func (r *TableNoForeignKeyRule) OnExit(ctx antlr.ParserRuleContext, nodeType string) error {
-	switch nodeType {
-	case NodeTypeCreateTable:
-		r.exitCreateTable(ctx.(*parser.Create_tableContext))
-	case NodeTypeAlterTable:
-		r.exitAlterTable(ctx.(*parser.Alter_tableContext))
-	default:
-	}
-	return nil
-}
-
-func (r *TableNoForeignKeyRule) enterCreateTable(ctx *parser.Create_tableContext) {
-	tableName := ctx.Table_name()
-	if tableName == nil {
+func (r *tableNoForeignKeyOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+	if n.Name == nil {
 		return
 	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
+	norm := normalizeTableRef(n.Name, "", "dbo")
+	original := tableRefText(n.Name)
 
-	r.tableHasForeignKey[normalizedTableName] = false
-	r.tableOriginalName[normalizedTableName] = tableName.GetText()
-	// Store absolute line number (with baseLine offset) so generateFinalAdvice can use it directly
-	r.tableLine[normalizedTableName] = tableName.GetStart().GetLine() + r.baseLine
+	r.tableHasFK[norm] = false
+	r.tableOriginal[norm] = original
+	r.tableLine[norm] = r.LocToLine(n.Name.Loc)
+	r.tableBaseLine[norm] = r.BaseLine
 
-	r.currentNormalizedTableName = normalizedTableName
-	r.currentConstraintAction = currentConstraintActionAdd
-}
-
-func (r *TableNoForeignKeyRule) exitCreateTable(*parser.Create_tableContext) {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
-}
-
-func (r *TableNoForeignKeyRule) enterColumnDefTableConstraints(ctx *parser.Column_def_table_constraintsContext) {
-	if r.currentNormalizedTableName == "" {
-		return
-	}
-
-	allColumnDefTableConstraints := ctx.AllColumn_def_table_constraint()
-	for _, columnDefTableConstraint := range allColumnDefTableConstraints {
-		if v := columnDefTableConstraint.Column_definition(); v != nil {
-			allColumnDefinitionElements := v.AllColumn_definition_element()
-			for _, columnDefinitionElement := range allColumnDefinitionElements {
-				if v := columnDefinitionElement.Column_constraint(); v != nil {
-					if v.Foreign_key_options() != nil {
-						if r.currentConstraintAction == currentConstraintActionAdd {
-							r.tableHasForeignKey[r.currentNormalizedTableName] = true
-							// Store absolute line number (with baseLine offset)
-							r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine() + r.baseLine
-						}
+	// Check column-level FK constraints.
+	if n.Columns != nil {
+		for _, item := range n.Columns.Items {
+			col, ok := item.(*ast.ColumnDef)
+			if !ok {
+				continue
+			}
+			if col.Constraints != nil {
+				for _, cItem := range col.Constraints.Items {
+					cd, ok := cItem.(*ast.ConstraintDef)
+					if !ok {
+						continue
+					}
+					if cd.Type == ast.ConstraintForeignKey {
+						r.tableHasFK[norm] = true
+						r.tableLine[norm] = r.LocToLine(cd.Loc)
 						return
 					}
 				}
 			}
-		} else if v := columnDefTableConstraint.Table_constraint(); v != nil {
-			if v.Foreign_key_options() != nil {
-				if r.currentConstraintAction == currentConstraintActionAdd {
-					r.tableHasForeignKey[r.currentNormalizedTableName] = true
-					// Store absolute line number (with baseLine offset)
-					r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine() + r.baseLine
-				}
+		}
+	}
+
+	// Check table-level constraints.
+	if n.Constraints != nil {
+		for _, item := range n.Constraints.Items {
+			cd, ok := item.(*ast.ConstraintDef)
+			if !ok {
+				continue
+			}
+			if cd.Type == ast.ConstraintForeignKey {
+				r.tableHasFK[norm] = true
+				r.tableLine[norm] = r.LocToLine(cd.Loc)
 				return
 			}
 		}
 	}
 }
 
-func (r *TableNoForeignKeyRule) enterAlterTable(ctx *parser.Alter_tableContext) {
-	tableName := ctx.Table_name(0)
-	if tableName == nil {
+func (r *tableNoForeignKeyOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+	if n.Name == nil || n.Actions == nil {
 		return
 	}
-	normalizedTableName := tsqlparser.NormalizeTSQLTableName(tableName, "" /* fallbackDatabase */, "dbo" /* fallbackSchema */, false /* caseSensitive */)
-	if ctx.ADD() != nil && ctx.Column_def_table_constraints() != nil {
-		r.currentNormalizedTableName = normalizedTableName
-		r.currentConstraintAction = currentConstraintActionAdd
-	} else if ctx.DROP() != nil && ctx.CONSTRAINT() != nil && ctx.GetConstraint() != nil {
-		r.currentNormalizedTableName = normalizedTableName
-		r.currentConstraintAction = currentConstraintActionDrop
+	norm := normalizeTableRef(n.Name, "", "dbo")
+
+	for _, item := range n.Actions.Items {
+		action, ok := item.(*ast.AlterTableAction)
+		if !ok {
+			continue
+		}
+		if action.Type == ast.ATAddConstraint && action.Constraint != nil && action.Constraint.Type == ast.ConstraintForeignKey {
+			r.tableHasFK[norm] = true
+			if _, exists := r.tableOriginal[norm]; !exists {
+				r.tableOriginal[norm] = tableRefText(n.Name)
+			}
+			r.tableLine[norm] = r.LocToLine(action.Constraint.Loc)
+			r.tableBaseLine[norm] = r.BaseLine
+		}
 	}
 }
 
-func (r *TableNoForeignKeyRule) exitAlterTable(*parser.Alter_tableContext) {
-	r.currentNormalizedTableName = ""
-	r.currentConstraintAction = currentConstraintActionNone
-}
-
-func (r *TableNoForeignKeyRule) generateFinalAdvice() {
-	for tableName, hasForeignKey := range r.tableHasForeignKey {
-		if hasForeignKey {
-			// Directly append to adviceList instead of using AddAdvice,
-			// because tableLine already contains the absolute line number
-			r.adviceList = append(r.adviceList, &storepb.Advice{
-				Status:        r.level,
+func (r *tableNoForeignKeyOmniRule) generateFinalAdvice() []*storepb.Advice {
+	var result []*storepb.Advice
+	for norm, hasFK := range r.tableHasFK {
+		if hasFK {
+			line := r.tableLine[norm] + int32(r.tableBaseLine[norm])
+			result = append(result, &storepb.Advice{
+				Status:        r.Level,
 				Code:          code.TableHasFK.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", r.tableOriginalName[tableName]),
-				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", r.tableOriginal[norm]),
+				StartPosition: &storepb.Position{Line: line},
 			})
 		}
 	}
+	return result
 }

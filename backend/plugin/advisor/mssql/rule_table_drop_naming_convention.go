@@ -4,32 +4,22 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-)
-
-var (
-	_ advisor.Advisor = (*TableDropNamingConventionAdvisor)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
-// TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
-type TableDropNamingConventionAdvisor struct {
-}
+type TableDropNamingConventionAdvisor struct{}
 
-// Check checks for table drop with naming convention.
 func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
@@ -46,78 +36,46 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	// Create the rule
-	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &tableDropNamingConventionRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		format:       format,
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// TableDropNamingConventionRule is the rule for table drop with naming convention.
-type TableDropNamingConventionRule struct {
-	BaseRule
+type tableDropNamingConventionRule struct {
+	OmniBaseRule
 	format *regexp.Regexp
 }
 
-// NewTableDropNamingConventionRule creates a new TableDropNamingConventionRule.
-func NewTableDropNamingConventionRule(level storepb.Advice_Status, title string, format *regexp.Regexp) *TableDropNamingConventionRule {
-	return &TableDropNamingConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		format: format,
-	}
-}
-
-// Name returns the rule name.
-func (*TableDropNamingConventionRule) Name() string {
+func (*tableDropNamingConventionRule) Name() string {
 	return "TableDropNamingConventionRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *TableDropNamingConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeDropTable {
-		r.enterDropTable(ctx.(*parser.Drop_tableContext))
+func (r *tableDropNamingConventionRule) OnStatement(node ast.Node) {
+	drop, ok := node.(*ast.DropStmt)
+	if !ok || drop.ObjectType != ast.DropTable {
+		return
 	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*TableDropNamingConventionRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *TableDropNamingConventionRule) enterDropTable(ctx *parser.Drop_tableContext) {
-	allTableNames := ctx.AllTable_name()
-	for _, tableName := range allTableNames {
-		table := tableName.GetTable()
-		if table == nil {
+	if drop.Names == nil {
+		return
+	}
+	for _, item := range drop.Names.Items {
+		ref, ok := item.(*ast.TableRef)
+		if !ok || ref == nil {
 			continue
 		}
-		_, normalizedTableName := tsqlparser.NormalizeTSQLIdentifier(table)
-		if !r.format.MatchString(normalizedTableName) {
+		tableName := strings.ToLower(ref.Object)
+		if tableName == "" {
+			continue
+		}
+		if !r.format.MatchString(tableName) {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.TableDropNamingConventionMismatch.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", normalizedTableName, r.format),
-				StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
+				Title:         r.Title,
+				Content:       fmt.Sprintf("[%s] mismatches drop table naming convention, naming format should be %q", tableName, r.format),
+				StartPosition: &storepb.Position{Line: r.LocToLine(drop.Loc)},
 			})
 		}
 	}

@@ -3,100 +3,47 @@ package mssql
 import (
 	"context"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-)
-
-var (
-	_ advisor.Advisor = (*SelectNoSelectAllAdvisor)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, &SelectNoSelectAllAdvisor{})
 }
 
-// SelectNoSelectAllAdvisor is the advisor checking for no select all.
-type SelectNoSelectAllAdvisor struct {
-}
+type SelectNoSelectAllAdvisor struct{}
 
-// Check checks for no select all.
 func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-
-	// Create the rule
-	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String())
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	rule := &selectNoSelectAllRule{OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// SelectNoSelectAllRule checks for no select all.
-type SelectNoSelectAllRule struct {
-	BaseRule
+type selectNoSelectAllRule struct {
+	OmniBaseRule
 }
 
-// NewSelectNoSelectAllRule creates a new SelectNoSelectAllRule.
-func NewSelectNoSelectAllRule(level storepb.Advice_Status, title string) *SelectNoSelectAllRule {
-	return &SelectNoSelectAllRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-	}
-}
-
-// Name returns the rule name.
-func (*SelectNoSelectAllRule) Name() string {
+func (*selectNoSelectAllRule) Name() string {
 	return "SelectNoSelectAllRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *SelectNoSelectAllRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeSelectListElem {
-		r.enterSelectListElem(ctx.(*parser.Select_list_elemContext))
-	}
-	return nil
-}
-
-// OnExit is called when exiting a parse tree node.
-func (*SelectNoSelectAllRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *SelectNoSelectAllRule) enterSelectListElem(ctx *parser.Select_list_elemContext) {
-	if v := ctx.Asterisk(); v != nil {
-		if v.STAR() != nil {
+func (r *selectNoSelectAllRule) OnStatement(node ast.Node) {
+	ast.Inspect(node, func(n ast.Node) bool {
+		if star, ok := n.(*ast.StarExpr); ok {
 			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
+				Status:        r.Level,
 				Code:          code.StatementSelectAll.Int32(),
-				Title:         r.title,
+				Title:         r.Title,
 				Content:       "Avoid using SELECT *.",
-				StartPosition: common.ConvertANTLRLineToPosition(v.STAR().GetSymbol().GetLine()),
+				StartPosition: &storepb.Position{Line: r.LocToLine(star.Loc)},
 			})
 		}
-	}
+		return true
+	})
 }

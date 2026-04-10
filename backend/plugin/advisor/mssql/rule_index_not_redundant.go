@@ -3,18 +3,13 @@ package mssql
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
-
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 func init() {
@@ -36,88 +31,46 @@ func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	// Create the rule
-	rule := NewIndexNotRedundantRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, checkCtx.DBSchema)
-
-	// Create the generic checker with the rule
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
+	rule := &indexNotRedundantRule{
+		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		curDB:        checkCtx.CurrentDatabase,
+		indexMap:     getIndexMapFromMetadata(checkCtx.DBSchema),
 	}
-
-	return checker.GetAdviceList(), nil
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
-// IndexNotRedundantRule checks for redundant indexes.
-type IndexNotRedundantRule struct {
-	BaseRule
+type indexNotRedundantRule struct {
+	OmniBaseRule
 	curDB    string
 	indexMap *IndexMap
 }
 
-// NewIndexNotRedundantRule creates a new IndexNotRedundantRule.
-func NewIndexNotRedundantRule(level storepb.Advice_Status, title string, currentDB string, dbMetadata *storepb.DatabaseSchemaMetadata) *IndexNotRedundantRule {
-	return &IndexNotRedundantRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
-		curDB:    currentDB,
-		indexMap: getIndexMapFromMetadata(dbMetadata),
-	}
-}
-
-// Name returns the rule name.
-func (*IndexNotRedundantRule) Name() string {
+func (*indexNotRedundantRule) Name() string {
 	return "IndexNotRedundantRule"
 }
 
-// OnEnter is called when entering a parse tree node.
-func (r *IndexNotRedundantRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
-	if nodeType == NodeTypeCreateIndex {
-		r.enterCreateIndex(ctx.(*parser.Create_indexContext))
+func (r *indexNotRedundantRule) OnStatement(node ast.Node) {
+	ci, ok := node.(*ast.CreateIndexStmt)
+	if !ok {
+		return
 	}
-	return nil
-}
 
-// OnExit is called when exiting a parse tree node.
-func (*IndexNotRedundantRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
-	// This rule doesn't need exit processing
-	return nil
-}
-
-func (r *IndexNotRedundantRule) enterCreateIndex(ctx *parser.Create_indexContext) {
 	idxSchemaName := dftMSSQLSchemaName
 	idxTblName := ""
 
-	// Get full table name.
-	if fullTblName := ctx.Table_name(); fullTblName != nil {
+	if ci.Table != nil {
 		// TODO(zp): we only check indexes in the current database due to the lack of necessary metadata.
-		// Case sensitive!
-		if database := fullTblName.GetDatabase(); database != nil {
-			if oriName, _ := tsqlparser.NormalizeTSQLIdentifier(database); oriName != r.curDB {
-				return
-			}
+		if ci.Table.Database != "" && !strings.EqualFold(ci.Table.Database, r.curDB) {
+			return
 		}
-		if schema := fullTblName.GetSchema(); schema != nil {
-			idxSchemaName, _ = tsqlparser.NormalizeTSQLIdentifier(schema)
+		if ci.Table.Schema != "" {
+			idxSchemaName = ci.Table.Schema
 		}
-		idxTblName, _ = tsqlparser.NormalizeTSQLIdentifier(fullTblName.GetTable())
+		idxTblName = ci.Table.Object
 	}
 
-	// Get index name from statement.
-	statIdxName, _ := tsqlparser.NormalizeTSQLIdentifier(ctx.AllId_()[0])
+	statIdxName := ci.Name
 
-	// Get ordered index list from metadata.
 	findIdxKey := FindIndexesKey{
 		schemaName: idxSchemaName,
 		tblName:    idxTblName,
@@ -127,17 +80,30 @@ func (r *IndexNotRedundantRule) enterCreateIndex(ctx *parser.Create_indexContext
 		return
 	}
 
-	// Get ordered column list from statement.
-	statIdxColList := ctx.Column_name_list_with_order()
-	if metaIdxName := containRedundantPrefix(metaIdxList, &statIdxColList); metaIdxName != "" {
-		r.AddAdvice(&storepb.Advice{
-			Status: r.level,
-			Title:  r.title,
-			Code:   code.RedundantIndex.Int32(),
-			Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
-				metaIdxName, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
-			StartPosition: common.ConvertANTLRLineToPosition(ctx.GetStart().GetLine()),
-		})
+	// Get the first column from the statement's index column list.
+	if ci.Columns == nil || ci.Columns.Len() == 0 {
+		return
+	}
+	firstCol := ""
+	if idxCol, ok := ci.Columns.Items[0].(*ast.IndexColumn); ok && idxCol != nil {
+		firstCol = idxCol.Name
+	}
+	if firstCol == "" {
+		return
+	}
+
+	for _, metaIndex := range metaIdxList {
+		if len(metaIndex.Expressions) > 0 && metaIndex.Expressions[0] == firstCol {
+			r.AddAdvice(&storepb.Advice{
+				Status: r.Level,
+				Title:  r.Title,
+				Code:   code.RedundantIndex.Int32(),
+				Content: fmt.Sprintf("Redundant indexes with the same prefix ('%s' and '%s') in '%s.%s' is not allowed",
+					metaIndex.Name, statIdxName, findIdxKey.schemaName, findIdxKey.tblName),
+				StartPosition: &storepb.Position{Line: r.LocToLine(ci.Loc)},
+			})
+			return
+		}
 	}
 }
 
@@ -148,19 +114,6 @@ type FindIndexesKey struct {
 
 // The value in the map represents the column list of a certain index.
 type IndexMap = map[FindIndexesKey][]*storepb.IndexMetadata
-
-// Return the name of the index if redundant prefixes are found.
-func containRedundantPrefix(metaIdxList []*storepb.IndexMetadata, statColumnList *parser.IColumn_name_list_with_orderContext) string {
-	for _, metaIndex := range metaIdxList {
-		if statColumnList != nil && len((*statColumnList).AllColumn_name_with_order()) != 0 && len(metaIdxList) != 0 {
-			statIdxCol, _ := tsqlparser.NormalizeTSQLIdentifier((*statColumnList).AllColumn_name_with_order()[0].Id_())
-			if metaIndex.Expressions[0] == statIdxCol {
-				return metaIndex.Name
-			}
-		}
-	}
-	return ""
-}
 
 func getIndexMapFromMetadata(dbMetadata *storepb.DatabaseSchemaMetadata) *IndexMap {
 	indexMap := IndexMap{}
