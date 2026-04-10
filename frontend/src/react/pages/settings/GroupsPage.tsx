@@ -3,7 +3,6 @@ import { isEqual } from "lodash-es";
 import {
   ChevronDown,
   ChevronRight,
-  Pencil,
   Plus,
   Settings,
   Trash2,
@@ -37,6 +36,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
@@ -278,8 +278,8 @@ function GroupTable({
                 isExpanded={isExpanded}
                 members={members}
                 searchText={searchText}
-                canEdit={canEdit}
                 canDelete={canDelete}
+                canOpen={canEdit || hasWorkspacePermissionV2("bb.groups.get")}
                 onToggle={() => toggleExpand(group)}
                 onEdit={() => onGroupSelected(group)}
                 onDelete={() => handleDelete(group)}
@@ -298,8 +298,8 @@ function GroupRow({
   isExpanded,
   members,
   searchText,
-  canEdit,
   canDelete,
+  canOpen,
   onToggle,
   onEdit,
   onDelete,
@@ -309,23 +309,32 @@ function GroupRow({
   isExpanded: boolean;
   members: User[] | undefined;
   searchText: string;
-  canEdit: boolean;
   canDelete: boolean;
+  canOpen: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
-  const stripeBg = index % 2 === 1 ? "bg-gray-50" : "";
+  const stripeBg = index % 2 === 1 ? "bg-control-bg/50" : "";
 
   return (
     <>
-      <TableRow className={stripeBg}>
+      <TableRow
+        className={cn(
+          stripeBg,
+          canOpen && "cursor-pointer hover:bg-control-bg"
+        )}
+        onClick={canOpen ? onEdit : undefined}
+      >
         <TableCell className="py-2">
           <div className="flex items-center gap-x-2">
             <button
               className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
-              onClick={onToggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
             >
               {isExpanded ? (
                 <ChevronDown className="h-4 w-4" />
@@ -358,25 +367,16 @@ function GroupRow({
         </TableCell>
         <TableCell className="py-2">
           <div className="flex justify-end gap-x-1">
-            {canEdit && (
-              <Tooltip content={t("common.edit")}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={onEdit}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </Tooltip>
-            )}
             {canDelete && (
               <Tooltip content={t("common.delete")}>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-error hover:text-error"
-                  onClick={onDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -698,200 +698,198 @@ function GroupForm({
       </SheetHeader>
 
       <SheetBody>
-          <div className="flex flex-col gap-y-6">
-            {isExternalGroup && (
-              <Alert variant="info">
-                <AlertDescription>
-                  {t("settings.members.groups.external-readonly")}
-                </AlertDescription>
-              </Alert>
-            )}
+        <div className="flex flex-col gap-y-6">
+          {isExternalGroup && (
+            <Alert variant="info">
+              <AlertDescription>
+                {t("settings.members.groups.external-readonly")}
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {/* Email */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.email")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
-              <span className="textinfolabel text-sm">
-                {t("settings.members.groups.form.email-tips")}
-              </span>
-              <div className="flex items-center gap-x-1">
-                <Input
-                  value={isEditMode ? email : email.split("@")[0]}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isEditMode || !allowEdit}
-                />
-                {!isEditMode && domainOptions.length > 0 && (
-                  <>
-                    <span className="text-sm text-control-light">@</span>
-                    {domainOptions.length === 1 ? (
-                      <span className="text-sm text-control-light whitespace-nowrap">
-                        {domainOptions[0]}
-                      </span>
-                    ) : (
-                      <select
-                        value={selectedDomain}
-                        onChange={(e) => setSelectedDomain(e.target.value)}
-                        className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
-                        disabled={!allowEdit}
-                      >
-                        {domainOptions.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Title */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.title")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <span className="textinfolabel text-sm">
+              {t("settings.members.groups.form.email-tips")}
+            </span>
+            <div className="flex items-center gap-x-1">
               <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={200}
-                disabled={!allowEdit}
+                value={isEditMode ? email : email.split("@")[0]}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isEditMode || !allowEdit}
               />
-            </div>
-
-            {/* Description */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.description")}
-              </label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={1000}
-                disabled={!allowEdit}
-              />
-            </div>
-
-            {/* Members */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.members", { count: 2 })}
-              </label>
-              <div className="flex flex-col gap-y-2">
-                {members.map((member, index) => (
-                  <div key={index} className="flex items-center gap-x-2">
-                    <Input
-                      className="flex-1"
-                      value={member.member}
-                      onChange={(e) =>
-                        handleMemberChange(index, "member", e.target.value)
-                      }
-                      placeholder="users/hello@example.com"
-                      disabled={!allowEdit}
-                    />
+              {!isEditMode && domainOptions.length > 0 && (
+                <>
+                  <span className="text-sm text-control-light">@</span>
+                  {domainOptions.length === 1 ? (
+                    <span className="text-sm text-control-light whitespace-nowrap">
+                      {domainOptions[0]}
+                    </span>
+                  ) : (
                     <select
-                      value={member.role}
-                      onChange={(e) =>
-                        handleMemberChange(
-                          index,
-                          "role",
-                          Number(e.target.value) as GroupMember_Role
-                        )
-                      }
-                      className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                      value={selectedDomain}
+                      onChange={(e) => setSelectedDomain(e.target.value)}
+                      className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
                       disabled={!allowEdit}
                     >
-                      <option value={GroupMember_Role.OWNER}>
-                        {t("settings.members.groups.form.role.owner")}
-                      </option>
-                      <option value={GroupMember_Role.MEMBER}>
-                        {t("settings.members.groups.form.role.member")}
-                      </option>
+                      {domainOptions.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
                     </select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-error hover:text-error"
-                      onClick={() => handleRemoveMember(index)}
-                      disabled={!allowEdit}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                {allowEdit && (
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.title")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              disabled={!allowEdit}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.description")}
+            </label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={1000}
+              disabled={!allowEdit}
+            />
+          </div>
+
+          {/* Members */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.members", { count: 2 })}
+            </label>
+            <div className="flex flex-col gap-y-2">
+              {members.map((member, index) => (
+                <div key={index} className="flex items-center gap-x-2">
+                  <Input
+                    className="flex-1"
+                    value={member.member}
+                    onChange={(e) =>
+                      handleMemberChange(index, "member", e.target.value)
+                    }
+                    placeholder="users/hello@example.com"
+                    disabled={!allowEdit}
+                  />
+                  <select
+                    value={member.role}
+                    onChange={(e) =>
+                      handleMemberChange(
+                        index,
+                        "role",
+                        Number(e.target.value) as GroupMember_Role
+                      )
+                    }
+                    className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                    disabled={!allowEdit}
+                  >
+                    <option value={GroupMember_Role.OWNER}>
+                      {t("settings.members.groups.form.role.owner")}
+                    </option>
+                    <option value={GroupMember_Role.MEMBER}>
+                      {t("settings.members.groups.form.role.member")}
+                    </option>
+                  </select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-error hover:text-error"
+                    onClick={() => handleRemoveMember(index)}
+                    disabled={!allowEdit}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {allowEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={handleAddMember}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("settings.members.add-member")}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {errorMessage && <p className="text-error text-sm">{errorMessage}</p>}
+        </div>
+      </SheetBody>
+
+      <SheetFooter className="justify-between">
+        <div>
+          {canDelete && (
+            <>
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-x-2">
+                  <span className="text-sm text-error">
+                    {t("settings.members.action.deactivate-confirm-title")}
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isRequesting}
+                  >
+                    {t("common.deactivate")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="self-start"
-                    onClick={handleAddMember}
+                    onClick={() => setShowDeleteConfirm(false)}
                   >
-                    <Plus className="h-4 w-4 mr-1" />
-                    {t("settings.members.add-member")}
+                    {t("common.cancel")}
                   </Button>
-                )}
-              </div>
-            </div>
-
-            {errorMessage && (
-              <p className="text-error text-sm">{errorMessage}</p>
-            )}
-          </div>
-        </SheetBody>
-
-        <SheetFooter className="justify-between">
-          <div>
-            {canDelete && (
-              <>
-                {showDeleteConfirm ? (
-                  <div className="flex items-center gap-x-2">
-                    <span className="text-sm text-error">
-                      {t("settings.members.action.deactivate-confirm-title")}
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDelete}
-                      disabled={isRequesting}
-                    >
-                      {t("common.deactivate")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDeleteConfirm(false)}
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    className="text-error hover:text-error"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {t("common.delete")}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-x-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={!allowEdit || !allowConfirm || isRequesting}
-              onClick={handleSubmit}
-            >
-              {isEditMode ? t("common.update") : t("common.create")}
-            </Button>
-          </div>
-        </SheetFooter>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="text-error hover:text-error"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {t("common.delete")}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-x-2">
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!allowEdit || !allowConfirm || isRequesting}
+            onClick={handleSubmit}
+          >
+            {isEditMode ? t("common.update") : t("common.create")}
+          </Button>
+        </div>
+      </SheetFooter>
     </>
   );
 }

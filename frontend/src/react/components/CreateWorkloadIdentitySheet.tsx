@@ -142,7 +142,6 @@ function WorkloadIdentityForm({
       workloadIdentity
         ? parseWorkloadIdentitySubjectPattern(workloadIdentity)
         : undefined,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
   const initialProviderType =
@@ -417,258 +416,254 @@ function WorkloadIdentityForm({
       </SheetHeader>
 
       <SheetBody>
-          <div className="flex flex-col gap-y-6">
-            {/* Title */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.name")}
-              </label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="GitHub Deploy"
-                maxLength={200}
-                autoComplete="off"
-              />
-            </div>
+        <div className="flex flex-col gap-y-6">
+          {/* Title */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.name")}
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="GitHub Deploy"
+              maxLength={200}
+              autoComplete="off"
+            />
+          </div>
 
-            {/* Email */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.email")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
-              {isEditMode ? (
-                <Input value={workloadIdentity!.email} disabled />
-              ) : (
-                <div className="flex items-center">
-                  <Input
-                    value={emailPrefix}
-                    onChange={(e) => setEmailPrefix(e.target.value)}
-                    placeholder="my-workflow"
-                    autoComplete="off"
-                    className="rounded-r-none"
-                  />
-                  <span className="inline-flex items-center px-3 h-9 border border-l-0 border-control-border bg-control-bg text-sm text-control rounded-r-xs whitespace-nowrap">
-                    @{emailSuffix}
-                  </span>
-                </div>
-              )}
-            </div>
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            {isEditMode ? (
+              <Input value={workloadIdentity!.email} disabled />
+            ) : (
+              <div className="flex items-center">
+                <Input
+                  value={emailPrefix}
+                  onChange={(e) => setEmailPrefix(e.target.value)}
+                  placeholder="my-workflow"
+                  autoComplete="off"
+                  className="rounded-r-none"
+                />
+                <span className="inline-flex items-center px-3 h-9 border border-l-0 border-control-border bg-control-bg text-sm text-control rounded-r-xs whitespace-nowrap">
+                  @{emailSuffix}
+                </span>
+              </div>
+            )}
+          </div>
 
-            {/* Platform */}
+          {/* Platform */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.workload-identity-platform")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <select
+              value={providerType}
+              onChange={(e) =>
+                handlePlatformChange(
+                  Number(e.target.value) as WorkloadIdentityConfig_ProviderType
+                )
+              }
+              className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
+            >
+              {[
+                WorkloadIdentityConfig_ProviderType.GITHUB,
+                WorkloadIdentityConfig_ProviderType.GITLAB,
+              ].map((pt) => (
+                <option key={pt} value={pt}>
+                  {getWorkloadIdentityProviderText(pt)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Owner / Group */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {isGitLab
+                ? t("settings.members.workload-identity-group")
+                : t("settings.members.workload-identity-owner")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <Input
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
+              placeholder={isGitLab ? "my-group" : "my-org"}
+              maxLength={200}
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Repository / Project */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {isGitLab
+                ? t("settings.members.workload-identity-project")
+                : t("settings.members.workload-identity-repo")}
+            </label>
+            <Input
+              value={repo}
+              onChange={(e) => setRepo(e.target.value)}
+              placeholder={isGitLab ? "my-project" : "my-repo"}
+              maxLength={200}
+              autoComplete="off"
+            />
+            <span className="text-xs text-control-light">
+              {isGitLab
+                ? t("settings.members.workload-identity-project-hint")
+                : t("settings.members.workload-identity-repo-hint")}
+            </span>
+          </div>
+
+          {/* Allowed Branches/Tags (GitLab only) */}
+          {isGitLab && (
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">
-                {t("settings.members.workload-identity-platform")}
-                <span className="ml-0.5 text-error">*</span>
+                {t("settings.members.workload-identity-allowed-branches-tags")}
               </label>
               <select
-                value={providerType}
-                onChange={(e) =>
-                  handlePlatformChange(
-                    Number(
-                      e.target.value
-                    ) as WorkloadIdentityConfig_ProviderType
-                  )
-                }
+                value={refType}
+                onChange={(e) => setRefType(e.target.value as RefType)}
                 className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
               >
-                {[
-                  WorkloadIdentityConfig_ProviderType.GITHUB,
-                  WorkloadIdentityConfig_ProviderType.GITLAB,
-                ].map((pt) => (
-                  <option key={pt} value={pt}>
-                    {getWorkloadIdentityProviderText(pt)}
-                  </option>
-                ))}
+                <option value="all">
+                  {t("settings.members.workload-identity-all-branches-tags")}
+                </option>
+                <option value="branch">
+                  {t("settings.members.workload-identity-specific-branch")}
+                </option>
+                <option value="tag">
+                  {t("settings.members.workload-identity-specific-tag")}
+                </option>
               </select>
             </div>
+          )}
 
-            {/* Owner / Group */}
+          {/* Branch / Tag */}
+          {showBranchField && (
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">
-                {isGitLab
-                  ? t("settings.members.workload-identity-group")
-                  : t("settings.members.workload-identity-owner")}
-                <span className="ml-0.5 text-error">*</span>
+                {isTagRefType
+                  ? t("settings.members.workload-identity-tag")
+                  : t("settings.members.workload-identity-branch")}
               </label>
               <Input
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-                placeholder={isGitLab ? "my-group" : "my-org"}
-                maxLength={200}
-                autoComplete="off"
-              />
-            </div>
-
-            {/* Repository / Project */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {isGitLab
-                  ? t("settings.members.workload-identity-project")
-                  : t("settings.members.workload-identity-repo")}
-              </label>
-              <Input
-                value={repo}
-                onChange={(e) => setRepo(e.target.value)}
-                placeholder={isGitLab ? "my-project" : "my-repo"}
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                placeholder={isTagRefType ? "v1.0.0" : "main"}
                 maxLength={200}
                 autoComplete="off"
               />
               <span className="text-xs text-control-light">
-                {isGitLab
-                  ? t("settings.members.workload-identity-project-hint")
-                  : t("settings.members.workload-identity-repo-hint")}
+                {isTagRefType
+                  ? t("settings.members.workload-identity-tag-hint")
+                  : t("settings.members.workload-identity-branch-hint")}
               </span>
             </div>
+          )}
 
-            {/* Allowed Branches/Tags (GitLab only) */}
-            {isGitLab && (
+          {/* Advanced Settings */}
+          {showAdvanced && (
+            <div className="flex flex-col gap-y-6 pt-6 border-t">
+              {/* Issuer URL / GitLab URL */}
               <div className="flex flex-col gap-y-2">
                 <label className="block text-sm font-medium text-control">
-                  {t(
-                    "settings.members.workload-identity-allowed-branches-tags"
-                  )}
-                </label>
-                <select
-                  value={refType}
-                  onChange={(e) => setRefType(e.target.value as RefType)}
-                  className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
-                >
-                  <option value="all">
-                    {t("settings.members.workload-identity-all-branches-tags")}
-                  </option>
-                  <option value="branch">
-                    {t("settings.members.workload-identity-specific-branch")}
-                  </option>
-                  <option value="tag">
-                    {t("settings.members.workload-identity-specific-tag")}
-                  </option>
-                </select>
-              </div>
-            )}
-
-            {/* Branch / Tag */}
-            {showBranchField && (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
-                  {isTagRefType
-                    ? t("settings.members.workload-identity-tag")
-                    : t("settings.members.workload-identity-branch")}
+                  {isGitLab
+                    ? t("settings.members.workload-identity-gitlab-url")
+                    : t("settings.members.workload-identity-issuer")}
                 </label>
                 <Input
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  placeholder={isTagRefType ? "v1.0.0" : "main"}
-                  maxLength={200}
+                  value={issuerUrl}
+                  onChange={(e) => setIssuerUrl(e.target.value)}
+                  maxLength={500}
                   autoComplete="off"
                 />
-                <span className="text-xs text-control-light">
-                  {isTagRefType
-                    ? t("settings.members.workload-identity-tag-hint")
-                    : t("settings.members.workload-identity-branch-hint")}
-                </span>
+                {isGitLab && (
+                  <span className="text-xs text-control-light">
+                    {t("settings.members.workload-identity-gitlab-url-hint")}
+                  </span>
+                )}
               </div>
-            )}
 
-            {/* Advanced Settings */}
-            {showAdvanced && (
-              <div className="flex flex-col gap-y-6 pt-6 border-t">
-                {/* Issuer URL / GitLab URL */}
-                <div className="flex flex-col gap-y-2">
-                  <label className="block text-sm font-medium text-control">
-                    {isGitLab
-                      ? t("settings.members.workload-identity-gitlab-url")
-                      : t("settings.members.workload-identity-issuer")}
-                  </label>
-                  <Input
-                    value={issuerUrl}
-                    onChange={(e) => setIssuerUrl(e.target.value)}
-                    maxLength={500}
-                    autoComplete="off"
-                  />
-                  {isGitLab && (
-                    <span className="text-xs text-control-light">
-                      {t("settings.members.workload-identity-gitlab-url-hint")}
-                    </span>
-                  )}
-                </div>
-
-                {/* Audience */}
-                <div className="flex flex-col gap-y-2">
-                  <label className="block text-sm font-medium text-control">
-                    {t("settings.members.workload-identity-audience")}
-                  </label>
-                  <Input
-                    value={audience}
-                    onChange={(e) => setAudience(e.target.value)}
-                    maxLength={500}
-                    autoComplete="off"
-                  />
-                </div>
-
-                {/* Subject Pattern */}
-                <div className="flex flex-col gap-y-2">
-                  <label className="block text-sm font-medium text-control">
-                    {t("settings.members.workload-identity-subject")}
-                  </label>
-                  <Input
-                    value={subjectPattern}
-                    onChange={(e) => setSubjectPattern(e.target.value)}
-                    maxLength={500}
-                    autoComplete="off"
-                  />
-                </div>
+              {/* Audience */}
+              <div className="flex flex-col gap-y-2">
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.members.workload-identity-audience")}
+                </label>
+                <Input
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                />
               </div>
-            )}
 
-            {/* Advanced Settings Toggle */}
-            <button
-              type="button"
-              className="flex items-center gap-x-1 text-sm text-accent hover:underline w-fit"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-            >
-              {t("settings.members.workload-identity-advanced")}
-              {showAdvanced ? (
-                <ChevronUp className="size-4" />
-              ) : (
-                <ChevronDown className="size-4" />
-              )}
-            </button>
+              {/* Subject Pattern */}
+              <div className="flex flex-col gap-y-2">
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.members.workload-identity-subject")}
+                </label>
+                <Input
+                  value={subjectPattern}
+                  onChange={(e) => setSubjectPattern(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
 
-            {/* Roles (create mode only) */}
-            {!isEditMode &&
-              (projectEntity
-                ? hasProjectPermissionV2(
-                    projectEntity,
-                    "bb.projects.setIamPolicy"
-                  )
-                : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
-                <div className="flex flex-col gap-y-2">
-                  <label className="block text-sm font-medium text-control">
-                    {t("settings.members.table.roles")}
-                  </label>
-                  <RoleSelect
-                    value={roles}
-                    onChange={setRoles}
-                    disabled={false}
-                  />
-                </div>
-              )}
-          </div>
-        </SheetBody>
-
-        <SheetFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={!allowConfirm || !hasPermission || isRequesting}
-            onClick={handleSubmit}
+          {/* Advanced Settings Toggle */}
+          <button
+            type="button"
+            className="flex items-center gap-x-1 text-sm text-accent hover:underline w-fit"
+            onClick={() => setShowAdvanced(!showAdvanced)}
           >
-            {isEditMode ? t("common.update") : t("common.create")}
-          </Button>
-        </SheetFooter>
+            {t("settings.members.workload-identity-advanced")}
+            {showAdvanced ? (
+              <ChevronUp className="size-4" />
+            ) : (
+              <ChevronDown className="size-4" />
+            )}
+          </button>
+
+          {/* Roles (create mode only) */}
+          {!isEditMode &&
+            (projectEntity
+              ? hasProjectPermissionV2(
+                  projectEntity,
+                  "bb.projects.setIamPolicy"
+                )
+              : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy")) && (
+              <div className="flex flex-col gap-y-2">
+                <label className="block text-sm font-medium text-control">
+                  {t("settings.members.table.roles")}
+                </label>
+                <RoleSelect
+                  value={roles}
+                  onChange={setRoles}
+                  disabled={false}
+                />
+              </div>
+            )}
+        </div>
+      </SheetBody>
+
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          disabled={!allowConfirm || !hasPermission || isRequesting}
+          onClick={handleSubmit}
+        >
+          {isEditMode ? t("common.update") : t("common.create")}
+        </Button>
+      </SheetFooter>
     </>
   );
 }

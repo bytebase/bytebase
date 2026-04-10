@@ -6,7 +6,6 @@ import {
   CircleCheck,
   Eye,
   EyeOff,
-  Pencil,
   Plus,
   Settings,
   Trash2,
@@ -41,6 +40,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_GROUPS,
@@ -252,7 +252,16 @@ function UserTable({
             return (
               <TableRow
                 key={user.name}
-                className={i % 2 === 1 ? "bg-gray-50" : ""}
+                className={cn(
+                  i % 2 === 1 && "bg-control-bg/50",
+                  hasWorkspacePermissionV2(getViewPermission(accountType)) &&
+                    "cursor-pointer hover:bg-control-bg"
+                )}
+                onClick={
+                  hasWorkspacePermissionV2(getViewPermission(accountType))
+                    ? () => handleView(user)
+                    : undefined
+                }
               >
                 {/* Account column */}
                 <TableCell className="py-2">
@@ -264,7 +273,7 @@ function UserTable({
                           className={
                             isDeleted
                               ? "line-through text-control-light"
-                              : "font-medium text-accent"
+                              : "font-medium text-main"
                           }
                         >
                           {user.title}
@@ -311,56 +320,33 @@ function UserTable({
                   />
                 </TableCell>
 
-                {/* Operations column */}
+                {/* Operations column — destructive/secondary actions only.
+                    The row itself is clickable to open the detail sheet. */}
                 <TableCell className="py-2">
                   <div className="flex justify-end gap-x-1">
-                    {!isDeleted && (
-                      <>
-                        {hasWorkspacePermissionV2(
-                          getDeletePermission(accountType)
-                        ) &&
-                          !isSelf && (
-                            <Tooltip
-                              content={t(
-                                "settings.members.action.deactivate-confirm-title"
-                              )}
-                            >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-error hover:text-error"
-                                onClick={() => handleDeactivate(user)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
+                    {!isDeleted &&
+                      hasWorkspacePermissionV2(
+                        getDeletePermission(accountType)
+                      ) &&
+                      !isSelf && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.deactivate-confirm-title"
                           )}
-                        {hasWorkspacePermissionV2(
-                          getViewPermission(accountType)
-                        ) && (
-                          <Tooltip
-                            content={
-                              accountType === AccountType.USER
-                                ? t("common.view")
-                                : t("common.edit")
-                            }
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-error hover:text-error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeactivate(user);
+                            }}
                           >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleView(user)}
-                            >
-                              {accountType === AccountType.USER ? (
-                                <Eye className="h-4 w-4" />
-                              ) : (
-                                <Pencil className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </Tooltip>
-                        )}
-                      </>
-                    )}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
                     {isDeleted &&
                       hasWorkspacePermissionV2(
                         getUndeletePermission(accountType)
@@ -374,7 +360,10 @@ function UserTable({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
-                            onClick={() => handleRestore(user)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestore(user);
+                            }}
                           >
                             <Undo2 className="h-4 w-4" />
                           </Button>
@@ -501,7 +490,6 @@ function UserForm({
     }
     const roles = userMapToRoles.get(getUserFullNameByType(user));
     return roles ? [...roles] : [];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const initialTitle = user?.title ?? "";
   const initialEmail = user?.email ?? "";
@@ -704,157 +692,153 @@ function UserForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {/* Name */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.name")}
-              </label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("common.name")}
-                maxLength={200}
-                disabled={!allowUpdate}
-              />
-            </div>
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.name")}
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t("common.name")}
+              maxLength={200}
+              disabled={!allowUpdate}
+            />
+          </div>
 
-            {/* Email */}
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isEditMode}
+            />
+          </div>
+
+          {/* Roles */}
+          {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">
-                {t("common.email")}
+                {t("settings.members.table.roles")}
+              </label>
+              <RoleSelect value={roles} onChange={setRoles} disabled={false} />
+            </div>
+          )}
+
+          {/* Phone */}
+          <div className="flex flex-col gap-y-2">
+            <div>
+              <label className="block text-sm font-medium text-control">
+                {t("settings.profile.phone")}
+              </label>
+              <span className="textinfolabel text-sm">
+                {t("settings.profile.phone-tips")}
+              </span>
+            </div>
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              autoComplete="new-password"
+              disabled={!allowUpdate}
+            />
+          </div>
+
+          {/* Password */}
+          <div className="flex flex-col gap-y-6">
+            <div>
+              <label className="block text-sm font-medium text-control">
+                {t("settings.profile.password")}
                 <span className="ml-0.5 text-error">*</span>
               </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isEditMode}
-              />
-            </div>
-
-            {/* Roles */}
-            {hasWorkspacePermissionV2("bb.workspaces.setIamPolicy") && (
-              <div className="flex flex-col gap-y-2">
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.members.table.roles")}
-                </label>
-                <RoleSelect
-                  value={roles}
-                  onChange={setRoles}
-                  disabled={false}
-                />
-              </div>
-            )}
-
-            {/* Phone */}
-            <div className="flex flex-col gap-y-2">
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.phone")}
-                </label>
-                <span className="textinfolabel text-sm">
-                  {t("settings.profile.phone-tips")}
-                </span>
-              </div>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="new-password"
-                disabled={!allowUpdate}
-              />
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-y-6">
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.password")}
-                  <span className="ml-0.5 text-error">*</span>
-                </label>
-                <span
-                  className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+              <span
+                className={`flex items-center gap-x-1 textinfolabel text-sm ${passwordHint ? "text-error" : ""}`}
+              >
+                {t("settings.profile.password-hint")}
+                <Tooltip
+                  content={
+                    <ul className="list-none text-sm">
+                      {passwordChecks.map((check, i) => (
+                        <li key={i} className="flex gap-x-1 items-center">
+                          {check.matched ? (
+                            <CircleCheck className="w-4 text-green-400" />
+                          ) : (
+                            <CircleAlert className="w-4 text-red-400" />
+                          )}
+                          {check.text}
+                        </li>
+                      ))}
+                    </ul>
+                  }
                 >
-                  {t("settings.profile.password-hint")}
-                  <Tooltip
-                    content={
-                      <ul className="list-none text-sm">
-                        {passwordChecks.map((check, i) => (
-                          <li key={i} className="flex gap-x-1 items-center">
-                            {check.matched ? (
-                              <CircleCheck className="w-4 text-green-400" />
-                            ) : (
-                              <CircleAlert className="w-4 text-red-400" />
-                            )}
-                            {check.text}
-                          </li>
-                        ))}
-                      </ul>
-                    }
-                  >
-                    <CircleAlert className="w-4 cursor-help" />
-                  </Tooltip>
-                </span>
-                <div className="mt-1 relative flex items-center">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder={t("common.sensitive-placeholder")}
-                    disabled={!allowUpdate}
-                    className={passwordHint ? "border-error" : ""}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+                  <CircleAlert className="w-4 cursor-help" />
+                </Tooltip>
+              </span>
+              <div className="mt-1 relative flex items-center">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder={t("common.sensitive-placeholder")}
+                  disabled={!allowUpdate}
+                  className={passwordHint ? "border-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-control">
-                  {t("settings.profile.password-confirm")}
-                  <span className="ml-0.5 text-error">*</span>
-                </label>
-                <div className="mt-1 relative flex items-center">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    autoComplete="new-password"
-                    placeholder={t(
-                      "settings.profile.password-confirm-placeholder"
-                    )}
-                    disabled={!allowUpdate}
-                    className={passwordMismatch ? "border-error" : ""}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {passwordMismatch && (
-                  <span className="text-error text-sm mt-1 pl-1">
-                    {t("settings.profile.password-mismatch")}
-                  </span>
-                )}
+            <div>
+              <label className="block text-sm font-medium text-control">
+                {t("settings.profile.password-confirm")}
+                <span className="ml-0.5 text-error">*</span>
+              </label>
+              <div className="mt-1 relative flex items-center">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder={t(
+                    "settings.profile.password-confirm-placeholder"
+                  )}
+                  disabled={!allowUpdate}
+                  className={passwordMismatch ? "border-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+              {passwordMismatch && (
+                <span className="text-error text-sm mt-1 pl-1">
+                  {t("settings.profile.password-mismatch")}
+                </span>
+              )}
             </div>
           </div>
+        </div>
       </SheetBody>
 
       <SheetFooter>

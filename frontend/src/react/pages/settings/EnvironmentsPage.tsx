@@ -80,31 +80,6 @@ import {
 } from "@/utils";
 
 // ============================================================
-// Escape key stack
-// ============================================================
-const escapeStack: (() => void)[] = [];
-
-function useEscapeKey(onEscape: () => void) {
-  useEffect(() => {
-    escapeStack.push(onEscape);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === onEscape
-      ) {
-        onEscape();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.lastIndexOf(onEscape);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [onEscape]);
-}
-
-// ============================================================
 // EnvironmentName - displays env name with color badge
 // ============================================================
 function EnvironmentName({

@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
@@ -114,9 +114,36 @@ function WorkloadIdentityTable({
           ) : (
             users.map((user) => {
               const isDeleted = user.state === State.DELETED;
+              const canOpenDetail =
+                !!onUserSelected &&
+                (project
+                  ? hasProjectPermissionV2(project, "bb.workloadIdentities.get")
+                  : hasWorkspacePermissionV2("bb.workloadIdentities.get"));
+              const canDelete = project
+                ? hasProjectPermissionV2(
+                    project,
+                    "bb.workloadIdentities.delete"
+                  )
+                : hasWorkspacePermissionV2("bb.workloadIdentities.delete");
+              const canRestore = project
+                ? hasProjectPermissionV2(
+                    project,
+                    "bb.workloadIdentities.undelete"
+                  )
+                : hasWorkspacePermissionV2("bb.workloadIdentities.undelete");
 
               return (
-                <TableRow key={user.name}>
+                <TableRow
+                  key={user.name}
+                  className={
+                    canOpenDetail
+                      ? "cursor-pointer hover:bg-control-bg"
+                      : undefined
+                  }
+                  onClick={
+                    canOpenDetail ? () => onUserSelected(user) : undefined
+                  }
+                >
                   {/* Account column */}
                   <TableCell>
                     <div className="flex items-center gap-x-3">
@@ -126,7 +153,7 @@ function WorkloadIdentityTable({
                           className={
                             isDeleted
                               ? "line-through text-control-light font-medium"
-                              : "font-medium text-accent"
+                              : "font-medium text-main"
                           }
                         >
                           {user.title || user.email}
@@ -138,80 +165,48 @@ function WorkloadIdentityTable({
                     </div>
                   </TableCell>
 
-                  {/* Operations column */}
+                  {/* Operations column — destructive/secondary actions only.
+                      The row itself is clickable to open the detail sheet. */}
                   <TableCell>
                     <div className="flex justify-end gap-x-1">
-                      {!isDeleted && (
-                        <>
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.workloadIdentities.delete"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.workloadIdentities.delete"
-                              )) && (
-                            <Tooltip
-                              content={t(
-                                "settings.members.action.deactivate-confirm-title"
-                              )}
-                            >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-error hover:text-error"
-                                onClick={() => handleDeactivate(user)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
+                      {!isDeleted && canDelete && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.deactivate-confirm-title"
                           )}
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.workloadIdentities.get"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.workloadIdentities.get"
-                              )) &&
-                            onUserSelected && (
-                              <Tooltip content={t("common.edit")}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => onUserSelected(user)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </Tooltip>
-                            )}
-                        </>
-                      )}
-                      {isDeleted &&
-                        (project
-                          ? hasProjectPermissionV2(
-                              project,
-                              "bb.workloadIdentities.undelete"
-                            )
-                          : hasWorkspacePermissionV2(
-                              "bb.workloadIdentities.undelete"
-                            )) && (
-                          <Tooltip
-                            content={t(
-                              "settings.members.action.reactivate-confirm-title"
-                            )}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-error hover:text-error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeactivate(user);
+                            }}
                           >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleRestore(user)}
-                            >
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
+                      {isDeleted && canRestore && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.reactivate-confirm-title"
+                          )}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestore(user);
+                            }}
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
