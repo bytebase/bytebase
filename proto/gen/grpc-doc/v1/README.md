@@ -96,6 +96,8 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-v1-DataClassificationSetting-DataClassificationConfig-Level)
+    - [EmailSetting](#bytebase-v1-EmailSetting)
+    - [EmailSetting.SMTPConfig](#bytebase-v1-EmailSetting-SMTPConfig)
     - [EnvironmentSetting](#bytebase-v1-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-v1-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-v1-EnvironmentSetting-Environment-TagsEntry)
@@ -107,6 +109,8 @@
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
     - [SettingValue](#bytebase-v1-SettingValue)
+    - [TestEmailSettingRequest](#bytebase-v1-TestEmailSettingRequest)
+    - [TestEmailSettingResponse](#bytebase-v1-TestEmailSettingResponse)
     - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
@@ -117,6 +121,9 @@
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
     - [Announcement.AlertLevel](#bytebase-v1-Announcement-AlertLevel)
     - [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode)
+    - [EmailSetting.SMTPConfig.Authentication](#bytebase-v1-EmailSetting-SMTPConfig-Authentication)
+    - [EmailSetting.SMTPConfig.Encryption](#bytebase-v1-EmailSetting-SMTPConfig-Encryption)
+    - [EmailSetting.Type](#bytebase-v1-EmailSetting-Type)
     - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source)
   
@@ -2147,6 +2154,44 @@ IssueService manages issues for tracking database changes and tasks.
 
 
 
+<a name="bytebase-v1-EmailSetting"></a>
+
+### EmailSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from | [string](#string) |  |  |
+| from_name | [string](#string) |  |  |
+| type | [EmailSetting.Type](#bytebase-v1-EmailSetting-Type) |  |  |
+| smtp | [EmailSetting.SMTPConfig](#bytebase-v1-EmailSetting-SMTPConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-EmailSetting-SMTPConfig"></a>
+
+### EmailSetting.SMTPConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [int32](#int32) |  |  |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  | INPUT_ONLY — never returned in GET responses. |
+| encryption | [EmailSetting.SMTPConfig.Encryption](#bytebase-v1-EmailSetting-SMTPConfig-Encryption) |  |  |
+| authentication | [EmailSetting.SMTPConfig.Authentication](#bytebase-v1-EmailSetting-SMTPConfig-Authentication) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-EnvironmentSetting"></a>
 
 ### EnvironmentSetting
@@ -2317,6 +2362,40 @@ The data in setting value.
 | semantic_type | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
 | ai | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
+| email | [EmailSetting](#bytebase-v1-EmailSetting) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TestEmailSettingRequest"></a>
+
+### TestEmailSettingRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Parent workspace. Format: workspaces/{workspace} |
+| email_setting | [EmailSetting](#bytebase-v1-EmailSetting) |  | The email config to test. Not persisted. |
+| to | [string](#string) |  | The recipient to send the test email to. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestEmailSettingResponse"></a>
+
+### TestEmailSettingResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| success | [bool](#bool) |  |  |
+| error | [string](#string) |  | Human-readable error if success=false. |
 
 
 
@@ -2493,6 +2572,47 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
+<a name="bytebase-v1-EmailSetting-SMTPConfig-Authentication"></a>
+
+### EmailSetting.SMTPConfig.Authentication
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| AUTHENTICATION_NONE | 1 |  |
+| PLAIN | 2 |  |
+| LOGIN | 3 |  |
+| CRAM_MD5 | 4 |  |
+
+
+
+<a name="bytebase-v1-EmailSetting-SMTPConfig-Encryption"></a>
+
+### EmailSetting.SMTPConfig.Encryption
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENCRYPTION_UNSPECIFIED | 0 |  |
+| ENCRYPTION_NONE | 1 |  |
+| STARTTLS | 2 |  |
+| SSL_TLS | 3 |  |
+
+
+
+<a name="bytebase-v1-EmailSetting-Type"></a>
+
+### EmailSetting.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SMTP | 1 |  |
+
+
+
 <a name="bytebase-v1-Setting-SettingName"></a>
 
 ### Setting.SettingName
@@ -2508,6 +2628,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | DATA_CLASSIFICATION | 5 |  |
 | SEMANTIC_TYPES | 6 |  |
 | ENVIRONMENT | 7 |  |
+| EMAIL | 8 |  |
 
 
 
@@ -2541,6 +2662,7 @@ SettingService manages workspace-level settings and configurations.
 | ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) | Lists all workspace settings. Permissions required: bb.settings.list |
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) | Retrieves a workspace setting by name. Permissions required: bb.settings.get |
 | UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) | Updates a workspace setting. Permissions required: bb.settings.set |
+| TestEmailSetting | [TestEmailSettingRequest](#bytebase-v1-TestEmailSettingRequest) | [TestEmailSettingResponse](#bytebase-v1-TestEmailSettingResponse) | Sends a test email using the provided config (without persisting). Permissions required: bb.settings.set |
 
  
 

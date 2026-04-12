@@ -535,6 +535,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.EmailSetting"><span class="badge">M</span>EmailSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EmailSetting.SMTPConfig"><span class="badge">M</span>EmailSetting.SMTPConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.EnvironmentSetting"><span class="badge">M</span>EnvironmentSetting</a>
                 </li>
               
@@ -579,6 +587,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TestEmailSettingRequest"><span class="badge">M</span>TestEmailSettingRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TestEmailSettingResponse"><span class="badge">M</span>TestEmailSettingResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateSettingRequest"><span class="badge">M</span>UpdateSettingRequest</a>
                 </li>
               
@@ -613,6 +629,18 @@
               
                 <li>
                   <a href="#bytebase.v1.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EmailSetting.SMTPConfig.Authentication"><span class="badge">E</span>EmailSetting.SMTPConfig.Authentication</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EmailSetting.SMTPConfig.Encryption"><span class="badge">E</span>EmailSetting.SMTPConfig.Encryption</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EmailSetting.Type"><span class="badge">E</span>EmailSetting.Type</a>
                 </li>
               
                 <li>
@@ -6782,6 +6810,110 @@ The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
 
         
       
+        <h3 id="bytebase.v1.EmailSetting">EmailSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.EmailSetting.Type">EmailSetting.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>smtp</td>
+                  <td><a href="#bytebase.v1.EmailSetting.SMTPConfig">EmailSetting.SMTPConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.EmailSetting.SMTPConfig">EmailSetting.SMTPConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>INPUT_ONLY — never returned in GET responses. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>encryption</td>
+                  <td><a href="#bytebase.v1.EmailSetting.SMTPConfig.Encryption">EmailSetting.SMTPConfig.Encryption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication</td>
+                  <td><a href="#bytebase.v1.EmailSetting.SMTPConfig.Authentication">EmailSetting.SMTPConfig.Authentication</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.EnvironmentSetting">EnvironmentSetting</h3>
         <p></p>
 
@@ -7138,6 +7270,82 @@ Example: &#34;settings/SEMANTIC_TYPES&#34; </p></td>
                   <td><a href="#bytebase.v1.EnvironmentSetting">EnvironmentSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#bytebase.v1.EmailSetting">EmailSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TestEmailSettingRequest">TestEmailSettingRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Parent workspace. Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email_setting</td>
+                  <td><a href="#bytebase.v1.EmailSetting">EmailSetting</a></td>
+                  <td></td>
+                  <td><p>The email config to test. Not persisted. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>to</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The recipient to send the test email to. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TestEmailSettingResponse">TestEmailSettingResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>success</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Human-readable error if success=false. </p></td>
                 </tr>
               
             </tbody>
@@ -7645,6 +7853,105 @@ Default to this mode.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.EmailSetting.SMTPConfig.Authentication">EmailSetting.SMTPConfig.Authentication</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AUTHENTICATION_NONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOGIN</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRAM_MD5</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.EmailSetting.SMTPConfig.Encryption">EmailSetting.SMTPConfig.Encryption</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ENCRYPTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENCRYPTION_NONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STARTTLS</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SSL_TLS</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.EmailSetting.Type">EmailSetting.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SMTP</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.Setting.SettingName">Setting.SettingName</h3>
         <p></p>
         <table class="enum-table">
@@ -7698,6 +8005,12 @@ Default to this mode.</p></td>
               <tr>
                 <td>ENVIRONMENT</td>
                 <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMAIL</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             
@@ -7787,6 +8100,14 @@ Permissions required: bb.settings.get</p></td>
 Permissions required: bb.settings.set</p></td>
               </tr>
             
+              <tr>
+                <td>TestEmailSetting</td>
+                <td><a href="#bytebase.v1.TestEmailSettingRequest">TestEmailSettingRequest</a></td>
+                <td><a href="#bytebase.v1.TestEmailSettingResponse">TestEmailSettingResponse</a></td>
+                <td><p>Sends a test email using the provided config (without persisting).
+Permissions required: bb.settings.set</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -7832,6 +8153,16 @@ Permissions required: bb.settings.set</p></td>
                 <td>PATCH</td>
                 <td>/v1/{setting.name=settings/*}</td>
                 <td>setting</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>TestEmailSetting</td>
+                <td>POST</td>
+                <td>/v1/{parent=workspaces/*}/settings/EMAIL:test</td>
+                <td>*</td>
               </tr>
               
             

@@ -1222,6 +1222,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.EmailSetting"><span class="badge">M</span>EmailSetting</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EmailSetting.SMTPConfig"><span class="badge">M</span>EmailSetting.SMTPConfig</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.EnvironmentSetting"><span class="badge">M</span>EnvironmentSetting</a>
                 </li>
               
@@ -1272,6 +1280,18 @@
               
                 <li>
                   <a href="#bytebase.store.Algorithm.InnerOuterMask.MaskType"><span class="badge">E</span>Algorithm.InnerOuterMask.MaskType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EmailSetting.SMTPConfig.Authentication"><span class="badge">E</span>EmailSetting.SMTPConfig.Authentication</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EmailSetting.SMTPConfig.Encryption"><span class="badge">E</span>EmailSetting.SMTPConfig.Encryption</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EmailSetting.Type"><span class="badge">E</span>EmailSetting.Type</a>
                 </li>
               
                 <li>
@@ -11990,6 +12010,110 @@ The id should in [0-9]&#43;-[0-9]&#43;-[0-9]&#43; format. </p></td>
 
         
       
+        <h3 id="bytebase.store.EmailSetting">EmailSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>from</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>from_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.EmailSetting.Type">EmailSetting.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>smtp</td>
+                  <td><a href="#bytebase.store.EmailSetting.SMTPConfig">EmailSetting.SMTPConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EmailSetting.SMTPConfig">EmailSetting.SMTPConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>port</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>encryption</td>
+                  <td><a href="#bytebase.store.EmailSetting.SMTPConfig.Encryption">EmailSetting.SMTPConfig.Encryption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication</td>
+                  <td><a href="#bytebase.store.EmailSetting.SMTPConfig.Authentication">EmailSetting.SMTPConfig.Authentication</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.EnvironmentSetting">EnvironmentSetting</h3>
         <p></p>
 
@@ -12597,6 +12721,105 @@ The default value is 100MB, we will use the default value if the setting not exi
           </tbody>
         </table>
       
+        <h3 id="bytebase.store.EmailSetting.SMTPConfig.Authentication">EmailSetting.SMTPConfig.Authentication</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTHENTICATION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AUTHENTICATION_NONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAIN</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOGIN</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CRAM_MD5</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.EmailSetting.SMTPConfig.Encryption">EmailSetting.SMTPConfig.Encryption</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ENCRYPTION_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ENCRYPTION_NONE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STARTTLS</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SSL_TLS</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.EmailSetting.Type">EmailSetting.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SMTP</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.store.SettingName">SettingName</h3>
         <p></p>
         <table class="enum-table">
@@ -12656,6 +12879,12 @@ The default value is 100MB, we will use the default value if the setting not exi
               <tr>
                 <td>ENVIRONMENT</td>
                 <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMAIL</td>
+                <td>9</td>
                 <td><p></p></td>
               </tr>
             

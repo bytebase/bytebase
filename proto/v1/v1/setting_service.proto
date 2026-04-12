@@ -46,6 +46,17 @@ service SettingService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Sends a test email using the provided config (without persisting).
+  // Permissions required: bb.settings.set
+  rpc TestEmailSetting(TestEmailSettingRequest) returns (TestEmailSettingResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=workspaces/*}/settings/EMAIL:test"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.settings.set";
+    option (bytebase.v1.auth_method) = IAM;
+  }
 }
 
 message ListSettingsRequest {}
@@ -99,6 +110,7 @@ message Setting {
     DATA_CLASSIFICATION = 5;
     SEMANTIC_TYPES = 6;
     ENVIRONMENT = 7;
+    EMAIL = 8;
   }
 
   // The resource name of the setting.
@@ -120,6 +132,7 @@ message SettingValue {
     SemanticTypeSetting semantic_type = 5;
     AISetting ai = 6;
     EnvironmentSetting environment = 7;
+    EmailSetting email = 8;
   }
 }
 
@@ -460,4 +473,60 @@ message EnvironmentSetting {
     map<string, string> tags = 4;
     string color = 5;
   }
+}
+
+message EmailSetting {
+  string from = 1;
+  string from_name = 2;
+
+  Type type = 3;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SMTP = 1;
+  }
+
+  oneof config {
+    SMTPConfig smtp = 4;
+  }
+
+  message SMTPConfig {
+    string host = 1;
+    int32 port = 2;
+    string username = 3;
+    // INPUT_ONLY — never returned in GET responses.
+    string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    Encryption encryption = 5;
+    Authentication authentication = 6;
+
+    enum Encryption {
+      ENCRYPTION_UNSPECIFIED = 0;
+      ENCRYPTION_NONE = 1;
+      STARTTLS = 2;
+      SSL_TLS = 3;
+    }
+
+    enum Authentication {
+      AUTHENTICATION_UNSPECIFIED = 0;
+      AUTHENTICATION_NONE = 1;
+      PLAIN = 2;
+      LOGIN = 3;
+      CRAM_MD5 = 4;
+    }
+  }
+}
+
+message TestEmailSettingRequest {
+  // Parent workspace. Format: workspaces/{workspace}
+  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  // The email config to test. Not persisted.
+  EmailSetting email_setting = 2 [(google.api.field_behavior) = REQUIRED];
+  // The recipient to send the test email to.
+  string to = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message TestEmailSettingResponse {
+  bool success = 1;
+  // Human-readable error if success=false.
+  string error = 2;
 }
