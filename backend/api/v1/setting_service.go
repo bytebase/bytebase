@@ -23,6 +23,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
@@ -733,6 +734,50 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// TestEmailSetting sends a test email using the provided config.
+func (s *SettingService) TestEmailSetting(ctx context.Context, req *connect.Request[v1pb.TestEmailSettingRequest]) (*connect.Response[v1pb.TestEmailSettingResponse], error) {
+	emailSetting := convertEmailSetting(req.Msg.EmailSetting)
+	if emailSetting == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email_setting is required"))
+	}
+
+	// Substitute stored password if not provided.
+	if smtp := emailSetting.GetSmtp(); smtp != nil && smtp.Password == "" {
+		workspaceID := common.GetWorkspaceIDFromContext(ctx)
+		if existing, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL); err == nil && existing != nil {
+			if oldEmail, ok := existing.Value.(*storepb.EmailSetting); ok {
+				if oldSMTP := oldEmail.GetSmtp(); oldSMTP != nil {
+					smtp.Password = oldSMTP.Password
+				}
+			}
+		}
+	}
+
+	sender, senderErr := mail.NewSender(emailSetting)
+	if senderErr != nil {
+		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
+			Success: false,
+			Error:   senderErr.Error(),
+		}), nil
+	}
+
+	sendErr := sender.Send(ctx, &mail.SendRequest{
+		To:       []string{req.Msg.To},
+		Subject:  "Bytebase email config test",
+		TextBody: "This is a test email from Bytebase to verify your email configuration.",
+	})
+	if sendErr != nil {
+		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
+			Success: false,
+			Error:   sendErr.Error(),
+		}), nil
+	}
+
+	return connect.NewResponse(&v1pb.TestEmailSettingResponse{
+		Success: true,
+	}), nil
 }
 
 func (s *SettingService) checkSettingPermission(ctx context.Context, req connect.AnyRequest, perm permission.Permission) error {
