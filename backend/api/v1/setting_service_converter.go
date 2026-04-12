@@ -118,6 +118,19 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	case storepb.SettingName_EMAIL:
+		storeValue, ok := setting.Value.(*storepb.EmailSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Email{
+					Email: convertToEmailSetting(storeValue),
+				},
+			},
+		}, nil
 	default:
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unsupported setting %v", setting.Name))
 	}
@@ -157,6 +170,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_SEMANTIC_TYPES
 	case storepb.SettingName_ENVIRONMENT:
 		return v1pb.Setting_ENVIRONMENT
+	case storepb.SettingName_EMAIL:
+		return v1pb.Setting_EMAIL
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
 	default:
@@ -184,6 +199,8 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_SEMANTIC_TYPES
 	case v1pb.Setting_ENVIRONMENT:
 		return storepb.SettingName_ENVIRONMENT
+	case v1pb.Setting_EMAIL:
+		return storepb.SettingName_EMAIL
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -771,4 +788,53 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		Model:   storeSetting.Model,
 		Version: storeSetting.Version,
 	}
+}
+
+//nolint:unused
+func convertEmailSetting(v1Setting *v1pb.EmailSetting) *storepb.EmailSetting {
+	if v1Setting == nil {
+		return nil
+	}
+	storeSetting := &storepb.EmailSetting{
+		From:     v1Setting.From,
+		FromName: v1Setting.FromName,
+		Type:     storepb.EmailSetting_Type(v1Setting.Type),
+	}
+	if v1Smtp := v1Setting.GetSmtp(); v1Smtp != nil {
+		storeSetting.Config = &storepb.EmailSetting_Smtp{
+			Smtp: &storepb.EmailSetting_SMTPConfig{
+				Host:           v1Smtp.Host,
+				Port:           v1Smtp.Port,
+				Username:       v1Smtp.Username,
+				Password:       v1Smtp.Password,
+				Encryption:     storepb.EmailSetting_SMTPConfig_Encryption(v1Smtp.Encryption),
+				Authentication: storepb.EmailSetting_SMTPConfig_Authentication(v1Smtp.Authentication),
+			},
+		}
+	}
+	return storeSetting
+}
+
+func convertToEmailSetting(storeSetting *storepb.EmailSetting) *v1pb.EmailSetting {
+	if storeSetting == nil {
+		return nil
+	}
+	v1Setting := &v1pb.EmailSetting{
+		From:     storeSetting.From,
+		FromName: storeSetting.FromName,
+		Type:     v1pb.EmailSetting_Type(storeSetting.Type),
+	}
+	if storeSMTP := storeSetting.GetSmtp(); storeSMTP != nil {
+		v1Setting.Config = &v1pb.EmailSetting_Smtp{
+			Smtp: &v1pb.EmailSetting_SMTPConfig{
+				Host:           storeSMTP.Host,
+				Port:           storeSMTP.Port,
+				Username:       storeSMTP.Username,
+				Password:       "", // INPUT_ONLY: never return password
+				Encryption:     v1pb.EmailSetting_SMTPConfig_Encryption(storeSMTP.Encryption),
+				Authentication: v1pb.EmailSetting_SMTPConfig_Authentication(storeSMTP.Authentication),
+			},
+		}
+	}
+	return v1Setting
 }
