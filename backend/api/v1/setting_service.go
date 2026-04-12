@@ -608,6 +608,65 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		storeSettingValue = environmentSetting
+	case storepb.SettingName_EMAIL:
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := convertEmailSetting(request.Msg.Setting.Value.GetEmail())
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email setting is required"))
+		}
+
+		oldEmailSetting := &storepb.EmailSetting{}
+		if existing, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get email setting: %v", err))
+		} else if existing != nil {
+			oldEmailSetting = proto.CloneOf(existing.Value.(*storepb.EmailSetting))
+		}
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.email.from":
+				oldEmailSetting.From = payload.From
+			case "value.email.from_name":
+				oldEmailSetting.FromName = payload.FromName
+			case "value.email.type":
+				oldEmailSetting.Type = payload.Type
+			case "value.email.smtp":
+				newSMTP := payload.GetSmtp()
+				if newSMTP == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when updating smtp"))
+				}
+				// Preserve existing password if new password is empty.
+				if newSMTP.Password == "" {
+					if oldSMTP := oldEmailSetting.GetSmtp(); oldSMTP != nil {
+						newSMTP.Password = oldSMTP.Password
+					}
+				}
+				oldEmailSetting.Config = &storepb.EmailSetting_Smtp{Smtp: newSMTP}
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+			}
+		}
+
+		// Validate the final state.
+		if oldEmailSetting.Type == storepb.EmailSetting_SMTP {
+			smtp := oldEmailSetting.GetSmtp()
+			if smtp == nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when type is SMTP"))
+			}
+			if smtp.Host == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp host is required"))
+			}
+			if smtp.Port <= 0 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp port must be positive"))
+			}
+		}
+		if oldEmailSetting.From == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("from address is required"))
+		}
+
+		storeSettingValue = oldEmailSetting
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", storeSettingName))
 	}
