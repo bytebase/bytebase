@@ -6,7 +6,7 @@ import { Button } from "@/react/components/ui/button";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import type { AgentMessage } from "../logic/types";
+import type { AgentMessage, ToolCall } from "../logic/types";
 import {
   selectCurrentChatRequiresAIConfiguration,
   selectError,
@@ -47,17 +47,22 @@ export function AgentChat({ className }: AgentChatProps) {
 
   function getToolResult(
     messageId: string,
-    toolCallId: string
+    toolCallId: string,
+    duplicateIndex = 0
   ): string | undefined {
     const fullIndex = allMessages.findIndex(
       (message) => message.id === messageId
     );
     if (fullIndex < 0) return undefined;
 
+    let matchingResultIndex = 0;
     for (let index = fullIndex + 1; index < allMessages.length; index++) {
       const message = allMessages[index];
       if (message.role === "tool" && message.toolCallId === toolCallId) {
-        return message.content;
+        if (matchingResultIndex === duplicateIndex) {
+          return message.content;
+        }
+        matchingResultIndex++;
       }
       if (
         message.role === "assistant" &&
@@ -68,6 +73,20 @@ export function AgentChat({ className }: AgentChatProps) {
       }
     }
     return undefined;
+  }
+
+  function getToolCallDuplicateIndex(
+    toolCalls: ToolCall[],
+    currentToolCallIndex: number
+  ): number {
+    const currentToolCall = toolCalls[currentToolCallIndex];
+    let duplicateIndex = 0;
+    for (let index = 0; index < currentToolCallIndex; index++) {
+      if (toolCalls[index]?.id === currentToolCall.id) {
+        duplicateIndex++;
+      }
+    }
+    return duplicateIndex;
   }
 
   function goConfigure() {
@@ -175,11 +194,15 @@ export function AgentChat({ className }: AgentChatProps) {
                 </ReactMarkdown>
               </div>
             )}
-            {msg.toolCalls?.map((toolCall) => (
+            {msg.toolCalls?.map((toolCall, index, toolCalls) => (
               <ToolCallCard
-                key={toolCall.id}
+                key={`${msg.id}:${toolCall.id}:${index}`}
                 toolCall={toolCall}
-                result={getToolResult(msg.id, toolCall.id)}
+                result={getToolResult(
+                  msg.id,
+                  toolCall.id,
+                  getToolCallDuplicateIndex(toolCalls, index)
+                )}
               />
             ))}
           </div>
