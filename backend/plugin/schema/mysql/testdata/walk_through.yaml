@@ -16,8 +16,14 @@
 
     RENAME TABLE `test`.`t1` TO `other`.`t1`;'
   ignore_case_sensitive: false
-  want: "{\n  \"name\": \"test\",\n  \"schemas\": [\n    {}\n  ]\n}"
-  advice: null
+  want: ''
+  advice:
+    status: 1
+    code: 704
+    title: Unknown database 'other'
+    content: Unknown database 'other'
+    startPosition:
+      line: 2
 - statement: 'CREATE TABLE t1(a INT);
 
     CREATE TABLE t2(a INT);
@@ -28,8 +34,8 @@
   advice:
     status: 1
     code: 607
-    title: Table `t1` already exists
-    content: Table `t1` already exists
+    title: Table 't1' already exists
+    content: Table 't1' already exists
     startPosition:
       line: 3
 - statement: 'CREATE TABLE t1(a INT);
@@ -40,8 +46,8 @@
   advice:
     status: 1
     code: 604
-    title: Table `t2` does not exist
-    content: Table `t2` does not exist
+    title: Table 'test.t2' doesn't exist
+    content: Table 'test.t2' doesn't exist
     startPosition:
       line: 2
 - statement: 'CREATE TABLE t1 (a INT);

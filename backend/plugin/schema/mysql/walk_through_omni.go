@@ -340,12 +340,16 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 }
 
 func partitionsToProto(p *catalog.PartitionInfo) []*storepb.TablePartitionMetadata {
+	expr := p.Expr
+	if expr == "" && len(p.Columns) > 0 {
+		expr = strings.Join(p.Columns, ",")
+	}
 	var result []*storepb.TablePartitionMetadata
 	for _, pd := range p.Partitions {
 		result = append(result, &storepb.TablePartitionMetadata{
 			Name:       pd.Name,
 			Type:       partitionTypeToProto(p.Type),
-			Expression: p.Expr,
+			Expression: expr,
 			Value:      pd.ValueExpr,
 		})
 	}
