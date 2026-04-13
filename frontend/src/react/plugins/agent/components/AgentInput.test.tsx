@@ -145,6 +145,33 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("shows a single-line overlay placeholder and hides it when typing", () => {
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const placeholder = container.querySelector(
+      "[data-agent-input-placeholder]"
+    );
+    expect(placeholder?.textContent).toBe("agent.input-placeholder");
+    expect(placeholder?.className).toContain("truncate");
+    expect(placeholder?.className).toContain("pointer-events-none");
+
+    const textarea = container.querySelector("textarea");
+    expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
+
+    act(() => {
+      setTextareaValue(textarea as HTMLTextAreaElement, "hello");
+      textarea?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(
+      container.querySelector("[data-agent-input-placeholder]")
+    ).toBeNull();
+
+    unmount();
+  });
+
   test("uses the same single-line height for the textarea and send button", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 

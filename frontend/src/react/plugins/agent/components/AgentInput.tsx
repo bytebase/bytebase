@@ -686,12 +686,20 @@ export function AgentInput() {
         /* Input row with @-mention autocomplete */
         <div className="relative flex items-end gap-x-2" data-agent-input-row>
           <div className="relative w-full">
+            {!input && (
+              <div
+                className="pointer-events-none absolute inset-x-3 top-1.5 z-10 truncate text-sm leading-5 text-control-light"
+                data-agent-input-placeholder
+              >
+                {inputPlaceholder}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={input}
               rows={1}
               className="block min-h-[34px] max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-              placeholder={inputPlaceholder}
+              aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {
                 setInput(e.target.value);
