@@ -157,6 +157,84 @@
         table: TableB
         column: IDB
 
+- description: "BYT-9235: WHERE clause on view column fails when CREATE VIEW has column alias list"
+  statement: |-
+    SELECT top 10 * FROM [bhs].[dbo].[vwTest] a WHERE a.F1 LIKE 'MT%'
+  defaultDatabase: bhs
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "bhs",
+        "schemas": [
+          {
+            "name": "dbo",
+            "views": [
+              {
+                "name": "vwTest",
+                "definition": "CREATE VIEW [dbo].[vwTest] (F1, F2) AS SELECT col_a, col_b FROM tbl",
+                "columns": [
+                  {
+                    "name": "F1"
+                  },
+                  {
+                    "name": "F2"
+                  }
+                ]
+              }
+            ],
+            "tables": [
+              {
+                "name": "tbl",
+                "columns": [
+                  {
+                    "name": "col_a"
+                  },
+                  {
+                    "name": "col_b"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: f1
+        sourcecolumns:
+          - server: ""
+            database: bhs
+            schema: dbo
+            table: tbl
+            column: col_a
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: f2
+        sourcecolumns:
+          - server: ""
+            database: bhs
+            schema: dbo
+            table: tbl
+            column: col_b
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: vwTest
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: tbl
+        column: col_a
+
 - description: Test simple correlated subquery - fix for outer table sources
   statement: |-
     SELECT HMNum FROM TableA WHERE HMNum = 'test'
