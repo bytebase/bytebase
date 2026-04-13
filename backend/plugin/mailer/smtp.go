@@ -103,10 +103,33 @@ func (s *smtpSender) auth() smtp.Auth {
 	switch s.config.Authentication {
 	case storepb.EmailSetting_SMTPConfig_CRAM_MD5:
 		return smtp.CRAMMD5Auth(s.config.Username, s.config.Password)
+	case storepb.EmailSetting_SMTPConfig_LOGIN:
+		return &loginAuth{username: s.config.Username, password: s.config.Password}
 	default:
-		// PLAIN, LOGIN, and UNSPECIFIED all use PlainAuth.
+		// PLAIN and UNSPECIFIED use PlainAuth.
 		return smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
 	}
+}
+
+// loginAuth implements the LOGIN SMTP authentication mechanism.
+type loginAuth struct {
+	username, password string
+}
+
+func (a *loginAuth) Start(_ *smtp.ServerInfo) (string, []byte, error) {
+	return "LOGIN", []byte(a.username), nil
+}
+
+func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
+	if more {
+		switch strings.ToLower(strings.TrimSpace(string(fromServer))) {
+		case "username:":
+			return []byte(a.username), nil
+		case "password:":
+			return []byte(a.password), nil
+		}
+	}
+	return nil, nil
 }
 
 func (s *smtpSender) buildMessage(req *SendRequest) string {

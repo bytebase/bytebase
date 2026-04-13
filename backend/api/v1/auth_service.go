@@ -1395,7 +1395,7 @@ func getAccountRestriction(
 // In SaaS mode with Gemini API key configured, injects AI settings.
 func (s *AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 	var settings []store.AdditionalSetting
-	if geminiAPIKey := os.Getenv("EMAIL_CONFIG"); geminiAPIKey != "" {
+	if geminiAPIKey := os.Getenv("GEMINI_API_KEY"); geminiAPIKey != "" {
 		settings = append(settings, store.AdditionalSetting{
 			Name: storepb.SettingName_AI,
 			Payload: &storepb.AISetting{
