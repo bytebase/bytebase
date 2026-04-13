@@ -1242,17 +1242,32 @@
     type: 1
     results:
         - name: cc1
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: cc2
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: cc3
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
@@ -1308,22 +1323,42 @@
     type: 1
     results:
         - name: c1
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c2
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c3
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
         - name: c4
-          sourcecolumns: []
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false

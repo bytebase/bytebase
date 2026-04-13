@@ -44,7 +44,19 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 	if meta, ok := e.metaCache[database]; ok {
 		return meta, nil
 	}
-	_, meta, err := e.gCtx.GetDatabaseMetadataFunc(e.ctx, e.gCtx.InstanceID, database)
+	// In case-insensitive mode, normalize the database name against known databases.
+	dbName := database
+	if e.ignoreCaseSensitive && e.gCtx.ListDatabaseNamesFunc != nil {
+		if names, err := e.gCtx.ListDatabaseNamesFunc(e.ctx, e.gCtx.InstanceID); err == nil {
+			for _, n := range names {
+				if strings.EqualFold(n, database) {
+					dbName = n
+					break
+				}
+			}
+		}
+	}
+	_, meta, err := e.gCtx.GetDatabaseMetadataFunc(e.ctx, e.gCtx.InstanceID, dbName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
 	}
@@ -428,13 +440,21 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 
 	switch rte.Kind {
 	case catalog.RTERelation:
-		colName := ""
-		if colIdx >= 0 && colIdx < len(rte.ColNames) {
-			colName = rte.ColNames[colIdx]
-		}
 		dbName := rte.DBName
 		if dbName == "" {
 			dbName = e.defaultDatabase
+		}
+		// For expanded MERGE views, ExpandMergeViews() already converted them
+		// to RTESubquery with Subquery populated. For views that remain as
+		// RTERelation (TEMPTABLE/UNDEFINED algorithm, or unresolvable definition),
+		// resolve through the Subquery if available, otherwise record the view name.
+		if rte.IsView && rte.Subquery != nil && colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
+			e.walkExpr(rte.Subquery, rte.Subquery.TargetList[colIdx].Expr, result)
+			return
+		}
+		colName := ""
+		if colIdx >= 0 && colIdx < len(rte.ColNames) {
+			colName = rte.ColNames[colIdx]
 		}
 		result[base.ColumnResource{
 			Database: dbName,
@@ -454,9 +474,8 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 	case catalog.RTECTE:
 		if rte.CTEIndex >= 0 && rte.CTEIndex < len(q.CTEList) {
 			cte := q.CTEList[rte.CTEIndex]
-			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
-				te := cte.Query.TargetList[colIdx]
-				e.walkExpr(cte.Query, te.Expr, result)
+			if cte.Query != nil {
+				e.resolveQueryColumn(cte.Query, colIdx, result)
 			}
 		}
 
@@ -698,6 +717,24 @@ func (e *omniQuerySpanExtractor) resolveColumnRefFallback(col *ast.ColumnRef, ta
 				}
 			}
 		}
+	}
+}
+
+// resolveQueryColumn resolves a column from a Query, recursing into set-op branches.
+func (e *omniQuerySpanExtractor) resolveQueryColumn(q *catalog.Query, colIdx int, result base.SourceColumnSet) {
+	if q.SetOp != catalog.SetOpNone {
+		// For UNION/INTERSECT/EXCEPT, resolve from both branches.
+		if q.LArg != nil {
+			e.resolveQueryColumn(q.LArg, colIdx, result)
+		}
+		if q.RArg != nil {
+			e.resolveQueryColumn(q.RArg, colIdx, result)
+		}
+		return
+	}
+	if colIdx >= 0 && colIdx < len(q.TargetList) {
+		te := q.TargetList[colIdx]
+		e.walkExpr(q, te.Expr, result)
 	}
 }
 
