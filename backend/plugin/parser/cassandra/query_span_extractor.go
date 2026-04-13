@@ -15,6 +15,7 @@ type querySpanExtractor struct {
 	*cql.BaseCqlParserListener
 
 	// Context
+	ctx             context.Context
 	defaultKeyspace string
 	gCtx            base.GetQuerySpanContext
 
@@ -33,9 +34,10 @@ func unquoteIdentifier(identifier string) string {
 	return identifier
 }
 
-func newQuerySpanExtractor(defaultKeyspace string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
+func newQuerySpanExtractor(ctx context.Context, defaultKeyspace string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
 		BaseCqlParserListener: &cql.BaseCqlParserListener{},
+		ctx:                   ctx,
 		defaultKeyspace:       defaultKeyspace,
 		gCtx:                  gCtx,
 		querySpan: &base.QuerySpan{
@@ -180,8 +182,7 @@ func (e *querySpanExtractor) expandSelectAsterisk(keyspace, table string) []base
 		}}
 	}
 
-	ctx := context.Background()
-	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(ctx, e.gCtx.InstanceID, keyspace)
+	_, metadata, err := e.gCtx.GetDatabaseMetadataFunc(e.ctx, e.gCtx.InstanceID, keyspace)
 	if err != nil || metadata == nil {
 		// If we can't get metadata, fall back to SelectAsterisk flag
 		// This matches behavior of other engines like TSQL
