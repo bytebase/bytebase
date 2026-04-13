@@ -357,7 +357,10 @@ func (s *Server) createSheet(ctx context.Context, project, engine, title, sql st
 }
 
 // createPlan creates a plan with a single changeDatabaseConfig spec.
-func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, changeType string) (string, error) {
+// Note: the proto ChangeDatabaseConfig has no `type` field (MIGRATE vs SDL was
+// merged in migration 3.14). The backend auto-detects from sheet content.
+// changeType is accepted as input for forward-compat but not sent on the wire.
+func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, _ string) (string, error) {
 	body := map[string]any{
 		"parent": project,
 		"plan": map[string]any{
@@ -368,7 +371,6 @@ func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, 
 					"changeDatabaseConfig": map[string]any{
 						"targets": []string{target},
 						"sheet":   sheet,
-						"type":    changeType,
 					},
 				},
 			},

@@ -57,8 +57,7 @@ call_api(operationId="PlanService/CreatePlan", body={
       "id": "spec-1",
       "changeDatabaseConfig": {
         "targets": ["instances/{instance-id}/databases/{database-name}"],
-        "sheet": "projects/{project-id}/sheets/{sheet-id}",
-        "type": "MIGRATE"
+        "sheet": "projects/{project-id}/sheets/{sheet-id}"
       }
     }]
   }
@@ -76,16 +75,14 @@ call_api(operationId="PlanService/CreatePlan", body={
         "id": "spec-dev",
         "changeDatabaseConfig": {
           "targets": ["instances/dev-pg/databases/mydb"],
-          "sheet": "projects/{project-id}/sheets/{sheet-id}",
-          "type": "MIGRATE"
+          "sheet": "projects/{project-id}/sheets/{sheet-id}"
         }
       },
       {
         "id": "spec-prod",
         "changeDatabaseConfig": {
           "targets": ["instances/prod-pg/databases/mydb"],
-          "sheet": "projects/{project-id}/sheets/{sheet-id}",
-          "type": "MIGRATE"
+          "sheet": "projects/{project-id}/sheets/{sheet-id}"
         }
       }
     ]
@@ -136,10 +133,7 @@ call_api(operationId="RolloutService/CreateRollout", body={
 
 ## Change Types
 
-| Type | Use Case |
-|------|----------|
-| `MIGRATE` | Imperative schema/data changes (DDL and DML) |
-| `SDL` | State-based declarative schema migration |
+The backend auto-detects whether a change is imperative (DDL/DML) or SDL (declarative schema) from the sheet content. No `type` field is needed in the plan spec.
 
 ## Common Errors
 

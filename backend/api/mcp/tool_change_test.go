@@ -224,9 +224,11 @@ func TestChange_SDL(t *testing.T) {
 
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
+	// changeType is reflected in the response but not sent to the API
+	// (the backend auto-detects MIGRATE vs SDL from sheet content).
 	require.Equal(t, "SDL", output.ResolvedChangeType)
 
-	// Verify plan spec has SDL type.
+	// Verify plan spec does NOT include a type field (removed in migration 3.14).
 	plan := mock.getCapturedPlan()
 	planObj, ok := plan["plan"].(map[string]any)
 	require.True(t, ok)
@@ -236,7 +238,8 @@ func TestChange_SDL(t *testing.T) {
 	require.True(t, ok)
 	cfg, ok := spec["changeDatabaseConfig"].(map[string]any)
 	require.True(t, ok)
-	require.Equal(t, "SDL", cfg["type"])
+	_, hasType := cfg["type"]
+	require.False(t, hasType, "type field should not be sent to the API")
 }
 
 func TestChange_ReasonIncluded(t *testing.T) {
