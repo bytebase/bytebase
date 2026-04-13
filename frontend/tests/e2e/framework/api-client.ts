@@ -146,4 +146,86 @@ export class BytebaseApiClient {
   async deleteWorkloadIdentity(email: string) {
     try { await this.request<unknown>("DELETE", `/v1/workloadIdentities/${email}`); } catch { /* ignore */ }
   }
+
+  // Sheets
+  async createSheet(project: string, content: string): Promise<string> {
+    const b64 = Buffer.from(content).toString("base64");
+    const resp = await this.request<{ name: string }>(
+      "POST", `/v1/${project}/sheets`, { content: b64 }
+    );
+    return resp.name;
+  }
+
+  // Plans
+  async createPlan(project: string, title: string, specs: { id: string; targets: string[]; sheet: string }[]): Promise<{ name: string }> {
+    return this.request<{ name: string }>("POST", `/v1/${project}/plans`, {
+      title,
+      specs: specs.map(s => ({
+        id: s.id,
+        changeDatabaseConfig: { targets: s.targets, sheet: s.sheet },
+      })),
+    });
+  }
+
+  async getPlan(planName: string): Promise<{ name: string; hasRollout: boolean; state: string }> {
+    return this.request("GET", `/v1/${planName}`);
+  }
+
+  async runPlanChecks(planName: string): Promise<void> {
+    await this.request("POST", `/v1/${planName}:runPlanChecks`, {});
+  }
+
+  async getPlanCheckRun(planName: string): Promise<{ status: string; results: { status: string; type: string; title: string }[] }> {
+    return this.request("GET", `/v1/${planName}/planCheckRun`);
+  }
+
+  // Issues
+  async createIssue(project: string, title: string, plan: string): Promise<{ name: string; status: string; approvalStatus: string }> {
+    return this.request("POST", `/v1/${project}/issues`, {
+      title, type: "DATABASE_CHANGE", plan,
+    });
+  }
+
+  async getIssue(issueName: string): Promise<{ name: string; status: string; approvalStatus: string; approvalTemplate: unknown }> {
+    return this.request("GET", `/v1/${issueName}`);
+  }
+
+  async approveIssue(issueName: string): Promise<{ approvalStatus: string }> {
+    return this.request("POST", `/v1/${issueName}:approve`, {});
+  }
+
+  // Project settings
+  async updateProjectSettings(project: string, settings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean }): Promise<void> {
+    const fields: string[] = [];
+    if (settings.requireIssueApproval !== undefined) fields.push("require_issue_approval");
+    if (settings.requirePlanCheckNoError !== undefined) fields.push("require_plan_check_no_error");
+    await this.request("PATCH", `/v1/${project}?update_mask=${fields.join(",")}`, settings);
+  }
+
+  async getProject(project: string): Promise<Record<string, unknown>> {
+    return this.request("GET", `/v1/${project}`);
+  }
+
+  // Review config
+  async getReviewConfig(name: string): Promise<{ name: string; rules: { type: string; level: string; engine: string; payload: string }[] }> {
+    return this.request("GET", `/v1/${name}`);
+  }
+
+  async updateReviewConfigRuleLevel(configName: string, ruleType: string, engine: string, newLevel: string): Promise<void> {
+    const config = await this.getReviewConfig(configName);
+    for (const rule of config.rules) {
+      if (rule.type === ruleType && rule.engine === engine) {
+        rule.level = newLevel;
+        break;
+      }
+    }
+    await this.request("PATCH", `/v1/${configName}?update_mask=rules`, { rules: config.rules });
+  }
+
+  // Multi-user helper
+  static async asUser(baseURL: string, email: string, password: string): Promise<BytebaseApiClient> {
+    const client = new BytebaseApiClient({ baseURL, credentials: { email, password } });
+    await client.login(email, password);
+    return client;
+  }
 }
