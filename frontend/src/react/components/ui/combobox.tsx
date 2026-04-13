@@ -1,5 +1,12 @@
 import { Check, ChevronDown, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
 import { SearchInput } from "./search-input";
@@ -103,8 +110,9 @@ export function Combobox(props: ComboboxProps) {
     [allOptions, selectedValues]
   );
 
-  // Position dropdown for portal mode
-  useEffect(() => {
+  // Position dropdown for portal mode — useLayoutEffect prevents a
+  // one-frame flash at a stale/empty position before the browser paints.
+  useLayoutEffect(() => {
     if (!open || !portal || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     setDropdownStyle({
