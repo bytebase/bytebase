@@ -1335,6 +1335,11 @@
       "edit-member": "Edit member - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "Allow request role is disabled for this project.",
+          "can-grant-access-directly": "You already have {{permission}}, so you can grant access directly.",
+          "feature-unavailable": "Request role workflow is unavailable on the current plan."
+        },
         "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
         "expiration-must-be-future": "Expiration must be in the future.",
         "failed-to-build-expression": "Failed to build CEL expression. Please try again.",
