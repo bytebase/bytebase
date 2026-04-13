@@ -190,26 +190,34 @@ const loadIssueDetailSnapshot = async (
 const refreshIssueDetailSnapshot = async (
   snapshot: Pick<IssueDetailPageSnapshot, "issue" | "plan">
 ): Promise<Partial<IssueDetailPageSnapshot>> => {
-  if (!snapshot.plan?.name) {
-    return {};
+  const issue = snapshot.issue?.name
+    ? await issueServiceClientConnect
+        .getIssue(
+          create(GetIssueRequestSchema, {
+            name: snapshot.issue.name,
+          })
+        )
+        .catch(() => undefined)
+    : undefined;
+
+  const planName = snapshot.plan?.name || issue?.plan;
+  if (!planName) {
+    return {
+      issue,
+      plan: unknownPlan(),
+      planCheckRuns: [],
+      rollout: undefined,
+      taskRuns: [],
+    };
   }
 
   const plan = await planServiceClientConnect.getPlan(
     create(GetPlanRequestSchema, {
-      name: snapshot.plan.name,
+      name: planName,
     })
   );
 
-  const [issue, planCheckRuns, rollout] = await Promise.all([
-    snapshot.issue?.name
-      ? issueServiceClientConnect
-          .getIssue(
-            create(GetIssueRequestSchema, {
-              name: snapshot.issue.name,
-            })
-          )
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
+  const [planCheckRuns, rollout] = await Promise.all([
     planServiceClientConnect
       .getPlanCheckRun(
         create(GetPlanCheckRunRequestSchema, {
