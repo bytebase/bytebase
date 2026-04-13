@@ -166,8 +166,9 @@ test.describe("Plan Detail: Check Count Consistency (BYT-9160)", () => {
     spec1SuccessCount = await readInlineSuccessCount();
     expect(spec1SuccessCount).toBeGreaterThan(0);
 
-    // Click spec #2 tab
-    await page.getByText("#2").first().click();
+    // Click spec #2 tab. Use exact match to avoid matching "Issue #..." text
+    // (issue numbers in demo are 100+, so "#2" is unambiguous).
+    await page.getByText("#2", { exact: true }).first().click();
     await page.waitForLoadState("networkidle");
     await expect(page.getByText("Success").first()).toBeVisible({ timeout: 10_000 });
     spec2SuccessCount = await readInlineSuccessCount();

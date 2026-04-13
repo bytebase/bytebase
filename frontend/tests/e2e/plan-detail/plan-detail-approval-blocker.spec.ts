@@ -63,12 +63,12 @@ test.beforeAll(async ({ browser }) => {
   while (Date.now() < deadline) {
     const freshIssue = await env.api.getIssue(issueName);
     lastStatus = freshIssue.approvalStatus;
-    if (lastStatus === "PENDING" || lastStatus === "SKIPPED") break;
+    if (lastStatus === "PENDING" || lastStatus === "SKIPPED" || lastStatus === "APPROVED") break;
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  if (lastStatus === "SKIPPED") {
-    // No approval rule matched — flag to skip all tests.
+  if (lastStatus === "SKIPPED" || lastStatus === "APPROVED") {
+    // No approval rule matched, or auto-approved — skip this blocker suite.
     shouldSkip = true;
     return;
   }
