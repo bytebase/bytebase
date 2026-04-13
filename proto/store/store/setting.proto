@@ -20,6 +20,7 @@ enum SettingName {
   DATA_CLASSIFICATION = 6;
   SEMANTIC_TYPES = 7;
   ENVIRONMENT = 8;
+  EMAIL = 9;
 }
 
 message SystemSetting {
@@ -338,5 +339,45 @@ message EnvironmentSetting {
     string title = 3;
     map<string, string> tags = 4;
     string color = 5;
+  }
+}
+
+message EmailSetting {
+  string from = 1;
+  string from_name = 2;
+
+  Type type = 3;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SMTP = 1;
+  }
+
+  oneof config {
+    SMTPConfig smtp = 4;
+  }
+
+  message SMTPConfig {
+    string host = 1;
+    int32 port = 2;
+    string username = 3;
+    string password = 4;
+    Encryption encryption = 5;
+    Authentication authentication = 6;
+
+    enum Encryption {
+      ENCRYPTION_UNSPECIFIED = 0;
+      ENCRYPTION_NONE = 1;
+      STARTTLS = 2;
+      SSL_TLS = 3;
+    }
+
+    enum Authentication {
+      AUTHENTICATION_UNSPECIFIED = 0;
+      AUTHENTICATION_NONE = 1;
+      PLAIN = 2;
+      LOGIN = 3;
+      CRAM_MD5 = 4;
+    }
   }
 }

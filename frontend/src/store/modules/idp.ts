@@ -22,10 +22,13 @@ export const useIdentityProviderStore = defineStore("idp", () => {
     return Array.from(identityProviderMapByName.value.values());
   });
 
-  const fetchIdentityProviderList = async () => {
-    const request = create(ListIdentityProvidersRequestSchema, {});
+  const fetchIdentityProviderList = async (parent?: string) => {
+    const request = create(ListIdentityProvidersRequestSchema, {
+      parent: parent ?? "",
+    });
     const response =
       await identityProviderServiceClientConnect.listIdentityProviders(request);
+    identityProviderMapByName.value.clear();
     for (const identityProvider of response.identityProviders) {
       identityProviderMapByName.value.set(
         identityProvider.name,

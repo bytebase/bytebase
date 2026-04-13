@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"log/slog"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -1392,19 +1393,32 @@ func getAccountRestriction(
 
 // getAdditionalWorkspaceSettings returns extra settings to inject during workspace creation.
 // In SaaS mode with Gemini API key configured, injects AI settings.
-func (s *AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
+func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 	var settings []store.AdditionalSetting
-	if s.profile.GeminiAPIKey != "" {
+	if geminiAPIKey := os.Getenv("GEMINI_API_KEY"); geminiAPIKey != "" {
 		settings = append(settings, store.AdditionalSetting{
 			Name: storepb.SettingName_AI,
 			Payload: &storepb.AISetting{
 				Enabled:  true,
 				Provider: storepb.AISetting_GEMINI,
-				ApiKey:   s.profile.GeminiAPIKey,
+				ApiKey:   geminiAPIKey,
 				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
 				Model:    "gemini-2.5-pro",
 			},
 		})
+	}
+	if raw := os.Getenv("EMAIL_CONFIG"); raw != "" { //nolint:nestif
+		emailSetting := &storepb.EmailSetting{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), emailSetting); err != nil {
+			slog.Error("failed to parse EMAIL_CONFIG env var", log.BBError(err))
+		} else if err := validateEmailSetting(emailSetting); err != nil {
+			slog.Error("invalid EMAIL_CONFIG env var", log.BBError(err))
+		} else {
+			settings = append(settings, store.AdditionalSetting{
+				Name:    storepb.SettingName_EMAIL,
+				Payload: emailSetting,
+			})
+		}
 	}
 	return settings
 }

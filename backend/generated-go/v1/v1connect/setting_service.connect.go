@@ -42,6 +42,9 @@ const (
 	// SettingServiceUpdateSettingProcedure is the fully-qualified name of the SettingService's
 	// UpdateSetting RPC.
 	SettingServiceUpdateSettingProcedure = "/bytebase.v1.SettingService/UpdateSetting"
+	// SettingServiceTestEmailSettingProcedure is the fully-qualified name of the SettingService's
+	// TestEmailSetting RPC.
+	SettingServiceTestEmailSettingProcedure = "/bytebase.v1.SettingService/TestEmailSetting"
 )
 
 // SettingServiceClient is a client for the bytebase.v1.SettingService service.
@@ -55,6 +58,9 @@ type SettingServiceClient interface {
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
+	// Sends a test email using the provided config (without persisting).
+	// Permissions required: bb.settings.set
+	TestEmailSetting(context.Context, *connect.Request[v1.TestEmailSettingRequest]) (*connect.Response[v1.TestEmailSettingResponse], error)
 }
 
 // NewSettingServiceClient constructs a client for the bytebase.v1.SettingService service. By
@@ -86,14 +92,21 @@ func NewSettingServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(settingServiceMethods.ByName("UpdateSetting")),
 			connect.WithClientOptions(opts...),
 		),
+		testEmailSetting: connect.NewClient[v1.TestEmailSettingRequest, v1.TestEmailSettingResponse](
+			httpClient,
+			baseURL+SettingServiceTestEmailSettingProcedure,
+			connect.WithSchema(settingServiceMethods.ByName("TestEmailSetting")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // settingServiceClient implements SettingServiceClient.
 type settingServiceClient struct {
-	listSettings  *connect.Client[v1.ListSettingsRequest, v1.ListSettingsResponse]
-	getSetting    *connect.Client[v1.GetSettingRequest, v1.Setting]
-	updateSetting *connect.Client[v1.UpdateSettingRequest, v1.Setting]
+	listSettings     *connect.Client[v1.ListSettingsRequest, v1.ListSettingsResponse]
+	getSetting       *connect.Client[v1.GetSettingRequest, v1.Setting]
+	updateSetting    *connect.Client[v1.UpdateSettingRequest, v1.Setting]
+	testEmailSetting *connect.Client[v1.TestEmailSettingRequest, v1.TestEmailSettingResponse]
 }
 
 // ListSettings calls bytebase.v1.SettingService.ListSettings.
@@ -111,6 +124,11 @@ func (c *settingServiceClient) UpdateSetting(ctx context.Context, req *connect.R
 	return c.updateSetting.CallUnary(ctx, req)
 }
 
+// TestEmailSetting calls bytebase.v1.SettingService.TestEmailSetting.
+func (c *settingServiceClient) TestEmailSetting(ctx context.Context, req *connect.Request[v1.TestEmailSettingRequest]) (*connect.Response[v1.TestEmailSettingResponse], error) {
+	return c.testEmailSetting.CallUnary(ctx, req)
+}
+
 // SettingServiceHandler is an implementation of the bytebase.v1.SettingService service.
 type SettingServiceHandler interface {
 	// Lists all workspace settings.
@@ -122,6 +140,9 @@ type SettingServiceHandler interface {
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error)
+	// Sends a test email using the provided config (without persisting).
+	// Permissions required: bb.settings.set
+	TestEmailSetting(context.Context, *connect.Request[v1.TestEmailSettingRequest]) (*connect.Response[v1.TestEmailSettingResponse], error)
 }
 
 // NewSettingServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -149,6 +170,12 @@ func NewSettingServiceHandler(svc SettingServiceHandler, opts ...connect.Handler
 		connect.WithSchema(settingServiceMethods.ByName("UpdateSetting")),
 		connect.WithHandlerOptions(opts...),
 	)
+	settingServiceTestEmailSettingHandler := connect.NewUnaryHandler(
+		SettingServiceTestEmailSettingProcedure,
+		svc.TestEmailSetting,
+		connect.WithSchema(settingServiceMethods.ByName("TestEmailSetting")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.SettingService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SettingServiceListSettingsProcedure:
@@ -157,6 +184,8 @@ func NewSettingServiceHandler(svc SettingServiceHandler, opts ...connect.Handler
 			settingServiceGetSettingHandler.ServeHTTP(w, r)
 		case SettingServiceUpdateSettingProcedure:
 			settingServiceUpdateSettingHandler.ServeHTTP(w, r)
+		case SettingServiceTestEmailSettingProcedure:
+			settingServiceTestEmailSettingHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -176,4 +205,8 @@ func (UnimplementedSettingServiceHandler) GetSetting(context.Context, *connect.R
 
 func (UnimplementedSettingServiceHandler) UpdateSetting(context.Context, *connect.Request[v1.UpdateSettingRequest]) (*connect.Response[v1.Setting], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SettingService.UpdateSetting is not implemented"))
+}
+
+func (UnimplementedSettingServiceHandler) TestEmailSetting(context.Context, *connect.Request[v1.TestEmailSettingRequest]) (*connect.Response[v1.TestEmailSettingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SettingService.TestEmailSetting is not implemented"))
 }

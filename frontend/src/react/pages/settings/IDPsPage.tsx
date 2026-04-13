@@ -1993,7 +1993,7 @@ export function IDPsPage() {
 
   useEffect(() => {
     identityProviderStore
-      .fetchIdentityProviderList()
+      .fetchIdentityProviderList(useActuatorV1Store().workspaceResourceName)
       .finally(() => setReady(true));
   }, []);
 

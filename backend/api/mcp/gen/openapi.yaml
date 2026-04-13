@@ -5783,6 +5783,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListSettingsResponse'
+  /bytebase.v1.SettingService/TestEmailSetting:
+    post:
+      tags:
+        - bytebase.v1.SettingService
+      summary: TestEmailSetting
+      description: |-
+        Sends a test email using the provided config (without persisting).
+         Permissions required: bb.settings.set
+      operationId: bytebase.v1.SettingService.TestEmailSetting
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.TestEmailSettingRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.TestEmailSettingResponse'
   /bytebase.v1.SettingService/UpdateSetting:
     post:
       tags:
@@ -10629,6 +10667,77 @@ components:
       title: DimensionalConfig
       additionalProperties: false
       description: DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+    bytebase.v1.EmailSetting:
+      type: object
+      allOf:
+        - properties:
+            from:
+              type: string
+              title: from
+            fromName:
+              type: string
+              title: from_name
+            type:
+              title: type
+              $ref: '#/components/schemas/bytebase.v1.EmailSetting.Type'
+        - oneOf:
+            - type: object
+              properties:
+                smtp:
+                  title: smtp
+                  $ref: '#/components/schemas/bytebase.v1.EmailSetting.SMTPConfig'
+              title: smtp
+              required:
+                - smtp
+      title: EmailSetting
+      additionalProperties: false
+    bytebase.v1.EmailSetting.SMTPConfig:
+      type: object
+      properties:
+        host:
+          type: string
+          title: host
+        port:
+          type: integer
+          title: port
+          format: int32
+        username:
+          type: string
+          title: username
+        password:
+          type: string
+          title: password
+        encryption:
+          title: encryption
+          $ref: '#/components/schemas/bytebase.v1.EmailSetting.SMTPConfig.Encryption'
+        authentication:
+          title: authentication
+          $ref: '#/components/schemas/bytebase.v1.EmailSetting.SMTPConfig.Authentication'
+      title: SMTPConfig
+      additionalProperties: false
+    bytebase.v1.EmailSetting.SMTPConfig.Authentication:
+      type: string
+      title: Authentication
+      enum:
+        - AUTHENTICATION_UNSPECIFIED
+        - AUTHENTICATION_NONE
+        - PLAIN
+        - LOGIN
+        - CRAM_MD5
+    bytebase.v1.EmailSetting.SMTPConfig.Encryption:
+      type: string
+      title: Encryption
+      enum:
+        - ENCRYPTION_UNSPECIFIED
+        - ENCRYPTION_NONE
+        - STARTTLS
+        - SSL_TLS
+    bytebase.v1.EmailSetting.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - SMTP
     bytebase.v1.Engine:
       type: string
       title: Engine
@@ -17145,6 +17254,7 @@ components:
         - DATA_CLASSIFICATION
         - SEMANTIC_TYPES
         - ENVIRONMENT
+        - EMAIL
     bytebase.v1.SettingValue:
       type: object
       oneOf:
@@ -17172,6 +17282,14 @@ components:
           title: data_classification
           required:
             - dataClassification
+        - type: object
+          properties:
+            email:
+              title: email
+              $ref: '#/components/schemas/bytebase.v1.EmailSetting'
+          title: email
+          required:
+            - email
         - type: object
           properties:
             environment:
@@ -18638,6 +18756,31 @@ components:
       title: TessellationConfig
       additionalProperties: false
       description: TessellationConfig defines tessellation parameters for spatial indexes.
+    bytebase.v1.TestEmailSettingRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          title: parent
+        emailSetting:
+          title: email_setting
+          $ref: '#/components/schemas/bytebase.v1.EmailSetting'
+        to:
+          type: string
+          title: to
+      title: TestEmailSettingRequest
+      additionalProperties: false
+    bytebase.v1.TestEmailSettingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          title: success
+        error:
+          type: string
+          title: error
+      title: TestEmailSettingResponse
+      additionalProperties: false
     bytebase.v1.TestIdentityProviderRequest:
       type: object
       allOf:

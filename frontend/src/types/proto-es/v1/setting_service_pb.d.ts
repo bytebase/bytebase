@@ -192,6 +192,11 @@ export enum Setting_SettingName {
    * @generated from enum value: ENVIRONMENT = 7;
    */
   ENVIRONMENT = 7,
+
+  /**
+   * @generated from enum value: EMAIL = 8;
+   */
+  EMAIL = 8,
 }
 
 /**
@@ -250,6 +255,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: EnvironmentSetting;
     case: "environment";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.EmailSetting email = 8;
+     */
+    value: EmailSetting;
+    case: "email";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1356,6 +1367,216 @@ export declare type EnvironmentSetting_Environment = Message<"bytebase.v1.Enviro
 export declare const EnvironmentSetting_EnvironmentSchema: GenMessage<EnvironmentSetting_Environment>;
 
 /**
+ * @generated from message bytebase.v1.EmailSetting
+ */
+export declare type EmailSetting = Message<"bytebase.v1.EmailSetting"> & {
+  /**
+   * @generated from field: string from = 1;
+   */
+  from: string;
+
+  /**
+   * @generated from field: string from_name = 2;
+   */
+  fromName: string;
+
+  /**
+   * @generated from field: bytebase.v1.EmailSetting.Type type = 3;
+   */
+  type: EmailSetting_Type;
+
+  /**
+   * @generated from oneof bytebase.v1.EmailSetting.config
+   */
+  config: {
+    /**
+     * @generated from field: bytebase.v1.EmailSetting.SMTPConfig smtp = 4;
+     */
+    value: EmailSetting_SMTPConfig;
+    case: "smtp";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.EmailSetting.
+ * Use `create(EmailSettingSchema)` to create a new message.
+ */
+export declare const EmailSettingSchema: GenMessage<EmailSetting>;
+
+/**
+ * @generated from message bytebase.v1.EmailSetting.SMTPConfig
+ */
+export declare type EmailSetting_SMTPConfig = Message<"bytebase.v1.EmailSetting.SMTPConfig"> & {
+  /**
+   * @generated from field: string host = 1;
+   */
+  host: string;
+
+  /**
+   * @generated from field: int32 port = 2;
+   */
+  port: number;
+
+  /**
+   * @generated from field: string username = 3;
+   */
+  username: string;
+
+  /**
+   * @generated from field: string password = 4;
+   */
+  password: string;
+
+  /**
+   * @generated from field: bytebase.v1.EmailSetting.SMTPConfig.Encryption encryption = 5;
+   */
+  encryption: EmailSetting_SMTPConfig_Encryption;
+
+  /**
+   * @generated from field: bytebase.v1.EmailSetting.SMTPConfig.Authentication authentication = 6;
+   */
+  authentication: EmailSetting_SMTPConfig_Authentication;
+};
+
+/**
+ * Describes the message bytebase.v1.EmailSetting.SMTPConfig.
+ * Use `create(EmailSetting_SMTPConfigSchema)` to create a new message.
+ */
+export declare const EmailSetting_SMTPConfigSchema: GenMessage<EmailSetting_SMTPConfig>;
+
+/**
+ * @generated from enum bytebase.v1.EmailSetting.SMTPConfig.Encryption
+ */
+export enum EmailSetting_SMTPConfig_Encryption {
+  /**
+   * @generated from enum value: ENCRYPTION_UNSPECIFIED = 0;
+   */
+  ENCRYPTION_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ENCRYPTION_NONE = 1;
+   */
+  ENCRYPTION_NONE = 1,
+
+  /**
+   * @generated from enum value: STARTTLS = 2;
+   */
+  STARTTLS = 2,
+
+  /**
+   * @generated from enum value: SSL_TLS = 3;
+   */
+  SSL_TLS = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.EmailSetting.SMTPConfig.Encryption.
+ */
+export declare const EmailSetting_SMTPConfig_EncryptionSchema: GenEnum<EmailSetting_SMTPConfig_Encryption>;
+
+/**
+ * @generated from enum bytebase.v1.EmailSetting.SMTPConfig.Authentication
+ */
+export enum EmailSetting_SMTPConfig_Authentication {
+  /**
+   * @generated from enum value: AUTHENTICATION_UNSPECIFIED = 0;
+   */
+  AUTHENTICATION_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AUTHENTICATION_NONE = 1;
+   */
+  AUTHENTICATION_NONE = 1,
+
+  /**
+   * @generated from enum value: PLAIN = 2;
+   */
+  PLAIN = 2,
+
+  /**
+   * @generated from enum value: LOGIN = 3;
+   */
+  LOGIN = 3,
+
+  /**
+   * @generated from enum value: CRAM_MD5 = 4;
+   */
+  CRAM_MD5 = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.EmailSetting.SMTPConfig.Authentication.
+ */
+export declare const EmailSetting_SMTPConfig_AuthenticationSchema: GenEnum<EmailSetting_SMTPConfig_Authentication>;
+
+/**
+ * @generated from enum bytebase.v1.EmailSetting.Type
+ */
+export enum EmailSetting_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SMTP = 1;
+   */
+  SMTP = 1,
+}
+
+/**
+ * Describes the enum bytebase.v1.EmailSetting.Type.
+ */
+export declare const EmailSetting_TypeSchema: GenEnum<EmailSetting_Type>;
+
+/**
+ * @generated from message bytebase.v1.TestEmailSettingRequest
+ */
+export declare type TestEmailSettingRequest = Message<"bytebase.v1.TestEmailSettingRequest"> & {
+  /**
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * @generated from field: bytebase.v1.EmailSetting email_setting = 2;
+   */
+  emailSetting?: EmailSetting;
+
+  /**
+   * @generated from field: string to = 3;
+   */
+  to: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TestEmailSettingRequest.
+ * Use `create(TestEmailSettingRequestSchema)` to create a new message.
+ */
+export declare const TestEmailSettingRequestSchema: GenMessage<TestEmailSettingRequest>;
+
+/**
+ * @generated from message bytebase.v1.TestEmailSettingResponse
+ */
+export declare type TestEmailSettingResponse = Message<"bytebase.v1.TestEmailSettingResponse"> & {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: string error = 2;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TestEmailSettingResponse.
+ * Use `create(TestEmailSettingResponseSchema)` to create a new message.
+ */
+export declare const TestEmailSettingResponseSchema: GenMessage<TestEmailSettingResponse>;
+
+/**
  * @generated from enum bytebase.v1.DatabaseChangeMode
  */
 export enum DatabaseChangeMode {
@@ -1423,6 +1644,17 @@ export declare const SettingService: GenService<{
     methodKind: "unary";
     input: typeof UpdateSettingRequestSchema;
     output: typeof SettingSchema;
+  },
+  /**
+   * Sends a test email using the provided config (without persisting).
+   * Permissions required: bb.settings.set
+   *
+   * @generated from rpc bytebase.v1.SettingService.TestEmailSetting
+   */
+  testEmailSetting: {
+    methodKind: "unary";
+    input: typeof TestEmailSettingRequestSchema;
+    output: typeof TestEmailSettingResponseSchema;
   },
 }>;
 
