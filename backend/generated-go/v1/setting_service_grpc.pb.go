@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SettingService_ListSettings_FullMethodName  = "/bytebase.v1.SettingService/ListSettings"
-	SettingService_GetSetting_FullMethodName    = "/bytebase.v1.SettingService/GetSetting"
-	SettingService_UpdateSetting_FullMethodName = "/bytebase.v1.SettingService/UpdateSetting"
+	SettingService_ListSettings_FullMethodName     = "/bytebase.v1.SettingService/ListSettings"
+	SettingService_GetSetting_FullMethodName       = "/bytebase.v1.SettingService/GetSetting"
+	SettingService_UpdateSetting_FullMethodName    = "/bytebase.v1.SettingService/UpdateSetting"
+	SettingService_TestEmailSetting_FullMethodName = "/bytebase.v1.SettingService/TestEmailSetting"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -39,6 +40,9 @@ type SettingServiceClient interface {
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...grpc.CallOption) (*Setting, error)
+	// Sends a test email using the provided config (without persisting).
+	// Permissions required: bb.settings.set
+	TestEmailSetting(ctx context.Context, in *TestEmailSettingRequest, opts ...grpc.CallOption) (*TestEmailSettingResponse, error)
 }
 
 type settingServiceClient struct {
@@ -79,6 +83,16 @@ func (c *settingServiceClient) UpdateSetting(ctx context.Context, in *UpdateSett
 	return out, nil
 }
 
+func (c *settingServiceClient) TestEmailSetting(ctx context.Context, in *TestEmailSettingRequest, opts ...grpc.CallOption) (*TestEmailSettingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TestEmailSettingResponse)
+	err := c.cc.Invoke(ctx, SettingService_TestEmailSetting_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SettingServiceServer is the server API for SettingService service.
 // All implementations must embed UnimplementedSettingServiceServer
 // for forward compatibility.
@@ -94,6 +108,9 @@ type SettingServiceServer interface {
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
 	UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error)
+	// Sends a test email using the provided config (without persisting).
+	// Permissions required: bb.settings.set
+	TestEmailSetting(context.Context, *TestEmailSettingRequest) (*TestEmailSettingResponse, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -112,6 +129,9 @@ func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSetting
 }
 func (UnimplementedSettingServiceServer) UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSetting not implemented")
+}
+func (UnimplementedSettingServiceServer) TestEmailSetting(context.Context, *TestEmailSettingRequest) (*TestEmailSettingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TestEmailSetting not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 func (UnimplementedSettingServiceServer) testEmbeddedByValue()                        {}
@@ -188,6 +208,24 @@ func _SettingService_UpdateSetting_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SettingService_TestEmailSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestEmailSettingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SettingServiceServer).TestEmailSetting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SettingService_TestEmailSetting_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SettingServiceServer).TestEmailSetting(ctx, req.(*TestEmailSettingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SettingService_ServiceDesc is the grpc.ServiceDesc for SettingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -206,6 +244,10 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSetting",
 			Handler:    _SettingService_UpdateSetting_Handler,
+		},
+		{
+			MethodName: "TestEmailSetting",
+			Handler:    _SettingService_TestEmailSetting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

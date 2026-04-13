@@ -170,6 +170,10 @@ router.beforeEach((to, from, next) => {
       if (to.query["idp"]) {
         query["idp"] = to.query["idp"];
       }
+      // Preserve workspace parameter for workspace-scoped signin
+      if (to.query["workspace"]) {
+        query["workspace"] = to.query["workspace"];
+      }
       // Preserve other auth-related parameters
       if (to.query["token"]) {
         query["token"] = to.query["token"];

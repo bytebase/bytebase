@@ -23,6 +23,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
@@ -608,6 +609,65 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		storeSettingValue = environmentSetting
+	case storepb.SettingName_EMAIL:
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := convertEmailSetting(request.Msg.Setting.Value.GetEmail())
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email setting is required"))
+		}
+
+		oldEmailSetting := &storepb.EmailSetting{}
+		if existing, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get email setting: %v", err))
+		} else if existing != nil {
+			oldEmailSetting = proto.CloneOf(existing.Value.(*storepb.EmailSetting))
+		}
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.email.from":
+				oldEmailSetting.From = payload.From
+			case "value.email.from_name":
+				oldEmailSetting.FromName = payload.FromName
+			case "value.email.type":
+				oldEmailSetting.Type = payload.Type
+			case "value.email.smtp":
+				newSMTP := payload.GetSmtp()
+				if newSMTP == nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when updating smtp"))
+				}
+				// Preserve existing password if new password is empty.
+				if newSMTP.Password == "" {
+					if oldSMTP := oldEmailSetting.GetSmtp(); oldSMTP != nil {
+						newSMTP.Password = oldSMTP.Password
+					}
+				}
+				oldEmailSetting.Config = &storepb.EmailSetting_Smtp{Smtp: newSMTP}
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+			}
+		}
+
+		// Validate the final state.
+		if oldEmailSetting.Type == storepb.EmailSetting_SMTP {
+			smtp := oldEmailSetting.GetSmtp()
+			if smtp == nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when type is SMTP"))
+			}
+			if smtp.Host == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp host is required"))
+			}
+			if smtp.Port <= 0 {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp port must be positive"))
+			}
+		}
+		if oldEmailSetting.From == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("from address is required"))
+		}
+
+		storeSettingValue = oldEmailSetting
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", storeSettingName))
 	}
@@ -674,6 +734,50 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// TestEmailSetting sends a test email using the provided config.
+func (s *SettingService) TestEmailSetting(ctx context.Context, req *connect.Request[v1pb.TestEmailSettingRequest]) (*connect.Response[v1pb.TestEmailSettingResponse], error) {
+	emailSetting := convertEmailSetting(req.Msg.EmailSetting)
+	if emailSetting == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email_setting is required"))
+	}
+
+	// Substitute stored password if not provided.
+	if smtp := emailSetting.GetSmtp(); smtp != nil && smtp.Password == "" {
+		workspaceID := common.GetWorkspaceIDFromContext(ctx)
+		if existing, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL); err == nil && existing != nil {
+			if oldEmail, ok := existing.Value.(*storepb.EmailSetting); ok {
+				if oldSMTP := oldEmail.GetSmtp(); oldSMTP != nil {
+					smtp.Password = oldSMTP.Password
+				}
+			}
+		}
+	}
+
+	sender, err := mail.NewSender(emailSetting)
+	if err != nil {
+		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
+			Success: false,
+			Error:   err.Error(),
+		}), nil
+	}
+
+	err = sender.Send(ctx, &mail.SendRequest{
+		To:       []string{req.Msg.To},
+		Subject:  "Bytebase email config test",
+		TextBody: "This is a test email from Bytebase to verify your email configuration.",
+	})
+	if err != nil {
+		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
+			Success: false,
+			Error:   err.Error(),
+		}), nil
+	}
+
+	return connect.NewResponse(&v1pb.TestEmailSettingResponse{
+		Success: true,
+	}), nil
 }
 
 func (s *SettingService) checkSettingPermission(ctx context.Context, req connect.AnyRequest, perm permission.Permission) error {

@@ -2,19 +2,23 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/mail"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -270,8 +274,9 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}
 
+	deltas := findIamPolicyDeltas(policyMessage.Policy, policy.Policy)
+
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
-		deltas := findIamPolicyDeltas(policyMessage.Policy, policy.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
@@ -279,12 +284,120 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		setServiceData(p)
 	}
 
+	// send invite emails to newly added members.
+	go s.sendInviteEmails(context.WithoutCancel(ctx), workspaceID, policyMessage.Policy, deltas)
+
 	v1Policy, err := convertToV1IamPolicy(policy)
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(v1Policy), nil
+}
+
+// sendInviteEmails sends invite emails to newly added members. Errors are logged, never returned.
+func (s *WorkspaceService) sendInviteEmails(ctx context.Context, workspaceID string, oldPolicy *storepb.IamPolicy, deltas []*v1pb.BindingDelta) {
+	// Load email config.
+	emailSettingMsg, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
+	if err != nil || emailSettingMsg == nil {
+		return
+	}
+	emailSetting, ok := emailSettingMsg.Value.(*storepb.EmailSetting)
+	if !ok || emailSetting == nil {
+		return
+	}
+
+	sender, err := mail.NewSender(emailSetting)
+	if err != nil {
+		slog.Warn("failed to create mail sender for invite emails", log.BBError(err))
+		return
+	}
+
+	// Get workspace URL and title.
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+	if err != nil {
+		slog.Warn("failed to get external URL for invite emails", log.BBError(err))
+		return
+	}
+	if externalURL == "" {
+		slog.Warn("empty external URL, skip send invite emails")
+		return
+	}
+	workspaceTitle := workspaceID
+	if ws, err := s.store.GetWorkspaceByID(ctx, workspaceID); err == nil && ws != nil && ws.Payload.GetTitle() != "" {
+		workspaceTitle = ws.Payload.GetTitle()
+	}
+
+	// Build set of members who already existed in the old policy (any role).
+	existingMembers := make(map[string]bool)
+	for _, binding := range oldPolicy.GetBindings() {
+		for _, member := range binding.Members {
+			if email, ok := strings.CutPrefix(member, common.UserNamePrefix); ok {
+				existingMembers[email] = true
+			} else if groupName, ok := strings.CutPrefix(member, common.GroupPrefix); ok {
+				// Expand group to individual members.
+				group, err := s.store.GetGroupByName(ctx, workspaceID, common.GroupPrefix+groupName)
+				if err != nil || group == nil || group.Payload == nil {
+					continue
+				}
+				for _, m := range group.Payload.Members {
+					if email, ok := strings.CutPrefix(m.Member, common.UserNamePrefix); ok {
+						existingMembers[email] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Collect truly new user emails and their roles. Map deduplicates by email.
+	invites := make(map[string]string) // email -> roleName
+	for _, delta := range deltas {
+		if delta.Action != v1pb.BindingDelta_ADD {
+			continue
+		}
+		roleName := delta.Role
+		if role, err := s.store.GetRole(ctx, &store.FindRoleMessage{Workspace: workspaceID, ResourceID: &delta.Role}); err == nil && role != nil {
+			roleName = role.Name
+		}
+
+		// Direct user member.
+		if email, ok := strings.CutPrefix(delta.Member, common.UserNamePrefix); ok {
+			if !existingMembers[email] {
+				invites[email] = roleName
+			}
+			continue
+		}
+		// Group member — expand to individual users.
+		if groupName, ok := strings.CutPrefix(delta.Member, common.GroupPrefix); ok {
+			group, err := s.store.GetGroupByName(ctx, workspaceID, common.GroupPrefix+groupName)
+			if err != nil || group == nil || group.Payload == nil {
+				continue
+			}
+			for _, m := range group.Payload.Members {
+				if email, ok := strings.CutPrefix(m.Member, common.UserNamePrefix); ok {
+					if !existingMembers[email] {
+						invites[email] = roleName
+					}
+				}
+			}
+		}
+	}
+	if len(invites) == 0 {
+		return
+	}
+
+	workspaceLink := fmt.Sprintf("%s?workspace=%s", externalURL, workspaceID)
+	for email, roleName := range invites {
+		subject := fmt.Sprintf("[Bytebase] You've been invited to workspace %q", workspaceTitle)
+		body := fmt.Sprintf("Hi,\n\nYou've been added to the Bytebase workspace %q as %s.\n\nSign in to get started:\n%s\n\n— Bytebase", workspaceTitle, roleName, workspaceLink)
+		if err := sender.Send(ctx, &mail.SendRequest{
+			To:       []string{email},
+			Subject:  subject,
+			TextBody: body,
+		}); err != nil {
+			slog.Warn("failed to send invite email", slog.String("to", email), log.BBError(err))
+		}
+	}
 }
 
 func containsActiveEndUser(users []*store.UserMessage) bool {

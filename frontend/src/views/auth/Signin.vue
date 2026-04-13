@@ -284,9 +284,17 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
+  // If a workspace is specified in the query, fetch workspace-scoped actuator and IDPs.
+  const workspaceID = route.query["workspace"] as string | undefined;
+  const workspaceName = workspaceID ? `workspaces/${workspaceID}` : undefined;
   try {
-    // Prepare all identity providers.
-    await identityProviderStore.fetchIdentityProviderList();
+    const promises: Promise<unknown>[] = [
+      identityProviderStore.fetchIdentityProviderList(workspaceName),
+    ];
+    if (workspaceName) {
+      promises.push(actuatorStore.fetchServerInfo(workspaceName));
+    }
+    await Promise.all(promises);
   } catch (error) {
     pushNotification({
       module: "bytebase",

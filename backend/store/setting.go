@@ -39,6 +39,8 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 		return &storepb.AISetting{}, nil
 	case storepb.SettingName_ENVIRONMENT:
 		return &storepb.EnvironmentSetting{}, nil
+	case storepb.SettingName_EMAIL:
+		return &storepb.EmailSetting{}, nil
 	default:
 		return nil, errors.Errorf("unknown setting name: %v", name)
 	}

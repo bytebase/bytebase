@@ -654,3 +654,53 @@ func (x *EnvironmentSetting) Equal(y *EnvironmentSetting) bool {
 	}
 	return true
 }
+
+func (x *EmailSetting_SMTPConfig) Equal(y *EmailSetting_SMTPConfig) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Host != y.Host {
+		return false
+	}
+	if x.Port != y.Port {
+		return false
+	}
+	if x.Username != y.Username {
+		return false
+	}
+	if x.Password != y.Password {
+		return false
+	}
+	if x.Encryption != y.Encryption {
+		return false
+	}
+	if x.Authentication != y.Authentication {
+		return false
+	}
+	return true
+}
+
+func (x *EmailSetting) Equal(y *EmailSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.From != y.From {
+		return false
+	}
+	if x.FromName != y.FromName {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if !x.GetSmtp().Equal(y.GetSmtp()) {
+		return false
+	}
+	return true
+}

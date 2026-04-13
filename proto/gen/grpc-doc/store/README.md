@@ -260,6 +260,8 @@
     - [DataClassificationSetting.DataClassificationConfig.ClassificationEntry](#bytebase-store-DataClassificationSetting-DataClassificationConfig-ClassificationEntry)
     - [DataClassificationSetting.DataClassificationConfig.DataClassification](#bytebase-store-DataClassificationSetting-DataClassificationConfig-DataClassification)
     - [DataClassificationSetting.DataClassificationConfig.Level](#bytebase-store-DataClassificationSetting-DataClassificationConfig-Level)
+    - [EmailSetting](#bytebase-store-EmailSetting)
+    - [EmailSetting.SMTPConfig](#bytebase-store-EmailSetting-SMTPConfig)
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
@@ -274,6 +276,9 @@
   
     - [AISetting.Provider](#bytebase-store-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
+    - [EmailSetting.SMTPConfig.Authentication](#bytebase-store-EmailSetting-SMTPConfig-Authentication)
+    - [EmailSetting.SMTPConfig.Encryption](#bytebase-store-EmailSetting-SMTPConfig-Encryption)
+    - [EmailSetting.Type](#bytebase-store-EmailSetting-Type)
     - [SettingName](#bytebase-store-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source)
     - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
@@ -4358,6 +4363,44 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 
 
+<a name="bytebase-store-EmailSetting"></a>
+
+### EmailSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from | [string](#string) |  |  |
+| from_name | [string](#string) |  |  |
+| type | [EmailSetting.Type](#bytebase-store-EmailSetting-Type) |  |  |
+| smtp | [EmailSetting.SMTPConfig](#bytebase-store-EmailSetting-SMTPConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-EmailSetting-SMTPConfig"></a>
+
+### EmailSetting.SMTPConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  |  |
+| port | [int32](#int32) |  |  |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+| encryption | [EmailSetting.SMTPConfig.Encryption](#bytebase-store-EmailSetting-SMTPConfig-Encryption) |  |  |
+| authentication | [EmailSetting.SMTPConfig.Authentication](#bytebase-store-EmailSetting-SMTPConfig-Authentication) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-EnvironmentSetting"></a>
 
 ### EnvironmentSetting
@@ -4591,6 +4634,47 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 
 
 
+<a name="bytebase-store-EmailSetting-SMTPConfig-Authentication"></a>
+
+### EmailSetting.SMTPConfig.Authentication
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTHENTICATION_UNSPECIFIED | 0 |  |
+| AUTHENTICATION_NONE | 1 |  |
+| PLAIN | 2 |  |
+| LOGIN | 3 |  |
+| CRAM_MD5 | 4 |  |
+
+
+
+<a name="bytebase-store-EmailSetting-SMTPConfig-Encryption"></a>
+
+### EmailSetting.SMTPConfig.Encryption
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ENCRYPTION_UNSPECIFIED | 0 |  |
+| ENCRYPTION_NONE | 1 |  |
+| STARTTLS | 2 |  |
+| SSL_TLS | 3 |  |
+
+
+
+<a name="bytebase-store-EmailSetting-Type"></a>
+
+### EmailSetting.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SMTP | 1 |  |
+
+
+
 <a name="bytebase-store-SettingName"></a>
 
 ### SettingName
@@ -4607,6 +4691,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | DATA_CLASSIFICATION | 6 |  |
 | SEMANTIC_TYPES | 7 |  |
 | ENVIRONMENT | 8 |  |
+| EMAIL | 9 |  |
 
 
 
