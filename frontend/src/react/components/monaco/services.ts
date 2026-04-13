@@ -9,12 +9,25 @@ import "vscode/localExtensionHost";
 type WorkerLoader = () => Worker;
 
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
+  editorWorkerService: () =>
+    new Worker(
+      new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
+      { type: "module" }
+    ),
   TextEditorWorker: () =>
     new Worker(
       new URL("monaco-editor/esm/vs/editor/editor.worker.js", import.meta.url),
       { type: "module" }
     ),
   TextMateWorker: () =>
+    new Worker(
+      new URL(
+        "@codingame/monaco-vscode-textmate-service-override/worker",
+        import.meta.url
+      ),
+      { type: "module" }
+    ),
+  textMateWorker: () =>
     new Worker(
       new URL(
         "@codingame/monaco-vscode-textmate-service-override/worker",
