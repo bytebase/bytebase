@@ -214,11 +214,30 @@ export function AgentInput() {
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+
+    const computedStyle = window.getComputedStyle(el);
+    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+    const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0;
+    const paddingHeight = paddingTop + paddingBottom;
+    const borderTop = Number.parseFloat(computedStyle.borderTopWidth) || 0;
+    const borderBottom =
+      Number.parseFloat(computedStyle.borderBottomWidth) || 0;
+    const borderHeight =
+      computedStyle.boxSizing === "border-box" ? borderTop + borderBottom : 0;
+    const minHeight = lineHeight + paddingHeight + borderHeight;
+
     el.style.height = "auto";
     const maxRows = 6;
-    const lineHeight = 20;
-    const maxHeight = lineHeight * maxRows;
-    el.style.height = `${Math.min(el.scrollHeight, maxHeight)}px`;
+    const maxHeight = lineHeight * maxRows + paddingHeight + borderHeight;
+    const nextHeight = Math.max(
+      minHeight,
+      Math.min(el.scrollHeight + borderHeight, maxHeight)
+    );
+
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY =
+      el.scrollHeight + borderHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
@@ -675,17 +694,13 @@ export function AgentInput() {
         </div>
       ) : (
         /* Input row with @-mention autocomplete */
-        <div
-          className="relative flex items-center gap-x-2"
-          data-agent-input-row
-        >
+        <div className="relative flex items-end gap-x-2" data-agent-input-row>
           <div className="relative w-full">
             <textarea
               ref={textareaRef}
               value={input}
               rows={1}
-              className="w-full resize-none rounded-xs border px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-              style={{ maxHeight: 120 }}
+              className="block min-h-[34px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               placeholder={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {
@@ -747,7 +762,7 @@ export function AgentInput() {
             <Button
               variant="destructive"
               size="sm"
-              className="whitespace-nowrap"
+              className="h-[34px] shrink-0 self-end whitespace-nowrap"
               onClick={() => useAgentStore.getState().cancel(currentChat?.id)}
             >
               {t("agent.stop")}
@@ -755,7 +770,7 @@ export function AgentInput() {
           ) : (
             <Button
               size="sm"
-              className="whitespace-nowrap"
+              className="h-[34px] shrink-0 self-end whitespace-nowrap"
               disabled={isSendDisabled}
               onClick={() => void send()}
             >
