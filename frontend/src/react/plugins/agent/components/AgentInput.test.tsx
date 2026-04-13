@@ -155,13 +155,16 @@ describe("AgentInput", () => {
     expect(container.querySelector("textarea")?.className).toContain(
       "min-h-[34px]"
     );
+    expect(container.querySelector("textarea")?.className).toContain(
+      "max-h-[134px]"
+    );
     expect(container.querySelector("textarea")?.className).toContain("block");
     expect(container.querySelector("button")?.className).toContain("h-[34px]");
 
     unmount();
   });
 
-  test("adds border-box height correctly and enables scrolling only at max height", () => {
+  test("sizes from CSS min/max heights and enables scrolling only at max height", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 
     render();
@@ -175,15 +178,19 @@ describe("AgentInput", () => {
       configurable: true,
       get: () => scrollHeight,
     });
+    Object.defineProperty(element, "offsetHeight", {
+      configurable: true,
+      get: () => 34,
+    });
+    Object.defineProperty(element, "clientHeight", {
+      configurable: true,
+      get: () => 32,
+    });
     const getComputedStyleSpy = vi
       .spyOn(window, "getComputedStyle")
       .mockReturnValue({
-        lineHeight: "20px",
-        paddingTop: "6px",
-        paddingBottom: "6px",
-        borderTopWidth: "1px",
-        borderBottomWidth: "1px",
-        boxSizing: "border-box",
+        minHeight: "34px",
+        maxHeight: "134px",
       } as CSSStyleDeclaration);
 
     act(() => {

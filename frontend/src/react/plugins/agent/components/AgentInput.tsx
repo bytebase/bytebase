@@ -215,29 +215,19 @@ export function AgentInput() {
     const el = textareaRef.current;
     if (!el) return;
 
-    const computedStyle = window.getComputedStyle(el);
-    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
-    const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
-    const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0;
-    const paddingHeight = paddingTop + paddingBottom;
-    const borderTop = Number.parseFloat(computedStyle.borderTopWidth) || 0;
-    const borderBottom =
-      Number.parseFloat(computedStyle.borderBottomWidth) || 0;
-    const borderHeight =
-      computedStyle.boxSizing === "border-box" ? borderTop + borderBottom : 0;
-    const minHeight = lineHeight + paddingHeight + borderHeight;
-
     el.style.height = "auto";
-    const maxRows = 6;
-    const maxHeight = lineHeight * maxRows + paddingHeight + borderHeight;
-    const nextHeight = Math.max(
-      minHeight,
-      Math.min(el.scrollHeight + borderHeight, maxHeight)
-    );
+
+    const styles = window.getComputedStyle(el);
+    const minHeight =
+      Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
+    const maxHeight =
+      Number.parseFloat(styles.maxHeight) || Number.POSITIVE_INFINITY;
+    const borderHeight = el.offsetHeight - el.clientHeight;
+    const contentHeight = el.scrollHeight + borderHeight;
+    const nextHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
 
     el.style.height = `${nextHeight}px`;
-    el.style.overflowY =
-      el.scrollHeight + borderHeight > maxHeight ? "auto" : "hidden";
+    el.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
@@ -700,7 +690,7 @@ export function AgentInput() {
               ref={textareaRef}
               value={input}
               rows={1}
-              className="block min-h-[34px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="block min-h-[34px] max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               placeholder={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {
