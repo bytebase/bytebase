@@ -117,7 +117,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       </pre>
                     ),
                     code: ({ children }) => (
-                      <code className="rounded bg-control-bg-hover px-1 text-xs">
+                      <code className="break-all rounded bg-control-bg-hover px-1 text-xs">
                         {children}
                       </code>
                     ),
