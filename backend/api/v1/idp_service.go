@@ -58,15 +58,20 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 	var identityProviders []*store.IdentityProviderMessage
 
 	var workspaceID string
+	workspaceIDInContext := common.GetWorkspaceIDFromContext(ctx)
 	if req.Msg.Parent != "" {
 		id, err := common.GetWorkspaceID(req.Msg.Parent)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		workspaceID = id
+
+		if workspaceID != workspaceIDInContext {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Wrapf(err, "workspace id not match"))
+		}
 	}
 	if workspaceID == "" {
-		workspaceID = common.GetWorkspaceIDFromContext(ctx)
+		workspaceID = workspaceIDInContext
 	}
 	if workspaceID == "" && !s.profile.SaaS {
 		defaultWorkspaceID, err := s.store.GetWorkspaceID(ctx)
@@ -82,6 +87,17 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 		identityProviders = append(identityProviders, wsIDPs...)
+
+		if len(identityProviders) == 0 {
+			if workspaceIDInContext == "" {
+				// callback to global IPDs, works for login flow
+				globalIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, err)
+				}
+				identityProviders = append(identityProviders, globalIDPs...)
+			}
+		}
 	} else {
 		globalIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
 		if err != nil {
