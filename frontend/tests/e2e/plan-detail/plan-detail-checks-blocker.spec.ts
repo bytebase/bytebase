@@ -73,8 +73,13 @@ test.beforeAll(async ({ browser }) => {
     await dbaApi.approveIssue(issueName);
   }
 
-  // Verify approval is APPROVED
+  // Verify approval is APPROVED. If the environment has no matching approval
+  // rule, status may be SKIPPED — skip the suite rather than false-fail.
   const finalIssue = await env.api.getIssue(issueName);
+  if (finalIssue.approvalStatus === "SKIPPED") {
+    test.skip();
+    return;
+  }
   if (finalIssue.approvalStatus !== "APPROVED") {
     throw new Error(
       `Expected approvalStatus "APPROVED" but got "${finalIssue.approvalStatus}" on issue "${issueName}"`

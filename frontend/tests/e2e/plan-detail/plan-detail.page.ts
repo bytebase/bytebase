@@ -1,4 +1,4 @@
-import { type Page, type Locator } from "@playwright/test";
+import { expect, type Page, type Locator } from "@playwright/test";
 import { BytebaseApiClient } from "../framework/api-client";
 
 export class PlanDetailPage {
@@ -76,18 +76,13 @@ export class PlanDetailPage {
     return this.page.getByRole("dialog").getByRole("button", { name: "Run" });
   }
 
-  async runTask(nth = 0) {
-    const runButtons = this.page.locator('[class*="task"]').getByRole("button", { name: "Run" });
-    const enabledRun = runButtons.filter({ has: this.page.locator(":not([disabled])") }).nth(nth);
-    if (await enabledRun.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await enabledRun.click();
-    } else {
-      await this.page
-        .getByRole("button", { name: "Run", exact: true })
-        .filter({ hasNot: this.page.locator("[disabled]") })
-        .last()
-        .click();
-    }
+  async runTask() {
+    // Use CSS :not([disabled]) on the element itself (not descendants) to find
+    // an enabled Run button. Playwright's filter({ has/hasNot }) checks children,
+    // which doesn't work for the button's own disabled attribute.
+    const enabledRun = this.page.locator("button:not([disabled])", { hasText: "Run" }).last();
+    await expect(enabledRun).toBeVisible({ timeout: 15_000 });
+    await enabledRun.click();
     const confirmDialog = this.page.getByRole("dialog").filter({ hasText: "Run task" });
     await confirmDialog.getByRole("button", { name: "Run" }).click();
   }
