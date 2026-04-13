@@ -62,6 +62,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, err
 	}
 
+	if len(antlrASTs) == 0 {
+		return &base.QuerySpan{
+			Type:          base.Select,
+			SourceColumns: make(base.SourceColumnSet),
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
 	if len(antlrASTs) != 1 {
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(antlrASTs))
 	}

@@ -1,10 +1,11 @@
 package tsql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"strings"
 
-	"github.com/bytebase/bytebase/backend/common"
+	omnimssql "github.com/bytebase/omni/mssql"
+	"github.com/bytebase/omni/mssql/ast"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -14,287 +15,76 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_MSSQL, SplitSQL)
 }
 
-// SplitSQL splits the given SQL statement into multiple SQL statements.
+// SplitSQL splits the given T-SQL script into statements.
+//
+// Strategy: use omni's mssql parser to obtain per-statement byte ranges, then
+// emit one base.Statement per omni statement with strict byte-contiguity and
+// position adjacency:
+//
+//  1. stmts[0].Range.Start == 0
+//     stmts[i].Range.Start == stmts[i-1].Range.End          (byte contiguity)
+//     stmts[0].Start       == {Line: 1, Column: 1}
+//     stmts[i].Start       == stmts[i-1].End                (position adjacency)
+//
+//  2. `GO` batch separators become base.Statement entries with Empty=true.
+//     The GO batch semantics live in the tsqlbatch.Batcher (which strips GO
+//     before SplitSQL is called on the execution path); this function only
+//     reports them so that span analysis paths (which consume raw user SQL
+//     without the Batcher) can filter them cleanly via FilterEmptyStatements.
+//
+// On parser failure, falls back to the semicolon-based tokenizer splitter.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	r, err := splitByParser(statement)
+	omniStmts, err := omnimssql.Parse(statement)
 	if err != nil {
-		// Fall back to semi split.
 		return splitBySemi(statement)
 	}
-	return r, err
+	return toBaseStatements(statement, omniStmts), nil
 }
 
 func splitBySemi(statement string) ([]base.Statement, error) {
 	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitStandardMultiSQL()
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
+	return t.SplitStandardMultiSQL()
 }
 
-func splitByParser(statement string) ([]base.Statement, error) {
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewTSqlLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewTSqlParser(stream)
-
-	// Remove default error listener and add our own error listener.
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+// toBaseStatements converts omni's statement list into []base.Statement while
+// enforcing byte-contiguity and position adjacency. Any bytes that omni did
+// not attribute to a statement (gaps) are absorbed into the following
+// statement so the output remains contiguous.
+func toBaseStatements(sql string, omniStmts []omnimssql.Statement) []base.Statement {
+	if len(omniStmts) == 0 {
+		return nil
 	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	p.RemoveErrorListeners()
-	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = true
-
-	tree := p.Tsql_file()
-
-	if lexerErrorListener.Err != nil {
-		return nil, lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return nil, parserErrorListener.Err
-	}
-
-	var result []base.Statement
-	tokens := stream.GetAllTokens()
-	start := 0
-	byteOffset := 0
-
-	if len(tree.AllBatch_without_go()) == 0 {
-		// Go statement only.
-		for _, goStmt := range tree.AllGo_statement() {
-			pos := goStmt.GetStop().GetTokenIndex()
-			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-			stmtByteLength := len(stmtText)
-			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-			result = append(result, base.Statement{
-				Text: stmtText,
-				Range: &storepb.Range{
-					Start: int32(byteOffset),
-					End:   int32(byteOffset + stmtByteLength),
-				},
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(tokens[pos].GetLine()),
-					int32(tokens[pos].GetColumn()),
-					tokens[pos].GetText(),
-				),
-				Start: &storepb.Position{
-					Line:   int32(startLine + 1),
-					Column: int32(startColumn + 1),
-				},
-				Empty: false,
-			})
-			byteOffset += stmtByteLength
-			start = pos + 1
+	result := make([]base.Statement, 0, len(omniStmts))
+	prevEnd := &storepb.Position{Line: 1, Column: 1}
+	prevByte := 0
+	for _, os := range omniStmts {
+		startByte := prevByte
+		endByte := os.ByteEnd
+		if endByte < startByte {
+			endByte = startByte
 		}
-		return result, nil
-	}
-
-	// First batch_without_go.
-	b := tree.AllBatch_without_go()[0]
-	var r []base.Statement
-	r, start, byteOffset = splitBatchWithoutGo(b, tokens, stream, start, byteOffset, statement)
-	result = append(result, r...)
-
-	goIdx := 0
-	if len(tree.AllBatch_without_go()) > 1 {
-		bs := tree.AllBatch_without_go()[1:]
-		for _, b := range bs {
-			// Find all go statement before the current batch_without_go.
-			var goStmts []parser.IGo_statementContext
-			for _, goStmt := range tree.AllGo_statement()[goIdx:] {
-				if goStmt.GetStop().GetTokenIndex() < b.GetStart().GetTokenIndex() {
-					goStmts = append(goStmts, goStmt)
-					goIdx++
-					continue
-				}
-				break
-			}
-
-			for _, goStmt := range goStmts {
-				pos := goStmt.GetStop().GetTokenIndex()
-				stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-				stmtByteLength := len(stmtText)
-				// Calculate start position from byte offset (first character of Text)
-				startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-				result = append(result, base.Statement{
-					Text: stmtText,
-					Range: &storepb.Range{
-						Start: int32(byteOffset),
-						End:   int32(byteOffset + stmtByteLength),
-					},
-					End: common.ConvertANTLRTokenToExclusiveEndPosition(
-						int32(tokens[pos].GetLine()),
-						int32(tokens[pos].GetColumn()),
-						tokens[pos].GetText(),
-					),
-					Start: &storepb.Position{
-						Line:   int32(startLine + 1),
-						Column: int32(startColumn + 1),
-					},
-					Empty: false,
-				})
-				byteOffset += stmtByteLength
-				start = pos + 1
-			}
-
-			r, start, byteOffset = splitBatchWithoutGo(b, tokens, stream, start, byteOffset, statement)
-			result = append(result, r...)
+		text := sql[startByte:endByte]
+		endLine, endCol := base.CalculateLineAndColumn(sql, endByte)
+		endPos := &storepb.Position{
+			Line:   int32(endLine + 1),
+			Column: int32(endCol + 1),
 		}
-	}
 
-	if goIdx < len(tree.AllGo_statement()) {
-		// Last go statement.
-		for _, goStmt := range tree.AllGo_statement()[goIdx:] {
-			pos := goStmt.GetStop().GetTokenIndex()
-			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-			stmtByteLength := len(stmtText)
-			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-			result = append(result, base.Statement{
-				Text: stmtText,
-				Range: &storepb.Range{
-					Start: int32(byteOffset),
-					End:   int32(byteOffset + stmtByteLength),
-				},
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(tokens[pos].GetLine()),
-					int32(tokens[pos].GetColumn()),
-					tokens[pos].GetText(),
-				),
-				Start: &storepb.Position{
-					Line:   int32(startLine + 1),
-					Column: int32(startColumn + 1),
-				},
-				Empty: false,
-			})
-			byteOffset += stmtByteLength
-			start = pos + 1
-		}
-	}
+		_, isGo := os.AST.(*ast.GoStmt)
+		empty := isGo || os.Empty() || strings.TrimSpace(text) == ""
 
-	return result, nil
-}
-
-func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, byteOffset int, statement string) ([]base.Statement, int, int) {
-	var result []base.Statement
-	switch {
-	case b.Batch_level_statement() == nil && b.Execute_body_batch() == nil:
-		// All sql_clauses.
-		for _, sqlClause := range b.AllSql_clauses() {
-			pos := sqlClause.GetStop().GetTokenIndex()
-			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-			stmtByteLength := len(stmtText)
-			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-			result = append(result, base.Statement{
-				Text: stmtText,
-				Range: &storepb.Range{
-					Start: int32(byteOffset),
-					End:   int32(byteOffset + stmtByteLength),
-				},
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(tokens[pos].GetLine()),
-					int32(tokens[pos].GetColumn()),
-					tokens[pos].GetText(),
-				),
-				Start: &storepb.Position{
-					Line:   int32(startLine + 1),
-					Column: int32(startColumn + 1),
-				},
-				Empty: false,
-			})
-			byteOffset += stmtByteLength
-			start = pos + 1
-		}
-	case b.Batch_level_statement() != nil:
-		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
-		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-		stmtByteLength := len(stmtText)
-		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
-			Text: stmtText,
+			Text: text,
 			Range: &storepb.Range{
-				Start: int32(byteOffset),
-				End:   int32(byteOffset + stmtByteLength),
+				Start: int32(startByte),
+				End:   int32(endByte),
 			},
-			End: common.ConvertANTLRTokenToExclusiveEndPosition(
-				int32(tokens[pos].GetLine()),
-				int32(tokens[pos].GetColumn()),
-				tokens[pos].GetText(),
-			),
-			Start: &storepb.Position{
-				Line:   int32(startLine + 1),
-				Column: int32(startColumn + 1),
-			},
-			Empty: false,
+			Start: prevEnd,
+			End:   endPos,
+			Empty: empty,
 		})
-		byteOffset += stmtByteLength
-		start = pos + 1
-	case b.Execute_body_batch() != nil:
-		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
-		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-		stmtByteLength := len(stmtText)
-		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-		result = append(result, base.Statement{
-			Text: stmtText,
-			Range: &storepb.Range{
-				Start: int32(byteOffset),
-				End:   int32(byteOffset + stmtByteLength),
-			},
-			End: common.ConvertANTLRTokenToExclusiveEndPosition(
-				int32(tokens[pos].GetLine()),
-				int32(tokens[pos].GetColumn()),
-				tokens[pos].GetText(),
-			),
-			Start: &storepb.Position{
-				Line:   int32(startLine + 1),
-				Column: int32(startColumn + 1),
-			},
-			Empty: false,
-		})
-		byteOffset += stmtByteLength
-		start = pos + 1
-		for _, sqlClause := range b.AllSql_clauses() {
-			pos := sqlClause.GetStop().GetTokenIndex()
-			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
-			stmtByteLength := len(stmtText)
-			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
-			result = append(result, base.Statement{
-				Text: stmtText,
-				Range: &storepb.Range{
-					Start: int32(byteOffset),
-					End:   int32(byteOffset + stmtByteLength),
-				},
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(tokens[pos].GetLine()),
-					int32(tokens[pos].GetColumn()),
-					tokens[pos].GetText(),
-				),
-				Start: &storepb.Position{
-					Line:   int32(startLine + 1),
-					Column: int32(startColumn + 1),
-				},
-				Empty: false,
-			})
-			byteOffset += stmtByteLength
-			start = pos + 1
-		}
-	default:
-		// No statements found in this batch
+		prevEnd = endPos
+		prevByte = endByte
 	}
-	return result, start, byteOffset
+	return result
 }
