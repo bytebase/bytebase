@@ -1214,6 +1214,11 @@
       "edit-member": "メンバー編集 - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "このプロジェクトではロール申請が無効になっています。",
+          "can-grant-access-directly": "すでに {{permission}} を持っているため、直接アクセスを付与できます。",
+          "feature-unavailable": "現在のプランではロール申請ワークフローを利用できません。"
+        },
         "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",
         "expiration-must-be-future": "有効期限は将来の時刻を指定してください。",
         "failed-to-build-expression": "CEL 式の構築に失敗しました。もう一度お試しください。",
