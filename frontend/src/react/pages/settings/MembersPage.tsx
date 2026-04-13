@@ -72,6 +72,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -132,8 +133,17 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
+import {
+  getRequestRoleButtonState,
+  REQUEST_ROLE_REQUIRED_PERMISSIONS,
+} from "./requestRoleButton";
 
 const EMPTY_ROLE_SET = new Set<string>();
+
+const assertNever = (value: never): never => {
+  throw new Error(`Unexpected value: ${String(value)}`);
+};
 
 // ============================================================
 // MemberTable (view by members)
@@ -2268,19 +2278,49 @@ export function MembersPage({ projectId }: { projectId?: string }) {
 
   const scope = projectName ? "project" : "workspace";
 
-  // A project member without `bb.projects.setIamPolicy` cannot grant access
-  // to themselves, so they need to request it instead. The old Vue
-  // ProjectMemberPanel showed a "Request Role" button in this case; we
-  // restore the same behavior here.
-  const canRequestRole = useMemo(() => {
-    if (!project || !projectName) return false;
-    if (!project.allowRequestRole) return false;
-    if (canSetIamPolicy) return false;
-    return (
-      hasProjectPermissionV2(project, "bb.issues.create") &&
-      hasProjectPermissionV2(project, "bb.roles.list")
-    );
-  }, [project, projectName, canSetIamPolicy]);
+  const requestRoleButtonState = useMemo(
+    () =>
+      getRequestRoleButtonState({
+        projectName,
+        projectReady: !!project,
+        allowRequestRole: project?.allowRequestRole ?? false,
+        canSetIamPolicy,
+        hasRequestRoleFeature,
+      }),
+    [projectName, project, canSetIamPolicy, hasRequestRoleFeature]
+  );
+
+  const requestRoleDisabledReason = useMemo(() => {
+    const reason = requestRoleButtonState.disabledReason;
+    if (!reason) return undefined;
+
+    switch (reason.kind) {
+      case "loading":
+        return t("common.loading");
+      case "allow-request-role-disabled":
+        return t(
+          "project.members.request-role.disabled-reason.allow-request-role-disabled"
+        );
+      case "can-grant-access-directly":
+        return t(
+          "project.members.request-role.disabled-reason.can-grant-access-directly",
+          {
+            permission: reason.permission,
+          }
+        );
+      case "feature-unavailable":
+        return t(
+          "project.members.request-role.disabled-reason.feature-unavailable"
+        );
+      default:
+        return assertNever(reason);
+    }
+  }, [requestRoleButtonState.disabledReason, t]);
+
+  const setIamPolicyPermissionGuard = useMemo(
+    () => getSetIamPolicyPermissionGuardConfig(project),
+    [project]
+  );
 
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
@@ -2317,46 +2357,72 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           onChange={(e) => setMemberSearchText(e.target.value)}
         />
         <div className="flex items-center gap-x-2">
-          <PermissionGuard permissions={["bb.workspaces.setIamPolicy"]}>
-            <div className="flex items-center gap-x-2">
-              {memberViewTab === "MEMBERS" && (
+          <PermissionGuard {...setIamPolicyPermissionGuard}>
+            {({ disabled }) => (
+              <div className="flex items-center gap-x-2">
+                {memberViewTab === "MEMBERS" && (
+                  <Button
+                    variant="outline"
+                    disabled={
+                      disabled ||
+                      !canSetIamPolicy ||
+                      selectedMembers.length === 0
+                    }
+                    onClick={handleRevokeSelected}
+                  >
+                    {t("settings.members.revoke-access")}
+                  </Button>
+                )}
                 <Button
-                  variant="outline"
-                  disabled={!canSetIamPolicy || selectedMembers.length === 0}
-                  onClick={handleRevokeSelected}
+                  disabled={disabled || !canSetIamPolicy}
+                  onClick={() => {
+                    setEditingMember(undefined);
+                    setShowEditMemberDrawer(true);
+                  }}
                 >
-                  {t("settings.members.revoke-access")}
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("settings.members.grant-access")}
                 </Button>
-              )}
-              <Button
-                disabled={!canSetIamPolicy}
-                onClick={() => {
-                  setEditingMember(undefined);
-                  setShowEditMemberDrawer(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {t("settings.members.grant-access")}
-              </Button>
-            </div>
+              </div>
+            )}
           </PermissionGuard>
-          {canRequestRole && (
-            <Button
-              disabled={!hasRequestRoleFeature}
-              onClick={() => setShowRequestRoleDialog(true)}
-            >
-              {hasRequestRoleFeature ? (
-                <ShieldUser className="size-4 mr-1" />
-              ) : (
-                <FeatureBadge
-                  feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW}
-                  clickable={false}
-                  className="mr-1"
-                />
-              )}
-              {t("issue.title.request-role")}
-            </Button>
-          )}
+          {requestRoleButtonState.visible &&
+            (requestRoleDisabledReason ? (
+              <Tooltip content={requestRoleDisabledReason}>
+                <span className="inline-flex">
+                  <Button
+                    disabled
+                    onClick={() => setShowRequestRoleDialog(true)}
+                  >
+                    {hasRequestRoleFeature ? (
+                      <ShieldUser className="size-4 mr-1" />
+                    ) : (
+                      <FeatureBadge
+                        feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW}
+                        clickable={false}
+                        className="mr-1"
+                      />
+                    )}
+                    {t("issue.title.request-role")}
+                  </Button>
+                </span>
+              </Tooltip>
+            ) : (
+              <PermissionGuard
+                permissions={[...REQUEST_ROLE_REQUIRED_PERMISSIONS]}
+                project={project}
+              >
+                {({ disabled }) => (
+                  <Button
+                    disabled={disabled}
+                    onClick={() => setShowRequestRoleDialog(true)}
+                  >
+                    <ShieldUser className="size-4 mr-1" />
+                    {t("issue.title.request-role")}
+                  </Button>
+                )}
+              </PermissionGuard>
+            ))}
         </div>
       </div>
 
