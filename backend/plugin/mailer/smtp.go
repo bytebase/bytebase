@@ -116,7 +116,7 @@ type loginAuth struct {
 	username, password string
 }
 
-func (a *loginAuth) Start(_ *smtp.ServerInfo) (string, []byte, error) {
+func (*loginAuth) Start(_ *smtp.ServerInfo) (string, []byte, error) {
 	return "LOGIN", nil, nil
 }
 
