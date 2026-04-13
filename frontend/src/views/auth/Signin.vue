@@ -286,19 +286,20 @@ watchEffect(() => {
 onMounted(async () => {
   // If a workspace is specified in the query, fetch workspace-scoped actuator and IDPs.
   const workspaceID = route.query["workspace"] as string | undefined;
-  const workspaceNameFromQuery = workspaceID ? `workspaces/${workspaceID}` : undefined;
-  const workspaceName = actuatorStore.workspaceResourceName || workspaceNameFromQuery
+  const workspaceNameFromQuery = workspaceID
+    ? `workspaces/${workspaceID}`
+    : undefined;
+  const workspaceName =
+    actuatorStore.workspaceResourceName || workspaceNameFromQuery;
 
   try {
     const [idpList, _] = await Promise.all([
-      identityProviderStore.fetchIdentityProviderList(
-        workspaceName
-      ),
-      actuatorStore.fetchServerInfo(workspaceName)
-    ])
+      identityProviderStore.fetchIdentityProviderList(workspaceName),
+      actuatorStore.fetchServerInfo(workspaceName),
+    ]);
     if (idpList.length === 0 && workspaceName) {
       // fallback to global IDPs
-      await identityProviderStore.fetchIdentityProviderList()
+      await identityProviderStore.fetchIdentityProviderList();
     }
   } catch (error) {
     pushNotification({
