@@ -30,6 +30,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -583,38 +584,21 @@ function SourceSchemaStep({
   return (
     <>
       <div className="mb-4">
-        <div className="flex items-center gap-x-6">
-          <label className="flex items-center gap-x-2 cursor-pointer">
-            <input
-              type="radio"
-              name="source-schema-type"
-              checked={
-                sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION
-              }
-              onChange={() =>
-                onSourceSchemaTypeChange(
-                  SourceSchemaType.SCHEMA_HISTORY_VERSION
-                )
-              }
-              className="accent-accent"
-            />
-            <span className="text-sm">{t("common.changelog")}</span>
-          </label>
-          <label className="flex items-center gap-x-2 cursor-pointer">
-            <input
-              type="radio"
-              name="source-schema-type"
-              checked={sourceSchemaType === SourceSchemaType.RAW_SQL}
-              onChange={() =>
-                onSourceSchemaTypeChange(SourceSchemaType.RAW_SQL)
-              }
-              className="accent-accent"
-            />
-            <span className="text-sm">
-              {t("database.sync-schema.copy-schema")}
-            </span>
-          </label>
-        </div>
+        <RadioGroup
+          value={String(sourceSchemaType)}
+          onValueChange={(value) =>
+            onSourceSchemaTypeChange(Number(value) as SourceSchemaType)
+          }
+        >
+          <RadioGroupItem
+            value={String(SourceSchemaType.SCHEMA_HISTORY_VERSION)}
+          >
+            {t("common.changelog")}
+          </RadioGroupItem>
+          <RadioGroupItem value={String(SourceSchemaType.RAW_SQL)}>
+            {t("database.sync-schema.copy-schema")}
+          </RadioGroupItem>
+        </RadioGroup>
       </div>
       {sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION && (
         <DatabaseSchemaSelector
