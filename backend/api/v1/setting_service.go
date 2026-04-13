@@ -871,7 +871,8 @@ func validateEmailSetting(setting *storepb.EmailSetting) error {
 	if setting.From == "" {
 		return errors.Errorf("from address is required")
 	}
-	if setting.Type == storepb.EmailSetting_SMTP {
+	switch setting.Type {
+	case storepb.EmailSetting_SMTP:
 		smtp := setting.GetSmtp()
 		if smtp == nil {
 			return errors.Errorf("smtp config is required when type is SMTP")
@@ -882,6 +883,8 @@ func validateEmailSetting(setting *storepb.EmailSetting) error {
 		if smtp.Port <= 0 {
 			return errors.Errorf("smtp port must be positive")
 		}
+	default:
+		return errors.Errorf("unsupported email type: %v", setting.Type)
 	}
 	return nil
 }
