@@ -39,3 +39,7 @@ scripts/azure-marketplace/.cnab/
 scripts/azure-marketplace/*.tgz
 scripts/azure-marketplace/*.backup
 /main
+
+# playwright-cli local session artifacts
+.playwright-cli/
+backend/plugin/advisor/manual_test_cases_where_disallow_functions_and_calculations.md
