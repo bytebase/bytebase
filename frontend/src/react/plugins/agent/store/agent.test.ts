@@ -126,6 +126,19 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).size).toEqual({ width: 788, height: 625 });
   });
 
+  test("centers reopening using the rendered minimum size on wider viewports", () => {
+    setViewportSize(1440, 900);
+    const store = createAgentStore();
+
+    s(store).setSize(398, 388);
+    s(store).setPosition(700, 500);
+
+    s(store).toggle();
+
+    expect(s(store).visible).toBe(true);
+    expect(s(store).position).toEqual({ x: 490, y: 250 });
+  });
+
   test("normalizes stale running chats on load", () => {
     localStorage.setItem(
       AGENT_STATE_KEY,

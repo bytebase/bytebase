@@ -26,9 +26,14 @@ const clampDefaultDimension = (
   );
 };
 
-const clampDisplayDimension = (size: number, viewportSize: number) => {
+const clampDisplayDimension = (
+  size: number,
+  viewportSize: number,
+  preferredMin: number
+) => {
   const max = Math.max(1, viewportSize - WINDOW_MARGIN * 2);
-  return Math.min(max, Math.max(1, Math.round(size)));
+  const min = Math.min(preferredMin, max);
+  return Math.min(max, Math.max(min, Math.round(size)));
 };
 
 export const getCenteredAgentWindowPosition = (
@@ -37,8 +42,12 @@ export const getCenteredAgentWindowPosition = (
   windowWidth: number,
   windowHeight: number
 ) => {
-  const width = clampDisplayDimension(windowWidth, viewportWidth);
-  const height = clampDisplayDimension(windowHeight, viewportHeight);
+  const width = clampDisplayDimension(windowWidth, viewportWidth, MIN_WIDTH);
+  const height = clampDisplayDimension(
+    windowHeight,
+    viewportHeight,
+    MIN_HEIGHT
+  );
 
   return {
     x: Math.max(WINDOW_MARGIN, Math.round((viewportWidth - width) / 2)),
