@@ -1,5 +1,4 @@
 import { Range } from "monaco-editor";
-import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 import type { Language, SQLDialect } from "@/types";
 import { callCssVariable, escapeMarkdown, minmax } from "@/utils";
@@ -15,10 +14,26 @@ export const RECONNECTION_DELAY = {
 export const WEBSOCKET_TIMEOUT = 5000;
 export const WEBSOCKET_HEARTBEAT_INTERVAL = 10 * 1000;
 
+type MonacoMessages = {
+  title: string;
+  description: string;
+  disconnected: string;
+};
+
+let monacoMessages: MonacoMessages = {
+  title: "WebSocket connection failed",
+  description: "Auto Completion might be limited or disabled.",
+  disconnected: "WebSocket disconnected",
+};
+
+export const configureMonacoMessages = (messages: MonacoMessages) => {
+  monacoMessages = messages;
+};
+
 export const messages = {
-  title: () => t("sql-editor.web-socket.errors.title"),
-  description: () => t("sql-editor.web-socket.errors.description"),
-  disconnected: () => t("sql-editor.web-socket.errors.disconnected"),
+  title: () => monacoMessages.title,
+  description: () => monacoMessages.description,
+  disconnected: () => monacoMessages.disconnected,
 };
 
 export const extensionNameOfLanguage = (lang: Language) => {
