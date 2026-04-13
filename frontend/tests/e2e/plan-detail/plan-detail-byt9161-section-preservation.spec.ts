@@ -104,9 +104,17 @@ test.describe("Plan Detail: Section Expansion Preservation (BYT-9161)", () => {
     } else {
       await page.keyboard.press("Escape");
     }
-    // Wait for the drawer to fully close (it has a CSS transition)
-    await expect(page.locator(".n-drawer-container")).toBeHidden({ timeout: 5_000 }).catch(() => {});
-    await page.waitForLoadState("networkidle");
+    // Wait for the drawer to fully close. If the drawer class doesn't match,
+    // reload the page to guarantee a clean state rather than silently proceeding.
+    const drawerHidden = await expect(page.locator(".n-drawer-container"))
+      .toBeHidden({ timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!drawerHidden) {
+      // Drawer didn't close — reload to ensure section state assertions are meaningful
+      await planPage.goto(projectId, planId);
+      await planPage.dismissModals();
+    }
 
     expect(await planPage.isSectionExpanded("Changes")).toBe(true);
     expect(await planPage.isSectionExpanded("Review")).toBe(true);

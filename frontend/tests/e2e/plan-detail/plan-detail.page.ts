@@ -58,10 +58,12 @@ export class PlanDetailPage {
   }
 
   async runTask() {
-    // Use CSS :not([disabled]) on the element itself (not descendants) to find
-    // an enabled Run button. Playwright's filter({ has/hasNot }) checks children,
-    // which doesn't work for the button's own disabled attribute.
-    const enabledRun = this.page.locator("button:not([disabled])", { hasText: "Run" }).last();
+    // Match only buttons with exact text "Run" (not "Run check", "Run Tasks").
+    // Use getByRole with exact name to avoid substring matches.
+    const enabledRun = this.page
+      .getByRole("button", { name: "Run", exact: true })
+      .and(this.page.locator("button:not([disabled])"))
+      .last();
     await expect(enabledRun).toBeVisible({ timeout: 15_000 });
     await enabledRun.click();
     const confirmDialog = this.page.getByRole("dialog").filter({ hasText: "Run task" });
