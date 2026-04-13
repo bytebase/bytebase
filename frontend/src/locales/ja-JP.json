@@ -47,7 +47,6 @@
     "pending-input-hint": "このチャットを続けるには、下に返信してください。",
     "rename-chat-placeholder": "チャット名を入力してください",
     "reply": "返信",
-    "resize": "Resize",
     "result": "結果:",
     "retry-last-chat-turn": "直前のターンを再試行",
     "self": "Agent",
