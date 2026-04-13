@@ -117,7 +117,7 @@ type loginAuth struct {
 }
 
 func (a *loginAuth) Start(_ *smtp.ServerInfo) (string, []byte, error) {
-	return "LOGIN", []byte(a.username), nil
+	return "LOGIN", nil, nil
 }
 
 func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {

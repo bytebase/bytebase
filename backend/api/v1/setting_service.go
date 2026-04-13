@@ -651,20 +651,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		// Validate the final state.
-		if oldEmailSetting.Type == storepb.EmailSetting_SMTP {
-			smtp := oldEmailSetting.GetSmtp()
-			if smtp == nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when type is SMTP"))
-			}
-			if smtp.Host == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp host is required"))
-			}
-			if smtp.Port <= 0 {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp port must be positive"))
-			}
-		}
-		if oldEmailSetting.From == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("from address is required"))
+		if err := validateEmailSetting(oldEmailSetting); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
 		storeSettingValue = oldEmailSetting
@@ -875,6 +863,25 @@ func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID s
 			}
 		}
 		used[env.Id] = true
+	}
+	return nil
+}
+
+func validateEmailSetting(setting *storepb.EmailSetting) error {
+	if setting.From == "" {
+		return errors.Errorf("from address is required")
+	}
+	if setting.Type == storepb.EmailSetting_SMTP {
+		smtp := setting.GetSmtp()
+		if smtp == nil {
+			return errors.Errorf("smtp config is required when type is SMTP")
+		}
+		if smtp.Host == "" {
+			return errors.Errorf("smtp host is required")
+		}
+		if smtp.Port <= 0 {
+			return errors.Errorf("smtp port must be positive")
+		}
 	}
 	return nil
 }
