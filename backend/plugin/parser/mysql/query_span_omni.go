@@ -184,9 +184,20 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	query, analyzeErr := e.cat.AnalyzeSelectStmt(selStmt)
 	if analyzeErr != nil {
-		// Fail-open: return access tables with best-effort column extraction
-		// when analysis fails (e.g., unknown function names).
-		return e.buildFallbackQuerySpan(selStmt, accessesMap), nil
+		// Check if the error indicates a missing resource (table/column not found).
+		// Propagate this as NotFoundError so downstream retry logic (sql_service
+		// metadata sync) can trigger a refresh.
+		span := e.buildFallbackQuerySpan(selStmt, accessesMap)
+		var catErr *catalog.Error
+		if errors.As(analyzeErr, &catErr) {
+			if catErr.Code == catalog.ErrNoSuchTable || catErr.Code == catalog.ErrUnknownTable ||
+				catErr.Code == catalog.ErrNoSuchColumn {
+				span.NotFoundError = &base.ResourceNotFoundError{
+					Err: analyzeErr,
+				}
+			}
+		}
+		return span, nil
 	}
 
 	// Expand merge views to see through to underlying tables.
@@ -262,7 +273,10 @@ func classifyQueryTypeOmni(node ast.Node, allSystems bool) (queryType base.Query
 		*ast.DropRoutineStmt,
 		*ast.RenameTableStmt, *ast.TruncateStmt:
 		return base.DDL, false
-	case *ast.SetStmt:
+	case *ast.SetStmt, *ast.SetDefaultRoleStmt, *ast.SetRoleStmt,
+		*ast.SetResourceGroupStmt:
+		// SET PASSWORD is intentionally excluded — the old ANTLR code
+		// treated SET with PASSWORD as unknown (not safe for read-only).
 		return base.Select, false
 	case *ast.ShowStmt:
 		return base.SelectInfoSchema, false
