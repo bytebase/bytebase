@@ -93,7 +93,14 @@ export class PlanDetailPage {
   }
 
   getSectionToggle(sectionName: string): Locator {
-    return this.page.getByText(sectionName).locator("..").getByText(/Hide details|Show details/);
+    // Find the section name text, then look for the toggle in the same parent container.
+    // The toggle text includes an arrow: "Hide details ↑" or "Show details ↓".
+    return this.page
+      .getByText(sectionName, { exact: true })
+      .first()
+      .locator("..")
+      .getByText(/Hide details|Show details/)
+      .first();
   }
 
   async isSectionExpanded(sectionName: string): Promise<boolean> {
@@ -115,26 +122,25 @@ export class PlanDetailPage {
   }
 
   // Returns the count number sibling of the given status label (Warning/Success/Error)
-  // in the inline Checks area within the Changes section.
+  // in the inline Checks area within the Changes section (h3 level, not sidebar h4).
   inlineCheckCount(status: string): Locator {
     return this.page
-      .getByRole("heading", { name: "Checks" })
-      .locator("..")
+      .getByRole("heading", { name: "Checks", level: 3 })
+      .locator("../..")
       .getByText(status)
       .locator("..")
       .getByText(/^\d+$/);
   }
 
   // Returns the count number for the given status (Warning/Success/Error)
-  // in the sidebar complementary Checks area.
+  // in the sidebar complementary Checks area (h4 level).
   sidebarCheckCount(status: string): Locator {
     return this.page
       .getByRole("complementary")
-      .getByRole("heading", { name: "Checks" })
+      .getByRole("heading", { name: "Checks", level: 4 })
       .locator("..")
-      .getByText(status)
-      .locator("..")
-      .getByText(/^\d+$/);
+      .getByText(/^\d+$/)
+      .last();
   }
 
   // Polls api.getIssue() every 1 s until approvalStatus matches targetStatus or timeout elapses.
