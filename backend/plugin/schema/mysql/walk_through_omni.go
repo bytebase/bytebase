@@ -248,6 +248,8 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			colMeta.Default = "AUTO_INCREMENT"
 		} else if col.Default != nil {
 			colMeta.Default = *col.Default
+		} else if col.Nullable {
+			colMeta.Default = "NULL"
 		}
 		if col.OnUpdate != "" {
 			colMeta.OnUpdate = col.OnUpdate
@@ -293,7 +295,11 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			} else {
 				idxMeta.Expressions = append(idxMeta.Expressions, col.Name)
 			}
-			idxMeta.KeyLength = append(idxMeta.KeyLength, int64(col.Length))
+			keyLen := int64(col.Length)
+			if keyLen == 0 {
+				keyLen = -1 // -1 means no specific prefix length (matching db driver convention)
+			}
+			idxMeta.KeyLength = append(idxMeta.KeyLength, keyLen)
 			idxMeta.Descending = append(idxMeta.Descending, col.Descending)
 		}
 		table.Indexes = append(table.Indexes, idxMeta)
