@@ -80,15 +80,7 @@ test.describe("Plan Detail: Lifecycle + Section Preservation", () => {
   });
 
   test("run task and wait for completion", async () => {
-    // Find the enabled per-task Run button (not the bulk "Run Tasks" or disabled ones)
-    const runBtn = page
-      .getByRole("button", { name: "Run", exact: true })
-      .filter({ hasNot: page.locator("[disabled]") })
-      .last();
-    await runBtn.click();
-    // Confirm in the "Run task" dialog
-    const dialog = page.getByRole("dialog").filter({ hasText: "Run task" });
-    await dialog.getByRole("button", { name: "Run" }).click();
+    await planPage.runTask();
     await expect(page.getByText("Done").first()).toBeVisible({ timeout: 30_000 });
   });
 

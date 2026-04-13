@@ -13,6 +13,7 @@ let issueName: string;
 let sharedContext: BrowserContext;
 let page: Page;
 let planPage: PlanDetailPage;
+let shouldSkip = false;
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
@@ -67,9 +68,8 @@ test.beforeAll(async ({ browser }) => {
   }
 
   if (lastStatus === "SKIPPED") {
-    // No approval rule matched — skip the whole suite rather than asserting
-    // wrong UI state.
-    test.skip();
+    // No approval rule matched — flag to skip all tests.
+    shouldSkip = true;
     return;
   }
 
@@ -100,6 +100,7 @@ test.describe("Plan Detail: Approval Blocker", () => {
   test.describe.configure({ mode: "serial" });
 
   test("deploy section shows approval pending when required", async () => {
+    test.skip(shouldSkip, "No approval rule matched — environment lacks required policy");
     await planPage.goto(projectId, planId);
     await planPage.dismissModals();
 
@@ -114,6 +115,7 @@ test.describe("Plan Detail: Approval Blocker", () => {
   });
 
   test("no manual create rollout button when approval is pending and required", async () => {
+    test.skip(shouldSkip, "No approval rule matched");
     // The button must NOT exist (or must be hidden) when approval is blocking.
     // Use a short timeout — if it's present the test fails fast.
     await expect(planPage.manualCreateRolloutButton).not.toBeVisible({
@@ -122,12 +124,14 @@ test.describe("Plan Detail: Approval Blocker", () => {
   });
 
   test("sidebar shows Under review", async () => {
+    test.skip(shouldSkip, "No approval rule matched");
     await expect(
       page.getByRole("complementary").getByText(/Under review/i)
     ).toBeVisible();
   });
 
   test("after approving both steps, deploy section updates", async () => {
+    test.skip(shouldSkip, "No approval rule matched");
     // First approval: admin (Project Owner / first approver in the flow).
     await env.api.approveIssue(issueName);
 

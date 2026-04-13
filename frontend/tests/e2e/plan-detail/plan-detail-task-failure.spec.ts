@@ -62,14 +62,7 @@ test.describe("Plan Detail: Task Failure (CUJ 4)", () => {
   });
 
   test("run task that will fail", async () => {
-    // Wait for at least one enabled Run button to appear (may take a moment after rollout creation)
-    const enabledRunButton = page.locator("button:not([disabled])", { hasText: "Run" }).last();
-    await expect(enabledRunButton).toBeVisible({ timeout: 15_000 });
-    await enabledRunButton.click();
-    // Confirm in the "Run task" dialog
-    const dialog = page.getByRole("dialog").filter({ hasText: "Run task" });
-    await expect(dialog).toBeVisible({ timeout: 5_000 });
-    await dialog.getByRole("button", { name: "Run" }).click();
+    await planPage.runTask();
     await expect(page.getByText("Failed").first()).toBeVisible({ timeout: 30_000 });
   });
 

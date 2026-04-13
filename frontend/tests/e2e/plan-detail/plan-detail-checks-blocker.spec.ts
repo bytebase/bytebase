@@ -13,6 +13,7 @@ let planURL: string;
 
 let sharedContext: BrowserContext;
 let page: Page;
+let shouldSkip = false;
 let planPage: PlanDetailPage;
 
 test.beforeAll(async ({ browser }) => {
@@ -77,7 +78,7 @@ test.beforeAll(async ({ browser }) => {
   // rule, status may be SKIPPED — skip the suite rather than false-fail.
   const finalIssue = await env.api.getIssue(issueName);
   if (finalIssue.approvalStatus === "SKIPPED") {
-    test.skip();
+    shouldSkip = true;
     return;
   }
   if (finalIssue.approvalStatus !== "APPROVED") {
@@ -114,6 +115,7 @@ test.describe("Plan Detail: Checks Blocker (BYT-9159)", () => {
   test.describe.configure({ mode: "serial" });
 
   test("checks show ERROR result", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED — environment lacks matching rule");
     await planPage.goto(projectId, planId);
     await planPage.dismissModals();
 
@@ -121,20 +123,24 @@ test.describe("Plan Detail: Checks Blocker (BYT-9159)", () => {
   });
 
   test("approval shows Done", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED");
     await expect(
       page.getByText(/Approved|Done/i).first()
     ).toBeVisible({ timeout: 10_000 });
   });
 
   test("deploy section says checks are blocking", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED");
     await expect(page.getByText("Failed checks are blocking")).toBeVisible({ timeout: 10_000 });
   });
 
   test("no manual create rollout button when checks required and failed (BYT-9159)", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED");
     await expect(planPage.manualCreateRolloutButton).not.toBeVisible({ timeout: 3_000 });
   });
 
   test("button appears after disabling check requirement", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED");
     await env.api.updateProjectSettings(env.project, { requirePlanCheckNoError: false });
 
     await page.goto(planURL);
@@ -145,6 +151,7 @@ test.describe("Plan Detail: Checks Blocker (BYT-9159)", () => {
   });
 
   test("deploy text confirms checks are optional", async () => {
+    test.skip(shouldSkip, "Approval resolved to SKIPPED");
     await expect(page.getByText(/Failed checks won't block/i)).toBeVisible({ timeout: 10_000 });
   });
 });

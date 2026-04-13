@@ -12,6 +12,7 @@ let planId: string;
 let sharedContext: BrowserContext;
 let page: Page;
 let planPage: PlanDetailPage;
+let shouldSkip = false;
 
 // Counts captured by test 1, consumed by test 2
 let spec1SuccessCount = 0;
@@ -65,8 +66,8 @@ test.beforeAll(async ({ browser }) => {
   }
 
   if (!secondDatabase) {
-    // No second instance/database available — skip the whole suite
-    test.skip();
+    // No second instance/database available — flag to skip all tests
+    shouldSkip = true;
     return;
   }
 
@@ -120,6 +121,7 @@ test.describe("Plan Detail: Check Count Consistency (BYT-9160)", () => {
   test.describe.configure({ mode: "serial" });
 
   test("spec #2 has more check results than spec #1", async () => {
+    test.skip(shouldSkip, "No second database available for multi-spec plan");
     await planPage.goto(projectId, planId);
     await planPage.dismissModals();
 
