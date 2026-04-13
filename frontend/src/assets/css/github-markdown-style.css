@@ -823,6 +823,8 @@
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   background-color: rgba(175, 184, 193, 0.2);
   border-radius: 6px;
 }
@@ -843,6 +845,7 @@
 .markdown-body pre > code {
   padding: 0;
   margin: 0;
+  overflow-wrap: normal;
   word-break: normal;
   white-space: pre;
   background: transparent;
