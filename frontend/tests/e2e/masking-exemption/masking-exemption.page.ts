@@ -66,7 +66,7 @@ export class GrantExemptionPage {
   constructor(page: Page, baseURL = "") {
     this.page = page;
     this.baseURL = baseURL;
-    this.allRadio = page.getByRole("radio", { name: "All", exact: true });
+    this.allRadio = page.getByRole("radio", { name: "All databases", exact: true });
     this.reasonInput = page.getByPlaceholder(/description/i);
     this.accountSelect = page.getByText("Select accounts", { exact: true });
     this.confirmButton = page.getByRole("button", { name: "Confirm" });
