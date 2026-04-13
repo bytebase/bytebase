@@ -18,7 +18,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/plugin/mail"
+	"github.com/bytebase/bytebase/backend/plugin/mailer"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -307,7 +307,7 @@ func (s *WorkspaceService) sendInviteEmails(ctx context.Context, workspaceID str
 		return
 	}
 
-	sender, err := mail.NewSender(emailSetting)
+	sender, err := mailer.NewSender(emailSetting)
 	if err != nil {
 		slog.Warn("failed to create mail sender for invite emails", log.BBError(err))
 		return
@@ -390,7 +390,7 @@ func (s *WorkspaceService) sendInviteEmails(ctx context.Context, workspaceID str
 	for email, roleName := range invites {
 		subject := fmt.Sprintf("[Bytebase] You've been invited to workspace %q", workspaceTitle)
 		body := fmt.Sprintf("Hi,\n\nYou've been added to the Bytebase workspace %q as %s.\n\nSign in to get started:\n%s\n\n— Bytebase", workspaceTitle, roleName, workspaceLink)
-		if err := sender.Send(ctx, &mail.SendRequest{
+		if err := sender.Send(ctx, &mailer.SendRequest{
 			To:       []string{email},
 			Subject:  subject,
 			TextBody: body,
