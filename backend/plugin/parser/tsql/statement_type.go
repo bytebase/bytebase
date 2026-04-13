@@ -1,8 +1,7 @@
 package tsql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -12,20 +11,12 @@ import (
 
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
-	for _, ast := range asts {
-		antlrAST, ok := base.GetANTLRAST(ast)
+	for _, a := range asts {
+		node, ok := GetOmniNode(a)
 		if !ok {
-			return nil, errors.New("expected ANTLR AST for MSSQL")
+			return nil, errors.New("expected omni AST for MSSQL")
 		}
-		for _, child := range antlrAST.Tree.GetChildren() {
-			_, ok := child.(*antlr.TerminalNodeImpl)
-			if ok {
-				continue
-			}
-
-			t := getStatementType(child)
-			sqlTypeSet[t] = true
-		}
+		sqlTypeSet[getStatementType(node)] = true
 	}
 	var sqlTypes []storepb.StatementType
 	for sqlType := range sqlTypeSet {
@@ -34,59 +25,45 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return sqlTypes, nil
 }
 
-func getStatementType(node antlr.Tree) storepb.StatementType {
-	switch ctx := node.(type) {
-	case *parser.Tsql_fileContext, *parser.Batch_without_goContext, *parser.Batch_level_statementContext:
-		for _, child := range ctx.GetChildren() {
-			return getStatementType(child)
-		}
-	case *parser.Sql_clausesContext:
-		for _, child := range ctx.GetChildren() {
-			switch ctx := child.(type) {
-			case *parser.Ddl_clauseContext:
-				for _, child := range ctx.GetChildren() {
-					return getStatementType(child)
-				}
-			case *parser.Dml_clauseContext:
-				for _, child := range ctx.GetChildren() {
-					return getStatementType(child)
-				}
-			default:
-			}
-		}
-	case *parser.Alter_databaseContext:
+func getStatementType(node ast.Node) storepb.StatementType {
+	switch n := node.(type) {
+	case *ast.AlterDatabaseStmt:
 		return storepb.StatementType_ALTER_DATABASE
-	case *parser.Alter_indexContext:
+	case *ast.AlterIndexStmt:
 		return storepb.StatementType_ALTER_INDEX
-	case *parser.Alter_tableContext:
+	case *ast.AlterTableStmt:
 		return storepb.StatementType_ALTER_TABLE
-	case *parser.Create_databaseContext:
+	case *ast.CreateDatabaseStmt:
 		return storepb.StatementType_CREATE_DATABASE
-	case *parser.Create_indexContext:
+	case *ast.CreateIndexStmt:
 		return storepb.StatementType_CREATE_INDEX
-	case *parser.Create_schemaContext:
+	case *ast.CreateSchemaStmt:
 		return storepb.StatementType_CREATE_SCHEMA
-	case *parser.Create_tableContext:
+	case *ast.CreateTableStmt:
 		return storepb.StatementType_CREATE_TABLE
-	case *parser.Create_viewContext:
+	case *ast.CreateViewStmt:
 		return storepb.StatementType_CREATE_VIEW
-	case *parser.Drop_databaseContext:
-		return storepb.StatementType_DROP_DATABASE
-	case *parser.Drop_indexContext:
-		return storepb.StatementType_DROP_INDEX
-	case *parser.Drop_schemaContext:
-		return storepb.StatementType_DROP_SCHEMA
-	case *parser.Drop_tableContext:
-		return storepb.StatementType_DROP_TABLE
-	case *parser.Drop_viewContext:
-		return storepb.StatementType_DROP_VIEW
-	case *parser.Truncate_tableContext:
+	case *ast.DropStmt:
+		switch n.ObjectType {
+		case ast.DropDatabase:
+			return storepb.StatementType_DROP_DATABASE
+		case ast.DropIndex:
+			return storepb.StatementType_DROP_INDEX
+		case ast.DropSchema:
+			return storepb.StatementType_DROP_SCHEMA
+		case ast.DropTable:
+			return storepb.StatementType_DROP_TABLE
+		case ast.DropView:
+			return storepb.StatementType_DROP_VIEW
+		default:
+		}
+	case *ast.TruncateStmt:
 		return storepb.StatementType_TRUNCATE
-	case *parser.Delete_statementContext:
+	case *ast.DeleteStmt:
 		return storepb.StatementType_DELETE
-	case *parser.Insert_statementContext:
+	case *ast.InsertStmt:
 		return storepb.StatementType_INSERT
-	case *parser.Update_statementContext:
+	case *ast.UpdateStmt:
 		return storepb.StatementType_UPDATE
 	default:
 	}
