@@ -1335,6 +1335,11 @@
       "edit-member": "编辑成员 - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "此项目未启用申请角色。",
+          "can-grant-access-directly": "您已拥有 {{permission}}，可以直接授予访问权限。",
+          "feature-unavailable": "当前套餐不支持申请角色工作流。"
+        },
         "expiration-exceeds-max": "过期时间不能超过工作空间上限 {{days}} 天。",
         "expiration-must-be-future": "过期时间必须是将来的时间。",
         "failed-to-build-expression": "构建 CEL 表达式失败，请重试。",

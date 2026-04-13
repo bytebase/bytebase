@@ -1335,6 +1335,11 @@
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "Dự án này đã tắt tính năng yêu cầu vai trò.",
+          "can-grant-access-directly": "Bạn đã có {{permission}}, nên có thể cấp quyền truy cập trực tiếp.",
+          "feature-unavailable": "Quy trình yêu cầu vai trò không khả dụng trong gói hiện tại."
+        },
         "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",
         "expiration-must-be-future": "Thời gian hết hạn phải ở tương lai.",
         "failed-to-build-expression": "Không thể xây dựng biểu thức CEL. Vui lòng thử lại.",

@@ -1335,6 +1335,11 @@
       "edit-member": "Editar miembro - {{member}}",
       "never-expires": "Never",
       "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
+          "can-grant-access-directly": "Ya tienes {{permission}}, así que puedes conceder acceso directamente.",
+          "feature-unavailable": "El flujo de solicitud de roles no está disponible en el plan actual."
+        },
         "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",
         "expiration-must-be-future": "La expiración debe ser una fecha futura.",
         "failed-to-build-expression": "Error al construir la expresión CEL. Inténtalo de nuevo.",
