@@ -13,6 +13,7 @@ let sharedContext: BrowserContext;
 let page: Page;
 let planPage: PlanDetailPage;
 let shouldSkip = false;
+let originalSettings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean } = {};
 
 // Counts captured by test 1, consumed by test 2
 let spec1SuccessCount = 0;
@@ -23,7 +24,12 @@ test.beforeAll(async ({ browser }) => {
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Permissive settings — no gates needed for this test
+  // Capture and set permissive settings
+  const project = await env.api.getProject(env.project);
+  originalSettings = {
+    requireIssueApproval: !!project.requireIssueApproval,
+    requirePlanCheckNoError: !!project.requirePlanCheckNoError,
+  };
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: false,
     requirePlanCheckNoError: false,
@@ -118,6 +124,7 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
+  await env.api.updateProjectSettings(env.project, originalSettings).catch(() => {});
   await sharedContext?.close();
 });
 

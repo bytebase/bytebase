@@ -14,16 +14,19 @@ let sharedContext: BrowserContext;
 let page: Page;
 let planPage: PlanDetailPage;
 let shouldSkip = false;
-let originalRequireApproval = false;
+let originalSettings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean } = {};
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Capture original setting before mutating.
+  // Capture both settings before mutating.
   const project = await env.api.getProject(env.project);
-  originalRequireApproval = !!project.requireIssueApproval;
+  originalSettings = {
+    requireIssueApproval: !!project.requireIssueApproval,
+    requirePlanCheckNoError: !!project.requirePlanCheckNoError,
+  };
 
   // Require approval so the approval flow is generated; disable plan-check gate
   // so the SQL check result doesn't block us independently.
@@ -91,9 +94,9 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => {
   await sharedContext?.close();
-  // Restore approval setting to the value captured before the test mutated it.
+  // Restore both settings to the values captured before the test mutated them.
   await env.api
-    .updateProjectSettings(env.project, { requireIssueApproval: originalRequireApproval })
+    .updateProjectSettings(env.project, originalSettings)
     .catch((err: unknown) => {
       console.warn(
         `afterAll updateProjectSettings: ${err instanceof Error ? err.message : err}`
