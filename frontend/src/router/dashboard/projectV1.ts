@@ -79,20 +79,16 @@ const planRoutes: RouteRecordRaw[] = [
 // Issue routes — uses IssueLayout (issue-only)
 const issueRoutes: RouteRecordRaw[] = [
   {
-    path: "",
-    component: () => import("@/views/project/IssueLayout.vue"),
-    props: true,
-    children: [
-      {
-        path: "issues/:issueId(\\d+)",
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        meta: {
-          requiredPermissionList: () => ["bb.issues.get"],
-        },
-        component: () => import("@/views/project/IssueDetailV1View.vue"),
-        props: true,
-      },
-    ],
+    path: "issues/:issueId(\\d+)",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    meta: {
+      requiredPermissionList: () => ["bb.issues.get"],
+    },
+    component: () => import("@/react/ReactPageMount.vue"),
+    props: (route: RouteLocationNormalized) => ({
+      page: "ProjectIssueDetailPage",
+      ...route.params,
+    }),
   },
 ];
 

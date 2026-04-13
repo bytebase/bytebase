@@ -1,10 +1,16 @@
 package v1
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestChatGeminiPartMarshalsThoughtSignatureOnPart(t *testing.T) {
@@ -132,4 +138,37 @@ func TestGeminiThoughtSignatureFromMetadataSupportsLegacyFormats(t *testing.T) {
 
 		require.Equal(t, "sig-native", geminiThoughtSignatureFromMetadata("sig-native"))
 	})
+}
+
+func TestChatGeminiGeneratesUniqueToolCallIDs(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{
+			"candidates": [{
+				"content": {
+					"parts": [
+						{"functionCall": {"name": "search_api", "args": {"service": "SQLService"}}},
+						{"functionCall": {"name": "search_api", "args": {"operationId": "SQLService/Query"}}}
+					]
+				}
+			}]
+		}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	resp, err := (&AIService{}).chatGemini(
+		context.Background(),
+		&storepb.AISetting{
+			Endpoint: server.URL,
+			Model:    "gemini-2.5-pro",
+			ApiKey:   "test-key",
+		},
+		&v1pb.AIChatRequest{},
+	)
+	require.NoError(t, err)
+	require.Len(t, resp.Msg.ToolCalls, 2)
+	require.NotEqual(t, resp.Msg.ToolCalls[0].Id, resp.Msg.ToolCalls[1].Id)
 }

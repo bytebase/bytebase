@@ -19,8 +19,13 @@ const initializeTheme = () => {
   if (state.themeInitialized) return;
   state.themeInitialized = true;
   if (!monacoModule) return;
-  monacoModule.editor.defineTheme("bb", getBBTheme());
-  monacoModule.editor.defineTheme("bb-dark", getBBDarkTheme());
+  try {
+    monacoModule.editor.defineTheme("bb", getBBTheme());
+    monacoModule.editor.defineTheme("bb-dark", getBBDarkTheme());
+  } catch {
+    // The VSCode theme service override owns themes in some runtime modes.
+    // Fall back to the default theme instead of failing editor creation.
+  }
 };
 
 const initialize = async () => {

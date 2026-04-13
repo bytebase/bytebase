@@ -51,6 +51,7 @@ import type {
 } from "./types";
 import {
   buildAdviceHoverMessage,
+  configureMonacoMessages,
   extensionNameOfLanguage,
   formatEditorContent,
   trySetContentWithUndo,
@@ -137,6 +138,14 @@ export function MonacoEditor({
   const [contentHeight, setContentHeight] = useState(min);
   const [ready, setReady] = useState(false);
 
+  useEffect(() => {
+    configureMonacoMessages({
+      title: t("sql-editor.web-socket.errors.title"),
+      description: t("sql-editor.web-socket.errors.description"),
+      disconnected: t("sql-editor.web-socket.errors.disconnected"),
+    });
+  }, [t]);
+
   contentRef.current = content;
   languageRef.current = language;
   readOnlyRef.current = readOnly;
@@ -147,6 +156,11 @@ export function MonacoEditor({
   onActiveContentChangeRef.current = onActiveContentChange;
   onReadyRef.current = onReady;
 
+  const shouldEnableLSP =
+    !readOnly &&
+    (Boolean(autoCompleteContext) ||
+      enableDecorations ||
+      Boolean(onActiveContentChange));
   const connection = useSyncExternalStore(
     subscribeConnectionState,
     getConnectionStateSnapshot,
@@ -211,21 +225,19 @@ export function MonacoEditor({
     let formatAction: { dispose(): void } | null = null;
     let suggestStyle: HTMLStyleElement | null = null;
     let messageHandler: ((event: MessageEvent) => void) | null = null;
+    const host = document.createElement("div");
+    host.className = "h-full w-full";
+    containerRef.current?.replaceChildren(host);
 
     (async () => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || editorRef.current) return;
 
-      const shouldEnableLSP =
-        !readOnlyRef.current &&
-        (Boolean(autoCompleteContext) ||
-          enableDecorations ||
-          Boolean(onActiveContentChangeRef.current));
       if (shouldEnableLSP) {
         void initializeLSPClient().catch(() => undefined);
       }
 
       const editor = await createMonacoEditor({
-        container: containerRef.current,
+        container: host,
         options: {
           ...optionsRef.current,
           language: languageRef.current,
@@ -303,9 +315,11 @@ export function MonacoEditor({
       }
 
       if (shouldEnableLSP) {
-        const wsPromise = getConnectionWebSocket();
+        const wsPromise =
+          getConnectionWebSocket() ??
+          initializeLSPClient().then(() => getConnectionWebSocket());
         wsPromise?.then((ws) => {
-          if (disposed) return;
+          if (!ws || disposed) return;
           messageHandler = (message: MessageEvent) => {
             processStatementRangeMessage(message, activeRangeByUriRef);
             emitSelectionSideEffects();
@@ -343,6 +357,7 @@ export function MonacoEditor({
       editorRef.current?.dispose();
       editorRef.current = null;
       modelRef.current = null;
+      host.remove();
     };
   }, [
     autoCompleteContext,
@@ -351,6 +366,8 @@ export function MonacoEditor({
     enableDecorations,
     formatContentOptions,
     generatedFilename,
+    shouldEnableLSP,
+    t,
   ]);
 
   useEffect(() => {

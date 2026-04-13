@@ -10,6 +10,7 @@ import (
 	"net/url"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -532,6 +533,10 @@ type chatGeminiResponsePart struct {
 	ThoughtSignature string                  `json:"thoughtSignature,omitempty"`
 }
 
+func newGeminiToolCallID(name string) string {
+	return fmt.Sprintf("call_%s_%s", name, uuid.NewString())
+}
+
 func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*connect.Response[v1pb.AIChatResponse], error) {
 	payload := chatGeminiRequest{}
 
@@ -654,7 +659,7 @@ func (*AIService) chatGemini(ctx context.Context, aiSetting *storepb.AISetting, 
 					return nil, errors.Errorf("failed to marshal function call args: %s", err)
 				}
 				tc := &v1pb.AIChatToolCall{
-					Id:        fmt.Sprintf("call_%s", part.FunctionCall.Name),
+					Id:        newGeminiToolCallID(part.FunctionCall.Name),
 					Name:      part.FunctionCall.Name,
 					Arguments: string(args),
 				}
