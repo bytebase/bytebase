@@ -49,8 +49,12 @@ export class PlanDetailPage {
   async createRolloutWithBypass() {
     await this.manualCreateRolloutButton.click();
     await this.bypassWarningsCheckbox.check();
+    // Arm the response waiter BEFORE clicking so a fast response isn't missed.
+    const responsePromise = this.page.waitForResponse(
+      (r) => r.url().includes("Rollout") && r.status() < 400
+    );
     await this.confirmRolloutButton.click();
-    await this.page.waitForResponse((r) => r.url().includes("Rollout") && r.status() < 400);
+    await responsePromise;
   }
 
   async runTask() {

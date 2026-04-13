@@ -96,15 +96,19 @@ test.beforeAll(async ({ browser }) => {
 
   // Poll until plan checks are DONE (max 60 s).
   // getPlanCheckRun returns 404 before the first run completes — catch and retry.
+  let checksDone = false;
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
     try {
       const checkRun = await env.api.getPlanCheckRun(plan.name);
-      if (checkRun.status === "DONE") break;
+      if (checkRun.status === "DONE") { checksDone = true; break; }
     } catch {
       // Check run not created yet — retry
     }
     await new Promise((r) => setTimeout(r, 2000));
+  }
+  if (!checksDone) {
+    throw new Error(`Plan checks did not reach DONE within 60s for ${plan.name}`);
   }
 
   // Open the shared browser context

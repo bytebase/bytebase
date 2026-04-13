@@ -14,6 +14,7 @@ let planURL: string;
 let sharedContext: BrowserContext;
 let page: Page;
 let shouldSkip = false;
+let originalRuleLevel = "WARNING";
 let planPage: PlanDetailPage;
 
 test.beforeAll(async ({ browser }) => {
@@ -27,7 +28,12 @@ test.beforeAll(async ({ browser }) => {
     requirePlanCheckNoError: true,
   });
 
-  // Upgrade COLUMN_NO_NULL from WARNING to ERROR so checks will fail
+  // Capture original rule level before mutating, so afterAll restores the exact value.
+  const config = await env.api.getReviewConfig("reviewConfigs/sql-review-sample-policy");
+  const rule = config.rules.find((r) => r.type === "COLUMN_NO_NULL" && r.engine === "POSTGRES");
+  originalRuleLevel = rule?.level ?? "WARNING";
+
+  // Upgrade COLUMN_NO_NULL to ERROR so checks will fail
   await env.api.updateReviewConfigRuleLevel(
     "reviewConfigs/sql-review-sample-policy",
     "COLUMN_NO_NULL",
@@ -100,12 +106,12 @@ test.afterAll(async () => {
     requirePlanCheckNoError: false,
   });
 
-  // Restore COLUMN_NO_NULL rule back to WARNING
+  // Restore COLUMN_NO_NULL rule to the level captured before the test mutated it.
   await env.api.updateReviewConfigRuleLevel(
     "reviewConfigs/sql-review-sample-policy",
     "COLUMN_NO_NULL",
     "POSTGRES",
-    "WARNING"
+    originalRuleLevel
   );
 
   await sharedContext?.close();
