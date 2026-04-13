@@ -368,6 +368,7 @@
   "common.n-more": "{{n}} more",
   "common.no-data": "No data",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.operation": "Operation",
   "common.open": "Open",
   "common.optional": "Optional",
   "common.or": "or",
@@ -626,6 +627,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Classification",
+  "database.column": "Column",
   "database.engine": "Engine",
   "database.export-schema": "Export Schema",
   "database.export-schema-multi-file": "Multi-File (ZIP)",
@@ -1151,6 +1153,7 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
+      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",
@@ -1921,7 +1924,9 @@
         },
         "re-order": "Re-order"
       },
+      "grant-access": "Grant Access",
       "never-expires": "Never expires",
+      "remove-sensitive-column-tips": "Expose this column?",
       "semantic-types": {
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",

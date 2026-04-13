@@ -368,6 +368,7 @@
   "common.n-more": "còn {{n}}",
   "common.no-data": "Không có dữ liệu",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.operation": "Thao tác",
   "common.open": "Mở",
   "common.optional": "Tùy chọn",
   "common.or": "hoặc",
@@ -626,6 +627,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Phân loại",
+  "database.column": "Cột",
   "database.engine": "Engine",
   "database.export-schema": "Xuất schema",
   "database.export-schema-multi-file": "Nhiều tệp (ZIP)",
@@ -1151,6 +1153,7 @@
     "role-grant": {
       "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Chọn thủ công",
@@ -1921,7 +1924,9 @@
         },
         "re-order": "Sắp xếp lại"
       },
+      "grant-access": "Cấp Quyền truy cập",
       "never-expires": "Không bao giờ hết hạn",
+      "remove-sensitive-column-tips": "Hiển thị cột này?",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",

@@ -368,6 +368,7 @@
   "common.n-more": "还有 {{n}} 个",
   "common.no-data": "无数据",
   "common.only-creator-allowed-export": "只有创建者可以导出",
+  "common.operation": "操作",
   "common.open": "打开",
   "common.optional": "可选",
   "common.or": "或者",
@@ -626,6 +627,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "分类",
+  "database.column": "列",
   "database.engine": "引擎",
   "database.export-schema": "导出 Schema",
   "database.export-schema-multi-file": "多文件 (ZIP)",
@@ -1151,6 +1153,7 @@
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
+      "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手动选择",
@@ -1921,7 +1924,9 @@
         },
         "re-order": "排序"
       },
+      "grant-access": "授予访问权限",
       "never-expires": "无过期时间",
+      "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
