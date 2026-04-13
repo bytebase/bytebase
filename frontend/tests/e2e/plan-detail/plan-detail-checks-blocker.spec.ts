@@ -15,12 +15,20 @@ let sharedContext: BrowserContext;
 let page: Page;
 let shouldSkip = false;
 let originalRuleLevel = "WARNING";
+let originalProjectSettings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean } = {};
 let planPage: PlanDetailPage;
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
+
+  // Capture original project settings before mutating.
+  const project = await env.api.getProject(env.project);
+  originalProjectSettings = {
+    requireIssueApproval: !!project.requireIssueApproval,
+    requirePlanCheckNoError: !!project.requirePlanCheckNoError,
+  };
 
   // Enable approval + plan-check gate
   await env.api.updateProjectSettings(env.project, {
@@ -100,11 +108,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  // Restore permissive project settings
-  await env.api.updateProjectSettings(env.project, {
-    requireIssueApproval: false,
-    requirePlanCheckNoError: false,
-  });
+  // Restore project settings to the values captured before the test mutated them.
+  await env.api.updateProjectSettings(env.project, originalProjectSettings);
 
   // Restore COLUMN_NO_NULL rule to the level captured before the test mutated it.
   await env.api.updateReviewConfigRuleLevel(

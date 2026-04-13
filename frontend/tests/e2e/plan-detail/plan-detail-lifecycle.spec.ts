@@ -12,13 +12,19 @@ let planId: string;
 let sharedContext: BrowserContext;
 let page: Page;
 let planPage: PlanDetailPage;
+let originalSettings: { requireIssueApproval?: boolean; requirePlanCheckNoError?: boolean } = {};
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Ensure permissive project settings — no approval required, no plan-check gate
+  // Capture and set permissive project settings
+  const project = await env.api.getProject(env.project);
+  originalSettings = {
+    requireIssueApproval: !!project.requireIssueApproval,
+    requirePlanCheckNoError: !!project.requirePlanCheckNoError,
+  };
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: false,
     requirePlanCheckNoError: false,
@@ -48,8 +54,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
+  await env.api.updateProjectSettings(env.project, originalSettings).catch(() => {});
   await sharedContext?.close();
-  // Demo instance is disposable — no plan/issue deletion needed
 });
 
 test.describe("Plan Detail: Lifecycle + Section Preservation", () => {
