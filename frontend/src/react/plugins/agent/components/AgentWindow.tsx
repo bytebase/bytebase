@@ -20,6 +20,13 @@ import {
   selectOrderedChats,
   useAgentStore,
 } from "../store/agent";
+import {
+  MIN_HEIGHT,
+  MIN_MAIN_PANEL_WIDTH,
+  MIN_SIDEBAR_WIDTH,
+  MIN_WIDTH,
+  WINDOW_MARGIN,
+} from "../window";
 import { AgentChat } from "./AgentChat";
 import { AgentInput } from "./AgentInput";
 import {
@@ -32,19 +39,6 @@ import {
   resizeWindowBounds,
 } from "./window-resize";
 
-const MIN_SIDEBAR_WIDTH = 180;
-const MIN_MAIN_PANEL_WIDTH = 240;
-// Budget for the sidebar resize handle, borders, and a small breathing
-// room so the main panel actually reaches its minimum width without the
-// input row collapsing.
-const WINDOW_CHROME_BUDGET = 40;
-// Keep the total window wide enough so both the sidebar and the main panel
-// can render at their minimums side by side; otherwise the input row gets
-// squeezed and the placeholder wraps onto multiple lines.
-const MIN_WIDTH =
-  MIN_SIDEBAR_WIDTH + MIN_MAIN_PANEL_WIDTH + WINDOW_CHROME_BUDGET;
-const MIN_HEIGHT = 400;
-const WINDOW_MARGIN = 16;
 const resizeZoneClasses: Record<ResizeDirection, string> = {
   n: "left-[12px] top-[-6px] h-[6px] w-[calc(100%-24px)] cursor-n-resize",
   s: "bottom-[-6px] left-[12px] h-[6px] w-[calc(100%-24px)] cursor-s-resize",

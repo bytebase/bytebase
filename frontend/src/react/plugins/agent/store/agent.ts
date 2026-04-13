@@ -11,6 +11,10 @@ import type {
   Message,
   ToolCall,
 } from "../logic/types";
+import {
+  getCenteredAgentWindowPosition,
+  getDefaultAgentWindowState,
+} from "../window";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
@@ -496,6 +500,18 @@ const getSafeStorage = (): Storage | null => {
   return storage as Storage;
 };
 
+const getInitialWindowState = () => {
+  if (typeof window === "undefined") {
+    return {
+      position: { x: 0, y: 0 },
+      size: { width: 480, height: 540 },
+      sidebarWidth: 200,
+    };
+  }
+
+  return getDefaultAgentWindowState(window.innerWidth, window.innerHeight);
+};
+
 const loadInitialState = (): {
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
@@ -540,6 +556,7 @@ const loadInitialState = (): {
 
 export const createAgentStore = () => {
   const initial = loadInitialState();
+  const initialWindowState = getInitialWindowState();
 
   const store = create<AgentState>()(
     immer((set, get) => {
@@ -565,12 +582,9 @@ export const createAgentStore = () => {
       return {
         // Window state
         visible: false,
-        position: {
-          x: typeof window !== "undefined" ? window.innerWidth - 500 : 0,
-          y: typeof window !== "undefined" ? window.innerHeight - 560 : 0,
-        },
-        size: { width: 480, height: 540 },
-        sidebarWidth: 200,
+        position: initialWindowState.position,
+        size: initialWindowState.size,
+        sidebarWidth: initialWindowState.sidebarWidth,
         minimized: false,
 
         // Chat state (from persisted/initial)
@@ -586,6 +600,14 @@ export const createAgentStore = () => {
             state.visible = !state.visible;
             if (state.visible) {
               state.minimized = false;
+              if (typeof window !== "undefined") {
+                state.position = getCenteredAgentWindowPosition(
+                  window.innerWidth,
+                  window.innerHeight,
+                  state.size.width,
+                  state.size.height
+                );
+              }
             }
           }),
         minimize: () =>

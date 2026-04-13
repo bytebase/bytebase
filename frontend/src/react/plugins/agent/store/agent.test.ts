@@ -33,11 +33,25 @@ function createMockStorage(): Storage {
   };
 }
 
+function setViewportSize(width: number, height: number) {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  Object.defineProperty(window, "innerHeight", {
+    configurable: true,
+    writable: true,
+    value: height,
+  });
+}
+
 let mockStorage: Storage;
 
 beforeEach(() => {
   mockStorage = createMockStorage();
   vi.stubGlobal("localStorage", mockStorage);
+  setViewportSize(1280, 800);
 });
 
 afterEach(() => {
@@ -54,6 +68,25 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBe(s(store).chats[0].id);
     expect(s(store).getMessages(s(store).currentChatId)).toEqual([]);
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
+  });
+
+  test("uses viewport-relative medium window defaults when no saved window state exists", () => {
+    setViewportSize(1440, 900);
+
+    const store = createAgentStore();
+
+    expect(s(store).size).toEqual({ width: 788, height: 625 });
+    expect(s(store).position).toEqual({ x: 326, y: 138 });
+    expect(s(store).sidebarWidth).toBe(200);
+  });
+
+  test("keeps the default window inside narrow viewports", () => {
+    setViewportSize(430, 450);
+
+    const store = createAgentStore();
+
+    expect(s(store).size).toEqual({ width: 398, height: 400 });
+    expect(s(store).position).toEqual({ x: 16, y: 25 });
   });
 
   test("loads persisted window state", () => {
@@ -77,6 +110,20 @@ describe("useAgentStore (Zustand)", () => {
       '"sidebarWidth":280'
     );
     expect(localStorage.getItem(AGENT_STATE_KEY)).not.toBeNull();
+  });
+
+  test("centers the window when opening the agent", () => {
+    setViewportSize(1440, 900);
+    const store = createAgentStore();
+
+    s(store).setSize(788, 625);
+    s(store).setPosition(700, 500);
+
+    s(store).toggle();
+
+    expect(s(store).visible).toBe(true);
+    expect(s(store).position).toEqual({ x: 326, y: 138 });
+    expect(s(store).size).toEqual({ width: 788, height: 625 });
   });
 
   test("normalizes stale running chats on load", () => {
