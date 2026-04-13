@@ -13,7 +13,7 @@ describe("supportsWindowBorderResize", () => {
       return { matches: true };
     });
 
-    expect(receivedQuery).toBe("(any-hover: hover) and (any-pointer: fine)");
+    expect(receivedQuery).toBe("(any-pointer: fine)");
     expect(RESIZE_POINTER_MEDIA_QUERY).toBe(receivedQuery);
     expect(supported).toBe(true);
   });
