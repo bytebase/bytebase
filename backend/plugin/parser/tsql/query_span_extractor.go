@@ -90,17 +90,17 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryTypeListener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
+	omniStmts, omniErr := ParseTSQLOmni(statement)
+	if omniErr != nil {
+		return nil, omniErr
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
-	if queryTypeListener.err != nil {
-		return nil, queryTypeListener.err
+	queryType := base.Select
+	if len(omniStmts) > 0 {
+		queryType = classifyQueryType(omniStmts[0].AST, allSystems)
 	}
-	if queryTypeListener.result != base.Select {
+	if queryType != base.Select {
 		return &base.QuerySpan{
-			Type:          queryTypeListener.result,
+			Type:          queryType,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
@@ -124,7 +124,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
-				Type:          queryTypeListener.result,
+				Type:          queryType,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -135,7 +135,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
-		Type:             queryTypeListener.result,
+		Type:             queryType,
 		SourceColumns:    accessTables,
 		Results:          listener.result,
 		PredicateColumns: q.predicateColumns,
