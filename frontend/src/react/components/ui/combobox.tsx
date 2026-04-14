@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
 import { HighlightLabelText } from "../HighlightLabelText";
-import { getLayerRoot } from "./layer";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 import { SearchInput } from "./search-input";
 
 export interface ComboboxOption {
@@ -338,6 +338,7 @@ export function Combobox(props: ComboboxProps) {
       style={portal ? dropdownStyle : undefined}
       className={cn(
         "bg-background border border-control-border rounded-sm shadow-lg overflow-hidden",
+        portal && LAYER_SURFACE_CLASS,
         !portal && "absolute z-50 mt-1 min-w-full w-max"
       )}
     >
