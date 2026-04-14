@@ -622,6 +622,7 @@ function useExemptionDataReact(projectName: string) {
       const pol = await policyStore.getOrFetchPolicyByParentAndType({
         parentPath: projectName,
         policyType: PolicyType.MASKING_EXEMPTION,
+        refresh: true,
       });
 
       if (generation !== fetchGenRef.current) return;
@@ -717,12 +718,10 @@ function useExemptionDataReact(projectName: string) {
         processingRef.current = false;
         return;
       }
-
-      const [removed] = currentList.splice(idx, 1);
-      setRawAccessList(currentList);
+      currentList.splice(idx, 1);
 
       try {
-        // Rebuild and save policy
+        // Rebuild and save policy first; only update UI state on success.
         const pol = await policyStore.getOrFetchPolicyByParentAndType({
           parentPath: projectName,
           policyType: PolicyType.MASKING_EXEMPTION,
@@ -739,16 +738,13 @@ function useExemptionDataReact(projectName: string) {
             policy: pol,
           });
         }
+        setRawAccessList(currentList);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("common.updated"),
         });
       } catch (error) {
-        // Restore on failure
-        const restored = [...rawAccessListRef.current];
-        restored.splice(idx, 0, removed);
-        setRawAccessList(restored);
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
