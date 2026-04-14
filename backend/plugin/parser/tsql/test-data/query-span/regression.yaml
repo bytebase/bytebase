@@ -250,12 +250,7 @@
             "views": [
               {
                 "name": "vwBHSDetailBPM3",
-                "definition": "CREATE VIEW [dbo].[vwBHSDetailBPM3] AS SELECT DISTINCT a.* FROM (SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'A' UNION SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'B') a",
-                "columns": [
-                  {"name": "Id"},
-                  {"name": "F1"},
-                  {"name": "F2"}
-                ]
+                "definition": "CREATE VIEW [dbo].[vwBHSDetailBPM3] AS SELECT DISTINCT a.* FROM (SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'A' UNION SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'B') a"
               }
             ],
             "tables": [
