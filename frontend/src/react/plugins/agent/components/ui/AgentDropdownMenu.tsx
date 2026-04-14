@@ -32,6 +32,7 @@ export function AgentDropdownMenuContent({
       >
         <BaseMenu.Popup
           ref={ref}
+          data-agent-dropdown-menu-content
           className={cn(
             "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
             "focus:outline-hidden",

@@ -128,6 +128,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
@@ -147,7 +148,117 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("selects the next archived chat after deleting the current archived chat", () => {
+  test("mounts agent menu and delete dialog into the agent layer root", async () => {
+    const archivedChat = useAgentStore.getState().createChat({
+      title: "Archived chat",
+      archived: true,
+      select: false,
+    });
+
+    useAgentStore.setState({
+      chats: useAgentStore.getState().chats.map((chat) => {
+        if (chat.id === archivedChat.id) {
+          return { ...chat, updatedTs: 2000 };
+        }
+        return chat;
+      }),
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const moreButton = document.body.querySelector(
+      "[aria-label='common.more']"
+    ) as HTMLButtonElement | null;
+
+    act(() => {
+      moreButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    const agentRoot = document.getElementById("bb-react-layer-agent");
+    const overlayRoot = document.getElementById("bb-react-layer-overlay");
+
+    expect(
+      agentRoot?.querySelector("[data-agent-dropdown-menu-content]")
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(
+      agentRoot?.querySelector("[data-agent-chat-list-mode]")
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(
+      overlayRoot?.querySelector("[data-agent-dropdown-menu-content]") ?? null
+    ).toBeNull();
+
+    const archivedModeButton = document.body.querySelector(
+      "[data-agent-chat-list-mode]"
+    ) as HTMLDivElement | null;
+
+    await act(async () => {
+      archivedModeButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+    });
+
+    const deleteButton = document.body.querySelector(
+      "[data-agent-delete-chat]"
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      deleteButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      agentRoot?.querySelector("[data-agent-dialog-content]")
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(
+      agentRoot?.textContent?.includes("agent.delete-chat-confirmation")
+    ).toBe(true);
+    expect(
+      overlayRoot?.querySelector("[data-agent-dialog-content]") ?? null
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("mounts agent tooltip content into the agent layer root", async () => {
+    vi.useFakeTimers();
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const trigger = document.body.querySelector(
+      "[aria-label='agent.new-chat']"
+    ) as HTMLButtonElement | null;
+
+    expect(trigger).toBeInstanceOf(HTMLButtonElement);
+
+    await act(async () => {
+      trigger?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(100);
+    });
+
+    const agentRoot = document.getElementById("bb-react-layer-agent");
+    const overlayRoot = document.getElementById("bb-react-layer-overlay");
+
+    expect(
+      agentRoot?.querySelector("[data-agent-tooltip-content]")
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(agentRoot?.textContent).toContain("agent.new-chat");
+    expect(
+      overlayRoot?.querySelector("[data-agent-tooltip-content]") ?? null
+    ).toBeNull();
+
+    unmount();
+  });
+
+  test("selects the next archived chat after deleting the current archived chat", async () => {
     const activeChatId = useAgentStore.getState().currentChatId!;
     const firstArchivedChat = useAgentStore.getState().createChat({
       title: "First archived",
@@ -194,10 +305,11 @@ describe("AgentWindow", () => {
       "[data-agent-chat-list-mode]"
     ) as HTMLDivElement | null;
 
-    act(() => {
+    await act(async () => {
       archivedModeButton?.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true })
       );
+      await Promise.resolve();
     });
 
     const deleteButtons = Array.from(
