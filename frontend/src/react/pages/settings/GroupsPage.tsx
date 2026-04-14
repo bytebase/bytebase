@@ -3,12 +3,10 @@ import { isEqual } from "lodash-es";
 import {
   ChevronDown,
   ChevronRight,
-  Pencil,
   Plus,
   Settings,
   Trash2,
   Users,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +18,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Table,
   TableBody,
   TableCell,
@@ -28,9 +34,9 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
@@ -53,7 +59,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
-import { AADSyncDrawer } from "./shared/AADSyncDrawer";
+import { AADSyncSheet } from "./shared/AADSyncSheet";
 
 // ============================================================
 // Helpers
@@ -272,8 +278,8 @@ function GroupTable({
                 isExpanded={isExpanded}
                 members={members}
                 searchText={searchText}
-                canEdit={canEdit}
                 canDelete={canDelete}
+                canOpen={canEdit || hasWorkspacePermissionV2("bb.groups.get")}
                 onToggle={() => toggleExpand(group)}
                 onEdit={() => onGroupSelected(group)}
                 onDelete={() => handleDelete(group)}
@@ -292,8 +298,8 @@ function GroupRow({
   isExpanded,
   members,
   searchText,
-  canEdit,
   canDelete,
+  canOpen,
   onToggle,
   onEdit,
   onDelete,
@@ -303,23 +309,46 @@ function GroupRow({
   isExpanded: boolean;
   members: User[] | undefined;
   searchText: string;
-  canEdit: boolean;
   canDelete: boolean;
+  canOpen: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
-  const stripeBg = index % 2 === 1 ? "bg-gray-50" : "";
+  const stripeBg = index % 2 === 1 ? "bg-control-bg/50" : "";
 
   return (
     <>
-      <TableRow className={stripeBg}>
+      <TableRow
+        className={cn(
+          stripeBg,
+          canOpen &&
+            "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+        )}
+        tabIndex={canOpen ? 0 : undefined}
+        role={canOpen ? "button" : undefined}
+        aria-label={canOpen ? group.title : undefined}
+        onClick={canOpen ? onEdit : undefined}
+        onKeyDown={
+          canOpen
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onEdit();
+                }
+              }
+            : undefined
+        }
+      >
         <TableCell className="py-2">
           <div className="flex items-center gap-x-2">
             <button
               className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
-              onClick={onToggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
             >
               {isExpanded ? (
                 <ChevronDown className="h-4 w-4" />
@@ -352,25 +381,16 @@ function GroupRow({
         </TableCell>
         <TableCell className="py-2">
           <div className="flex justify-end gap-x-1">
-            {canEdit && (
-              <Tooltip content={t("common.edit")}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={onEdit}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </Tooltip>
-            )}
             {canDelete && (
               <Tooltip content={t("common.delete")}>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-error hover:text-error"
-                  onClick={onDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -426,17 +446,44 @@ function GroupRow({
 // CreateGroupDrawer
 // ============================================================
 
-function CreateGroupDrawer({
-  group,
-  onClose,
-  onUpdated,
-  onRemoved,
-}: {
+interface CreateGroupSheetProps {
+  open: boolean;
   group: Group | undefined;
   onClose: () => void;
   onUpdated: (group: Group) => void;
   onRemoved: (group: Group) => void;
-}) {
+}
+
+function CreateGroupSheet(props: CreateGroupSheetProps) {
+  const { open, group, onClose } = props;
+  // Freeze the entity while open=false so the inner form stays visually
+  // stable during the Sheet's close animation.
+  const openEntityRef = useRef(group);
+  if (open) {
+    openEntityRef.current = group;
+  }
+  const stableGroup = openEntityRef.current;
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <GroupForm
+          key={stableGroup?.name ?? "new"}
+          group={stableGroup}
+          onClose={props.onClose}
+          onUpdated={props.onUpdated}
+          onRemoved={props.onRemoved}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function GroupForm({
+  group,
+  onClose,
+  onUpdated,
+  onRemoved,
+}: Omit<CreateGroupSheetProps, "open">) {
   const { t } = useTranslation();
   const groupStore = useGroupStore();
   const settingV1Store = useSettingV1Store();
@@ -451,11 +498,11 @@ function CreateGroupDrawer({
   );
   const domainOptions = workspaceDomains.filter((d) => d.trim());
 
-  const [email, setEmail] = useState(() => {
-    if (!group) return "";
-    return group.email ?? "";
-  });
-  const [selectedDomain, setSelectedDomain] = useState(() => {
+  // Initial values derived from the group prop. The parent keys this
+  // component by group, so it remounts fresh on each open — these initial
+  // values always reflect the latest prop.
+  const initialEmail = group?.email ?? "";
+  const initialSelectedDomain = (() => {
     if (group?.email) {
       const atIdx = group.email.indexOf("@");
       if (atIdx >= 0) {
@@ -464,26 +511,27 @@ function CreateGroupDrawer({
       }
     }
     return domainOptions[0] ?? "";
-  });
-  const [title, setTitle] = useState(group?.title ?? "");
-  const [description, setDescription] = useState(group?.description ?? "");
-  const [members, setMembers] = useState<GroupMember[]>(() => {
-    if (group) {
-      return group.members.map((m) =>
+  })();
+  const initialTitle = group?.title ?? "";
+  const initialDescription = group?.description ?? "";
+  const initialMembers: GroupMember[] = group
+    ? group.members.map((m) =>
         create(GroupMemberSchema, { member: m.member, role: m.role })
-      );
-    }
-    return [
-      create(GroupMemberSchema, {
-        role: GroupMember_Role.OWNER,
-        member: currentUser.name,
-      }),
-    ];
-  });
+      )
+    : [
+        create(GroupMemberSchema, {
+          role: GroupMember_Role.OWNER,
+          member: currentUser.name,
+        }),
+      ];
+
+  const [email, setEmail] = useState(initialEmail);
+  const [selectedDomain, setSelectedDomain] = useState(initialSelectedDomain);
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [members, setMembers] = useState<GroupMember[]>(initialMembers);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  useEscapeKey(true, onClose);
 
   const isExternalGroup = !!group?.source;
 
@@ -672,221 +720,203 @@ function CreateGroupDrawer({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <SheetHeader>
+        <SheetTitle>{t("common.group")}</SheetTitle>
+      </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.group")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+      <SheetBody>
+        <div className="flex flex-col gap-y-6">
+          {isExternalGroup && (
+            <Alert variant="info">
+              <AlertDescription>
+                {t("settings.members.groups.external-readonly")}
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
-          <div className="flex flex-col gap-y-6">
-            {isExternalGroup && (
-              <Alert variant="info">
-                <AlertDescription>
-                  {t("settings.members.groups.external-readonly")}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Email */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.email")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
-              <span className="textinfolabel text-sm">
-                {t("settings.members.groups.form.email-tips")}
-              </span>
-              <div className="flex items-center gap-x-1">
-                <Input
-                  value={isEditMode ? email : email.split("@")[0]}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isEditMode || !allowEdit}
-                />
-                {!isEditMode && domainOptions.length > 0 && (
-                  <>
-                    <span className="text-sm text-control-light">@</span>
-                    {domainOptions.length === 1 ? (
-                      <span className="text-sm text-control-light whitespace-nowrap">
-                        {domainOptions[0]}
-                      </span>
-                    ) : (
-                      <select
-                        value={selectedDomain}
-                        onChange={(e) => setSelectedDomain(e.target.value)}
-                        className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
-                        disabled={!allowEdit}
-                      >
-                        {domainOptions.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Title */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.title")}
-                <span className="ml-0.5 text-error">*</span>
-              </label>
+          {/* Email */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.email")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <span className="textinfolabel text-sm">
+              {t("settings.members.groups.form.email-tips")}
+            </span>
+            <div className="flex items-center gap-x-1">
               <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={200}
-                disabled={!allowEdit}
+                value={isEditMode ? email : email.split("@")[0]}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isEditMode || !allowEdit}
               />
-            </div>
-
-            {/* Description */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("settings.members.groups.form.description")}
-              </label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={1000}
-                disabled={!allowEdit}
-              />
-            </div>
-
-            {/* Members */}
-            <div className="flex flex-col gap-y-2">
-              <label className="block text-sm font-medium text-control">
-                {t("common.members", { count: 2 })}
-              </label>
-              <div className="flex flex-col gap-y-2">
-                {members.map((member, index) => (
-                  <div key={index} className="flex items-center gap-x-2">
-                    <Input
-                      className="flex-1"
-                      value={member.member}
-                      onChange={(e) =>
-                        handleMemberChange(index, "member", e.target.value)
-                      }
-                      placeholder="users/hello@example.com"
-                      disabled={!allowEdit}
-                    />
+              {!isEditMode && domainOptions.length > 0 && (
+                <>
+                  <span className="text-sm text-control-light">@</span>
+                  {domainOptions.length === 1 ? (
+                    <span className="text-sm text-control-light whitespace-nowrap">
+                      {domainOptions[0]}
+                    </span>
+                  ) : (
                     <select
-                      value={member.role}
-                      onChange={(e) =>
-                        handleMemberChange(
-                          index,
-                          "role",
-                          Number(e.target.value) as GroupMember_Role
-                        )
-                      }
-                      className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                      value={selectedDomain}
+                      onChange={(e) => setSelectedDomain(e.target.value)}
+                      className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
                       disabled={!allowEdit}
                     >
-                      <option value={GroupMember_Role.OWNER}>
-                        {t("settings.members.groups.form.role.owner")}
-                      </option>
-                      <option value={GroupMember_Role.MEMBER}>
-                        {t("settings.members.groups.form.role.member")}
-                      </option>
+                      {domainOptions.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
                     </select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-error hover:text-error"
-                      onClick={() => handleRemoveMember(index)}
-                      disabled={!allowEdit}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                {allowEdit && (
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.title")}
+              <span className="ml-0.5 text-error">*</span>
+            </label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={200}
+              disabled={!allowEdit}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("settings.members.groups.form.description")}
+            </label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={1000}
+              disabled={!allowEdit}
+            />
+          </div>
+
+          {/* Members */}
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium text-control">
+              {t("common.members", { count: 2 })}
+            </label>
+            <div className="flex flex-col gap-y-2">
+              {members.map((member, index) => (
+                <div key={index} className="flex items-center gap-x-2">
+                  <Input
+                    className="flex-1"
+                    value={member.member}
+                    onChange={(e) =>
+                      handleMemberChange(index, "member", e.target.value)
+                    }
+                    placeholder="users/hello@example.com"
+                    disabled={!allowEdit}
+                  />
+                  <select
+                    value={member.role}
+                    onChange={(e) =>
+                      handleMemberChange(
+                        index,
+                        "role",
+                        Number(e.target.value) as GroupMember_Role
+                      )
+                    }
+                    className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                    disabled={!allowEdit}
+                  >
+                    <option value={GroupMember_Role.OWNER}>
+                      {t("settings.members.groups.form.role.owner")}
+                    </option>
+                    <option value={GroupMember_Role.MEMBER}>
+                      {t("settings.members.groups.form.role.member")}
+                    </option>
+                  </select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-error hover:text-error"
+                    onClick={() => handleRemoveMember(index)}
+                    disabled={!allowEdit}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {allowEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={handleAddMember}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("settings.members.add-member")}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {errorMessage && <p className="text-error text-sm">{errorMessage}</p>}
+        </div>
+      </SheetBody>
+
+      <SheetFooter className="justify-between">
+        <div>
+          {canDelete && (
+            <>
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-x-2">
+                  <span className="text-sm text-error">
+                    {t("settings.members.action.deactivate-confirm-title")}
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={isRequesting}
+                  >
+                    {t("common.deactivate")}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="self-start"
-                    onClick={handleAddMember}
+                    onClick={() => setShowDeleteConfirm(false)}
                   >
-                    <Plus className="h-4 w-4 mr-1" />
-                    {t("settings.members.add-member")}
+                    {t("common.cancel")}
                   </Button>
-                )}
-              </div>
-            </div>
-
-            {errorMessage && (
-              <p className="text-error text-sm">{errorMessage}</p>
-            )}
-          </div>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="text-error hover:text-error"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  {t("common.delete")}
+                </Button>
+              )}
+            </>
+          )}
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t">
-          <div>
-            {canDelete && (
-              <>
-                {showDeleteConfirm ? (
-                  <div className="flex items-center gap-x-2">
-                    <span className="text-sm text-error">
-                      {t("settings.members.action.deactivate-confirm-title")}
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDelete}
-                      disabled={isRequesting}
-                    >
-                      {t("common.deactivate")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDeleteConfirm(false)}
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    className="text-error hover:text-error"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {t("common.delete")}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-x-2">
-            <Button variant="outline" onClick={onClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={!allowEdit || !allowConfirm || isRequesting}
-              onClick={handleSubmit}
-            >
-              {isEditMode ? t("common.update") : t("common.create")}
-            </Button>
-          </div>
+        <div className="flex items-center gap-x-2">
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            disabled={!allowEdit || !allowConfirm || isRequesting}
+            onClick={handleSubmit}
+          >
+            {isEditMode ? t("common.update") : t("common.create")}
+          </Button>
         </div>
-      </div>
+      </SheetFooter>
     </>
   );
 }
@@ -1081,27 +1111,27 @@ export function GroupsPage() {
         )}
       </ComponentPermissionGuard>
 
-      {showCreateGroupDrawer && (
-        <CreateGroupDrawer
-          group={editingGroup}
-          onClose={() => {
-            setShowCreateGroupDrawer(false);
-            setEditingGroup(undefined);
-          }}
-          onUpdated={(group) => {
-            groupPaged.updateCache([group]);
-          }}
-          onRemoved={(group) => {
-            groupPaged.removeCache(group);
-            setShowCreateGroupDrawer(false);
-            setEditingGroup(undefined);
-          }}
-        />
-      )}
+      <CreateGroupSheet
+        open={showCreateGroupDrawer}
+        group={editingGroup}
+        onClose={() => {
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+        onUpdated={(group) => {
+          groupPaged.updateCache([group]);
+        }}
+        onRemoved={(group) => {
+          groupPaged.removeCache(group);
+          setShowCreateGroupDrawer(false);
+          setEditingGroup(undefined);
+        }}
+      />
 
-      {showAadSyncDrawer && (
-        <AADSyncDrawer onClose={() => setShowAadSyncDrawer(false)} />
-      )}
+      <AADSyncSheet
+        open={showAadSyncDrawer}
+        onClose={() => setShowAadSyncDrawer(false)}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
@@ -371,11 +372,14 @@ export function SQLReviewDetailPage({
 
       {/* Disable confirmation dialog */}
       <Dialog open={showDisableModal} onOpenChange={setShowDisableModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md p-6">
           <DialogTitle>
             {t("common.disable")} &apos;{reviewPolicy.name}&apos;?
           </DialogTitle>
-          <div className="flex justify-end gap-x-2 mt-4">
+          <DialogDescription className="mt-2">
+            {t("sql-review.disable-description")}
+          </DialogDescription>
+          <div className="flex justify-end gap-x-2 mt-6">
             <Button
               variant="outline"
               onClick={() => setShowDisableModal(false)}
@@ -391,11 +395,14 @@ export function SQLReviewDetailPage({
 
       {/* Enable confirmation dialog */}
       <Dialog open={showEnableModal} onOpenChange={setShowEnableModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md p-6">
           <DialogTitle>
             {t("common.enable")} &apos;{reviewPolicy.name}&apos;?
           </DialogTitle>
-          <div className="flex justify-end gap-x-2 mt-4">
+          <DialogDescription className="mt-2">
+            {t("sql-review.enable-description")}
+          </DialogDescription>
+          <div className="flex justify-end gap-x-2 mt-6">
             <Button variant="outline" onClick={() => setShowEnableModal(false)}>
               {t("common.cancel")}
             </Button>
@@ -406,11 +413,14 @@ export function SQLReviewDetailPage({
 
       {/* Delete confirmation dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
+        <DialogContent className="max-w-md p-6">
           <DialogTitle>
             {t("common.delete")} &apos;{reviewPolicy.name}&apos;?
           </DialogTitle>
-          <div className="flex justify-end gap-x-2 mt-4">
+          <DialogDescription className="mt-2">
+            {t("sql-review.delete-description")}
+          </DialogDescription>
+          <div className="flex justify-end gap-x-2 mt-6">
             <Button
               variant="outline"
               onClick={() => setShowDeleteConfirm(false)}

@@ -95,7 +95,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
     // Fetch identity providers on mount
     useEffect(() => {
-      idpStore.fetchIdentityProviderList();
+      idpStore.fetchIdentityProviderList(
+        useActuatorV1Store().workspaceResourceName
+      );
     }, []);
 
     // --- Toggle state ---

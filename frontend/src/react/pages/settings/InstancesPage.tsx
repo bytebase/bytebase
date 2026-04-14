@@ -28,7 +28,21 @@ import {
   AlertTitle,
 } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -296,16 +310,12 @@ function InstanceActionDropdown({
 }) {
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
-  const [open, setOpen] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [forceArchive, setForceArchive] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canArchive = hasWorkspacePermissionV2("bb.instances.delete");
   const canRestore = hasWorkspacePermissionV2("bb.instances.undelete");
-  const closeDropdown = useCallback(() => setOpen(false), []);
-  useClickOutside(dropdownRef, open, closeDropdown);
 
   const handleArchive = useCallback(async () => {
     try {
@@ -331,7 +341,6 @@ function InstanceActionDropdown({
   }, [instance, instanceStore, forceArchive, t, onAction]);
 
   const handleRestore = useCallback(async () => {
-    setOpen(false);
     try {
       await instanceStore.restoreInstance(instance);
       pushNotification({
@@ -378,56 +387,47 @@ function InstanceActionDropdown({
 
   return (
     <>
-      <div ref={dropdownRef} className="relative">
-        <button
-          className="p-1 hover:bg-control-bg rounded-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen(!open);
-          }}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="p-1 rounded-xs hover:bg-control-bg outline-hidden"
+          onClick={(e) => e.stopPropagation()}
         >
           <EllipsisVertical className="h-4 w-4" />
-        </button>
-        {open && (
-          <div className="absolute right-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[120px]">
-            {isActive && canArchive && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  setShowArchiveConfirm(true);
-                }}
-              >
-                {t("common.archive")}
-              </button>
-            )}
-            {!isActive && canRestore && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRestore();
-                }}
-              >
-                {t("common.restore")}
-              </button>
-            )}
-            {(canArchive || canRestore) && (
-              <button
-                className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg flex items-center gap-x-2 text-error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  setShowDeleteConfirm(true);
-                }}
-              >
-                {t("common.delete")}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {isActive && canArchive && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowArchiveConfirm(true);
+              }}
+            >
+              {t("common.archive")}
+            </DropdownMenuItem>
+          )}
+          {!isActive && canRestore && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRestore();
+              }}
+            >
+              {t("common.restore")}
+            </DropdownMenuItem>
+          )}
+          {(canArchive || canRestore) && (
+            <DropdownMenuItem
+              className="text-error"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
+            >
+              {t("common.delete")}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ConfirmDialog
         open={showArchiveConfirm}
@@ -497,10 +497,10 @@ function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
 }
 
 // ============================================================
-// EditEnvironmentDrawer
+// EditEnvironmentSheet
 // ============================================================
 
-function EditEnvironmentDrawer({
+function EditEnvironmentSheet({
   open,
   onClose,
   onUpdate,
@@ -515,27 +515,17 @@ function EditEnvironmentDrawer({
     () => environmentStore.environmentList ?? []
   );
   const [selected, setSelected] = useState("");
-  useEscapeKey(open, onClose);
   useEffect(() => {
     if (open) setSelected("");
   }, [open]);
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[24rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">{t("common.environment")}</h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            &times;
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <SheetHeader>
+          <SheetTitle>{t("common.environment")}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
           <div className="flex flex-col gap-y-2">
             {environments.map((env) => (
               <label
@@ -566,8 +556,8 @@ function EditEnvironmentDrawer({
               </label>
             ))}
           </div>
-        </div>
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t border-control-border">
+        </SheetBody>
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -580,9 +570,9 @@ function EditEnvironmentDrawer({
           >
             {t("common.update")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1187,7 +1177,7 @@ export function InstancesPage() {
         showAssignLicense={subscriptionStore.currentPlan !== PlanType.FREE}
       />
 
-      <EditEnvironmentDrawer
+      <EditEnvironmentSheet
         open={showEditEnvDrawer}
         onClose={() => setShowEditEnvDrawer(false)}
         onUpdate={handleEnvironmentUpdate}

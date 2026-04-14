@@ -23,7 +23,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/plugin/mail"
+	"github.com/bytebase/bytebase/backend/plugin/mailer"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/dingtalk"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/feishu"
 	"github.com/bytebase/bytebase/backend/plugin/webhook/lark"
@@ -651,20 +651,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		// Validate the final state.
-		if oldEmailSetting.Type == storepb.EmailSetting_SMTP {
-			smtp := oldEmailSetting.GetSmtp()
-			if smtp == nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp config is required when type is SMTP"))
-			}
-			if smtp.Host == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp host is required"))
-			}
-			if smtp.Port <= 0 {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("smtp port must be positive"))
-			}
-		}
-		if oldEmailSetting.From == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("from address is required"))
+		if err := validateEmailSetting(oldEmailSetting); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
 		storeSettingValue = oldEmailSetting
@@ -755,23 +743,23 @@ func (s *SettingService) TestEmailSetting(ctx context.Context, req *connect.Requ
 		}
 	}
 
-	sender, senderErr := mail.NewSender(emailSetting)
-	if senderErr != nil {
+	sender, err := mailer.NewSender(emailSetting)
+	if err != nil {
 		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
 			Success: false,
-			Error:   senderErr.Error(),
+			Error:   err.Error(),
 		}), nil
 	}
 
-	sendErr := sender.Send(ctx, &mail.SendRequest{
+	err = sender.Send(ctx, &mailer.SendRequest{
 		To:       []string{req.Msg.To},
 		Subject:  "Bytebase email config test",
 		TextBody: "This is a test email from Bytebase to verify your email configuration.",
 	})
-	if sendErr != nil {
+	if err != nil {
 		return connect.NewResponse(&v1pb.TestEmailSettingResponse{ //nolint:nilerr
 			Success: false,
-			Error:   sendErr.Error(),
+			Error:   err.Error(),
 		}), nil
 	}
 
@@ -875,6 +863,28 @@ func (s *SettingService) validateEnvironments(ctx context.Context, workspaceID s
 			}
 		}
 		used[env.Id] = true
+	}
+	return nil
+}
+
+func validateEmailSetting(setting *storepb.EmailSetting) error {
+	if setting.From == "" {
+		return errors.Errorf("from address is required")
+	}
+	switch setting.Type {
+	case storepb.EmailSetting_SMTP:
+		smtp := setting.GetSmtp()
+		if smtp == nil {
+			return errors.Errorf("smtp config is required when type is SMTP")
+		}
+		if smtp.Host == "" {
+			return errors.Errorf("smtp host is required")
+		}
+		if smtp.Port <= 0 {
+			return errors.Errorf("smtp port must be positive")
+		}
+	default:
+		return errors.Errorf("unsupported email type: %v", setting.Type)
 	}
 	return nil
 }

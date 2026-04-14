@@ -622,6 +622,7 @@ function useExemptionDataReact(projectName: string) {
       const pol = await policyStore.getOrFetchPolicyByParentAndType({
         parentPath: projectName,
         policyType: PolicyType.MASKING_EXEMPTION,
+        refresh: true,
       });
 
       if (generation !== fetchGenRef.current) return;
@@ -717,12 +718,10 @@ function useExemptionDataReact(projectName: string) {
         processingRef.current = false;
         return;
       }
-
-      const [removed] = currentList.splice(idx, 1);
-      setRawAccessList(currentList);
+      currentList.splice(idx, 1);
 
       try {
-        // Rebuild and save policy
+        // Rebuild and save policy first; only update UI state on success.
         const pol = await policyStore.getOrFetchPolicyByParentAndType({
           parentPath: projectName,
           policyType: PolicyType.MASKING_EXEMPTION,
@@ -739,16 +738,13 @@ function useExemptionDataReact(projectName: string) {
             policy: pol,
           });
         }
+        setRawAccessList(currentList);
         pushNotification({
           module: "bytebase",
           style: "SUCCESS",
           title: t("common.updated"),
         });
       } catch (error) {
-        // Restore on failure
-        const restored = [...rawAccessListRef.current];
-        restored.splice(idx, 0, removed);
-        setRawAccessList(restored);
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
@@ -919,6 +915,7 @@ function ExemptionMemberItem({
 
   return (
     <div
+      data-testid="exemption-member-item"
       className={cn(
         "flex items-center gap-x-3 px-3 py-2.5 cursor-pointer rounded-xs transition-colors",
         selected ? "bg-accent/5" : "hover:bg-control-bg"
@@ -1057,6 +1054,7 @@ function ExemptionDetailPanel({
         {member.grants.map((grant, idx) => (
           <div
             key={grant.id}
+            data-testid="exemption-grant-card"
             className="border border-block-border rounded-sm overflow-hidden"
           >
             <ExemptionGrantSection
@@ -1115,6 +1113,7 @@ function ExemptionGrantSection({
     <div>
       {/* Header */}
       <div
+        data-testid="exemption-grant-header"
         className="flex items-center justify-between px-4 py-2 cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >

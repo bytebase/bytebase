@@ -62,6 +62,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, err
 	}
 
+	if len(antlrASTs) == 0 {
+		return &base.QuerySpan{
+			Type:          base.Select,
+			SourceColumns: make(base.SourceColumnSet),
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
 	if len(antlrASTs) != 1 {
 		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(antlrASTs))
 	}
@@ -82,17 +90,17 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryTypeListener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
+	omniStmts, omniErr := ParseTSQLOmni(statement)
+	if omniErr != nil {
+		return nil, omniErr
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
-	if queryTypeListener.err != nil {
-		return nil, queryTypeListener.err
+	queryType := base.Select
+	if len(omniStmts) > 0 {
+		queryType = classifyQueryType(omniStmts[0].AST, allSystems)
 	}
-	if queryTypeListener.result != base.Select {
+	if queryType != base.Select {
 		return &base.QuerySpan{
-			Type:          queryTypeListener.result,
+			Type:          queryType,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
@@ -116,7 +124,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
-				Type:          queryTypeListener.result,
+				Type:          queryType,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -127,7 +135,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
-		Type:             queryTypeListener.result,
+		Type:             queryType,
 		SourceColumns:    accessTables,
 		Results:          listener.result,
 		PredicateColumns: q.predicateColumns,
@@ -753,8 +761,11 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 }
 
 func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDatabaseName string, viewSchemaName string) ([]base.QuerySpanResult, error) {
-	// Extract the SELECT body from CREATE VIEW statement
-	selectBody, err := getSelectBodyFromCreateView(definition)
+	// Extract the SELECT body and optional column alias list from CREATE VIEW statement.
+	// e.g. CREATE VIEW vw (F1, F2) AS SELECT col_a, col_b FROM tbl
+	//   selectBody = "SELECT col_a, col_b FROM tbl"
+	//   columnAliases = ["F1", "F2"]
+	selectBody, columnAliases, err := getSelectBodyFromCreateView(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract SELECT body from CREATE VIEW")
 	}
@@ -772,6 +783,15 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDat
 	if span.NotFoundError != nil {
 		return nil, span.NotFoundError
 	}
+
+	// Apply column aliases from the CREATE VIEW header if present.
+	// The alias list renames the SELECT body columns positionally.
+	if len(columnAliases) > 0 && len(columnAliases) == len(span.Results) {
+		for i, alias := range columnAliases {
+			span.Results[i].Name = alias
+		}
+	}
+
 	return span.Results, nil
 }
 
@@ -3665,35 +3685,36 @@ func unquote(name string) string {
 	return name
 }
 
-func getSelectBodyFromCreateView(createView string) (string, error) {
+func getSelectBodyFromCreateView(createView string) (string, []string, error) {
 	antlrASTs, err := ParseTSQL(createView)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	if len(antlrASTs) != 1 {
-		return "", errors.Errorf("expected exactly 1 statement, got %d", len(antlrASTs))
+		return "", nil, errors.Errorf("expected exactly 1 statement, got %d", len(antlrASTs))
 	}
 
 	ast := antlrASTs[0]
 	tree := ast.Tree
 	if tree == nil {
-		return "", errors.Errorf("parse tree is nil")
+		return "", nil, errors.Errorf("parse tree is nil")
 	}
 
 	extractor := &selectBodyExtractor{}
 	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
 
 	if extractor.selectBody == "" {
-		return "", errors.Errorf("no SELECT statement found in CREATE VIEW")
+		return "", nil, errors.Errorf("no SELECT statement found in CREATE VIEW")
 	}
 
-	return extractor.selectBody, nil
+	return extractor.selectBody, extractor.columnAliases, nil
 }
 
 type selectBodyExtractor struct {
 	*parser.BaseTSqlParserListener
-	selectBody string
+	selectBody    string
+	columnAliases []string
 }
 
 func (e *selectBodyExtractor) EnterCreate_view(ctx *parser.Create_viewContext) {
@@ -3705,5 +3726,13 @@ func (e *selectBodyExtractor) EnterCreate_view(ctx *parser.Create_viewContext) {
 		input := selectStatement.GetStart().GetInputStream()
 		interval := antlr.NewInterval(start, stop)
 		e.selectBody = input.GetTextFromInterval(interval)
+	}
+
+	// Extract the optional column alias list: CREATE VIEW vw (F1, F2) AS SELECT ...
+	if columnNameList := ctx.Column_name_list(); columnNameList != nil {
+		for _, id := range columnNameList.AllId_() {
+			_, normalizedName := NormalizeTSQLIdentifier(id)
+			e.columnAliases = append(e.columnAliases, normalizedName)
+		}
 	}
 }

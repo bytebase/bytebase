@@ -2183,7 +2183,7 @@ IssueService manages issues for tracking database changes and tasks.
 | host | [string](#string) |  |  |
 | port | [int32](#int32) |  |  |
 | username | [string](#string) |  |  |
-| password | [string](#string) |  | INPUT_ONLY — never returned in GET responses. |
+| password | [string](#string) |  |  |
 | encryption | [EmailSetting.SMTPConfig.Encryption](#bytebase-v1-EmailSetting-SMTPConfig-Encryption) |  |  |
 | authentication | [EmailSetting.SMTPConfig.Authentication](#bytebase-v1-EmailSetting-SMTPConfig-Authentication) |  |  |
 
@@ -2377,9 +2377,9 @@ The data in setting value.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Parent workspace. Format: workspaces/{workspace} |
-| email_setting | [EmailSetting](#bytebase-v1-EmailSetting) |  | The email config to test. Not persisted. |
-| to | [string](#string) |  | The recipient to send the test email to. |
+| parent | [string](#string) |  |  |
+| email_setting | [EmailSetting](#bytebase-v1-EmailSetting) |  |  |
+| to | [string](#string) |  |  |
 
 
 
@@ -2395,7 +2395,7 @@ The data in setting value.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | success | [bool](#bool) |  |  |
-| error | [string](#string) |  | Human-readable error if success=false. |
+| error | [string](#string) |  |  |
 
 
 

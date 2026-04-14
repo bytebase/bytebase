@@ -1,0 +1,660 @@
+import { clone, create } from "@bufbuild/protobuf";
+import dayjs from "dayjs";
+import { ExternalLink, Loader2, Package, Upload } from "lucide-react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { planServiceClientConnect, sheetServiceClientConnect } from "@/connect";
+import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
+import { Alert } from "@/react/components/ui/alert";
+import { Button } from "@/react/components/ui/button";
+import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
+import {
+  projectNamePrefix,
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useProjectV1Store,
+  useReleaseStore,
+  useSheetV1Store,
+} from "@/store";
+import { extractUserEmail } from "@/store/modules/v1/common";
+import {
+  getDateForPbTimestampProtoEs,
+  isValidDatabaseName,
+  isValidReleaseName,
+  languageOfEngineV1,
+} from "@/types";
+import { VCSType } from "@/types/proto-es/v1/common_pb";
+import {
+  type Plan,
+  type Plan_Spec,
+  PlanSchema,
+  UpdatePlanRequestSchema,
+} from "@/types/proto-es/v1/plan_service_pb";
+import {
+  type Release,
+  Release_Type,
+} from "@/types/proto-es/v1/release_service_pb";
+import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
+import { getInstanceResource } from "@/utils/v1/database";
+import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
+import {
+  extractSheetUID,
+  getSheetStatement,
+  setSheetStatement,
+} from "@/utils/v1/sheet";
+import { useIssueDetailContext } from "../context/IssueDetailContext";
+import {
+  createEmptyLocalSheet,
+  getLocalSheetByName,
+} from "../utils/localSheet";
+
+const MAX_DISPLAYED_RELEASE_FILES = 4;
+
+export function IssueDetailStatementSection({
+  className,
+  forceReadonly = false,
+  spec,
+}: {
+  className?: string;
+  forceReadonly?: boolean;
+  spec: Plan_Spec;
+}) {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  const sheetStore = useSheetV1Store();
+  const releaseStore = useReleaseStore();
+  const projectStore = useProjectV1Store();
+  const databaseStore = useDatabaseV1Store();
+  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const project = useVueState(() =>
+    projectStore.getProjectByName(`${projectNamePrefix}${page.projectId}`)
+  );
+  const releaseName =
+    spec.config?.case === "changeDatabaseConfig"
+      ? spec.config.value.release
+      : "";
+  const sheetName = useMemo(() => sheetNameOfSpec(spec), [spec]);
+  const release = useVueState(() =>
+    isValidReleaseName(releaseName)
+      ? releaseStore.getReleaseByName(releaseName)
+      : undefined
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSheetOversize, setIsSheetOversize] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [statement, setStatement] = useState("");
+  const [draftStatement, setDraftStatement] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
+  const targetDatabaseName = useMemo(() => {
+    if (
+      spec.config?.case !== "changeDatabaseConfig" &&
+      spec.config?.case !== "exportDataConfig"
+    ) {
+      return "";
+    }
+    return (spec.config.value.targets ?? []).find(isValidDatabaseName) ?? "";
+  }, [spec]);
+  const language = useMemo(() => {
+    if (!targetDatabaseName) {
+      return "sql";
+    }
+    const database = databaseStore.getDatabaseByName(targetDatabaseName);
+    return languageOfEngineV1(getInstanceResource(database).engine);
+  }, [databaseStore, targetDatabaseName]);
+  const autoCompleteContext = useMemo(() => {
+    if (!targetDatabaseName) {
+      return undefined;
+    }
+    return {
+      instance: extractDatabaseResourceName(targetDatabaseName).instance,
+      database: targetDatabaseName,
+      scene: "all" as const,
+    };
+  }, [targetDatabaseName]);
+  const statementTitle =
+    language === "sql" ? t("common.sql") : t("common.statement");
+  const displayedStatement = isEditing ? draftStatement : statement;
+  const isEmpty = displayedStatement.trim() === "";
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftStatement(statement);
+    }
+  }, [isEditing, statement]);
+
+  useEffect(() => {
+    page.setEditing(editingScope, isEditing);
+    return () => {
+      page.setEditing(editingScope, false);
+    };
+  }, [editingScope, isEditing, page]);
+
+  useEffect(() => {
+    setIsEditing(false);
+    setDraftStatement("");
+  }, [spec.id]);
+
+  useEffect(() => {
+    let canceled = false;
+
+    const load = async () => {
+      if (isValidReleaseName(releaseName)) {
+        const cached = releaseStore.getReleaseByName(releaseName);
+        if (isValidReleaseName(cached.name)) {
+          return;
+        }
+        try {
+          setIsLoading(true);
+          await releaseStore.fetchReleaseByName(releaseName, true);
+        } finally {
+          if (!canceled) {
+            setIsLoading(false);
+          }
+        }
+        return;
+      }
+
+      if (!sheetName) {
+        setStatement("");
+        setIsSheetOversize(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const uid = extractSheetUID(sheetName);
+        const sheet = uid.startsWith("-")
+          ? getLocalSheetByName(sheetName)
+          : await sheetStore.getOrFetchSheetByName(sheetName);
+        if (!sheet || canceled) {
+          return;
+        }
+        const nextStatement = getSheetStatement(sheet);
+        setStatement(nextStatement);
+        setIsSheetOversize(getStatementSize(nextStatement) < sheet.contentSize);
+      } finally {
+        if (!canceled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      canceled = true;
+    };
+  }, [releaseName, releaseStore, sheetName, sheetStore]);
+
+  if (isValidReleaseName(releaseName)) {
+    return (
+      <IssueDetailReleaseStatement
+        className={className}
+        isLoading={isLoading}
+        release={release}
+        releaseName={releaseName}
+      />
+    );
+  }
+
+  const canModifyStatement = Boolean(
+    !forceReadonly &&
+      !page.readonly &&
+      !page.isCreating &&
+      !page.plan?.hasRollout &&
+      sheetName &&
+      project &&
+      (currentUser.email === extractUserEmail(page.plan?.creator || "") ||
+        hasProjectPermissionV2(project, "bb.plans.update"))
+  );
+  const canEdit = canModifyStatement && !isSheetOversize;
+  const hasChanges = isEditing && draftStatement !== statement;
+  const canSave =
+    !isSaving &&
+    !isLoading &&
+    Boolean(sheetName) &&
+    draftStatement.trim() !== "" &&
+    hasChanges;
+
+  const handleBeginEdit = () => {
+    setDraftStatement(statement);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setDraftStatement(statement);
+    setIsEditing(false);
+  };
+
+  const downloadSheet = async () => {
+    if (!sheetName) {
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+      const uid = extractSheetUID(sheetName);
+      const content = uid.startsWith("-")
+        ? statement
+        : new TextDecoder().decode(
+            (
+              await sheetServiceClientConnect.getSheet(
+                create(GetSheetRequestSchema, {
+                  name: sheetName,
+                  raw: true,
+                })
+              )
+            ).content
+          );
+      const filename = `${sheetName.split("/").pop() || "sheet"}.sql`;
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download sheet:", error);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: String(error),
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    inputRef.current?.click();
+  };
+
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    if (file.size > MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("issue.upload-sql-file-max-size-exceeded", {
+          size: `${MAX_UPLOAD_FILE_SIZE_MB}MB`,
+        }),
+      });
+      return;
+    }
+    const nextStatement = await file.text();
+    if (isSheetOversize && statement.trim() !== "") {
+      const confirmed = window.confirm(t("issue.overwrite-current-statement"));
+      if (!confirmed) {
+        return;
+      }
+    }
+    setDraftStatement(nextStatement);
+    setIsEditing(true);
+  };
+
+  const patchPlanStatement = (
+    plan: Plan,
+    targetSpec: Plan_Spec,
+    nextSheetName: string
+  ) => {
+    const planPatch = clone(PlanSchema, plan);
+    const specToPatch = planPatch.specs.find(
+      (candidate) => candidate.id === targetSpec.id
+    );
+    if (!specToPatch) {
+      return undefined;
+    }
+    if (
+      specToPatch.config?.case !== "changeDatabaseConfig" &&
+      specToPatch.config?.case !== "exportDataConfig"
+    ) {
+      return undefined;
+    }
+    specToPatch.config.value.sheet = nextSheetName;
+    return planPatch;
+  };
+
+  const handleSave = async () => {
+    if (!page.plan || !project || !sheetName || !canSave) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const sheet = createEmptyLocalSheet();
+      setSheetStatement(sheet, draftStatement);
+      const createdSheet = await sheetStore.createSheet(project.name, sheet);
+      const nextPlan = patchPlanStatement(page.plan, spec, createdSheet.name);
+      if (!nextPlan) {
+        return;
+      }
+      const request = create(UpdatePlanRequestSchema, {
+        plan: nextPlan,
+        updateMask: {
+          paths: ["specs"],
+        },
+      });
+      const response = await planServiceClientConnect.updatePlan(request);
+      page.patchState({
+        plan: response,
+      });
+      setStatement(draftStatement);
+      setIsEditing(false);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
+      void page.refreshState();
+    } catch (error) {
+      console.error("Failed to update issue detail statement:", error);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.error"),
+        description: String(error),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className={cn("flex flex-col gap-y-2", className)}>
+      <div className="flex items-center justify-between">
+        <div
+          className={cn(
+            "flex items-center gap-x-1 text-base font-medium",
+            isEmpty && "text-red-600"
+          )}
+        >
+          <span>{statementTitle}</span>
+          {isEmpty && <span className="text-error">*</span>}
+        </div>
+        <input
+          ref={inputRef}
+          accept=".sql,.txt,application/sql,text/plain"
+          className="hidden"
+          onChange={(event) => void handleFileUpload(event)}
+          type="file"
+        />
+        <div className="flex items-center gap-x-2">
+          {(canModifyStatement || isEditing) && (
+            <div className="flex items-center gap-x-2">
+              <Button onClick={handleUploadClick} size="xs" variant="outline">
+                <Upload className="h-3.5 w-3.5" />
+                {t("issue.upload-sql")}
+              </Button>
+              {!isEditing ? (
+                canEdit ? (
+                  <Button onClick={handleBeginEdit} size="xs" variant="outline">
+                    {t("common.edit")}
+                  </Button>
+                ) : null
+              ) : (
+                <>
+                  <Button
+                    disabled={!canSave}
+                    onClick={() => void handleSave()}
+                    size="xs"
+                    variant="outline"
+                  >
+                    {isSaving && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                    {t("common.save")}
+                  </Button>
+                  <Button onClick={handleCancel} size="xs" variant="ghost">
+                    {t("common.cancel")}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {isSheetOversize && (
+        <Alert variant="warning">
+          <div className="flex items-center justify-between gap-x-4">
+            <span>{t("issue.statement-from-sheet-warning")}</span>
+            {sheetName && (
+              <Button
+                disabled={isDownloading}
+                onClick={() => void downloadSheet()}
+                size="xs"
+                variant="outline"
+              >
+                {isDownloading && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                )}
+                {t("common.download")}
+              </Button>
+            )}
+          </div>
+        </Alert>
+      )}
+      {isLoading ? (
+        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+          {t("common.loading")}
+        </div>
+      ) : statement || isEditing ? (
+        <div className="relative">
+          {isEditing ? (
+            <MonacoEditor
+              autoCompleteContext={autoCompleteContext}
+              className="relative h-auto max-h-[600px] min-h-[120px]"
+              content={draftStatement}
+              language={language}
+              onChange={setDraftStatement}
+            />
+          ) : (
+            <ReadonlyMonaco
+              className="relative h-auto max-h-[600px] min-h-[120px]"
+              content={statement}
+              language={language}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+          {t("common.no-data")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function IssueDetailReleaseStatement({
+  className,
+  isLoading,
+  release,
+  releaseName,
+}: {
+  className?: string;
+  isLoading: boolean;
+  release?: Release;
+  releaseName: string;
+}) {
+  const { t } = useTranslation();
+  const releaseTitle = useMemo(() => {
+    const name = release?.name || releaseName;
+    const parts = name.split("/");
+    return parts[parts.length - 1] || name;
+  }, [release?.name, releaseName]);
+  const displayedFiles =
+    release?.files.slice(0, MAX_DISPLAYED_RELEASE_FILES) ?? [];
+  const createdTime = release?.createTime
+    ? dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
+        "YYYY-MM-DD HH:mm:ss"
+      )
+    : undefined;
+
+  return (
+    <div className={cn("flex h-full flex-col gap-y-2", className)}>
+      <Alert variant="info">{t("release.change-tip")}</Alert>
+
+      <div className="flex items-center justify-between gap-x-2">
+        <div className="flex items-center gap-x-1 text-base font-medium">
+          <Package className="h-4 w-4" />
+          <span>{releaseTitle}</span>
+        </div>
+        {isValidReleaseName(release?.name ?? "") && (
+          <a
+            className="inline-flex items-center gap-x-1 text-sm text-accent hover:underline"
+            href={`/${release?.name}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <span>{t("common.view")}</span>
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="rounded-md border border-control-border bg-control-bg px-4 py-3 text-sm text-control-light">
+          {t("common.loading")}
+        </div>
+      ) : release ? (
+        <div className="rounded-md border border-control-border bg-control-bg px-4 py-3">
+          <div className="flex flex-col gap-y-3">
+            <div>
+              <div className="text-sm font-medium text-main">
+                {releaseTitle}
+              </div>
+              <div className="mt-1 text-xs text-control-light">
+                {release.name}
+              </div>
+            </div>
+
+            {release.files.length > 0 && (
+              <div className="flex flex-col gap-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-medium text-control">
+                    {t("release.files")} ({release.files.length})
+                  </div>
+                  {release.files.length > MAX_DISPLAYED_RELEASE_FILES &&
+                    isValidReleaseName(release.name) && (
+                      <a
+                        className="text-sm text-accent hover:underline"
+                        href={`/${release.name}`}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {t("release.view-all-files")}
+                      </a>
+                    )}
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {displayedFiles.map((file) => (
+                    <div
+                      key={file.path}
+                      className="flex items-center justify-between rounded-sm bg-white p-2 text-xs"
+                    >
+                      <div className="mr-2 min-w-0 flex-1">
+                        <div className="truncate font-medium">{file.path}</div>
+                        <div className="text-control-light">{file.version}</div>
+                      </div>
+                      <div className="shrink-0 rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">
+                        {getReleaseFileTypeText(release.type, t)}
+                      </div>
+                    </div>
+                  ))}
+                  {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
+                    <div className="py-1 text-center text-xs text-control-light">
+                      {t("release.and-n-more-files", {
+                        count:
+                          release.files.length - MAX_DISPLAYED_RELEASE_FILES,
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {release.vcsSource && (
+              <div className="flex flex-col gap-y-1">
+                <div className="text-sm font-medium text-control">
+                  {t("release.vcs-source")}
+                </div>
+                <div className="text-xs">
+                  <span className="text-control-light">
+                    {getVCSTypeText(release.vcsSource.vcsType, t)}:
+                  </span>
+                  {release.vcsSource.url && (
+                    <a
+                      className="ml-1 text-accent hover:underline"
+                      href={release.vcsSource.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {release.vcsSource.url}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {createdTime && (
+              <div className="text-xs text-control-light">{createdTime}</div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+          {t("release.not-found")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const getReleaseFileTypeText = (
+  fileType: Release_Type,
+  t: (key: string, options?: Record<string, unknown>) => string
+) => {
+  switch (fileType) {
+    case Release_Type.VERSIONED:
+      return t("release.file-type.versioned");
+    case Release_Type.DECLARATIVE:
+      return t("release.file-type.declarative");
+    case Release_Type.TYPE_UNSPECIFIED:
+      return t("release.file-type.unspecified");
+    default:
+      return t("release.file-type.unspecified");
+  }
+};
+
+const getVCSTypeText = (
+  vcsType: VCSType,
+  t: (key: string, options?: Record<string, unknown>) => string
+) => {
+  switch (vcsType) {
+    case VCSType.GITHUB:
+      return "GitHub";
+    case VCSType.GITLAB:
+      return "GitLab";
+    case VCSType.BITBUCKET:
+      return "Bitbucket";
+    case VCSType.AZURE_DEVOPS:
+      return "Azure DevOps";
+    default:
+      return t("release.vcs-type.unspecified");
+  }
+};

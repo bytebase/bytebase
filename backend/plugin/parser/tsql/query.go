@@ -1,8 +1,7 @@
 package tsql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -12,99 +11,54 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_MSSQL, ValidateSQLForEditor)
 }
 
+// ValidateSQLForEditor validates that every statement in the SQL is a read-only
+// SELECT (no SELECT INTO). Returns (valid, allAlike, err). For MSSQL the two
+// booleans move together — we reject on the first non-SELECT.
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	antlrASTs, err := ParseTSQL(statement)
+	stmts, err := ParseTSQLOmni(statement)
 	if err != nil {
 		return false, false, err
 	}
-	if len(antlrASTs) == 0 {
+	if len(stmts) == 0 {
 		return false, false, nil
 	}
 
-	l := &queryValidateListener{
-		valid: true,
-	}
-
-	for _, ast := range antlrASTs {
-		antlr.ParseTreeWalkerDefault.Walk(l, ast.Tree)
-		if !l.valid {
-			break
+	for _, s := range stmts {
+		if s.Empty() {
+			continue
+		}
+		if !isReadOnlySelect(s.AST) {
+			return false, false, nil
 		}
 	}
-
-	return l.valid, l.valid, nil
+	return true, true, nil
 }
 
-type queryValidateListener struct {
-	*parser.BaseTSqlParserListener
-
-	valid bool
-}
-
-func (q *queryValidateListener) EnterBatch_without_go(ctx *parser.Batch_without_goContext) {
-	if !q.valid {
-		return
-	}
-	if ctx.Batch_level_statement() != nil {
-		q.valid = false
-		return
-	}
-}
-
-func (q *queryValidateListener) EnterSql_clauses(ctx *parser.Sql_clausesContext) {
-	if !q.valid {
-		return
-	}
-	if ctx.Dml_clause() == nil {
-		q.valid = false
-		return
-	}
-}
-
-func (q *queryValidateListener) EnterDml_clause(ctx *parser.Dml_clauseContext) {
-	if !q.valid {
-		return
-	}
-	_, ok := ctx.GetParent().(*parser.Sql_clausesContext)
+// isReadOnlySelect returns true for SELECT statements without an INTO target.
+// Non-SELECT nodes and SELECT ... INTO are rejected — INTO materialises a new
+// table which is a DDL-like side effect.
+func isReadOnlySelect(node ast.Node) bool {
+	sel, ok := node.(*ast.SelectStmt)
 	if !ok {
-		return
+		return false
 	}
-	if ctx.Select_statement_standalone() == nil {
-		q.valid = false
-		return
-	}
+	return !HasSelectInto(sel)
 }
 
-func (q *queryValidateListener) EnterSelect_statement_standalone(ctx *parser.Select_statement_standaloneContext) {
-	if !q.valid {
-		return
+// HasSelectInto reports whether sel (or any branch of its set operations)
+// carries an INTO clause.
+func HasSelectInto(sel *ast.SelectStmt) bool {
+	if sel == nil {
+		return false
 	}
-	_, ok := ctx.GetParent().(*parser.Dml_clauseContext)
-	if !ok {
-		return
+	if sel.IntoTable != nil {
+		return true
 	}
-	if ctx.Select_statement() == nil {
-		q.valid = false
-		return
+	if sel.Larg != nil && HasSelectInto(sel.Larg) {
+		return true
 	}
-}
-
-func (q *queryValidateListener) EnterQuery_specification(ctx *parser.Query_specificationContext) {
-	if !q.valid {
-		return
+	if sel.Rarg != nil && HasSelectInto(sel.Rarg) {
+		return true
 	}
-	if ctx.INTO() != nil {
-		// For Into clause, we only select into temporary table, likes "SELECT ... INTO #temp FROM ...".
-		isValid := false
-		// NOTE: normal mode is not in single session mode, so temporary table is meaningless.
-		// if tableName := ctx.Table_name(); tableName != nil {
-		// 	if allID := tableName.AllId_(); len(allID) == 1 {
-		// 		if id := allID[0].TEMP_ID(); id != nil {
-		// 			isValid = true
-		// 		}
-		// 	}
-		// }
-		q.valid = isValid
-		return
-	}
+	return false
 }

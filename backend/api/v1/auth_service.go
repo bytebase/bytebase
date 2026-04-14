@@ -1407,10 +1407,12 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 			},
 		})
 	}
-	if raw := os.Getenv("EMAIL_CONFIG"); raw != "" {
+	if raw := os.Getenv("EMAIL_CONFIG"); raw != "" { //nolint:nestif
 		emailSetting := &storepb.EmailSetting{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), emailSetting); err != nil {
 			slog.Error("failed to parse EMAIL_CONFIG env var", log.BBError(err))
+		} else if err := validateEmailSetting(emailSetting); err != nil {
+			slog.Error("invalid EMAIL_CONFIG env var", log.BBError(err))
 		} else {
 			settings = append(settings, store.AdditionalSetting{
 				Name:    storepb.SettingName_EMAIL,

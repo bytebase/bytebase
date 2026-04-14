@@ -16021,12 +16021,10 @@ paths:
               properties:
                 emailSetting:
                   title: email_setting
-                  description: The email config to test. Not persisted.
                   $ref: '#/components/schemas/bytebase.v1.EmailSetting'
                 to:
                   type: string
                   title: to
-                  description: The recipient to send the test email to.
               title: TestEmailSettingRequest
               required:
                 - emailSetting
@@ -19928,7 +19926,6 @@ components:
         password:
           type: string
           title: password
-          description: INPUT_ONLY — never returned in GET responses.
           writeOnly: true
         encryption:
           title: encryption
@@ -28198,15 +28195,12 @@ components:
         parent:
           type: string
           title: parent
-          description: 'Parent workspace. Format: workspaces/{workspace}'
         emailSetting:
           title: email_setting
-          description: The email config to test. Not persisted.
           $ref: '#/components/schemas/bytebase.v1.EmailSetting'
         to:
           type: string
           title: to
-          description: The recipient to send the test email to.
       title: TestEmailSettingRequest
       required:
         - parent
@@ -28222,7 +28216,6 @@ components:
         error:
           type: string
           title: error
-          description: Human-readable error if success=false.
       title: TestEmailSettingResponse
       additionalProperties: false
     bytebase.v1.TestIdentityProviderRequest:

@@ -15,7 +15,7 @@ func init() {
 }
 
 // GetQuerySpan extracts the query span from a CQL statement.
-func GetQuerySpan(_ context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
 	parseResults, err := ParseCassandraSQL(stmt.Text)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func GetQuerySpan(_ context.Context, gCtx base.GetQuerySpanContext, stmt base.St
 	tree := parseResults[0].Tree
 
 	// Create extractor and walk the tree
-	extractor := newQuerySpanExtractor(database, gCtx)
+	extractor := newQuerySpanExtractor(ctx, database, gCtx)
 	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
 
 	if extractor.err != nil {

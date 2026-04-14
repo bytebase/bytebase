@@ -32,7 +32,48 @@ React UI components live in `src/react/components/ui/` and follow shadcn-style p
 - **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
 - **Use `cn()` for conditional classes** — import from `@/react/lib/utils`, don't write manual template literal ternaries
 - **No manual `dark:` overrides** — use semantic tokens that handle theming
-- **No manual `z-index` on overlays** — Dialog, Sheet, Popover handle their own stacking
+- **No manual `z-index` on overlay *consumers*** — callers of `Dialog`, `Sheet`, `Popover`, `Select`, `Tooltip` must not set their own `z-index`. The primitives in `src/react/components/ui/` already coordinate stacking (all overlays use `z-50`; within that layer, later-mounted portals win by DOM order). Do **not** strip `z-50` from `select.tsx`, `tooltip.tsx`, `dialog.tsx`, or `alert-dialog.tsx` — removing it makes Select/Tooltip render behind Dialog (BYT-9226, PR #19824)
+- **Dialog vs Sheet** — use `<Sheet>` (right-side drawer, in `src/react/components/ui/sheet.tsx`) for **creating or editing a resource**. Use `<Dialog>` for **confirmations, single-field prompts, critical interrupts, and read-only result displays**. The dividing line is whether the user is filling out a form with multiple fields — drawers keep the parent list/table visible behind a scrim and scale to multi-section forms, while dialogs are for short blocking interactions. `AlertDialog` is the right pick for destructive confirms that need an explicit acknowledgment.
+- **Sheet width tiers** — `<SheetContent>` accepts a `width` variant. Pick the tier that matches the form complexity; don't inline ad-hoc widths. Add a new tier to `sheet.tsx` only if a genuinely new size is needed.
+  - `narrow` (384px) — single-field pickers, short 2–3 field forms, environment/project selection, read-only display sheets
+  - `standard` (704px, default) — 3–6 field forms, permission transfer lists, typical create/edit resources (role, user, group, service account, workload identity, request role)
+  - `wide` (832px) — forms with CEL expression builders, nested tables, multi-tab layouts, multi-step wizards (custom approval rule, data export wizard)
+- **Edit sheets must populate from props reliably** — when a Sheet is always-mounted via `<Sheet open={open}>` (the standard pattern), `useState` initializers only run on first mount, which means switching the entity being edited (e.g. clicking Edit on a different row) won't repopulate fields. Use the **outer wrapper + inner form + stable-entity ref + key** pattern. The ref freezes the last-open entity so the inner form stays visually stable through the Sheet's close animation (which is ~200ms), while the `key` forces a fresh mount when a new entity is opened. Example from `CreateUserSheet`:
+  ```tsx
+  function CreateUserSheet(props: Props) {
+    const { open, user, onClose } = props;
+    // Freeze the entity while open=false so the inner form stays visually
+    // stable during the Sheet's close animation. Base UI's Dialog.Portal
+    // unmounts after the animation, at which point the form unmounts with it.
+    const openEntityRef = useRef(user);
+    if (open) {
+      openEntityRef.current = user;
+    }
+    const stableUser = openEntityRef.current;
+    return (
+      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+        <SheetContent width="standard">
+          <UserForm
+            key={stableUser?.name ?? "new"}
+            user={stableUser}
+            onClose={props.onClose}
+            onCreated={props.onCreated}
+            onUpdated={props.onUpdated}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+  function UserForm({ user, ... }: InnerProps) {
+    // useState initializers read directly from `user` — always fresh
+    // because the inner component mounts fresh on every open.
+    const [title, setTitle] = useState(user?.title ?? "");
+    // ...
+  }
+  ```
+  Do **not** guard the inner form with `{open && ...}` — that would unmount it at the start of the close animation, leaving a blank sheet sliding off-screen for ~200ms. Base UI's Dialog.Portal already handles the mount/unmount lifecycle around the animation.
+- **Edit sheets must disable Update until dirty** — capture initial values at mount (inside the inner form component, so they reflect the just-mounted entity prop) and compute `isDirty` via `useMemo` comparing current state to captured initials. Gate the Update button on `isFormValid && isDirty`. Create mode is always "dirty" so Create is enabled as soon as required fields are valid.
+- **Fetch the full entity before opening an edit sheet** — list APIs often return partial objects. Synchronous cache lookups like `store.getX(id)` can return a stub with only name/email/title fields, leaving nested fields (e.g. `workloadIdentityConfig.subjectPattern`) undefined. Use the async `getOrFetchX` form in row-click handlers so the Sheet receives a fully-hydrated entity — otherwise parsed/derived fields will be empty on first edit.
 
 ### Component Patterns
 

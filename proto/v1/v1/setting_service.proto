@@ -494,7 +494,6 @@ message EmailSetting {
     string host = 1;
     int32 port = 2;
     string username = 3;
-    // INPUT_ONLY — never returned in GET responses.
     string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
     Encryption encryption = 5;
     Authentication authentication = 6;
@@ -517,16 +516,12 @@ message EmailSetting {
 }
 
 message TestEmailSettingRequest {
-  // Parent workspace. Format: workspaces/{workspace}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
-  // The email config to test. Not persisted.
   EmailSetting email_setting = 2 [(google.api.field_behavior) = REQUIRED];
-  // The recipient to send the test email to.
   string to = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message TestEmailSettingResponse {
   bool success = 1;
-  // Human-readable error if success=false.
   string error = 2;
 }

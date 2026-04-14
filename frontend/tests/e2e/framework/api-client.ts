@@ -41,8 +41,19 @@ export class BytebaseApiClient {
   }
 
   // Auth
+  // NOTE: login() intentionally bypasses request() to avoid recursive re-login
+  // on 401: request() retries via login() on 401, which would loop forever if
+  // credentials were invalid.
   async login(email: string, password: string): Promise<string> {
-    const { token } = await this.request<{ token: string }>("POST", "/v1/auth/login", { email, password });
+    const resp = await fetch(`${this.baseURL}/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!resp.ok) {
+      throw new Error(`API POST /v1/auth/login failed (${resp.status}): ${await resp.text()}`);
+    }
+    const { token } = (await resp.json()) as { token: string };
     this.token = token;
     this.credentials = { email, password };
     return token;

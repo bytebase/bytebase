@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="flex flex-col gap-y-2 overflow-hidden">
+  <div v-if="show" class="flex flex-col gap-y-2">
     <!-- Row 1: Title + Run button -->
     <div class="flex items-center justify-between gap-2">
       <div class="flex flex-row items-center gap-2">

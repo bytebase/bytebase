@@ -1423,8 +1423,6 @@ export declare type EmailSetting_SMTPConfig = Message<"bytebase.v1.EmailSetting.
   username: string;
 
   /**
-   * INPUT_ONLY — never returned in GET responses.
-   *
    * @generated from field: string password = 4;
    */
   password: string;
@@ -1536,22 +1534,16 @@ export declare const EmailSetting_TypeSchema: GenEnum<EmailSetting_Type>;
  */
 export declare type TestEmailSettingRequest = Message<"bytebase.v1.TestEmailSettingRequest"> & {
   /**
-   * Parent workspace. Format: workspaces/{workspace}
-   *
    * @generated from field: string parent = 1;
    */
   parent: string;
 
   /**
-   * The email config to test. Not persisted.
-   *
    * @generated from field: bytebase.v1.EmailSetting email_setting = 2;
    */
   emailSetting?: EmailSetting;
 
   /**
-   * The recipient to send the test email to.
-   *
    * @generated from field: string to = 3;
    */
   to: string;
@@ -1573,8 +1565,6 @@ export declare type TestEmailSettingResponse = Message<"bytebase.v1.TestEmailSet
   success: boolean;
 
   /**
-   * Human-readable error if success=false.
-   *
    * @generated from field: string error = 2;
    */
   error: string;

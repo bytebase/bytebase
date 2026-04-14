@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { cn } from "@/react/lib/utils";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
   selectCurrentChat,
@@ -19,14 +20,35 @@ import {
   selectOrderedChats,
   useAgentStore,
 } from "../store/agent";
+import {
+  MIN_HEIGHT,
+  MIN_MAIN_PANEL_WIDTH,
+  MIN_SIDEBAR_WIDTH,
+  MIN_WIDTH,
+  WINDOW_MARGIN,
+} from "../window";
 import { AgentChat } from "./AgentChat";
 import { AgentInput } from "./AgentInput";
+import {
+  RESIZE_POINTER_MEDIA_QUERY,
+  supportsWindowBorderResize,
+} from "./resize-capability";
+import {
+  type ResizeBounds,
+  type ResizeDirection,
+  resizeWindowBounds,
+} from "./window-resize";
 
-const MIN_WIDTH = 300;
-const MIN_HEIGHT = 400;
-const WINDOW_MARGIN = 16;
-const MIN_SIDEBAR_WIDTH = 180;
-const MIN_MAIN_PANEL_WIDTH = 240;
+const resizeZoneClasses: Record<ResizeDirection, string> = {
+  n: "left-[12px] top-[-6px] h-[6px] w-[calc(100%-24px)] cursor-n-resize",
+  s: "bottom-[-6px] left-[12px] h-[6px] w-[calc(100%-24px)] cursor-s-resize",
+  e: "right-[-6px] top-[12px] h-[calc(100%-24px)] w-[6px] cursor-e-resize",
+  w: "left-[-6px] top-[12px] h-[calc(100%-24px)] w-[6px] cursor-w-resize",
+  ne: "right-[-6px] top-[-6px] size-[12px] cursor-ne-resize",
+  nw: "left-[-6px] top-[-6px] size-[12px] cursor-nw-resize",
+  se: "bottom-[-6px] right-[-6px] size-[12px] cursor-se-resize",
+  sw: "bottom-[-6px] left-[-6px] size-[12px] cursor-sw-resize",
+};
 
 const tokenFormatter = new Intl.NumberFormat();
 
@@ -50,6 +72,9 @@ export function AgentWindow() {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  const [supportsFinePointer, setSupportsFinePointer] = useState(() =>
+    supportsWindowBorderResize(window.matchMedia.bind(window))
+  );
   const isViewportResizingRef = useRef(false);
   const viewportResizeFrameRef = useRef(0);
 
@@ -61,30 +86,54 @@ export function AgentWindow() {
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const isResizingRef = useRef(false);
-  const resizeStartRef = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const resizeStartRef = useRef<{
+    x: number;
+    y: number;
+    bounds: ResizeBounds;
+    direction: ResizeDirection;
+  }>({
+    x: 0,
+    y: 0,
+    bounds: { x: 0, y: 0, width: 0, height: 0 },
+    direction: "se",
+  });
   const isSidebarResizingRef = useRef(false);
   const sidebarResizeStartRef = useRef({ x: 0, width: 0 });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // --- Clamping helpers ---
+  //
+  // On wide viewports we keep MIN_WIDTH/MIN_HEIGHT as the preferred floor so
+  // the sidebar and main panel both hit their minimums. On narrow viewports
+  // (split panes, mobile-like widths), forcing those minimums would render
+  // the window partially off-screen — so the floor drops to whatever the
+  // viewport can accommodate minus the standard margins. At very narrow
+  // widths the main panel gets cramped, but that's strictly better than
+  // hiding controls.
 
   const maxWidth = useCallback(
-    () => Math.max(MIN_WIDTH, viewportSize.width - WINDOW_MARGIN * 2),
+    () => Math.max(1, viewportSize.width - WINDOW_MARGIN * 2),
     [viewportSize.width]
   );
   const maxHeight = useCallback(
-    () => Math.max(MIN_HEIGHT, viewportSize.height - WINDOW_MARGIN * 2),
+    () => Math.max(1, viewportSize.height - WINDOW_MARGIN * 2),
     [viewportSize.height]
   );
 
   const clampWidth = useCallback(
-    (width: number) =>
-      Math.min(maxWidth(), Math.max(MIN_WIDTH, Math.round(width))),
+    (width: number) => {
+      const max = maxWidth();
+      const min = Math.min(MIN_WIDTH, max);
+      return Math.min(max, Math.max(min, Math.round(width)));
+    },
     [maxWidth]
   );
   const clampHeight = useCallback(
-    (height: number) =>
-      Math.min(maxHeight(), Math.max(MIN_HEIGHT, Math.round(height))),
+    (height: number) => {
+      const max = maxHeight();
+      const min = Math.min(MIN_HEIGHT, max);
+      return Math.min(max, Math.max(min, Math.round(height)));
+    },
     [maxHeight]
   );
 
@@ -207,6 +256,7 @@ export function AgentWindow() {
   );
 
   const isChatCreationDisabled = hasRunningChat;
+  const canResizeWindow = supportsFinePointer;
 
   const syncStoreToDisplayState = useCallback(() => {
     const store = useAgentStore.getState();
@@ -407,7 +457,7 @@ export function AgentWindow() {
 
   // --- Drag handlers ---
   // All drag/resize handlers manipulate DOM directly during movement
-  // and only commit to the Zustand store on mouseup, avoiding per-frame
+  // and only commit to the Zustand store on pointerup, avoiding per-frame
   // immer drafts + React re-renders.
 
   const sidebarRef = useRef<HTMLElement>(null);
@@ -425,15 +475,15 @@ export function AgentWindow() {
   }, []);
 
   const startDrag = useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
       if (
         event.target instanceof HTMLElement &&
-        event.target.closest(
-          "[data-agent-window-action], [data-agent-window-resize]"
-        )
+        event.target.closest("[data-agent-window-action]")
       ) {
         return;
       }
+      event.preventDefault();
       syncStoreToDisplayState();
       isDraggingRef.current = true;
       const store = useAgentStore.getState();
@@ -442,7 +492,7 @@ export function AgentWindow() {
         y: event.clientY - store.position.y,
       };
 
-      const onDrag = (e: MouseEvent) => {
+      const onDrag = (e: PointerEvent) => {
         if (!isDraggingRef.current || !windowRef.current) return;
         const el = windowRef.current;
         const vw = window.innerWidth;
@@ -466,14 +516,16 @@ export function AgentWindow() {
 
       const stopDrag = () => {
         isDraggingRef.current = false;
-        document.removeEventListener("mousemove", onDrag);
-        document.removeEventListener("mouseup", stopDrag);
+        document.removeEventListener("pointermove", onDrag);
+        document.removeEventListener("pointerup", stopDrag);
+        document.removeEventListener("pointercancel", stopDrag);
         dragCleanupRef.current = null;
         useAgentStore.getState().saveWindowState();
       };
 
-      document.addEventListener("mousemove", onDrag);
-      document.addEventListener("mouseup", stopDrag);
+      document.addEventListener("pointermove", onDrag);
+      document.addEventListener("pointerup", stopDrag);
+      document.addEventListener("pointercancel", stopDrag);
       dragCleanupRef.current = stopDrag;
     },
     [syncStoreToDisplayState]
@@ -482,7 +534,8 @@ export function AgentWindow() {
   // --- Resize handlers ---
 
   const startResize = useCallback(
-    (event: React.MouseEvent) => {
+    (direction: ResizeDirection, event: React.PointerEvent<HTMLDivElement>) => {
+      if (!canResizeWindow || event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation();
       syncStoreToDisplayState();
@@ -491,60 +544,62 @@ export function AgentWindow() {
       resizeStartRef.current = {
         x: event.clientX,
         y: event.clientY,
-        w: store.size.width,
-        h: store.size.height,
+        bounds: {
+          x: store.position.x,
+          y: store.position.y,
+          width: store.size.width,
+          height: store.size.height,
+        },
+        direction,
       };
 
-      const onResize = (e: MouseEvent) => {
+      const onResize = (e: PointerEvent) => {
         if (!isResizingRef.current || !windowRef.current) return;
         const el = windowRef.current;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const dx = e.clientX - resizeStartRef.current.x;
-        const dy = e.clientY - resizeStartRef.current.y;
-        const clW = Math.min(
-          Math.max(MIN_WIDTH, vw - WINDOW_MARGIN * 2),
-          Math.max(MIN_WIDTH, Math.round(resizeStartRef.current.w + dx))
-        );
-        const clH = Math.min(
-          Math.max(MIN_HEIGHT, vh - WINDOW_MARGIN * 2),
-          Math.max(MIN_HEIGHT, Math.round(resizeStartRef.current.h + dy))
-        );
-        el.style.width = `${clW}px`;
-        el.style.height = `${clH}px`;
-        // Clamp position
-        const maxX = Math.max(WINDOW_MARGIN, vw - clW - WINDOW_MARGIN);
-        const maxY = Math.max(WINDOW_MARGIN, vh - clH - WINDOW_MARGIN);
-        const curX = parseInt(el.style.left) || 0;
-        const curY = parseInt(el.style.top) || 0;
-        const clX = Math.min(maxX, Math.max(WINDOW_MARGIN, curX));
-        const clY = Math.min(maxY, Math.max(WINDOW_MARGIN, curY));
-        el.style.left = `${clX}px`;
-        el.style.top = `${clY}px`;
+        const nextBounds = resizeWindowBounds({
+          direction: resizeStartRef.current.direction,
+          startBounds: resizeStartRef.current.bounds,
+          deltaX: e.clientX - resizeStartRef.current.x,
+          deltaY: e.clientY - resizeStartRef.current.y,
+          constraints: {
+            minWidth: MIN_WIDTH,
+            minHeight: MIN_HEIGHT,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            margin: WINDOW_MARGIN,
+          },
+        });
+        el.style.left = `${nextBounds.x}px`;
+        el.style.top = `${nextBounds.y}px`;
+        el.style.width = `${nextBounds.width}px`;
+        el.style.height = `${nextBounds.height}px`;
         const store = useAgentStore.getState();
-        store.setSize(clW, clH);
-        store.setPosition(clX, clY);
+        store.setSize(nextBounds.width, nextBounds.height);
+        store.setPosition(nextBounds.x, nextBounds.y);
       };
 
       const stopResize = () => {
         isResizingRef.current = false;
-        document.removeEventListener("mousemove", onResize);
-        document.removeEventListener("mouseup", stopResize);
+        document.removeEventListener("pointermove", onResize);
+        document.removeEventListener("pointerup", stopResize);
+        document.removeEventListener("pointercancel", stopResize);
         resizeCleanupRef.current = null;
         useAgentStore.getState().saveWindowState();
       };
 
-      document.addEventListener("mousemove", onResize);
-      document.addEventListener("mouseup", stopResize);
+      document.addEventListener("pointermove", onResize);
+      document.addEventListener("pointerup", stopResize);
+      document.addEventListener("pointercancel", stopResize);
       resizeCleanupRef.current = stopResize;
     },
-    [syncStoreToDisplayState]
+    [canResizeWindow, syncStoreToDisplayState]
   );
 
   // --- Sidebar resize ---
 
   const startSidebarResize = useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation();
       syncStoreToDisplayState();
@@ -554,7 +609,7 @@ export function AgentWindow() {
         width: clampedSidebarWidth,
       };
 
-      const onSidebarResize = (e: MouseEvent) => {
+      const onSidebarResize = (e: PointerEvent) => {
         if (!isSidebarResizingRef.current || !sidebarRef.current) return;
         const dx = e.clientX - sidebarResizeStartRef.current.x;
         const newWidth = sidebarResizeStartRef.current.width + dx;
@@ -571,14 +626,16 @@ export function AgentWindow() {
 
       const stopSidebarResize = () => {
         isSidebarResizingRef.current = false;
-        document.removeEventListener("mousemove", onSidebarResize);
-        document.removeEventListener("mouseup", stopSidebarResize);
+        document.removeEventListener("pointermove", onSidebarResize);
+        document.removeEventListener("pointerup", stopSidebarResize);
+        document.removeEventListener("pointercancel", stopSidebarResize);
         sidebarResizeCleanupRef.current = null;
         useAgentStore.getState().saveWindowState();
       };
 
-      document.addEventListener("mousemove", onSidebarResize);
-      document.addEventListener("mouseup", stopSidebarResize);
+      document.addEventListener("pointermove", onSidebarResize);
+      document.addEventListener("pointerup", stopSidebarResize);
+      document.addEventListener("pointercancel", stopSidebarResize);
       sidebarResizeCleanupRef.current = stopSidebarResize;
     },
     [syncStoreToDisplayState, clampedSidebarWidth]
@@ -605,6 +662,26 @@ export function AgentWindow() {
     };
   }, []);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(RESIZE_POINTER_MEDIA_QUERY);
+    const update = () => {
+      setSupportsFinePointer(
+        supportsWindowBorderResize(window.matchMedia.bind(window))
+      );
+    };
+    update();
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", update);
+      return () => {
+        mediaQuery.removeEventListener("change", update);
+      };
+    }
+    mediaQuery.addListener(update);
+    return () => {
+      mediaQuery.removeListener(update);
+    };
+  }, []);
+
   // --- ResizeObserver ---
 
   useEffect(() => {
@@ -625,14 +702,13 @@ export function AgentWindow() {
       if (width === store.size.width && height === store.size.height) return;
 
       useAgentStore.setState((state) => {
-        const clW = Math.min(
-          Math.max(MIN_WIDTH, viewportSize.width - WINDOW_MARGIN * 2),
-          Math.max(MIN_WIDTH, Math.round(width))
-        );
-        const clH = Math.min(
-          Math.max(MIN_HEIGHT, viewportSize.height - WINDOW_MARGIN * 2),
-          Math.max(MIN_HEIGHT, Math.round(height))
-        );
+        // Same viewport-aware floor as clampWidth/clampHeight.
+        const maxW = Math.max(1, viewportSize.width - WINDOW_MARGIN * 2);
+        const minW = Math.min(MIN_WIDTH, maxW);
+        const maxH = Math.max(1, viewportSize.height - WINDOW_MARGIN * 2);
+        const minH = Math.min(MIN_HEIGHT, maxH);
+        const clW = Math.min(maxW, Math.max(minW, Math.round(width)));
+        const clH = Math.min(maxH, Math.max(minH, Math.round(height)));
         state.size.width = clW;
         state.size.height = clH;
         const maxX = Math.max(
@@ -720,242 +796,236 @@ export function AgentWindow() {
     <div
       ref={windowRef}
       data-agent-window
-      className="fixed z-[1999] flex flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl"
+      className="fixed z-[1999] overflow-visible"
       style={windowStyle}
     >
-      {/* Header */}
-      <div
-        className="flex cursor-move select-none items-center justify-between border-b bg-control-bg px-3 py-2"
-        onMouseDown={startDrag}
-      >
-        <div className="flex min-w-0 items-center gap-x-2">
-          <span className="truncate text-sm font-medium">
-            {t("agent.assistant-title")}
-          </span>
-          <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${currentChatStatusClass}`}
-          >
-            {currentChatStatusLabel}
-          </span>
-          <span className="truncate text-xs text-control-light">
-            {currentChatTokenUsageLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-x-1">
-          <button
-            data-agent-window-action
-            className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
-            title={t("agent.minimize")}
-            onClick={(e) => {
-              e.stopPropagation();
-              useAgentStore.getState().minimize();
-            }}
-          >
-            &#8722;
-          </button>
-          <button
-            data-agent-window-action
-            className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
-            title={t("agent.close")}
-            onClick={(e) => {
-              e.stopPropagation();
-              useAgentStore.getState().toggle();
-            }}
-          >
-            &#10005;
-          </button>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-background">
-        {/* Sidebar */}
-        <aside
-          ref={sidebarRef}
-          className="flex shrink-0 flex-col border-r border-block-border bg-control-bg"
-          style={sidebarStyle}
+      <div className="flex size-full flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl">
+        {/* Header */}
+        <div
+          className="flex cursor-move select-none items-center justify-between border-b bg-control-bg px-3 py-2 [touch-action:none]"
+          onPointerDown={startDrag}
         >
-          {/* Sidebar header */}
-          <div className="border-b border-block-border px-3 py-3">
-            <div className="flex items-center justify-between gap-x-2">
-              <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
-                  {t("agent.chat-list-label")}
-                </h2>
-              </div>
-              <button
-                className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-control-bg disabled:cursor-not-allowed disabled:bg-control-bg disabled:text-control-placeholder"
-                disabled={isChatCreationDisabled}
-                onClick={createChat}
-              >
-                {t("agent.new-chat")}
-              </button>
-            </div>
+          <div className="flex min-w-0 items-center gap-x-2">
+            <span className="truncate text-sm font-medium">
+              {t("agent.assistant-title")}
+            </span>
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${currentChatStatusClass}`}
+            >
+              {currentChatStatusLabel}
+            </span>
+            <span className="truncate text-xs text-control-light">
+              {currentChatTokenUsageLabel}
+            </span>
           </div>
+          <div className="flex items-center gap-x-1">
+            <button
+              data-agent-window-action
+              className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+              title={t("agent.minimize")}
+              onClick={(e) => {
+                e.stopPropagation();
+                useAgentStore.getState().minimize();
+              }}
+            >
+              &#8722;
+            </button>
+            <button
+              data-agent-window-action
+              className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+              title={t("agent.close")}
+              onClick={(e) => {
+                e.stopPropagation();
+                useAgentStore.getState().toggle();
+              }}
+            >
+              &#10005;
+            </button>
+          </div>
+        </div>
 
-          {/* Chat list */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-            <div className="flex flex-col gap-y-1" data-agent-chat-list>
-              {displayedChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={`w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
-                    chat.id === currentChatId
-                      ? "bg-accent/10 text-accent"
-                      : "text-control hover:bg-background"
-                  }`}
-                  data-agent-chat-row={chat.id}
-                >
-                  {chat.id === currentChatId && isRenamingCurrentChat ? (
-                    <Input
-                      ref={renameInputRef}
-                      value={renamingTitle}
-                      onChange={(e) => setRenamingTitle(e.target.value)}
-                      className="h-7 text-sm"
-                      placeholder={t("agent.rename-chat-placeholder")}
-                      data-agent-inline-rename-input
-                      onBlur={commitRenameCurrentChat}
-                      onKeyDown={onRenameKeydown}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      className="w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={
-                        !useAgentStore.getState().canSelectChat(chat.id)
-                      }
-                      aria-current={
-                        chat.id === currentChatId ? "true" : undefined
-                      }
-                      onClick={() => handleChatRowClick(chat.id)}
-                    >
-                      <div
-                        className="truncate font-medium"
-                        data-agent-chat-title
-                      >
-                        {getChatLabel(chat)}
-                      </div>
-                      <span
-                        className={`mt-1 block truncate text-xs ${
-                          chat.id === currentChatId
-                            ? "text-accent/80"
-                            : "text-control-light"
-                        }`}
-                        data-agent-chat-updated-ts
-                      >
-                        <HumanizeTs ts={Math.floor(chat.updatedTs / 1000)} />
-                      </span>
-                    </button>
-                  )}
+        {/* Body */}
+        <div className="flex min-h-0 flex-1 overflow-hidden bg-background">
+          {/* Sidebar */}
+          <aside
+            ref={sidebarRef}
+            className="flex shrink-0 flex-col border-r border-block-border bg-control-bg"
+            style={sidebarStyle}
+          >
+            {/* Sidebar header */}
+            <div className="border-b border-block-border px-3 py-3">
+              <div className="flex items-center justify-between gap-x-2">
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
+                    {t("agent.chat-list-label")}
+                  </h2>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar footer */}
-          <div className="border-t border-block-border px-3 py-3">
-            <div className="flex flex-col gap-y-2">
-              <div
-                className="flex flex-wrap gap-x-2 gap-y-2"
-                data-agent-chat-sidebar-actions
-              >
-                {isCurrentChatInDisplayedMode && (
-                  <>
-                    {showArchivedOnly ? (
-                      <button
-                        className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
-                        data-agent-unarchive-chat
-                        onClick={toggleArchiveCurrentChat}
-                      >
-                        {t("agent.unarchive-chat")}
-                      </button>
-                    ) : (
-                      <ConfirmDialog
-                        message={t("agent.archive-chat-confirmation")}
-                        onConfirm={toggleArchiveCurrentChat}
-                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
-                        triggerLabel={t("agent.archive-chat")}
-                        triggerDataAttr="data-agent-archive-chat"
-                      />
-                    )}
-                    {showArchivedOnly && (
-                      <ConfirmDialog
-                        message={t("agent.delete-chat-confirmation")}
-                        onConfirm={deleteCurrentChat}
-                        triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-error hover:bg-red-50"
-                        triggerLabel={t("agent.delete-chat")}
-                        triggerDataAttr="data-agent-delete-chat"
-                      />
-                    )}
-                  </>
-                )}
                 <button
-                  className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-control-light hover:bg-background"
-                  aria-label={
-                    showArchivedOnly
-                      ? t("agent.archived-only-chats")
-                      : t("agent.active-only-chats")
-                  }
-                  title={
-                    showArchivedOnly
-                      ? t("agent.archived-only-chats")
-                      : t("agent.active-only-chats")
-                  }
-                  data-agent-chat-list-mode
-                  onClick={toggleChatListMode}
+                  className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-control-bg disabled:cursor-not-allowed disabled:bg-control-bg disabled:text-control-placeholder"
+                  disabled={isChatCreationDisabled}
+                  onClick={createChat}
                 >
-                  {showArchivedOnly ? (
-                    <Archive className="size-3.5" aria-hidden="true" />
-                  ) : (
-                    <Inbox className="size-3.5" aria-hidden="true" />
-                  )}
+                  {t("agent.new-chat")}
                 </button>
               </div>
             </div>
+
+            {/* Chat list */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+              <div className="flex flex-col gap-y-1" data-agent-chat-list>
+                {displayedChats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className={`w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
+                      chat.id === currentChatId
+                        ? "bg-accent/10 text-accent"
+                        : "text-control hover:bg-background"
+                    }`}
+                    data-agent-chat-row={chat.id}
+                  >
+                    {chat.id === currentChatId && isRenamingCurrentChat ? (
+                      <Input
+                        ref={renameInputRef}
+                        value={renamingTitle}
+                        onChange={(e) => setRenamingTitle(e.target.value)}
+                        className="h-7 text-sm"
+                        placeholder={t("agent.rename-chat-placeholder")}
+                        data-agent-inline-rename-input
+                        onBlur={commitRenameCurrentChat}
+                        onKeyDown={onRenameKeydown}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={
+                          !useAgentStore.getState().canSelectChat(chat.id)
+                        }
+                        aria-current={
+                          chat.id === currentChatId ? "true" : undefined
+                        }
+                        onClick={() => handleChatRowClick(chat.id)}
+                      >
+                        <div
+                          className="truncate font-medium"
+                          data-agent-chat-title
+                        >
+                          {getChatLabel(chat)}
+                        </div>
+                        <span
+                          className={`mt-1 block truncate text-xs ${
+                            chat.id === currentChatId
+                              ? "text-accent/80"
+                              : "text-control-light"
+                          }`}
+                          data-agent-chat-updated-ts
+                        >
+                          <HumanizeTs ts={Math.floor(chat.updatedTs / 1000)} />
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sidebar footer */}
+            <div className="border-t border-block-border px-3 py-3">
+              <div className="flex flex-col gap-y-2">
+                <div
+                  className="flex flex-wrap gap-x-2 gap-y-2"
+                  data-agent-chat-sidebar-actions
+                >
+                  {isCurrentChatInDisplayedMode && (
+                    <>
+                      {showArchivedOnly ? (
+                        <button
+                          className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
+                          data-agent-unarchive-chat
+                          onClick={toggleArchiveCurrentChat}
+                        >
+                          {t("agent.unarchive-chat")}
+                        </button>
+                      ) : (
+                        <ConfirmDialog
+                          message={t("agent.archive-chat-confirmation")}
+                          onConfirm={toggleArchiveCurrentChat}
+                          triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
+                          triggerLabel={t("agent.archive-chat")}
+                          triggerDataAttr="data-agent-archive-chat"
+                        />
+                      )}
+                      {showArchivedOnly && (
+                        <ConfirmDialog
+                          message={t("agent.delete-chat-confirmation")}
+                          onConfirm={deleteCurrentChat}
+                          triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-error hover:bg-red-50"
+                          triggerLabel={t("agent.delete-chat")}
+                          triggerDataAttr="data-agent-delete-chat"
+                        />
+                      )}
+                    </>
+                  )}
+                  <button
+                    className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-control-light hover:bg-background"
+                    aria-label={
+                      showArchivedOnly
+                        ? t("agent.archived-only-chats")
+                        : t("agent.active-only-chats")
+                    }
+                    title={
+                      showArchivedOnly
+                        ? t("agent.archived-only-chats")
+                        : t("agent.active-only-chats")
+                    }
+                    data-agent-chat-list-mode
+                    onClick={toggleChatListMode}
+                  >
+                    {showArchivedOnly ? (
+                      <Archive className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <Inbox className="size-3.5" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Sidebar resize handle */}
+          <button
+            type="button"
+            data-agent-window-action
+            data-agent-sidebar-resize
+            className="group relative w-1 shrink-0 cursor-col-resize bg-control-bg transition-colors hover:bg-accent/10 [touch-action:none]"
+            onPointerDown={startSidebarResize}
+          >
+            <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
+          </button>
+
+          {/* Main panel */}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <AgentChat className="min-h-0 flex-1" />
+            <AgentInput />
           </div>
-        </aside>
-
-        {/* Sidebar resize handle */}
-        <button
-          type="button"
-          data-agent-window-action
-          data-agent-sidebar-resize
-          className="group relative w-1 shrink-0 cursor-col-resize bg-control-bg transition-colors hover:bg-accent/10"
-          onMouseDown={startSidebarResize}
-        >
-          <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
-        </button>
-
-        {/* Main panel */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <AgentChat className="min-h-0 flex-1" />
-          <AgentInput />
         </div>
       </div>
 
-      {/* Resize handle (SE corner) */}
-      <button
-        type="button"
-        data-agent-window-action
-        data-agent-window-resize
-        className="absolute bottom-0 right-0 flex size-5 cursor-se-resize items-end justify-end pb-0.5 pr-0.5 text-control-border hover:text-control-placeholder"
-        title={t("agent.resize")}
-        onMouseDown={startResize}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="size-3"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-        >
-          <path d="M3.5 8.5h.01M6 6h.01M8.5 3.5h.01" />
-          <path d="M3.5 11 11 3.5" />
-        </svg>
-      </button>
+      {canResizeWindow &&
+        (Object.keys(resizeZoneClasses) as ResizeDirection[]).map(
+          (direction) => (
+            <div
+              key={direction}
+              aria-hidden="true"
+              data-agent-window-resize-zone={direction}
+              className={cn(
+                "absolute z-[1] [touch-action:none]",
+                resizeZoneClasses[direction]
+              )}
+              onPointerDown={(event) => startResize(direction, event)}
+            />
+          )
+        )}
     </div>,
     document.body
   );

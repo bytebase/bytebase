@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col gap-y-1">
+  <div class="flex flex-col gap-y-1">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-1">
         <span
@@ -110,7 +110,7 @@
       </template>
     </BBAttention>
 
-    <div class="relative flex-1">
+    <div class="relative h-64">
       <MonacoEditor
         class="w-full h-full border rounded-sm overflow-hidden"
         :filename="filename"

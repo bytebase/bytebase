@@ -1,4 +1,12 @@
 {
+  "activity.sentence.canceled-issue": "closed the issue",
+  "activity.sentence.changed-description": "changed description",
+  "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
+  "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.created-issue": "created issue",
+  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.reopened-issue": "reopened issue",
+  "activity.sentence.resolved-issue": "approved the issue",
   "agent": {
     "active-only-chats": "アクティブのみ",
     "ai-not-configured": {
@@ -36,7 +44,6 @@
     "pending-input-hint": "上に入力してください",
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
-    "resize": "リサイズ",
     "result": "結果",
     "retry-last-chat-turn": "再試行",
     "send": "送信",
@@ -133,6 +140,7 @@
     "address": "接続先",
     "admin": "管理者",
     "all": "全て",
+    "approve": "Approve",
     "approved": "承認済み",
     "archive": "アーカイブ",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
@@ -183,6 +191,7 @@
     "dismiss": "閉じる",
     "download": "ダウンロード",
     "draft": "下書き",
+    "duration": "Duration",
     "edit": "編集",
     "email": "メールアドレス",
     "email-ascii-only": "メールアドレスは ASCII 文字のみ使用できます（英数字および . _ - + などの記号）。",
@@ -227,6 +236,7 @@
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "missing-required-permission-for-resource": "リソース {{resource}} に必要な権限がありません",
+    "more": "More",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
     "name": "名前",
@@ -239,12 +249,14 @@
     "password": "パスワード",
     "pending": "保留中",
     "permissions": "権限",
+    "plan": "Plan",
     "previous": "Previous",
     "project": "プロジェクト",
     "projects": "プロジェクト",
     "read-only": "読み取り専用",
     "reason": "Reason",
     "regenerate": "再生する",
+    "reject": "Reject",
     "rejected": "却下",
     "release": "リリース",
     "reorder": "並び替え",
@@ -264,6 +276,7 @@
     },
     "rollback": "ロールバック",
     "rows-per-page": "ページあたりの行数",
+    "run": "Run",
     "save": "保存",
     "schema": "スキーマ",
     "scope": "スコープ",
@@ -278,9 +291,11 @@
     "skipped": "スキップ",
     "snapshot": "スナップショット",
     "sql": "SQL",
+    "stage": "ステージ",
     "state": "ステート",
     "statement": "ステートメント",
     "status": "ステータス",
+    "submit": "Submit",
     "system": "システム",
     "table": "テーブル",
     "title": "タイトル",
@@ -309,6 +324,7 @@
     "write-only": "書き込み専用",
     "you": "あなた"
   },
+  "common.activity": "アクティビティ",
   "common.add": "追加",
   "common.admin": "管理者",
   "common.all": "全て",
@@ -318,41 +334,61 @@
   "common.cannot-undo-this-action": "この操作は元に戻せません",
   "common.catalog": "カタログ",
   "common.close": "閉じる",
+  "common.collapse": "折りたたむ",
+  "common.column": "列",
+  "common.comment": "Comment",
   "common.confirm": "確認する",
   "common.continue-anyway": "まだ続けたい",
+  "common.copy": "コピー",
   "common.create": "作成する",
   "common.creating": "作成...",
   "common.custom": "カスタマイズ",
   "common.database": "データベース",
+  "common.database-group": "データベースグループ",
   "common.databases": "データベース",
   "common.default": "デフォルト",
   "common.delete": "消去",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "削除されました",
+  "common.detail": "Detail",
   "common.detailed-guide": "詳細ガイド",
   "common.edit": "編集",
+  "common.edited": "edited",
   "common.environment": "環境",
   "common.import": "インポート",
+  "common.issue": "Issue",
   "common.key": "キー",
   "common.labels": "ラベル",
   "common.learn-more": "もっと詳しく知る",
+  "common.line": "行",
   "common.load-more": "さらに読み込む",
   "common.loading": "読み込み中",
   "common.members": "メンバー",
   "common.minutes": "分",
+  "common.n-more": "あと {{n}} 件",
   "common.no-data": "データなし",
+  "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.open": "開く",
   "common.optional": "オプション",
   "common.or": "または",
   "common.overview": "概要",
   "common.password": "パスワード",
   "common.project": "プロジェクト",
   "common.read-only": "読み取り専用",
+  "common.remaining": "残り",
   "common.remove": "削除",
   "common.removed": "削除されました",
   "common.restore": "復元する",
+  "common.retry": "再試行",
+  "common.role.self": "ロール",
   "common.rollout": "リリース",
+  "common.save": "保存",
   "common.sensitive-placeholder": "機密データ - 書き込みのみ",
   "common.show-more": "もっと見る",
+  "common.skip": "スキップ",
+  "common.success": "成功",
+  "common.task": "タスク",
+  "common.troubleshoot": "トラブルシューティング",
   "common.unknown": "不明",
   "common.unlimited": "無制限",
   "common.updated": "更新しました",
@@ -400,7 +436,17 @@
       }
     },
     "issue-review": {
-      "generating-approval-flow": "承認フローが生成されています"
+      "and-n-other-users": "{{names}} と他の {{count}} 人のユーザー",
+      "approved-by": "承認者",
+      "disallow-approve-reason": {
+        "some-task-checks-are-still-running": "Some task checks are still running.",
+        "some-task-checks-didnt-pass": "Some task checks didn't pass."
+      },
+      "generating-approval-flow": "承認フローが生成されています",
+      "re-request-review": "再度承認をリクエストする",
+      "re-request-review-success": "レビューの再リクエストが完了しました",
+      "rejected-by": "拒否された",
+      "self-approval-not-allowed": "このプロジェクトでは自己承認は許可されていません。作成者として承認することはできません。"
     },
     "risk": {
       "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
@@ -437,6 +483,9 @@
     },
     "self": "カスタム承認"
   },
+  "custom-approval.issue-review.approved-issue": "approved issue",
+  "custom-approval.issue-review.re-requested-review": "re-requested issue review",
+  "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "追加のノードアドレス",
     "connection-string-schema": "接続文字列モード",
@@ -585,12 +634,7 @@
   "database.filter-database": "フィルターデータベース",
   "database.labels": "データベースラベル",
   "database.revision.delete-confirm-dialog": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。",
-  "database.revision.import-revision": "インポートリビジョン",
-  "database.revision.invalid-version-format": "バージョンはドットで区切られた数字部分でなければなりません（例：1.0.0）",
   "database.revision.self": "リビジョン",
-  "database.revision.type-declarative": "宣言的",
-  "database.revision.type-versioned": "バージョン管理",
-  "database.revision.version-already-exists": "このバージョンは既にデータベースに存在します",
   "database.successfully-exported-schema": "スキーマのエクスポートに成功しました",
   "database.sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
   "database.sync-database": "データベースを同期",
@@ -647,6 +691,7 @@
   "export-data": {
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
+  "export-data.password-optional": "パスワード（任意）",
   "gitops": {
     "checklist": {
       "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
@@ -975,6 +1020,7 @@
   "instance.scan-interval.self": "スキャン間隔",
   "instance.section.basic-info": "基本情報",
   "instance.section.connection": "接続",
+  "instance.select-database-user": "データベースユーザーの選択",
   "instance.sentence.aws-rds.mysql.template": "以下は、ユーザー {{user}}@% を作成し、そのユーザーに必要な権限を付与する例です。",
   "instance.sentence.aws-rds.postgresql.template": "以下は、ユーザー '{{user}}' を作成し、そのユーザーに必要な権限を付与する例です。",
   "instance.sentence.console.snowflake": "この インスタンス を管理する外部コンソール URL (AWS RDS コンソール、データベース コンソールなど)",
@@ -1020,6 +1066,11 @@
   "instance.users": "ユーザー",
   "instance.your-snowflake-account-locator": "Snowflake アカウント ロケーター",
   "issue": {
+    "access-grant": {
+      "details": "Access Grant Details",
+      "expired-at": "Expired at"
+    },
+    "action-anyway": "まだ {{action}} が必要です",
     "advanced-search": {
       "filter": "フィルター",
       "scope": {
@@ -1064,6 +1115,9 @@
         }
       }
     },
+    "approval-flow": {
+      "self": "承認フロー"
+    },
     "batch-transition": {
       "close": "閉じる",
       "closed": "閉まっている",
@@ -1071,13 +1125,22 @@
       "reopen": "再開",
       "reopened": "再開"
     },
+    "checks-manual-rollout-hint": "承認は完了しましたが、このプランにはまだチェックエラーがあるため、ロールアウトは自動作成されていません。Plan に移動して続行してください。",
     "data-export": {
+      "download-tooltip": "24 時間利用可能",
+      "file-expired": "ファイルの有効期限が切れました",
       "format": "エクスポート形式",
       "limits": "制限",
       "options": "設定項目"
     },
     "labels": "イシューラベル",
     "leave-a-comment": "コメントを残す…",
+    "review": {
+      "approve-description": "フィードバックを送信してこのイシューを承認する",
+      "comment-description": "承認なしで一般的なフィードバックを送信する",
+      "reject-description": "フィードバックを送信して変更をリクエストする",
+      "self": "レビュー"
+    },
     "risk-level": {
       "filter": "リスクレベルでフィルタリング",
       "high": "高い",
@@ -1088,6 +1151,8 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
+      "details": "Role Grant Details",
+      "expired-at": "Expired at",
       "manually-select": "手動選択",
       "use-cel": "CEL式を使用"
     },
@@ -1097,6 +1162,12 @@
       "descending": "降順",
       "sort": "並べ替え",
       "updated": "更新日時"
+    },
+    "status-transition": {
+      "modal": {
+        "close": "イシューを閉じますか?",
+        "reopen": "イシューを再開しますか?"
+      }
     },
     "subtitle": "イシューには、データベースの変更、データのエクスポート、アクセス要求が含まれます。実行前に確認と承認が必要です。",
     "table": {
@@ -1109,10 +1180,33 @@
       "updated": "更新日時",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "ロールをリクエスト",
+      "request-specific-role": "「{{role}}」ロールをリクエスト"
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "承認待ち"
   },
+  "issue.comment-editor.nothing-to-preview": "Nothing to preview",
+  "issue.comment-editor.preview": "Preview",
+  "issue.comment-editor.toolbar.bold": "Insert bold text",
+  "issue.comment-editor.toolbar.code": "Insert SQL code snippet",
+  "issue.comment-editor.toolbar.hashtag": "Insert hashtag",
+  "issue.comment-editor.toolbar.header": "Insert heading text",
+  "issue.comment-editor.toolbar.link": "Insert a link",
+  "issue.comment-editor.write": "Write",
+  "issue.data-export.format": "形式",
+  "issue.data-export.limits": "制限",
+  "issue.data-export.options": "オプション",
+  "issue.issue-name": "Issue name",
+  "issue.no-description-provided": "No description provided",
+  "issue.options-disabled-due-to-oversize": "SQL が大きすぎるため、オプションは無効になっています。",
+  "issue.overwrite-current-statement": "現在の SQL ステートメントを上書きする",
+  "issue.review.self": "Review",
+  "issue.statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
   "issue.task-run.logs": "ログ",
+  "issue.transaction-mode.label": "トランザクションモード",
+  "issue.upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
   "label": {
     "add-label": "タグ付けする",
     "empty-label-value": "ヌル",
@@ -1143,6 +1237,9 @@
     "checks": {
       "self": "チェック"
     },
+    "editor": {
+      "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
+    },
     "navigator": {
       "review": "レビュー"
     },
@@ -1153,6 +1250,30 @@
       "title": "ターゲット"
     }
   },
+  "plan.checks.failed-to-run": "Failed to run plan checks",
+  "plan.checks.no-check-results": "No check results",
+  "plan.checks.no-results-match-filters": "No results match your filters",
+  "plan.checks.started": "Plan checks started",
+  "plan.go-to-plan-page": "プランページへ移動",
+  "plan.isolation-level.read-committed": "コミット済み読み取り",
+  "plan.isolation-level.read-uncommitted": "未コミット読み取り",
+  "plan.isolation-level.repeatable-read": "反復可能読み取り",
+  "plan.isolation-level.self": "分離レベル",
+  "plan.isolation-level.serializable": "直列化可能",
+  "plan.navigator.checks": "Checks",
+  "plan.navigator.statement-empty": "ステートメントが空です",
+  "plan.options.self": "オプション",
+  "plan.overview.no-checks": "No checks",
+  "plan.ready-for-review": "Ready for Review",
+  "plan.run": "Run",
+  "plan.select-isolation-level": "分離レベルを選択",
+  "plan.spec.change": "Change",
+  "plan.spec.type.database-change": "データベース変更",
+  "plan.targets.no-targets-found": "対象が見つかりません",
+  "plan.targets.non-env-warning.one": "有効な環境がないため、{{count}} 件のデータベースはロールアウトから除外されます:",
+  "plan.targets.non-env-warning.other": "有効な環境がないため、{{count}} 件のデータベースはロールアウトから除外されます:",
+  "plan.targets.title": "対象",
+  "plan.targets.view-all": "すべて表示 ({{count}})",
   "policy": {
     "environment-tier": {
       "description": "この環境を他の環境とは異なって見えるようにします。",
@@ -1213,6 +1334,21 @@
       "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "このプロジェクトではロール申請が無効になっています。",
+          "can-grant-access-directly": "すでに {{permission}} を持っているため、直接アクセスを付与できます。",
+          "feature-unavailable": "現在のプランではロール申請ワークフローを利用できません。"
+        },
+        "expiration-exceeds-max": "有効期限はワークスペースの上限 {{days}} 日を超えることはできません。",
+        "expiration-must-be-future": "有効期限は将来の時刻を指定してください。",
+        "failed-to-build-expression": "CEL 式の構築に失敗しました。もう一度お試しください。",
+        "labels-misconfigured": {
+          "description": "このプロジェクトはイシューラベルを必須にしていますが、ラベルが設定されていません。ロールをリクエストする前に、プロジェクトのオーナーに連絡してラベルを追加してください。",
+          "title": "イシューラベルが必須ですが設定されていません"
+        },
+        "max-expiration-hint": "ワークスペースポリシーで許可される最大値：{{days}} 日。"
+      },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
     "settings": {
@@ -1247,6 +1383,7 @@
           "self": "SQL レビューを強制"
         },
         "labels": {
+          "configure-labels": "ラベルを設定する",
           "description": "イシューにラベルを貼って管理できる",
           "force-issue-labels": {
             "description": "イシューを作成するときは、少なくとも 1 つのラベルが必要です。",
@@ -1324,10 +1461,23 @@
     "request-export-data": "データ出力を申請する"
   },
   "release": {
+    "and-n-more-files": "and {{count}} more files",
+    "change-tip": "This change is linked to a release artifact.",
+    "file-type": {
+      "declarative": "Declarative",
+      "unspecified": "Unspecified",
+      "versioned": "Versioned"
+    },
     "files": "ファイル",
+    "not-found": "Release not found",
     "releases": "リリース",
     "total-files": "合計 {{}} ファイル",
-    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。"
+    "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
+    "vcs-source": "VCS Source",
+    "vcs-type": {
+      "unspecified": "Unknown VCS"
+    },
+    "view-all-files": "View all files"
   },
   "remind": {
     "release": {
@@ -1381,7 +1531,8 @@
     "stage": {
       "self_one": "ステージ",
       "self_other": "ステージ"
-    }
+    },
+    "task-execution-errors": "タスク実行エラー"
   },
   "schema-editor": {
     "raw-sql": "Raw SQL"
@@ -1895,6 +2046,7 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
@@ -1903,6 +2055,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQLエディタ",
+    "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -1953,8 +2106,11 @@
       }
     },
     "delete": "SQL レビューポリシーの削除",
+    "delete-description": "SQL レビューポリシーとそのすべてのルールは完全に削除されます。この操作は元に戻せません。",
     "description": "SQL レビューポリシーは、さまざまな環境に対してさまざまな SQL lint ルールのセットを定義でき、チームが SQL のベスト プラクティスを採用し、さまざまなデータベースでスキーマの一貫性を制約するのに役立ちます。 DDL/DML を変更しようとしたり、SQL エディターを使用してデータをクエリしようとしたりすると、設定された SQL レビュールールによって対応する実行ステートメントがチェックされます。",
+    "disable-description": "このポリシーを無効にすると、関連付けられたリソースへのルール適用が停止されます。後で再度有効にすることができます。",
     "disabled": "SQL レビューポリシーが無効になっています",
+    "enable-description": "このポリシーを有効にすると、関連付けられたリソースへのルール適用が開始されます。",
     "enabled-rules": "開かれたルールの数",
     "engine": {
       "mariadb": "MariaDB",
@@ -2769,11 +2925,40 @@
   "subscription.usage.instance-count.runoutof": "すべての {{total}} インスタンス クレジットが使用されました。",
   "subscription.usage.instance-count.title": "インスタンスの制限",
   "task": {
+    "cancel-task": "タスクをキャンセルする",
     "checking": "検査中…",
+    "created": "作成日時",
+    "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "スケジュール時間は将来の時間である必要があります"
+    },
+    "execution-time": "実行時間",
+    "no-permission": "この操作を実行する権限がありません",
+    "run-immediately": {
+      "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。",
+      "self": "すぐに実行"
+    },
+    "run-task": "タスクを実行 | タスクを実行",
+    "schedule-for-later": {
+      "description": "タスクを自動的に実行開始する日時を指定します。メンテナンス期間やオフピーク時に便利です。",
+      "self": "後でスケジュールする"
+    },
+    "select-scheduled-time": "予定時刻を選択してください",
+    "skip-prior-backup": "事前バックアップをスキップ",
+    "skip-prior-backup-description": "変更適用前の自動データバックアップをスキップする",
+    "skip-task": "タスクをスキップ | タスクをスキップ",
+    "started": "開始日時",
     "status": {
-      "running": "ランニング"
+      "canceled": "キャンセル",
+      "done": "終わり",
+      "failed": "失敗",
+      "not-started": "開始されていません",
+      "pending": "保留中",
+      "running": "ランニング",
+      "skipped": "スキップ"
     }
   },
+  "task-run.history": "実行履歴",
   "task-run.log-detail.backing-up": "バックアップ中...",
   "task-run.log-detail.backup-completed": "完了しました（{{count}} テーブル）",
   "task-run.log-detail.completed": "完了しました",
@@ -2794,7 +2979,18 @@
   "task-run.log-viewer.multiple-replicas-notice": "実行中にサーバーの再起動が検出されました。ログはレプリカごとにグループ化されています。",
   "task-run.log-viewer.replica-n": "レプリカ #{n}",
   "task-run.log-viewer.summary": "{sections} セクション · {entries} エントリ",
+  "task-run.status.enqueued": "実行を待っています。",
+  "task-run.status.enqueued-with-rollout-time": "{{time}} の後に実行される予定です。",
+  "task-run.status.waiting-max-tasks-per-rollout": "他のタスクが完了するのを待っています。ロールアウトごとの最大実行タスク数制限に達しました。最後の報告は {{time}} です。",
   "task.affected-rows": "影響を受けた行数",
+  "task.check-type.affected-rows.description": "Estimated by statistical information.",
+  "task.check-type.affected-rows.self": "Affected rows",
+  "task.check-type.ghost-sync": "gh-ost sync",
+  "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
+  "task.check-type.sql-review.self": "SQL review",
+  "task.check-type.summary-report": "Summary report",
+  "task.online-migration.self": "オンラインでの大規模なテーブル変更",
+  "task.prior-backup": "影響を受けるデータの事前バックアップ",
   "two-factor": {
     "description": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。",
     "disable": {

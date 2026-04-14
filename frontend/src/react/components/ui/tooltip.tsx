@@ -26,7 +26,7 @@ export function Tooltip({
         </BaseTooltip.Trigger>
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner side={side} sideOffset={4}>
-            <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
+            <BaseTooltip.Popup className="z-50 max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
               {content}
               <BaseTooltip.Arrow className="fill-main" />
             </BaseTooltip.Popup>
@@ -60,7 +60,7 @@ export function BlockTooltip({
         </BaseTooltip.Trigger>
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner side={side} sideOffset={4}>
-            <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
+            <BaseTooltip.Popup className="z-50 max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
               {content}
               <BaseTooltip.Arrow className="fill-main" />
             </BaseTooltip.Popup>

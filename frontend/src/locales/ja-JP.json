@@ -47,7 +47,6 @@
     "pending-input-hint": "このチャットを続けるには、下に返信してください。",
     "rename-chat-placeholder": "チャット名を入力してください",
     "reply": "返信",
-    "resize": "Resize",
     "result": "結果:",
     "retry-last-chat-turn": "直前のターンを再試行",
     "self": "Agent",
@@ -2724,8 +2723,11 @@
       }
     },
     "delete": "SQL レビューポリシーの削除",
+    "delete-description": "SQL レビューポリシーとそのすべてのルールは完全に削除されます。この操作は元に戻せません。",
     "description": "SQL lint ルールを定義し、ベストプラクティスとスキーマの一貫性を適用します。ルールは DDL/DML 変更にのみ適用され、SQL エディターのクエリには適用されません。",
+    "disable-description": "このポリシーを無効にすると、関連付けられたリソースへのルール適用が停止されます。後で再度有効にすることができます。",
     "disabled": "SQL レビューポリシーが無効になっています",
+    "enable-description": "このポリシーを有効にすると、関連付けられたリソースへのルール適用が開始されます。",
     "enabled-rules": "開かれたルールの数",
     "input-then-press-enter": "入力後、Enterを押して追加します",
     "level": {

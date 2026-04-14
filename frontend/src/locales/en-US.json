@@ -47,7 +47,6 @@
     "pending-input-hint": "Reply below to continue this chat.",
     "rename-chat-placeholder": "Enter a chat name",
     "reply": "Reply",
-    "resize": "Resize",
     "result": "Result:",
     "retry-last-chat-turn": "Retry last turn",
     "self": "Agent",
@@ -2724,8 +2723,11 @@
       }
     },
     "delete": "Delete SQL review policy",
+    "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
     "description": "Define SQL lint rules to enforce best practices and schema consistency. Rules apply to DDL/DML changes only, not to SQL Editor queries.",
+    "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
     "disabled": "SQL review is disabled",
+    "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
     "enabled-rules": "Enabled rules",
     "input-then-press-enter": "Input the value then press enter to add",
     "level": {

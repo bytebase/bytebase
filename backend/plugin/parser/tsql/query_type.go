@@ -1,86 +1,74 @@
 package tsql
 
 import (
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-type queryTypeListener struct {
-	*parser.BaseTSqlParserListener
-
-	allSystems bool
-	result     base.QueryType
-	err        error
-}
-
-func (l *queryTypeListener) EnterTsql_file(ctx *parser.Tsql_fileContext) {
-	if l.err != nil {
-		return
+// classifyQueryType classifies an omni AST node into a QueryType.
+// allSystems indicates whether all referenced tables are system/info_schema tables.
+func classifyQueryType(node ast.Node, allSystems bool) base.QueryType {
+	if node == nil {
+		return base.QueryTypeUnknown
 	}
 
-	l.result, l.err = l.getQueryTypeForTSqlFile(ctx)
-}
+	switch node.(type) {
+	case *ast.SelectStmt:
+		if allSystems {
+			return base.SelectInfoSchema
+		}
+		return base.Select
 
-func (l *queryTypeListener) getQueryTypeForTSqlFile(file parser.ITsql_fileContext) (base.QueryType, error) {
-	if len(file.AllBatch_without_go()) == 0 {
-		// Multiple go statement only.
-		return base.Select, nil
-	}
+	// Safe read-only statements treated as Select (parity with the pre-omni
+	// Another_statement → SET/SETUSER/DECLARE branch).
+	case *ast.SetStmt, *ast.SetOptionStmt, *ast.DeclareStmt:
+		return base.Select
 
-	// TODO(zp): Make sure the splitter had handled the GO statement.
-	return l.getQueryTypeForBatchWithoutGo(file.Batch_without_go(0))
-}
+	// DML statements.
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt,
+		*ast.BulkInsertStmt, *ast.InsertBulkStmt, *ast.CopyIntoStmt,
+		*ast.ReadtextStmt, *ast.WritetextStmt, *ast.UpdatetextStmt,
+		*ast.ExecStmt, *ast.ReceiveStmt, *ast.PredictStmt:
+		return base.DML
 
-func (l *queryTypeListener) getQueryTypeForBatchWithoutGo(batch parser.IBatch_without_goContext) (base.QueryType, error) {
-	// TODO(zp): Make sure the splitter had handled the SEMICOLON.
-	switch {
-	case len(batch.AllSql_clauses()) != 0 && batch.Execute_body_batch() == nil:
-		return l.getQueryTypeForSQLClause(batch.Sql_clauses(0))
-	case batch.Batch_level_statement() != nil:
-		return l.getQueryTypeForBatchLevelStatement(batch.Batch_level_statement())
-	case batch.Execute_body_batch() != nil:
-		return l.getQueryTypeForExecuteBodyBatch(batch.Execute_body_batch())
+	// DDL statements.
+	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropStmt,
+		*ast.TruncateStmt, *ast.RenameStmt,
+		*ast.CreateIndexStmt, *ast.AlterIndexStmt,
+		*ast.CreateViewStmt,
+		*ast.CreateTriggerStmt, *ast.EnableDisableTriggerStmt,
+		*ast.CreateFunctionStmt, *ast.CreateProcedureStmt,
+		*ast.CreateDatabaseStmt, *ast.AlterDatabaseStmt,
+		*ast.CreateSchemaStmt, *ast.AlterSchemaStmt,
+		*ast.CreateTypeStmt,
+		*ast.CreateSequenceStmt, *ast.AlterSequenceStmt,
+		*ast.CreateSynonymStmt,
+		*ast.GrantStmt, *ast.SecurityStmt, *ast.SecurityKeyStmt, *ast.SecurityPolicyStmt,
+		*ast.SensitivityClassificationStmt, *ast.SignatureStmt,
+		*ast.CreateStatisticsStmt, *ast.UpdateStatisticsStmt, *ast.DropStatisticsStmt,
+		*ast.CreatePartitionFunctionStmt, *ast.AlterPartitionFunctionStmt,
+		*ast.CreatePartitionSchemeStmt, *ast.AlterPartitionSchemeStmt,
+		*ast.CreateFulltextIndexStmt, *ast.AlterFulltextIndexStmt,
+		*ast.CreateFulltextCatalogStmt, *ast.AlterFulltextCatalogStmt,
+		*ast.CreateFulltextStoplistStmt, *ast.AlterFulltextStoplistStmt, *ast.DropFulltextStoplistStmt,
+		*ast.CreateSearchPropertyListStmt, *ast.AlterSearchPropertyListStmt, *ast.DropSearchPropertyListStmt,
+		*ast.CreateXmlSchemaCollectionStmt, *ast.AlterXmlSchemaCollectionStmt,
+		*ast.CreateXmlIndexStmt, *ast.CreateSelectiveXmlIndexStmt,
+		*ast.CreateSpatialIndexStmt, *ast.CreateJsonIndexStmt, *ast.CreateVectorIndexStmt,
+		*ast.CreateAggregateStmt, *ast.DropAggregateStmt,
+		*ast.CreateAssemblyStmt, *ast.AlterAssemblyStmt,
+		*ast.CreateMaterializedViewStmt, *ast.AlterMaterializedViewStmt,
+		*ast.CreateExternalTableAsSelectStmt, *ast.CreateTableCloneStmt,
+		*ast.CreateTableAsSelectStmt, *ast.CreateRemoteTableAsSelectStmt,
+		*ast.CreateFederationStmt, *ast.AlterFederationStmt, *ast.DropFederationStmt, *ast.UseFederationStmt,
+		*ast.AlterServerConfigurationStmt:
+		return base.DDL
+
 	default:
-		return base.QueryTypeUnknown, nil
+		// Flow control (IF/WHILE/BEGIN-END/TRY-CATCH/RETURN/BREAK/CONTINUE/GOTO/LABEL/WAITFOR),
+		// PRINT/RAISERROR/THROW, DBCC, BACKUP/RESTORE, transactions, cursors, and other
+		// statements we do not classify — report as Unknown to match the pre-omni behavior.
+		return base.QueryTypeUnknown
 	}
-}
-
-func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesContext) (base.QueryType, error) {
-	// We only care about the first clause.
-	switch {
-	case clause.Dml_clause() != nil:
-		if clause.Dml_clause().Select_statement_standalone() != nil {
-			if l.allSystems {
-				return base.SelectInfoSchema, nil
-			}
-			return base.Select, nil
-		}
-		return base.DML, nil
-	case clause.Ddl_clause() != nil:
-		return base.DDL, nil
-	case clause.Another_statement() != nil:
-		// Treat SAFE SET as select statement.
-		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil || clause.Another_statement().Declare_statement() != nil {
-			return base.Select, nil
-		}
-		// EXECUTE stored procedure is DML.
-		if clause.Another_statement().Execute_statement() != nil {
-			return base.DML, nil
-		}
-		return base.QueryTypeUnknown, nil
-	case clause.Cfl_statement() != nil, clause.Dbcc_clause() != nil, clause.Backup_statement() != nil:
-		return base.QueryTypeUnknown, nil
-	default:
-		return base.QueryTypeUnknown, nil
-	}
-}
-
-func (*queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level_statementContext) (base.QueryType, error) {
-	return base.DDL, nil
-}
-
-func (*queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_body_batchContext) (base.QueryType, error) {
-	// Call stored procedure or function.
-	return base.DML, nil
 }

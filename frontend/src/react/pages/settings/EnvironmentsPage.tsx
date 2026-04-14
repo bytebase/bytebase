@@ -1,4 +1,21 @@
 import { create } from "@bufbuild/protobuf";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cloneDeep, isEqual } from "lodash-es";
 import { GripVertical, ListOrdered, Plus, ShieldAlert, X } from "lucide-react";
 import {
@@ -18,12 +35,21 @@ import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Tabs,
   TabsList,
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -70,31 +96,6 @@ import {
   hexToRgb,
   sqlReviewPolicySlug,
 } from "@/utils";
-
-// ============================================================
-// Escape key stack
-// ============================================================
-const escapeStack: (() => void)[] = [];
-
-function useEscapeKey(onEscape: () => void) {
-  useEffect(() => {
-    escapeStack.push(onEscape);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === onEscape
-      ) {
-        onEscape();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.lastIndexOf(onEscape);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [onEscape]);
-}
 
 // ============================================================
 // EnvironmentName - displays env name with color badge
@@ -1014,10 +1015,12 @@ function EnvironmentDetail({
 // ============================================================
 // CreateDrawer
 // ============================================================
-function CreateDrawer({
+function CreateSheet({
+  open,
   onClose,
   onCreate,
 }: {
+  open: boolean;
   onClose: () => void;
   onCreate: (params: {
     environment: Partial<Environment>;
@@ -1025,7 +1028,6 @@ function CreateDrawer({
   }) => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
   const subscriptionStore = useSubscriptionV1Store();
   const environmentStore = useEnvironmentV1Store();
 
@@ -1041,6 +1043,18 @@ function CreateDrawer({
   );
   const [resourceId, setResourceId] = useState("");
   const [resourceIdValid, setResourceIdValid] = useState(false);
+
+  // Reset form state whenever the Sheet is (re)opened. Sheet is always mounted
+  // so useState initializers only run on first mount.
+  useEffect(() => {
+    if (!open) return;
+    setTitle("");
+    setColor("#4f46e5");
+    setIsProtected(false);
+    setRolloutPolicy(getEmptyRolloutPolicy("", PolicyResourceType.ENVIRONMENT));
+    setResourceId("");
+    setResourceIdValid(false);
+  }, [open]);
 
   const canCreate = useMemo(() => {
     return title.trim().length > 0 && resourceId.length > 0 && resourceIdValid;
@@ -1101,17 +1115,13 @@ function CreateDrawer({
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-xl max-w-[100vw] bg-white shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("common.environment")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("common.environment")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Name */}
             <div className="flex flex-col gap-y-2">
@@ -1187,25 +1197,129 @@ function CreateDrawer({
               />
             </div>
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button disabled={!canCreate} onClick={handleCreate}>
             {t("common.create")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 // ============================================================
-// ReorderDrawer
+// ReorderSheet
 // ============================================================
-function ReorderDrawer({
+function SortableEnvironmentRow({
+  env,
+  index,
+}: {
+  env: Environment;
+  index: number;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: env.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center justify-between p-2 rounded-xs border border-transparent",
+        !isDragging && "hover:bg-control-bg"
+      )}
+    >
+      <div className="flex items-center gap-x-2">
+        <span className="textinfo">{index + 1}.</span>
+        <EnvironmentName environment={env} />
+      </div>
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing touch-none p-1 text-control-light hover:text-control"
+        aria-label="Drag to reorder"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="size-5" />
+      </button>
+    </div>
+  );
+}
+
+// Outer wrapper — captures a snapshot of `environments` at open time and
+// keeps it stable for the lifetime of the opened sheet. The inner
+// `ReorderSheetInner` is keyed by an open counter so it remounts fresh
+// every time the Sheet opens (re-initializing its `list` state from the
+// snapshot), but does NOT reset mid-session when the parent's
+// `environments` prop gets a new reference on every render (which
+// `useVueState` does — it spreads the store's array). A naive
+// `useEffect([open, environments])` reset would clobber the user's drag
+// reorder the instant the parent re-renders, which was the previous bug.
+function ReorderSheet({
+  open,
+  environments,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  environments: Environment[];
+  onClose: () => void;
+  onConfirm: (reordered: Environment[]) => void;
+}) {
+  // Counter bumps each time the Sheet transitions from closed → open,
+  // forcing the inner component to remount with a fresh list snapshot.
+  const [openCount, setOpenCount] = useState(0);
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setOpenCount((c) => c + 1);
+    }
+    prevOpenRef.current = open;
+  }, [open]);
+
+  // Snapshot the environments at the moment we decided to open. This
+  // closes over a stable array reference for the session.
+  const snapshotRef = useRef(environments);
+  if (open && !prevOpenRef.current) {
+    snapshotRef.current = environments;
+  }
+  // After the initial open transition we keep refreshing the snapshot
+  // while open remains true so list-item metadata (titles, colors) stays
+  // current. But we never mutate the *order* mid-session.
+  const snapshot = open ? environments : snapshotRef.current;
+
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="narrow">
+        <ReorderSheetInner
+          key={openCount}
+          environments={snapshot}
+          onClose={onClose}
+          onConfirm={onConfirm}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ReorderSheetInner({
   environments,
   onClose,
   onConfirm,
@@ -1215,72 +1329,80 @@ function ReorderDrawer({
   onConfirm: (reordered: Environment[]) => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
-  const [list, setList] = useState(() => [...environments]);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  // Initialize once at mount from the snapshot passed in. The outer
+  // wrapper remounts this component on each open, so this initializer
+  // always sees the correct starting order.
+  const [list, setList] = useState<Environment[]>(() => [...environments]);
 
+  // dnd-kit sensors — Pointer handles mouse/touch, Keyboard enables
+  // Tab+Space/Arrow accessible reordering.
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Small activation distance prevents click-vs-drag ambiguity on
+      // the grip handle while still feeling responsive.
+      activationConstraint: { distance: 4 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Compare against the initial order captured at mount, not against the
+  // live `environments` prop (which may change reference on every parent
+  // render thanks to useVueState spreading the store array).
+  const initialOrderRef = useRef(environments.map((e) => e.id));
   const orderChanged = useMemo(() => {
+    if (list.length !== initialOrderRef.current.length) return true;
     for (let i = 0; i < list.length; i++) {
-      if (list[i].id !== environments[i].id) return true;
+      if (list[i].id !== initialOrderRef.current[i]) return true;
     }
     return false;
-  }, [list, environments]);
+  }, [list]);
 
-  const onDragStart = (index: number) => {
-    setDragIndex(index);
-  };
-
-  const onDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (dragIndex === null || dragIndex === index) return;
-    const newList = [...list];
-    const [item] = newList.splice(dragIndex, 1);
-    newList.splice(index, 0, item);
-    setList(newList);
-    setDragIndex(index);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setList((prev) => {
+      const oldIndex = prev.findIndex((e) => e.id === active.id);
+      const newIndex = prev.findIndex((e) => e.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-120 max-w-[90vw] bg-white shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("environment.reorder")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+      <SheetHeader>
+        <SheetTitle>{t("environment.reorder")}</SheetTitle>
+      </SheetHeader>
 
-        <div className="flex-1 overflow-auto px-6 py-4">
-          {list.map((env, index) => (
-            <div
-              key={env.id}
-              draggable
-              onDragStart={() => onDragStart(index)}
-              onDragOver={(e) => onDragOver(e, index)}
-              onDragEnd={() => setDragIndex(null)}
-              className={`flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab ${
-                dragIndex === index ? "opacity-50" : ""
-              }`}
-            >
-              <div className="flex items-center gap-x-2">
-                <span className="textinfo">{index + 1}.</span>
-                <EnvironmentName environment={env} />
-              </div>
-              <GripVertical className="w-5 h-5 text-gray-500" />
+      <SheetBody>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={list.map((e) => e.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col gap-y-1">
+              {list.map((env, index) => (
+                <SortableEnvironmentRow key={env.id} env={env} index={index} />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
+      </SheetBody>
 
-        <div className="flex justify-end items-center gap-x-2 px-6 py-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
-            {t("common.update")}
-          </Button>
-        </div>
-      </div>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t("common.cancel")}
+        </Button>
+        <Button disabled={!orderChanged} onClick={() => onConfirm(list)}>
+          {t("common.update")}
+        </Button>
+      </SheetFooter>
     </>
   );
 }
@@ -1500,22 +1622,20 @@ export function EnvironmentsPage() {
         ))}
       </Tabs>
 
-      {/* Create drawer */}
-      {showCreate && (
-        <CreateDrawer
-          onClose={() => setShowCreate(false)}
-          onCreate={handleCreate}
-        />
-      )}
+      {/* Create sheet */}
+      <CreateSheet
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreate={handleCreate}
+      />
 
-      {/* Reorder drawer */}
-      {showReorder && (
-        <ReorderDrawer
-          environments={environmentList}
-          onClose={() => setShowReorder(false)}
-          onConfirm={handleReorder}
-        />
-      )}
+      {/* Reorder sheet */}
+      <ReorderSheet
+        open={showReorder}
+        environments={environmentList}
+        onClose={() => setShowReorder(false)}
+        onConfirm={handleReorder}
+      />
     </div>
   );
 }

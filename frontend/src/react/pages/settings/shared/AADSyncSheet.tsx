@@ -1,12 +1,19 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Copy, X } from "lucide-react";
+import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useEscapeKey } from "@/react/hooks/useEscapeKey";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -16,10 +23,16 @@ import {
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 // ============================================================
-// AADSyncDrawer
+// AADSyncSheet
 // ============================================================
 
-export function AADSyncDrawer({ onClose }: { onClose: () => void }) {
+export function AADSyncSheet({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const settingV1Store = useSettingV1Store();
@@ -33,8 +46,6 @@ export function AADSyncDrawer({ onClose }: { onClose: () => void }) {
   const directorySyncToken = useVueState(
     () => settingV1Store.workspaceProfile.directorySyncToken
   );
-
-  useEscapeKey(true, onClose);
 
   const scimUrl =
     externalUrl && workspaceResourceName
@@ -94,28 +105,13 @@ export function AADSyncDrawer({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>{t("settings.members.entra-sync.self")}</SheetTitle>
+        </SheetHeader>
 
-      {/* Drawer */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-white shadow-xl flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("settings.members.entra-sync.self")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody>
           <div className="flex flex-col gap-y-6">
             {/* Description */}
             <p className="text-sm text-control-light">
@@ -190,15 +186,14 @@ export function AADSyncDrawer({ onClose }: { onClose: () => void }) {
               )}
             </div>
           </div>
-        </div>
+        </SheetBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

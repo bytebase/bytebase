@@ -9,6 +9,11 @@ const Dialog = BaseDialog.Root;
 const DialogTrigger = BaseDialog.Trigger;
 
 // ---- Overlay / Backdrop ----
+// Dialog, Select, Tooltip, and AlertDialog all use `z-50`. Within that shared
+// z-layer, stacking falls back to DOM portal mount order — later mounts win —
+// which correctly places a Select/Tooltip opened *inside* a Dialog on top of
+// the dialog backdrop. Do not bump Dialog above z-50 (or other overlays below)
+// without updating all four components together. See BYT-9226 / PR #19824.
 function DialogOverlay({
   className,
   ref,

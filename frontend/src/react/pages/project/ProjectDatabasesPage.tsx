@@ -11,12 +11,12 @@ import {
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
 import {
-  CreateDatabaseDrawer,
+  CreateDatabaseSheet,
   DatabaseBatchOperationsBar,
   DatabaseTable,
-  LabelEditorDrawer,
+  LabelEditorSheet,
 } from "@/react/components/database";
-import { EditEnvironmentDrawer } from "@/react/components/EditEnvironmentDrawer";
+import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -53,7 +53,7 @@ import {
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
-import { DataExportPrepDrawer } from "./export-center/DataExportPrepDrawer";
+import { DataExportPrepSheet } from "./export-center/DataExportPrepSheet";
 
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -394,12 +394,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           onExportData={isDefault ? undefined : handleExportData}
         />
 
-        <EditEnvironmentDrawer
+        <EditEnvironmentSheet
           open={showEditEnvDrawer}
           onClose={() => setShowEditEnvDrawer(false)}
           onUpdate={handleEnvironmentUpdate}
         />
-        <LabelEditorDrawer
+        <LabelEditorSheet
           open={showLabelEditor}
           databases={selectedDatabases}
           onClose={() => setShowLabelEditor(false)}
@@ -416,13 +416,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         />
       </div>
 
-      <CreateDatabaseDrawer
+      <CreateDatabaseSheet
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         projectName={projectName}
       />
 
-      <DataExportPrepDrawer
+      <DataExportPrepSheet
         open={showExportDrawer}
         onClose={() => setShowExportDrawer(false)}
         projectName={projectName}

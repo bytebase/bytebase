@@ -790,7 +790,6 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 	}
 }
 
-//nolint:unused
 func convertEmailSetting(v1Setting *v1pb.EmailSetting) *storepb.EmailSetting {
 	if v1Setting == nil {
 		return nil
@@ -800,15 +799,15 @@ func convertEmailSetting(v1Setting *v1pb.EmailSetting) *storepb.EmailSetting {
 		FromName: v1Setting.FromName,
 		Type:     storepb.EmailSetting_Type(v1Setting.Type),
 	}
-	if v1Smtp := v1Setting.GetSmtp(); v1Smtp != nil {
+	if v1SMTP := v1Setting.GetSmtp(); v1SMTP != nil {
 		storeSetting.Config = &storepb.EmailSetting_Smtp{
 			Smtp: &storepb.EmailSetting_SMTPConfig{
-				Host:           v1Smtp.Host,
-				Port:           v1Smtp.Port,
-				Username:       v1Smtp.Username,
-				Password:       v1Smtp.Password,
-				Encryption:     storepb.EmailSetting_SMTPConfig_Encryption(v1Smtp.Encryption),
-				Authentication: storepb.EmailSetting_SMTPConfig_Authentication(v1Smtp.Authentication),
+				Host:           v1SMTP.Host,
+				Port:           v1SMTP.Port,
+				Username:       v1SMTP.Username,
+				Password:       v1SMTP.Password,
+				Encryption:     storepb.EmailSetting_SMTPConfig_Encryption(v1SMTP.Encryption),
+				Authentication: storepb.EmailSetting_SMTPConfig_Authentication(v1SMTP.Authentication),
 			},
 		}
 	}

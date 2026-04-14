@@ -62,6 +62,10 @@ const conn: ConnectionState = {
     timestamp: 0,
   },
 };
+let connectionSnapshot = {
+  state: conn.state,
+  heartbeat: conn.heartbeat,
+};
 
 const state = {
   client: undefined as MonacoLanguageClient | undefined,
@@ -70,11 +74,19 @@ const state = {
 
 const setConnState = (patch: Partial<ConnectionState>) => {
   Object.assign(conn, patch);
+  connectionSnapshot = {
+    state: conn.state,
+    heartbeat: conn.heartbeat,
+  };
   emit();
 };
 
 const setHeartbeat = (patch: Partial<ConnectionState["heartbeat"]>) => {
   Object.assign(conn.heartbeat, patch);
+  connectionSnapshot = {
+    state: conn.state,
+    heartbeat: conn.heartbeat,
+  };
   emit();
 };
 
@@ -295,9 +307,6 @@ export const subscribeConnectionState = (listener: () => void) => {
   };
 };
 
-export const getConnectionStateSnapshot = () => ({
-  state: conn.state,
-  heartbeat: conn.heartbeat,
-});
+export const getConnectionStateSnapshot = () => connectionSnapshot;
 
 export const getConnectionWebSocket = () => conn.ws;

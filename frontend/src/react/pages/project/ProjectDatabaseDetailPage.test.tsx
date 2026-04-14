@@ -62,7 +62,7 @@ const mocks = vi.hoisted(() => {
       t: (key: string) => key,
     })),
     pushNotification: vi.fn(),
-    transferProjectDrawer: vi.fn(
+    transferProjectSheet: vi.fn(
       ({
         open,
         onTransfer,
@@ -71,7 +71,7 @@ const mocks = vi.hoisted(() => {
         onTransfer: (projectName: string) => Promise<void>;
       }) => (
         <div
-          data-testid="transfer-project-drawer"
+          data-testid="transfer-project-sheet"
           data-open={open ? "true" : "false"}
         >
           {open && (
@@ -284,7 +284,7 @@ vi.mock("@/store", () => ({
 }));
 
 vi.mock("@/react/components/database", () => ({
-  TransferProjectDrawer: mocks.transferProjectDrawer,
+  TransferProjectSheet: mocks.transferProjectSheet,
 }));
 
 vi.mock("@/connect", () => ({
@@ -452,7 +452,7 @@ beforeEach(() => {
     t: (key: string) => key,
   });
   mocks.pushNotification.mockReset();
-  mocks.transferProjectDrawer.mockClear();
+  mocks.transferProjectSheet.mockClear();
   mocks.DatabaseChangelogPanel.mockClear();
   mocks.DatabaseOverviewPanel.mockClear();
   mocks.DatabaseRevisionPanel.mockClear();

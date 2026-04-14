@@ -1,4 +1,12 @@
 {
+  "activity.sentence.canceled-issue": "closed the issue",
+  "activity.sentence.changed-description": "changed description",
+  "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
+  "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.created-issue": "created issue",
+  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.reopened-issue": "reopened issue",
+  "activity.sentence.resolved-issue": "approved the issue",
   "agent": {
     "active-only-chats": "Chỉ hoạt động",
     "ai-not-configured": {
@@ -36,7 +44,6 @@
     "pending-input-hint": "Vui lòng cung cấp đầu vào ở trên",
     "rename-chat-placeholder": "Nhập tên cuộc trò chuyện",
     "reply": "Trả lời",
-    "resize": "Thay đổi kích thước",
     "result": "Kết quả",
     "retry-last-chat-turn": "Thử lại",
     "send": "Gửi",
@@ -133,6 +140,7 @@
     "address": "Địa chỉ",
     "admin": "Quản trị viên",
     "all": "Tất cả",
+    "approve": "Approve",
     "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
@@ -183,6 +191,7 @@
     "dismiss": "Loại bỏ",
     "download": "Tải xuống",
     "draft": "Bản nháp",
+    "duration": "Duration",
     "edit": "Chỉnh sửa",
     "email": "Email",
     "email-ascii-only": "Địa chỉ email chỉ hỗ trợ ký tự ASCII (chữ cái, số và ký hiệu như . _ - +).",
@@ -227,6 +236,7 @@
     "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {{resource}}",
+    "more": "More",
     "n-items-selected": "Đã chọn {{n}} mục",
     "n-more": "+{{n}} nữa",
     "name": "Tên",
@@ -239,12 +249,14 @@
     "password": "Mật khẩu",
     "pending": "Đang chờ",
     "permissions": "Quyền",
+    "plan": "Plan",
     "previous": "Previous",
     "project": "Dự án",
     "projects": "Dự án",
     "read-only": "Chỉ đọc",
     "reason": "Reason",
     "regenerate": "Tạo lại",
+    "reject": "Reject",
     "rejected": "Đã từ chối",
     "release": "Phiên bản",
     "reorder": "Sắp xếp lại",
@@ -264,6 +276,7 @@
     },
     "rollback": "Hoàn tác",
     "rows-per-page": "Số dòng mỗi trang",
+    "run": "Run",
     "save": "Lưu",
     "schema": "Schema",
     "scope": "Phạm vi",
@@ -278,9 +291,11 @@
     "skipped": "Đã bỏ qua",
     "snapshot": "Ảnh chụp nhanh",
     "sql": "SQL",
+    "stage": "Giai đoạn",
     "state": "Trạng thái",
     "statement": "Câu lệnh",
     "status": "Trạng thái",
+    "submit": "Submit",
     "system": "Hệ thống",
     "table": "Bảng",
     "title": "Tiêu đề",
@@ -309,6 +324,7 @@
     "write-only": "chỉ ghi",
     "you": "bạn"
   },
+  "common.activity": "Hoạt động",
   "common.add": "Thêm",
   "common.admin": "Quản trị viên",
   "common.all": "Tất cả",
@@ -318,41 +334,61 @@
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
   "common.catalog": "Danh mục",
   "common.close": "Đóng",
+  "common.collapse": "Thu gọn",
+  "common.column": "Cột",
+  "common.comment": "Comment",
   "common.confirm": "Xác nhận",
   "common.continue-anyway": "Tiếp tục",
+  "common.copy": "Sao chép",
   "common.create": "Tạo",
   "common.creating": "Đang tạo...",
   "common.custom": "Tùy chỉnh",
   "common.database": "Cơ sở dữ liệu",
+  "common.database-group": "Nhóm cơ sở dữ liệu",
   "common.databases": "Cơ sở dữ liệu",
   "common.default": "Mặc định",
   "common.delete": "Xóa",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Đã xóa",
+  "common.detail": "Detail",
   "common.detailed-guide": "Hướng dẫn chi tiết",
   "common.edit": "Chỉnh sửa",
+  "common.edited": "edited",
   "common.environment": "Môi trường",
   "common.import": "Nhập",
+  "common.issue": "Issue",
   "common.key": "Khóa",
   "common.labels": "Nhãn",
   "common.learn-more": "Tìm hiểu thêm",
+  "common.line": "Dòng",
   "common.load-more": "Tải thêm",
   "common.loading": "Đang tải",
   "common.members": "Thành viên",
   "common.minutes": "Phút",
+  "common.n-more": "còn {{n}}",
   "common.no-data": "Không có dữ liệu",
+  "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.open": "Mở",
   "common.optional": "Tùy chọn",
   "common.or": "hoặc",
   "common.overview": "Tổng quan",
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
   "common.read-only": "Chỉ đọc",
+  "common.remaining": "còn lại",
   "common.remove": "Xóa",
   "common.removed": "LOẠI BỎ",
   "common.restore": "Khôi phục",
+  "common.retry": "Thử lại",
+  "common.role.self": "Vai trò",
   "common.rollout": "Triển khai",
+  "common.save": "Lưu",
   "common.sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
   "common.show-more": "Hiển thị thêm",
+  "common.skip": "Bỏ qua",
+  "common.success": "Thành công",
+  "common.task": "Tác vụ",
+  "common.troubleshoot": "Khắc phục sự cố",
   "common.unknown": "Không xác định",
   "common.unlimited": "Không giới hạn",
   "common.updated": "Đã cập nhật",
@@ -400,7 +436,17 @@
       }
     },
     "issue-review": {
-      "generating-approval-flow": "Đang tạo quy trình phê duyệt"
+      "and-n-other-users": "{{names}} và {{count}} người dùng khác",
+      "approved-by": "Được chấp thuận bởi",
+      "disallow-approve-reason": {
+        "some-task-checks-are-still-running": "Some task checks are still running.",
+        "some-task-checks-didnt-pass": "Some task checks didn't pass."
+      },
+      "generating-approval-flow": "Đang tạo quy trình phê duyệt",
+      "re-request-review": "Yêu cầu xem xét lại",
+      "re-request-review-success": "Yêu cầu xem xét lại đã được thực hiện thành công.",
+      "rejected-by": "Bị từ chối bởi",
+      "self-approval-not-allowed": "Không được phép tự phê duyệt cho dự án này. Bạn không thể phê duyệt với tư cách là người sáng tạo."
     },
     "risk": {
       "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
@@ -437,6 +483,9 @@
     },
     "self": "Phê duyệt tùy chỉnh"
   },
+  "custom-approval.issue-review.approved-issue": "approved issue",
+  "custom-approval.issue-review.re-requested-review": "re-requested issue review",
+  "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "Địa chỉ nút bổ sung",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
@@ -585,12 +634,7 @@
   "database.filter-database": "Lọc cơ sở dữ liệu",
   "database.labels": "Nhãn cơ sở dữ liệu",
   "database.revision.delete-confirm-dialog": "Thao tác này sẽ xóa các bản sửa đổi đã áp dụng này và lược đồ cơ sở dữ liệu sẽ không bị thay đổi. Hành động này không thể hoàn tác.",
-  "database.revision.import-revision": "Nhập bản sửa đổi",
-  "database.revision.invalid-version-format": "Phiên bản phải là các phần số được phân tách bằng dấu chấm (ví dụ: 1.0.0)",
   "database.revision.self": "Phiên bản",
-  "database.revision.type-declarative": "Khai báo",
-  "database.revision.type-versioned": "Phiên bản",
-  "database.revision.version-already-exists": "Phiên bản này đã tồn tại trong cơ sở dữ liệu",
   "database.successfully-exported-schema": "Đã xuất schema thành công",
   "database.sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
   "database.sync-database": "Đồng bộ cơ sở dữ liệu",
@@ -647,6 +691,7 @@
   "export-data": {
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
   },
+  "export-data.password-optional": "Mật khẩu (không bắt buộc)",
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
@@ -975,6 +1020,7 @@
   "instance.scan-interval.self": "Khoảng thời gian quét",
   "instance.section.basic-info": "Thông tin cơ bản",
   "instance.section.connection": "Kết nối",
+  "instance.select-database-user": "Chọn người dùng cơ sở dữ liệu",
   "instance.sentence.aws-rds.mysql.template": "Dưới đây là ví dụ để tạo người dùng {{user}}@% và cấp cho người dùng các đặc quyền cần thiết.",
   "instance.sentence.aws-rds.postgresql.template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' và cấp cho người dùng các đặc quyền cần thiết.",
   "instance.sentence.console.snowflake": "URL bảng điều khiển bên ngoài quản lý phiên bản này (ví dụ: bảng điều khiển AWS RDS, bảng điều khiển phiên bản cơ sở dữ liệu nội bộ của bạn)",
@@ -1020,6 +1066,11 @@
   "instance.users": "Người dùng",
   "instance.your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn",
   "issue": {
+    "access-grant": {
+      "details": "Access Grant Details",
+      "expired-at": "Expired at"
+    },
+    "action-anyway": "{{action}} bằng mọi cách",
     "advanced-search": {
       "filter": "Bộ lọc",
       "scope": {
@@ -1064,6 +1115,9 @@
         }
       }
     },
+    "approval-flow": {
+      "self": "Quy trình phê duyệt"
+    },
     "batch-transition": {
       "close": "Đóng",
       "closed": "đã đóng",
@@ -1071,13 +1125,22 @@
       "reopen": "Mở lại",
       "reopened": "đã mở lại"
     },
+    "checks-manual-rollout-hint": "Phê duyệt đã hoàn tất, nhưng rollout không được tạo tự động vì kế hoạch này vẫn còn kiểm tra lỗi. Hãy vào Plan để tiếp tục.",
     "data-export": {
+      "download-tooltip": "Có sẵn trong 24 giờ",
+      "file-expired": "Tệp đã hết hạn",
       "format": "Định dạng",
       "limits": "Giới hạn",
       "options": "Tùy chọn"
     },
     "labels": "Nhãn vấn đề",
     "leave-a-comment": "Để lại bình luận...",
+    "review": {
+      "approve-description": "Gửi phản hồi và phê duyệt vấn đề này.",
+      "comment-description": "Gửi phản hồi chung mà không cần phê duyệt",
+      "reject-description": "Gửi phản hồi và yêu cầu thay đổi",
+      "self": "Xem xét"
+    },
     "risk-level": {
       "filter": "Lọc theo mức độ rủi ro",
       "high": "Cao",
@@ -1086,8 +1149,10 @@
       "self": "Mức độ rủi ro"
     },
     "role-grant": {
-      "all-databases": "Tất cả",
+      "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "details": "Role Grant Details",
+      "expired-at": "Expired at",
       "manually-select": "Chọn thủ công",
       "use-cel": "Sử dụng biểu thức CEL"
     },
@@ -1097,6 +1162,12 @@
       "descending": "Giảm dần",
       "sort": "Sắp xếp",
       "updated": "Thời gian cập nhật"
+    },
+    "status-transition": {
+      "modal": {
+        "close": "Đóng vấn đề?",
+        "reopen": "Mở lại vấn đề?"
+      }
     },
     "subtitle": "Các vấn đề bao gồm thay đổi cơ sở dữ liệu, xuất dữ liệu và yêu cầu truy cập. Cần xem xét và phê duyệt trước khi thực hiện.",
     "table": {
@@ -1109,10 +1180,33 @@
       "updated": "Đã cập nhật",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Yêu cầu vai trò",
+      "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "Đang chờ phê duyệt"
   },
+  "issue.comment-editor.nothing-to-preview": "Nothing to preview",
+  "issue.comment-editor.preview": "Preview",
+  "issue.comment-editor.toolbar.bold": "Insert bold text",
+  "issue.comment-editor.toolbar.code": "Insert SQL code snippet",
+  "issue.comment-editor.toolbar.hashtag": "Insert hashtag",
+  "issue.comment-editor.toolbar.header": "Insert heading text",
+  "issue.comment-editor.toolbar.link": "Insert a link",
+  "issue.comment-editor.write": "Write",
+  "issue.data-export.format": "Định dạng",
+  "issue.data-export.limits": "Giới hạn",
+  "issue.data-export.options": "Tùy chọn",
+  "issue.issue-name": "Issue name",
+  "issue.no-description-provided": "No description provided",
+  "issue.options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
+  "issue.overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
+  "issue.review.self": "Review",
+  "issue.statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
   "issue.task-run.logs": "Nhật ký",
+  "issue.transaction-mode.label": "Chế độ giao dịch",
+  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
   "label": {
     "add-label": "Thêm nhãn",
     "empty-label-value": "Trống",
@@ -1143,6 +1237,9 @@
     "checks": {
       "self": "Kiểm tra"
     },
+    "editor": {
+      "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
+    },
     "navigator": {
       "review": "Xem xét"
     },
@@ -1153,6 +1250,30 @@
       "title": "Mục tiêu"
     }
   },
+  "plan.checks.failed-to-run": "Failed to run plan checks",
+  "plan.checks.no-check-results": "No check results",
+  "plan.checks.no-results-match-filters": "No results match your filters",
+  "plan.checks.started": "Plan checks started",
+  "plan.go-to-plan-page": "Đi tới trang kế hoạch",
+  "plan.isolation-level.read-committed": "Đọc đã cam kết",
+  "plan.isolation-level.read-uncommitted": "Đọc chưa cam kết",
+  "plan.isolation-level.repeatable-read": "Đọc lặp lại",
+  "plan.isolation-level.self": "Mức Độ Cô Lập",
+  "plan.isolation-level.serializable": "Tuần tự hóa",
+  "plan.navigator.checks": "Checks",
+  "plan.navigator.statement-empty": "Câu lệnh đang trống",
+  "plan.options.self": "Tùy chọn",
+  "plan.overview.no-checks": "No checks",
+  "plan.ready-for-review": "Ready for Review",
+  "plan.run": "Run",
+  "plan.select-isolation-level": "Chọn mức độ cô lập",
+  "plan.spec.change": "Change",
+  "plan.spec.type.database-change": "Thay đổi cơ sở dữ liệu",
+  "plan.targets.no-targets-found": "Không tìm thấy mục tiêu",
+  "plan.targets.non-env-warning.one": "{{count}} cơ sở dữ liệu sẽ bị loại khỏi rollout vì không có môi trường hiệu lực:",
+  "plan.targets.non-env-warning.other": "{{count}} cơ sở dữ liệu sẽ bị loại khỏi rollout vì không có môi trường hiệu lực:",
+  "plan.targets.title": "Mục tiêu",
+  "plan.targets.view-all": "Xem tất cả ({{count}})",
   "policy": {
     "environment-tier": {
       "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
@@ -1213,6 +1334,21 @@
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "Dự án này đã tắt tính năng yêu cầu vai trò.",
+          "can-grant-access-directly": "Bạn đã có {{permission}}, nên có thể cấp quyền truy cập trực tiếp.",
+          "feature-unavailable": "Quy trình yêu cầu vai trò không khả dụng trong gói hiện tại."
+        },
+        "expiration-exceeds-max": "Thời gian hết hạn không được vượt quá giới hạn {{days}} ngày của không gian làm việc.",
+        "expiration-must-be-future": "Thời gian hết hạn phải ở tương lai.",
+        "failed-to-build-expression": "Không thể xây dựng biểu thức CEL. Vui lòng thử lại.",
+        "labels-misconfigured": {
+          "description": "Dự án này yêu cầu nhãn vấn đề, nhưng chưa có nhãn nào được cấu hình. Vui lòng liên hệ chủ sở hữu dự án để thêm nhãn trước khi yêu cầu vai trò.",
+          "title": "Dự án yêu cầu nhãn vấn đề nhưng chưa cấu hình"
+        },
+        "max-expiration-hint": "Tối đa được phép theo chính sách không gian làm việc: {{days}} ngày."
+      },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
     "settings": {
@@ -1247,6 +1383,7 @@
           "self": "Bắt buộc đánh giá SQL"
         },
         "labels": {
+          "configure-labels": "Cấu hình nhãn",
           "description": "Có thể gắn nhãn vào các vấn đề để quản lý",
           "force-issue-labels": {
             "description": "Yêu cầu ít nhất một nhãn khi tạo vấn đề.",
@@ -1324,10 +1461,23 @@
     "request-export-data": "Yêu cầu Xuất"
   },
   "release": {
+    "and-n-more-files": "and {{count}} more files",
+    "change-tip": "This change is linked to a release artifact.",
+    "file-type": {
+      "declarative": "Declarative",
+      "unspecified": "Unspecified",
+      "versioned": "Versioned"
+    },
     "files": "Tệp",
+    "not-found": "Release not found",
     "releases": "Bản phát hành",
     "total-files": "Tổng số {{}} tệp",
-    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps."
+    "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
+    "vcs-source": "VCS Source",
+    "vcs-type": {
+      "unspecified": "Unknown VCS"
+    },
+    "view-all-files": "View all files"
   },
   "remind": {
     "release": {
@@ -1381,7 +1531,8 @@
     "stage": {
       "self_one": "Giai đoạn",
       "self_other": "Các giai đoạn"
-    }
+    },
+    "task-execution-errors": "Lỗi thực hiện tác vụ"
   },
   "schema-editor": {
     "raw-sql": "Raw SQL"
@@ -1895,6 +2046,7 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
@@ -1903,6 +2055,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Trình soạn thảo SQL",
+    "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -1953,8 +2106,11 @@
       }
     },
     "delete": "Xóa chính sách đánh giá SQL",
+    "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
     "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc lint SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng thực tiễn tốt nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng Trình soạn thảo SQL để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách đánh giá SQL đã định cấu hình.",
+    "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
     "disabled": "Đánh giá SQL bị vô hiệu hóa",
+    "enable-description": "Bật chính sách này sẽ bắt đầu áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm.",
     "enabled-rules": "Quy tắc được bật",
     "engine": {
       "mariadb": "MariaDB",
@@ -2769,11 +2925,40 @@
   "subscription.usage.instance-count.runoutof": "Bạn đã hết hạn ngạch {{total}} phiên bản của mình.",
   "subscription.usage.instance-count.title": "Giới hạn số lượng phiên bản",
   "task": {
+    "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "checking": "Đang kiểm tra...",
+    "created": "Đã tạo",
+    "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Thời gian dự kiến phải ở trong tương lai"
+    },
+    "execution-time": "Thời gian thực thi",
+    "no-permission": "Không có quyền thực hiện hành động này",
+    "run-immediately": {
+      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
+      "self": "Chạy ngay lập tức"
+    },
+    "run-task": "Chạy tác vụ | Chạy tác vụ",
+    "schedule-for-later": {
+      "description": "Đặt ngày và giờ cụ thể để các tác vụ tự động bắt đầu chạy. Hữu ích cho các khung giờ bảo trì hoặc ngoài giờ cao điểm.",
+      "self": "Lên lịch cho sau"
+    },
+    "select-scheduled-time": "Chọn thời gian đã lên lịch",
+    "skip-prior-backup": "Bỏ qua sao lưu trước",
+    "skip-prior-backup-description": "Bỏ qua sao lưu dữ liệu tự động trước khi áp dụng thay đổi",
+    "skip-task": "Bỏ qua nhiệm vụ | Bỏ qua nhiệm vụ",
+    "started": "Bắt đầu",
     "status": {
-      "running": "Đang chạy"
+      "canceled": "Đã hủy",
+      "done": "Hoàn tất",
+      "failed": "Thất bại",
+      "not-started": "Chưa bắt đầu",
+      "pending": "Đang chờ",
+      "running": "Đang chạy",
+      "skipped": "Đã bỏ qua"
     }
   },
+  "task-run.history": "Lịch sử thực thi",
   "task-run.log-detail.backing-up": "đang sao lưu...",
   "task-run.log-detail.backup-completed": "đã hoàn thành ({{count}} bảng)",
   "task-run.log-detail.completed": "Đã hoàn thành",
@@ -2794,7 +2979,18 @@
   "task-run.log-viewer.multiple-replicas-notice": "Phát hiện khởi động lại máy chủ trong quá trình thực thi. Nhật ký được nhóm theo bản sao.",
   "task-run.log-viewer.replica-n": "Bản sao #{n}",
   "task-run.log-viewer.summary": "{sections} phần · {entries} mục",
+  "task-run.status.enqueued": "Đang chờ thực thi.",
+  "task-run.status.enqueued-with-rollout-time": "Đang chờ thực thi sau {{time}}.",
+  "task-run.status.waiting-max-tasks-per-rollout": "Đang chờ các tác vụ khác hoàn thành. Đã đạt đến giới hạn số lượng tác vụ đang chạy tối đa cho mỗi lần triển khai. Báo cáo gần nhất lúc {{time}}.",
   "task.affected-rows": "Hàng bị ảnh hưởng",
+  "task.check-type.affected-rows.description": "Estimated by statistical information.",
+  "task.check-type.affected-rows.self": "Affected rows",
+  "task.check-type.ghost-sync": "gh-ost sync",
+  "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
+  "task.check-type.sql-review.self": "SQL review",
+  "task.check-type.summary-report": "Summary report",
+  "task.online-migration.self": "Di chuyển trực tuyến",
+  "task.prior-backup": "Sao lưu trước",
   "two-factor": {
     "description": "Xác thực hai yếu tố cung cấp một lớp bảo mật bổ sung cho các tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng xác thực của bạn tạo.",
     "disable": {

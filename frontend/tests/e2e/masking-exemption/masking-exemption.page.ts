@@ -4,26 +4,10 @@ export class MaskingExemptionPage {
   readonly page: Page;
   private baseURL: string;
 
-  // Navigation
   readonly grantExemptionButton: Locator;
-
-  // Tabs
   readonly activeTab: Locator;
   readonly expiredTab: Locator;
   readonly allTab: Locator;
-
-  // Search
-  readonly searchBar: Locator;
-
-  // Member list
-  readonly memberList: Locator;
-
-  // Detail panel
-  readonly detailPanel: Locator;
-
-  // Revoke dialog
-  readonly revokeConfirmButton: Locator;
-  readonly revokeCancelButton: Locator;
 
   constructor(page: Page, baseURL = "") {
     this.page = page;
@@ -31,18 +15,9 @@ export class MaskingExemptionPage {
     this.grantExemptionButton = page.getByRole("button", {
       name: /grant exemption/i,
     });
-    this.activeTab = page.getByRole("button", { name: "Active" });
-    this.expiredTab = page.getByRole("button", { name: "Expired" });
-    this.allTab = page.getByRole("button", { name: "All" });
-    this.searchBar = page.getByPlaceholder(/filter/i);
-    this.memberList = page.locator("[class*='divide-y']").first();
-    this.detailPanel = page.locator("[class*='flex-1 min-w-0']").first();
-    this.revokeConfirmButton = page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Confirm" });
-    this.revokeCancelButton = page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Cancel" });
+    this.activeTab = page.getByRole("tab", { name: "Active" });
+    this.expiredTab = page.getByRole("tab", { name: "Expired" });
+    this.allTab = page.getByRole("tab", { name: "All" });
   }
 
   async goto(projectId: string) {
@@ -59,43 +34,23 @@ export class MaskingExemptionPage {
       .waitFor({ timeout: 10000 });
   }
 
+  // Select a member by email. Uses data-testid for a stable locator,
+  // filtered by the visible email text.
   getMemberItem(email: string): Locator {
-    return this.page.locator(`[class*="cursor-pointer"]`).filter({
-      hasText: email,
-    });
+    return this.page
+      .getByTestId("exemption-member-item")
+      .filter({ hasText: email });
   }
 
   async selectMember(email: string) {
-    await this.getMemberItem(email).click();
-  }
-
-  getGrantCard(title: string): Locator {
-    return this.page.locator("[class*='border border-gray']").filter({
-      hasText: title,
-    });
-  }
-
-  getRevokeButton(grantTitle: string): Locator {
-    return this.getGrantCard(grantTitle).getByRole("button", {
-      name: "Revoke",
-    });
-  }
-
-  async revokeGrant(grantTitle: string) {
-    await this.getRevokeButton(grantTitle).click();
-    await this.revokeConfirmButton.click();
-    // Wait for optimistic update
-    await this.page.waitForTimeout(500);
-  }
-
-  async getMemberCount(): Promise<number> {
-    return this.page.locator("[class*='cursor-pointer']").filter({
-      has: this.page.locator("[class*='rounded-full']"),
-    }).count();
-  }
-
-  getExpiryLabel(grantTitle: string): Locator {
-    return this.getGrantCard(grantTitle).locator("[class*='text-xs']").first();
+    // Fail fast (10s) with a descriptive error if the member item is missing,
+    // instead of letting the surrounding test timeout drag out to 120s.
+    const item = this.getMemberItem(email).first();
+    await expect(
+      item,
+      `member item for "${email}" (data-testid="exemption-member-item") not found`
+    ).toBeVisible({ timeout: 10000 });
+    await item.click();
   }
 }
 
@@ -104,29 +59,17 @@ export class GrantExemptionPage {
   private baseURL: string;
 
   readonly allRadio: Locator;
-  readonly expressionRadio: Locator;
-  readonly selectRadio: Locator;
   readonly reasonInput: Locator;
-  readonly expirationInput: Locator;
   readonly accountSelect: Locator;
   readonly confirmButton: Locator;
-  readonly cancelButton: Locator;
 
   constructor(page: Page, baseURL = "") {
     this.page = page;
     this.baseURL = baseURL;
-    this.allRadio = page.getByRole("radio", { name: "All", exact: true });
-    this.expressionRadio = page.getByRole("radio", {
-      name: /use cel/i,
-    });
-    this.selectRadio = page.getByRole("radio", {
-      name: /manually select/i,
-    });
+    this.allRadio = page.getByRole("radio", { name: "All databases", exact: true });
     this.reasonInput = page.getByPlaceholder(/description/i);
-    this.expirationInput = page.getByRole("textbox").nth(1);
     this.accountSelect = page.getByText("Select accounts", { exact: true });
     this.confirmButton = page.getByRole("button", { name: "Confirm" });
-    this.cancelButton = page.getByRole("button", { name: "Cancel" });
   }
 
   async goto(projectId: string) {
@@ -195,11 +138,6 @@ export class SqlEditorPage {
     // Wait for results to load (look for "N rows" or "N row" indicator)
     await this.page.getByText(/\d+ rows?/).first().waitFor({ timeout: 15000 }).catch(() => {});
     await this.page.waitForTimeout(500);
-  }
-
-  async hasResultsTable(): Promise<boolean> {
-    // Check for the "rows" indicator that appears after query execution
-    return (await this.page.getByText(/\d+ rows?/).count()) > 0;
   }
 
   async resultContainsText(text: string, timeout = 15000): Promise<boolean> {

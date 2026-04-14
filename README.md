@@ -163,10 +163,3 @@ alias y="pnpm --dir frontend i && pnpm --dir frontend dev"
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=bytebase/bytebase%2Cliquibase/liquibase%2Cflyway/flyway%2Cdbeaver/cloudbeaver&type=date&legend=top-left" />
  </picture>
 </a>
-
----
-
-<p align="center">
-  <b>Join us in revolutionizing database management!</b><br>
-  <a href="https://cal.com/bytebase/product-walkthrough">Book a demo</a>
-</p>

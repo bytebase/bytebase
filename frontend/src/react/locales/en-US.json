@@ -1,4 +1,12 @@
 {
+  "activity.sentence.canceled-issue": "closed the issue",
+  "activity.sentence.changed-description": "changed description",
+  "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
+  "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.created-issue": "created issue",
+  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.reopened-issue": "reopened issue",
+  "activity.sentence.resolved-issue": "approved the issue",
   "agent": {
     "active-only-chats": "Active only",
     "ai-not-configured": {
@@ -36,7 +44,6 @@
     "pending-input-hint": "Please provide input above",
     "rename-chat-placeholder": "Enter chat name",
     "reply": "Reply",
-    "resize": "Resize",
     "result": "Result",
     "retry-last-chat-turn": "Retry",
     "send": "Send",
@@ -133,6 +140,7 @@
     "address": "Address",
     "admin": "Admin",
     "all": "All",
+    "approve": "Approve",
     "approved": "Approved",
     "archive": "Archive",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
@@ -183,6 +191,7 @@
     "dismiss": "Dismiss",
     "download": "Download",
     "draft": "Draft",
+    "duration": "Duration",
     "edit": "Edit",
     "email": "Email",
     "email-ascii-only": "Email addresses only support ASCII characters (letters, numbers, and symbols like . _ - +).",
@@ -227,6 +236,7 @@
     "minutes": "Minutes",
     "missing-required-permission": "Missing required permissions {{permissions}}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {{resource}}",
+    "more": "More",
     "n-items-selected": "{{n}} items selected",
     "n-more": "+{{n}} more",
     "name": "Name",
@@ -239,12 +249,14 @@
     "password": "Password",
     "pending": "Pending",
     "permissions": "Permissions",
+    "plan": "Plan",
     "previous": "Previous",
     "project": "Project",
     "projects": "Projects",
     "read-only": "Read-only",
     "reason": "Reason",
     "regenerate": "Regenerate",
+    "reject": "Reject",
     "rejected": "Rejected",
     "release": "Release",
     "reorder": "Reorder",
@@ -264,6 +276,7 @@
     },
     "rollback": "Rollback",
     "rows-per-page": "Rows per page",
+    "run": "Run",
     "save": "Save",
     "schema": "Schema",
     "scope": "Scope",
@@ -278,9 +291,11 @@
     "skipped": "Skipped",
     "snapshot": "Snapshot",
     "sql": "SQL",
+    "stage": "Stage",
     "state": "State",
     "statement": "Statement",
     "status": "Status",
+    "submit": "Submit",
     "system": "System",
     "table": "Table",
     "title": "Title",
@@ -309,6 +324,7 @@
     "write-only": "write only",
     "you": "you"
   },
+  "common.activity": "Activity",
   "common.add": "Add",
   "common.admin": "Admin",
   "common.all": "All",
@@ -318,41 +334,61 @@
   "common.cannot-undo-this-action": "You cannot undo this action",
   "common.catalog": "Catalog",
   "common.close": "Close",
+  "common.collapse": "Collapse",
+  "common.column": "Column",
+  "common.comment": "Comment",
   "common.confirm": "Confirm",
   "common.continue-anyway": "Continue anyway",
+  "common.copy": "Copy",
   "common.create": "Create",
   "common.creating": "Creating",
   "common.custom": "Custom",
   "common.database": "Database",
+  "common.database-group": "Database group",
   "common.databases": "Databases",
   "common.default": "default",
   "common.delete": "Delete",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Deleted",
+  "common.detail": "Detail",
   "common.detailed-guide": "detailed guide",
   "common.edit": "Edit",
+  "common.edited": "edited",
   "common.environment": "Environment",
   "common.import": "Import",
+  "common.issue": "Issue",
   "common.key": "Key",
   "common.labels": "Labels",
   "common.learn-more": "Learn more",
+  "common.line": "Line",
   "common.load-more": "Load more",
   "common.loading": "Loading",
   "common.members": "Members",
   "common.minutes": "Minutes",
+  "common.n-more": "{{n}} more",
   "common.no-data": "No data",
+  "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.open": "Open",
   "common.optional": "Optional",
   "common.or": "or",
   "common.overview": "Overview",
   "common.password": "Password",
   "common.project": "Project",
   "common.read-only": "Read-only",
+  "common.remaining": "remaining",
   "common.remove": "Remove",
   "common.removed": "Removed",
   "common.restore": "Restore",
+  "common.retry": "Retry",
+  "common.role.self": "Role",
   "common.rollout": "Rollout",
+  "common.save": "Save",
   "common.sensitive-placeholder": "Sensitive - write only",
   "common.show-more": "Show more",
+  "common.skip": "Skip",
+  "common.success": "Success",
+  "common.task": "Task",
+  "common.troubleshoot": "Troubleshoot",
   "common.unknown": "Unknown",
   "common.unlimited": "Unlimited",
   "common.updated": "Updated",
@@ -400,7 +436,17 @@
       }
     },
     "issue-review": {
-      "generating-approval-flow": "Generating approval flow"
+      "and-n-other-users": "{{names}} and {{count}} other users",
+      "approved-by": "Approved by",
+      "disallow-approve-reason": {
+        "some-task-checks-are-still-running": "Some task checks are still running.",
+        "some-task-checks-didnt-pass": "Some task checks didn't pass."
+      },
+      "generating-approval-flow": "Generating approval flow",
+      "re-request-review": "Re-request review",
+      "re-request-review-success": "Review re-requested successfully",
+      "rejected-by": "Rejected by",
+      "self-approval-not-allowed": "Self-approval is not allowed in this project. So you cannot approve your own issue."
     },
     "risk": {
       "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
@@ -437,6 +483,9 @@
     },
     "self": "Custom Approval"
   },
+  "custom-approval.issue-review.approved-issue": "approved issue",
+  "custom-approval.issue-review.re-requested-review": "re-requested issue review",
+  "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "Additional Node Addresses",
     "connection-string-schema": "Connection String Schema",
@@ -585,12 +634,7 @@
   "database.filter-database": "Filter database",
   "database.labels": "Database Labels",
   "database.revision.delete-confirm-dialog": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone.",
-  "database.revision.import-revision": "Import Revision",
-  "database.revision.invalid-version-format": "Version must be numeric parts separated by dots (e.g., 1.0.0)",
   "database.revision.self": "Revision",
-  "database.revision.type-declarative": "Declarative",
-  "database.revision.type-versioned": "Versioned",
-  "database.revision.version-already-exists": "This version already exists in the database",
   "database.successfully-exported-schema": "Successfully exported schema",
   "database.sync-complete-for-instance": "Sync complete for instance '{{0}}'",
   "database.sync-database": "Sync Database",
@@ -647,6 +691,7 @@
   "export-data": {
     "password-optional": "Encrypt with password (Optional)"
   },
+  "export-data.password-optional": "Password (optional)",
   "gitops": {
     "checklist": {
       "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
@@ -975,6 +1020,7 @@
   "instance.scan-interval.self": "Scan Interval",
   "instance.section.basic-info": "Basic Info",
   "instance.section.connection": "Connection",
+  "instance.select-database-user": "Select database user",
   "instance.sentence.aws-rds.mysql.template": "Below is an example to create user {{user}}@% and grant the user with the needed privileges.",
   "instance.sentence.aws-rds.postgresql.template": "Below is an example to create user '{{user}}' and grant the user with the needed privileges.",
   "instance.sentence.console.snowflake": "The external console URL managing this instance (e.g. AWS RDS console, your in-house DB instance console)",
@@ -1020,6 +1066,11 @@
   "instance.users": "Users",
   "instance.your-snowflake-account-locator": "Your Snowflake account locator",
   "issue": {
+    "access-grant": {
+      "details": "Access Grant Details",
+      "expired-at": "Expired at"
+    },
+    "action-anyway": "{{action}} anyway",
     "advanced-search": {
       "filter": "Filter",
       "scope": {
@@ -1064,6 +1115,9 @@
         }
       }
     },
+    "approval-flow": {
+      "self": "Approval Flow"
+    },
     "batch-transition": {
       "close": "Close",
       "closed": "closed",
@@ -1071,13 +1125,22 @@
       "reopen": "Reopen",
       "reopened": "reopened"
     },
+    "checks-manual-rollout-hint": "Approval is complete, but rollout wasn't created automatically because this plan still has failed checks. Go to Plan to continue.",
     "data-export": {
+      "download-tooltip": "Available for 24 hours",
+      "file-expired": "File Expired",
       "format": "Format",
       "limits": "Limits",
       "options": "Options"
     },
     "labels": "Issue Labels",
     "leave-a-comment": "Leave a comment...",
+    "review": {
+      "approve-description": "Submit feedback and approve this issue",
+      "comment-description": "Submit general feedback without approval",
+      "reject-description": "Submit feedback and request changes",
+      "self": "Review"
+    },
     "risk-level": {
       "filter": "Filter issues by risk level",
       "high": "High",
@@ -1086,8 +1149,10 @@
       "self": "Risk level"
     },
     "role-grant": {
-      "all-databases": "All",
+      "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
+      "details": "Role Grant Details",
+      "expired-at": "Expired at",
       "manually-select": "Manually select",
       "use-cel": "Use CEL Expression"
     },
@@ -1097,6 +1162,12 @@
       "descending": "Descending",
       "sort": "Sort",
       "updated": "Update time"
+    },
+    "status-transition": {
+      "modal": {
+        "close": "Close issue?",
+        "reopen": "Reopen issue?"
+      }
     },
     "subtitle": "Issues cover database changes, data exports, and access requests. Review and approve before execution.",
     "table": {
@@ -1109,10 +1180,33 @@
       "updated": "Updated",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Request role",
+      "request-specific-role": "Request \"{{role}}\" role"
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "Waiting for Approval"
   },
+  "issue.comment-editor.nothing-to-preview": "Nothing to preview",
+  "issue.comment-editor.preview": "Preview",
+  "issue.comment-editor.toolbar.bold": "Insert bold text",
+  "issue.comment-editor.toolbar.code": "Insert SQL code snippet",
+  "issue.comment-editor.toolbar.hashtag": "Insert hashtag",
+  "issue.comment-editor.toolbar.header": "Insert heading text",
+  "issue.comment-editor.toolbar.link": "Insert a link",
+  "issue.comment-editor.write": "Write",
+  "issue.data-export.format": "Format",
+  "issue.data-export.limits": "Limits",
+  "issue.data-export.options": "Options",
+  "issue.issue-name": "Issue name",
+  "issue.no-description-provided": "No description provided",
+  "issue.options-disabled-due-to-oversize": "Options are disabled because the SQL is oversized.",
+  "issue.overwrite-current-statement": "Overwrite current SQL statement",
+  "issue.review.self": "Review",
+  "issue.statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
   "issue.task-run.logs": "Logs",
+  "issue.transaction-mode.label": "Transaction Mode",
+  "issue.upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
   "label": {
     "add-label": "Add label",
     "empty-label-value": "Empty",
@@ -1143,6 +1237,9 @@
     "checks": {
       "self": "Checks"
     },
+    "editor": {
+      "save-changes-before-continuing": "Please save or cancel your changes before continuing"
+    },
     "navigator": {
       "review": "Review"
     },
@@ -1153,6 +1250,30 @@
       "title": "Targets"
     }
   },
+  "plan.checks.failed-to-run": "Failed to run plan checks",
+  "plan.checks.no-check-results": "No check results",
+  "plan.checks.no-results-match-filters": "No results match your filters",
+  "plan.checks.started": "Plan checks started",
+  "plan.go-to-plan-page": "Go to plan page",
+  "plan.isolation-level.read-committed": "Read Committed",
+  "plan.isolation-level.read-uncommitted": "Read Uncommitted",
+  "plan.isolation-level.repeatable-read": "Repeatable Read",
+  "plan.isolation-level.self": "Isolation Level",
+  "plan.isolation-level.serializable": "Serializable",
+  "plan.navigator.checks": "Checks",
+  "plan.navigator.statement-empty": "Statement is empty",
+  "plan.options.self": "Options",
+  "plan.overview.no-checks": "No checks",
+  "plan.ready-for-review": "Ready for Review",
+  "plan.run": "Run",
+  "plan.select-isolation-level": "Select isolation level",
+  "plan.spec.change": "Change",
+  "plan.spec.type.database-change": "Database Change",
+  "plan.targets.no-targets-found": "No targets found",
+  "plan.targets.non-env-warning.one": "{{count}} database will be excluded from rollout because it has no effective environment:",
+  "plan.targets.non-env-warning.other": "{{count}} databases will be excluded from rollout because they have no effective environment:",
+  "plan.targets.title": "Targets",
+  "plan.targets.view-all": "View all ({{count}})",
   "policy": {
     "environment-tier": {
       "description": "The environment will appear differently from other environments.",
@@ -1213,6 +1334,21 @@
       "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
       "edit-member": "Edit member - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "Allow request role is disabled for this project.",
+          "can-grant-access-directly": "You already have {{permission}}, so you can grant access directly.",
+          "feature-unavailable": "Request role workflow is unavailable on the current plan."
+        },
+        "expiration-exceeds-max": "Expiration cannot exceed the workspace limit of {{days}} day(s).",
+        "expiration-must-be-future": "Expiration must be in the future.",
+        "failed-to-build-expression": "Failed to build CEL expression. Please try again.",
+        "labels-misconfigured": {
+          "description": "This project requires issue labels, but no labels have been configured. Please contact the project owner to add labels before requesting a role.",
+          "title": "Issue labels required but not configured"
+        },
+        "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
+      },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
     "settings": {
@@ -1247,6 +1383,7 @@
           "self": "Enforce SQL review"
         },
         "labels": {
+          "configure-labels": "Configure labels",
           "description": "Labels can be attached in the issues for management",
           "force-issue-labels": {
             "description": "Require at least one label when creating issues.",
@@ -1324,10 +1461,23 @@
     "request-export-data": "Request Export"
   },
   "release": {
+    "and-n-more-files": "and {{count}} more files",
+    "change-tip": "This change is linked to a release artifact.",
+    "file-type": {
+      "declarative": "Declarative",
+      "unspecified": "Unspecified",
+      "versioned": "Versioned"
+    },
     "files": "Files",
+    "not-found": "Release not found",
     "releases": "Releases",
     "total-files": "Total {{}} files",
-    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow."
+    "usage-description": "A release is a versioned application artifact whose deployment to an environment is triggered by a GitOps workflow.",
+    "vcs-source": "VCS Source",
+    "vcs-type": {
+      "unspecified": "Unknown VCS"
+    },
+    "view-all-files": "View all files"
   },
   "remind": {
     "release": {
@@ -1381,7 +1531,8 @@
     "stage": {
       "self_one": "Stage",
       "self_other": "Stages"
-    }
+    },
+    "task-execution-errors": "Task execution errors"
   },
   "schema-editor": {
     "raw-sql": "Raw SQL"
@@ -1895,6 +2046,7 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
@@ -1903,6 +2055,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
+    "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -1953,8 +2106,11 @@
       }
     },
     "delete": "Delete SQL review policy",
+    "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
     "description": "SQL review policy can define different set of SQL lint rules for the respective environments. It helps teams to adopt SQL best practice and enforce schema consistency across different databases. Whenever you attempt a DDL/DML change or use SQL Editor to query data, the query will be checked against the configured SQL review policy.",
+    "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
     "disabled": "SQL review is disabled",
+    "enable-description": "Enabling this policy will start enforcing its rules on the attached resources.",
     "enabled-rules": "Enabled rules",
     "engine": {
       "mariadb": "MariaDB",
@@ -2769,11 +2925,40 @@
   "subscription.usage.instance-count.runoutof": "You have run out of your {{total}} instance quota.",
   "subscription.usage.instance-count.title": "Instance count limit",
   "task": {
+    "cancel-task": "Cancel task | Cancel tasks",
     "checking": "Checking...",
+    "created": "Created",
+    "data-export-creator-only": "Only the issue creator can execute data export tasks",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "Scheduled time must be in the future"
+    },
+    "execution-time": "Execution time",
+    "no-permission": "No permission to perform this action",
+    "run-immediately": {
+      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required.",
+      "self": "Run immediately"
+    },
+    "run-task": "Run task | Run tasks",
+    "schedule-for-later": {
+      "description": "Set a specific date and time for tasks to automatically start running. Useful for maintenance windows or off-peak hours.",
+      "self": "Schedule for later"
+    },
+    "select-scheduled-time": "Select scheduled time",
+    "skip-prior-backup": "Skip prior backup",
+    "skip-prior-backup-description": "Skip the automatic data backup before applying changes",
+    "skip-task": "Skip task | Skip tasks",
+    "started": "Started",
     "status": {
-      "running": "Running"
+      "canceled": "Canceled",
+      "done": "Done",
+      "failed": "Failed",
+      "not-started": "Not started",
+      "pending": "Pending",
+      "running": "Running",
+      "skipped": "Skipped"
     }
   },
+  "task-run.history": "Execution History",
   "task-run.log-detail.backing-up": "Backing up...",
   "task-run.log-detail.backup-completed": "completed ({{count}} tables)",
   "task-run.log-detail.completed": "Completed",
@@ -2794,7 +2979,18 @@
   "task-run.log-viewer.multiple-replicas-notice": "Server restart detected during execution. Logs are grouped by replica.",
   "task-run.log-viewer.replica-n": "Replica #{n}",
   "task-run.log-viewer.summary": "{sections} sections · {entries} entries",
+  "task-run.status.enqueued": "Waiting for execution.",
+  "task-run.status.enqueued-with-rollout-time": "Waiting to execute after {{time}}.",
+  "task-run.status.waiting-max-tasks-per-rollout": "Waiting for other tasks to finish. Maximum running tasks limit per rollout has been reached. Last report at {{time}}.",
   "task.affected-rows": "Affected rows",
+  "task.check-type.affected-rows.description": "Estimated by statistical information.",
+  "task.check-type.affected-rows.self": "Affected rows",
+  "task.check-type.ghost-sync": "gh-ost sync",
+  "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
+  "task.check-type.sql-review.self": "SQL review",
+  "task.check-type.summary-report": "Summary report",
+  "task.online-migration.self": "Online migration",
+  "task.prior-backup": "Prior backup",
   "two-factor": {
     "description": "Two-factor authentication provides an extra layer of security for member accounts. When signing in, you will be required to enter the security code generated by your Authenticator App.",
     "disable": {

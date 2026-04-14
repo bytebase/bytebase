@@ -57,26 +57,12 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 	// Workspace resolution order: request.parent -> JWT context -> default workspace (self-hosted).
 	var identityProviders []*store.IdentityProviderMessage
 
-	var workspaceID string
 	if req.Msg.Parent != "" {
-		id, err := common.GetWorkspaceID(req.Msg.Parent)
+		workspaceID, err := common.GetWorkspaceID(req.Msg.Parent)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		workspaceID = id
-	}
-	if workspaceID == "" {
-		workspaceID = common.GetWorkspaceIDFromContext(ctx)
-	}
-	if workspaceID == "" && !s.profile.SaaS {
-		defaultWorkspaceID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace id"))
-		}
-		workspaceID = defaultWorkspaceID
-	}
 
-	if workspaceID != "" {
 		wsIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &workspaceID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)

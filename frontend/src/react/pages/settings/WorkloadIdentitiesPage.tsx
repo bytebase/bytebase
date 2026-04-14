@@ -1,7 +1,7 @@
-import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
@@ -114,9 +114,51 @@ function WorkloadIdentityTable({
           ) : (
             users.map((user) => {
               const isDeleted = user.state === State.DELETED;
+              const canOpenDetail =
+                !!onUserSelected &&
+                (project
+                  ? hasProjectPermissionV2(project, "bb.workloadIdentities.get")
+                  : hasWorkspacePermissionV2("bb.workloadIdentities.get"));
+              const canDelete = project
+                ? hasProjectPermissionV2(
+                    project,
+                    "bb.workloadIdentities.delete"
+                  )
+                : hasWorkspacePermissionV2("bb.workloadIdentities.delete");
+              const canRestore = project
+                ? hasProjectPermissionV2(
+                    project,
+                    "bb.workloadIdentities.undelete"
+                  )
+                : hasWorkspacePermissionV2("bb.workloadIdentities.undelete");
 
               return (
-                <TableRow key={user.name}>
+                <TableRow
+                  key={user.name}
+                  className={
+                    canOpenDetail
+                      ? "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
+                      : undefined
+                  }
+                  tabIndex={canOpenDetail ? 0 : undefined}
+                  role={canOpenDetail ? "button" : undefined}
+                  aria-label={
+                    canOpenDetail ? user.title || user.email : undefined
+                  }
+                  onClick={
+                    canOpenDetail ? () => onUserSelected(user) : undefined
+                  }
+                  onKeyDown={
+                    canOpenDetail
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onUserSelected(user);
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   {/* Account column */}
                   <TableCell>
                     <div className="flex items-center gap-x-3">
@@ -126,7 +168,7 @@ function WorkloadIdentityTable({
                           className={
                             isDeleted
                               ? "line-through text-control-light font-medium"
-                              : "font-medium text-accent"
+                              : "font-medium text-main"
                           }
                         >
                           {user.title || user.email}
@@ -138,80 +180,48 @@ function WorkloadIdentityTable({
                     </div>
                   </TableCell>
 
-                  {/* Operations column */}
+                  {/* Operations column — destructive/secondary actions only.
+                      The row itself is clickable to open the detail sheet. */}
                   <TableCell>
                     <div className="flex justify-end gap-x-1">
-                      {!isDeleted && (
-                        <>
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.workloadIdentities.delete"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.workloadIdentities.delete"
-                              )) && (
-                            <Tooltip
-                              content={t(
-                                "settings.members.action.deactivate-confirm-title"
-                              )}
-                            >
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-error hover:text-error"
-                                onClick={() => handleDeactivate(user)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </Tooltip>
+                      {!isDeleted && canDelete && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.deactivate-confirm-title"
                           )}
-                          {(project
-                            ? hasProjectPermissionV2(
-                                project,
-                                "bb.workloadIdentities.get"
-                              )
-                            : hasWorkspacePermissionV2(
-                                "bb.workloadIdentities.get"
-                              )) &&
-                            onUserSelected && (
-                              <Tooltip content={t("common.edit")}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => onUserSelected(user)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </Tooltip>
-                            )}
-                        </>
-                      )}
-                      {isDeleted &&
-                        (project
-                          ? hasProjectPermissionV2(
-                              project,
-                              "bb.workloadIdentities.undelete"
-                            )
-                          : hasWorkspacePermissionV2(
-                              "bb.workloadIdentities.undelete"
-                            )) && (
-                          <Tooltip
-                            content={t(
-                              "settings.members.action.reactivate-confirm-title"
-                            )}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-error hover:text-error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeactivate(user);
+                            }}
                           >
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleRestore(user)}
-                            >
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
+                      {isDeleted && canRestore && (
+                        <Tooltip
+                          content={t(
+                            "settings.members.action.reactivate-confirm-title"
+                          )}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestore(user);
+                            }}
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -313,8 +323,26 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     }
   };
 
-  const handleUserSelected = (user: User) => {
-    const wi = workloadIdentityStore.getWorkloadIdentity(user.email);
+  // Sequence guard for async row-selection. Each click increments the
+  // counter; only the response from the latest click is allowed to update
+  // `editingWI`. Without this, fast double-clicks on different rows can
+  // resolve out of order and open the sheet with the wrong identity.
+  const selectSeqRef = useRef(0);
+  const handleUserSelected = async (user: User) => {
+    // Use getOrFetch so the full WorkloadIdentity (including
+    // workloadIdentityConfig with subjectPattern) is loaded before we open
+    // the edit Sheet. `getWorkloadIdentity` returns a stub with only
+    // name/email/title if the cache is empty — which it is on first click
+    // of a row, since listWorkloadIdentities doesn't populate the cache.
+    // Without this, the edit Sheet would see no config and leave
+    // Organization/Repository/Branch fields blank.
+    const seq = ++selectSeqRef.current;
+    const wi = await workloadIdentityStore.getOrFetchWorkloadIdentity(
+      user.email,
+      true
+    );
+    // Drop stale response — a later click superseded this request.
+    if (seq !== selectSeqRef.current) return;
     setEditingWI(wi);
     setShowDrawer(true);
   };
@@ -418,22 +446,21 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         )}
       </div>
 
-      {showDrawer && (
-        <CreateWorkloadIdentityDrawer
-          workloadIdentity={editingWI}
-          project={projectName}
-          onClose={() => {
-            setShowDrawer(false);
-            setEditingWI(undefined);
-          }}
-          onCreated={(wi) => {
-            activeData.updateCache([workloadIdentityToUser(wi)]);
-          }}
-          onUpdated={(wi) => {
-            activeData.updateCache([workloadIdentityToUser(wi)]);
-          }}
-        />
-      )}
+      <CreateWorkloadIdentitySheet
+        open={showDrawer}
+        workloadIdentity={editingWI}
+        project={projectName}
+        onClose={() => {
+          setShowDrawer(false);
+          setEditingWI(undefined);
+        }}
+        onCreated={(wi) => {
+          activeData.updateCache([workloadIdentityToUser(wi)]);
+        }}
+        onUpdated={(wi) => {
+          activeData.updateCache([workloadIdentityToUser(wi)]);
+        }}
+      />
     </div>
   );
 }

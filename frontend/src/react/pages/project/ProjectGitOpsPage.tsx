@@ -2,7 +2,7 @@ import { Check, ChevronDown, ChevronRight, Copy, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import gitopsWorkflowImage from "@/assets/gitops-workflow.svg";
-import { CreateWorkloadIdentityDrawer } from "@/react/components/CreateWorkloadIdentityDrawer";
+import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
@@ -605,13 +605,12 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         </p>
       </div>
 
-      {showCreateDrawer && (
-        <CreateWorkloadIdentityDrawer
-          project={projectName}
-          onClose={() => setShowCreateDrawer(false)}
-          onCreated={handleWorkloadIdentityCreated}
-        />
-      )}
+      <CreateWorkloadIdentitySheet
+        open={showCreateDrawer}
+        project={projectName}
+        onClose={() => setShowCreateDrawer(false)}
+        onCreated={handleWorkloadIdentityCreated}
+      />
     </div>
   );
 }

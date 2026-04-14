@@ -1783,13 +1783,10 @@ type EmailSetting_Smtp struct {
 func (*EmailSetting_Smtp) isEmailSetting_Config() {}
 
 type TestEmailSettingRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Parent workspace. Format: workspaces/{workspace}
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The email config to test. Not persisted.
-	EmailSetting *EmailSetting `protobuf:"bytes,2,opt,name=email_setting,json=emailSetting,proto3" json:"email_setting,omitempty"`
-	// The recipient to send the test email to.
-	To            string `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Parent        string                 `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	EmailSetting  *EmailSetting          `protobuf:"bytes,2,opt,name=email_setting,json=emailSetting,proto3" json:"email_setting,omitempty"`
+	To            string                 `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1846,10 +1843,9 @@ func (x *TestEmailSettingRequest) GetTo() string {
 }
 
 type TestEmailSettingResponse struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Success bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	// Human-readable error if success=false.
-	Error         string `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3192,11 +3188,10 @@ func (x *EnvironmentSetting_Environment) GetColor() string {
 }
 
 type EmailSetting_SMTPConfig struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Host     string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port     int32                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	Username string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	// INPUT_ONLY — never returned in GET responses.
+	state          protoimpl.MessageState                 `protogen:"open.v1"`
+	Host           string                                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Port           int32                                  `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	Username       string                                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
 	Password       string                                 `protobuf:"bytes,4,opt,name=password,proto3" json:"password,omitempty"`
 	Encryption     EmailSetting_SMTPConfig_Encryption     `protobuf:"varint,5,opt,name=encryption,proto3,enum=bytebase.v1.EmailSetting_SMTPConfig_Encryption" json:"encryption,omitempty"`
 	Authentication EmailSetting_SMTPConfig_Authentication `protobuf:"varint,6,opt,name=authentication,proto3,enum=bytebase.v1.EmailSetting_SMTPConfig_Authentication" json:"authentication,omitempty"`

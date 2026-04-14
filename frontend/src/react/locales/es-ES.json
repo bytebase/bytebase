@@ -1,4 +1,12 @@
 {
+  "activity.sentence.canceled-issue": "closed the issue",
+  "activity.sentence.changed-description": "changed description",
+  "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
+  "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.created-issue": "created issue",
+  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.reopened-issue": "reopened issue",
+  "activity.sentence.resolved-issue": "approved the issue",
   "agent": {
     "active-only-chats": "Solo activos",
     "ai-not-configured": {
@@ -36,7 +44,6 @@
     "pending-input-hint": "Proporcione la entrada arriba",
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
-    "resize": "Redimensionar",
     "result": "Resultado",
     "retry-last-chat-turn": "Reintentar",
     "send": "Enviar",
@@ -133,6 +140,7 @@
     "address": "Dirección",
     "admin": "Admin",
     "all": "Todos",
+    "approve": "Approve",
     "approved": "Aprobado",
     "archive": "Archivo",
     "archive-description": "Mark \"{{name}}\" as archived and read-only.",
@@ -183,6 +191,7 @@
     "dismiss": "Descartar",
     "download": "Descargar",
     "draft": "Borrador",
+    "duration": "Duration",
     "edit": "Editar",
     "email": "Correo electrónico",
     "email-ascii-only": "Las direcciones de correo solo admiten caracteres ASCII (letras, números y símbolos como . _ - +).",
@@ -227,6 +236,7 @@
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {{resource}}",
+    "more": "More",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
     "name": "Nombre",
@@ -239,12 +249,14 @@
     "password": "Contraseña",
     "pending": "Pendiente",
     "permissions": "Permisos",
+    "plan": "Plan",
     "previous": "Previous",
     "project": "Proyecto",
     "projects": "Proyectos",
     "read-only": "Solo lectura",
     "reason": "Reason",
     "regenerate": "Regenerar",
+    "reject": "Reject",
     "rejected": "Rechazado",
     "release": "Versión",
     "reorder": "Reordenar",
@@ -264,6 +276,7 @@
     },
     "rollback": "Retroceder",
     "rows-per-page": "Filas por página",
+    "run": "Run",
     "save": "Guardar",
     "schema": "Esquema",
     "scope": "Alcance",
@@ -278,9 +291,11 @@
     "skipped": "Omitido",
     "snapshot": "Instantánea",
     "sql": "SQL",
+    "stage": "Etapa",
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
+    "submit": "Submit",
     "system": "Sistema",
     "table": "Tabla",
     "title": "Título",
@@ -309,6 +324,7 @@
     "write-only": "solo escritura",
     "you": "tu"
   },
+  "common.activity": "Actividad",
   "common.add": "Agregar",
   "common.admin": "Admin",
   "common.all": "Todos",
@@ -318,41 +334,61 @@
   "common.cannot-undo-this-action": "No se puede deshacer esta acción",
   "common.catalog": "Catálogo",
   "common.close": "Cerrar",
+  "common.collapse": "Contraer",
+  "common.column": "Columna",
+  "common.comment": "Comment",
   "common.confirm": "Confirmar",
   "common.continue-anyway": "De todas maneras, continúe",
+  "common.copy": "Copiar",
   "common.create": "Crear",
   "common.creating": "Creando...",
   "common.custom": "Personalizado",
   "common.database": "Base de datos",
+  "common.database-group": "Grupo de bases de datos",
   "common.databases": "Bases de datos",
   "common.default": "predeterminado",
   "common.delete": "Eliminar",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Eliminado",
+  "common.detail": "Detail",
   "common.detailed-guide": "guía detallada",
   "common.edit": "Editar",
+  "common.edited": "edited",
   "common.environment": "Entorno",
   "common.import": "Importar",
+  "common.issue": "Issue",
   "common.key": "Clave",
   "common.labels": "Etiquetas",
   "common.learn-more": "Aprender más",
+  "common.line": "Línea",
   "common.load-more": "Cargar más",
   "common.loading": "Cargando",
   "common.members": "Miembros",
   "common.minutes": "Minutos",
+  "common.n-more": "{{n}} más",
   "common.no-data": "Sin datos",
+  "common.only-creator-allowed-export": "Only the creator is allowed to export",
+  "common.open": "Abrir",
   "common.optional": "Opcional",
   "common.or": "o",
   "common.overview": "Resumen",
   "common.password": "Contraseña",
   "common.project": "Proyecto",
   "common.read-only": "Solo lectura",
+  "common.remaining": "restantes",
   "common.remove": "Eliminar",
   "common.removed": "Eliminado",
   "common.restore": "Restaurar",
+  "common.retry": "Reintentar",
+  "common.role.self": "Rol",
   "common.rollout": "Implementar",
+  "common.save": "Guardar",
   "common.sensitive-placeholder": "Sensible - solo escritura",
   "common.show-more": "Mostrar más",
+  "common.skip": "Omitir",
+  "common.success": "Éxito",
+  "common.task": "Tarea",
+  "common.troubleshoot": "Solucionar problemas",
   "common.unknown": "Desconocido",
   "common.unlimited": "Ilimitado",
   "common.updated": "Actualizado",
@@ -400,7 +436,17 @@
       }
     },
     "issue-review": {
-      "generating-approval-flow": "Generando flujo de aprobación"
+      "and-n-other-users": "{{names}} y {{count}} otros usuarios",
+      "approved-by": "Aprobado por",
+      "disallow-approve-reason": {
+        "some-task-checks-are-still-running": "Some task checks are still running.",
+        "some-task-checks-didnt-pass": "Some task checks didn't pass."
+      },
+      "generating-approval-flow": "Generando flujo de aprobación",
+      "re-request-review": "Volver a solicitar revisión",
+      "re-request-review-success": "Revisión solicitada nuevamente con éxito",
+      "rejected-by": "Rechazado por",
+      "self-approval-not-allowed": "No se permite la autoaprobación para este proyecto. No puedes aprobarlo como creador."
     },
     "risk": {
       "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
@@ -437,6 +483,9 @@
     },
     "self": "Aprobación personalizada"
   },
+  "custom-approval.issue-review.approved-issue": "approved issue",
+  "custom-approval.issue-review.re-requested-review": "re-requested issue review",
+  "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "Direcciones de nodos adicionales",
     "connection-string-schema": "Esquema de cadena de conexión",
@@ -585,12 +634,7 @@
   "database.filter-database": "Filtrar base de datos",
   "database.labels": "Etiquetas de base de datos",
   "database.revision.delete-confirm-dialog": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer.",
-  "database.revision.import-revision": "Revisión de importación",
-  "database.revision.invalid-version-format": "La versión debe tener partes numéricas separadas por puntos (por ejemplo, 1.0.0)",
   "database.revision.self": "Revisión",
-  "database.revision.type-declarative": "Declarativo",
-  "database.revision.type-versioned": "Versionado",
-  "database.revision.version-already-exists": "Esta versión ya existe en la base de datos",
   "database.successfully-exported-schema": "Esquema exportado correctamente",
   "database.sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
   "database.sync-database": "Sincronizar base de datos",
@@ -647,6 +691,7 @@
   "export-data": {
     "password-optional": "Cifrar con contraseña (opcional)"
   },
+  "export-data.password-optional": "Contraseña (opcional)",
   "gitops": {
     "checklist": {
       "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
@@ -975,6 +1020,7 @@
   "instance.scan-interval.self": "Intervalo de escaneo",
   "instance.section.basic-info": "Información básica",
   "instance.section.connection": "Conexión",
+  "instance.select-database-user": "Seleccionar usuario de base de datos",
   "instance.sentence.aws-rds.mysql.template": "A continuación se muestra un ejemplo para crear el usuario {{user}}@% y otorgarle los privilegios necesarios.",
   "instance.sentence.aws-rds.postgresql.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' y otorgarle los privilegios necesarios.",
   "instance.sentence.console.snowflake": "La URL de la consola externa que administra esta instancia (por ejemplo, la consola de AWS RDS, la consola de la instancia de base de datos interna)",
@@ -1020,6 +1066,11 @@
   "instance.users": "Usuarios",
   "instance.your-snowflake-account-locator": "Su localizador de cuentas Snowflake",
   "issue": {
+    "access-grant": {
+      "details": "Access Grant Details",
+      "expired-at": "Expired at"
+    },
+    "action-anyway": "{{action}} de todos modos",
     "advanced-search": {
       "filter": "Filtrar",
       "scope": {
@@ -1064,6 +1115,9 @@
         }
       }
     },
+    "approval-flow": {
+      "self": "Flujo de aprobación"
+    },
     "batch-transition": {
       "close": "Cerrar",
       "closed": "cerrado",
@@ -1071,13 +1125,22 @@
       "reopen": "Reabrir",
       "reopened": "reabierto"
     },
+    "checks-manual-rollout-hint": "La aprobación ya se completó, pero el rollout no se creó automáticamente porque este plan todavía tiene verificaciones fallidas. Ve a Plan para continuar.",
     "data-export": {
+      "download-tooltip": "Disponible por 24 horas",
+      "file-expired": "Archivo expirado",
       "format": "Formato",
       "limits": "Límites",
       "options": "Opciones de exportación"
     },
     "labels": "Etiquetas de problema",
     "leave-a-comment": "Dejar un comentario...",
+    "review": {
+      "approve-description": "Enviar comentarios y aprobar este problema",
+      "comment-description": "Enviar comentarios generales sin aprobación",
+      "reject-description": "Envíe comentarios y solicite cambios",
+      "self": "Revisar"
+    },
     "risk-level": {
       "filter": "Filtrar por nivel de riesgo",
       "high": "Alto",
@@ -1088,6 +1151,8 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
+      "details": "Role Grant Details",
+      "expired-at": "Expired at",
       "manually-select": "selección manual",
       "use-cel": "Usar expresión CEL"
     },
@@ -1097,6 +1162,12 @@
       "descending": "Descendente",
       "sort": "Ordenar",
       "updated": "Fecha de actualización"
+    },
+    "status-transition": {
+      "modal": {
+        "close": "¿Cerrar el problema?",
+        "reopen": "¿Reabrir incidencia?"
+      }
     },
     "subtitle": "Los problemas abarcan cambios en la base de datos, exportaciones de datos y solicitudes de acceso. Revisar y aprobar antes de la ejecución.",
     "table": {
@@ -1109,10 +1180,33 @@
       "updated": "Actualizado",
       "waiting-role": "Waiting: {{role}}"
     },
+    "title": {
+      "request-role": "Solicitar rol",
+      "request-specific-role": "Solicitar rol \"{{role}}\""
+    },
     "upload-sql": "Upload SQL",
     "waiting-approval": "A la espera de la aprobación"
   },
+  "issue.comment-editor.nothing-to-preview": "Nothing to preview",
+  "issue.comment-editor.preview": "Preview",
+  "issue.comment-editor.toolbar.bold": "Insert bold text",
+  "issue.comment-editor.toolbar.code": "Insert SQL code snippet",
+  "issue.comment-editor.toolbar.hashtag": "Insert hashtag",
+  "issue.comment-editor.toolbar.header": "Insert heading text",
+  "issue.comment-editor.toolbar.link": "Insert a link",
+  "issue.comment-editor.write": "Write",
+  "issue.data-export.format": "Formato",
+  "issue.data-export.limits": "Límites",
+  "issue.data-export.options": "Opciones",
+  "issue.issue-name": "Issue name",
+  "issue.no-description-provided": "No description provided",
+  "issue.options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
+  "issue.overwrite-current-statement": "Sobrescribir la declaración SQL actual",
+  "issue.review.self": "Review",
+  "issue.statement-from-sheet-warning": "This statement is loaded from a large sheet. Preview may be truncated.",
   "issue.task-run.logs": "Registros",
+  "issue.transaction-mode.label": "Modo de transacción",
+  "issue.upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
   "label": {
     "add-label": "Agregar etiqueta",
     "empty-label-value": "Valor",
@@ -1143,6 +1237,9 @@
     "checks": {
       "self": "Verificaciones"
     },
+    "editor": {
+      "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
+    },
     "navigator": {
       "review": "Revisión"
     },
@@ -1153,6 +1250,30 @@
       "title": "Objetivos"
     }
   },
+  "plan.checks.failed-to-run": "Failed to run plan checks",
+  "plan.checks.no-check-results": "No check results",
+  "plan.checks.no-results-match-filters": "No results match your filters",
+  "plan.checks.started": "Plan checks started",
+  "plan.go-to-plan-page": "Ir a la página del plan",
+  "plan.isolation-level.read-committed": "Lectura confirmada",
+  "plan.isolation-level.read-uncommitted": "Lectura no confirmada",
+  "plan.isolation-level.repeatable-read": "Lectura repetible",
+  "plan.isolation-level.self": "Nivel de Aislamiento",
+  "plan.isolation-level.serializable": "Serializable",
+  "plan.navigator.checks": "Checks",
+  "plan.navigator.statement-empty": "La sentencia está vacía",
+  "plan.options.self": "Opciones",
+  "plan.overview.no-checks": "No checks",
+  "plan.ready-for-review": "Ready for Review",
+  "plan.run": "Run",
+  "plan.select-isolation-level": "Seleccionar nivel de aislamiento",
+  "plan.spec.change": "Change",
+  "plan.spec.type.database-change": "Cambio de base de datos",
+  "plan.targets.no-targets-found": "No se encontraron objetivos",
+  "plan.targets.non-env-warning.one": "{{count}} base de datos se excluirá del despliegue porque no tiene un entorno efectivo:",
+  "plan.targets.non-env-warning.other": "{{count}} bases de datos se excluirán del despliegue porque no tienen un entorno efectivo:",
+  "plan.targets.title": "Objetivos",
+  "plan.targets.view-all": "Ver todo ({{count}})",
   "policy": {
     "environment-tier": {
       "description": "El entorno aparecerá de manera diferente a otros entornos.",
@@ -1213,6 +1334,21 @@
       "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
       "never-expires": "Never",
+      "request-role": {
+        "disabled-reason": {
+          "allow-request-role-disabled": "La solicitud de roles está deshabilitada para este proyecto.",
+          "can-grant-access-directly": "Ya tienes {{permission}}, así que puedes conceder acceso directamente.",
+          "feature-unavailable": "El flujo de solicitud de roles no está disponible en el plan actual."
+        },
+        "expiration-exceeds-max": "La expiración no puede exceder el límite del espacio de trabajo de {{days}} día(s).",
+        "expiration-must-be-future": "La expiración debe ser una fecha futura.",
+        "failed-to-build-expression": "Error al construir la expresión CEL. Inténtalo de nuevo.",
+        "labels-misconfigured": {
+          "description": "Este proyecto requiere etiquetas de incidencia, pero no se ha configurado ninguna etiqueta. Contacte con el propietario del proyecto para añadir etiquetas antes de solicitar un rol.",
+          "title": "Se requieren etiquetas de incidencia pero no están configuradas"
+        },
+        "max-expiration-hint": "Máximo permitido por la política del espacio de trabajo: {{days}} día(s)."
+      },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
     "settings": {
@@ -1247,6 +1383,7 @@
           "self": "Aplicar revisión SQL"
         },
         "labels": {
+          "configure-labels": "Configurar etiquetas",
           "description": "Se pueden colocar etiquetas en los problemas para su gestión.",
           "force-issue-labels": {
             "description": "Exija al menos una etiqueta al crear problemas.",
@@ -1324,10 +1461,23 @@
     "request-export-data": "Solicitar exportación"
   },
   "release": {
+    "and-n-more-files": "and {{count}} more files",
+    "change-tip": "This change is linked to a release artifact.",
+    "file-type": {
+      "declarative": "Declarative",
+      "unspecified": "Unspecified",
+      "versioned": "Versioned"
+    },
     "files": "Archivos",
+    "not-found": "Release not found",
     "releases": "Lanzamientos",
     "total-files": "Total de {{}} archivos",
-    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps."
+    "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
+    "vcs-source": "VCS Source",
+    "vcs-type": {
+      "unspecified": "Unknown VCS"
+    },
+    "view-all-files": "View all files"
   },
   "remind": {
     "release": {
@@ -1381,7 +1531,8 @@
     "stage": {
       "self_one": "Etapa",
       "self_other": "Etapas"
-    }
+    },
+    "task-execution-errors": "Errores de ejecución de tareas"
   },
   "schema-editor": {
     "raw-sql": "Raw SQL"
@@ -1895,6 +2046,7 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "expired": "Expired",
@@ -1903,6 +2055,7 @@
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Editor de SQL",
+    "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -1953,8 +2106,11 @@
       }
     },
     "delete": "Eliminar política de revisión SQL",
+    "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
     "description": "La política de revisión de SQL puede definir diferentes conjuntos de reglas de lint SQL para los entornos respectivos. Ayuda a los equipos a adoptar las mejores prácticas de SQL y a hacer cumplir la consistencia del esquema en diferentes bases de datos. Cada vez que intente realizar un cambio DDL/DML o use el Editor SQL para consultar datos, la consulta se verificará en función de la política de revisión de SQL configurada.",
+    "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
     "disabled": "La revisión de SQL está deshabilitada",
+    "enable-description": "Habilitar esta política comenzará a aplicar sus reglas a los recursos adjuntos.",
     "enabled-rules": "Reglas habilitadas",
     "engine": {
       "mariadb": "MariaDB",
@@ -2769,11 +2925,40 @@
   "subscription.usage.instance-count.runoutof": "Te has quedado sin tu cuota de instancias {{total}}.",
   "subscription.usage.instance-count.title": "Límite de cantidad de instancias",
   "task": {
+    "cancel-task": "Cancelar tarea | Cancelar tareas",
     "checking": "Comprobando...",
+    "created": "Creado",
+    "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
+    "error": {
+      "scheduled-time-must-be-in-the-future": "La hora programada debe ser en el futuro"
+    },
+    "execution-time": "Tiempo de ejecución",
+    "no-permission": "No hay permiso para realizar esta acción",
+    "run-immediately": {
+      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación.",
+      "self": "Corre inmediatamente"
+    },
+    "run-task": "Ejecutar tarea | Ejecutar tareas",
+    "schedule-for-later": {
+      "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda.",
+      "self": "Programar para más tarde"
+    },
+    "select-scheduled-time": "Seleccionar hora programada",
+    "skip-prior-backup": "Omitir respaldo previo",
+    "skip-prior-backup-description": "Omitir la copia de seguridad automática de datos antes de aplicar cambios",
+    "skip-task": "Saltar tarea | Saltar tareas",
+    "started": "Iniciado",
     "status": {
-      "running": "Ejecutándose"
+      "canceled": "Cancelado",
+      "done": "Hecho",
+      "failed": "Fallido",
+      "not-started": "No iniciado",
+      "pending": "Pendiente",
+      "running": "Ejecutándose",
+      "skipped": "Omitido"
     }
   },
+  "task-run.history": "Historial de ejecución",
   "task-run.log-detail.backing-up": "haciendo copia de seguridad...",
   "task-run.log-detail.backup-completed": "completadas ({{count}} tablas)",
   "task-run.log-detail.completed": "Completado",
@@ -2794,7 +2979,18 @@
   "task-run.log-viewer.multiple-replicas-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por réplica.",
   "task-run.log-viewer.replica-n": "Réplica #{n}",
   "task-run.log-viewer.summary": "{sections} secciones · {entries} entradas",
+  "task-run.status.enqueued": "Esperando a ser ejecutada.",
+  "task-run.status.enqueued-with-rollout-time": "Esperando para ejecutar después de {{time}}.",
+  "task-run.status.waiting-max-tasks-per-rollout": "Esperando a que terminen otras tareas. Se ha alcanzado el límite máximo de tareas en ejecución por despliegue. Último informe a las {{time}}.",
   "task.affected-rows": "Filas afectadas",
+  "task.check-type.affected-rows.description": "Estimated by statistical information.",
+  "task.check-type.affected-rows.self": "Affected rows",
+  "task.check-type.ghost-sync": "gh-ost sync",
+  "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
+  "task.check-type.sql-review.self": "SQL review",
+  "task.check-type.summary-report": "Summary report",
+  "task.online-migration.self": "Migración en línea",
+  "task.prior-backup": "Respaldo previo",
   "two-factor": {
     "description": "La autenticación de dos factores proporciona una capa adicional de seguridad para las cuentas de los miembros. Al iniciar sesión, se te pedirá que ingreses el código de seguridad generado por tu aplicación de autenticación.",
     "disable": {
