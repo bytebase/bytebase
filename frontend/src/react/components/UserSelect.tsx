@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
 import { useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -54,14 +54,17 @@ export function UserSelect({
     };
   }, [value, userStore]);
 
-  const handleSearch = (query: string) => {
-    userStore
-      .fetchUserList({
-        pageSize: getDefaultPagination(),
-        filter: { query: query.trim() },
-      })
-      .then(({ users: fetched }) => setUsers(fetched));
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      userStore
+        .fetchUserList({
+          pageSize: getDefaultPagination(),
+          filter: { query: query.trim() },
+        })
+        .then(({ users: fetched }) => setUsers(fetched));
+    },
+    [userStore]
+  );
 
   const options: ComboboxOption[] = useMemo(() => {
     const list: ComboboxOption[] = [];
