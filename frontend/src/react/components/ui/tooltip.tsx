@@ -1,5 +1,6 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import type { ReactNode } from "react";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 interface TooltipProps {
   readonly content: ReactNode;
@@ -24,8 +25,12 @@ export function Tooltip({
         <BaseTooltip.Trigger render={<span className="inline-flex" />}>
           {children}
         </BaseTooltip.Trigger>
-        <BaseTooltip.Portal>
-          <BaseTooltip.Positioner side={side} sideOffset={4} className="z-50">
+        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+          <BaseTooltip.Positioner
+            side={side}
+            sideOffset={4}
+            className={LAYER_SURFACE_CLASS}
+          >
             <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
               {content}
               <BaseTooltip.Arrow className="fill-main" />
@@ -58,8 +63,12 @@ export function BlockTooltip({
         <BaseTooltip.Trigger render={<div className="flex-1 min-w-0" />}>
           {children}
         </BaseTooltip.Trigger>
-        <BaseTooltip.Portal>
-          <BaseTooltip.Positioner side={side} sideOffset={4} className="z-50">
+        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+          <BaseTooltip.Positioner
+            side={side}
+            sideOffset={4}
+            className={LAYER_SURFACE_CLASS}
+          >
             <BaseTooltip.Popup className="max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
               {content}
               <BaseTooltip.Arrow className="fill-main" />

@@ -3,6 +3,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "./layer";
 
 // ---- Root ----
 // A side sheet is a Dialog whose Popup is pinned to the right edge of the
@@ -18,11 +23,6 @@ const SheetTrigger = BaseDialog.Trigger;
 const SheetClose = BaseDialog.Close;
 
 // ---- Backdrop ----
-// Dialog, Select, Tooltip, AlertDialog, DropdownMenu all share `z-50`. Within
-// that layer, stacking falls back to DOM portal mount order — later mounts
-// win — which correctly places a Select/Tooltip opened *inside* a Sheet on
-// top of the sheet backdrop. Do not bump Sheet above z-50 (or other overlays
-// below) without updating all siblings together. See BYT-9226 / PR #19824.
 function SheetOverlay({
   className,
   ref,
@@ -32,7 +32,7 @@ function SheetOverlay({
     <BaseDialog.Backdrop
       ref={ref}
       className={cn(
-        "fixed inset-0 z-50 bg-overlay/50",
+        `fixed inset-0 ${LAYER_BACKDROP_CLASS} bg-overlay/50`,
         "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0",
         "transition-opacity duration-200",
         className
@@ -82,11 +82,15 @@ function SheetContent({
   ...props
 }: SheetContentProps) {
   return (
-    <BaseDialog.Portal>
+    <BaseDialog.Portal container={getLayerRoot("overlay")}>
       <SheetOverlay />
       <BaseDialog.Popup
         ref={ref}
-        className={cn(sheetContentVariants({ width }), className)}
+        className={cn(
+          sheetContentVariants({ width }),
+          LAYER_SURFACE_CLASS,
+          className
+        )}
         {...props}
       >
         {children}

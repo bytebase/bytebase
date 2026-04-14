@@ -1,6 +1,11 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "./layer";
 
 // ---- Root ----
 const Dialog = BaseDialog.Root;
@@ -9,11 +14,6 @@ const Dialog = BaseDialog.Root;
 const DialogTrigger = BaseDialog.Trigger;
 
 // ---- Overlay / Backdrop ----
-// Dialog, Select, Tooltip, and AlertDialog all use `z-50`. Within that shared
-// z-layer, stacking falls back to DOM portal mount order — later mounts win —
-// which correctly places a Select/Tooltip opened *inside* a Dialog on top of
-// the dialog backdrop. Do not bump Dialog above z-50 (or other overlays below)
-// without updating all four components together. See BYT-9226 / PR #19824.
 function DialogOverlay({
   className,
   ref,
@@ -22,7 +22,10 @@ function DialogOverlay({
   return (
     <BaseDialog.Backdrop
       ref={ref}
-      className={cn("fixed inset-0 z-50 bg-overlay/50", className)}
+      className={cn(
+        `fixed inset-0 ${LAYER_BACKDROP_CLASS} bg-overlay/50`,
+        className
+      )}
       {...props}
     />
   );
@@ -36,12 +39,12 @@ function DialogContent({
   ...props
 }: ComponentProps<typeof BaseDialog.Popup>) {
   return (
-    <BaseDialog.Portal>
+    <BaseDialog.Portal container={getLayerRoot("overlay")}>
       <DialogOverlay />
       <BaseDialog.Popup
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+          `fixed left-1/2 top-1/2 ${LAYER_SURFACE_CLASS} -translate-x-1/2 -translate-y-1/2`,
           "w-[calc(100vw-8rem)] max-w-3xl 2xl:max-w-[55vw]",
           "max-h-[calc(100vh-10rem)] overflow-y-auto",
           "rounded-sm bg-background shadow-lg",

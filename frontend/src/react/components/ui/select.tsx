@@ -2,6 +2,7 @@ import { Select as BaseSelect } from "@base-ui/react/select";
 import { Check, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 // ---- Root ----
 const Select = BaseSelect.Root;
@@ -36,13 +37,6 @@ function SelectTrigger({
 const SelectValue = BaseSelect.Value;
 
 // ---- Portal + Positioner + Popup  ----
-// The `z-50` on the Positioner matches the z-index used by Dialog/AlertDialog
-// (see ui/dialog.tsx). It must not be removed — Dialog's backdrop/popup are
-// hardcoded at z-50, so a Select without an explicit z-index renders *behind*
-// any open Dialog regardless of DOM portal order (z-auto loses to z-50).
-// Within the same z-layer, stacking falls back to DOM order, which correctly
-// puts later-mounted portals (e.g. a Select opened inside a Dialog) on top.
-// See BYT-9226 and PR #19824 for the original regression.
 function SelectContent({
   className,
   children,
@@ -50,8 +44,8 @@ function SelectContent({
   ...props
 }: ComponentProps<typeof BaseSelect.Popup>) {
   return (
-    <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={4} className="z-50">
+    <BaseSelect.Portal container={getLayerRoot("overlay")}>
+      <BaseSelect.Positioner sideOffset={4} className={LAYER_SURFACE_CLASS}>
         <BaseSelect.Popup
           ref={ref}
           className={cn(

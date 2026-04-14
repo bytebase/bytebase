@@ -1,6 +1,11 @@
 import { AlertDialog as BaseAlertDialog } from "@base-ui/react/alert-dialog";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "./layer";
 
 const AlertDialog = BaseAlertDialog.Root;
 
@@ -14,7 +19,10 @@ function AlertDialogOverlay({
   return (
     <BaseAlertDialog.Backdrop
       ref={ref}
-      className={cn("fixed inset-0 z-50 bg-overlay/50", className)}
+      className={cn(
+        `fixed inset-0 ${LAYER_BACKDROP_CLASS} bg-overlay/50`,
+        className
+      )}
       {...props}
     />
   );
@@ -27,12 +35,12 @@ function AlertDialogContent({
   ...props
 }: ComponentProps<typeof BaseAlertDialog.Popup>) {
   return (
-    <BaseAlertDialog.Portal>
+    <BaseAlertDialog.Portal container={getLayerRoot("overlay")}>
       <AlertDialogOverlay />
       <BaseAlertDialog.Popup
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+          `fixed left-1/2 top-1/2 ${LAYER_SURFACE_CLASS} -translate-x-1/2 -translate-y-1/2`,
           "w-full max-w-md",
           "rounded-sm bg-background p-6 shadow-lg",
           className
