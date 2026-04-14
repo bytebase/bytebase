@@ -123,6 +123,7 @@
     "sign-in": {
       "demo-account": "Demo Account",
       "forget-password": "Forgot your password?",
+      "invited-email": "You've been invited. Please sign in with {email}",
       "new-user": "New to Bytebase?",
       "sign-in-with-idp": "Sign in with {idp}"
     },

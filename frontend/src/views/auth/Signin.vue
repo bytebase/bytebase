@@ -3,6 +3,13 @@
     <div class="mx-auto w-full max-w-sm">
       <BytebaseLogo class="mx-auto mb-8" />
 
+      <BBAttention
+        v-if="invitedEmail"
+        class="mb-4"
+        type="info"
+        :title="$t('auth.sign-in.invited-email', { email: invitedEmail })"
+      />
+
       <div v-if="showSignInForm">
         <NCard>
           <NTabs
@@ -181,7 +188,7 @@ import { NButton, NCard, NTabPane, NTabs } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { BBSpin, BBTextField } from "@/bbkit";
+import { BBAttention, BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import DemoSigninForm from "@/components/DemoSigninForm.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
@@ -229,7 +236,7 @@ const authStore = useAuthStore();
 const identityProviderStore = useIdentityProviderStore();
 
 const state = reactive<LocalState>({
-  email: "",
+  email: (route.query.email as string) || "",
   password: "",
   showPassword: false,
   isLoading: false,
@@ -237,6 +244,10 @@ const state = reactive<LocalState>({
 const initialized = ref(false);
 const { isDemo } = storeToRefs(actuatorStore);
 const { serverInfo, isSaaSMode } = storeToRefs(actuatorStore);
+
+const invitedEmail = computed(
+  () => (route.query.email as string | undefined) || ""
+);
 
 const disallowSignup = computed(
   () => !props.allowSignup || serverInfo.value?.restriction?.disallowSignup
