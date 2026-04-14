@@ -740,7 +740,7 @@ export function InstancesPage() {
       {
         id: "environment",
         title: t("common.environment"),
-        description: t("common.environment"),
+        description: t("issue.advanced-search.scope.environment.description"),
         options: [unknownEnvironment(), ...environments].map((env) => {
           const isUnknown = env.name === UNKNOWN_ENVIRONMENT_NAME;
           return {
@@ -756,7 +756,7 @@ export function InstancesPage() {
       {
         id: "engine",
         title: t("database.engine"),
-        description: t("database.engine"),
+        description: t("issue.advanced-search.scope.engine.description"),
         options: supportedEngineV1List().map((engine) => ({
           value: Engine[engine],
           keywords: [Engine[engine].toLowerCase(), engineNameV1(engine)],
@@ -777,13 +777,13 @@ export function InstancesPage() {
       {
         id: "label",
         title: t("common.labels"),
-        description: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
         allowMultiple: true,
       },
       {
         id: "state",
         title: t("common.state"),
-        description: t("common.state"),
+        description: t("issue.advanced-search.scope.state.description"),
         options: [
           { value: "ACTIVE", keywords: ["active"] },
           ...(canUndelete

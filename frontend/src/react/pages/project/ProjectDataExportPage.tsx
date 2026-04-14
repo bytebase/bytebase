@@ -6,6 +6,7 @@ import {
   type ScopeOption,
   type SearchParams,
   type SearchScope,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -13,7 +14,13 @@ import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { useIssueV1Store, useProjectV1Store, useUserStore } from "@/store";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useIssueV1Store,
+  useProjectV1Store,
+  useUserStore,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import { RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -26,12 +33,16 @@ import {
 import {
   buildIssueFilterBySearchParams,
   displayRoleTitle,
+  extractDatabaseResourceName,
+  extractInstanceResourceName,
   extractIssueUID,
   extractProjectResourceName,
   formatAbsoluteDateTime,
+  getDefaultPagination,
   getHighlightHTMLByRegExp,
   getIssueRoute,
   hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
   humanizeTs,
   PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE,
   type SearchParams as VueSearchParams,
@@ -80,12 +91,47 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     setSearchParams(defaultSearchParams());
   }, [projectId]);
 
+  const instanceStore = useInstanceV1Store();
+  const databaseStore = useDatabaseV1Store();
+  const searchInstances = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
+      const { instances } = await instanceStore.fetchInstanceList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return instances.map((i) => {
+        const id = extractInstanceResourceName(i.name);
+        return { value: id, keywords: [id, i.title] };
+      });
+    },
+    [instanceStore]
+  );
+  const searchDatabases = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
+        return [];
+      }
+      const { databases } = await databaseStore.fetchDatabases({
+        parent: projectName,
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return databases.map((db) => {
+        const { databaseName } = extractDatabaseResourceName(db.name);
+        return { value: db.name, keywords: [databaseName, db.name] };
+      });
+    },
+    [databaseStore, projectName, project]
+  );
+
   // Scope options for the search bar
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
       {
         id: "status",
         title: t("common.status"),
+        description: t("issue.advanced-search.scope.status.description"),
         options: [
           {
             value: IssueStatus[IssueStatus.OPEN],
@@ -107,17 +153,22 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
       {
         id: "instance",
         title: t("common.instance"),
+        description: t("issue.advanced-search.scope.instance.description"),
+        onSearch: searchInstances,
       },
       {
         id: "database",
         title: t("common.database"),
+        description: t("issue.advanced-search.scope.database.description"),
+        onSearch: searchDatabases,
       },
       {
         id: "issue-label",
         title: t("issue.labels"),
+        description: t("issue.advanced-search.scope.issue-label.description"),
       },
     ],
-    [t]
+    [t, searchInstances, searchDatabases]
   );
 
   // Permission check for creating export issues

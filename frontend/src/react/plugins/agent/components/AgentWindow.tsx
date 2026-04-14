@@ -1,8 +1,16 @@
-import { Archive, Inbox } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Archive, EllipsisVertical, Plus, Trash2, Undo2 } from "lucide-react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,7 +19,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
@@ -80,11 +96,16 @@ export function AgentWindow() {
 
   const [showArchivedOnly, setShowArchivedOnly] = useState(false);
   const [isRenamingCurrentChat, setIsRenamingCurrentChat] = useState(false);
+  const [
+    isDeleteAllArchivedChatsDialogOpen,
+    setIsDeleteAllArchivedChatsDialogOpen,
+  ] = useState(false);
   const [renamingTitle, setRenamingTitle] = useState("");
 
   // Refs for drag/resize intermediate values (avoid re-renders)
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isResizingRef = useRef(false);
   const resizeStartRef = useRef<{
     x: number;
@@ -217,10 +238,13 @@ export function AgentWindow() {
     () => orderedChats.filter((chat) => chat.archived === showArchivedOnly),
     [orderedChats, showArchivedOnly]
   );
-
-  const isCurrentChatInDisplayedMode = useMemo(
-    () => !!currentChat && currentChat.archived === showArchivedOnly,
-    [currentChat, showArchivedOnly]
+  const activeChats = useMemo(
+    () => orderedChats.filter((chat) => !chat.archived),
+    [orderedChats]
+  );
+  const archivedChats = useMemo(
+    () => orderedChats.filter((chat) => chat.archived),
+    [orderedChats]
   );
 
   const currentChatStatusLabel = useMemo(() => {
@@ -256,6 +280,12 @@ export function AgentWindow() {
   );
 
   const isChatCreationDisabled = hasRunningChat;
+  const isArchiveAllDisabled =
+    hasRunningChat || showArchivedOnly || activeChats.length === 0;
+  const isUnarchiveAllDisabled =
+    hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
+  const isDeleteAllDisabled =
+    hasRunningChat || !showArchivedOnly || archivedChats.length === 0;
   const canResizeWindow = supportsFinePointer;
 
   const syncStoreToDisplayState = useCallback(() => {
@@ -296,24 +326,36 @@ export function AgentWindow() {
   );
 
   const selectFirstDisplayedChat = useCallback(() => {
-    const first = displayedChats[0];
+    const store = useAgentStore.getState();
+    const first = selectOrderedChats(store).find(
+      (chat) => chat.archived === showArchivedOnly
+    );
     if (!first || !useAgentStore.getState().canSelectChat(first.id))
       return false;
     useAgentStore.getState().setCurrentChat(first.id);
     return useAgentStore.getState().currentChatId === first.id;
-  }, [displayedChats]);
+  }, [showArchivedOnly]);
 
   const ensureCurrentChatMatchesDisplayedMode = useCallback(
-    (options: { fallbackToActiveWhenEmpty?: boolean } = {}) => {
+    (
+      options: {
+        allowCreateWhenEmpty?: boolean;
+        fallbackToActiveWhenEmpty?: boolean;
+      } = {}
+    ) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === store.currentChatId);
+      if (chat?.status === "running") return;
       const isInDisplayedMode = !!chat && chat.archived === showArchivedOnly;
 
       if (isInDisplayedMode) return;
       if (selectFirstDisplayedChat()) return;
 
       if (showArchivedOnly) {
-        if (!options.fallbackToActiveWhenEmpty) return;
+        if (!options.fallbackToActiveWhenEmpty) {
+          store.clearCurrentChat();
+          return;
+        }
         setShowArchivedOnly(false);
         // After toggling, check again with active mode
         const storeNow = useAgentStore.getState();
@@ -332,7 +374,15 @@ export function AgentWindow() {
         }
       }
 
-      if (store.chats.some((c) => c.status === "running")) return;
+      if (options.allowCreateWhenEmpty !== true || showArchivedOnly) {
+        store.clearCurrentChat();
+        return;
+      }
+
+      if (store.chats.some((c) => c.status === "running")) {
+        store.clearCurrentChat();
+        return;
+      }
       store.createChat({ page: getCurrentPageSnapshot() });
     },
     [showArchivedOnly, selectFirstDisplayedChat, getCurrentPageSnapshot]
@@ -420,31 +470,87 @@ export function AgentWindow() {
     [isRenamingCurrentChat, beginRenameCurrentChat, cancelRenameCurrentChat]
   );
 
-  const toggleArchiveCurrentChat = useCallback(() => {
-    const chat = useAgentStore
-      .getState()
-      .chats.find((c) => c.id === useAgentStore.getState().currentChatId);
-    if (!chat) return;
-    if (chat.archived) {
+  const archiveChat = useCallback(
+    (chatId: string) => {
+      const chat = useAgentStore.getState().chats.find((c) => c.id === chatId);
+      if (!chat || chat.archived) return;
+      useAgentStore.getState().archiveChat(chat.id);
+      ensureCurrentChatMatchesDisplayedMode({
+        allowCreateWhenEmpty: false,
+      });
+    },
+    [ensureCurrentChatMatchesDisplayedMode]
+  );
+
+  const unarchiveChat = useCallback(
+    (chatId: string) => {
+      const chat = useAgentStore.getState().chats.find((c) => c.id === chatId);
+      if (!chat?.archived) return;
       useAgentStore.getState().unarchiveChat(chat.id);
       ensureCurrentChatMatchesDisplayedMode({
-        fallbackToActiveWhenEmpty: true,
+        allowCreateWhenEmpty: false,
       });
-      return;
-    }
-    useAgentStore.getState().archiveChat(chat.id);
-    ensureCurrentChatMatchesDisplayedMode();
-  }, [ensureCurrentChatMatchesDisplayedMode]);
+    },
+    [ensureCurrentChatMatchesDisplayedMode]
+  );
 
-  const deleteCurrentChat = useCallback(() => {
-    const store = useAgentStore.getState();
-    const chat = store.chats.find((c) => c.id === store.currentChatId);
-    if (!chat) return;
-    store.deleteChat(chat.id);
+  const archiveAllChats = useCallback(() => {
+    if (isArchiveAllDisabled) return;
+    const archivedCount = useAgentStore.getState().archiveAllActiveChats();
+    if (archivedCount === 0) return;
+    cancelRenameCurrentChat();
     ensureCurrentChatMatchesDisplayedMode({
-      fallbackToActiveWhenEmpty: true,
+      allowCreateWhenEmpty: false,
     });
-  }, [ensureCurrentChatMatchesDisplayedMode]);
+  }, [
+    cancelRenameCurrentChat,
+    ensureCurrentChatMatchesDisplayedMode,
+    isArchiveAllDisabled,
+  ]);
+
+  const unarchiveAllChats = useCallback(() => {
+    if (isUnarchiveAllDisabled) return;
+    const unarchivedCount = useAgentStore
+      .getState()
+      .unarchiveAllArchivedChats();
+    if (unarchivedCount === 0) return;
+    cancelRenameCurrentChat();
+    ensureCurrentChatMatchesDisplayedMode({
+      allowCreateWhenEmpty: false,
+    });
+  }, [
+    cancelRenameCurrentChat,
+    ensureCurrentChatMatchesDisplayedMode,
+    isUnarchiveAllDisabled,
+  ]);
+
+  const deleteAllArchivedChats = useCallback(() => {
+    if (isDeleteAllDisabled) return;
+    const deletedCount = useAgentStore.getState().deleteAllArchivedChats();
+    if (deletedCount === 0) return;
+    cancelRenameCurrentChat();
+    setIsDeleteAllArchivedChatsDialogOpen(false);
+    ensureCurrentChatMatchesDisplayedMode({
+      allowCreateWhenEmpty: false,
+    });
+  }, [
+    cancelRenameCurrentChat,
+    ensureCurrentChatMatchesDisplayedMode,
+    isDeleteAllDisabled,
+  ]);
+
+  const deleteChat = useCallback(
+    (chatId: string) => {
+      const store = useAgentStore.getState();
+      const chat = store.chats.find((c) => c.id === chatId);
+      if (!chat) return;
+      store.deleteChat(chat.id);
+      ensureCurrentChatMatchesDisplayedMode({
+        allowCreateWhenEmpty: false,
+      });
+    },
+    [ensureCurrentChatMatchesDisplayedMode]
+  );
 
   const toggleChatListMode = useCallback(() => {
     setShowArchivedOnly((prev) => !prev);
@@ -491,6 +597,10 @@ export function AgentWindow() {
         x: event.clientX - store.position.x,
         y: event.clientY - store.position.y,
       };
+      dragPositionRef.current = {
+        x: store.position.x,
+        y: store.position.y,
+      };
 
       const onDrag = (e: PointerEvent) => {
         if (!isDraggingRef.current || !windowRef.current) return;
@@ -511,7 +621,7 @@ export function AgentWindow() {
         );
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
-        useAgentStore.getState().setPosition(x, y);
+        dragPositionRef.current = { x, y };
       };
 
       const stopDrag = () => {
@@ -520,6 +630,12 @@ export function AgentWindow() {
         document.removeEventListener("pointerup", stopDrag);
         document.removeEventListener("pointercancel", stopDrag);
         dragCleanupRef.current = null;
+        if (dragPositionRef.current) {
+          useAgentStore
+            .getState()
+            .setPosition(dragPositionRef.current.x, dragPositionRef.current.y);
+        }
+        dragPositionRef.current = null;
         useAgentStore.getState().saveWindowState();
       };
 
@@ -772,7 +888,7 @@ export function AgentWindow() {
     return createPortal(
       <div
         data-agent-window
-        className="fixed bottom-4 right-4 z-[1999] flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
+        className="fixed bottom-4 right-4 z-40 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
         onClick={() => useAgentStore.getState().restore()}
       >
         <svg
@@ -796,9 +912,37 @@ export function AgentWindow() {
     <div
       ref={windowRef}
       data-agent-window
-      className="fixed z-[1999] overflow-visible"
+      className="fixed z-40 overflow-visible"
       style={windowStyle}
     >
+      <Dialog
+        open={isDeleteAllArchivedChatsDialogOpen}
+        onOpenChange={setIsDeleteAllArchivedChatsDialogOpen}
+      >
+        <DialogContent className="max-w-sm p-6">
+          <DialogTitle className="sr-only">{t("common.confirm")}</DialogTitle>
+          <DialogDescription>
+            {t("agent.delete-all-chats-confirmation")}
+          </DialogDescription>
+          <div className="mt-6 flex justify-end gap-x-2">
+            <DialogClose
+              render={
+                <Button variant="outline" type="button">
+                  {t("common.cancel")}
+                </Button>
+              }
+            />
+            <DialogClose
+              render={
+                <Button type="button" variant="destructive">
+                  {t("common.confirm")}
+                </Button>
+              }
+              onClick={deleteAllArchivedChats}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="flex size-full flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl">
         {/* Header */}
         <div
@@ -860,13 +1004,87 @@ export function AgentWindow() {
                     {t("agent.chat-list-label")}
                   </h2>
                 </div>
-                <button
-                  className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-control-bg disabled:cursor-not-allowed disabled:bg-control-bg disabled:text-control-placeholder"
-                  disabled={isChatCreationDisabled}
-                  onClick={createChat}
+                <div
+                  className="flex items-center gap-x-2"
+                  data-agent-chat-sidebar-actions
                 >
-                  {t("agent.new-chat")}
-                </button>
+                  <Tooltip content={t("agent.new-chat")}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-7 text-control-light"
+                      aria-label={t("agent.new-chat")}
+                      disabled={isChatCreationDisabled}
+                      onClick={createChat}
+                    >
+                      <Plus className="size-4" aria-hidden="true" />
+                    </Button>
+                  </Tooltip>
+                  <DropdownMenu>
+                    <Tooltip content={t("common.more")}>
+                      <DropdownMenuTrigger
+                        className="inline-flex size-7 items-center justify-center rounded-xs border border-control-border bg-transparent text-control-light outline-hidden hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
+                        aria-label={t("common.more")}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <EllipsisVertical
+                          className="size-4"
+                          aria-hidden="true"
+                        />
+                      </DropdownMenuTrigger>
+                    </Tooltip>
+                    <DropdownMenuContent>
+                      {showArchivedOnly ? (
+                        <>
+                          <DropdownMenuItem
+                            data-agent-unarchive-all-chats
+                            disabled={isUnarchiveAllDisabled}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              unarchiveAllChats();
+                            }}
+                          >
+                            {t("agent.unarchive-all-chats")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            data-agent-delete-all-chats
+                            className="text-error data-highlighted:bg-red-50"
+                            disabled={isDeleteAllDisabled}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setIsDeleteAllArchivedChatsDialogOpen(true);
+                            }}
+                          >
+                            {t("agent.delete-all-chats")}
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem
+                          data-agent-archive-all-chats
+                          disabled={isArchiveAllDisabled}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            archiveAllChats();
+                          }}
+                        >
+                          {t("agent.archive-all-chats")}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        data-agent-chat-list-mode
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleChatListMode();
+                        }}
+                      >
+                        {showArchivedOnly
+                          ? t("agent.active-only-chats")
+                          : t("agent.archived-only-chats")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
 
@@ -876,7 +1094,7 @@ export function AgentWindow() {
                 {displayedChats.map((chat) => (
                   <div
                     key={chat.id}
-                    className={`w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
+                    className={`group w-full rounded-xs px-3 py-2 text-left text-sm transition-colors ${
                       chat.id === currentChatId
                         ? "bg-accent/10 text-accent"
                         : "text-control hover:bg-background"
@@ -895,99 +1113,82 @@ export function AgentWindow() {
                         onKeyDown={onRenameKeydown}
                       />
                     ) : (
-                      <button
-                        type="button"
-                        className="w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={
-                          !useAgentStore.getState().canSelectChat(chat.id)
-                        }
-                        aria-current={
-                          chat.id === currentChatId ? "true" : undefined
-                        }
-                        onClick={() => handleChatRowClick(chat.id)}
-                      >
-                        <div
-                          className="truncate font-medium"
-                          data-agent-chat-title
+                      <div className="flex items-start gap-x-2">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={
+                            !useAgentStore.getState().canSelectChat(chat.id)
+                          }
+                          aria-current={
+                            chat.id === currentChatId ? "true" : undefined
+                          }
+                          onClick={() => handleChatRowClick(chat.id)}
                         >
-                          {getChatLabel(chat)}
+                          <div
+                            className="truncate font-medium"
+                            data-agent-chat-title
+                          >
+                            {getChatLabel(chat)}
+                          </div>
+                          <span
+                            className={`mt-1 block truncate text-xs ${
+                              chat.id === currentChatId
+                                ? "text-accent/80"
+                                : "text-control-light"
+                            }`}
+                            data-agent-chat-updated-ts
+                          >
+                            <HumanizeTs
+                              ts={Math.floor(chat.updatedTs / 1000)}
+                            />
+                          </span>
+                        </button>
+                        <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                          {chat.archived ? (
+                            <>
+                              <SidebarIconButton
+                                tooltip={t("agent.unarchive-chat")}
+                                ariaLabel={t("agent.unarchive-chat")}
+                                dataAttr="data-agent-unarchive-chat"
+                                onClick={() => unarchiveChat(chat.id)}
+                              >
+                                <Undo2
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                              </SidebarIconButton>
+                              <ConfirmDialog
+                                message={t("agent.delete-chat-confirmation")}
+                                onConfirm={() => deleteChat(chat.id)}
+                                triggerLabel={t("agent.delete-chat")}
+                                triggerDataAttr="data-agent-delete-chat"
+                                triggerVariant="icon"
+                              >
+                                <Trash2
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                              </ConfirmDialog>
+                            </>
+                          ) : (
+                            <SidebarIconButton
+                              tooltip={t("agent.archive-chat")}
+                              ariaLabel={t("agent.archive-chat")}
+                              dataAttr="data-agent-archive-chat"
+                              onClick={() => archiveChat(chat.id)}
+                            >
+                              <Archive
+                                className="size-3.5"
+                                aria-hidden="true"
+                              />
+                            </SidebarIconButton>
+                          )}
                         </div>
-                        <span
-                          className={`mt-1 block truncate text-xs ${
-                            chat.id === currentChatId
-                              ? "text-accent/80"
-                              : "text-control-light"
-                          }`}
-                          data-agent-chat-updated-ts
-                        >
-                          <HumanizeTs ts={Math.floor(chat.updatedTs / 1000)} />
-                        </span>
-                      </button>
+                      </div>
                     )}
                   </div>
                 ))}
-              </div>
-            </div>
-
-            {/* Sidebar footer */}
-            <div className="border-t border-block-border px-3 py-3">
-              <div className="flex flex-col gap-y-2">
-                <div
-                  className="flex flex-wrap gap-x-2 gap-y-2"
-                  data-agent-chat-sidebar-actions
-                >
-                  {isCurrentChatInDisplayedMode && (
-                    <>
-                      {showArchivedOnly ? (
-                        <button
-                          className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
-                          data-agent-unarchive-chat
-                          onClick={toggleArchiveCurrentChat}
-                        >
-                          {t("agent.unarchive-chat")}
-                        </button>
-                      ) : (
-                        <ConfirmDialog
-                          message={t("agent.archive-chat-confirmation")}
-                          onConfirm={toggleArchiveCurrentChat}
-                          triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
-                          triggerLabel={t("agent.archive-chat")}
-                          triggerDataAttr="data-agent-archive-chat"
-                        />
-                      )}
-                      {showArchivedOnly && (
-                        <ConfirmDialog
-                          message={t("agent.delete-chat-confirmation")}
-                          onConfirm={deleteCurrentChat}
-                          triggerClassName="rounded-xs border px-2 py-1.5 text-xs font-medium text-error hover:bg-red-50"
-                          triggerLabel={t("agent.delete-chat")}
-                          triggerDataAttr="data-agent-delete-chat"
-                        />
-                      )}
-                    </>
-                  )}
-                  <button
-                    className="ml-auto inline-flex items-center rounded-xs border p-1.5 text-xs font-medium text-control-light hover:bg-background"
-                    aria-label={
-                      showArchivedOnly
-                        ? t("agent.archived-only-chats")
-                        : t("agent.active-only-chats")
-                    }
-                    title={
-                      showArchivedOnly
-                        ? t("agent.archived-only-chats")
-                        : t("agent.active-only-chats")
-                    }
-                    data-agent-chat-list-mode
-                    onClick={toggleChatListMode}
-                  >
-                    {showArchivedOnly ? (
-                      <Archive className="size-3.5" aria-hidden="true" />
-                    ) : (
-                      <Inbox className="size-3.5" aria-hidden="true" />
-                    )}
-                  </button>
-                </div>
               </div>
             </div>
           </aside>
@@ -1034,17 +1235,19 @@ export function AgentWindow() {
 // --- Confirmation Dialog ---
 
 function ConfirmDialog({
+  children,
   message,
   onConfirm,
-  triggerClassName,
   triggerLabel,
   triggerDataAttr,
+  triggerVariant = "text",
 }: {
+  children?: ReactNode;
   message: string;
   onConfirm: () => void;
-  triggerClassName: string;
   triggerLabel: string;
   triggerDataAttr?: string;
+  triggerVariant?: "icon" | "text";
 }) {
   const { t } = useTranslation();
   const triggerProps: Record<string, unknown> = {};
@@ -1052,8 +1255,31 @@ function ConfirmDialog({
 
   return (
     <Dialog>
-      <DialogTrigger className={triggerClassName} {...triggerProps}>
-        {triggerLabel}
+      <DialogTrigger
+        render={
+          triggerVariant === "icon" ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-control-light hover:bg-background"
+              aria-label={triggerLabel}
+              onClick={(event) => event.stopPropagation()}
+              {...triggerProps}
+            />
+          ) : (
+            <button
+              className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
+              onClick={(event) => event.stopPropagation()}
+              {...triggerProps}
+            />
+          )
+        }
+      >
+        {triggerVariant === "icon" ? (
+          <Tooltip content={triggerLabel}>{children}</Tooltip>
+        ) : (
+          triggerLabel
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-sm p-6">
         <DialogTitle className="sr-only">{t("common.confirm")}</DialogTitle>
@@ -1079,5 +1305,42 @@ function ConfirmDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type SidebarIconButtonProps = Readonly<{
+  ariaLabel: string;
+  children: ReactNode;
+  dataAttr?: string;
+  onClick: () => void;
+  tooltip: string;
+}>;
+
+function SidebarIconButton({
+  ariaLabel,
+  children,
+  dataAttr,
+  onClick,
+  tooltip,
+}: SidebarIconButtonProps) {
+  const dataProps: Record<string, unknown> = {};
+  if (dataAttr) dataProps[dataAttr] = true;
+
+  return (
+    <Tooltip content={tooltip}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-6 text-control-light hover:bg-background"
+        aria-label={ariaLabel}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        {...dataProps}
+      >
+        {children}
+      </Button>
+    </Tooltip>
   );
 }

@@ -19,7 +19,6 @@
       "title": "El asistente de IA no está configurado para este espacio de trabajo"
     },
     "archive-chat": "Archivar",
-    "archive-chat-confirmation": "¿Archivar este chat?",
     "archived-only-chats": "Solo archivadas",
     "args": "Argumentos:",
     "assistant-title": "Asistente de Bytebase",
@@ -1225,6 +1224,7 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
+      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "custom-date": "Fecha personalizada",
       "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento",
       "details": "Detalles de la solicitud",
@@ -2517,7 +2517,6 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
-    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",

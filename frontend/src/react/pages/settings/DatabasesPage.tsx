@@ -9,6 +9,7 @@ import {
   getValueFromScopes,
   type ScopeOption,
   type SearchParams,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import {
   CreateDatabaseSheet,
@@ -29,6 +30,8 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useEnvironmentV1Store,
+  useInstanceV1Store,
+  useProjectV1Store,
   useUIStateStore,
 } from "@/store";
 import {
@@ -50,7 +53,9 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   engineNameV1,
+  extractInstanceResourceName,
   extractProjectResourceName,
+  getDefaultPagination,
   hasWorkspacePermissionV2,
   supportedEngineV1List,
 } from "@/utils";
@@ -113,28 +118,67 @@ export function DatabasesPage() {
     () => environmentStore.environmentList ?? []
   );
 
+  const projectStore = useProjectV1Store();
+  const defaultProjectId = extractProjectResourceName(
+    actuatorStore.serverInfo?.defaultProject ?? ""
+  );
+  const searchProjects = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const { projects } = await projectStore.fetchProjectList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      const unassigned: ValueOption = {
+        value: defaultProjectId,
+        keywords: ["unassigned", "default"],
+        render: () => (
+          <span className="italic text-control-light">Unassigned</span>
+        ),
+      };
+      const matchesUnassigned =
+        !keyword.trim() || "unassigned".includes(keyword.trim().toLowerCase());
+      const remote = projects
+        .filter((p) => extractProjectResourceName(p.name) !== defaultProjectId)
+        .map<ValueOption>((p) => {
+          const id = extractProjectResourceName(p.name);
+          return { value: id, keywords: [id, p.title] };
+        });
+      return matchesUnassigned ? [unassigned, ...remote] : remote;
+    },
+    [projectStore, defaultProjectId]
+  );
+
+  const instanceStore = useInstanceV1Store();
+  const searchInstances = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
+      const { instances } = await instanceStore.fetchInstanceList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return instances.map((i) => {
+        const id = extractInstanceResourceName(i.name);
+        return {
+          value: id,
+          keywords: [id, i.title],
+        };
+      });
+    },
+    [instanceStore]
+  );
+
   const scopeOptions: ScopeOption[] = useMemo(() => {
     return [
       {
         id: "project",
         title: t("common.project"),
-        description: t("common.project"),
-        options: [
-          {
-            value: extractProjectResourceName(
-              actuatorStore.serverInfo?.defaultProject ?? ""
-            ),
-            keywords: ["unassigned", "default"],
-            render: () => (
-              <span className="italic text-control-light">Unassigned</span>
-            ),
-          },
-        ],
+        description: t("issue.advanced-search.scope.project.description"),
+        onSearch: searchProjects,
       },
       {
         id: "environment",
         title: t("common.environment"),
-        description: t("common.environment"),
+        description: t("issue.advanced-search.scope.environment.description"),
         options: [unknownEnvironment(), ...environments].map((env) => {
           const isUnknown = env.name === UNKNOWN_ENVIRONMENT_NAME;
           return {
@@ -150,12 +194,13 @@ export function DatabasesPage() {
       {
         id: "instance",
         title: t("common.instance"),
-        description: t("common.instance"),
+        description: t("issue.advanced-search.scope.instance.description"),
+        onSearch: searchInstances,
       },
       {
         id: "engine",
         title: t("database.engine"),
-        description: t("database.engine"),
+        description: t("issue.advanced-search.scope.engine.description"),
         options: supportedEngineV1List().map((engine) => ({
           value: Engine[engine],
           keywords: [Engine[engine].toLowerCase(), engineNameV1(engine)],
@@ -176,11 +221,11 @@ export function DatabasesPage() {
       {
         id: "label",
         title: t("common.labels"),
-        description: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
         allowMultiple: true,
       },
     ];
-  }, [t, environments]);
+  }, [t, environments, searchInstances, searchProjects]);
 
   // Derived filter values
   const projectVal = getValueFromScopes(searchParams, "project");

@@ -19,7 +19,6 @@
       "title": "このワークスペースでは AI アシスタントが設定されていません"
     },
     "archive-chat": "アーカイブ",
-    "archive-chat-confirmation": "このチャットをアーカイブしますか？",
     "archived-only-chats": "アーカイブのみ",
     "args": "引数:",
     "assistant-title": "Bytebase アシスタント",
@@ -1225,6 +1224,7 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
+      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "custom-date": "カスタム日付",
       "custom-date-placeholder": "有効期限と時刻を選択します",
       "details": "リクエストの詳細",
@@ -2517,7 +2517,6 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
-    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",

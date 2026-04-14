@@ -19,7 +19,6 @@
       "title": "AI Assistant isn’t configured for this workspace"
     },
     "archive-chat": "Archive",
-    "archive-chat-confirmation": "Archive this chat?",
     "archived-only-chats": "Archived only",
     "args": "Args:",
     "assistant-title": "Bytebase Assistant",
@@ -1225,6 +1224,7 @@
     "role-grant": {
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
+      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "custom-date": "Custom date",
       "custom-date-placeholder": "Select expiration date and time",
       "details": "Request Details",
@@ -2517,7 +2517,6 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
-    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",

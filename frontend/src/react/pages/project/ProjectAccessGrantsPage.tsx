@@ -157,6 +157,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   // Server-side search for database filter options
   const searchDatabases = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
+      if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
+        return [];
+      }
       const result = await databaseStore.fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
@@ -192,7 +195,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         };
       });
     },
-    [databaseStore, projectName]
+    [databaseStore, projectName, project]
   );
 
   // Server-side search for creator filter options
@@ -235,6 +238,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       {
         id: "status",
         title: t("common.status"),
+        description: t(
+          "issue.access-grant.advanced-search.scope.status.description"
+        ),
         allowMultiple: true,
         options: [
           {
@@ -262,11 +268,13 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
       {
         id: "database",
         title: t("common.database"),
+        description: t("issue.advanced-search.scope.database.description"),
         onSearch: searchDatabases,
       },
       {
         id: "creator",
         title: t("common.creator"),
+        description: t("issue.advanced-search.scope.creator.description"),
         onSearch: searchUsers,
       },
     ],
