@@ -554,6 +554,78 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).currentChatId).toBe(firstChatId);
   });
 
+  test("archives all active chats and clears the current selection", () => {
+    const store = createAgentStore();
+    const firstChatId = s(store).currentChatId!;
+    const secondChat = s(store).createChat({ title: "Second thread" });
+    const archivedChat = s(store).createChat({
+      title: "Archived thread",
+      archived: true,
+      select: false,
+    });
+
+    expect(s(store).currentChatId).toBe(secondChat.id);
+
+    const archivedCount = s(store).archiveAllActiveChats();
+
+    expect(archivedCount).toBe(2);
+    expect(s(store).getChat(firstChatId)?.archived).toBe(true);
+    expect(s(store).getChat(secondChat.id)?.archived).toBe(true);
+    expect(s(store).getChat(archivedChat.id)?.archived).toBe(true);
+    expect(s(store).currentChatId).toBeNull();
+  });
+
+  test("unarchives all archived chats and clears an archived current selection", () => {
+    const store = createAgentStore();
+    const activeChatId = s(store).currentChatId!;
+    const firstArchivedChat = s(store).createChat({
+      title: "Archived thread",
+      archived: true,
+      select: false,
+    });
+    const secondArchivedChat = s(store).createChat({
+      title: "Another archived thread",
+      archived: true,
+      select: false,
+    });
+
+    s(store).setCurrentChat(firstArchivedChat.id);
+
+    const unarchivedCount = s(store).unarchiveAllArchivedChats();
+
+    expect(unarchivedCount).toBe(2);
+    expect(s(store).getChat(activeChatId)?.archived).toBe(false);
+    expect(s(store).getChat(firstArchivedChat.id)?.archived).toBe(false);
+    expect(s(store).getChat(secondArchivedChat.id)?.archived).toBe(false);
+    expect(s(store).currentChatId).toBeNull();
+  });
+
+  test("deletes all archived chats without creating a replacement chat", () => {
+    const store = createAgentStore();
+    const activeChatId = s(store).currentChatId!;
+    const firstArchivedChat = s(store).createChat({
+      title: "Archived thread",
+      archived: true,
+      select: false,
+    });
+    const secondArchivedChat = s(store).createChat({
+      title: "Another archived thread",
+      archived: true,
+      select: false,
+    });
+
+    s(store).setCurrentChat(firstArchivedChat.id);
+
+    const deletedCount = s(store).deleteAllArchivedChats();
+
+    expect(deletedCount).toBe(2);
+    expect(s(store).getChat(activeChatId)).not.toBeNull();
+    expect(s(store).getChat(firstArchivedChat.id)).toBeNull();
+    expect(s(store).getChat(secondArchivedChat.id)).toBeNull();
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).currentChatId).toBeNull();
+  });
+
   test("tracks abort controllers per chat and cancels only the requested chat", () => {
     const store = createAgentStore();
     const firstChatId = s(store).currentChatId!;

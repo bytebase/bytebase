@@ -19,7 +19,6 @@
       "title": "此工作空间尚未配置 AI 助手"
     },
     "archive-chat": "归档",
-    "archive-chat-confirmation": "要归档这个聊天吗？",
     "archived-only-chats": "仅显示已归档",
     "args": "参数：",
     "assistant-title": "Bytebase 助手",

@@ -15,8 +15,8 @@
       "description": "此工作区尚未配置 AI。",
       "title": "AI 未配置"
     },
+    "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
-    "archive-chat-confirmation": "确定要归档此对话吗？",
     "archived-only-chats": "仅已归档",
     "args": "参数",
     "assistant-title": "AI 助手",
@@ -32,6 +32,8 @@
     "chat-total-tokens": "总 token 数",
     "close": "关闭",
     "confirm": "确认",
+    "delete-all-chats": "删除所有对话",
+    "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
     "input-placeholder": "向 AI 提问...",
@@ -60,6 +62,7 @@
     "tool-prompt": "提示",
     "tool-response-submitted": "已提交回复",
     "tool-value": "值",
+    "unarchive-all-chats": "取消归档所有对话",
     "unarchive-chat": "取消归档"
   },
   "audit-log": {
@@ -236,7 +239,7 @@
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {{permissions}}",
     "missing-required-permission-for-resource": "缺少资源 {{resource}} 的必需权限",
-    "more": "More",
+    "more": "更多",
     "n-items-selected": "已选 {{n}} 项",
     "n-more": "+{{n}} 更多",
     "name": "名称",

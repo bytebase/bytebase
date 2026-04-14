@@ -344,11 +344,15 @@ export interface AgentState {
   createChat: (options?: CreateChatOptions) => AgentChat;
   ensureCurrentChat: (page?: AgentChatSnapshot) => AgentChat;
   setCurrentChat: (chatId: string) => void;
+  clearCurrentChat: () => void;
   updateChatPage: (chatId: string, page: AgentChatSnapshot) => AgentChat | null;
   renameChat: (chatId: string, title: string) => AgentChat | null;
   archiveChat: (chatId: string) => AgentChat | null;
+  archiveAllActiveChats: () => number;
   unarchiveChat: (chatId: string) => AgentChat | null;
+  unarchiveAllArchivedChats: () => number;
   deleteChat: (chatId: string) => boolean;
+  deleteAllArchivedChats: () => number;
 
   // Messages
   addMessage: (message: AddMessageOptions) => AgentMessage;
@@ -727,6 +731,12 @@ export const createAgentStore = () => {
           }
         },
 
+        clearCurrentChat: () => {
+          set((state) => {
+            state.currentChatId = null;
+          });
+        },
+
         updateChatPage: (chatId, page) => {
           if (!_getChat(chatId)) return null;
           set((state) => {
@@ -766,6 +776,28 @@ export const createAgentStore = () => {
           return _getChat(chatId);
         },
 
+        archiveAllActiveChats: () => {
+          let archivedCount = 0;
+          set((state) => {
+            const activeChats = state.chats.filter((chat) => !chat.archived);
+            archivedCount = activeChats.length;
+            if (archivedCount === 0) return;
+
+            for (const chat of activeChats) {
+              chat.archived = true;
+              _touchChatInDraft(state.chats, chat.id);
+            }
+
+            if (
+              state.currentChatId &&
+              activeChats.some((chat) => chat.id === state.currentChatId)
+            ) {
+              state.currentChatId = null;
+            }
+          });
+          return archivedCount;
+        },
+
         unarchiveChat: (chatId) => {
           if (!_getChat(chatId)) return null;
           set((state) => {
@@ -776,6 +808,28 @@ export const createAgentStore = () => {
             }
           });
           return _getChat(chatId);
+        },
+
+        unarchiveAllArchivedChats: () => {
+          let unarchivedCount = 0;
+          set((state) => {
+            const archivedChats = state.chats.filter((chat) => chat.archived);
+            unarchivedCount = archivedChats.length;
+            if (unarchivedCount === 0) return;
+
+            for (const chat of archivedChats) {
+              chat.archived = false;
+              _touchChatInDraft(state.chats, chat.id);
+            }
+
+            if (
+              state.currentChatId &&
+              archivedChats.some((chat) => chat.id === state.currentChatId)
+            ) {
+              state.currentChatId = null;
+            }
+          });
+          return unarchivedCount;
         },
 
         deleteChat: (chatId) => {
@@ -805,6 +859,42 @@ export const createAgentStore = () => {
             }
           });
           return true;
+        },
+
+        deleteAllArchivedChats: () => {
+          const archivedChatIds = get()
+            .chats.filter((chat) => chat.archived)
+            .map((chat) => chat.id);
+          for (const chatId of archivedChatIds) {
+            get().cancel(chatId);
+          }
+
+          let deletedCount = 0;
+          set((state) => {
+            const archivedChats = state.chats.filter((chat) => chat.archived);
+            deletedCount = archivedChats.length;
+            if (deletedCount === 0) return;
+
+            const deletedChatIds = new Set(
+              archivedChats.map((chat) => chat.id)
+            );
+            for (const chatId of deletedChatIds) {
+              delete state.messagesByChatId[chatId];
+              delete state.pendingAskByChatId[chatId];
+              delete state.abortControllersByChatId[chatId];
+            }
+
+            state.chats = state.chats.filter(
+              (chat) => !deletedChatIds.has(chat.id)
+            );
+            if (
+              state.currentChatId &&
+              deletedChatIds.has(state.currentChatId)
+            ) {
+              state.currentChatId = null;
+            }
+          });
+          return deletedCount;
         },
 
         // Messages
