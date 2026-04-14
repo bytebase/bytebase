@@ -270,9 +270,11 @@ export function AdvancedSearch({
   useEffect(() => {
     clearTimeout(asyncSearchRef.current);
     asyncRequestRef.current += 1;
+    // Clear previous results on every run so stale options from the prior
+    // scope/keyword aren't selectable during the debounce + fetch window.
+    setAsyncOptions([]);
 
     if (!currentScope || !onSearchRef.current) {
-      setAsyncOptions([]);
       setAsyncLoading(false);
       return;
     }
