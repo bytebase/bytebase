@@ -1429,7 +1429,7 @@
     "refresh-indicator": {
       "last-refresh": "最終更新: {time}"
     },
-    "run": "チェックを実行",
+    "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
     "select-targets": "ターゲットを選択",
     "sidebar": {

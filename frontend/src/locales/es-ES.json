@@ -1429,7 +1429,7 @@
     "refresh-indicator": {
       "last-refresh": "Última actualización: {time}"
     },
-    "run": "Ejecutar verificación",
+    "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "select-targets": "Seleccionar objetivos",
     "sidebar": {

@@ -1429,7 +1429,7 @@
     "refresh-indicator": {
       "last-refresh": "Last refresh: {time}"
     },
-    "run": "Run check",
+    "run": "Run checks",
     "select-isolation-level": "Select isolation level",
     "select-targets": "Select Targets",
     "sidebar": {

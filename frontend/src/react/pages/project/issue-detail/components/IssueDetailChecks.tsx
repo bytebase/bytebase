@@ -76,6 +76,11 @@ export function IssueDetailChecks() {
     if (!page.plan) {
       return false;
     }
+    // Once a rollout exists, the plan is frozen — re-running checks produces
+    // the same result and is misleading for the user.
+    if (page.plan.hasRollout) {
+      return false;
+    }
     if (extractUserEmail(page.plan.creator) === currentUser.email) {
       return true;
     }

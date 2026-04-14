@@ -440,6 +440,12 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if storePlanConfigHasRelease(plan.Config) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot run plan checks because plan %q has release", plan.Name))
 	}
+	// Once a rollout exists the plan is frozen; re-running checks produces the
+	// same result and is misleading. Match the frontend gate in
+	// PlanCheckSection.vue / ChecksSection.vue / IssueDetailChecks.tsx.
+	if plan.Config.GetHasRollout() {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot run plan checks because plan %q already has a rollout", plan.Name))
+	}
 	var databaseGroup *v1pb.DatabaseGroup
 	for _, spec := range plan.Config.GetSpecs() {
 		if c, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {

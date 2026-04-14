@@ -1299,7 +1299,7 @@
   "plan.options.self": "配置项",
   "plan.overview.no-checks": "没有检查",
   "plan.ready-for-review": "准备提交评审",
-  "plan.run": "运行",
+  "plan.run": "重新检查",
   "plan.select-isolation-level": "选择隔离级别",
   "plan.spec.change": "Change",
   "plan.spec.type.database-change": "数据库变更",
