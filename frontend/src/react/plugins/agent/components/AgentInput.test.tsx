@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { DomRefSuggestion } from "../dom";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -13,7 +14,9 @@ const mocks = vi.hoisted(() => ({
     t: (key: string) => key,
   })),
   routerPush: vi.fn(),
-  lazyExtractDomRefSuggestions: vi.fn(async () => []),
+  lazyExtractDomRefSuggestions: vi.fn<() => Promise<DomRefSuggestion[]>>(
+    async () => []
+  ),
   runAgentLoop: vi.fn(),
   isAgentAIConfigurationError: vi.fn(() => false),
   buildOutboundHistory: vi.fn(() => []),
@@ -90,6 +93,7 @@ vi.mock("../logic/tools", () => ({
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
+  document.body.appendChild(container);
   const root = createRoot(container);
 
   return {
@@ -102,6 +106,7 @@ const renderIntoContainer = (element: ReactElement) => {
     unmount: () =>
       act(() => {
         root.unmount();
+        container.remove();
       }),
   };
 };
@@ -145,6 +150,37 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("mounts mention suggestions into the agent layer root", async () => {
+    const suggestions: DomRefSuggestion[] = [
+      {
+        ref: "button.submit",
+        tag: "BUTTON",
+        role: "button",
+        label: "Submit",
+        value: "",
+      },
+    ];
+    mocks.lazyExtractDomRefSuggestions.mockResolvedValue(suggestions);
+
+    const { render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const textarea = document.body.querySelector(
+      "textarea"
+    ) as HTMLTextAreaElement;
+
+    await act(async () => {
+      setTextareaValue(textarea, "@");
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const agentRoot = document.getElementById("bb-react-layer-agent");
+    expect(agentRoot?.querySelector("[data-agent-mention-list]")).toBeTruthy();
+
+    unmount();
+  });
+
   test("shows a single-line overlay placeholder and hides it when typing", () => {
     const { container, render, unmount } = renderIntoContainer(<AgentInput />);
 

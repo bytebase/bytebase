@@ -133,6 +133,20 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("mounts the agent shell into the agent layer root", () => {
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const agentRoot = document.getElementById("bb-react-layer-agent");
+    expect(agentRoot).toBeInstanceOf(HTMLDivElement);
+    expect(agentRoot?.querySelector("[data-agent-window]")).toBeInstanceOf(
+      HTMLDivElement
+    );
+
+    unmount();
+  });
+
   test("selects the next archived chat after deleting the current archived chat", () => {
     const activeChatId = useAgentStore.getState().currentChatId!;
     const firstArchivedChat = useAgentStore.getState().createChat({

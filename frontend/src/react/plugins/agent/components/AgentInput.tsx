@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/react/components/ui/button";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { router } from "@/router";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
@@ -154,6 +163,19 @@ export function AgentInput() {
 
   // Show/hide mention popover
   const showMention = isMentionOpen && mentionOptions.length > 0;
+  const mentionListStyle = useMemo<CSSProperties | null>(() => {
+    if (!showMention) return null;
+
+    const rect = textareaRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+
+    return {
+      left: rect.left,
+      top: rect.top - 4,
+      width: rect.width,
+      transform: "translateY(-100%)",
+    };
+  }, [showMention, input, selectionStart, selectionEnd]);
 
   // Reset highlight when options change
   useEffect(() => {
@@ -712,48 +734,53 @@ export function AgentInput() {
             />
 
             {/* Mention popover */}
-            {showMention && (
-              <div
-                ref={mentionListRef}
-                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-xs border bg-background shadow-lg"
-              >
-                {mentionOptions.map((option, index) => {
-                  const meta = formatDomRefSuggestionMeta(option.suggestion);
-                  return (
-                    <div
-                      key={option.value}
-                      data-mention-option
-                      className={`cursor-pointer px-3 py-2 ${
-                        index === highlightIndex
-                          ? "bg-accent/10"
-                          : "hover:bg-control-bg"
-                      }`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        selectMention(option);
-                      }}
-                      onMouseEnter={() => setHighlightIndex(index)}
-                    >
-                      <div className="flex flex-col text-sm">
-                        <div className="flex items-center gap-x-2 text-main">
-                          <span className="font-medium">
-                            [{option.suggestion.ref}]
-                          </span>
-                          <span className="truncate">
-                            {option.suggestion.label}
-                          </span>
-                        </div>
-                        {meta && (
-                          <div className="mt-1 text-xs text-control-light">
-                            {meta}
+            {showMention &&
+              mentionListStyle &&
+              createPortal(
+                <div
+                  ref={mentionListRef}
+                  data-agent-mention-list
+                  className={`fixed ${LAYER_SURFACE_CLASS} max-h-80 overflow-y-auto rounded-xs border bg-background shadow-lg`}
+                  style={mentionListStyle}
+                >
+                  {mentionOptions.map((option, index) => {
+                    const meta = formatDomRefSuggestionMeta(option.suggestion);
+                    return (
+                      <div
+                        key={option.value}
+                        data-mention-option
+                        className={`cursor-pointer px-3 py-2 ${
+                          index === highlightIndex
+                            ? "bg-accent/10"
+                            : "hover:bg-control-bg"
+                        }`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectMention(option);
+                        }}
+                        onMouseEnter={() => setHighlightIndex(index)}
+                      >
+                        <div className="flex flex-col text-sm">
+                          <div className="flex items-center gap-x-2 text-main">
+                            <span className="font-medium">
+                              [{option.suggestion.ref}]
+                            </span>
+                            <span className="truncate">
+                              {option.suggestion.label}
+                            </span>
                           </div>
-                        )}
+                          {meta && (
+                            <div className="mt-1 text-xs text-control-light">
+                              {meta}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>,
+                getLayerRoot("agent")
+              )}
           </div>
 
           {loading ? (

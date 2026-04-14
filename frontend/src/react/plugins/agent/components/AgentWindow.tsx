@@ -11,23 +11,8 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Button } from "@/react/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/react/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
-import { Tooltip } from "@/react/components/ui/tooltip";
+import { getLayerRoot } from "@/react/components/ui/layer";
 import { cn } from "@/react/lib/utils";
 import type { AgentChat as AgentChatRecord } from "../logic/types";
 import {
@@ -49,6 +34,22 @@ import {
   RESIZE_POINTER_MEDIA_QUERY,
   supportsWindowBorderResize,
 } from "./resize-capability";
+import {
+  AgentDialog,
+  AgentDialogClose,
+  AgentDialogContent,
+  AgentDialogDescription,
+  AgentDialogTitle,
+  AgentDialogTrigger,
+} from "./ui/AgentDialog";
+import {
+  AgentDropdownMenu,
+  AgentDropdownMenuContent,
+  AgentDropdownMenuItem,
+  AgentDropdownMenuSeparator,
+  AgentDropdownMenuTrigger,
+} from "./ui/AgentDropdownMenu";
+import { AgentTooltip } from "./ui/AgentTooltip";
 import {
   type ResizeBounds,
   type ResizeDirection,
@@ -888,7 +889,7 @@ export function AgentWindow() {
     return createPortal(
       <div
         data-agent-window
-        className="fixed bottom-4 right-4 z-40 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
+        className="fixed bottom-4 right-4 flex size-10 cursor-pointer items-center justify-center rounded-full bg-accent text-accent-text shadow-lg hover:bg-accent-hover"
         onClick={() => useAgentStore.getState().restore()}
       >
         <svg
@@ -904,7 +905,7 @@ export function AgentWindow() {
           />
         </svg>
       </div>,
-      document.body
+      getLayerRoot("agent")
     );
   }
 
@@ -912,27 +913,29 @@ export function AgentWindow() {
     <div
       ref={windowRef}
       data-agent-window
-      className="fixed z-40 overflow-visible"
+      className="fixed overflow-visible"
       style={windowStyle}
     >
-      <Dialog
+      <AgentDialog
         open={isDeleteAllArchivedChatsDialogOpen}
         onOpenChange={setIsDeleteAllArchivedChatsDialogOpen}
       >
-        <DialogContent className="max-w-sm p-6">
-          <DialogTitle className="sr-only">{t("common.confirm")}</DialogTitle>
-          <DialogDescription>
+        <AgentDialogContent className="max-w-sm p-6">
+          <AgentDialogTitle className="sr-only">
+            {t("common.confirm")}
+          </AgentDialogTitle>
+          <AgentDialogDescription>
             {t("agent.delete-all-chats-confirmation")}
-          </DialogDescription>
+          </AgentDialogDescription>
           <div className="mt-6 flex justify-end gap-x-2">
-            <DialogClose
+            <AgentDialogClose
               render={
                 <Button variant="outline" type="button">
                   {t("common.cancel")}
                 </Button>
               }
             />
-            <DialogClose
+            <AgentDialogClose
               render={
                 <Button type="button" variant="destructive">
                   {t("common.confirm")}
@@ -941,8 +944,8 @@ export function AgentWindow() {
               onClick={deleteAllArchivedChats}
             />
           </div>
-        </DialogContent>
-      </Dialog>
+        </AgentDialogContent>
+      </AgentDialog>
       <div className="flex size-full flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl">
         {/* Header */}
         <div
@@ -1008,7 +1011,7 @@ export function AgentWindow() {
                   className="flex items-center gap-x-2"
                   data-agent-chat-sidebar-actions
                 >
-                  <Tooltip content={t("agent.new-chat")}>
+                  <AgentTooltip content={t("agent.new-chat")}>
                     <Button
                       variant="outline"
                       size="icon"
@@ -1019,10 +1022,10 @@ export function AgentWindow() {
                     >
                       <Plus className="size-4" aria-hidden="true" />
                     </Button>
-                  </Tooltip>
-                  <DropdownMenu>
-                    <Tooltip content={t("common.more")}>
-                      <DropdownMenuTrigger
+                  </AgentTooltip>
+                  <AgentDropdownMenu>
+                    <AgentTooltip content={t("common.more")}>
+                      <AgentDropdownMenuTrigger
                         className="inline-flex size-7 items-center justify-center rounded-xs border border-control-border bg-transparent text-control-light outline-hidden hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
                         aria-label={t("common.more")}
                         onClick={(event) => event.stopPropagation()}
@@ -1031,12 +1034,12 @@ export function AgentWindow() {
                           className="size-4"
                           aria-hidden="true"
                         />
-                      </DropdownMenuTrigger>
-                    </Tooltip>
-                    <DropdownMenuContent>
+                      </AgentDropdownMenuTrigger>
+                    </AgentTooltip>
+                    <AgentDropdownMenuContent>
                       {showArchivedOnly ? (
                         <>
-                          <DropdownMenuItem
+                          <AgentDropdownMenuItem
                             data-agent-unarchive-all-chats
                             disabled={isUnarchiveAllDisabled}
                             onClick={(event) => {
@@ -1045,8 +1048,8 @@ export function AgentWindow() {
                             }}
                           >
                             {t("agent.unarchive-all-chats")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
+                          </AgentDropdownMenuItem>
+                          <AgentDropdownMenuItem
                             data-agent-delete-all-chats
                             className="text-error data-highlighted:bg-red-50"
                             disabled={isDeleteAllDisabled}
@@ -1056,10 +1059,10 @@ export function AgentWindow() {
                             }}
                           >
                             {t("agent.delete-all-chats")}
-                          </DropdownMenuItem>
+                          </AgentDropdownMenuItem>
                         </>
                       ) : (
-                        <DropdownMenuItem
+                        <AgentDropdownMenuItem
                           data-agent-archive-all-chats
                           disabled={isArchiveAllDisabled}
                           onClick={(event) => {
@@ -1068,10 +1071,10 @@ export function AgentWindow() {
                           }}
                         >
                           {t("agent.archive-all-chats")}
-                        </DropdownMenuItem>
+                        </AgentDropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
+                      <AgentDropdownMenuSeparator />
+                      <AgentDropdownMenuItem
                         data-agent-chat-list-mode
                         onClick={(event) => {
                           event.stopPropagation();
@@ -1081,9 +1084,9 @@ export function AgentWindow() {
                         {showArchivedOnly
                           ? t("agent.active-only-chats")
                           : t("agent.archived-only-chats")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </AgentDropdownMenuItem>
+                    </AgentDropdownMenuContent>
+                  </AgentDropdownMenu>
                 </div>
               </div>
             </div>
@@ -1228,7 +1231,7 @@ export function AgentWindow() {
           )
         )}
     </div>,
-    document.body
+    getLayerRoot("agent")
   );
 }
 
@@ -1254,8 +1257,8 @@ function ConfirmDialog({
   if (triggerDataAttr) triggerProps[triggerDataAttr] = true;
 
   return (
-    <Dialog>
-      <DialogTrigger
+    <AgentDialog>
+      <AgentDialogTrigger
         render={
           triggerVariant === "icon" ? (
             <Button
@@ -1276,23 +1279,27 @@ function ConfirmDialog({
         }
       >
         {triggerVariant === "icon" ? (
-          <Tooltip content={triggerLabel}>{children}</Tooltip>
+          <AgentTooltip content={triggerLabel}>{children}</AgentTooltip>
         ) : (
           triggerLabel
         )}
-      </DialogTrigger>
-      <DialogContent className="max-w-sm p-6">
-        <DialogTitle className="sr-only">{t("common.confirm")}</DialogTitle>
-        <DialogDescription className="mb-4">{message}</DialogDescription>
+      </AgentDialogTrigger>
+      <AgentDialogContent className="max-w-sm p-6">
+        <AgentDialogTitle className="sr-only">
+          {t("common.confirm")}
+        </AgentDialogTitle>
+        <AgentDialogDescription className="mb-4">
+          {message}
+        </AgentDialogDescription>
         <div className="flex justify-end gap-x-2">
-          <DialogClose
+          <AgentDialogClose
             render={
               <button className="rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg">
                 {t("common.cancel")}
               </button>
             }
           />
-          <DialogClose
+          <AgentDialogClose
             render={
               <button
                 className="rounded-xs bg-accent px-3 py-1.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
@@ -1303,8 +1310,8 @@ function ConfirmDialog({
             }
           />
         </div>
-      </DialogContent>
-    </Dialog>
+      </AgentDialogContent>
+    </AgentDialog>
   );
 }
 
@@ -1327,7 +1334,7 @@ function SidebarIconButton({
   if (dataAttr) dataProps[dataAttr] = true;
 
   return (
-    <Tooltip content={tooltip}>
+    <AgentTooltip content={tooltip}>
       <Button
         variant="ghost"
         size="icon"
@@ -1341,6 +1348,6 @@ function SidebarIconButton({
       >
         {children}
       </Button>
-    </Tooltip>
+    </AgentTooltip>
   );
 }
