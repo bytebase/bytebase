@@ -51,6 +51,7 @@ import {
   getDateForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidEnvironmentName,
+  type Language,
   languageOfEngineV1,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -1535,6 +1536,7 @@ function SelectTargetDatabasesView({
         <div className="flex-1 h-full overflow-hidden p-2">
           {selectedDatabaseName ? (
             <DiffViewPanel
+              selectedDatabaseName={selectedDatabaseName}
               statement={schemaDiffCache[selectedDatabaseName]?.edited ?? ""}
               engine={sourceEngine}
               targetDatabaseSchema={targetSchemaDisplayString}
@@ -1575,6 +1577,7 @@ function SelectTargetDatabasesView({
 // ============================================================
 
 function DiffViewPanel({
+  selectedDatabaseName,
   statement,
   engine,
   targetDatabaseSchema,
@@ -1583,6 +1586,7 @@ function DiffViewPanel({
   previewSchemaChangeMessage,
   onStatementChange,
 }: {
+  selectedDatabaseName?: string;
   statement: string;
   engine: Engine;
   targetDatabaseSchema: string;
@@ -1626,6 +1630,7 @@ function DiffViewPanel({
         {tab === "diff" &&
           (shouldShowDiff ? (
             <SchemaDiffViewer
+              key={selectedDatabaseName ?? "unknown"}
               title={previewSchemaChangeMessage}
               original={targetDatabaseSchema}
               modified={sourceDatabaseSchema}
@@ -1686,6 +1691,17 @@ function SchemaDiffViewer({
   // biome-ignore lint/suspicious/noExplicitAny: Monaco diff editor instance
   const editorRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [showModal, setShowModal] = useState(false);
+  const layoutFrameRef = useRef<number | null>(null);
+
+  const scheduleLayout = useCallback(() => {
+    if (layoutFrameRef.current !== null) {
+      cancelAnimationFrame(layoutFrameRef.current);
+    }
+    layoutFrameRef.current = requestAnimationFrame(() => {
+      editorRef.current?.layout();
+      layoutFrameRef.current = null;
+    });
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -1708,16 +1724,21 @@ function SchemaDiffViewer({
         original: monaco.editor.createModel(normalizedOriginal, "sql"),
         modified: monaco.editor.createModel(normalizedModified, "sql"),
       });
+      scheduleLayout();
     })();
     return () => {
       disposed = true;
+      if (layoutFrameRef.current !== null) {
+        cancelAnimationFrame(layoutFrameRef.current);
+        layoutFrameRef.current = null;
+      }
       const model = editorRef.current?.getModel();
       model?.original?.dispose();
       model?.modified?.dispose();
       editorRef.current?.dispose();
       editorRef.current = null;
     };
-  }, []);
+  }, [scheduleLayout]);
 
   // Update models when content changes
   useEffect(() => {
@@ -1727,8 +1748,18 @@ function SchemaDiffViewer({
     if (model) {
       model.original.setValue(normalizedOriginal);
       model.modified.setValue(normalizedModified);
+      scheduleLayout();
     }
-  }, [normalizedOriginal, normalizedModified]);
+  }, [normalizedOriginal, normalizedModified, scheduleLayout]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      scheduleLayout();
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [scheduleLayout]);
 
   const handleNavigate = useCallback((direction: "next" | "previous") => {
     editorRef.current?.goToDiff(direction);
@@ -1825,7 +1856,7 @@ function MonacoEditorPanel({
   onChange,
 }: {
   content: string;
-  language: string;
+  language: Language;
   onChange: (value: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1834,6 +1865,17 @@ function MonacoEditorPanel({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const contentRef = useRef(content);
+  const layoutFrameRef = useRef<number | null>(null);
+
+  const scheduleLayout = useCallback(() => {
+    if (layoutFrameRef.current !== null) {
+      cancelAnimationFrame(layoutFrameRef.current);
+    }
+    layoutFrameRef.current = requestAnimationFrame(() => {
+      editorRef.current?.layout();
+      layoutFrameRef.current = null;
+    });
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -1856,21 +1898,44 @@ function MonacoEditorPanel({
         contentRef.current = val;
         onChangeRef.current(val);
       });
+      scheduleLayout();
     })();
     return () => {
       disposed = true;
+      if (layoutFrameRef.current !== null) {
+        cancelAnimationFrame(layoutFrameRef.current);
+        layoutFrameRef.current = null;
+      }
       editorRef.current?.dispose();
       editorRef.current = null;
     };
-  }, []);
+  }, [scheduleLayout]);
+
+  useEffect(() => {
+    const model = editorRef.current?.getModel();
+    if (model) {
+      void setMonacoModelLanguage(model, language);
+      scheduleLayout();
+    }
+  }, [language, scheduleLayout]);
 
   // Sync content from outside
   useEffect(() => {
     if (editorRef.current && content !== contentRef.current) {
       contentRef.current = content;
       editorRef.current.setValue(content);
+      scheduleLayout();
     }
-  }, [content]);
+  }, [content, scheduleLayout]);
+
+  useEffect(() => {
+    if (!containerRef.current || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      scheduleLayout();
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [scheduleLayout]);
 
   return <div ref={containerRef} className="w-full flex-1 border" />;
 }
