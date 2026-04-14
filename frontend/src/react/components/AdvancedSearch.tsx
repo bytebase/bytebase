@@ -255,12 +255,15 @@ export function AdvancedSearch({
 
   const isAsyncScope = currentScopeOption?.onSearch != null;
 
-  // Keep scopeOptions in a ref so the search effect doesn't re-run (and cancel
-  // its in-flight request) just because the parent rebuilt the array.
-  const scopeOptionsRef = useRef(scopeOptions);
-  useEffect(() => {
-    scopeOptionsRef.current = scopeOptions;
-  }, [scopeOptions]);
+  // Keep the latest onSearch in a ref so the timer always fires against the
+  // freshest callback — without adding it as an effect dep. Page-level
+  // callbacks (e.g. `searchDatabases`) often close over async-loaded state
+  // like `project`, and their useCallback identity can churn on every render
+  // when that state flows through unstable references (e.g. a fallback
+  // `unknownProject()` that allocates a new proto each call). Depending on
+  // that identity would refire this effect on every render and loop forever.
+  const onSearchRef = useRef(currentScopeOption?.onSearch);
+  onSearchRef.current = currentScopeOption?.onSearch;
 
   // Trigger async search when the current scope or its keyword changes.
   // Reset is folded into the same effect so we never race with it.
@@ -268,14 +271,7 @@ export function AdvancedSearch({
     clearTimeout(asyncSearchRef.current);
     asyncRequestRef.current += 1;
 
-    if (!currentScope) {
-      setAsyncOptions([]);
-      setAsyncLoading(false);
-      return;
-    }
-    const scope = scopeOptionsRef.current.find((s) => s.id === currentScope);
-    const onSearch = scope?.onSearch;
-    if (!onSearch) {
+    if (!currentScope || !onSearchRef.current) {
       setAsyncOptions([]);
       setAsyncLoading(false);
       return;
@@ -284,7 +280,14 @@ export function AdvancedSearch({
     const requestID = asyncRequestRef.current;
     setAsyncLoading(true);
     asyncSearchRef.current = setTimeout(() => {
-      onSearch(currentValueForScope)
+      const fn = onSearchRef.current;
+      if (!fn) {
+        if (asyncRequestRef.current !== requestID) return;
+        setAsyncOptions([]);
+        setAsyncLoading(false);
+        return;
+      }
+      fn(currentValueForScope)
         .then((results) => {
           if (asyncRequestRef.current !== requestID) return;
           setAsyncOptions(results);
