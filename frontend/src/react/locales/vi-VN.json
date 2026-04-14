@@ -1106,20 +1106,16 @@
           "title": "Người phê duyệt hiện tại"
         },
         "database": {
-          "description": "Lọc theo cơ sở dữ liệu",
-          "title": "Cơ sở dữ liệu"
+          "description": "Lọc theo cơ sở dữ liệu"
         },
         "engine": {
-          "description": "Lọc theo engine",
-          "title": "Engine"
+          "description": "Lọc theo engine"
         },
         "environment": {
-          "description": "Lọc theo môi trường",
-          "title": "Môi trường"
+          "description": "Lọc theo môi trường"
         },
         "instance": {
-          "description": "Lọc theo phiên bản",
-          "title": "Phiên bản"
+          "description": "Lọc theo phiên bản"
         },
         "issue-label": {
           "description": "Lọc theo nhãn vấn đề",
@@ -1139,8 +1135,7 @@
           "description": "Nhập cặp \"key:value\" rồi nhấn Enter"
         },
         "project": {
-          "description": "Lọc theo dự án",
-          "title": "Dự án"
+          "description": "Lọc theo dự án"
         },
         "state": {
           "description": "Lọc theo trạng thái"
@@ -1148,13 +1143,8 @@
         "status": {
           "description": "Tìm kiếm theo trạng thái issue"
         },
-        "table": {
-          "description": "Nhập giá trị sau đó nhấn Enter",
-          "title": "Bảng"
-        },
         "user": {
-          "description": "Lọc theo người dùng",
-          "title": "Người dùng"
+          "description": "Lọc theo người dùng"
         }
       }
     },

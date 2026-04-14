@@ -345,7 +345,7 @@ export function ProjectMaskingExemptionPage({
         id: "status",
         title: t("common.status"),
         description: t(
-          "issue.masking-exemption.advanced-search.scope.status.description"
+          "project.masking-exemption.advanced-search.scope.status.description"
         ),
         options: [
           {

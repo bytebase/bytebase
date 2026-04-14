@@ -1106,20 +1106,16 @@
           "title": "Current approver"
         },
         "database": {
-          "description": "Filter by database",
-          "title": "Database"
+          "description": "Filter by database"
         },
         "engine": {
-          "description": "Filter by engines",
-          "title": "Engine"
+          "description": "Filter by engines"
         },
         "environment": {
-          "description": "Filter by environment",
-          "title": "Environment"
+          "description": "Filter by environment"
         },
         "instance": {
-          "description": "Filter by instance",
-          "title": "Instance"
+          "description": "Filter by instance"
         },
         "issue-label": {
           "description": "Filter by issue label",
@@ -1139,8 +1135,7 @@
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "project": {
-          "description": "Filter by project",
-          "title": "Project"
+          "description": "Filter by project"
         },
         "state": {
           "description": "Filter by state"
@@ -1148,13 +1143,8 @@
         "status": {
           "description": "Search by the issue status"
         },
-        "table": {
-          "description": "Input the value then press Enter",
-          "title": "Table"
-        },
         "user": {
-          "description": "Filter by user",
-          "title": "User"
+          "description": "Filter by user"
         }
       }
     },

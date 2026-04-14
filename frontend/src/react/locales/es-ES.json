@@ -1106,20 +1106,16 @@
           "title": "aprobador actual"
         },
         "database": {
-          "description": "Filtrar por base de datos",
-          "title": "Base de datos"
+          "description": "Filtrar por base de datos"
         },
         "engine": {
-          "description": "Filtrar por motores",
-          "title": "Motor"
+          "description": "Filtrar por motores"
         },
         "environment": {
-          "description": "Filtrar por entorno",
-          "title": "Ambiente"
+          "description": "Filtrar por entorno"
         },
         "instance": {
-          "description": "Filtrar por instancia",
-          "title": "Instancia"
+          "description": "Filtrar por instancia"
         },
         "issue-label": {
           "description": "Filtrar por etiqueta de problema",
@@ -1139,8 +1135,7 @@
           "description": "Ingrese el par \"clave:valor\" y luego presione Enter"
         },
         "project": {
-          "description": "Filtrar por proyecto",
-          "title": "Proyecto"
+          "description": "Filtrar por proyecto"
         },
         "state": {
           "description": "Filtrar por estado"
@@ -1148,13 +1143,8 @@
         "status": {
           "description": "Buscar por el estado del issue"
         },
-        "table": {
-          "description": "Ingrese el valor y luego presione Enter",
-          "title": "Tabla"
-        },
         "user": {
-          "description": "Filtrar por usuario",
-          "title": "Usuario"
+          "description": "Filtrar por usuario"
         }
       }
     },

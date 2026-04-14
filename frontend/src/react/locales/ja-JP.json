@@ -1106,20 +1106,16 @@
           "title": "現在の承認者"
         },
         "database": {
-          "description": "データベースでフィルター",
-          "title": "データベース"
+          "description": "データベースでフィルター"
         },
         "engine": {
-          "description": "エンジンでフィルタリング",
-          "title": "エンジン"
+          "description": "エンジンでフィルタリング"
         },
         "environment": {
-          "description": "環境に基づいてフィルタリングする",
-          "title": "環境"
+          "description": "環境に基づいてフィルタリングする"
         },
         "instance": {
-          "description": "インスタンスによるフィルター",
-          "title": "インスタンス"
+          "description": "インスタンスによるフィルター"
         },
         "issue-label": {
           "description": "イシューラベルでフィルタリング",
@@ -1139,8 +1135,7 @@
           "description": "「キー:値」のペアを入力し、Enterを押します"
         },
         "project": {
-          "description": "プロジェクトでフィルターする",
-          "title": "プロジェクト"
+          "description": "プロジェクトでフィルターする"
         },
         "state": {
           "description": "状態でフィルタ"
@@ -1148,13 +1143,8 @@
         "status": {
           "description": "イシューのステータスで検索"
         },
-        "table": {
-          "description": "値を入力してEnterを押します",
-          "title": "テーブル"
-        },
         "user": {
-          "description": "ユーザーでフィルター",
-          "title": "ユーザー"
+          "description": "ユーザーでフィルター"
         }
       }
     },
