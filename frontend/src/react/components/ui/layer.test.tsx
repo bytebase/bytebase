@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, test } from "vitest";
-import {
-  getLayerRoot,
-  LAYER_ROOT_ID,
-  LAYER_Z_INDEX,
-} from "./layer";
+import { getLayerRoot, LAYER_ROOT_ID, LAYER_Z_INDEX } from "./layer";
 
 describe("layer roots", () => {
   afterEach(() => {
@@ -33,13 +29,13 @@ describe("layer roots", () => {
 
     expect(document.body.children).toHaveLength(3);
     expect(document.querySelectorAll(`#${LAYER_ROOT_ID.overlay}`)).toHaveLength(
-      1,
+      1
     );
     expect(document.querySelectorAll(`#${LAYER_ROOT_ID.agent}`)).toHaveLength(
-      1,
+      1
     );
     expect(
-      document.querySelectorAll(`#${LAYER_ROOT_ID.critical}`),
+      document.querySelectorAll(`#${LAYER_ROOT_ID.critical}`)
     ).toHaveLength(1);
   });
 });
