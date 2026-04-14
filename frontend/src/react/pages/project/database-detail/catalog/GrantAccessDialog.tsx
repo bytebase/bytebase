@@ -14,6 +14,7 @@ import {
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
+  ExprType,
   emptySimpleExpr,
   resolveCELExpr,
   validateSimpleExpr,
@@ -135,6 +136,37 @@ export function GrantAccessDialog({
   const lastInitializationKeyRef = useRef<string | undefined>(undefined);
   const modeChangeRequestIdRef = useRef(0);
 
+  const convertToConditionGroupExpr = useCallback(
+    async (resources: DatabaseResource[]) => {
+      if (resources.length === 0) {
+        return wrapAsGroup(emptySimpleExpr());
+      }
+
+      const expression = stringifyConditionExpression({
+        databaseResources: resources,
+      });
+
+      try {
+        const parsedExprs = await batchConvertCELStringToParsedExpr([
+          expression,
+        ]);
+        const parsedExpr = parsedExprs[0];
+        if (parsedExpr) {
+          return wrapAsGroup(resolveCELExpr(parsedExpr));
+        }
+      } catch {
+        // Fall through to a raw string expression so the current scope stays
+        // editable/submittable even if CEL parsing is temporarily unavailable.
+      }
+
+      return wrapAsGroup({
+        type: ExprType.RawString,
+        content: expression,
+      });
+    },
+    []
+  );
+
   useEffect(() => {
     if (!open) {
       return;
@@ -177,19 +209,13 @@ export function GrantAccessDialog({
         return;
       }
 
-      const expression = stringifyConditionExpression({
-        databaseResources: initialDatabaseResources,
-      });
-      const parsedExprs = await batchConvertCELStringToParsedExpr([expression]);
-      if (cancelled) {
+      const nextExpr = await convertToConditionGroupExpr(
+        initialDatabaseResources
+      );
+      if (cancelled || !nextExpr) {
         return;
       }
-      const parsedExpr = parsedExprs[0];
-      if (parsedExpr) {
-        setExpr(wrapAsGroup(resolveCELExpr(parsedExpr)));
-      } else {
-        setExpr(wrapAsGroup(emptySimpleExpr()));
-      }
+      setExpr(nextExpr);
       setRadioValue("EXPRESSION");
     };
 
@@ -202,6 +228,7 @@ export function GrantAccessDialog({
     initialDatabaseResources,
     initialDatabaseResourceKey,
     hasColumnScopedResource,
+    convertToConditionGroupExpr,
   ]);
 
   useEffect(() => {
@@ -270,30 +297,6 @@ export function GrantAccessDialog({
   }, [factorList, projectName]);
 
   const minDatetime = dayjs().startOf("day").format("YYYY-MM-DDTHH:mm");
-
-  const convertToConditionGroupExpr = useCallback(
-    async (resources: DatabaseResource[]) => {
-      if (resources.length === 0) {
-        return wrapAsGroup(emptySimpleExpr());
-      }
-
-      try {
-        const expression = stringifyConditionExpression({
-          databaseResources: resources,
-        });
-        const parsedExprs = await batchConvertCELStringToParsedExpr([
-          expression,
-        ]);
-        const parsedExpr = parsedExprs[0];
-        if (parsedExpr) {
-          return wrapAsGroup(resolveCELExpr(parsedExpr));
-        }
-      } catch {
-        return;
-      }
-    },
-    []
-  );
 
   const convertToDatabaseResources = useCallback(
     async (expr: ConditionGroupExpr) => {

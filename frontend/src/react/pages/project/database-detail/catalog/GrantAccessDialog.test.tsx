@@ -66,6 +66,9 @@ vi.mock("@/components/SensitiveData/utils", () => ({
 }));
 
 vi.mock("@/plugins/cel", () => ({
+  ExprType: {
+    RawString: "RawString",
+  },
   buildCELExpr: vi.fn(),
   emptySimpleExpr: vi.fn(() => ({
     type: "ConditionGroup",
@@ -297,6 +300,42 @@ describe("GrantAccessDialog", () => {
     expect(exprEditor?.textContent).toContain(
       JSON.stringify(mocks.convertedExpr)
     );
+
+    unmount();
+  });
+
+  test("falls back to a raw expression when initial CEL conversion fails", async () => {
+    mocks.batchConvertCELStringToParsedExpr.mockImplementationOnce(
+      async () => [undefined] as unknown as [{ parsed: true }]
+    );
+
+    const { container, unmount } = renderGrantAccessDialog({
+      columnList: [
+        {
+          database: {
+            name: "instances/inst1/databases/db1",
+          } as SensitiveColumn["database"],
+          maskData: {
+            schema: "public",
+            table: "book",
+            column: "id",
+            semanticTypeId: "",
+            classificationId: "",
+            target: {} as SensitiveColumn["maskData"]["target"],
+          } as SensitiveColumn["maskData"],
+        },
+      ],
+    });
+    await flush();
+
+    const radioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(radioList[1]?.checked).toBe(true);
+    expect(radioList[2]?.disabled).toBe(true);
+
+    const exprEditor = container.querySelector('[data-testid="expr-editor"]');
+    expect(exprEditor?.textContent).toContain("serialized-selection");
 
     unmount();
   });
