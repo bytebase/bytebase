@@ -746,7 +746,7 @@ export function ProjectsPage() {
     const stateOption: ScopeOption = {
       id: "state",
       title: t("common.state"),
-      description: t("common.state"),
+      description: t("issue.advanced-search.scope.state.description"),
       options: [
         { value: "ACTIVE", keywords: ["active"] },
         ...(canUndelete
@@ -760,7 +760,7 @@ export function ProjectsPage() {
     const labelOption: ScopeOption = {
       id: "label",
       title: t("common.labels"),
-      description: t("common.labels"),
+      description: t("issue.advanced-search.scope.label.description"),
       allowMultiple: true,
     };
     return [labelOption, stateOption];

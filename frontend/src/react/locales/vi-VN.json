@@ -1067,6 +1067,13 @@
   "instance.your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn",
   "issue": {
     "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Lọc theo trạng thái cấp quyền truy cập"
+          }
+        }
+      },
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
@@ -1093,6 +1100,22 @@
           "description": "Tìm kiếm theo người phê duyệt hiện tại",
           "title": "Người phê duyệt hiện tại"
         },
+        "database": {
+          "description": "Lọc theo cơ sở dữ liệu",
+          "title": "Cơ sở dữ liệu"
+        },
+        "engine": {
+          "description": "Lọc theo engine",
+          "title": "Engine"
+        },
+        "environment": {
+          "description": "Lọc theo môi trường",
+          "title": "Môi trường"
+        },
+        "instance": {
+          "description": "Lọc theo phiên bản",
+          "title": "Phiên bản"
+        },
         "issue-label": {
           "description": "Lọc theo nhãn vấn đề",
           "title": "Nhãn vấn đề"
@@ -1107,11 +1130,26 @@
             "role-grant": "Role Grant"
           }
         },
+        "label": {
+          "description": "Nhập cặp \"key:value\" rồi nhấn Enter"
+        },
+        "project": {
+          "description": "Lọc theo dự án",
+          "title": "Dự án"
+        },
         "state": {
           "description": "Lọc theo trạng thái"
         },
         "status": {
           "description": "Tìm kiếm theo trạng thái issue"
+        },
+        "table": {
+          "description": "Nhập giá trị sau đó nhấn Enter",
+          "title": "Bảng"
+        },
+        "user": {
+          "description": "Lọc theo người dùng",
+          "title": "Người dùng"
         }
       }
     },
@@ -1316,6 +1354,13 @@
     },
     "filter-projects": "Lọc dự án",
     "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Lọc theo trạng thái miễn trừ"
+          }
+        }
+      },
       "all-levels": "Tất cả các cấp",
       "expires-in-days_one": "Hết hạn sau {{days}} ngày",
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",

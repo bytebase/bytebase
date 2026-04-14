@@ -2516,7 +2516,6 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
-    "access-grants-redirect-hint": "Go to {link} to view and manage your own access grants.",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",

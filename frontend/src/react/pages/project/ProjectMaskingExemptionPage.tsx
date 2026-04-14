@@ -268,6 +268,9 @@ export function ProjectMaskingExemptionPage({
   // Scope options for advanced search
   const searchDatabases = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
+      if (!project || !hasProjectPermissionV2(project, "bb.databases.list")) {
+        return [];
+      }
       const result = await databaseStore.fetchDatabases({
         parent: projectName,
         pageSize: getDefaultPagination(),
@@ -287,7 +290,7 @@ export function ProjectMaskingExemptionPage({
         };
       });
     },
-    [databaseStore, projectName]
+    [databaseStore, projectName, project]
   );
 
   const searchUsers = useCallback(
@@ -329,16 +332,21 @@ export function ProjectMaskingExemptionPage({
       {
         id: "database",
         title: t("common.database"),
+        description: t("issue.advanced-search.scope.database.description"),
         onSearch: searchDatabases,
       },
       {
         id: "user",
         title: t("common.users"),
+        description: t("issue.advanced-search.scope.user.description"),
         onSearch: searchUsers,
       },
       {
         id: "status",
         title: t("common.status"),
+        description: t(
+          "issue.masking-exemption.advanced-search.scope.status.description"
+        ),
         options: [
           {
             value: "active",

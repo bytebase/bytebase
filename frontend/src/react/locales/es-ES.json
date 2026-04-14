@@ -1067,6 +1067,13 @@
   "instance.your-snowflake-account-locator": "Su localizador de cuentas Snowflake",
   "issue": {
     "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Filtrar por estado de la concesión de acceso"
+          }
+        }
+      },
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
@@ -1093,6 +1100,22 @@
           "description": "Buscar por el aprobador actual del problema",
           "title": "aprobador actual"
         },
+        "database": {
+          "description": "Filtrar por base de datos",
+          "title": "Base de datos"
+        },
+        "engine": {
+          "description": "Filtrar por motores",
+          "title": "Motor"
+        },
+        "environment": {
+          "description": "Filtrar por entorno",
+          "title": "Ambiente"
+        },
+        "instance": {
+          "description": "Filtrar por instancia",
+          "title": "Instancia"
+        },
         "issue-label": {
           "description": "Filtrar por etiqueta de problema",
           "title": "Etiqueta de emisión"
@@ -1107,11 +1130,26 @@
             "role-grant": "Role Grant"
           }
         },
+        "label": {
+          "description": "Ingrese el par \"clave:valor\" y luego presione Enter"
+        },
+        "project": {
+          "description": "Filtrar por proyecto",
+          "title": "Proyecto"
+        },
         "state": {
           "description": "Filtrar por estado"
         },
         "status": {
           "description": "Buscar por el estado del issue"
+        },
+        "table": {
+          "description": "Ingrese el valor y luego presione Enter",
+          "title": "Tabla"
+        },
+        "user": {
+          "description": "Filtrar por usuario",
+          "title": "Usuario"
         }
       }
     },
@@ -1316,6 +1354,13 @@
     },
     "filter-projects": "Filtrar proyectos",
     "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Filtrar por estado de la exención"
+          }
+        }
+      },
       "all-levels": "Todos los niveles",
       "expires-in-days_one": "Expira en {{days}} día",
       "expires-in-days_other": "Expira en {{days}} días",

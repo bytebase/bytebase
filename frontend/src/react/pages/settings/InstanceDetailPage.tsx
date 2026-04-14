@@ -5,8 +5,10 @@ import {
   getValueFromScopes,
   type ScopeOption,
   type SearchParams,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { DatabaseTable } from "@/react/components/database";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import {
   InstanceActionDropdown,
   InstanceFormBody,
@@ -24,15 +26,26 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   environmentNamePrefix,
   instanceNamePrefix,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
+import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { instanceV1Name, setDocumentTitle } from "@/utils";
+import {
+  extractProjectResourceName,
+  getDefaultPagination,
+  instanceV1Name,
+  setDocumentTitle,
+} from "@/utils";
 
 const instanceHashList = ["overview", "databases", "users"] as const;
 type InstanceHash = (typeof instanceHashList)[number];
@@ -106,26 +119,61 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     [selectedEnvironment, selectedProject, searchParams.query, selectedLabels]
   );
 
+  const environmentStore = useEnvironmentV1Store();
+  const environments = useVueState(
+    () => environmentStore.environmentList ?? []
+  );
+
+  const projectStore = useProjectV1Store();
+  const searchProjects = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const { projects } = await projectStore.fetchProjectList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return projects.map((p) => {
+        const id = extractProjectResourceName(p.name);
+        return {
+          value: id,
+          keywords: [id, p.title],
+        };
+      });
+    },
+    [projectStore]
+  );
+
   const scopeOptions: ScopeOption[] = useMemo(
     () => [
       {
         id: "environment",
         title: t("common.environment"),
-        description: t("common.environment"),
+        description: t("issue.advanced-search.scope.environment.description"),
+        options: [unknownEnvironment(), ...environments].map((env) => {
+          const isUnknown = env.name === UNKNOWN_ENVIRONMENT_NAME;
+          return {
+            value: env.id,
+            keywords: isUnknown
+              ? ["unassigned", "none", env.id]
+              : [env.id, env.title],
+            custom: true,
+            render: () => <EnvironmentLabel environment={env} />,
+          };
+        }),
       },
       {
         id: "project",
         title: t("common.project"),
-        description: t("common.project"),
+        description: t("issue.advanced-search.scope.project.description"),
+        onSearch: searchProjects,
       },
       {
         id: "label",
         title: t("common.labels"),
-        description: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
         allowMultiple: true,
       },
     ],
-    [t]
+    [t, environments, searchProjects]
   );
 
   const handleTabChange = useCallback((tab: string | number | null) => {
