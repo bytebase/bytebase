@@ -129,7 +129,9 @@ vi.mock("@/react/components/ui/dialog", () => ({
 }));
 
 vi.mock("@/react/components/ui/expiration-picker", () => ({
-  ExpirationPicker: () => <div data-testid="expiration-picker" />,
+  ExpirationPicker: ({ minDate }: { minDate: string }) => (
+    <div data-min-date={minDate} data-testid="expiration-picker" />
+  ),
 }));
 
 vi.mock("@/react/components/ui/input", () => ({
@@ -184,7 +186,7 @@ const click = async (element: HTMLElement) => {
   await flush();
 };
 
-const renderGrantAccessDialog = () => {
+const renderGrantAccessDialog = ({ open = true }: { open?: boolean } = {}) => {
   const container = document.createElement("div");
   const root = createRoot(container);
   const columnList = [
@@ -203,19 +205,24 @@ const renderGrantAccessDialog = () => {
     },
   ] satisfies SensitiveColumn[];
 
-  act(() => {
-    root.render(
-      <GrantAccessDialog
-        open
-        projectName="projects/proj1"
-        columnList={columnList}
-        onDismiss={vi.fn()}
-      />
-    );
-  });
+  const render = (nextOpen = open) => {
+    act(() => {
+      root.render(
+        <GrantAccessDialog
+          open={nextOpen}
+          projectName="projects/proj1"
+          columnList={columnList}
+          onDismiss={vi.fn()}
+        />
+      );
+    });
+  };
+
+  render(open);
 
   return {
     container,
+    render,
     unmount: () =>
       act(() => {
         root.unmount();
@@ -263,5 +270,36 @@ describe("GrantAccessDialog", () => {
     );
 
     unmount();
+  });
+
+  test("refreshes the expiration minimum when reopening the dialog", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-14T08:00:00Z"));
+
+    const { container, render, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    const initialPicker = container.querySelector(
+      '[data-testid="expiration-picker"]'
+    );
+    expect(initialPicker?.getAttribute("data-min-date")).toBe(
+      "2026-04-14T00:00"
+    );
+
+    vi.setSystemTime(new Date("2026-04-15T08:00:00Z"));
+    render(false);
+    await flush();
+    render(true);
+    await flush();
+
+    const reopenedPicker = container.querySelector(
+      '[data-testid="expiration-picker"]'
+    );
+    expect(reopenedPicker?.getAttribute("data-min-date")).toBe(
+      "2026-04-15T00:00"
+    );
+
+    unmount();
+    vi.useRealTimers();
   });
 });

@@ -229,9 +229,7 @@ export function GrantAccessDialog({
     }, new Map<Factor, OptionConfig>());
   }, [factorList, projectName]);
 
-  const minDatetime = useMemo(() => {
-    return dayjs().startOf("day").format("YYYY-MM-DDTHH:mm");
-  }, []);
+  const minDatetime = dayjs().startOf("day").format("YYYY-MM-DDTHH:mm");
 
   const convertToConditionGroupExpr = useCallback(
     async (resources: DatabaseResource[]) => {
