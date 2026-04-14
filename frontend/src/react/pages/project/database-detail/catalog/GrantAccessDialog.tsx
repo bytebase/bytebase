@@ -59,7 +59,10 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
-import { stringifyConditionExpression } from "@/utils/issue/cel";
+import {
+  convertFromExpr,
+  stringifyConditionExpression,
+} from "@/utils/issue/cel";
 import { batchConvertCELStringToParsedExpr } from "@/utils/v1/cel";
 
 type RadioValue = "ALL" | "EXPRESSION" | "SELECT";
@@ -230,15 +233,74 @@ export function GrantAccessDialog({
     return dayjs().startOf("day").format("YYYY-MM-DDTHH:mm");
   }, []);
 
+  const convertToConditionGroupExpr = useCallback(
+    async (resources: DatabaseResource[]) => {
+      if (resources.length === 0) {
+        return wrapAsGroup(emptySimpleExpr());
+      }
+
+      try {
+        const expression = stringifyConditionExpression({
+          databaseResources: resources,
+        });
+        const parsedExprs = await batchConvertCELStringToParsedExpr([
+          expression,
+        ]);
+        const parsedExpr = parsedExprs[0];
+        if (parsedExpr) {
+          return wrapAsGroup(resolveCELExpr(parsedExpr));
+        }
+      } catch {
+        return;
+      }
+    },
+    []
+  );
+
+  const convertToDatabaseResources = useCallback(
+    async (expr: ConditionGroupExpr) => {
+      try {
+        const parsedExpr = await buildCELExpr(expr);
+        if (!parsedExpr) {
+          return;
+        }
+        return convertFromExpr(parsedExpr).databaseResources;
+      } catch {
+        return;
+      }
+    },
+    []
+  );
+
   const onRadioChange = useCallback(
-    (value: RadioValue) => {
+    async (value: RadioValue) => {
       if (!hasRequiredFeature && value !== "ALL") {
         setShowFeatureModal(true);
         return;
       }
+
+      if (value === "EXPRESSION" && radioValue === "SELECT") {
+        const nextExpr = await convertToConditionGroupExpr(databaseResources);
+        if (nextExpr) {
+          setExpr(nextExpr);
+        }
+      } else if (value === "SELECT" && radioValue === "EXPRESSION") {
+        const nextResources = await convertToDatabaseResources(expr);
+        if (nextResources) {
+          setDatabaseResources(nextResources);
+        }
+      }
+
       setRadioValue(value);
     },
-    [hasRequiredFeature]
+    [
+      hasRequiredFeature,
+      radioValue,
+      convertToConditionGroupExpr,
+      databaseResources,
+      convertToDatabaseResources,
+      expr,
+    ]
   );
 
   const onDismissInternal = useCallback(() => {
