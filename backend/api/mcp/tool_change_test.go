@@ -280,6 +280,11 @@ func TestChange_SQLBase64Encoded(t *testing.T) {
 	decoded, decodeErr := base64.StdEncoding.DecodeString(encoded)
 	require.NoError(t, decodeErr)
 	require.Equal(t, sql, string(decoded))
+	// Sheet should not contain dead fields (title, engine removed from proto).
+	_, hasTitle := sheetObj["title"]
+	require.False(t, hasTitle)
+	_, hasEngine := sheetObj["engine"]
+	require.False(t, hasEngine)
 }
 
 // --- Defaults tests ---
@@ -606,6 +611,28 @@ func TestChange_Rollout_GateOrder(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "PLAN_CHECK_ERROR", output.RolloutDeferredReason)
 	require.Equal(t, "FIX_SQL_AND_RETRY", output.NextAction)
+}
+
+func TestChange_Rollout_ApprovalRejected(t *testing.T) {
+	mock := newChangeMock(employeeDB())
+	mock.issueResponse = defaultIssueResponse("REJECTED")
+	s := newChangeTestServer(t, mock)
+
+	_, structured, err := s.handleChange(testContext(), nil, ChangeInput{
+		Database:      "employee_db",
+		SQL:           "ALTER TABLE x ADD COLUMN y INT",
+		Title:         "Test",
+		CreateRollout: true,
+	})
+	require.NoError(t, err)
+
+	output, ok := structured.(*ChangeOutput)
+	require.True(t, ok)
+	require.False(t, output.RolloutCreated)
+	require.Equal(t, "APPROVAL_REJECTED", output.RolloutDeferredReason)
+	require.Equal(t, "FIX_SQL_AND_RETRY", output.NextAction)
+	// Rollout should NOT have been attempted.
+	require.Nil(t, mock.getCapturedRollout())
 }
 
 func TestChange_Rollout_RequestShape(t *testing.T) {

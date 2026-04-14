@@ -20,7 +20,7 @@ Create database changes (DDL/DML) through Bytebase's review workflow. Supports s
 
 ### Step 1: Create sheet(s) with SQL
 
-SQL content must be **base64 encoded**. Engine field is **required**.
+SQL content must be **base64 encoded**.
 
 ```
 search_api(operationId="SheetService/CreateSheet")
@@ -29,16 +29,12 @@ search_api(operationId="SheetService/CreateSheet")
 call_api(operationId="SheetService/CreateSheet", body={
   "parent": "projects/{project-id}",
   "sheet": {
-    "title": "Add users table",
-    "engine": "POSTGRES",
     "content": "Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw=="
   }
 })
 ```
 
 Note: `Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw==` decodes to `CREATE TABLE users (id INT PRIMARY KEY);`
-
-Use `search_api(schema="Engine")` to discover valid engine values.
 
 ### Step 2: Create a plan
 

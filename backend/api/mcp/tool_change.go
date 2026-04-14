@@ -38,6 +38,7 @@ const (
 const (
 	rolloutNotRequested     = "NOT_REQUESTED"
 	rolloutApprovalPending  = "APPROVAL_PENDING"
+	rolloutApprovalRejected = "APPROVAL_REJECTED"
 	rolloutPlanCheckPending = "PLAN_CHECK_PENDING"
 	rolloutPlanCheckError   = "PLAN_CHECK_ERROR"
 	rolloutCreateFailed     = "ROLLOUT_CREATE_FAILED"
@@ -249,6 +250,9 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	case approvalStatus == "PENDING" || approvalStatus == "CHECKING":
 		rolloutDeferredReason = rolloutApprovalPending
 		nextAction = nextActionApproveIssue
+	case approvalStatus == "REJECTED":
+		rolloutDeferredReason = rolloutApprovalRejected
+		nextAction = nextActionFixSQLRetry
 	default:
 		rolloutName, err = s.createRollout(ctx, planName)
 		if err != nil {
@@ -321,13 +325,13 @@ func normalizeProject(p string) string {
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.
-func (s *Server) createSheet(ctx context.Context, project, engine, title, sql string) (string, error) {
+// Note: the Sheet proto only has name, content, and content_size.
+// title and engine were removed; the backend discards unknown fields.
+func (s *Server) createSheet(ctx context.Context, project, _, _, sql string) (string, error) {
 	encoded := base64.StdEncoding.EncodeToString([]byte(sql))
 	body := map[string]any{
 		"parent": project,
 		"sheet": map[string]any{
-			"title":   title,
-			"engine":  engine,
 			"content": encoded,
 		},
 	}
