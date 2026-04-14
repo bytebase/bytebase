@@ -120,6 +120,9 @@ const shouldShow = computed(() => {
 const allowRunChecks = computed(() => {
   if (plan.value.state === State.DELETED) return false;
   if (issue.value && issue.value.status !== IssueStatus.OPEN) return false;
+  // Once a rollout exists, the plan is frozen — re-running checks produces
+  // the same result and is misleading for the user.
+  if (plan.value.hasRollout) return false;
   const me = currentUser.value;
   if (extractUserEmail(plan.value.creator) === me.email) {
     return true;

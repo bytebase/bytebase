@@ -1429,7 +1429,7 @@
     "refresh-indicator": {
       "last-refresh": "上次刷新：{time}"
     },
-    "run": "运行检查",
+    "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
     "select-targets": "选择目标库",
     "sidebar": {

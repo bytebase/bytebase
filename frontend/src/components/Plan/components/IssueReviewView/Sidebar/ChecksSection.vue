@@ -66,6 +66,9 @@ const isRunningChecks = ref(false);
 const selectedResultStatus = ref<Advice_Level | undefined>(undefined);
 
 const allowRunChecks = computed(() => {
+  // Once a rollout exists, the plan is frozen — re-running checks produces
+  // the same result and is misleading for the user.
+  if (plan.value.hasRollout) return false;
   const me = currentUser.value;
   if (extractUserEmail(plan.value.creator) === me.email) {
     return true;

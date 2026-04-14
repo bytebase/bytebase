@@ -1299,7 +1299,7 @@
   "plan.options.self": "Tùy chọn",
   "plan.overview.no-checks": "No checks",
   "plan.ready-for-review": "Ready for Review",
-  "plan.run": "Run",
+  "plan.run": "Kiểm tra lại",
   "plan.select-isolation-level": "Chọn mức độ cô lập",
   "plan.spec.change": "Change",
   "plan.spec.type.database-change": "Thay đổi cơ sở dữ liệu",
