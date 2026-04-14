@@ -133,6 +133,35 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("keeps the running chat selected when archiving it from the active list", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.getState().startChatRun(chatId, {
+      path: "/projects/demo",
+      title: "Demo",
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const archiveButton = document.body.querySelector(
+      "[data-agent-archive-chat]"
+    ) as HTMLButtonElement | null;
+
+    expect(archiveButton).toBeInstanceOf(HTMLButtonElement);
+
+    act(() => {
+      archiveButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(useAgentStore.getState().getChat(chatId)?.archived).toBe(true);
+    expect(useAgentStore.getState().currentChatId).toBe(chatId);
+
+    unmount();
+  });
+
   test("commits drag position only on pointerup", () => {
     const { render, unmount } = renderIntoContainer(<AgentWindow />);
 

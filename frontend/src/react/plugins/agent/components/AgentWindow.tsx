@@ -481,7 +481,7 @@ export function AgentWindow() {
   const unarchiveChat = useCallback(
     (chatId: string) => {
       const chat = useAgentStore.getState().chats.find((c) => c.id === chatId);
-      if (!chat || !chat.archived) return;
+      if (!chat?.archived) return;
       useAgentStore.getState().unarchiveChat(chat.id);
       ensureCurrentChatMatchesDisplayedMode({
         allowCreateWhenEmpty: false,
@@ -1304,19 +1304,21 @@ function ConfirmDialog({
   );
 }
 
+type SidebarIconButtonProps = Readonly<{
+  ariaLabel: string;
+  children: ReactNode;
+  dataAttr?: string;
+  onClick: () => void;
+  tooltip: string;
+}>;
+
 function SidebarIconButton({
   ariaLabel,
   children,
   dataAttr,
   onClick,
   tooltip,
-}: {
-  ariaLabel: string;
-  children: ReactNode;
-  dataAttr?: string;
-  onClick: () => void;
-  tooltip: string;
-}) {
+}: SidebarIconButtonProps) {
   const dataProps: Record<string, unknown> = {};
   if (dataAttr) dataProps[dataAttr] = true;
 
