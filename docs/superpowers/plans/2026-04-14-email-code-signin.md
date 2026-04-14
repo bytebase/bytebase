@@ -624,9 +624,10 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeMaxAttempts    = 5
 	emailCodeResendCooldown = 60 * time.Second
-	emailCodeSendMaxPerHour = 10
 )
 ```
+
+The 60-sec cooldown caps sends at ~60/hour/email, which is the only rate limit. See the "Rate-limiting design note" in Step 3.
 
 - [ ] **Step 2: Add the code-generation helper**
 
@@ -646,32 +647,31 @@ func generateEmailCode() (string, error) {
 	return string(bytes), nil
 }
 
-// hashEmailCode returns sha256(code) hex-encoded.
-func hashEmailCode(code string) string {
-	h := sha256.Sum256([]byte(code))
-	return hex.EncodeToString(h[:])
+// hashEmailCode returns HMAC-SHA256(code) hex-encoded, keyed with the server's auth secret.
+// HMAC with a server-side secret (vs. bare SHA-256) prevents offline brute force of the
+// 10^6-size code space if the DB is ever compromised — the attacker would also need the
+// auth secret to verify candidate codes.
+func (s *AuthService) hashEmailCode(code string) string {
+	mac := hmac.New(sha256.New, []byte(s.secret))
+	mac.Write([]byte(code))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 ```
 
-Ensure imports include `crypto/rand`, `crypto/sha256`, `encoding/hex`.
+Ensure imports include `crypto/hmac`, `crypto/rand`, `crypto/sha256`, `encoding/hex`.
 
-- [ ] **Step 3: Add SendEmailLoginCode RPC (with per-email send abuse cap)**
+**Note:** `hashEmailCode` is a method on `*AuthService` (needs `s.secret`). All call sites in this plan use `s.hashEmailCode(code)` — update references below if you see a package-level call.
+
+- [ ] **Step 3: Add SendEmailLoginCode RPC**
 
 ```go
 // SendEmailLoginCode sends a 6-digit verification code. Always returns success
-// (no email enumeration). Enforces 60-sec resend cooldown via DB last_sent_at.
-// Enforces per-email abuse cap: max 10 sends per hour via audit-log count.
+// (no email enumeration). Rate limit: 60-sec resend cooldown enforced via DB
+// last_sent_at inside sendEmailVerificationCode → effective cap ≈ 60 sends/hour/email.
 func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Request[v1pb.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error) {
 	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
-	}
-
-	// Abuse cap: count SendEmailLoginCode audit entries for this email in the last hour.
-	// Uses the same audit-log query pattern as countRecentLoginFailures.
-	count, err := s.countRecentEmailCodeSends(ctx, email, 1*time.Hour)
-	if err == nil && count >= emailCodeSendMaxPerHour {
-		return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf("too many code requests"))
 	}
 
 	// Fire-and-forget: cooldown check + send. Always return success to caller.
@@ -685,24 +685,9 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
-
-// countRecentEmailCodeSends counts SendEmailLoginCode audit entries for the given email within the window.
-// Mirrors the pattern of countRecentLoginFailures (backend/api/v1/auth_service.go:705-744).
-func (s *AuthService) countRecentEmailCodeSends(ctx context.Context, email string, window time.Duration) (int, error) {
-	since := time.Now().Add(-window)
-	auditLogs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFilter{
-		Method:   "/bytebase.v1.AuthService/SendEmailLoginCode",
-		Resource: email,
-		Since:    &since,
-	})
-	if err != nil {
-		return 0, err
-	}
-	return len(auditLogs), nil
-}
 ```
 
-**Note for implementer:** The exact `SearchAuditLogs` / `AuditLogFilter` struct names come from the existing `countRecentLoginFailures` implementation (`backend/api/v1/auth_service.go:705-744`). Open that function, copy the store-query call, and adapt only the `Method` filter to `/bytebase.v1.AuthService/SendEmailLoginCode`. Drop any error-message / status-code filters since we're counting all sends, not failures.
+**Rate-limiting design note:** The spec initially proposed a separate 10/hour cap via audit-log counting, but `SendEmailLoginCode` is unauthenticated and has no workspace context — the audit middleware skips writing logs in that case (`backend/api/v1/audit.go:217-224`), so the count query would always return 0 and the cap would be ineffective. The 60-second `last_sent_at` cooldown inside `sendEmailVerificationCode` (enforced on the `(email, purpose)` row) already provides rate limiting: maximum ~60 sends per hour per email. This is strict enough without adding complexity. Remove `emailCodeSendMaxPerHour` from the constants block in Step 1.
 
 - [ ] **Step 4: Add the shared `sendEmailVerificationCode` helper**
 
@@ -732,7 +717,7 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, email strin
 	if err := s.store.UpsertEmailVerificationCode(ctx, &store.EmailVerificationCodeMessage{
 		Email:      email,
 		Purpose:    purpose,
-		CodeHash:   hashEmailCode(code),
+		CodeHash:   s.hashEmailCode(code),
 		ExpiresAt:  now.Add(emailCodeExpiry),
 		LastSentAt: now,
 	}); err != nil {
@@ -820,7 +805,7 @@ func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose
 		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("too many attempts"))
 	}
-	if subtle.ConstantTimeCompare([]byte(hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
+	if subtle.ConstantTimeCompare([]byte(s.hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
 		_ = s.store.IncrementEmailVerificationCodeAttempts(ctx, email, purpose)
 		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
 	}
@@ -873,6 +858,24 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return nil, err
 	}
 
+	// Resolve the workspace for this email. Existing users have it via IAM.
+	// Unknown emails may have a pre-invited workspace. Check workspace-level settings
+	// (allow_email_code_signin, disallow_signup) BEFORE any state mutation to avoid
+	// orphaned accounts if the workspace disallows email-code signin.
+	preInvitedWorkspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workspaces for email"))
+	}
+	if len(preInvitedWorkspaces) > 0 {
+		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
+		}
+		if profile != nil && !profile.AllowEmailCodeSignin {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+		}
+	}
+
 	// Existing user → return.
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
@@ -886,10 +889,6 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	// Respect disallow_signup only if the email was pre-invited to an existing workspace
 	// that has disallow_signup=true. If no workspace is resolvable (SaaS first-time user),
 	// signup proceeds normally — provisionWorkspaceForNewUser creates a new workspace.
-	preInvitedWorkspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workspaces for email"))
-	}
 	if len(preInvitedWorkspaces) > 0 {
 		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
 		if err == nil && profile != nil && profile.DisallowSignup {
@@ -924,6 +923,8 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	}
 
 	// Provision workspace for the new user (joins pre-invited workspace or creates a new one).
+	// Brand-new workspaces inherit allow_email_code_signin from getAdditionalWorkspaceSettings
+	// (enabled by default in SaaS when EMAIL_CONFIG is set), so no separate check is needed.
 	if _, err := s.provisionWorkspaceForNewUser(ctx, email); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
@@ -934,26 +935,7 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 
 Note: double-check the exact `store.CreateUser` signature and `UserMessage` shape while implementing — match the Signup RPC's usage exactly.
 
-- [ ] **Step 4: Enforce `allow_email_code_signin` in the post-authenticate pipeline**
-
-Find where the Login RPC calls `resolveWorkspaceForLogin` then `validateLoginPermissions`. After workspace resolution, add (inside the existing permission-check path):
-
-```go
-// If this login came via email code, the workspace must have it enabled.
-if request.EmailCode != nil && *request.EmailCode != "" {
-	profile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
-	}
-	if profile == nil || !profile.AllowEmailCodeSignin {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
-	}
-}
-```
-
-Place this inside `validateLoginPermissions` or wherever the per-workspace permission checks live (grep for `DisallowPasswordSignin` to find the right spot).
-
-- [ ] **Step 5: Build + lint**
+- [ ] **Step 4: Build + lint**
 
 ```bash
 go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...

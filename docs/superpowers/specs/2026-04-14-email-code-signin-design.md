@@ -22,7 +22,7 @@ Let users sign in (and sign up) using only their email address and a one-time 6-
 | Code expiry | 10 minutes | Balances email delivery latency with security |
 | Resend cooldown | 60 seconds | Prevents mail bombing; both new login and password reset |
 | Max attempts per code | 5 | Matches existing MFA lockout threshold |
-| Per-email send cap | 10 per hour | Anti-abuse; mirrors existing audit-log-based rate limiting |
+| Per-email send rate | Effective ~60/hour via 60s cooldown | Simpler than audit-log counting, which fails for unauthenticated requests (audit middleware skips them when workspace is empty) |
 | Code storage | Dedicated DB table (`email_verification_code`) | HA-safe; stateful semantics (attempts, cooldown) can't be done with JWT |
 | Password reset | Migrate from JWT to code (shares table) | HA-correct cooldown/retry limits; unified UX |
 | 2FA interaction | TOTP still required if user has it | Defense in depth; don't silently downgrade |
@@ -100,7 +100,7 @@ CREATE INDEX idx_email_verification_code_expires_at ON email_verification_code (
 
 - **PK `(email, purpose)`** — one active code per purpose per email. Resend upserts the row.
 - **No workspace column** — codes are identity-scoped (matches `principal`, `web_refresh_token`).
-- **`code_hash`** — SHA256 hash of the 6-digit code. Prevents DB leak → impersonation.
+- **`code_hash`** — HMAC-SHA256 of the 6-digit code, keyed with the server's `auth_secret`. Using HMAC with a server-side secret (vs. bare SHA-256) prevents offline brute force of the 10^6-size code space if the DB is ever compromised — the attacker would also need the auth secret to verify candidate codes.
 - **`expires_at` index** — backs the background cleanup job.
 
 ### New proto (`proto/store/store/email_verification_code.proto`)
@@ -212,7 +212,6 @@ const (
     emailCodeExpiry         = 10 * time.Minute
     emailCodeMaxAttempts    = 5
     emailCodeResendCooldown = 60 * time.Second
-    emailCodeSendMaxPerHour = 10
 )
 ```
 
@@ -237,25 +236,27 @@ Dispatch order (in order of precedence):
 
 **Email-code branch:**
 1. Reject if `password` or `idp_name` is also set → `InvalidArgument` "email_code is mutually exclusive with password and idp_name".
-2. Per-email send abuse cap: count audit log entries for `SendEmailLoginCode` for this email in last hour. If > 10 → `ResourceExhausted`.
-3. `verifyEmailCode(ctx, email, LOGIN, submittedCode)` (shared helper — see below).
-4. On match: look up principal by email.
-5. **Existing principal**: return user → downstream pipeline continues (workspace resolution, MFA check, token gen).
-6. **New principal (signup)**:
-   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace (resolved via `ListWorkspacesByEmail`) AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found". Do not leak that the disallow flag is why — use the generic "not found" message to avoid enumeration.
-   - If no resolvable workspace exists (e.g. SaaS first-time user with a brand-new email), signup proceeds normally — this is the common passwordless-signup path. The `provisionWorkspaceForNewUser` helper creates a new workspace.
+2. `verifyEmailCode(ctx, email, LOGIN, submittedCode)` (shared helper — see below).
+3. On match: resolve pre-invited workspaces for this email via `ListWorkspacesByEmail`.
+4. **Gate check (BEFORE any state mutation)**: if a pre-invited workspace exists AND its `allow_email_code_signin = false` → `FailedPrecondition` "email code login is not enabled for this workspace". This prevents orphan accounts when workspace disallows email-code signin.
+5. Look up principal by email.
+6. **Existing principal**: return user → downstream pipeline continues (workspace resolution, MFA check, token gen).
+7. **New principal (signup)**:
+   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found" (generic message, no enumeration).
+   - If no resolvable workspace exists (e.g. SaaS first-time user with a brand-new email), signup proceeds normally — the `provisionWorkspaceForNewUser` helper creates a new workspace (which inherits `allow_email_code_signin = true` in SaaS via `getAdditionalWorkspaceSettings`).
    - Generate random 32-byte string, bcrypt-hash it.
    - Create principal: `email = email`, `name = email.split("@")[0]`, `type = END_USER`, `password_hash = hashedRandom`.
-   - Workspace assignment: extract the workspace-provisioning logic from the existing `Signup` RPC into a shared helper (e.g. `provisionWorkspaceForNewUser`) and call it from both places. Joins pre-invited workspace via `ListWorkspacesByEmail` or creates a new workspace with `getAdditionalWorkspaceSettings()`.
+   - Workspace assignment: extract the workspace-provisioning logic from the existing `Signup` RPC into a shared helper (e.g. `provisionWorkspaceForNewUser`) and call it from both places.
    - Return new user → downstream pipeline continues.
-7. Post-branch: the existing pipeline enforces `allow_email_code_signin` on the resolved workspace. If not enabled → `FailedPrecondition`.
+
+**Rate limiting:** `SendEmailLoginCode` has no workspace context and can't use audit-log-based counting (the audit middleware skips unauthenticated requests without workspace). The 60-second `last_sent_at` cooldown inside `sendEmailVerificationCode` caps sends at ~60/hour/email — this is the only rate limit.
 
 ### Shared helper: `verifyEmailCode(ctx, email, purpose, submittedCode) error`
 
 1. `GetEmailVerificationCode(email, purpose)`. If nil → `Unauthenticated` "invalid or expired code".
 2. `expires_at > now`? If not → `DeleteEmailVerificationCode` → `Unauthenticated` "invalid or expired code".
 3. `attempts < 5`? If at limit → `DeleteEmailVerificationCode` → `Unauthenticated` "too many attempts".
-4. Constant-time compare SHA256(submittedCode) with `code_hash`. If mismatch → `IncrementEmailVerificationCodeAttempts` → `Unauthenticated` "invalid or expired code".
+4. Constant-time compare HMAC-SHA256(submittedCode, auth_secret) with `code_hash`. If mismatch → `IncrementEmailVerificationCodeAttempts` → `Unauthenticated` "invalid or expired code".
 5. On match: `DeleteEmailVerificationCode` (one-time use). Return nil.
 
 ### `ResetPassword` — switch to code
@@ -361,8 +362,7 @@ When user clicks "Forgot password?" on signin, carry `email` through: `password-
 | `Login` email_code: attempts >= 5 | Delete, `Unauthenticated` "too many attempts" |
 | `Login` email_code: mismatch | Increment attempts, `Unauthenticated` "invalid or expired code" |
 | `Login` email_code: email unknown AND a resolvable pre-invited workspace has `disallow_signup=true` | `Unauthenticated` "account not found" (generic — don't leak why) |
-| `Login` email_code: >10 sends/hour | `ResourceExhausted` "too many code requests" |
-| `Login` email_code success but workspace disallows | `FailedPrecondition` "email code login is not enabled for this workspace" |
+| `Login` email_code: pre-invited workspace has `allow_email_code_signin=false` | `FailedPrecondition` "email code login is not enabled for this workspace" (checked BEFORE any state mutation to prevent orphan accounts) |
 | `ResetPassword` — all code errors mirror Login branch | Same semantics |
 | `RequestPasswordReset` within 60s cooldown | `Empty` success (silent) |
 
