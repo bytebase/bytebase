@@ -122,6 +122,7 @@
     "sign-in": {
       "demo-account": "Demo Account",
       "forget-password": "忘记密码?",
+      "invited-email": "您已被邀请，请使用 {email} 登录",
       "new-user": "第一次使用 Bytebase?",
       "sign-in-with-idp": "通过 {idp} 登录"
     },

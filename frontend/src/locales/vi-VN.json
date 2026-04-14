@@ -122,6 +122,7 @@
     "sign-in": {
       "demo-account": "Demo Account",
       "forget-password": "Quên mật khẩu?",
+      "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {email}",
       "new-user": "Mới sử dụng Bytebase?",
       "sign-in-with-idp": "Đăng nhập bằng {idp}"
     },

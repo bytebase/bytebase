@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -386,10 +387,10 @@ func (s *WorkspaceService) sendInviteEmails(ctx context.Context, workspaceID str
 		return
 	}
 
-	workspaceLink := fmt.Sprintf("%s?workspace=%s", externalURL, workspaceID)
 	for email, roleName := range invites {
+		loginLink := fmt.Sprintf("%s?workspace=%s&email=%s", externalURL, url.QueryEscape(workspaceID), url.QueryEscape(email))
 		subject := fmt.Sprintf("[Bytebase] You've been invited to workspace %q", workspaceTitle)
-		body := fmt.Sprintf("Hi,\n\nYou've been added to the Bytebase workspace %q as %s.\n\nSign in to get started:\n%s\n\n— Bytebase", workspaceTitle, roleName, workspaceLink)
+		body := fmt.Sprintf("Hi,\n\nYou've been added to the Bytebase workspace %q as %s.\n\nSign in to get started:\n%s\n\n— Bytebase", workspaceTitle, roleName, loginLink)
 		if err := sender.Send(ctx, &mailer.SendRequest{
 			To:       []string{email},
 			Subject:  subject,

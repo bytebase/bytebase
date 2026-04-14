@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
+import { HighlightLabelText } from "../HighlightLabelText";
 import { SearchInput } from "./search-input";
 
 export interface ComboboxOption {
@@ -304,18 +305,20 @@ export function Combobox(props: ComboboxProps) {
             option.render()
           ) : (
             <>
-              <span
+              <HighlightLabelText
+                text={option.label}
+                keyword={search}
                 className={cn(
                   "truncate",
                   !multiple && isSelected && "text-accent font-medium"
                 )}
-              >
-                {option.label}
-              </span>
+              />
               {option.description && (
-                <span className="text-xs text-control-light truncate">
-                  {option.description}
-                </span>
+                <HighlightLabelText
+                  text={option.description}
+                  keyword={search}
+                  className="text-xs text-control-light truncate"
+                />
               )}
             </>
           )}

@@ -25,6 +25,24 @@ import authRoutes, {
   AUTH_SIGNIN_MODULE,
   OAUTH2_CONSENT_MODULE,
 } from "./auth";
+
+// Query params that are only meaningful on the signin page (pre-login).
+// They're forwarded from the original URL to signin and stripped from the post-login redirect.
+const SIGNIN_QUERY_PARAMS = [
+  "idp",
+  "workspace",
+  "email",
+  "token",
+  "invitation",
+] as const;
+
+const stripSigninQueryParams = (fullPath: string): string => {
+  const url = new URL(fullPath, window.location.origin);
+  for (const param of SIGNIN_QUERY_PARAMS) {
+    url.searchParams.delete(param);
+  }
+  return url.pathname + url.search + url.hash;
+};
 import dashboardRoutes from "./dashboard";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -164,28 +182,17 @@ router.beforeEach((to, from, next) => {
   if (!authStore.isLoggedIn) {
     const query: LocationQueryRaw = {};
 
-    // Preserve important query parameters
-    if (to.query) {
-      // Preserve IDP parameter for OAuth flows
-      if (to.query["idp"]) {
-        query["idp"] = to.query["idp"];
-      }
-      // Preserve workspace parameter for workspace-scoped signin
-      if (to.query["workspace"]) {
-        query["workspace"] = to.query["workspace"];
-      }
-      // Preserve other auth-related parameters
-      if (to.query["token"]) {
-        query["token"] = to.query["token"];
-      }
-      if (to.query["invitation"]) {
-        query["invitation"] = to.query["invitation"];
+    // Forward signin-only query params (consumed by the signin page itself).
+    for (const param of SIGNIN_QUERY_PARAMS) {
+      if (to.query[param]) {
+        query[param] = to.query[param];
       }
     }
 
-    // Set redirect URL if not root path and not already set
+    // Set redirect URL if not root path and not already set.
+    // Strip signin-only params from the redirect — they're meaningless after login.
     if (to.fullPath !== "/" && !to.query["redirect"]) {
-      query["redirect"] = to.fullPath;
+      query["redirect"] = stripSigninQueryParams(to.fullPath);
     }
 
     next({

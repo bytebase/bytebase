@@ -122,6 +122,7 @@
     "sign-in": {
       "demo-account": "Demo Account",
       "forget-password": "パスワードを忘れましたか？",
+      "invited-email": "招待されました。{email} でログインしてください",
       "new-user": "Bytebase を初めて使用しますか?",
       "sign-in-with-idp": "{idp} 経由でログイン"
     },

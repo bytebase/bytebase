@@ -122,6 +122,7 @@
     "sign-in": {
       "demo-account": "Demo Account",
       "forget-password": "¿Olvidaste tu contraseña?",
+      "invited-email": "Has sido invitado. Inicia sesión con {email}",
       "new-user": "¿Nuevo en Bytebase?",
       "sign-in-with-idp": "Iniciar sesión con {idp}"
     },
