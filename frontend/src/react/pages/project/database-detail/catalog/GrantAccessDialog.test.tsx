@@ -67,6 +67,8 @@ vi.mock("@/components/SensitiveData/utils", () => ({
 
 vi.mock("@/plugins/cel", () => ({
   ExprType: {
+    Condition: "Condition",
+    ConditionGroup: "ConditionGroup",
     RawString: "RawString",
   },
   buildCELExpr: vi.fn(),
@@ -75,6 +77,9 @@ vi.mock("@/plugins/cel", () => ({
     operator: "_&&_",
     args: [],
   })),
+  isConditionExpr: vi.fn((expr) => expr?.type === "Condition"),
+  isConditionGroupExpr: vi.fn((expr) => expr?.type === "ConditionGroup"),
+  isRawStringExpr: vi.fn((expr) => expr?.type === "RawString"),
   resolveCELExpr: mocks.resolveCELExpr,
   validateSimpleExpr: vi.fn(() => true),
   wrapAsGroup: vi.fn((expr) => expr),
@@ -103,8 +108,33 @@ vi.mock("@/react/components/DatabaseResourceSelector", () => ({
 }));
 
 vi.mock("@/react/components/ExprEditor", () => ({
-  ExprEditor: ({ expr }: { expr: unknown }) => (
-    <div data-testid="expr-editor">{JSON.stringify(expr)}</div>
+  ExprEditor: ({
+    expr,
+    onUpdate,
+  }: {
+    expr: unknown;
+    onUpdate: (expr: unknown) => void;
+  }) => (
+    <div>
+      <div data-testid="expr-editor">{JSON.stringify(expr)}</div>
+      <button
+        data-testid="expr-editor-set-column-scope"
+        onClick={() =>
+          onUpdate({
+            type: "ConditionGroup",
+            operator: "_&&_",
+            args: [
+              {
+                type: "Condition",
+                operator: "_==_",
+                args: ["resource.column_name", "id"],
+              },
+            ],
+          })
+        }
+        type="button"
+      />
+    </div>
   ),
 }));
 
@@ -336,6 +366,40 @@ describe("GrantAccessDialog", () => {
 
     const exprEditor = container.querySelector('[data-testid="expr-editor"]');
     expect(exprEditor?.textContent).toContain("serialized-selection");
+
+    unmount();
+  });
+
+  test("disables select mode after CEL scope becomes column-scoped", async () => {
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    let radioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(radioList[2]?.checked).toBe(true);
+    expect(radioList[2]?.disabled).toBe(false);
+
+    await click(radioList[1]!);
+    await click(
+      container.querySelector<HTMLElement>(
+        '[data-testid="expr-editor-set-column-scope"]'
+      )!
+    );
+
+    radioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(radioList[1]?.checked).toBe(true);
+    expect(radioList[2]?.disabled).toBe(true);
+
+    await click(radioList[2]!);
+
+    radioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(radioList[1]?.checked).toBe(true);
+    expect(container.querySelector('[data-testid="expr-editor"]')).toBeTruthy();
 
     unmount();
   });

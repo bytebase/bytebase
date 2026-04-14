@@ -11,11 +11,19 @@ import {
   convertSensitiveColumnToDatabaseResource,
   getExpressionsForDatabaseResource as getResourceExpressions,
 } from "@/components/SensitiveData/utils";
-import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
+import type {
+  ConditionGroupExpr,
+  Factor,
+  Operator,
+  SimpleExpr,
+} from "@/plugins/cel";
 import {
   buildCELExpr,
   ExprType,
   emptySimpleExpr,
+  isConditionExpr,
+  isConditionGroupExpr,
+  isRawStringExpr,
   resolveCELExpr,
   validateSimpleExpr,
   wrapAsGroup,
@@ -76,6 +84,23 @@ interface GrantAccessDialogProps {
   onDismiss: () => void;
 }
 
+const hasColumnScopedResources = (resources: DatabaseResource[]): boolean => {
+  return resources.some((resource) => (resource.columns?.length ?? 0) > 0);
+};
+
+const hasColumnScopedExpr = (expr: SimpleExpr): boolean => {
+  if (isConditionGroupExpr(expr)) {
+    return expr.args.some((arg) => hasColumnScopedExpr(arg));
+  }
+  if (isConditionExpr(expr)) {
+    return expr.args[0] === CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME;
+  }
+  if (isRawStringExpr(expr)) {
+    return expr.content.includes(CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME);
+  }
+  return false;
+};
+
 export function GrantAccessDialog({
   open,
   projectName,
@@ -95,10 +120,7 @@ export function GrantAccessDialog({
     [columnList]
   );
   const hasColumnScopedResource = useMemo(
-    () =>
-      initialDatabaseResources.some(
-        (resource) => (resource.columns?.length ?? 0) > 0
-      ),
+    () => hasColumnScopedResources(initialDatabaseResources),
     [initialDatabaseResources]
   );
   const initialDatabaseResourceKey = useMemo(
@@ -116,8 +138,6 @@ export function GrantAccessDialog({
         .join("||"),
     [initialDatabaseResources]
   );
-  const selectModeDisabled = hasColumnScopedResource;
-
   const [radioValue, setRadioValue] = useState<RadioValue>("ALL");
   const [databaseResources, setDatabaseResources] = useState<
     DatabaseResource[]
@@ -240,6 +260,17 @@ export function GrantAccessDialog({
     setModeChangeProcessing(false);
   }, [open]);
 
+  const exprHasColumnScope = useMemo(() => hasColumnScopedExpr(expr), [expr]);
+  const selectModeDisabled = useMemo(() => {
+    if (hasColumnScopedResource) {
+      return true;
+    }
+    if (radioValue === "EXPRESSION") {
+      return exprHasColumnScope;
+    }
+    return false;
+  }, [hasColumnScopedResource, radioValue, exprHasColumnScope]);
+
   const isValid = useMemo(() => {
     switch (radioValue) {
       case "SELECT":
@@ -319,6 +350,9 @@ export function GrantAccessDialog({
         setShowFeatureModal(true);
         return;
       }
+      if (value === "SELECT" && selectModeDisabled) {
+        return;
+      }
 
       const requestId = modeChangeRequestIdRef.current + 1;
       modeChangeRequestIdRef.current = requestId;
@@ -365,6 +399,7 @@ export function GrantAccessDialog({
     },
     [
       hasRequiredFeature,
+      selectModeDisabled,
       radioValue,
       convertToConditionGroupExpr,
       databaseResources,
