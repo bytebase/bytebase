@@ -177,6 +177,14 @@ const flush = async () => {
   });
 };
 
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+  return { promise, resolve };
+};
+
 const click = async (element: HTMLElement) => {
   act(() => {
     element.dispatchEvent(
@@ -186,10 +194,21 @@ const click = async (element: HTMLElement) => {
   await flush();
 };
 
-const renderGrantAccessDialog = ({ open = true }: { open?: boolean } = {}) => {
-  const container = document.createElement("div");
-  const root = createRoot(container);
-  const columnList = [
+const changeTextInput = async (input: HTMLInputElement, value: string) => {
+  act(() => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+    );
+    descriptor?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await flush();
+};
+
+const createColumnList = (): SensitiveColumn[] =>
+  [
     {
       database: {
         name: "instances/inst1/databases/db1",
@@ -205,13 +224,23 @@ const renderGrantAccessDialog = ({ open = true }: { open?: boolean } = {}) => {
     },
   ] satisfies SensitiveColumn[];
 
-  const render = (nextOpen = open) => {
+const renderGrantAccessDialog = ({
+  open = true,
+  columnList = createColumnList(),
+}: {
+  open?: boolean;
+  columnList?: SensitiveColumn[];
+} = {}) => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+
+  const render = (nextOpen = open, nextColumnList = columnList) => {
     act(() => {
       root.render(
         <GrantAccessDialog
           open={nextOpen}
           projectName="projects/proj1"
-          columnList={columnList}
+          columnList={nextColumnList}
           onDismiss={vi.fn()}
         />
       );
@@ -301,5 +330,75 @@ describe("GrantAccessDialog", () => {
 
     unmount();
     vi.useRealTimers();
+  });
+
+  test("keeps the latest mode when an earlier async conversion resolves late", async () => {
+    const pendingConversion = deferred<[{ parsed: true }]>();
+    mocks.batchConvertCELStringToParsedExpr.mockImplementationOnce(
+      () => pendingConversion.promise
+    );
+
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    const radioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+
+    expect(radioList[2]?.checked).toBe(true);
+
+    act(() => {
+      radioList[1]?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    await flush();
+
+    act(() => {
+      radioList[0]?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    await flush();
+
+    pendingConversion.resolve([{ parsed: true }]);
+    await flush();
+
+    const refreshedRadioList = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
+    );
+    expect(refreshedRadioList[0]?.checked).toBe(true);
+    expect(refreshedRadioList[1]?.checked).toBe(false);
+    expect(
+      container.querySelector('[data-testid="expr-editor"]')
+    ).not.toBeTruthy();
+
+    unmount();
+  });
+
+  test("does not reset form state when reopened props are semantically unchanged", async () => {
+    const initialColumnList = createColumnList();
+    const { container, render, unmount } = renderGrantAccessDialog({
+      columnList: initialColumnList,
+    });
+    await flush();
+
+    const descriptionInput = container.querySelector<HTMLInputElement>(
+      'input[placeholder="common.description"]'
+    );
+    expect(descriptionInput).toBeTruthy();
+
+    await changeTextInput(descriptionInput!, "temporary reason");
+    expect(descriptionInput?.value).toBe("temporary reason");
+
+    render(true, createColumnList());
+    await flush();
+
+    const refreshedDescriptionInput = container.querySelector<HTMLInputElement>(
+      'input[placeholder="common.description"]'
+    );
+    expect(refreshedDescriptionInput?.value).toBe("temporary reason");
+
+    unmount();
   });
 });

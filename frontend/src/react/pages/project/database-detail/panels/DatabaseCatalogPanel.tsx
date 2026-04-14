@@ -287,6 +287,14 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       );
     });
   }, [columnList, searchText]);
+  const grantAccessColumnList = useMemo(
+    () =>
+      checkedColumnList.map((maskData) => ({
+        database,
+        maskData,
+      })),
+    [checkedColumnList, database]
+  );
   const openGrantAccessDialog =
     showGrantAccessDialog && checkedColumnList.length > 0;
 
@@ -492,10 +500,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       <GrantAccessDialog
         open={openGrantAccessDialog}
         projectName={database.project}
-        columnList={checkedColumnList.map((maskData) => ({
-          database,
-          maskData,
-        }))}
+        columnList={grantAccessColumnList}
         instance={instance}
         onDismiss={closeGrantAccessDialog}
       />

@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { CircleHelp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { getClassificationLevelOptions } from "@/components/SensitiveData/components/utils";
@@ -100,6 +100,21 @@ export function GrantAccessDialog({
       ),
     [initialDatabaseResources]
   );
+  const initialDatabaseResourceKey = useMemo(
+    () =>
+      initialDatabaseResources
+        .map((resource) =>
+          [
+            resource.databaseFullName,
+            resource.schema ?? "",
+            resource.table ?? "",
+            (resource.columns ?? []).join(","),
+          ].join("|")
+        )
+        .sort()
+        .join("||"),
+    [initialDatabaseResources]
+  );
   const selectModeDisabled = hasColumnScopedResource;
 
   const [radioValue, setRadioValue] = useState<RadioValue>("ALL");
@@ -115,9 +130,20 @@ export function GrantAccessDialog({
   >();
   const [memberList, setMemberList] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [modeChangeProcessing, setModeChangeProcessing] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const lastInitializationKeyRef = useRef<string | undefined>(undefined);
+  const modeChangeRequestIdRef = useRef(0);
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (lastInitializationKeyRef.current === initialDatabaseResourceKey) {
+      return;
+    }
+    lastInitializationKeyRef.current = initialDatabaseResourceKey;
+
     if (!open) {
       return;
     }
@@ -171,7 +197,21 @@ export function GrantAccessDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, initialDatabaseResources, hasColumnScopedResource]);
+  }, [
+    open,
+    initialDatabaseResources,
+    initialDatabaseResourceKey,
+    hasColumnScopedResource,
+  ]);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+    lastInitializationKeyRef.current = undefined;
+    modeChangeRequestIdRef.current += 1;
+    setModeChangeProcessing(false);
+  }, [open]);
 
   const isValid = useMemo(() => {
     switch (radioValue) {
@@ -277,19 +317,48 @@ export function GrantAccessDialog({
         return;
       }
 
-      if (value === "EXPRESSION" && radioValue === "SELECT") {
-        const nextExpr = await convertToConditionGroupExpr(databaseResources);
-        if (nextExpr) {
-          setExpr(nextExpr);
-        }
-      } else if (value === "SELECT" && radioValue === "EXPRESSION") {
-        const nextResources = await convertToDatabaseResources(expr);
-        if (nextResources) {
-          setDatabaseResources(nextResources);
-        }
+      const requestId = modeChangeRequestIdRef.current + 1;
+      modeChangeRequestIdRef.current = requestId;
+
+      const requiresConversion =
+        (value === "EXPRESSION" && radioValue === "SELECT") ||
+        (value === "SELECT" && radioValue === "EXPRESSION");
+
+      if (!requiresConversion) {
+        setModeChangeProcessing(false);
+        setRadioValue(value);
+        return;
       }
 
-      setRadioValue(value);
+      setModeChangeProcessing(true);
+      try {
+        if (value === "EXPRESSION" && radioValue === "SELECT") {
+          const nextExpr = await convertToConditionGroupExpr(databaseResources);
+          if (modeChangeRequestIdRef.current !== requestId) {
+            return;
+          }
+          if (nextExpr) {
+            setExpr(nextExpr);
+          }
+        } else if (value === "SELECT" && radioValue === "EXPRESSION") {
+          const nextResources = await convertToDatabaseResources(expr);
+          if (modeChangeRequestIdRef.current !== requestId) {
+            return;
+          }
+          if (nextResources) {
+            setDatabaseResources(nextResources);
+          }
+        }
+
+        if (modeChangeRequestIdRef.current !== requestId) {
+          return;
+        }
+        setRadioValue(value);
+      } finally {
+        if (modeChangeRequestIdRef.current === requestId) {
+          setModeChangeProcessing(false);
+        }
+      }
     },
     [
       hasRequiredFeature,
@@ -451,6 +520,7 @@ export function GrantAccessDialog({
                         name="resource-mode"
                         checked={radioValue === "ALL"}
                         onChange={() => onRadioChange("ALL")}
+                        disabled={modeChangeProcessing}
                         className="accent-accent"
                       />
                       <span>{t("issue.role-grant.all-databases")}</span>
@@ -463,6 +533,7 @@ export function GrantAccessDialog({
                       name="resource-mode"
                       checked={radioValue === "EXPRESSION"}
                       onChange={() => onRadioChange("EXPRESSION")}
+                      disabled={modeChangeProcessing}
                       className="accent-accent"
                     />
                     <div className="flex items-center gap-x-1">
@@ -486,7 +557,7 @@ export function GrantAccessDialog({
                       name="resource-mode"
                       checked={radioValue === "SELECT"}
                       onChange={() => onRadioChange("SELECT")}
-                      disabled={selectModeDisabled}
+                      disabled={selectModeDisabled || modeChangeProcessing}
                       className="accent-accent"
                     />
                     <Tooltip
