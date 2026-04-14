@@ -163,7 +163,7 @@ export function AgentInput() {
 
   // Show/hide mention popover
   const showMention = isMentionOpen && mentionOptions.length > 0;
-  const mentionListStyle = useMemo<CSSProperties | null>(() => {
+  const mentionListStyle: CSSProperties | null = (() => {
     if (!showMention) return null;
 
     const rect = textareaRef.current?.getBoundingClientRect();
@@ -175,7 +175,7 @@ export function AgentInput() {
       width: rect.width,
       transform: "translateY(-100%)",
     };
-  }, [showMention, input, selectionStart, selectionEnd]);
+  })();
 
   // Reset highlight when options change
   useEffect(() => {
