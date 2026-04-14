@@ -485,7 +485,10 @@ func TestChange_PlanChecks_RunPlanChecksAPIFailure(t *testing.T) {
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
 	require.NotNil(t, output.PlanChecks)
-	require.Equal(t, "FAILED", output.PlanChecks.Status)
+	// Trigger failure is treated as RUNNING (not FAILED) to avoid misleading
+	// FIX_SQL_AND_RETRY when the issue is a permission or transient error.
+	require.Equal(t, "RUNNING", output.PlanChecks.Status)
+	require.NotEmpty(t, output.PlanChecks.PlanCheckRun)
 	// Issue still created.
 	require.NotEmpty(t, output.Issue)
 }

@@ -411,12 +411,17 @@ func (s *Server) planCheckBudget() time.Duration {
 
 // runPlanChecks triggers plan checks and polls for results within the poll budget.
 func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckInfo {
-	// Trigger plan checks.
+	// Trigger plan checks. If the trigger itself fails (permission, transient
+	// error), treat as RUNNING — we don't know whether checks will run server-side
+	// and shouldn't block rollout with a misleading FIX_SQL_AND_RETRY.
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/RunPlanChecks", map[string]any{
 		"name": planName,
 	})
 	if err != nil || resp.Status >= 400 {
-		return &PlanCheckInfo{Status: planCheckFailed}
+		return &PlanCheckInfo{
+			Status:       planCheckRunning,
+			PlanCheckRun: planName + "/planCheckRun",
+		}
 	}
 
 	// Poll for results.
