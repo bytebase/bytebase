@@ -32,7 +32,14 @@ React UI components live in `src/react/components/ui/` and follow shadcn-style p
 - **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
 - **Use `cn()` for conditional classes** — import from `@/react/lib/utils`, don't write manual template literal ternaries
 - **No manual `dark:` overrides** — use semantic tokens that handle theming
-- **No manual `z-index` on overlay *consumers*** — callers of `Dialog`, `Sheet`, `Popover`, `Select`, `Tooltip` must not set their own `z-index`. The primitives in `src/react/components/ui/` already coordinate stacking (all overlays use `z-50`; within that layer, later-mounted portals win by DOM order). Do **not** strip `z-50` from `select.tsx`, `tooltip.tsx`, `dialog.tsx`, or `alert-dialog.tsx` — removing it makes Select/Tooltip render behind Dialog (BYT-9226, PR #19824)
+- **Overlay layering policy** — React overlays use three semantic families: `overlay`, `agent`, and `critical`.
+  - Standard app overlays mount into `overlay`.
+  - `AgentWindow`, the minimized launcher, and other agent-owned overlays mount into `agent` and stay above normal app overlays.
+  - Forced session-expired / re-login UI mounts into `critical` and is the only layer allowed above and disabling the agent.
+  - Each family has a dedicated portal root; use `getLayerRoot(<family>)` plus the family-specific surface class from `src/react/components/ui/layer.ts`.
+  - Children inherit the owning family. If a parent mounts into `agent` or `critical`, its descendants must not remount into a lower family.
+  - Raw global `z-index` values are forbidden in React feature code for cross-surface stacking. Local component-internal `z-index` remains allowed when it only affects internal composition.
+  - Consumers of overlay primitives must not set their own global `z-index`.
 - **Dialog vs Sheet** — use `<Sheet>` (right-side drawer, in `src/react/components/ui/sheet.tsx`) for **creating or editing a resource**. Use `<Dialog>` for **confirmations, single-field prompts, critical interrupts, and read-only result displays**. The dividing line is whether the user is filling out a form with multiple fields — drawers keep the parent list/table visible behind a scrim and scale to multi-section forms, while dialogs are for short blocking interactions. `AlertDialog` is the right pick for destructive confirms that need an explicit acknowledgment.
 - **Sheet width tiers** — `<SheetContent>` accepts a `width` variant. Pick the tier that matches the form complexity; don't inline ad-hoc widths. Add a new tier to `sheet.tsx` only if a genuinely new size is needed.
   - `narrow` (384px) — single-field pickers, short 2–3 field forms, environment/project selection, read-only display sheets
