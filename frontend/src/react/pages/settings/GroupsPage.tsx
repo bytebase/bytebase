@@ -12,11 +12,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { UserSelect } from "@/react/components/UserSelect";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -810,34 +818,39 @@ function GroupForm({
             <div className="flex flex-col gap-y-2">
               {members.map((member, index) => (
                 <div key={index} className="flex items-center gap-x-2">
-                  <Input
+                  <UserSelect
                     className="flex-1"
                     value={member.member}
-                    onChange={(e) =>
-                      handleMemberChange(index, "member", e.target.value)
-                    }
-                    placeholder="users/hello@example.com"
+                    onChange={(val) => handleMemberChange(index, "member", val)}
                     disabled={!allowEdit}
                   />
-                  <select
+                  <Select
                     value={member.role}
-                    onChange={(e) =>
-                      handleMemberChange(
-                        index,
-                        "role",
-                        Number(e.target.value) as GroupMember_Role
-                      )
-                    }
-                    className="h-9 rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm"
+                    onValueChange={(val: GroupMember_Role | null) => {
+                      if (val !== null) {
+                        handleMemberChange(index, "role", val);
+                      }
+                    }}
                     disabled={!allowEdit}
                   >
-                    <option value={GroupMember_Role.OWNER}>
-                      {t("settings.members.groups.form.role.owner")}
-                    </option>
-                    <option value={GroupMember_Role.MEMBER}>
-                      {t("settings.members.groups.form.role.member")}
-                    </option>
-                  </select>
+                    <SelectTrigger className="h-9 w-36 shrink-0">
+                      <SelectValue>
+                        {(value: GroupMember_Role | null) =>
+                          value === GroupMember_Role.OWNER
+                            ? t("settings.members.groups.form.role.owner")
+                            : t("settings.members.groups.form.role.member")
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={GroupMember_Role.OWNER}>
+                        {t("settings.members.groups.form.role.owner")}
+                      </SelectItem>
+                      <SelectItem value={GroupMember_Role.MEMBER}>
+                        {t("settings.members.groups.form.role.member")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="ghost"
                     size="icon"
