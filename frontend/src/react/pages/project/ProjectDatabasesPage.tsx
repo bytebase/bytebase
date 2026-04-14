@@ -9,6 +9,7 @@ import {
   getValueFromScopes,
   type ScopeOption,
   type SearchParams,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import {
   CreateDatabaseSheet,
@@ -26,6 +27,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useEnvironmentV1Store,
+  useInstanceV1Store,
   useProjectV1Store,
 } from "@/store";
 import {
@@ -49,7 +51,10 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   engineNameV1,
+  extractInstanceResourceName,
+  getDefaultPagination,
   hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
@@ -96,6 +101,22 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     () => environmentStore.environmentList ?? []
   );
 
+  const instanceStore = useInstanceV1Store();
+  const searchInstances = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
+      const { instances } = await instanceStore.fetchInstanceList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return instances.map((i) => {
+        const id = extractInstanceResourceName(i.name);
+        return { value: id, keywords: [id, i.title] };
+      });
+    },
+    [instanceStore]
+  );
+
   const scopeOptions: ScopeOption[] = useMemo(() => {
     return [
       {
@@ -123,7 +144,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       {
         id: "instance",
         title: t("common.instance"),
-        description: t("common.instance"),
+        description: t("issue.advanced-search.scope.instance.description"),
+        onSearch: searchInstances,
       },
       {
         id: "engine",
@@ -138,11 +160,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       {
         id: "label",
         title: t("common.labels"),
-        description: t("common.labels"),
+        description: t("issue.advanced-search.scope.label.description"),
         allowMultiple: true,
       },
     ];
-  }, [t, environments]);
+  }, [t, environments, searchInstances]);
 
   // Derived filter values
   const envVal = getValueFromScopes(searchParams, "environment");

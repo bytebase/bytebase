@@ -1072,6 +1072,13 @@
   "instance.your-snowflake-account-locator": "Snowflake アカウント ロケーター",
   "issue": {
     "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "アクセス権限のステータスでフィルター"
+          }
+        }
+      },
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
@@ -1098,6 +1105,18 @@
           "description": "イシューの現在の承認者による検索",
           "title": "現在の承認者"
         },
+        "database": {
+          "description": "データベースでフィルター"
+        },
+        "engine": {
+          "description": "エンジンでフィルタリング"
+        },
+        "environment": {
+          "description": "環境に基づいてフィルタリングする"
+        },
+        "instance": {
+          "description": "インスタンスによるフィルター"
+        },
         "issue-label": {
           "description": "イシューラベルでフィルタリング",
           "title": "イシューラベル"
@@ -1112,11 +1131,20 @@
             "role-grant": "Role Grant"
           }
         },
+        "label": {
+          "description": "「キー:値」のペアを入力し、Enterを押します"
+        },
+        "project": {
+          "description": "プロジェクトでフィルターする"
+        },
         "state": {
           "description": "状態でフィルタ"
         },
         "status": {
           "description": "イシューのステータスで検索"
+        },
+        "user": {
+          "description": "ユーザーでフィルター"
         }
       }
     },
@@ -1322,6 +1350,13 @@
     },
     "filter-projects": "プロジェクトをフィルタリング",
     "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "免除ステータスでフィルター"
+          }
+        }
+      },
       "all-levels": "全レベル",
       "expires-in-days_one": "{{days}} 日後に期限切れ",
       "expires-in-days_other": "{{days}} 日後に期限切れ",

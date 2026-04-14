@@ -1072,6 +1072,13 @@
   "instance.your-snowflake-account-locator": "Your Snowflake account locator",
   "issue": {
     "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Filter by access grant status"
+          }
+        }
+      },
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
@@ -1098,6 +1105,18 @@
           "description": "Search by the issue current approver",
           "title": "Current approver"
         },
+        "database": {
+          "description": "Filter by database"
+        },
+        "engine": {
+          "description": "Filter by engines"
+        },
+        "environment": {
+          "description": "Filter by environment"
+        },
+        "instance": {
+          "description": "Filter by instance"
+        },
         "issue-label": {
           "description": "Filter by issue label",
           "title": "Issue label"
@@ -1112,11 +1131,20 @@
             "role-grant": "Role Grant"
           }
         },
+        "label": {
+          "description": "Input the \"key:value\" pair then press Enter"
+        },
+        "project": {
+          "description": "Filter by project"
+        },
         "state": {
           "description": "Filter by state"
         },
         "status": {
           "description": "Search by the issue status"
+        },
+        "user": {
+          "description": "Filter by user"
         }
       }
     },
@@ -1322,6 +1350,13 @@
     },
     "filter-projects": "Filter projects",
     "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "Filter by exemption status"
+          }
+        }
+      },
       "all-levels": "All levels",
       "expires-in-days_one": "Expires in {{days}} day",
       "expires-in-days_other": "Expires in {{days}} days",

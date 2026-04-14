@@ -1072,6 +1072,13 @@
   "instance.your-snowflake-account-locator": "您的 Snowflake 账户定位符",
   "issue": {
     "access-grant": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "按访问授权状态筛选"
+          }
+        }
+      },
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
@@ -1098,6 +1105,18 @@
           "description": "按工单的当前审批人搜索",
           "title": "当前审批人"
         },
+        "database": {
+          "description": "按数据库筛选"
+        },
+        "engine": {
+          "description": "按引擎过滤"
+        },
+        "environment": {
+          "description": "根据环境过滤"
+        },
+        "instance": {
+          "description": "根据实例过滤"
+        },
         "issue-label": {
           "description": "按工单标签过滤",
           "title": "工单标签"
@@ -1112,11 +1131,20 @@
             "role-grant": "角色授权"
           }
         },
+        "label": {
+          "description": "输入 \"key:value\" 后按下回车"
+        },
+        "project": {
+          "description": "根据项目过滤"
+        },
         "state": {
           "description": "按状态过滤"
         },
         "status": {
           "description": "按工单状态搜索"
+        },
+        "user": {
+          "description": "按用户筛选"
         }
       }
     },
@@ -1322,6 +1350,13 @@
     },
     "filter-projects": "过滤项目",
     "masking-exemption": {
+      "advanced-search": {
+        "scope": {
+          "status": {
+            "description": "按豁免状态筛选"
+          }
+        }
+      },
       "all-levels": "所有等级",
       "expires-in-days_one": "{{days}} 天后到期",
       "expires-in-days_other": "{{days}} 天后到期",

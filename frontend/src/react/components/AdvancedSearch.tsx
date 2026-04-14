@@ -1,5 +1,7 @@
 import { Filter, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { cn } from "@/react/lib/utils";
 
 // ============================================================
@@ -20,7 +22,11 @@ export interface SearchParams {
 export interface ValueOption {
   value: string;
   keywords: string[];
-  render?: () => React.ReactNode;
+  /**
+   * Custom renderer for the option's primary cell. Receives the current
+   * search keyword so the renderer can highlight matches.
+   */
+  render?: (keyword: string) => React.ReactNode;
   custom?: boolean;
 }
 
@@ -145,6 +151,7 @@ export function AdvancedSearch({
   placeholder,
   onParamsChange,
 }: AdvancedSearchProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const tagsContainerRef = useRef<HTMLDivElement>(null);
   const scopeMenuListRef = useRef<HTMLDivElement>(null);
@@ -227,30 +234,62 @@ export function AdvancedSearch({
     return inputText.trim().toLowerCase();
   }, [currentScope, inputText]);
 
+  // Keyword typed before any "scope:" prefix — used to filter & highlight
+  // the scope menu.
+  const scopeKeyword = useMemo(
+    () => inputText.trim().replace(/:.*$/, ""),
+    [inputText]
+  );
+
   // Visible scope options (filtered by typing)
   const visibleScopeOptions = useMemo(() => {
     if (currentScopeOption) return [currentScopeOption];
-    const keyword = inputText.trim().replace(/:.*$/, "").toLowerCase();
+    const keyword = scopeKeyword.toLowerCase();
     if (!keyword) return availableScopeOptions;
     return availableScopeOptions.filter(
       (opt) =>
         opt.id.toLowerCase().includes(keyword) ||
         opt.title.toLowerCase().includes(keyword)
     );
-  }, [currentScopeOption, inputText, availableScopeOptions]);
+  }, [currentScopeOption, scopeKeyword, availableScopeOptions]);
 
-  // Trigger async search when scope has onSearch
   const isAsyncScope = currentScopeOption?.onSearch != null;
+
+  // Keep the latest onSearch in a ref so the timer always fires against the
+  // freshest callback — without adding it as an effect dep. Page-level
+  // callbacks (e.g. `searchDatabases`) often close over async-loaded state
+  // like `project`, and their useCallback identity can churn on every render
+  // when that state flows through unstable references (e.g. a fallback
+  // `unknownProject()` that allocates a new proto each call). Depending on
+  // that identity would refire this effect on every render and loop forever.
+  const onSearchRef = useRef(currentScopeOption?.onSearch);
+  onSearchRef.current = currentScopeOption?.onSearch;
+
+  // Trigger async search when the current scope or its keyword changes.
+  // Reset is folded into the same effect so we never race with it.
   useEffect(() => {
-    if (!isAsyncScope || !currentScopeOption?.onSearch) return;
     clearTimeout(asyncSearchRef.current);
-    const keyword = currentValueForScope;
-    const onSearch = currentScopeOption.onSearch;
-    const requestID = asyncRequestRef.current + 1;
-    asyncRequestRef.current = requestID;
+    asyncRequestRef.current += 1;
+    // Clear previous results on every run so stale options from the prior
+    // scope/keyword aren't selectable during the debounce + fetch window.
+    setAsyncOptions([]);
+
+    if (!currentScope || !onSearchRef.current) {
+      setAsyncLoading(false);
+      return;
+    }
+
+    const requestID = asyncRequestRef.current;
     setAsyncLoading(true);
     asyncSearchRef.current = setTimeout(() => {
-      onSearch(keyword)
+      const fn = onSearchRef.current;
+      if (!fn) {
+        if (asyncRequestRef.current !== requestID) return;
+        setAsyncOptions([]);
+        setAsyncLoading(false);
+        return;
+      }
+      fn(currentValueForScope)
         .then((results) => {
           if (asyncRequestRef.current !== requestID) return;
           setAsyncOptions(results);
@@ -267,17 +306,8 @@ export function AdvancedSearch({
     }, 300);
     return () => {
       clearTimeout(asyncSearchRef.current);
-      if (asyncRequestRef.current === requestID) {
-        asyncRequestRef.current += 1;
-      }
     };
-  }, [isAsyncScope, currentScopeOption, currentValueForScope]);
-
-  // Reset async state when scope changes
-  useEffect(() => {
-    setAsyncOptions([]);
-    setAsyncLoading(false);
-  }, [currentScope]);
+  }, [currentScope, currentValueForScope]);
 
   // Visible value options (filtered, de-duped)
   const visibleValueOptions = useMemo(() => {
@@ -569,7 +599,7 @@ export function AdvancedSearch({
       const opt = scopeOptions
         .find((o) => o.id === scope.id)
         ?.options?.find((o) => o.value === scope.value);
-      if (opt?.render) return opt.render();
+      if (opt?.render) return opt.render("");
       return scope.value;
     },
     [scopeOptions]
@@ -701,11 +731,17 @@ export function AdvancedSearch({
                     onMouseEnter={() => setMenuIndex(index)}
                     onClick={() => selectScope(option.id)}
                   >
-                    <span className="text-accent">{option.id}</span>
+                    <HighlightLabelText
+                      className="text-accent"
+                      text={option.id}
+                      keyword={scopeKeyword}
+                    />
                     {option.description && (
-                      <span className="text-control-light truncate">
-                        {option.description}
-                      </span>
+                      <HighlightLabelText
+                        className="text-control-light truncate"
+                        text={option.description}
+                        keyword={scopeKeyword}
+                      />
                     )}
                   </div>
                 ))}
@@ -735,6 +771,9 @@ export function AdvancedSearch({
                 {currentScopeOption.description && (
                   <div className="text-xs text-control-light">
                     {currentScopeOption.description}
+                    {currentScopeOption.onSearch && (
+                      <span>. {t("common.type-to-search")}</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -756,7 +795,7 @@ export function AdvancedSearch({
                       >
                         {option.render && (
                           <span className="min-w-0 truncate text-control text-sm">
-                            {option.render()}
+                            {option.render(currentValueForScope)}
                           </span>
                         )}
                         {!option.custom && (
@@ -764,7 +803,10 @@ export function AdvancedSearch({
                             className="min-w-0 flex-1 truncate text-control-light text-sm"
                             title={option.value}
                           >
-                            {option.value}
+                            <HighlightLabelText
+                              text={option.value}
+                              keyword={currentValueForScope}
+                            />
                           </span>
                         )}
                       </div>

@@ -18,6 +18,7 @@ import {
   AdvancedSearch,
   type ScopeOption,
   type SearchParams,
+  type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
@@ -29,7 +30,11 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { pushNotification, useSubscriptionV1Store } from "@/store";
+import {
+  pushNotification,
+  useSubscriptionV1Store,
+  useUserStore,
+} from "@/store";
 import {
   extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
@@ -56,7 +61,11 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { formatAbsoluteDateTime, humanizeDurationV1 } from "@/utils";
+import {
+  formatAbsoluteDateTime,
+  getDefaultPagination,
+  humanizeDurationV1,
+} from "@/utils";
 
 dayjs.extend(utc);
 
@@ -709,12 +718,28 @@ export function AuditLogTable({
     return "";
   }, [filter, t]);
 
+  const userStore = useUserStore();
+  const searchUsers = useCallback(
+    async (keyword: string): Promise<ValueOption[]> => {
+      const { users } = await userStore.fetchUserList({
+        pageSize: getDefaultPagination(),
+        filter: keyword.trim() ? { query: keyword } : undefined,
+      });
+      return users.map((u) => ({
+        value: u.email,
+        keywords: [u.email, u.title],
+      }));
+    },
+    [userStore]
+  );
+
   const scopeOptions = useMemo((): ScopeOption[] => {
     return [
       {
         id: "actor",
         title: t("audit-log.advanced-search.scope.actor.title"),
         description: t("audit-log.advanced-search.scope.actor.description"),
+        onSearch: searchUsers,
       },
       {
         id: "method",
@@ -737,7 +762,7 @@ export function AuditLogTable({
           })),
       },
     ];
-  }, [t]);
+  }, [t, searchUsers]);
 
   const renderSortIndicator = (columnKey: string) => {
     if (sortKey !== columnKey)
