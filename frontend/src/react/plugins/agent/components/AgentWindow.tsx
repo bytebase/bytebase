@@ -105,6 +105,7 @@ export function AgentWindow() {
   // Refs for drag/resize intermediate values (avoid re-renders)
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragPositionRef = useRef<{ x: number; y: number } | null>(null);
   const isResizingRef = useRef(false);
   const resizeStartRef = useRef<{
     x: number;
@@ -592,6 +593,10 @@ export function AgentWindow() {
         x: event.clientX - store.position.x,
         y: event.clientY - store.position.y,
       };
+      dragPositionRef.current = {
+        x: store.position.x,
+        y: store.position.y,
+      };
 
       const onDrag = (e: PointerEvent) => {
         if (!isDraggingRef.current || !windowRef.current) return;
@@ -612,7 +617,7 @@ export function AgentWindow() {
         );
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
-        useAgentStore.getState().setPosition(x, y);
+        dragPositionRef.current = { x, y };
       };
 
       const stopDrag = () => {
@@ -621,6 +626,12 @@ export function AgentWindow() {
         document.removeEventListener("pointerup", stopDrag);
         document.removeEventListener("pointercancel", stopDrag);
         dragCleanupRef.current = null;
+        if (dragPositionRef.current) {
+          useAgentStore
+            .getState()
+            .setPosition(dragPositionRef.current.x, dragPositionRef.current.y);
+        }
+        dragPositionRef.current = null;
         useAgentStore.getState().saveWindowState();
       };
 
