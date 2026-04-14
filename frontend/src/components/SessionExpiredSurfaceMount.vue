@@ -18,6 +18,10 @@ const props = computed(() => ({ currentPath: route.fullPath }));
 
 onMounted(async () => {
   if (!container.value) return;
+  const i18nModule = await import("@/react/i18n");
+  if (i18nModule.default.language !== locale.value) {
+    await i18nModule.default.changeLanguage(locale.value);
+  }
   root = await mountReactPage(
     container.value,
     "SessionExpiredSurface",

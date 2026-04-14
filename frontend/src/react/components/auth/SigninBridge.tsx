@@ -14,11 +14,17 @@ export function SigninBridge({ currentPath }: { currentPath: string }) {
 
     const app = createApp({
       render() {
-        return h(Signin as never, {
-          redirect: false,
-          redirectUrl: currentPath,
-          allowSignup: false,
-        });
+        return h(
+          Signin as never,
+          {
+            redirect: false,
+            redirectUrl: currentPath,
+            allowSignup: false,
+          },
+          {
+            footer: () => null,
+          }
+        );
       },
     });
     app.use(router).use(pinia).use(i18n).use(NaiveUI);
