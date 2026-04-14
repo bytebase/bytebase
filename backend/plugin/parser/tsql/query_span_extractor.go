@@ -379,16 +379,21 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ct
 
 	var compoundFrom []base.TableSource
 	if from := ctx.From_table_sources(); from != nil {
+		// Capture the boundary BEFORE extracting table sources: the extraction
+		// pushes intermediate join anchors onto q.tableSourcesFrom (see
+		// extractTSqlSensitiveFieldsFromTableSource), and those pushes must be
+		// scoped to this query specification so they don't leak into the
+		// enclosing scope — especially when alias names collide.
+		originalFromFieldList := len(q.tableSourcesFrom)
+		defer func() {
+			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldList]
+		}()
 		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(from.GetFrom())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_sources` in `query_specification`")
 		}
-		originalFromFieldList := len(q.tableSourcesFrom)
 		q.tableSourcesFrom = append(q.tableSourcesFrom, fromFieldList...)
 		compoundFrom = fromFieldList
-		defer func() {
-			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldList]
-		}()
 	}
 
 	result := &base.PseudoTable{}
