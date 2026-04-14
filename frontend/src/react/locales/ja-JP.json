@@ -369,6 +369,7 @@
   "common.no-data": "データなし",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
   "common.open": "開く",
+  "common.operation": "操作",
   "common.optional": "オプション",
   "common.or": "または",
   "common.overview": "概要",
@@ -626,6 +627,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "分類",
+  "database.column": "列",
   "database.engine": "エンジン",
   "database.export-schema": "スキーマをエクスポート",
   "database.export-schema-multi-file": "複数ファイル (ZIP)",
@@ -1151,6 +1153,7 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
+      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手動選択",
@@ -1921,7 +1924,9 @@
         },
         "re-order": "並び替え"
       },
+      "grant-access": "アクセスを許可する",
       "never-expires": "有効期限なし",
+      "remove-sensitive-column-tips": "このデータ列を表示しますか？",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",

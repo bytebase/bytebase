@@ -318,9 +318,15 @@ vi.mock("@/components/Plan/logic/issue", () => ({
 }));
 
 vi.mock("./database-detail/DatabaseDetailActions", () => ({
-  DatabaseDetailActions: vi.fn(() => (
-    <div data-testid="database-detail-actions" />
-  )),
+  DatabaseDetailActions: vi.fn(
+    ({ onOpenTransferProject }: { onOpenTransferProject?: () => void }) => (
+      <div data-testid="database-detail-actions">
+        <button type="button" onClick={onOpenTransferProject}>
+          database.transfer-project
+        </button>
+      </div>
+    )
+  ),
 }));
 
 vi.mock("./database-detail/DatabaseDetailHeader", () => ({

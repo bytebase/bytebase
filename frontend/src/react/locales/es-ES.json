@@ -369,6 +369,7 @@
   "common.no-data": "Sin datos",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
   "common.open": "Abrir",
+  "common.operation": "Operación",
   "common.optional": "Opcional",
   "common.or": "o",
   "common.overview": "Resumen",
@@ -626,6 +627,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Clasificación",
+  "database.column": "Columna",
   "database.engine": "Motor",
   "database.export-schema": "Exportar esquema",
   "database.export-schema-multi-file": "Multi-archivo (ZIP)",
@@ -1151,6 +1153,7 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
+      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",
@@ -1921,7 +1924,9 @@
         },
         "re-order": "Reordenar"
       },
+      "grant-access": "Conceder acceso",
       "never-expires": "Nunca expira",
+      "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",
