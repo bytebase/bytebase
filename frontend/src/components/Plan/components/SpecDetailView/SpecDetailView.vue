@@ -5,9 +5,7 @@
       <TargetListSection />
 
       <!-- Statement -->
-      <div :class="[plan.hasRollout ? 'h-[192px]' : 'h-[256px]', 'flex flex-col']">
-        <StatementSection />
-      </div>
+      <StatementSection />
 
       <!-- Checks + Configuration -->
       <template v-if="!specHasRelease">
