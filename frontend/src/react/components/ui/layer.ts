@@ -1,0 +1,50 @@
+export const LAYER_ROOT_ID = {
+  overlay: "bb-react-layer-overlay",
+  agent: "bb-react-layer-agent",
+  critical: "bb-react-layer-critical",
+} as const;
+
+export const LAYER_Z_INDEX = {
+  overlay: 50,
+  agent: 60,
+  critical: 70,
+} as const;
+
+export type LayerFamily = keyof typeof LAYER_ROOT_ID;
+
+const ORDERED_FAMILIES: LayerFamily[] = ["overlay", "agent", "critical"];
+
+const ensureRoot = (family: LayerFamily) => {
+  const id = LAYER_ROOT_ID[family];
+  const existing = document.getElementById(id);
+  if (existing) {
+    return existing as HTMLDivElement;
+  }
+
+  const root = document.createElement("div");
+  root.id = id;
+  root.dataset.bbLayerFamily = family;
+  root.style.position = "relative";
+  root.style.zIndex = String(LAYER_Z_INDEX[family]);
+  root.style.isolation = "isolate";
+
+  const nextFamily = ORDERED_FAMILIES.slice(
+    ORDERED_FAMILIES.indexOf(family) + 1,
+  ).find((candidate) => document.getElementById(LAYER_ROOT_ID[candidate]));
+
+  if (nextFamily) {
+    document.body.insertBefore(
+      root,
+      document.getElementById(LAYER_ROOT_ID[nextFamily]),
+    );
+  } else {
+    document.body.appendChild(root);
+  }
+
+  return root as HTMLDivElement;
+};
+
+export const getLayerRoot = (family: LayerFamily) => ensureRoot(family);
+
+export const LAYER_SURFACE_CLASS = "z-10";
+export const LAYER_BACKDROP_CLASS = "z-0";
