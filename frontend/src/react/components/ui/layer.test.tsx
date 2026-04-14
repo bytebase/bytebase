@@ -11,9 +11,9 @@ describe("layer roots", () => {
   });
 
   test("creates each layer root once with stable ordering", () => {
+    const critical = getLayerRoot("critical");
     const overlay = getLayerRoot("overlay");
     const agent = getLayerRoot("agent");
-    const critical = getLayerRoot("critical");
 
     expect(overlay.id).toBe(LAYER_ROOT_ID.overlay);
     expect(agent.id).toBe(LAYER_ROOT_ID.agent);
@@ -27,6 +27,19 @@ describe("layer roots", () => {
     expect(document.body.children[1]?.id).toBe(LAYER_ROOT_ID.agent);
     expect(document.body.children[2]?.id).toBe(LAYER_ROOT_ID.critical);
 
+    expect(getLayerRoot("overlay")).toBe(overlay);
     expect(getLayerRoot("agent")).toBe(agent);
+    expect(getLayerRoot("critical")).toBe(critical);
+
+    expect(document.body.children).toHaveLength(3);
+    expect(document.querySelectorAll(`#${LAYER_ROOT_ID.overlay}`)).toHaveLength(
+      1,
+    );
+    expect(document.querySelectorAll(`#${LAYER_ROOT_ID.agent}`)).toHaveLength(
+      1,
+    );
+    expect(
+      document.querySelectorAll(`#${LAYER_ROOT_ID.critical}`),
+    ).toHaveLength(1);
   });
 });
