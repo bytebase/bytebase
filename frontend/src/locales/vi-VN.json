@@ -19,7 +19,6 @@
       "title": "Trợ lý AI chưa được cấu hình cho workspace này"
     },
     "archive-chat": "Lưu trữ",
-    "archive-chat-confirmation": "Lưu trữ chat này?",
     "archived-only-chats": "Chỉ lưu trữ",
     "args": "Tham số:",
     "assistant-title": "Trợ lý Bytebase",
@@ -1224,6 +1223,7 @@
     "role-grant": {
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
       "custom-date": "Ngày tùy chỉnh",
       "custom-date-placeholder": "Chọn ngày và giờ hết hạn",
       "details": "Yêu cầu chi tiết",

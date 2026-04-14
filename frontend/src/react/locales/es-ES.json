@@ -15,8 +15,8 @@
       "description": "La IA no está configurada para este espacio de trabajo.",
       "title": "IA no configurada"
     },
+    "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
-    "archive-chat-confirmation": "¿Está seguro de que desea archivar este chat?",
     "archived-only-chats": "Solo archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
@@ -32,6 +32,8 @@
     "chat-total-tokens": "Tokens totales",
     "close": "Cerrar",
     "confirm": "Confirmar",
+    "delete-all-chats": "Eliminar todos los chats",
+    "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
     "input-placeholder": "Pregunta algo a la IA...",
@@ -60,6 +62,7 @@
     "tool-prompt": "Indicación",
     "tool-response-submitted": "Respuesta enviada",
     "tool-value": "Valor",
+    "unarchive-all-chats": "Desarchivar todos los chats",
     "unarchive-chat": "Desarchivar chat"
   },
   "audit-log": {
@@ -236,7 +239,7 @@
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {{resource}}",
-    "more": "More",
+    "more": "Más",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
     "name": "Nombre",
@@ -369,6 +372,7 @@
   "common.no-data": "Sin datos",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
   "common.open": "Abrir",
+  "common.operation": "Operación",
   "common.optional": "Opcional",
   "common.or": "o",
   "common.overview": "Resumen",
@@ -626,6 +630,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Clasificación",
+  "database.column": "Columna",
   "database.engine": "Motor",
   "database.export-schema": "Exportar esquema",
   "database.export-schema-multi-file": "Multi-archivo (ZIP)",
@@ -1189,6 +1194,7 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
+      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",
@@ -1966,7 +1972,9 @@
         },
         "re-order": "Reordenar"
       },
+      "grant-access": "Conceder acceso",
       "never-expires": "Nunca expira",
+      "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",

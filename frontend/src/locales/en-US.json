@@ -19,7 +19,6 @@
       "title": "AI Assistant isn’t configured for this workspace"
     },
     "archive-chat": "Archive",
-    "archive-chat-confirmation": "Archive this chat?",
     "archived-only-chats": "Archived only",
     "args": "Args:",
     "assistant-title": "Bytebase Assistant",
@@ -1224,6 +1223,7 @@
     "role-grant": {
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
+      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "custom-date": "Custom date",
       "custom-date-placeholder": "Select expiration date and time",
       "details": "Request Details",

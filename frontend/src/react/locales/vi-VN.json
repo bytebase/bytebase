@@ -15,8 +15,8 @@
       "description": "AI chưa được cấu hình cho không gian làm việc này.",
       "title": "AI chưa được cấu hình"
     },
+    "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
-    "archive-chat-confirmation": "Bạn có chắc chắn muốn lưu trữ cuộc trò chuyện này?",
     "archived-only-chats": "Chỉ đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
@@ -32,6 +32,8 @@
     "chat-total-tokens": "Tổng số token",
     "close": "Đóng",
     "confirm": "Xác nhận",
+    "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
+    "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
     "input-placeholder": "Hỏi AI bất cứ điều gì...",
@@ -60,6 +62,7 @@
     "tool-prompt": "Lời nhắc",
     "tool-response-submitted": "Phản hồi đã được gửi",
     "tool-value": "Giá trị",
+    "unarchive-all-chats": "Bỏ lưu trữ tất cả cuộc trò chuyện",
     "unarchive-chat": "Bỏ lưu trữ"
   },
   "audit-log": {
@@ -236,7 +239,7 @@
     "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {{resource}}",
-    "more": "More",
+    "more": "Thêm",
     "n-items-selected": "Đã chọn {{n}} mục",
     "n-more": "+{{n}} nữa",
     "name": "Tên",
@@ -369,6 +372,7 @@
   "common.no-data": "Không có dữ liệu",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
   "common.open": "Mở",
+  "common.operation": "Thao tác",
   "common.optional": "Tùy chọn",
   "common.or": "hoặc",
   "common.overview": "Tổng quan",
@@ -626,6 +630,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Phân loại",
+  "database.column": "Cột",
   "database.engine": "Engine",
   "database.export-schema": "Xuất schema",
   "database.export-schema-multi-file": "Nhiều tệp (ZIP)",
@@ -1189,6 +1194,7 @@
     "role-grant": {
       "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Chọn thủ công",
@@ -1966,7 +1972,9 @@
         },
         "re-order": "Sắp xếp lại"
       },
+      "grant-access": "Cấp Quyền truy cập",
       "never-expires": "Không bao giờ hết hạn",
+      "remove-sensitive-column-tips": "Hiển thị cột này?",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",

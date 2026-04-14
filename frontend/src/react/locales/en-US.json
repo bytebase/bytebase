@@ -15,8 +15,8 @@
       "description": "AI is not configured for this workspace.",
       "title": "AI Not Configured"
     },
+    "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
-    "archive-chat-confirmation": "Are you sure you want to archive this chat?",
     "archived-only-chats": "Archived only",
     "args": "Args",
     "assistant-title": "AI Assistant",
@@ -32,6 +32,8 @@
     "chat-total-tokens": "Total tokens",
     "close": "Close",
     "confirm": "Confirm",
+    "delete-all-chats": "Delete all chats",
+    "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
     "input-placeholder": "Ask AI anything...",
@@ -60,6 +62,7 @@
     "tool-prompt": "Prompt",
     "tool-response-submitted": "Response submitted",
     "tool-value": "Value",
+    "unarchive-all-chats": "Unarchive all chats",
     "unarchive-chat": "Unarchive chat"
   },
   "audit-log": {
@@ -369,6 +372,7 @@
   "common.no-data": "No data",
   "common.only-creator-allowed-export": "Only the creator is allowed to export",
   "common.open": "Open",
+  "common.operation": "Operation",
   "common.optional": "Optional",
   "common.or": "or",
   "common.overview": "Overview",
@@ -626,6 +630,7 @@
     "unmatched-database": "Unmatched database"
   },
   "database.classification.self": "Classification",
+  "database.column": "Column",
   "database.engine": "Engine",
   "database.export-schema": "Export Schema",
   "database.export-schema-multi-file": "Multi-File (ZIP)",
@@ -1189,6 +1194,7 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
+      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",
@@ -1966,7 +1972,9 @@
         },
         "re-order": "Re-order"
       },
+      "grant-access": "Grant Access",
       "never-expires": "Never expires",
+      "remove-sensitive-column-tips": "Expose this column?",
       "semantic-types": {
         "label": "Columns having the same semantic type will use the same masking algorithms.",
         "select": "Select semantic type",
