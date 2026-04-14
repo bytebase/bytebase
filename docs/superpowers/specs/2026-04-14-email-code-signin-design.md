@@ -242,8 +242,9 @@ Dispatch order (in order of precedence):
 4. On match: look up principal by email.
 5. **Existing principal**: return user → downstream pipeline continues (workspace resolution, MFA check, token gen).
 6. **New principal (signup)**:
-   - Respect `disallow_signup`: resolve the workspace context for this email. If no workspace context exists (SaaS, brand-new email) OR the resolvable workspace has `disallow_signup = true`, return `Unauthenticated` "account not found". Do not leak that the disallow flag is why — use the same generic message as "email not found" to avoid enumeration.
-   - Otherwise: generate random 32-byte string, bcrypt-hash it.
+   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace (resolved via `ListWorkspacesByEmail`) AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found". Do not leak that the disallow flag is why — use the generic "not found" message to avoid enumeration.
+   - If no resolvable workspace exists (e.g. SaaS first-time user with a brand-new email), signup proceeds normally — this is the common passwordless-signup path. The `provisionWorkspaceForNewUser` helper creates a new workspace.
+   - Generate random 32-byte string, bcrypt-hash it.
    - Create principal: `email = email`, `name = email.split("@")[0]`, `type = END_USER`, `password_hash = hashedRandom`.
    - Workspace assignment: extract the workspace-provisioning logic from the existing `Signup` RPC into a shared helper (e.g. `provisionWorkspaceForNewUser`) and call it from both places. Joins pre-invited workspace via `ListWorkspacesByEmail` or creates a new workspace with `getAdditionalWorkspaceSettings()`.
    - Return new user → downstream pipeline continues.
@@ -359,7 +360,7 @@ When user clicks "Forgot password?" on signin, carry `email` through: `password-
 | `Login` email_code: expired | Delete, `Unauthenticated` "invalid or expired code" |
 | `Login` email_code: attempts >= 5 | Delete, `Unauthenticated` "too many attempts" |
 | `Login` email_code: mismatch | Increment attempts, `Unauthenticated` "invalid or expired code" |
-| `Login` email_code: email unknown AND no workspace context or target workspace has `disallow_signup=true` | `Unauthenticated` "account not found" (generic — don't leak why) |
+| `Login` email_code: email unknown AND a resolvable pre-invited workspace has `disallow_signup=true` | `Unauthenticated` "account not found" (generic — don't leak why) |
 | `Login` email_code: >10 sends/hour | `ResourceExhausted` "too many code requests" |
 | `Login` email_code success but workspace disallows | `FailedPrecondition` "email code login is not enabled for this workspace" |
 | `ResetPassword` — all code errors mirror Login branch | Same semantics |

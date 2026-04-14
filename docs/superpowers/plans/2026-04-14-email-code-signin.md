@@ -38,7 +38,7 @@ enum EmailVerificationCodePurpose {
 - [ ] **Step 2: Format and lint**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase/proto && buf format -w . && buf lint
+cd proto && buf format -w . && buf lint
 ```
 
 Expected: no errors.
@@ -65,7 +65,7 @@ Find the last field (around `query_timeout` at line 146) and the closing brace a
 - [ ] **Step 2: Format and lint**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase/proto && buf format -w . && buf lint
+cd proto && buf format -w . && buf lint
 ```
 
 Expected: no errors.
@@ -111,7 +111,7 @@ message Restriction {
 - [ ] **Step 3: Format and lint**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase/proto && buf format -w . && buf lint
+cd proto && buf format -w . && buf lint
 ```
 
 Expected: no errors.
@@ -180,7 +180,7 @@ message ResetPasswordRequest {
 - [ ] **Step 5: Format, lint, generate**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase/proto && buf format -w . && buf lint && buf generate
+cd proto && buf format -w . && buf lint && buf generate
 ```
 
 Expected: no errors. All generated files (backend/generated-go/, frontend/src/types/proto-es/) are updated.
@@ -240,7 +240,7 @@ Open `backend/migrator/migrator_test.go`. Find `TestLatestVersion`. Update the e
 - [ ] **Step 4: Run migrator test**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 -run TestLatestVersion github.com/bytebase/bytebase/backend/migrator
+go test -v -count=1 -run TestLatestVersion github.com/bytebase/bytebase/backend/migrator
 ```
 
 Expected: PASS.
@@ -389,7 +389,7 @@ Note: `setupStoreForTest(t)` — check existing store tests (e.g. `backend/store
 - [ ] **Step 2: Run test to verify failure (undefined symbols)**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
+go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
 ```
 
 Expected: build error / undefined.
@@ -529,7 +529,7 @@ func (s *Store) DeleteExpiredEmailVerificationCodes(ctx context.Context) (int64,
 - [ ] **Step 4: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/store/...
+go build ./backend/store/...
 ```
 
 Expected: clean build.
@@ -537,7 +537,7 @@ Expected: clean build.
 - [ ] **Step 5: Run store tests**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
+go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
 ```
 
 Expected: all tests PASS. If the test harness `setupStoreForTest` doesn't exist, skip the test file and let integration tests (Task 14) cover this.
@@ -562,7 +562,7 @@ Remove these items:
 - [ ] **Step 2: Build to surface any remaining references**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/... 2>&1 | head
+go build ./backend/... 2>&1 | head
 ```
 
 Expected: errors pointing to `auth_service.go` (we'll fix those in Task 9/10). Other errors mean something else uses these — update accordingly.
@@ -602,7 +602,7 @@ Replace the original code inside `Signup` with a call to this helper. Preserve e
 - [ ] **Step 3: Build + ensure no regressions**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/... && go test -count=1 github.com/bytebase/bytebase/backend/api/v1
+go build ./backend/... && go test -count=1 github.com/bytebase/bytebase/backend/api/v1
 ```
 
 Expected: clean build; existing auth tests pass.
@@ -786,7 +786,7 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, email strin
 - [ ] **Step 5: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/... 2>&1 | tail
+go build ./backend/... 2>&1 | tail
 ```
 
 Expected: clean (existing password-reset code may still reference things — we fix that in Task 11).
@@ -882,15 +882,19 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return user, nil
 	}
 
-	// Unknown email → signup path. Respect disallow_signup of the resolvable workspace.
-	// If no workspace is resolvable, refuse the signup (SaaS new-email case must go through the normal Signup flow for workspace creation).
-	workspaceID, err := s.provisionWorkspaceForNewUser(ctx, email)
+	// Unknown email → signup path.
+	// Respect disallow_signup only if the email was pre-invited to an existing workspace
+	// that has disallow_signup=true. If no workspace is resolvable (SaaS first-time user),
+	// signup proceeds normally — provisionWorkspaceForNewUser creates a new workspace.
+	preInvitedWorkspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workspaces for email"))
 	}
-	profile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
-	if err == nil && profile != nil && profile.DisallowSignup {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
+	if len(preInvitedWorkspaces) > 0 {
+		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
+		if err == nil && profile != nil && profile.DisallowSignup {
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
+		}
 	}
 
 	// Create principal with random bcrypt password.
@@ -917,6 +921,11 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+	}
+
+	// Provision workspace for the new user (joins pre-invited workspace or creates a new one).
+	if _, err := s.provisionWorkspaceForNewUser(ctx, email); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
 
 	return newUser, nil
@@ -947,7 +956,7 @@ Place this inside `validateLoginPermissions` or wherever the per-workspace permi
 - [ ] **Step 5: Build + lint**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...
+go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...
 ```
 
 Expected: clean build, 0 lint issues.
@@ -1044,7 +1053,7 @@ The old `sendPasswordResetEmail` (lines ~1451-1500) is no longer used. Delete it
 - [ ] **Step 4: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/... 2>&1 | tail
+go build ./backend/... 2>&1 | tail
 ```
 
 Expected: clean build. If `fmt` or `utils` imports become unused after deletion, remove them.
@@ -1085,7 +1094,7 @@ No license-gate for `AllowEmailCodeSignin` — the feature requires EMAIL settin
 - [ ] **Step 2: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/api/v1/...
+go build ./backend/api/v1/...
 ```
 
 Expected: clean.
@@ -1127,7 +1136,7 @@ The field naming (`oldSetting`, `payload`, etc.) depends on the surrounding code
 - [ ] **Step 3: Build + lint**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...
+go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...
 ```
 
 Expected: clean.
@@ -1158,7 +1167,7 @@ If the construction happens by way of an `AdditionalSetting` (like the EMAIL set
 - [ ] **Step 3: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/api/v1/...
+go build ./backend/api/v1/...
 ```
 
 Expected: clean.
@@ -1198,7 +1207,7 @@ c.cleanupEmailVerificationCodes(ctx)
 - [ ] **Step 3: Build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build ./backend/runner/...
+go build ./backend/runner/...
 ```
 
 Expected: clean.
@@ -1273,7 +1282,7 @@ Prefer the DB approach for simplicity (no sender mock needed).
 - [ ] **Step 3: Run**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestEmailCodeLogin
+go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestEmailCodeLogin
 ```
 
 Expected: all PASS.
@@ -1310,7 +1319,7 @@ The existing `login()` calls `authServiceClientConnect.login(request)`. The gene
 - [ ] **Step 4: Type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend type-check
+pnpm --dir frontend type-check
 ```
 
 Expected: clean.
@@ -1486,7 +1495,7 @@ import EmailCodeSigninForm from "@/components/EmailCodeSigninForm.vue";
 - [ ] **Step 3: Type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend type-check
+pnpm --dir frontend type-check
 ```
 
 Expected: clean.
@@ -1521,7 +1530,7 @@ After successful send, instead of just showing the success message in-place, off
 - [ ] **Step 4: Type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend type-check
+pnpm --dir frontend type-check
 ```
 
 Expected: clean.
@@ -1662,7 +1671,7 @@ The pre-existing `route.query.token` branch (if any) can be deleted — we no lo
 - [ ] **Step 5: Type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend type-check
+pnpm --dir frontend type-check
 ```
 
 Expected: clean.
@@ -1681,7 +1690,7 @@ Grep the file for `SIGNIN_QUERY_PARAMS`. It should already include `email` (we a
 - [ ] **Step 2: Type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend type-check
+pnpm --dir frontend type-check
 ```
 
 Expected: clean.
@@ -1731,7 +1740,7 @@ Mirror the keys. Translations:
 - [ ] **Step 3: Run i18n sorter + type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend fix && pnpm --dir frontend type-check
+pnpm --dir frontend fix && pnpm --dir frontend type-check
 ```
 
 Expected: no changes from sorter (or it auto-sorts), type-check clean.
@@ -1745,7 +1754,7 @@ Expected: no changes from sorter (or it auto-sorts), type-check clean.
 - [ ] **Step 1: Full backend build**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
+go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
 ```
 
 Expected: success.
@@ -1753,7 +1762,7 @@ Expected: success.
 - [ ] **Step 2: Backend lint (full)**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && golangci-lint run --allow-parallel-runners
+golangci-lint run --allow-parallel-runners
 ```
 
 Expected: 0 issues.
@@ -1761,9 +1770,9 @@ Expected: 0 issues.
 - [ ] **Step 3: Backend tests**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestEmailCodeLogin
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestPasswordReset
+go test -v -count=1 github.com/bytebase/bytebase/backend/store -run TestEmailVerificationCode
+go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestEmailCodeLogin
+go test -v -count=1 github.com/bytebase/bytebase/backend/tests -run TestPasswordReset
 ```
 
 Expected: all PASS.
@@ -1771,7 +1780,7 @@ Expected: all PASS.
 - [ ] **Step 4: Frontend fix + type-check**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend fix && pnpm --dir frontend type-check
+pnpm --dir frontend fix && pnpm --dir frontend type-check
 ```
 
 Expected: no errors.
@@ -1779,7 +1788,7 @@ Expected: no errors.
 - [ ] **Step 5: Frontend tests**
 
 ```bash
-cd /Users/ecmadao/Develop/Bytebase/ecmadao/bytebase && pnpm --dir frontend test
+pnpm --dir frontend test
 ```
 
 Expected: all PASS.
