@@ -421,9 +421,21 @@ type EmailVerificationCodeMessage struct {
 	LastSentAt time.Time
 }
 
-// UpsertEmailVerificationCode inserts or replaces the row for (email, purpose).
-// Upserting always resets attempts to 0, because the row represents a single code send.
-func (s *Store) UpsertEmailVerificationCode(ctx context.Context, msg *EmailVerificationCodeMessage) error {
+// UpsertEmailVerificationCodeIfCooldownExpired inserts or updates the row for (email, purpose),
+// but ONLY if no row exists OR the existing row's last_sent_at is older than the cooldown.
+// Returns (true, nil) if the upsert happened (caller may proceed to send the email), or
+// (false, nil) if the cooldown is still active (caller must skip the send).
+//
+// This is an atomic check-and-set: the cooldown decision and the state mutation happen in a
+// single statement. Prevents TOCTOU where two concurrent requests both pass a read-side cooldown
+// check and each send an email.
+//
+// Uses RETURNING to reliably detect whether the row was written — RowsAffected from Postgres
+// ON CONFLICT DO UPDATE ... WHERE is unreliable (returns 1 even when the WHERE filters out
+// the update). RETURNING only yields a row when the INSERT succeeded or the UPDATE's WHERE
+// matched, so a zero-row result cleanly signals "cooldown blocked the send".
+func (s *Store) UpsertEmailVerificationCodeIfCooldownExpired(ctx context.Context, msg *EmailVerificationCodeMessage, cooldown time.Duration) (bool, error) {
+	cooldownSeconds := int64(cooldown.Seconds())
 	q := qb.Q().Space(`
 		INSERT INTO email_verification_code (email, purpose, code_hash, attempts, expires_at, last_sent_at)
 		VALUES (?, ?, ?, 0, ?, ?)
@@ -432,16 +444,22 @@ func (s *Store) UpsertEmailVerificationCode(ctx context.Context, msg *EmailVerif
 			attempts = 0,
 			expires_at = EXCLUDED.expires_at,
 			last_sent_at = EXCLUDED.last_sent_at
-	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt)
+		WHERE email_verification_code.last_sent_at < EXCLUDED.last_sent_at - (? || ' seconds')::interval
+		RETURNING 1
+	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt, cooldownSeconds)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return err
+		return false, err
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrap(err, "failed to upsert email verification code")
+	var dummy int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&dummy); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil // cooldown blocked the upsert
+		}
+		return false, errors.Wrap(err, "failed to upsert email verification code")
 	}
-	return nil
+	return true, nil
 }
 
 // GetEmailVerificationCode returns (nil, nil) if no row exists.
@@ -710,33 +728,30 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, email strin
 		}
 	}
 
-	// Cooldown check.
-	existing, err := s.store.GetEmailVerificationCode(ctx, email, purpose)
-	if err != nil {
-		slog.Warn("failed to check existing email verification code", log.BBError(err))
-		return
-	}
-	now := time.Now()
-	if existing != nil && now.Sub(existing.LastSentAt) < emailCodeResendCooldown {
-		return // silent: cooldown not expired
-	}
-
-	// Generate code + hash.
+	// Generate code + hash. We must generate BEFORE the atomic upsert so we have the code_hash
+	// to store. If the upsert is blocked by cooldown, we simply discard the generated code.
 	code, err := generateEmailCode()
 	if err != nil {
 		slog.Warn("failed to generate email code", log.BBError(err))
 		return
 	}
+	now := time.Now()
 
-	if err := s.store.UpsertEmailVerificationCode(ctx, &store.EmailVerificationCodeMessage{
+	// Atomic check-and-set: upsert ONLY if cooldown has expired. Prevents TOCTOU where two
+	// concurrent requests both see an expired cooldown and both send emails.
+	proceeded, err := s.store.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 		Email:      email,
 		Purpose:    purpose,
 		CodeHash:   s.hashEmailCode(code),
 		ExpiresAt:  now.Add(emailCodeExpiry),
 		LastSentAt: now,
-	}); err != nil {
+	}, emailCodeResendCooldown)
+	if err != nil {
 		slog.Warn("failed to upsert email verification code", log.BBError(err))
 		return
+	}
+	if !proceeded {
+		return // silent: cooldown not expired
 	}
 
 	// Resolve workspace for EMAIL setting. Fall back to env-var EMAIL_CONFIG if no workspace yet.
@@ -872,25 +887,9 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return nil, err
 	}
 
-	// Resolve the workspace for this email. Existing users have it via IAM.
-	// Unknown emails may have a pre-invited workspace. Check workspace-level settings
-	// (allow_email_code_signin, disallow_signup) BEFORE any state mutation to avoid
-	// orphaned accounts if the workspace disallows email-code signin.
-	preInvitedWorkspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workspaces for email"))
-	}
-	if len(preInvitedWorkspaces) > 0 {
-		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
-		}
-		if profile != nil && !profile.AllowEmailCodeSignin {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
-		}
-	}
-
-	// Existing user → return.
+	// Existing user → return. allow_email_code_signin is checked later in validateLoginPermissions
+	// against the actually-resolved login workspace (which may not be preInvitedWorkspaces[0] for
+	// multi-workspace users — resolveWorkspaceForLogin prefers LastLoginWorkspace).
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
@@ -900,17 +899,27 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	}
 
 	// Unknown email → signup path.
-	// Respect disallow_signup only if the email was pre-invited to an existing workspace
-	// that has disallow_signup=true. If no workspace is resolvable (SaaS first-time user),
-	// signup proceeds normally — provisionWorkspaceForNewUser creates a new workspace.
-	// Fail closed on store errors: a transient failure must not let us bypass the signup policy.
+	// For signup, the gate MUST run BEFORE user creation to avoid orphan accounts.
+	// The workspace the new user will join is determined by ListWorkspacesByEmail (pre-invited
+	// workspaces) or provisioned fresh. Check pre-invited workspace policies now; fresh workspaces
+	// inherit allow_email_code_signin=true via getAdditionalWorkspaceSettings so they don't need
+	// a pre-check. Fail closed on store errors: transient failures must not bypass signup policy.
+	preInvitedWorkspaces, err := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list workspaces for email"))
+	}
 	if len(preInvitedWorkspaces) > 0 {
 		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
 		}
-		if profile != nil && profile.DisallowSignup {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
+		if profile != nil {
+			if !profile.AllowEmailCodeSignin {
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+			}
+			if profile.DisallowSignup {
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
+			}
 		}
 	}
 
@@ -953,7 +962,56 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 
 Note: double-check the exact `store.CreateUser` signature and `UserMessage` shape while implementing — match the Signup RPC's usage exactly.
 
-- [ ] **Step 4: Build + lint**
+- [ ] **Step 4: Update `validateLoginPermissions` (backend/api/v1/auth_service.go:910-951)**
+
+Two changes, both necessary for SaaS to work:
+
+**(a)** Exempt email-code logins from the `DisallowPasswordSignin` gate. Without this, SaaS defaults (`DisallowPasswordSignin=true`) block every email-code login.
+
+**(b)** Add a post-resolution check on `allow_email_code_signin` using the actually-resolved `workspaceID`. For multi-workspace users, `resolveWorkspaceForLogin` prefers `LastLoginWorkspace`, which may differ from `preInvitedWorkspaces[0]`. The signup-time check in Task 10 Step 3 only covers the first-time case; this covers all subsequent logins.
+
+Open `validateLoginPermissions` and replace the existing `DisallowPasswordSignin` block (lines ~932-947) with:
+
+```go
+// Skip restrictions for MFA second login (already validated in first step)
+mfaSecondLogin := request.GetMfaTempToken() != ""
+if mfaSecondLogin {
+	return nil
+}
+
+isEmailCodeLogin := request.EmailCode != nil && *request.EmailCode != ""
+
+// Check disallow password signin when not through IDP or email-code.
+// Email-code is a separate auth method; DisallowPasswordSignin must not apply.
+if request.GetIdpName() == "" && !isEmailCodeLogin {
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
+	if err != nil {
+		return err
+	}
+	if restriction.DisallowPasswordSignin {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
+	}
+}
+
+// For email-code logins, verify that the resolved workspace has it enabled.
+if isEmailCodeLogin {
+	profile, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
+	}
+	if profile == nil || !profile.AllowEmailCodeSignin {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+	}
+}
+```
+
+- [ ] **Step 5: Build + lint**
 
 ```bash
 go build ./backend/api/v1/... && golangci-lint run --allow-parallel-runners ./backend/api/v1/...

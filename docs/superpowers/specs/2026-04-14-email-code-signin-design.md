@@ -237,19 +237,24 @@ Dispatch order (in order of precedence):
 **Email-code branch:**
 1. Reject if `password` or `idp_name` is also set → `InvalidArgument` "email_code is mutually exclusive with password and idp_name".
 2. `verifyEmailCode(ctx, email, LOGIN, submittedCode)` (shared helper — see below).
-3. On match: resolve pre-invited workspaces for this email via `ListWorkspacesByEmail`.
-4. **Gate check (BEFORE any state mutation)**: if a pre-invited workspace exists AND its `allow_email_code_signin = false` → `FailedPrecondition` "email code login is not enabled for this workspace". This prevents orphan accounts when workspace disallows email-code signin.
-5. Look up principal by email.
-6. **Existing principal**: return user → downstream pipeline continues (workspace resolution, MFA check, token gen).
-7. **New principal (signup)**:
-   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found" (generic message, no enumeration). Fail closed on store errors (return `Internal`) — a transient read failure must not bypass the signup policy.
-   - If no resolvable workspace exists (e.g. SaaS first-time user with a brand-new email), signup proceeds normally — the `provisionWorkspaceForNewUser` helper creates a new workspace (which inherits `allow_email_code_signin = true` in SaaS via `getAdditionalWorkspaceSettings`).
+3. Look up principal by email.
+4. **Existing principal**: return user → downstream pipeline continues. The `allow_email_code_signin` check for existing users runs **later** in `validateLoginPermissions` against the **actually-resolved** login workspace (see post-auth section below). This matters for multi-workspace users: `resolveWorkspaceForLogin` prefers `LastLoginWorkspace`, which may differ from the first pre-invited workspace.
+5. **New principal (signup)** — workspace-level gates run here, BEFORE user creation, to prevent orphan accounts:
+   - Resolve pre-invited workspaces via `ListWorkspacesByEmail`.
+   - If a pre-invited workspace exists AND `allow_email_code_signin = false` → `FailedPrecondition` "email code login is not enabled for this workspace".
+   - If a pre-invited workspace exists AND `disallow_signup = true` → `Unauthenticated` "account not found" (generic, no enumeration).
+   - Fail closed on store errors (return `Internal`) — a transient read failure must not bypass either gate.
+   - If no resolvable workspace exists (SaaS first-time user): signup proceeds. `provisionWorkspaceForNewUser` creates a new workspace which inherits `allow_email_code_signin = true` via `getAdditionalWorkspaceSettings`.
    - Generate random 32-byte string, bcrypt-hash it.
    - Create principal: `email = email`, `name = email.split("@")[0]`, `type = END_USER`, `password_hash = hashedRandom`.
-   - Workspace assignment: extract the workspace-provisioning logic from the existing `Signup` RPC into a shared helper (e.g. `provisionWorkspaceForNewUser`) and call it from both places.
+   - Workspace assignment via `provisionWorkspaceForNewUser` (shared with password Signup RPC).
    - Return new user → downstream pipeline continues.
 
-**Rate limiting:** `SendEmailLoginCode` has no workspace context and can't use audit-log-based counting (the audit middleware skips unauthenticated requests without workspace). The 60-second `last_sent_at` cooldown inside `sendEmailVerificationCode` caps sends at ~60/hour/email — this is the only rate limit.
+**Post-auth: updates to `validateLoginPermissions`** (required for SaaS):
+1. **Exempt email-code logins from `DisallowPasswordSignin`**: SaaS defaults to `DisallowPasswordSignin = true`, which blocks any non-IDP login. Add an `isEmailCodeLogin` branch that skips this check — email-code is a distinct auth method, not password.
+2. **Enforce `allow_email_code_signin` on the resolved workspace**: for email-code logins, verify the resolved `workspaceID` (from `resolveWorkspaceForLogin`) has `allow_email_code_signin = true`. Fails closed on store errors. This covers existing-user logins correctly even when the user's `LastLoginWorkspace` differs from their first pre-invited workspace.
+
+**Rate limiting:** `SendEmailLoginCode` has no workspace context and can't use audit-log-based counting (the audit middleware skips unauthenticated requests without workspace). The 60-second `last_sent_at` cooldown is the only rate limit, capping sends at ~60/hour/email. The cooldown check MUST be atomic with the row write to prevent a TOCTOU race: a conditional upsert (`INSERT ... ON CONFLICT DO UPDATE ... WHERE last_sent_at < now - cooldown RETURNING 1`) does the check-and-set in one statement. A separate read-then-write allows concurrent requests to both pass the cooldown and both send emails.
 
 ### Shared helper: `verifyEmailCode(ctx, email, purpose, submittedCode) error`
 
