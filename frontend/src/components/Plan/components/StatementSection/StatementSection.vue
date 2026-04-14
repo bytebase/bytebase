@@ -1,7 +1,9 @@
 <template>
-  <div v-if="viewMode === 'EDITOR'" class="flex-1">
-    <EditorView :key="editorViewKey" :header-variant="headerVariant" />
-  </div>
+  <EditorView
+    v-if="viewMode === 'EDITOR'"
+    :key="editorViewKey"
+    :header-variant="headerVariant"
+  />
   <ReleaseView v-else-if="viewMode === 'RELEASE'" />
 </template>
 

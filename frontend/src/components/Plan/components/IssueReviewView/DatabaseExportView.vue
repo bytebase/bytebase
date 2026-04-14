@@ -10,9 +10,7 @@
     <LimitsSection />
     <OptionsSection />
 
-    <div class="h-72 flex flex-col">
-      <StatementSection header-variant="section" />
-    </div>
+    <StatementSection header-variant="section" />
   </div>
 </template>
 
