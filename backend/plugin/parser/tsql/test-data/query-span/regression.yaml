@@ -235,6 +235,95 @@
         table: tbl
         column: col_a
 
+- description: "BYT-9235: alias shadowing between inner JOIN tables and outer derived table in view body. The view uses `SELECT DISTINCT a.* FROM (SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ... UNION ...) a` — same alias `a` at inner and outer levels. Before the fix, join-anchor pushes leaked out of nested query specifications, so `a.*` resolved to the inner tableA instead of the outer derived table."
+  statement: |-
+    SELECT TOP 10 * FROM [bhs].[dbo].[vwBHSDetailBPM3] a WHERE a.F1 LIKE 'MT%'
+  defaultDatabase: bhs
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "bhs",
+        "schemas": [
+          {
+            "name": "dbo",
+            "views": [
+              {
+                "name": "vwBHSDetailBPM3",
+                "definition": "CREATE VIEW [dbo].[vwBHSDetailBPM3] AS SELECT DISTINCT a.* FROM (SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'A' UNION SELECT a.Id, b.F1, b.F2 FROM tableA a INNER JOIN tableB b ON a.Id = b.mainid WHERE a.condition = 'B') a",
+                "columns": [
+                  {"name": "Id"},
+                  {"name": "F1"},
+                  {"name": "F2"}
+                ]
+              }
+            ],
+            "tables": [
+              {
+                "name": "tableA",
+                "columns": [
+                  {"name": "Id"},
+                  {"name": "condition"}
+                ]
+              },
+              {
+                "name": "tableB",
+                "columns": [
+                  {"name": "mainid"},
+                  {"name": "F1"},
+                  {"name": "F2"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: Id
+        sourcecolumns:
+          - server: ""
+            database: bhs
+            schema: dbo
+            table: tableA
+            column: Id
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: F1
+        sourcecolumns:
+          - server: ""
+            database: bhs
+            schema: dbo
+            table: tableB
+            column: F1
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+      - name: F2
+        sourcecolumns:
+          - server: ""
+            database: bhs
+            schema: dbo
+            table: tableB
+            column: F2
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: vwBHSDetailBPM3
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: tableB
+        column: F1
+
 - description: Test simple correlated subquery - fix for outer table sources
   statement: |-
     SELECT HMNum FROM TableA WHERE HMNum = 'test'
