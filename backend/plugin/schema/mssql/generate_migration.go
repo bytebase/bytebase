@@ -6,8 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -1063,42 +1062,36 @@ func generateColumnCommentSQL(action, schemaName, tableName, columnName, comment
 	return buf.String()
 }
 
-type queryClauseListener struct {
-	*parser.BaseTSqlParserListener
-
-	result string
-}
-
-func (l *queryClauseListener) EnterCreate_view(ctx *parser.Create_viewContext) {
-	if l.result != "" {
-		return
-	}
-
-	l.result = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_statement_standalone())
-}
-
 // getViewDependencies extracts the tables that a view depends on
 func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 	// Parse the CREATE VIEW statement to extract the query properly
-	// We need to find the AS keyword that's part of CREATE VIEW, not column aliases
-
-	parseResults, err := tsql.ParseTSQL(viewDef)
+	// We need to find the AS keyword that's part of CREATE VIEW, not column aliases.
+	stmts, err := tsql.ParseTSQLOmni(viewDef)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse view definition")
 	}
-
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(parseResults))
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
 	}
 
-	// Extract the query part after the CREATE VIEW statement
-	// This assumes the viewDef is a valid CREATE VIEW statement
-	// and that it contains a valid T-SQL query.
-	l := &queryClauseListener{}
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResults[0].Tree)
-	if l.result == "" {
+	createView, ok := stmts[0].AST.(*ast.CreateViewStmt)
+	if !ok || createView.Query == nil {
 		return []string{}, nil
 	}
+	selectStmt, ok := createView.Query.(*ast.SelectStmt)
+	if !ok {
+		return []string{}, nil
+	}
+	// For set operations (UNION/INTERSECT/EXCEPT) the omni parser leaves the
+	// combined node's Loc.End at -1 because the operator is detected before the
+	// outer SelectStmt's End is assigned. Walk the Larg/Rarg chain to find the
+	// real end offset of the entire query expression.
+	start := selectStmt.Loc.Start
+	end := selectStmtSpanEnd(selectStmt)
+	if start < 0 || end < 0 || start >= end || end > len(viewDef) {
+		return []string{}, nil
+	}
+	selectBody := viewDef[start:end]
 
 	// Use GetQuerySpan with mock functions to avoid nil pointer dereference
 	span, err := tsql.GetQuerySpan(
@@ -1123,7 +1116,7 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 				return []string{}, nil
 			},
 		},
-		base.Statement{Text: l.result},
+		base.Statement{Text: selectBody},
 		"", // database
 		schemaName,
 		false, // case sensitive
@@ -1150,6 +1143,23 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 	}
 
 	return dependencies, nil
+}
+
+// selectStmtSpanEnd returns the maximum byte-offset End across a SelectStmt
+// and its Larg/Rarg chain. Set-operation SelectStmt nodes inherit Loc.End=-1
+// from their left operand, so the only reliable end is the right-most leaf.
+func selectStmtSpanEnd(s *ast.SelectStmt) int {
+	if s == nil {
+		return -1
+	}
+	end := s.Loc.End
+	if e := selectStmtSpanEnd(s.Larg); e > end {
+		end = e
+	}
+	if e := selectStmtSpanEnd(s.Rarg); e > end {
+		end = e
+	}
+	return end
 }
 
 // getObjectID creates a unique identifier for a database object
