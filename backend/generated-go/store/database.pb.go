@@ -3121,7 +3121,14 @@ type IndexMetadata struct {
 	// The name of the index.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The expressions are the ordered columns or expressions of an index.
-	// This could refer to a column or an expression.
+	//
+	// For PostgreSQL, the canonical shape for each entry matches
+	// pg_get_indexdef(oid, col, true) — the tightest `index_elem` grammar form:
+	//   - column key:        bare identifier            e.g. "id", `"Name"`
+	//   - function-call key: bare func_expr_windowless  e.g. "lower(name)"
+	//   - expression key:    parenthesized a_expr       e.g. "(payload ->> 'k'::text)"
+	//
+	// The DDL emitter writes entries verbatim into the CREATE INDEX key list.
 	Expressions []string `protobuf:"bytes,2,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	// The ordered list of key lengths for the index.
 	// If the key length is not specified, it is -1.

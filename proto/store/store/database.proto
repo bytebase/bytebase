@@ -712,7 +712,13 @@ message IndexMetadata {
   string name = 1;
 
   // The expressions are the ordered columns or expressions of an index.
-  // This could refer to a column or an expression.
+  //
+  // For PostgreSQL, the canonical shape for each entry matches
+  // pg_get_indexdef(oid, col, true) — the tightest `index_elem` grammar form:
+  //   - column key:        bare identifier            e.g. "id", `"Name"`
+  //   - function-call key: bare func_expr_windowless  e.g. "lower(name)"
+  //   - expression key:    parenthesized a_expr       e.g. "(payload ->> 'k'::text)"
+  // The DDL emitter writes entries verbatim into the CREATE INDEX key list.
   repeated string expressions = 2;
 
   // The ordered list of key lengths for the index.
