@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 const bridgeMocks = vi.hoisted(() => {
+  type RootComponent = { render?: () => unknown };
   const app = {
     mount: vi.fn(),
     unmount: vi.fn(),
@@ -12,7 +13,7 @@ const bridgeMocks = vi.hoisted(() => {
 
   return {
     app,
-    createApp: vi.fn(() => app),
+    createApp: vi.fn((_component: RootComponent) => app),
     h: vi.fn(),
   };
 });
@@ -70,6 +71,11 @@ describe("SigninBridge", () => {
 
     const render = bridgeMocks.createApp.mock.calls[0]?.[0]?.render;
     expect(render).toBeTypeOf("function");
+    if (!render) {
+      throw new Error(
+        "expected SigninBridge to pass a render function to createApp"
+      );
+    }
 
     render();
 

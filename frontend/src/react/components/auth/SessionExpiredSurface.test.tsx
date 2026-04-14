@@ -1,6 +1,6 @@
+import { flushPromises, mount } from "@vue/test-utils";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { mount, flushPromises } from "@vue/test-utils";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("./SigninBridge", () => ({
@@ -53,8 +53,8 @@ vi.mock("vue-router", () => ({
   }),
 }));
 
-import { SessionExpiredSurface } from "./SessionExpiredSurface";
 import SessionExpiredSurfaceMount from "@/components/SessionExpiredSurfaceMount.vue";
+import { SessionExpiredSurface } from "./SessionExpiredSurface";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }

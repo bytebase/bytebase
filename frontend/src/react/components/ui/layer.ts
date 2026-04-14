@@ -29,13 +29,13 @@ const ensureRoot = (family: LayerFamily) => {
   root.style.isolation = "isolate";
 
   const nextFamily = ORDERED_FAMILIES.slice(
-    ORDERED_FAMILIES.indexOf(family) + 1,
+    ORDERED_FAMILIES.indexOf(family) + 1
   ).find((candidate) => document.getElementById(LAYER_ROOT_ID[candidate]));
 
   if (nextFamily) {
     document.body.insertBefore(
       root,
-      document.getElementById(LAYER_ROOT_ID[nextFamily]),
+      document.getElementById(LAYER_ROOT_ID[nextFamily])
     );
   } else {
     document.body.appendChild(root);

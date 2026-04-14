@@ -366,6 +366,7 @@
   "common.line": "行",
   "common.load-more": "加载更多",
   "common.loading": "加载中",
+  "common.logout": "登出",
   "common.members": "成员",
   "common.minutes": "分钟",
   "common.n-more": "还有 {{n}} 个",

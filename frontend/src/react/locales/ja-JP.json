@@ -366,6 +366,7 @@
   "common.line": "行",
   "common.load-more": "さらに読み込む",
   "common.loading": "読み込み中",
+  "common.logout": "サインアウト",
   "common.members": "メンバー",
   "common.minutes": "分",
   "common.n-more": "あと {{n}} 件",
