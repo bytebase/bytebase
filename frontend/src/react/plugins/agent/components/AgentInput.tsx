@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -79,6 +80,16 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
+const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
+  left: rect.left,
+  top: rect.top - 4,
+  transform: "translateY(-100%)",
+  width: rect.width,
+});
+
+const getMentionListStyleKey = (rect: DOMRect) =>
+  `${rect.left}:${rect.top}:${rect.width}`;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -110,9 +121,12 @@ export function AgentInput() {
   >([]);
   const [isMentionOpen, setIsMentionOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const [mentionListStyle, setMentionListStyle] =
+    useState<CSSProperties | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mentionListRef = useRef<HTMLDivElement>(null);
+  const mentionListStyleKeyRef = useRef<string | null>(null);
 
   // Derived values
   const isInterrupted = Boolean(currentChat?.interrupted);
@@ -163,19 +177,44 @@ export function AgentInput() {
 
   // Show/hide mention popover
   const showMention = isMentionOpen && mentionOptions.length > 0;
-  const mentionListStyle: CSSProperties | null = (() => {
-    if (!showMention) return null;
 
-    const rect = textareaRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+  useLayoutEffect(() => {
+    if (!showMention) {
+      mentionListStyleKeyRef.current = null;
+      setMentionListStyle(null);
+      return;
+    }
 
-    return {
-      left: rect.left,
-      top: rect.top - 4,
-      width: rect.width,
-      transform: "translateY(-100%)",
+    let isCancelled = false;
+    let frameId = 0;
+
+    const updateMentionListPosition = () => {
+      const rect = textareaRef.current?.getBoundingClientRect();
+      if (!rect) {
+        if (mentionListStyleKeyRef.current !== null) {
+          mentionListStyleKeyRef.current = null;
+          setMentionListStyle(null);
+        }
+      } else {
+        const nextStyleKey = getMentionListStyleKey(rect);
+        if (nextStyleKey !== mentionListStyleKeyRef.current) {
+          mentionListStyleKeyRef.current = nextStyleKey;
+          setMentionListStyle(buildMentionListStyle(rect));
+        }
+      }
+
+      if (!isCancelled) {
+        frameId = requestAnimationFrame(updateMentionListPosition);
+      }
     };
-  })();
+
+    updateMentionListPosition();
+
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [showMention]);
 
   // Reset highlight when options change
   useEffect(() => {
