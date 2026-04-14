@@ -15,8 +15,8 @@
       "description": "このワークスペースでは AI が設定されていません。",
       "title": "AI 未設定"
     },
+    "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
-    "archive-chat-confirmation": "このチャットをアーカイブしますか？",
     "archived-only-chats": "アーカイブ済みのみ",
     "args": "引数",
     "assistant-title": "AI アシスタント",
@@ -32,6 +32,8 @@
     "chat-total-tokens": "合計トークン数",
     "close": "閉じる",
     "confirm": "確認",
+    "delete-all-chats": "すべてのチャットを削除",
+    "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
     "input-placeholder": "AI に何でも聞いてください...",
@@ -60,6 +62,7 @@
     "tool-prompt": "プロンプト",
     "tool-response-submitted": "回答が送信されました",
     "tool-value": "値",
+    "unarchive-all-chats": "すべてのチャットのアーカイブを解除",
     "unarchive-chat": "アーカイブ解除"
   },
   "audit-log": {
@@ -236,7 +239,7 @@
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "missing-required-permission-for-resource": "リソース {{resource}} に必要な権限がありません",
-    "more": "More",
+    "more": "その他",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
     "name": "名前",
