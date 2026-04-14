@@ -191,11 +191,15 @@ func isBareColumnIdent(s string) bool {
 
 // isBareFunctionCall reports whether s is a bare function call — an identifier
 // (optionally schema-qualified) directly followed by a parenthesized argument
-// list that extends to the end of s. This is the shape pg_get_indexdef returns
-// for function-call index keys like `lower(name)` or `tst.foo(a, b)`.
+// list that extends to and balances at the end of s. This is the shape
+// pg_get_indexdef returns for function-call index keys like `lower(name)` or
+// `tst.foo(a, b)`.
 //
-// This does not validate that the argument list is balanced or that contents
-// parse — callers trust pg_get_indexdef's output shape.
+// Critically, the opening '(' after the identifier must match the LAST ')' in
+// s. Otherwise a compound expression like `lower(name) + abs(score)` — which
+// also starts with `ident(` and ends with `)` — would be misclassified as a
+// bare call, and a legacy stripped-parens entry would be emitted unwrapped,
+// producing invalid CREATE INDEX SQL.
 func isBareFunctionCall(s string) bool {
 	s = strings.TrimSpace(s)
 	if s == "" || !isIdentStart(s[0]) {
@@ -217,8 +221,49 @@ func isBareFunctionCall(s string) bool {
 	if i >= len(s) || s[i] != '(' {
 		return false
 	}
-	// Must end with ')' — sanity check.
-	return strings.HasSuffix(s, ")")
+	if !strings.HasSuffix(s, ")") {
+		return false
+	}
+	// Verify the '(' at position i pairs with the ')' at len(s)-1, accounting
+	// for nested parens and string literals.
+	depth := 0
+	inSingle := false
+	inDouble := false
+	for j := i; j < len(s); j++ {
+		c := s[j]
+		switch {
+		case inSingle:
+			if c == '\'' {
+				if j+1 < len(s) && s[j+1] == '\'' {
+					j++
+				} else {
+					inSingle = false
+				}
+			}
+		case inDouble:
+			if c == '"' {
+				if j+1 < len(s) && s[j+1] == '"' {
+					j++
+				} else {
+					inDouble = false
+				}
+			}
+		case c == '\'':
+			inSingle = true
+		case c == '"':
+			inDouble = true
+		case c == '(':
+			depth++
+		case c == ')':
+			depth--
+			if depth == 0 {
+				return j == len(s)-1
+			}
+		default:
+			// Any other character is ignored.
+		}
+	}
+	return false
 }
 
 func isIdentStart(b byte) bool {

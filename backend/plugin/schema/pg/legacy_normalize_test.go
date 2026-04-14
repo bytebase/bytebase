@@ -86,6 +86,18 @@ func TestIsBareFunctionCall(t *testing.T) {
 		{"(name)", false},          // starts with '('
 		{"", false},
 		{"1lower(name)", false}, // digit start
+		// Compound expressions that happen to end with ')' — the '(' after
+		// the leading ident does NOT match the trailing ')'. Misclassifying
+		// these as bare calls would leave legacy stripped-parens entries
+		// unwrapped, producing invalid CREATE INDEX SQL. Codex review
+		// (PR #20009 r3082599144).
+		{"lower(name) + abs(score)", false},
+		{"abs(x) - abs(y)", false},
+		{"f() OR g()", false},
+		{"coalesce(a, b) || coalesce(c, d)", false},
+		// True nested-call cases stay correctly classified.
+		{"coalesce(lower(name), upper(name))", true},
+		{"f(g(h(x)))", true},
 	}
 	for _, c := range cases {
 		if got := isBareFunctionCall(c.s); got != c.want {
@@ -122,6 +134,13 @@ func TestCanonicalizeIndexKeyExpression(t *testing.T) {
 		// Whitespace tolerance.
 		{"  id  ", "id"},
 		{"  (a + b)  ", "(a + b)"},
+
+		// Compound expressions involving function calls — must wrap, even
+		// though the input starts with `ident(` and ends with `)`.
+		// PR #20009 r3082599144.
+		{"lower(name) + abs(score)", "(lower(name) + abs(score))"},
+		{"abs(x) - abs(y)", "(abs(x) - abs(y))"},
+		{"f() OR g()", "(f() OR g())"},
 
 		// Empty / edge.
 		{"", ""},
