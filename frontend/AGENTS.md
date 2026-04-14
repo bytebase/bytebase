@@ -36,7 +36,7 @@ React UI components live in `src/react/components/ui/` and follow shadcn-style p
   - Standard app overlays mount into `overlay`.
   - `AgentWindow`, the minimized launcher, and other agent-owned overlays mount into `agent` and stay above normal app overlays.
   - Forced session-expired / re-login UI mounts into `critical` and is the only layer allowed above and disabling the agent.
-  - Each family has a dedicated portal root; use `getLayerRoot(<family>)` plus the family-specific surface class from `src/react/components/ui/layer.ts`.
+  - Each family has a dedicated portal root; use `getLayerRoot(<family>)` plus the shared surface and backdrop helpers from `src/react/components/ui/layer.ts` where appropriate.
   - Children inherit the owning family. If a parent mounts into `agent` or `critical`, its descendants must not remount into a lower family.
   - Raw global `z-index` values are forbidden in React feature code for cross-surface stacking. Local component-internal `z-index` remains allowed when it only affects internal composition.
   - Consumers of overlay primitives must not set their own global `z-index`.
