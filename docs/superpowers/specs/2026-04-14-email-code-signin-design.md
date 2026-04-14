@@ -221,7 +221,7 @@ Remove `passwordResetTokenDuration` (was 15 min JWT). Remove `GeneratePasswordRe
 
 1. Validate `req.Msg.Email` format. If invalid → `InvalidArgument`.
 2. Resend cooldown: `GetEmailVerificationCode(email, LOGIN)`. If row exists AND `now - last_sent_at < 60s` → return `Empty` silently.
-3. Generate 6-digit numeric code via `crypto/rand`. Hash with SHA256.
+3. Generate 6-digit numeric code via `crypto/rand`. Hash with HMAC-SHA256 keyed by the server's `auth_secret` (consistent with the data-model section — bare SHA-256 would be bruteforceable across the 10^6 code space).
 4. `UpsertEmailVerificationCode` with `attempts=0`, `expires_at=now+10min`, `last_sent_at=now`.
 5. Fire-and-forget goroutine (`context.WithoutCancel`): resolve workspace → load EMAIL setting → send code via mailer. If no workspace exists yet but `EMAIL_CONFIG` env var is set, use it.
 6. Return `Empty` unconditionally.
@@ -242,7 +242,7 @@ Dispatch order (in order of precedence):
 5. Look up principal by email.
 6. **Existing principal**: return user → downstream pipeline continues (workspace resolution, MFA check, token gen).
 7. **New principal (signup)**:
-   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found" (generic message, no enumeration).
+   - Respect `disallow_signup`: if the email was pre-invited to an existing workspace AND that workspace has `disallow_signup = true`, return `Unauthenticated` "account not found" (generic message, no enumeration). Fail closed on store errors (return `Internal`) — a transient read failure must not bypass the signup policy.
    - If no resolvable workspace exists (e.g. SaaS first-time user with a brand-new email), signup proceeds normally — the `provisionWorkspaceForNewUser` helper creates a new workspace (which inherits `allow_email_code_signin = true` in SaaS via `getAdditionalWorkspaceSettings`).
    - Generate random 32-byte string, bcrypt-hash it.
    - Create principal: `email = email`, `name = email.split("@")[0]`, `type = END_USER`, `password_hash = hashedRandom`.
@@ -267,9 +267,15 @@ Body:
 3. bcrypt-hash `new_password`, update via `UpdateUser`.
 4. Revoke all refresh tokens for the user.
 
-### `RequestPasswordReset` — add cooldown
+### `RequestPasswordReset` — add cooldown + existence check
 
-Same 60-sec cooldown check at the top of `sendPasswordResetEmail`, using `GetEmailVerificationCode(email, PASSWORD_RESET).last_sent_at`. Then generate code + upsert + send email containing the code (not a link).
+The shared `sendEmailVerificationCode` helper enforces two safeguards for `PASSWORD_RESET`:
+1. **Principal existence check**: look up the email via `store.GetAccountByEmail`. If no principal (or not an `END_USER`), return silently without upserting a row or sending an email. Prevents the endpoint from being abused to send reset emails to arbitrary addresses.
+2. **Cooldown**: 60-sec `last_sent_at` check (same as LOGIN path).
+
+Both checks are internal to the helper; the RPC itself always returns `Empty` success regardless (no enumeration).
+
+The `LOGIN` purpose intentionally skips the existence check because it also handles signup (unknown-email → create principal).
 
 ---
 

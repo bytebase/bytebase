@@ -696,6 +696,20 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 // Errors are logged, never returned (avoids email enumeration).
 // `bodyFmt` must contain one %s for the 6-digit code.
 func (s *AuthService) sendEmailVerificationCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) {
+	// For password reset, only send to existing principals — no upsert, no email for unknown addresses.
+	// Prevents arbitrary email spam and matches the legacy sendPasswordResetEmail behavior.
+	// LOGIN purpose intentionally skips this check because it also covers signup.
+	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
+		account, err := s.store.GetAccountByEmail(ctx, email)
+		if err != nil {
+			slog.Warn("failed to look up account for password reset", log.BBError(err))
+			return
+		}
+		if account == nil || account.Type != storepb.PrincipalType_END_USER {
+			return // silent: account doesn't exist
+		}
+	}
+
 	// Cooldown check.
 	existing, err := s.store.GetEmailVerificationCode(ctx, email, purpose)
 	if err != nil {
@@ -889,9 +903,13 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	// Respect disallow_signup only if the email was pre-invited to an existing workspace
 	// that has disallow_signup=true. If no workspace is resolvable (SaaS first-time user),
 	// signup proceeds normally — provisionWorkspaceForNewUser creates a new workspace.
+	// Fail closed on store errors: a transient failure must not let us bypass the signup policy.
 	if len(preInvitedWorkspaces) > 0 {
 		profile, err := s.store.GetWorkspaceProfileSetting(ctx, preInvitedWorkspaces[0].ResourceID)
-		if err == nil && profile != nil && profile.DisallowSignup {
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load workspace profile"))
+		}
+		if profile != nil && profile.DisallowSignup {
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("account not found"))
 		}
 	}
