@@ -326,12 +326,15 @@ export function AgentWindow() {
   );
 
   const selectFirstDisplayedChat = useCallback(() => {
-    const first = displayedChats[0];
+    const store = useAgentStore.getState();
+    const first = selectOrderedChats(store).find(
+      (chat) => chat.archived === showArchivedOnly
+    );
     if (!first || !useAgentStore.getState().canSelectChat(first.id))
       return false;
     useAgentStore.getState().setCurrentChat(first.id);
     return useAgentStore.getState().currentChatId === first.id;
-  }, [displayedChats]);
+  }, [showArchivedOnly]);
 
   const ensureCurrentChatMatchesDisplayedMode = useCallback(
     (
@@ -342,6 +345,7 @@ export function AgentWindow() {
     ) => {
       const store = useAgentStore.getState();
       const chat = store.chats.find((c) => c.id === store.currentChatId);
+      if (chat?.status === "running") return;
       const isInDisplayedMode = !!chat && chat.archived === showArchivedOnly;
 
       if (isInDisplayedMode) return;

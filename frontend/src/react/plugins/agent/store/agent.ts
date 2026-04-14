@@ -296,16 +296,26 @@ const normalizePersistedState = (raw: unknown): PersistedAgentState => {
     messagesByChatId[chat.id] = messages;
   }
 
-  const savedCurrentChatId =
-    typeof raw.currentChatId === "string"
-      ? raw.currentChatId
-      : typeof raw.currentThreadId === "string"
-        ? raw.currentThreadId
-        : null;
+  const hasCurrentChatId = Object.prototype.hasOwnProperty.call(
+    raw,
+    "currentChatId"
+  );
+  const hasCurrentThreadId = Object.prototype.hasOwnProperty.call(
+    raw,
+    "currentThreadId"
+  );
+  const persistedCurrentChatId = hasCurrentChatId
+    ? raw.currentChatId
+    : hasCurrentThreadId
+      ? raw.currentThreadId
+      : undefined;
   const currentChatId =
-    savedCurrentChatId && chats.some((chat) => chat.id === savedCurrentChatId)
-      ? savedCurrentChatId
-      : (chats[0]?.id ?? null);
+    persistedCurrentChatId === null
+      ? null
+      : typeof persistedCurrentChatId === "string" &&
+          chats.some((chat) => chat.id === persistedCurrentChatId)
+        ? persistedCurrentChatId
+        : (chats[0]?.id ?? null);
 
   return {
     currentChatId,
@@ -536,8 +546,9 @@ const loadInitialState = (): {
 
   if (
     state &&
-    state.currentChatId &&
-    state.chats.some((c) => c.id === state!.currentChatId)
+    (state.currentChatId === null
+      ? state.chats.length > 0
+      : state.chats.some((c) => c.id === state.currentChatId))
   ) {
     return state;
   }
@@ -1185,8 +1196,9 @@ export const createAgentStore = () => {
 
           const s = get();
           if (
-            !s.currentChatId ||
-            !s.chats.some((c) => c.id === s.currentChatId)
+            s.chats.length === 0 ||
+            (s.currentChatId !== null &&
+              !s.chats.some((c) => c.id === s.currentChatId))
           ) {
             const chat = createChatRecord();
             set((draft) => {

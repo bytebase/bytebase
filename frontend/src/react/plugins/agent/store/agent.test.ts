@@ -227,6 +227,35 @@ describe("useAgentStore (Zustand)", () => {
     });
   });
 
+  test("preserves a cleared current chat across store reloads", () => {
+    localStorage.setItem(
+      AGENT_STATE_KEY,
+      JSON.stringify({
+        currentChatId: null,
+        chats: [
+          {
+            id: "thread-1",
+            title: "Archived thread",
+            createdTs: 10,
+            updatedTs: 20,
+            status: "idle",
+            archived: true,
+          },
+        ],
+        messagesByChatId: {
+          "thread-1": [],
+        },
+        pendingAskByChatId: {},
+      })
+    );
+
+    const store = createAgentStore();
+
+    expect(s(store).chats).toHaveLength(1);
+    expect(s(store).getChat("thread-1")).not.toBeNull();
+    expect(s(store).currentChatId).toBeNull();
+  });
+
   test("increments and persists chat token totals", () => {
     const store = createAgentStore();
     const chatId = s(store).currentChatId!;

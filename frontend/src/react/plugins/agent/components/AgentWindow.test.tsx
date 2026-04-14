@@ -133,6 +133,87 @@ afterEach(() => {
 });
 
 describe("AgentWindow", () => {
+  test("selects the next archived chat after deleting the current archived chat", () => {
+    const activeChatId = useAgentStore.getState().currentChatId!;
+    const firstArchivedChat = useAgentStore.getState().createChat({
+      title: "First archived",
+      archived: true,
+      select: false,
+    });
+    const secondArchivedChat = useAgentStore.getState().createChat({
+      title: "Second archived",
+      archived: true,
+      select: false,
+    });
+
+    useAgentStore.setState({
+      chats: useAgentStore.getState().chats.map((chat) => {
+        if (chat.id === activeChatId) {
+          return { ...chat, updatedTs: 3000 };
+        }
+        if (chat.id === firstArchivedChat.id) {
+          return { ...chat, updatedTs: 2000 };
+        }
+        if (chat.id === secondArchivedChat.id) {
+          return { ...chat, updatedTs: 1000 };
+        }
+        return chat;
+      }),
+      currentChatId: firstArchivedChat.id,
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const moreButton = document.body.querySelector(
+      "[aria-label='common.more']"
+    ) as HTMLButtonElement | null;
+
+    act(() => {
+      moreButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    const archivedModeButton = document.body.querySelector(
+      "[data-agent-chat-list-mode]"
+    ) as HTMLDivElement | null;
+
+    act(() => {
+      archivedModeButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    const deleteButtons = Array.from(
+      document.body.querySelectorAll("[data-agent-delete-chat]")
+    ) as HTMLButtonElement[];
+
+    expect(deleteButtons).toHaveLength(2);
+
+    act(() => {
+      deleteButtons[0]?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    const confirmButton = Array.from(
+      document.body.querySelectorAll("button")
+    ).find((button) => button.textContent === "common.confirm");
+
+    act(() => {
+      confirmButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(useAgentStore.getState().getChat(firstArchivedChat.id)).toBeNull();
+    expect(useAgentStore.getState().currentChatId).toBe(secondArchivedChat.id);
+
+    unmount();
+  });
+
   test("keeps the running chat selected when archiving it from the active list", () => {
     const chatId = useAgentStore.getState().currentChatId!;
     useAgentStore.getState().startChatRun(chatId, {
