@@ -241,6 +241,7 @@ export function ProjectMaskingExemptionCreatePage({
       const policy = await policyStore.getOrFetchPolicyByParentAndType({
         parentPath: projectName,
         policyType: PolicyType.MASKING_EXEMPTION,
+        refresh: true,
       });
       const existed =
         policy?.policy?.case === "maskingExemptionPolicy"
