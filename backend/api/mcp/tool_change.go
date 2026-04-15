@@ -120,9 +120,11 @@ func (e *changeError) Error() string {
 }
 
 // proposeChangeDescription is the description for the propose_database_change tool.
-const proposeChangeDescription = `Propose a database change through Bytebase's review workflow.
+const proposeChangeDescription = `Run DDL/DML changes (ALTER TABLE, CREATE TABLE, INSERT, UPDATE, migrations) against a Bytebase database.
 
-Creates a sheet, plan, and issue in one call. Optionally creates a rollout.
+This is the primary tool for making database changes. Use this instead of manually calling CreateSheet/CreatePlan/CreateIssue via call_api.
+
+Provide plain SQL — the tool handles database resolution, sheet creation, plan creation with automatic plan checks, and issue creation in one call. Optionally creates a rollout.
 
 | Parameter     | Required | Description |
 |---------------|----------|-------------|
@@ -130,17 +132,17 @@ Creates a sheet, plan, and issue in one call. Optionally creates a rollout.
 | sql           | Yes      | SQL statement(s) in plain text (NOT base64) |
 | title         | Yes      | Title for the issue/plan |
 | instance      | No       | Narrow database resolution |
-| project       | No       | Verified against resolved database's project |
+| project       | No       | Narrow to a specific project |
 | changeType    | No       | "MIGRATE" (default) or "SDL" |
 | createRollout | No       | If true, attempts rollout creation after issue |
 | reason        | No       | Context or ticket reference (max 1000 chars) |
 
 **Examples:**
 propose_database_change(database="app", sql="ALTER TABLE users ADD COLUMN status VARCHAR(20)", title="Add status column")
-propose_database_change(database="app", sql="ALTER TABLE users ADD COLUMN status VARCHAR(20)", title="Add status column", createRollout=true)
+propose_database_change(database="app", sql="UPDATE orders SET status='shipped' WHERE id=42", title="Ship order 42", createRollout=true)
 
 **Notes:**
-- v1 supports single database targets only.
+- v1 supports single database targets only. For batch changes across multiple databases, use get_skill("database-change").
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
 - If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.`
