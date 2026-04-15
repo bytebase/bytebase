@@ -1,5 +1,12 @@
 const DROPDOWN_OFFSET = 4;
 
+function shouldIgnorePortalDropdownScroll(
+  target: EventTarget | null,
+  dropdownElement: HTMLElement | null
+): boolean {
+  return target instanceof Node && dropdownElement?.contains(target) === true;
+}
+
 function getPortalDropdownStyle(
   triggerRect: Pick<DOMRect, "top" | "left" | "width" | "bottom">,
   dropdownHeight: number,
@@ -20,4 +27,22 @@ function getPortalDropdownStyle(
   };
 }
 
-export { DROPDOWN_OFFSET, getPortalDropdownStyle };
+function isPortalDropdownStyleEqual(
+  previous: React.CSSProperties,
+  next: React.CSSProperties
+): boolean {
+  return (
+    previous.position === next.position &&
+    previous.left === next.left &&
+    previous.width === next.width &&
+    previous.top === next.top &&
+    previous.bottom === next.bottom
+  );
+}
+
+export {
+  DROPDOWN_OFFSET,
+  getPortalDropdownStyle,
+  isPortalDropdownStyleEqual,
+  shouldIgnorePortalDropdownScroll,
+};

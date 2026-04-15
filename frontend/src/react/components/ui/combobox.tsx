@@ -10,7 +10,11 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
 import { HighlightLabelText } from "../HighlightLabelText";
-import { getPortalDropdownStyle } from "./combobox-position";
+import {
+  getPortalDropdownStyle,
+  isPortalDropdownStyleEqual,
+  shouldIgnorePortalDropdownScroll,
+} from "./combobox-position";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 import { SearchInput } from "./search-input";
 
@@ -151,18 +155,32 @@ export function Combobox(props: ComboboxProps) {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
-      setDropdownStyle(
-        getPortalDropdownStyle(rect, dropdownHeight, window.innerHeight)
+      const nextStyle = getPortalDropdownStyle(
+        rect,
+        dropdownHeight,
+        window.innerHeight
       );
+      setDropdownStyle((previousStyle) =>
+        isPortalDropdownStyleEqual(previousStyle, nextStyle)
+          ? previousStyle
+          : nextStyle
+      );
+    };
+
+    const handleScroll = (event: Event) => {
+      if (shouldIgnorePortalDropdownScroll(event.target, dropdownRef.current)) {
+        return;
+      }
+      updateDropdownPosition();
     };
 
     updateDropdownPosition();
     window.addEventListener("resize", updateDropdownPosition);
-    window.addEventListener("scroll", updateDropdownPosition, true);
+    window.addEventListener("scroll", handleScroll, true);
 
     return () => {
       window.removeEventListener("resize", updateDropdownPosition);
-      window.removeEventListener("scroll", updateDropdownPosition, true);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [open, portal, filteredGroups]);
 
