@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -621,7 +622,7 @@ func TestLoaderParseSelectBody(t *testing.T) {
 
 // ---------------- loader ----------------
 
-func TestLoaderLoader_HappyPath(t *testing.T) {
+func TestLoader_HappyPath(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -667,7 +668,7 @@ func TestLoaderLoader_HappyPath(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
+func TestLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -704,7 +705,7 @@ func TestLoaderLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_TopoOrder_DependencyBeforeUse(t *testing.T) {
+func TestLoader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -740,7 +741,7 @@ func TestLoaderLoader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_CycleBreaking(t *testing.T) {
+func TestLoader_CycleBreaking(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	// Two views referencing each other — a metadata-level cycle.
@@ -786,7 +787,7 @@ func TestLoaderLoader_CycleBreaking(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_LoaderObjectsTracksEverything(t *testing.T) {
+func TestLoader_LoaderObjectsTracksEverything(t *testing.T) {
 	cat := catalog.New()
 	meta := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{{
@@ -813,7 +814,7 @@ func TestLoaderLoader_LoaderObjectsTracksEverything(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_NilMetaIsNoop(t *testing.T) {
+func TestLoader_NilMetaIsNoop(t *testing.T) {
 	cat := catalog.New()
 	loader := newCatalogLoader(cat, nil)
 	if err := loader.Load(context.Background()); err != nil {
@@ -821,10 +822,57 @@ func TestLoaderLoader_NilMetaIsNoop(t *testing.T) {
 	}
 }
 
-func TestLoaderLoader_NilCatalogErrors(t *testing.T) {
+func TestLoader_NilCatalogErrors(t *testing.T) {
 	loader := newCatalogLoader(nil, &storepb.DatabaseSchemaMetadata{})
 	if err := loader.Load(context.Background()); err == nil {
 		t.Error("expected error for nil catalog")
+	}
+}
+
+// TestLoader_FunctionOverloadsAllInstalled guards against a regression where
+// multiple FunctionMetadata entries sharing a name collapsed into a single
+// loader object because the loader key didn't include the signature. Both
+// overloads must end up in the catalog under the same name.
+func TestLoader_FunctionOverloadsAllInstalled(t *testing.T) {
+	cat := catalog.New()
+	cat.SetSearchPath([]string{"public"})
+	meta := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Functions: []*storepb.FunctionMetadata{
+				{
+					Name:       "fn",
+					Signature:  "fn(integer)",
+					Definition: "CREATE OR REPLACE FUNCTION public.fn(x int) RETURNS int LANGUAGE sql AS $$ SELECT $1 $$;",
+				},
+				{
+					Name:       "fn",
+					Signature:  "fn(text)",
+					Definition: "CREATE OR REPLACE FUNCTION public.fn(x text) RETURNS text LANGUAGE sql AS $$ SELECT $1 $$;",
+				},
+			},
+		}},
+	}
+	loader := newCatalogLoader(cat, meta)
+	if err := loader.Load(context.Background()); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(loader.degraded) != 0 {
+		t.Errorf("expected zero degraded, got %+v", loader.degraded)
+	}
+	procs := cat.LookupProcByName("fn")
+	if len(procs) < 2 {
+		t.Errorf("expected both overloads installed, got %d procs", len(procs))
+	}
+	fnEntries := 0
+	for k := range loader.loaderObjects {
+		if strings.HasPrefix(k, "func:public.fn|") {
+			fnEntries++
+		}
+	}
+	if fnEntries != 2 {
+		t.Errorf("expected 2 distinct fn loader-object keys, got %d: %+v",
+			fnEntries, loader.loaderObjects)
 	}
 }
 

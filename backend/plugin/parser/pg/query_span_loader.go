@@ -81,6 +81,10 @@ type objectEntry struct {
 // key returns a canonical kind-prefixed identifier used for dependency
 // lookups and set membership. Tables, views, and matviews share a namespace
 // (relation namespace in PG), so they use the same prefix "rel:".
+//
+// Functions are identified by schema, name AND signature so that overloaded
+// names (e.g. `public.fn(int4)` and `public.fn(text)`) do not collide and
+// collapse into a single entry during topo-sort bookkeeping.
 func (e *objectEntry) key() string {
 	switch e.kind {
 	case kindSchema:
@@ -90,14 +94,34 @@ func (e *objectEntry) key() string {
 	case kindTable, kindView, kindMatView:
 		return "rel:" + e.schema + "." + e.name
 	case kindFunction:
-		return "func:" + e.schema + "." + e.name
+		return "func:" + e.schema + "." + e.name + "|" + funcSignatureKey(e.funcMeta)
 	}
 	return "unknown:" + e.schema + "." + e.name
 }
 
 // sortKey returns the intra-SCC lexicographic key. Matches hard contract C10.
+// For functions the signature is appended so overloads have distinct sort
+// keys and the install order is fully deterministic.
 func (e *objectEntry) sortKey() string {
-	return e.schema + "\x00" + e.name + "\x00" + kindLabel(e.kind)
+	base := e.schema + "\x00" + e.name + "\x00" + kindLabel(e.kind)
+	if e.kind == kindFunction {
+		base += "\x00" + funcSignatureKey(e.funcMeta)
+	}
+	return base
+}
+
+// funcSignatureKey returns a stable, comparable identifier for a function
+// signature. Uses the metadata Signature string when present; falls back to
+// the definition hash to keep distinct overloads distinguishable even when
+// sync emitted an empty Signature field.
+func funcSignatureKey(fn *storepb.FunctionMetadata) string {
+	if fn == nil {
+		return ""
+	}
+	if fn.Signature != "" {
+		return fn.Signature
+	}
+	return fn.Definition
 }
 
 func kindLabel(k objectKind) string {
