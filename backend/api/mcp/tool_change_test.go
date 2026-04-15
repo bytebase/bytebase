@@ -477,6 +477,8 @@ func TestChange_PlanChecks_Failed(t *testing.T) {
 func TestChange_PlanChecks_RunPlanChecksAPIFailure(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.runPlanChecksStatus = http.StatusInternalServerError
+	// GetPlanCheckRun still works (CreatePlan auto-triggers checks).
+	mock.planCheckRunResponse = defaultPlanCheckDone()
 	mock.issueResponse = defaultIssueResponse("APPROVED")
 	s := newChangeTestServer(t, mock)
 
@@ -490,10 +492,8 @@ func TestChange_PlanChecks_RunPlanChecksAPIFailure(t *testing.T) {
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
 	require.NotNil(t, output.PlanChecks)
-	// Trigger failure is treated as RUNNING (not FAILED) to avoid misleading
-	// FIX_SQL_AND_RETRY when the issue is a permission or transient error.
-	require.Equal(t, "RUNNING", output.PlanChecks.Status)
-	require.NotEmpty(t, output.PlanChecks.PlanCheckRun)
+	// RunPlanChecks failure is ignored; poll picks up results from CreatePlan-triggered checks.
+	require.Equal(t, "DONE", output.PlanChecks.Status)
 	// Issue still created.
 	require.NotEmpty(t, output.Issue)
 }
@@ -722,10 +722,11 @@ func TestChange_ProjectDerived(t *testing.T) {
 	require.Equal(t, "projects/hr-system", issue["parent"])
 }
 
-func TestChange_ProjectMismatch(t *testing.T) {
+func TestChange_ProjectWrongFilter(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	s := newChangeTestServer(t, mock)
 
+	// Wrong project filters out the database at the server level.
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
 		Database: "employee_db",
 		SQL:      "ALTER TABLE x ADD COLUMN y INT",
@@ -736,7 +737,34 @@ func TestChange_ProjectMismatch(t *testing.T) {
 	require.True(t, result.IsError)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "PROJECT_MISMATCH")
+	require.Contains(t, text, "DATABASE_NOT_FOUND")
+}
+
+func TestChange_ProjectDisambiguates(t *testing.T) {
+	// Same database name in two projects.
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/app", "instances/prod-pg", "projects/payments", "POSTGRES", "ds-1"),
+		makeDatabase("instances/staging-pg/databases/app", "instances/staging-pg", "projects/staging", "POSTGRES", "ds-2"),
+	}
+	mock := newChangeMock(databases)
+	mock.sheetResponse = map[string]any{"name": "projects/payments/sheets/1001"}
+	mock.planResponse = map[string]any{"name": "projects/payments/plans/2002"}
+	mock.issueResponse = map[string]any{"name": "projects/payments/issues/3003", "approvalStatus": "APPROVED"}
+	s := newChangeTestServer(t, mock)
+
+	// Providing project disambiguates without elicitation.
+	_, structured, err := s.handleChange(testContext(), nil, ChangeInput{
+		Database: "app",
+		SQL:      "ALTER TABLE x ADD COLUMN y INT",
+		Title:    "Test",
+		Project:  "payments",
+	})
+	require.NoError(t, err)
+
+	output, ok := structured.(*ChangeOutput)
+	require.True(t, ok)
+	require.Equal(t, "projects/payments", output.Project)
+	require.Equal(t, "instances/prod-pg/databases/app", output.Database)
 }
 
 func TestChange_InvalidChangeType(t *testing.T) {

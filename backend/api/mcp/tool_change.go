@@ -190,18 +190,9 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 		return resolveResult, nil, nil
 	}
 
-	// Step 3: Validate project.
+	// Step 3: Use project from resolved database.
+	// When input.Project is set, the resolver already filtered by it.
 	project := resolved.project
-	if input.Project != "" {
-		inputProject := normalizeProject(input.Project)
-		if inputProject != project {
-			return formatChangeError(&changeError{
-				Code:       "PROJECT_MISMATCH",
-				Message:    fmt.Sprintf("provided project %q does not match resolved project %q", inputProject, project),
-				Suggestion: "omit the project parameter to use the resolved database's project",
-			}), nil, nil
-		}
-	}
 
 	// Step 4: Create sheet.
 	sheetName, err := s.createSheet(ctx, project, resolved.engine, input.Title, input.SQL)
@@ -295,14 +286,13 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 }
 
 // resolveChangeTarget runs the shared database resolver with elicitation fallback.
-// Unlike query/schema tools, we do NOT pass input.Project to the resolver's filter
-// because project mismatch is validated separately (step 3). Passing it to the
-// server-side filter would cause DATABASE_NOT_FOUND instead of PROJECT_MISMATCH.
+// The project parameter is passed to the server-side filter so it can disambiguate
+// when the same database name exists in multiple projects.
 func (s *Server) resolveChangeTarget(ctx context.Context, req *mcp.CallToolRequest, input ChangeInput) (*resolvedDatabase, *mcp.CallToolResult) {
 	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
 	defer resolveCancel()
 
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, "")
+	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
 	if err != nil {
 		return nil, formatToolError(err)
 	}
@@ -314,14 +304,6 @@ func (s *Server) resolveChangeTarget(ctx context.Context, req *mcp.CallToolReque
 		return nil, formatAmbiguousResult(input.Database, resolved.candidates)
 	}
 	return picked, nil
-}
-
-// normalizeProject ensures project has the "projects/" prefix.
-func normalizeProject(p string) string {
-	if strings.HasPrefix(p, "projects/") {
-		return p
-	}
-	return "projects/" + p
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.
@@ -415,18 +397,11 @@ func (s *Server) planCheckBudget() time.Duration {
 
 // runPlanChecks triggers plan checks and polls for results within the poll budget.
 func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckInfo {
-	// Trigger plan checks. If the trigger itself fails (permission, transient
-	// error), treat as RUNNING — we don't know whether checks will run server-side
-	// and shouldn't block rollout with a misleading FIX_SQL_AND_RETRY.
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/RunPlanChecks", map[string]any{
+	// Trigger plan checks. If this fails, still poll — CreatePlan already
+	// initializes plan checks server-side, so they may be running regardless.
+	_, _ = s.apiRequest(ctx, "/bytebase.v1.PlanService/RunPlanChecks", map[string]any{
 		"name": planName,
 	})
-	if err != nil || resp.Status >= 400 {
-		return &PlanCheckInfo{
-			Status:       planCheckRunning,
-			PlanCheckRun: planName + "/planCheckRun",
-		}
-	}
 
 	// Poll for results.
 	deadline := time.Now().Add(s.planCheckBudget())
