@@ -1,4 +1,4 @@
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils/util";
 
 interface HighlightLabelTextProps {
   text: string;
