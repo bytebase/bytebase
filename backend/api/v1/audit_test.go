@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // TestLogAuditToStdoutFormat is a contract test for the structured JSON fields
@@ -98,4 +99,75 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal(float64(16), failed["status_code"], "failed call must carry status_code")
 	a.Equal("invalid email or password", failed["status_message"],
 		"failed call must carry status_message")
+}
+
+// TestAuditRedactsCredentials covers the request/response redactors that
+// strip secrets before the audit pipeline serializes payloads. Specifically
+// guards against regressions like the Signup password leak and the
+// ExchangeToken OIDC/access-token leak that Codex flagged on #20024 — both
+// only surfaced once the corresponding audit path was re-enabled by the
+// SetAuditWorkspaceID callback.
+func TestAuditRedactsCredentials(t *testing.T) {
+	a := require.New(t)
+
+	t.Run("LoginRequest redacts password and MFA secrets", func(_ *testing.T) {
+		otp := "123456"
+		mfa := "mfa-temp-jwt"
+		reqStr, err := getRequestString(&v1pb.LoginRequest{
+			Email:        "alice@example.com",
+			Password:     "hunter2",
+			OtpCode:      &otp,
+			MfaTempToken: &mfa,
+		})
+		a.NoError(err)
+		a.Contains(reqStr, "alice@example.com", "non-sensitive email stays")
+		a.NotContains(reqStr, "hunter2", "plaintext password must not appear")
+		a.NotContains(reqStr, "123456", "OTP must not appear")
+		a.NotContains(reqStr, "mfa-temp-jwt", "MFA temp token must not appear")
+	})
+
+	t.Run("LoginResponse drops token", func(_ *testing.T) {
+		respStr, err := getResponseString(&v1pb.LoginResponse{
+			Token: "secret-access-token",
+			User:  &v1pb.User{Name: "users/alice@example.com"},
+		})
+		a.NoError(err)
+		a.Contains(respStr, "users/alice@example.com", "user info is retained")
+		a.NotContains(respStr, "secret-access-token", "access token must not appear")
+	})
+
+	t.Run("SignupRequest redacts password", func(_ *testing.T) {
+		reqStr, err := getRequestString(&v1pb.SignupRequest{
+			Email:    "bob@example.com",
+			Password: "signup-password",
+			Title:    "bob",
+		})
+		a.NoError(err)
+		a.Contains(reqStr, "bob@example.com")
+		a.NotContains(reqStr, "signup-password",
+			"plaintext password must not appear in Signup audit")
+	})
+
+	t.Run("ExchangeTokenRequest redacts OIDC token", func(_ *testing.T) {
+		reqStr, err := getRequestString(&v1pb.ExchangeTokenRequest{
+			Token: "oidc.jwt.payload",
+			Email: "ci-bot@workload.bytebase.com",
+		})
+		a.NoError(err)
+		a.Contains(reqStr, "ci-bot@workload.bytebase.com",
+			"workload email retained for audit correlation")
+		a.NotContains(reqStr, "oidc.jwt.payload",
+			"external OIDC token must not appear in audit — it can be replayed "+
+				"against the original IdP or reveal workload claims")
+	})
+
+	t.Run("ExchangeTokenResponse drops issued access token", func(_ *testing.T) {
+		respStr, err := getResponseString(&v1pb.ExchangeTokenResponse{
+			AccessToken: "issued-bytebase-api-token",
+		})
+		a.NoError(err)
+		a.NotContains(respStr, "issued-bytebase-api-token",
+			"issued Bytebase access token must never be logged — anyone with "+
+				"audit read access could use it as a valid API token")
+	})
 }

@@ -414,6 +414,8 @@ func getRequestResource(request any) string {
 		return r.GetEmail()
 	case *v1pb.SignupRequest:
 		return r.GetEmail()
+	case *v1pb.ExchangeTokenRequest:
+		return r.GetEmail()
 	case *v1pb.CreateInstanceRequest:
 		return r.GetInstance().GetName()
 	case *v1pb.UpdateInstanceRequest:
@@ -451,6 +453,8 @@ func getRequestString(request any) (string, error) {
 			return redactLoginRequest(r)
 		case *v1pb.SignupRequest:
 			return redactSignupRequest(r)
+		case *v1pb.ExchangeTokenRequest:
+			return redactExchangeTokenRequest(r)
 		case *v1pb.CreateInstanceRequest:
 			r.Instance = redactInstance(r.Instance)
 			return r
@@ -498,6 +502,8 @@ func getResponseString(response any) (string, error) {
 			return nil
 		case *v1pb.LoginResponse:
 			return redactLoginResponse(r)
+		case *v1pb.ExchangeTokenResponse:
+			return redactExchangeTokenResponse(r)
 		case *v1pb.User:
 			return redactUser(r)
 		case *v1pb.Instance:
@@ -566,6 +572,32 @@ func redactSignupRequest(r *v1pb.SignupRequest) *v1pb.SignupRequest {
 		r.Password = maskedString
 	}
 	return r
+}
+
+// redactExchangeTokenRequest masks the external OIDC JWT. The token is a
+// credential — it could be replayed against the original IdP or, if logged,
+// reveal workload identity claims. The caller's email is kept for audit
+// correlation.
+func redactExchangeTokenRequest(r *v1pb.ExchangeTokenRequest) *v1pb.ExchangeTokenRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.Token != "" {
+		r.Token = maskedString
+	}
+	return r
+}
+
+// redactExchangeTokenResponse drops the issued Bytebase access token. Logging
+// it would give anyone with audit-log read access a valid API token for the
+// workload identity. Returns an empty response so the audit entry still
+// records that the call happened.
+func redactExchangeTokenResponse(r *v1pb.ExchangeTokenResponse) *v1pb.ExchangeTokenResponse {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.ExchangeTokenResponse{}
 }
 
 func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {
