@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	omnipg "github.com/bytebase/omni/pg"
 	"github.com/bytebase/omni/pg/ast"
@@ -50,6 +51,17 @@ func init() {
 
 func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
+
+	// Clone before mutating: the caller's *DatabaseSchemaMetadata is often a
+	// shared pointer returned from store.dbSchemaCache (see
+	// backend/store/model/database.go:GetProto), so concurrent callers could
+	// race on in-place normalization writes below.
+	metadata = proto.CloneOf(metadata)
+
+	// Repair historical non-canonical metadata shapes (e.g. index key
+	// expressions stored without outer parens) so emission produces valid SQL.
+	// See legacy_normalize.go for removal criteria.
+	normalizeLegacyMetadata(metadata)
 
 	if len(metadata.Schemas) == 0 {
 		return "", nil
@@ -1946,6 +1958,10 @@ func writeIndexKeyList(out io.Writer, index *storepb.IndexMetadata) error {
 			}
 		}
 
+		// expression is expected to be in canonical pg_get_indexdef form —
+		// see IndexMetadata.expressions in proto/store/store/database.proto.
+		// normalizeLegacyMetadata (called at the top of GetDatabaseDefinition)
+		// repairs historical rows that pre-date the contract.
 		if _, err := io.WriteString(out, expression); err != nil {
 			return err
 		}
@@ -3600,6 +3616,17 @@ func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata)
 // GetMultiFileDatabaseDefinition generates multi-file SDL schema for PostgreSQL.
 func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
+
+	// Clone before mutating: the caller's *DatabaseSchemaMetadata is often a
+	// shared pointer returned from store.dbSchemaCache (see
+	// backend/store/model/database.go:GetProto), so concurrent callers could
+	// race on in-place normalization writes below.
+	metadata = proto.CloneOf(metadata)
+
+	// Repair historical non-canonical metadata shapes (e.g. index key
+	// expressions stored without outer parens) so emission produces valid SQL.
+	// See legacy_normalize.go for removal criteria.
+	normalizeLegacyMetadata(metadata)
 
 	if len(metadata.Schemas) == 0 {
 		return &schema.MultiFileSchemaResult{Files: []schema.File{}}, nil
