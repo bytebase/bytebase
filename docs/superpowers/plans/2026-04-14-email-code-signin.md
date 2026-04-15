@@ -754,16 +754,22 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, email strin
 		return // silent: cooldown not expired
 	}
 
-	// Resolve workspace for EMAIL setting. Fall back to env-var EMAIL_CONFIG if no workspace yet.
+	// Resolve EMAIL setting across candidate workspaces. For multi-workspace users, the first
+	// workspace returned by ListWorkspacesByEmail may not have EMAIL configured while another does.
+	// Scan until we find a usable setting. Fall back to env-var EMAIL_CONFIG if none match.
 	var emailSetting *storepb.EmailSetting
 	workspaces, _ := s.store.ListWorkspacesByEmail(ctx, &store.FindWorkspaceMessage{Email: email, IncludeAllUser: true})
-	if len(workspaces) > 0 {
-		emailSettingMsg, err := s.store.GetSetting(ctx, workspaces[0].ResourceID, storepb.SettingName_EMAIL)
-		if err == nil && emailSettingMsg != nil {
-			if es, ok := emailSettingMsg.Value.(*storepb.EmailSetting); ok {
-				emailSetting = es
-			}
+	for _, ws := range workspaces {
+		emailSettingMsg, err := s.store.GetSetting(ctx, ws.ResourceID, storepb.SettingName_EMAIL)
+		if err != nil || emailSettingMsg == nil {
+			continue
 		}
+		es, ok := emailSettingMsg.Value.(*storepb.EmailSetting)
+		if !ok || es == nil {
+			continue
+		}
+		emailSetting = es
+		break
 	}
 	if emailSetting == nil {
 		// Fallback to EMAIL_CONFIG env var for brand-new signups (workspace doesn't exist yet).
@@ -1460,6 +1466,7 @@ File: `frontend/src/components/EmailCodeSigninForm.vue`
 import { create } from "@bufbuild/protobuf";
 import { NButton, NInputOtp } from "naive-ui";
 import { onUnmounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { pushNotification, useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
@@ -1469,6 +1476,7 @@ const emit = defineEmits<{
   (e: "signin", request: ReturnType<typeof create<typeof LoginRequestSchema>>): void;
 }>();
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const step = ref<"email" | "code">("email");
 const resendCountdown = ref(0);
@@ -1507,7 +1515,7 @@ const sendCode = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "Failed to send code",
+      title: t("auth.sign-in.failed-to-send-code"),
     });
   } finally {
     state.sending = false;
@@ -1700,7 +1708,7 @@ const onConfirm = async () => {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: "Invalid or expired code",
+        title: t("auth.password-reset.invalid-or-expired-code"),
       });
     }
     return;
@@ -1772,12 +1780,14 @@ Under `auth.sign-in`, add:
 "send-code": "Send code",
 "resend-code": "Resend code",
 "resend-in": "Resend in {seconds}s",
-"code-sent-hint": "We've sent a 6-digit code to {email}"
+"code-sent-hint": "We've sent a 6-digit code to {email}",
+"failed-to-send-code": "Failed to send code"
 ```
 
 Under `auth.password-reset`, add:
 ```json
-"code-label": "Verification code"
+"code-label": "Verification code",
+"invalid-or-expired-code": "Invalid or expired code"
 ```
 
 Under `auth.password-forget`, replace existing keys if needed — ensure `send-code`, `email-sent`, `email-sent-hint` are present (may already exist from prior work; dedup if so).
@@ -1794,6 +1804,8 @@ Mirror the keys. Translations:
 | Resend in {seconds}s | {seconds} 秒后可重发 | {seconds}秒後に再送信可能 | Reenviar en {seconds}s | Gửi lại sau {seconds}s |
 | We've sent a 6-digit code to {email} | 已向 {email} 发送 6 位验证码 | {email} に6桁のコードを送信しました | Hemos enviado un código de 6 dígitos a {email} | Đã gửi mã 6 chữ số đến {email} |
 | Verification code | 验证码 | 認証コード | Código de verificación | Mã xác minh |
+| Failed to send code | 发送验证码失败 | コードの送信に失敗しました | No se pudo enviar el código | Không gửi được mã |
+| Invalid or expired code | 验证码无效或已过期 | コードが無効または期限切れです | Código inválido o caducado | Mã không hợp lệ hoặc đã hết hạn |
 
 - [ ] **Step 3: Run i18n sorter + type-check**
 
