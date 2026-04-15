@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { nextTick } from "vue";
 
 vi.mock("./SigninBridge", () => ({
   SigninBridge: () => <button data-testid="signin-bridge">Sign in</button>,
@@ -22,6 +23,7 @@ vi.mock("react-i18next", () => ({
 const mountMocks = vi.hoisted(() => ({
   changeLanguage: vi.fn(async () => {}),
   mountReactPage: vi.fn(async () => ({ unmount: vi.fn() })),
+  routePath: null as unknown,
   updateReactPage: vi.fn(async () => {}),
   locale: {
     __v_isRef: true,
@@ -47,11 +49,22 @@ vi.mock("vue-i18n", () => ({
   }),
 }));
 
-vi.mock("vue-router", () => ({
-  useRoute: () => ({
-    fullPath: "/instances",
-  }),
-}));
+vi.mock("vue-router", async () => {
+  const { ref } = await import("vue");
+  mountMocks.routePath ||= ref("/instances");
+
+  return {
+    useRoute: () => ({
+      get fullPath() {
+        return (
+          mountMocks.routePath as {
+            value: string;
+          }
+        ).value;
+      },
+    }),
+  };
+});
 
 import SessionExpiredSurfaceMount from "@/components/SessionExpiredSurfaceMount.vue";
 import { SessionExpiredSurface } from "./SessionExpiredSurface";
@@ -67,6 +80,11 @@ describe("SessionExpiredSurface", () => {
     mountMocks.mountReactPage.mockClear();
     mountMocks.updateReactPage.mockClear();
     mountMocks.locale.value = "zh-CN";
+    (
+      mountMocks.routePath as {
+        value: string;
+      }
+    ).value = "/instances";
   });
 
   test("mounts into the critical root", async () => {
@@ -139,6 +157,51 @@ describe("SessionExpiredSurface", () => {
       expect(mountMocks.changeLanguage).toHaveBeenCalledWith("zh-CN");
       expect(mountMocks.mountReactPage).toHaveBeenCalledTimes(1);
       expect(calls).toEqual(["changeLanguage", "mountReactPage"]);
+    });
+
+    wrapper.unmount();
+  });
+
+  test("reconciles the latest route after async mount resolves", async () => {
+    let resolveMount: ((root: unknown) => void) | undefined;
+    const mountedRoot = { unmount: vi.fn(() => {}) };
+    mountMocks.mountReactPage.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveMount = (root) => {
+            resolve(root as { unmount: typeof mountedRoot.unmount });
+          };
+        })
+    );
+
+    const wrapper = mount(SessionExpiredSurfaceMount);
+    await flushPromises();
+
+    expect(mountMocks.mountReactPage).toHaveBeenCalledWith(
+      expect.any(HTMLDivElement),
+      "SessionExpiredSurface",
+      { currentPath: "/instances" }
+    );
+
+    (
+      mountMocks.routePath as {
+        value: string;
+      }
+    ).value = "/projects/demo";
+    await nextTick();
+    await flushPromises();
+
+    expect(mountMocks.updateReactPage).not.toHaveBeenCalled();
+
+    resolveMount?.(mountedRoot);
+    await flushPromises();
+
+    await vi.waitFor(() => {
+      expect(mountMocks.updateReactPage).toHaveBeenCalledWith(
+        mountedRoot,
+        "SessionExpiredSurface",
+        { currentPath: "/projects/demo" }
+      );
     });
 
     wrapper.unmount();

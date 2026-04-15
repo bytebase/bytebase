@@ -15,25 +15,46 @@ const container = ref<HTMLElement>();
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const props = computed(() => ({ currentPath: route.fullPath }));
+let latestLocale = locale.value;
+let latestProps = props.value;
+
+const syncMountedPage = async (
+  nextLocale: string,
+  nextProps: { currentPath: string }
+) => {
+  const i18nModule = await import("@/react/i18n");
+  if (i18nModule.default.language !== nextLocale) {
+    await i18nModule.default.changeLanguage(nextLocale);
+  }
+  if (!root) return;
+  await updateReactPage(root, "SessionExpiredSurface", nextProps);
+};
 
 onMounted(async () => {
   if (!container.value) return;
+  latestLocale = locale.value;
+  latestProps = props.value;
+  const mountedLocale = latestLocale;
+  const mountedProps = latestProps;
   const i18nModule = await import("@/react/i18n");
-  if (i18nModule.default.language !== locale.value) {
-    await i18nModule.default.changeLanguage(locale.value);
+  if (i18nModule.default.language !== mountedLocale) {
+    await i18nModule.default.changeLanguage(mountedLocale);
   }
   root = await mountReactPage(
     container.value,
     "SessionExpiredSurface",
-    props.value
+    mountedProps
   );
+  if (latestLocale !== mountedLocale || latestProps !== mountedProps) {
+    await syncMountedPage(latestLocale, latestProps);
+  }
 });
 
-watch([locale, props], async () => {
+watch([locale, props], async ([nextLocale, nextProps]) => {
+  latestLocale = nextLocale;
+  latestProps = nextProps;
   if (!root) return;
-  const i18nModule = await import("@/react/i18n");
-  await i18nModule.default.changeLanguage(locale.value);
-  await updateReactPage(root, "SessionExpiredSurface", props.value);
+  await syncMountedPage(nextLocale, nextProps);
 });
 
 onUnmounted(() => {
