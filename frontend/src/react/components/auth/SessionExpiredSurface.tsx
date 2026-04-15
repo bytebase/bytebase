@@ -22,16 +22,12 @@ export function SessionExpiredSurface({
         />
         <BaseDialog.Popup
           data-session-expired-surface
-          className={`fixed inset-0 ${LAYER_SURFACE_CLASS} flex items-center justify-center p-4 outline-none`}
+          className={`fixed inset-0 ${LAYER_SURFACE_CLASS} flex items-center justify-center outline-none`}
         >
           <BaseDialog.Title className="sr-only">
             {t("auth.token-expired-title")}
           </BaseDialog.Title>
-          <div className="pointer-events-auto flex w-auto max-w-full items-center md:min-w-96 md:py-4">
-            <div className="flex flex-1 flex-col items-center justify-center gap-y-2">
-              <SigninBridge currentPath={currentPath} />
-            </div>
-          </div>
+          <SigninBridge currentPath={currentPath} />
         </BaseDialog.Popup>
       </BaseDialog.Portal>
     </BaseDialog.Root>

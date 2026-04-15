@@ -14,6 +14,28 @@ export function SigninBridge({ currentPath }: { currentPath: string }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const renderSignin = () =>
+      h(
+        Signin as never,
+        {
+          redirect: false,
+          redirectUrl: currentPath,
+          allowSignup: false,
+        },
+        {
+          footer: () =>
+            h(
+              NButton,
+              {
+                quaternary: true,
+                size: "small",
+                onClick: () => useAuthStore().logout(),
+              },
+              () => i18n.global.t("common.logout")
+            ),
+        }
+      );
+
     const app = createApp({
       render() {
         return h(
@@ -26,24 +48,42 @@ export function SigninBridge({ currentPath }: { currentPath: string }) {
           {
             default: () =>
               h(
-                Signin as never,
+                "div",
                 {
-                  redirect: false,
-                  redirectUrl: currentPath,
-                  allowSignup: false,
+                  class:
+                    "bg-white shadow-lg rounded-md py-3 flex pointer-events-auto flex-col gap-3",
+                  style: {
+                    maxWidth: "calc(100vw - 80px)",
+                    maxHeight: "calc(100vh - 80px)",
+                  },
                 },
-                {
-                  footer: () =>
-                    h(
-                      NButton,
-                      {
-                        quaternary: true,
-                        size: "small",
-                        onClick: () => useAuthStore().logout(),
-                      },
-                      () => i18n.global.t("common.logout")
-                    ),
-                }
+                [
+                  h(
+                    "div",
+                    {
+                      class: "px-4 max-h-screen overflow-auto w-full h-full",
+                    },
+                    [
+                      h(
+                        "div",
+                        {
+                          class:
+                            "flex items-center w-auto md:min-w-96 max-w-full h-auto md:py-4",
+                        },
+                        [
+                          h(
+                            "div",
+                            {
+                              class:
+                                "flex flex-col justify-center items-center flex-1 gap-y-2",
+                            },
+                            [renderSignin()]
+                          ),
+                        ]
+                      ),
+                    ]
+                  ),
+                ]
               ),
           }
         );
