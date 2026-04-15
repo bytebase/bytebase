@@ -1,12 +1,10 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
-import { useAuthStore } from "@/store";
 import { SigninBridge } from "./SigninBridge";
 
 export function SessionExpiredSurface({
@@ -24,16 +22,15 @@ export function SessionExpiredSurface({
         />
         <BaseDialog.Popup
           data-session-expired-surface
-          className={`fixed left-1/2 top-1/2 ${LAYER_SURFACE_CLASS} w-full max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-sm bg-background p-6 shadow-lg`}
+          className={`fixed inset-0 ${LAYER_SURFACE_CLASS} flex items-center justify-center p-4 outline-none`}
         >
           <BaseDialog.Title className="sr-only">
             {t("auth.token-expired-title")}
           </BaseDialog.Title>
-          <SigninBridge currentPath={currentPath} />
-          <div className="mt-4 flex justify-end gap-x-2">
-            <Button variant="ghost" onClick={() => useAuthStore().logout()}>
-              {t("common.logout")}
-            </Button>
+          <div className="pointer-events-auto flex w-auto max-w-full items-center md:min-w-96 md:py-4">
+            <div className="flex flex-1 flex-col items-center justify-center gap-y-2">
+              <SigninBridge currentPath={currentPath} />
+            </div>
           </div>
         </BaseDialog.Popup>
       </BaseDialog.Portal>
