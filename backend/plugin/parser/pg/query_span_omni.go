@@ -11,10 +11,8 @@ import (
 	"github.com/bytebase/omni/pg/catalog"
 	omniparser "github.com/bytebase/omni/pg/parser"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -47,6 +45,20 @@ type omniQuerySpanExtractor struct {
 	// fallbackCTEAliases holds CTE column aliases (e.g., WITH t1(cc1, cc2) AS (...)).
 	// Keyed by lowercase CTE name.
 	fallbackCTEAliases map[string][]string
+
+	// Catalog loader state — populated by initCatalog.
+	// degraded records objects whose real install failed and fell back to
+	// pseudo. Keyed by loader object key (schema.name with kind prefix).
+	degraded map[string]error
+	// trulyBroken records objects whose pseudo install also failed.
+	trulyBroken map[string]error
+	// loaderObjects records every object collected from metadata. Used by
+	// tests to distinguish loader bugs from metadata gaps.
+	loaderObjects map[string]bool
+	// lastFallbackReason is the classifier's verdict for the most recent
+	// AnalyzeSelectStmt error at any of the three fallback sites. Used by
+	// tests; not consumed by production code.
+	lastFallbackReason fallbackReason
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -79,10 +91,12 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 	return meta, nil
 }
 
-// initCatalog initializes the omni catalog from the database metadata.
-// It uses schemapg.GetDatabaseDefinition to produce complete DDL (including
-// CREATE TYPE, CREATE SEQUENCE, dependency ordering, etc.), the same
-// approach used by WalkThroughOmni.
+// initCatalog initializes the omni catalog from the database metadata using
+// the Catalog loader. Every metadata object is installed in dependency order,
+// with an inline pseudo fallback at any failed slot (see query_span_e3_*.go).
+//
+// The DDL render + batch-parse path used before this refactor is deleted: BYT-9215 and
+// BYT-9261 are unreachable by construction here.
 func (e *omniQuerySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil {
@@ -96,61 +110,37 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	ddl, err := schema.GetDatabaseDefinition(
-		storepb.Engine_POSTGRES,
-		schema.GetDefinitionContext{},
-		meta.GetProto(),
-	)
-	if err != nil {
-		return errors.Wrapf(err, "failed to generate schema DDL for catalog init")
+	loader := newCatalogLoader(e.cat, meta.GetProto())
+	if err := loader.Load(e.ctx); err != nil {
+		return errors.Wrapf(err, "catalog loader failed for %q", e.defaultDatabase)
 	}
-	if ddl != "" {
-		if _, err := e.cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-			slog.Error("failed to parse schema DDL for catalog init",
-				slog.String("database", e.defaultDatabase),
-				log.BBError(err),
-				slog.String("context", ddlErrorContext(ddl, err)),
-			)
-			return errors.Wrapf(err, "failed to load schema DDL into catalog")
-		}
+	e.degraded = loader.degraded
+	e.trulyBroken = loader.trulyBroken
+	e.loaderObjects = loader.loaderObjects
+
+	if len(loader.degraded) > 0 || len(loader.trulyBroken) > 0 {
+		slog.Debug("catalog loader degraded objects",
+			slog.String("database", e.defaultDatabase),
+			slog.Int("degraded", len(loader.degraded)),
+			slog.Int("truly_broken", len(loader.trulyBroken)),
+		)
 	}
 
-	// Store original (non-stubbed) function definitions for body analysis.
+	// Populate original (non-stubbed) function definitions for PL/pgSQL body
+	// analysis. This is independent of catalog loading and unchanged by the loader.
 	for _, s := range meta.GetProto().GetSchemas() {
 		for _, f := range s.GetFunctions() {
-			if f.Definition != "" {
-				origBody := extractFuncBodyFromDef(f.Definition)
-				if origBody != "" {
-					e.funcOrigDefs[strings.ToLower(f.Name)] = origBody
-				}
+			if f.Definition == "" {
+				continue
+			}
+			origBody := extractFuncBodyFromDef(f.Definition)
+			if origBody != "" {
+				e.funcOrigDefs[strings.ToLower(f.Name)] = origBody
 			}
 		}
 	}
 
 	return nil
-}
-
-// ddlErrorContext extracts a snippet around the error position from the DDL.
-// If err is a *omniparser.ParseError with a position, it shows ~200 bytes
-// around that position. Otherwise returns the first 500 bytes.
-func ddlErrorContext(ddl string, err error) string {
-	var parseErr *omniparser.ParseError
-	if errors.As(err, &parseErr) && parseErr.Position > 0 {
-		pos := parseErr.Position
-		start := pos - 100
-		if start < 0 {
-			start = 0
-		}
-		end := pos + 100
-		if end > len(ddl) {
-			end = len(ddl)
-		}
-		return ddl[start:end]
-	}
-	if len(ddl) > 500 {
-		return ddl[:500] + "...(truncated)"
-	}
-	return ddl
 }
 
 // extractFuncBodyFromDef extracts the dollar-quoted function body from a
@@ -275,6 +265,10 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
+		// Record the classifier's verdict for test inspection. This does not
+		// gate behavior — the fallback below always runs on analyzer errors.
+		e.lastFallbackReason = classifyAnalyzeError(err)
+
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
