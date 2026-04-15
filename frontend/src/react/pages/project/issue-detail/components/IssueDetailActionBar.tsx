@@ -1,22 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import DOMPurify from "dompurify";
 import { first, orderBy } from "lodash-es";
 import {
-  Bold,
   CalendarX,
   Check,
   ChevronDown,
-  Code2,
   EllipsisVertical,
-  Hash,
-  Heading1,
-  Link2,
   Loader2,
   MessageCircle,
   X,
 } from "lucide-react";
-import MarkdownIt from "markdown-it";
 import {
   type ReactNode,
   useCallback,
@@ -30,6 +23,7 @@ import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/connect";
+import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -43,7 +37,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { Textarea } from "@/react/components/ui/textarea";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -101,11 +94,6 @@ import {
 import { isApprovalCompleted } from "../utils/approval";
 import { refreshIssueDetailState } from "../utils/refreshIssueDetailState";
 import { IssueDetailTaskRolloutActionPanel } from "./IssueDetailTaskRolloutActionPanel";
-
-const markdown = new MarkdownIt({
-  html: true,
-  linkify: true,
-});
 
 export function IssueDetailActionBar() {
   const { t } = useTranslation();
@@ -901,7 +889,7 @@ function IssueDetailReviewPopover({
 
   const content = (
     <div className="flex flex-col gap-y-3">
-      <IssueDetailReviewMarkdownEditor
+      <MarkdownEditor
         content={comment}
         onChange={setComment}
         onSubmit={() => {
@@ -1041,268 +1029,6 @@ function IssueDetailReviewOption({
       </span>
     </label>
   );
-}
-
-function IssueDetailReviewMarkdownEditor({
-  content,
-  onChange,
-  onSubmit,
-}: {
-  content: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-}) {
-  const { t } = useTranslation();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [tab, setTab] = useState<"write" | "preview">("write");
-  const previewHtml = useMemo(() => {
-    const rendered = markdown.render(content || "");
-    return DOMPurify.sanitize(rendered);
-  }, [content]);
-
-  useEffect(() => {
-    if (!textareaRef.current) {
-      return;
-    }
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${Math.max(
-      textareaRef.current.scrollHeight,
-      112
-    )}px`;
-  }, [content, tab]);
-
-  const insertTemplate = (template: string, cursorOffset: number) => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const next = `${content.slice(0, start)}${template.slice(
-      0,
-      cursorOffset
-    )}${content.slice(start, end)}${template.slice(cursorOffset)}${content.slice(end)}`;
-    onChange(next);
-    window.requestAnimationFrame(() => {
-      if (!textareaRef.current) {
-        return;
-      }
-      const cursor = start + cursorOffset;
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(cursor, cursor);
-    });
-  };
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between border-b border-control-border pb-1">
-        <div className="flex gap-x-4">
-          <button
-            className={cn(
-              "relative px-1 pb-2 text-sm font-medium transition-colors",
-              tab === "write"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("write")}
-            type="button"
-          >
-            {t("issue.comment-editor.write")}
-          </button>
-          <button
-            className={cn(
-              "relative px-1 pb-2 text-sm font-medium transition-colors",
-              tab === "preview"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("preview")}
-            type="button"
-          >
-            {t("issue.comment-editor.preview")}
-          </button>
-        </div>
-        {tab === "write" && (
-          <div className="flex items-center gap-x-3 pb-1">
-            <IssueDetailReviewToolbarButton
-              icon={<Heading1 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.header")}
-              onClick={() => insertTemplate("### ", 4)}
-            />
-            <IssueDetailReviewToolbarButton
-              icon={<Bold className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.bold")}
-              onClick={() => insertTemplate("****", 2)}
-            />
-            <IssueDetailReviewToolbarButton
-              icon={<Code2 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.code")}
-              onClick={() => insertTemplate("```sql\n\n```", 7)}
-            />
-            <IssueDetailReviewToolbarButton
-              icon={<Link2 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.link")}
-              onClick={() => insertTemplate("[](url)", 1)}
-            />
-            <IssueDetailReviewToolbarButton
-              icon={<Hash className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.hashtag")}
-              onClick={() => insertTemplate("#", 1)}
-            />
-          </div>
-        )}
-      </div>
-
-      {tab === "preview" ? (
-        <div className="markdown-body min-h-25 rounded-xs border border-control-border px-4 py-3 text-sm">
-          {previewHtml ? (
-            <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-          ) : (
-            <span className="italic text-gray-400">
-              {t("issue.comment-editor.nothing-to-preview")}
-            </span>
-          )}
-        </div>
-      ) : (
-        <Textarea
-          className="min-h-34 rounded-lg px-4 py-3 text-sm"
-          maxLength={65536}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            const listContinuation = applyMarkdownListContinuation(
-              content,
-              e.currentTarget.selectionStart,
-              e.currentTarget.selectionEnd
-            );
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              !e.metaKey &&
-              !e.ctrlKey &&
-              listContinuation
-            ) {
-              e.preventDefault();
-              onChange(listContinuation.content);
-              window.requestAnimationFrame(() => {
-                const target = textareaRef.current;
-                if (!target) {
-                  return;
-                }
-                target.focus();
-                target.setSelectionRange(
-                  listContinuation.cursor,
-                  listContinuation.cursor
-                );
-              });
-              return;
-            }
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              (e.metaKey || e.ctrlKey)
-            ) {
-              e.preventDefault();
-              onSubmit();
-            }
-          }}
-          placeholder={t("issue.leave-a-comment")}
-          ref={textareaRef}
-          rows={4}
-          value={content}
-        />
-      )}
-    </div>
-  );
-}
-
-function IssueDetailReviewToolbarButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-label={label}
-      className="rounded-xs p-1 text-control transition-colors hover:bg-control-bg hover:text-main"
-      onClick={onClick}
-      title={label}
-      type="button"
-    >
-      {icon}
-    </button>
-  );
-}
-
-function applyMarkdownListContinuation(
-  text: string,
-  selectionStart: number,
-  selectionEnd: number
-) {
-  if (selectionStart !== selectionEnd) {
-    return undefined;
-  }
-
-  const lines = text.split("\n");
-  const lineIndex = getActiveLineIndex(text, selectionStart);
-  const currentLine = lines[lineIndex] ?? "";
-  const lineStart = getCursorPosition(lines.slice(0, lineIndex));
-  const indexInCurrentLine = selectionStart - lineStart;
-
-  if (/^\s{0,}(\d{1,}\.|-)\s{1,}$/.test(currentLine)) {
-    lines[lineIndex] = "";
-    return {
-      content: lines.join("\n"),
-      cursor: getCursorPosition(lines.slice(0, lineIndex)),
-    };
-  }
-
-  if (!/^\s{0,}(\d{1,}\.|-)\s/.test(currentLine)) {
-    return undefined;
-  }
-
-  const indent = " ".repeat(
-    currentLine.length - currentLine.trimStart().length
-  );
-  const trailing = currentLine.slice(indexInCurrentLine);
-  lines[lineIndex] = currentLine.slice(0, indexInCurrentLine);
-
-  let nextListStart = "-";
-  if (/^\s{0,}\d{1,}\.\s/.test(currentLine)) {
-    const currentNumber = Number(currentLine.match(/\d+/)?.[0] ?? "1");
-    nextListStart = `${currentNumber + 1}.`;
-  }
-
-  lines.splice(lineIndex + 1, 0, `${indent}${nextListStart} ${trailing}`);
-  return {
-    content: lines.join("\n"),
-    cursor: getCursorPosition(lines.slice(0, lineIndex + 2)) - 1,
-  };
-}
-
-function getActiveLineIndex(content: string, cursorPosition: number): number {
-  const lines = content.split("\n");
-  let count = 0;
-  for (let i = 0; i < lines.length; i++) {
-    count += lines[i].length;
-    if (count >= cursorPosition) {
-      return i;
-    }
-    count += 1;
-  }
-  return lines.length - 1;
-}
-
-function getCursorPosition(lines: string[]): number {
-  let count = 0;
-  for (const line of lines) {
-    count += line.length;
-    count += 1;
-  }
-  return count;
 }
 
 function isExportExpired(
