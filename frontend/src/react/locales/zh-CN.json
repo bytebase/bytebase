@@ -1301,7 +1301,7 @@
   "plan.ready-for-review": "准备提交评审",
   "plan.run": "重新检查",
   "plan.select-isolation-level": "选择隔离级别",
-  "plan.spec.change": "Change",
+  "plan.spec.change": "变更",
   "plan.spec.type.database-change": "数据库变更",
   "plan.targets.no-targets-found": "未找到目标",
   "plan.targets.non-env-warning.one": "{{count}} 个数据库因为没有生效环境，将不会进入发布:",
