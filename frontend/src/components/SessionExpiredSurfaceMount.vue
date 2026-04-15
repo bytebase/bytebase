@@ -15,6 +15,7 @@ const container = ref<HTMLElement>();
 let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 let isUnmounted = false;
 let syncVersion = 0;
+let syncChain = Promise.resolve();
 
 const props = computed(() => ({ currentPath: route.fullPath }));
 let latestLocale = locale.value;
@@ -25,12 +26,19 @@ const syncMountedPage = async (
   nextProps: { currentPath: string }
 ) => {
   const currentSyncVersion = ++syncVersion;
-  const i18nModule = await import("@/react/i18n");
-  if (i18nModule.default.language !== nextLocale) {
-    await i18nModule.default.changeLanguage(nextLocale);
-  }
-  if (isUnmounted || !root || currentSyncVersion !== syncVersion) return;
-  await updateReactPage(root, "SessionExpiredSurface", nextProps);
+  syncChain = syncChain
+    .catch(() => {})
+    .then(async () => {
+      if (isUnmounted || currentSyncVersion !== syncVersion) return;
+      const i18nModule = await import("@/react/i18n");
+      if (isUnmounted || currentSyncVersion !== syncVersion) return;
+      if (i18nModule.default.language !== nextLocale) {
+        await i18nModule.default.changeLanguage(nextLocale);
+      }
+      if (isUnmounted || !root || currentSyncVersion !== syncVersion) return;
+      await updateReactPage(root, "SessionExpiredSurface", nextProps);
+    });
+  await syncChain;
 };
 
 onMounted(async () => {
@@ -70,6 +78,7 @@ watch([locale, props], async ([nextLocale, nextProps]) => {
 onUnmounted(() => {
   isUnmounted = true;
   syncVersion++;
+  syncChain = Promise.resolve();
   root?.unmount();
   root = null;
 });

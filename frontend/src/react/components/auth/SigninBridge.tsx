@@ -1,6 +1,6 @@
 import { NButton, NConfigProvider } from "naive-ui";
 import { useEffect, useRef } from "react";
-import { createApp, h } from "vue";
+import { createApp, h, type Ref as VueRef, ref as vueRef } from "vue";
 import { dateLang, generalLang, themeOverrides } from "@/../naive-ui.config";
 import i18n from "@/plugins/i18n";
 import NaiveUI from "@/plugins/naive-ui";
@@ -10,16 +10,19 @@ import Signin from "@/views/auth/Signin.vue";
 
 export function SigninBridge({ currentPath }: { currentPath: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const redirectUrlRef = useRef<VueRef<string> | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
+    const currentPathState = vueRef(currentPath);
+    redirectUrlRef.current = currentPathState;
 
     const renderSignin = () =>
       h(
         Signin as never,
         {
           redirect: false,
-          redirectUrl: currentPath,
+          redirectUrl: currentPathState.value,
           allowSignup: false,
         },
         {
@@ -93,8 +96,14 @@ export function SigninBridge({ currentPath }: { currentPath: string }) {
     app.mount(containerRef.current);
 
     return () => {
+      redirectUrlRef.current = null;
       app.unmount();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!redirectUrlRef.current) return;
+    redirectUrlRef.current.value = currentPath;
   }, [currentPath]);
 
   return <div ref={containerRef} />;

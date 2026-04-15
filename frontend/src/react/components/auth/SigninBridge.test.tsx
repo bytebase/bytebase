@@ -20,10 +20,14 @@ const bridgeMocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("vue", () => ({
-  createApp: bridgeMocks.createApp,
-  h: bridgeMocks.h,
-}));
+vi.mock("vue", async () => {
+  const actual = await vi.importActual<typeof import("vue")>("vue");
+  return {
+    ...actual,
+    createApp: bridgeMocks.createApp,
+    h: bridgeMocks.h,
+  };
+});
 
 vi.mock("@/plugins/i18n", () => ({
   default: {
@@ -155,6 +159,84 @@ describe("SigninBridge", () => {
     const onClick = footerButtonCall?.[1]?.onClick as (() => void) | undefined;
     onClick?.();
     expect(bridgeMocks.logout).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("updates redirectUrl without remounting the Vue signin app", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(<SigninBridge currentPath="/instances" />);
+    });
+
+    const render = bridgeMocks.createApp.mock.calls[0]?.[0]?.render;
+    expect(render).toBeTypeOf("function");
+    if (!render) {
+      throw new Error(
+        "expected SigninBridge to pass a render function to createApp"
+      );
+    }
+
+    bridgeMocks.h.mockClear();
+    render();
+    let configProviderCall = bridgeMocks.h.mock.calls.find(
+      ([component]) =>
+        typeof component === "object" &&
+        component !== null &&
+        "name" in component &&
+        component.name === "NConfigProvider"
+    );
+    let providerSlots = configProviderCall?.[2] as
+      | { default?: () => unknown }
+      | undefined;
+    providerSlots?.default?.();
+
+    let signinCall = bridgeMocks.h.mock.calls.find(
+      ([component]) =>
+        typeof component === "object" &&
+        component !== null &&
+        "name" in component &&
+        component.name === "Signin"
+    );
+    expect(signinCall?.[1]).toMatchObject({
+      redirectUrl: "/instances",
+    });
+
+    act(() => {
+      root.render(<SigninBridge currentPath="/projects/demo" />);
+    });
+
+    expect(bridgeMocks.createApp).toHaveBeenCalledTimes(1);
+    expect(bridgeMocks.app.unmount).not.toHaveBeenCalled();
+
+    bridgeMocks.h.mockClear();
+    render();
+    configProviderCall = bridgeMocks.h.mock.calls.find(
+      ([component]) =>
+        typeof component === "object" &&
+        component !== null &&
+        "name" in component &&
+        component.name === "NConfigProvider"
+    );
+    providerSlots = configProviderCall?.[2] as
+      | { default?: () => unknown }
+      | undefined;
+    providerSlots?.default?.();
+    signinCall = bridgeMocks.h.mock.calls.find(
+      ([component]) =>
+        typeof component === "object" &&
+        component !== null &&
+        "name" in component &&
+        component.name === "Signin"
+    );
+    expect(signinCall?.[1]).toMatchObject({
+      redirectUrl: "/projects/demo",
+    });
 
     act(() => {
       root.unmount();

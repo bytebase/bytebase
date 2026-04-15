@@ -21,21 +21,28 @@ vi.mock("react-i18next", () => ({
 }));
 
 const mountMocks = vi.hoisted(() => ({
-  changeLanguage: vi.fn(async () => {}),
+  reactI18nLanguage: { value: "en-US" },
+  changeLanguage: vi.fn(async (locale: string) => {
+    mountMocks.reactI18nLanguage.value = locale;
+  }),
   mountReactPage: vi.fn(async () => ({ unmount: vi.fn() })),
   routePath: null as unknown,
   updateReactPage: vi.fn(async () => {}),
-  locale: {
-    __v_isRef: true,
-    value: "zh-CN",
+  locale: null as { value: string } | null,
+  reactI18n: {
+    get language() {
+      return mountMocks.reactI18nLanguage.value;
+    },
+    changeLanguage: vi.fn(async (locale: string) => {
+      mountMocks.reactI18nLanguage.value = locale;
+    }),
   },
 }));
 
+mountMocks.reactI18n.changeLanguage = mountMocks.changeLanguage;
+
 vi.mock("@/react/i18n", () => ({
-  default: {
-    language: "en-US",
-    changeLanguage: mountMocks.changeLanguage,
-  },
+  default: mountMocks.reactI18n,
 }));
 
 vi.mock("@/react/mount", () => ({
@@ -43,11 +50,16 @@ vi.mock("@/react/mount", () => ({
   updateReactPage: mountMocks.updateReactPage,
 }));
 
-vi.mock("vue-i18n", () => ({
-  useI18n: () => ({
-    locale: mountMocks.locale,
-  }),
-}));
+vi.mock("vue-i18n", async () => {
+  const { ref } = await import("vue");
+  mountMocks.locale ||= ref("zh-CN");
+
+  return {
+    useI18n: () => ({
+      locale: mountMocks.locale,
+    }),
+  };
+});
 
 vi.mock("vue-router", async () => {
   const { ref } = await import("vue");
@@ -79,7 +91,8 @@ describe("SessionExpiredSurface", () => {
     mountMocks.changeLanguage.mockClear();
     mountMocks.mountReactPage.mockClear();
     mountMocks.updateReactPage.mockClear();
-    mountMocks.locale.value = "zh-CN";
+    mountMocks.locale!.value = "zh-CN";
+    mountMocks.reactI18nLanguage.value = "en-US";
     (
       mountMocks.routePath as {
         value: string;
@@ -264,12 +277,15 @@ describe("SessionExpiredSurface", () => {
     await nextTick();
     await flushPromises();
 
+    expect(pendingLanguageChanges).toHaveLength(1);
+
+    await flushPromises();
+    pendingLanguageChanges[0]?.();
+    await flushPromises();
+
     expect(pendingLanguageChanges).toHaveLength(2);
 
     pendingLanguageChanges[1]?.();
-    await flushPromises();
-
-    pendingLanguageChanges[0]?.();
     await flushPromises();
 
     expect(mountMocks.updateReactPage).toHaveBeenLastCalledWith(
@@ -277,6 +293,50 @@ describe("SessionExpiredSurface", () => {
       "SessionExpiredSurface",
       { currentPath: "/projects/second" }
     );
+
+    wrapper.unmount();
+  });
+
+  test("keeps the newest locale when async locale syncs finish out of order", async () => {
+    const mountedRoot = { unmount: vi.fn(() => {}) };
+    const pendingLanguageChanges = new Map<string, () => void>();
+
+    mountMocks.mountReactPage.mockResolvedValue(mountedRoot);
+    mountMocks.changeLanguage.mockImplementation(async (locale: string) => {
+      if (locale === "zh-CN") {
+        mountMocks.reactI18nLanguage.value = locale;
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        pendingLanguageChanges.set(locale, () => {
+          mountMocks.reactI18nLanguage.value = locale;
+          resolve();
+        });
+      });
+    });
+
+    const wrapper = mount(SessionExpiredSurfaceMount);
+    await flushPromises();
+
+    mountMocks.locale!.value = "fr-FR";
+    await nextTick();
+    await flushPromises();
+
+    mountMocks.locale!.value = "de-DE";
+    await nextTick();
+    await flushPromises();
+
+    expect(pendingLanguageChanges.size).toBe(1);
+
+    pendingLanguageChanges.get("fr-FR")?.();
+    await flushPromises();
+
+    expect(pendingLanguageChanges.size).toBe(2);
+
+    pendingLanguageChanges.get("de-DE")?.();
+    await flushPromises();
+
+    expect(mountMocks.reactI18n.language).toBe("de-DE");
 
     wrapper.unmount();
   });
