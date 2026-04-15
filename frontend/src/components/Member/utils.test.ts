@@ -2,10 +2,13 @@ import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import { getUniqueProjectRoleBindings } from "./projectRoleBindings";
+import {
+  getProjectRoleBindingKey,
+  groupProjectRoleBindings,
+} from "./projectRoleBindings";
 
-describe("getUniqueProjectRoleBindings", () => {
-  test("dedupes repeated roles and prefers non-expired bindings", () => {
+describe("groupProjectRoleBindings", () => {
+  test("groups repeated roles without dropping distinct bindings", () => {
     const activeProjectDeveloper = create(BindingSchema, {
       role: "roles/projectDeveloper",
       members: ["user:test@example.com"],
@@ -22,16 +25,32 @@ describe("getUniqueProjectRoleBindings", () => {
       members: ["user:test@example.com"],
     });
 
-    const result = getUniqueProjectRoleBindings([
+    const result = groupProjectRoleBindings([
       expiredProjectDeveloper,
       activeProjectDeveloper,
       sqlEditorUser,
     ]);
 
-    expect(result.map((binding) => binding.role)).toEqual([
+    expect(result.map((group) => group.role)).toEqual([
       "roles/projectDeveloper",
       "roles/sqlEditorUser",
     ]);
-    expect(result[0].condition?.expression).toBeUndefined();
+    expect(result[0].bindings).toEqual([
+      expiredProjectDeveloper,
+      activeProjectDeveloper,
+    ]);
+  });
+});
+
+describe("getProjectRoleBindingKey", () => {
+  test("keeps repeated same-role bindings unique", () => {
+    const binding = create(BindingSchema, {
+      role: "roles/projectDeveloper",
+      members: ["user:test@example.com"],
+    });
+
+    expect(getProjectRoleBindingKey(binding, 0)).not.toEqual(
+      getProjectRoleBindingKey(binding, 1)
+    );
   });
 });

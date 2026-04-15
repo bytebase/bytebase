@@ -1,48 +1,48 @@
-import { orderBy } from "lodash-es";
+import { PRESET_ROLES } from "@/types/iam/role";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 
-const getBindingExpirationTimestamp = (
-  binding: Binding
-): number | undefined => {
-  const expression = binding.condition?.expression;
-  if (!expression) {
-    return undefined;
-  }
+export interface ProjectRoleBindingGroup {
+  role: string;
+  bindings: Binding[];
+}
 
-  const match = expression.match(/request\.time\s*<\s*timestamp\("([^"]+)"\)/);
-  if (!match) {
-    return undefined;
-  }
-
-  const timestamp = Date.parse(match[1]);
-  return Number.isNaN(timestamp) ? undefined : timestamp;
+export const getProjectRoleBindingKey = (
+  binding: Binding,
+  index: number
+): string => {
+  return [
+    binding.role,
+    binding.condition?.expression ?? "",
+    binding.condition?.description ?? "",
+    index,
+  ].join("::");
 };
 
-const isBindingExpired = (binding: Binding): boolean => {
-  const expiration = getBindingExpirationTimestamp(binding);
-  return expiration !== undefined && expiration < Date.now();
-};
-
-export const getUniqueProjectRoleBindings = (
+export const groupProjectRoleBindings = (
   bindings: Binding[]
-): Binding[] => {
-  const roleMap = new Map<string, { expired: boolean; binding: Binding }>();
+): ProjectRoleBindingGroup[] => {
+  const roleMap = new Map<string, Binding[]>();
 
   for (const binding of bindings) {
-    const expired = isBindingExpired(binding);
-    if (
-      !roleMap.has(binding.role) ||
-      (roleMap.get(binding.role)?.expired && !expired)
-    ) {
-      roleMap.set(binding.role, {
-        expired,
-        binding,
-      });
+    if (!roleMap.has(binding.role)) {
+      roleMap.set(binding.role, []);
     }
+    roleMap.get(binding.role)?.push(binding);
   }
 
-  return orderBy(
-    [...roleMap.values()].map((item) => item.binding),
-    ["role"]
-  );
+  return [...roleMap.keys()]
+    .sort((a, b) => {
+      const priority = (role: string) => {
+        const presetRoleIndex = PRESET_ROLES.indexOf(role);
+        if (presetRoleIndex !== -1) {
+          return presetRoleIndex;
+        }
+        return PRESET_ROLES.length;
+      };
+      return priority(a) - priority(b);
+    })
+    .map((role) => ({
+      role,
+      bindings: roleMap.get(role) ?? [],
+    }));
 };
