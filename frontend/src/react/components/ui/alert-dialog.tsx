@@ -5,6 +5,7 @@ import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
+  usePreserveHigherLayerAccess,
 } from "./layer";
 
 const AlertDialog = BaseAlertDialog.Root;
@@ -34,6 +35,8 @@ function AlertDialogContent({
   ref,
   ...props
 }: ComponentProps<typeof BaseAlertDialog.Popup>) {
+  usePreserveHigherLayerAccess("overlay");
+
   return (
     <BaseAlertDialog.Portal container={getLayerRoot("overlay")}>
       <AlertDialogOverlay />

@@ -7,6 +7,7 @@ import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
+  usePreserveHigherLayerAccess,
 } from "./layer";
 
 // ---- Root ----
@@ -81,6 +82,8 @@ function SheetContent({
   ref,
   ...props
 }: SheetContentProps) {
+  usePreserveHigherLayerAccess("overlay");
+
   return (
     <BaseDialog.Portal container={getLayerRoot("overlay")}>
       <SheetOverlay />

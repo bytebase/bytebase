@@ -79,6 +79,7 @@ vi.mock("vue-router", async () => {
 });
 
 import SessionExpiredSurfaceMount from "@/components/SessionExpiredSurfaceMount.vue";
+import { Dialog, DialogContent } from "@/react/components/ui/dialog";
 import { SessionExpiredSurface } from "./SessionExpiredSurface";
 
 (
@@ -147,6 +148,49 @@ describe("SessionExpiredSurface", () => {
         ).toBeTruthy();
       });
     });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("does not let Escape dismiss lower-layer dialogs", async () => {
+    const onOpenChange = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <>
+          <Dialog open onOpenChange={onOpenChange}>
+            <DialogContent>Underlying dialog</DialogContent>
+          </Dialog>
+          <SessionExpiredSurface currentPath="/instances" />
+        </>
+      );
+      await Promise.resolve();
+    });
+
+    const signinButton = document.querySelector(
+      "[data-testid='signin-bridge']"
+    ) as HTMLButtonElement | null;
+
+    expect(signinButton).toBeInstanceOf(HTMLButtonElement);
+
+    await act(async () => {
+      signinButton?.focus();
+      signinButton?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      await Promise.resolve();
+    });
+
+    expect(onOpenChange).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();

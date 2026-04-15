@@ -5,6 +5,7 @@ import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
+  usePreserveHigherLayerAccess,
 } from "./layer";
 
 // ---- Root ----
@@ -38,6 +39,8 @@ function DialogContent({
   ref,
   ...props
 }: ComponentProps<typeof BaseDialog.Popup>) {
+  usePreserveHigherLayerAccess("overlay");
+
   return (
     <BaseDialog.Portal container={getLayerRoot("overlay")}>
       <DialogOverlay />

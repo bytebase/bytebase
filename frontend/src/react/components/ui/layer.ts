@@ -1,3 +1,5 @@
+import { useLayoutEffect } from "react";
+
 export const LAYER_ROOT_ID = {
   overlay: "bb-react-layer-overlay",
   agent: "bb-react-layer-agent",
@@ -15,6 +17,16 @@ export const LAYER_Z_INDEX = {
 export type LayerFamily = keyof typeof LAYER_ROOT_ID;
 
 const ORDERED_FAMILIES: LayerFamily[] = ["overlay", "agent", "critical"];
+const LAYER_ACCESSIBLE_ATTRIBUTES = [
+  "aria-hidden",
+  "inert",
+  "data-base-ui-inert",
+] as const;
+const HIGHER_LAYER_FAMILIES: Record<LayerFamily, LayerFamily[]> = {
+  overlay: ["agent", "critical"],
+  agent: ["critical"],
+  critical: [],
+};
 
 const ensureRoot = (family: LayerFamily) => {
   const id = LAYER_ROOT_ID[family];
@@ -47,6 +59,53 @@ const ensureRoot = (family: LayerFamily) => {
 };
 
 export const getLayerRoot = (family: LayerFamily) => ensureRoot(family);
+
+export const usePreserveHigherLayerAccess = (family: LayerFamily) => {
+  useLayoutEffect(() => {
+    const higherRoots = HIGHER_LAYER_FAMILIES[family]
+      .map((higherFamily) =>
+        document.getElementById(LAYER_ROOT_ID[higherFamily])
+      )
+      .filter((root): root is HTMLDivElement => root instanceof HTMLDivElement);
+
+    if (higherRoots.length === 0) {
+      return;
+    }
+
+    const revealRoot = (root: HTMLDivElement) => {
+      for (const attribute of LAYER_ACCESSIBLE_ATTRIBUTES) {
+        root.removeAttribute(attribute);
+      }
+    };
+
+    higherRoots.forEach(revealRoot);
+
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (
+          record.attributeName &&
+          LAYER_ACCESSIBLE_ATTRIBUTES.includes(
+            record.attributeName as (typeof LAYER_ACCESSIBLE_ATTRIBUTES)[number]
+          ) &&
+          record.target instanceof HTMLDivElement
+        ) {
+          revealRoot(record.target);
+        }
+      }
+    });
+
+    for (const root of higherRoots) {
+      observer.observe(root, {
+        attributes: true,
+        attributeFilter: [...LAYER_ACCESSIBLE_ATTRIBUTES],
+      });
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [family]);
+};
 
 // Backdrops and popups share one intra-family stack level so nested modal
 // layers can rely on portal mount order: child backdrop above parent surface,

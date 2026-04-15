@@ -2,7 +2,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { Dialog, DialogContent } from "./dialog";
-import { LAYER_BACKDROP_CLASS, LAYER_SURFACE_CLASS } from "./layer";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "./layer";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -73,6 +77,35 @@ describe("Dialog", () => {
         backdrops[1].compareDocumentPosition(childSurface as Node) &
           Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("keeps the agent layer visible to assistive tech when an app dialog opens", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const agentRoot = getLayerRoot("agent");
+    const agentButton = document.createElement("button");
+
+    agentButton.textContent = "Agent action";
+    agentRoot.appendChild(agentButton);
+
+    await act(async () => {
+      root.render(
+        <Dialog open>
+          <DialogContent>App dialog</DialogContent>
+        </Dialog>
+      );
+    });
+
+    await vi.waitFor(() => {
+      expect(agentRoot.getAttribute("aria-hidden")).toBeNull();
+      expect(agentRoot.getAttribute("inert")).toBeNull();
+      expect(agentRoot.getAttribute("data-base-ui-inert")).toBeNull();
     });
 
     await act(async () => {
