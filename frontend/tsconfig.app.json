@@ -10,6 +10,7 @@
   "exclude": [
     "src/**/__tests__/*",
     "src/react/**/*.tsx",
+    "src/react/components/MarkdownEditor/index.ts",
     "src/react/components/task-run-log/index.ts",
     "src/react/components/monaco/index.ts",
     "src/react/components/revision/index.ts"
@@ -18,6 +19,8 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"]
     },

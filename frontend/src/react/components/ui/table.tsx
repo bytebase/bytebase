@@ -18,17 +18,34 @@ function TableHeader({
   return <thead className={cn("[&_tr]:border-b", className)} {...props} />;
 }
 
-function TableBody({ className, ...props }: ComponentPropsWithoutRef<"tbody">) {
+interface TableBodyProps extends ComponentPropsWithoutRef<"tbody"> {
+  striped?: boolean;
+}
+
+function TableBody({ className, striped = true, ...props }: TableBodyProps) {
   return (
-    <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+    <tbody
+      className={cn(
+        "[&_tr:last-child]:border-0",
+        striped && "[&_tr:nth-child(even)]:bg-control-bg/50",
+        className
+      )}
+      {...props}
+    />
   );
 }
 
-function TableRow({ className, ...props }: ComponentPropsWithoutRef<"tr">) {
+interface TableRowProps extends ComponentPropsWithoutRef<"tr"> {
+  striped?: boolean;
+}
+
+function TableRow({ className, striped = true, ...props }: TableRowProps) {
   return (
     <tr
+      data-striped={striped ? undefined : "false"}
       className={cn(
-        "border-b border-block-border transition-colors hover:bg-control-bg/60 data-[state=selected]:bg-control-bg",
+        "border-b border-block-border transition-colors hover:bg-control-bg/60 data-[state=selected]:!bg-control-bg",
+        !striped && "!bg-transparent",
         className
       )}
       {...props}

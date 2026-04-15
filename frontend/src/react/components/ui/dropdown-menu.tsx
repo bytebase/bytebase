@@ -1,6 +1,7 @@
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import type { ComponentProps } from "react";
 import { cn } from "@/react/lib/utils";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 // ---- Root ----
 // Default to non-modal: row action menus should let users click through to
@@ -19,13 +20,6 @@ function DropdownMenu({
 const DropdownMenuTrigger = BaseMenu.Trigger;
 
 // ---- Portal + Positioner + Popup ----
-// The `z-50` on the Positioner matches the z-index used by Dialog/Select/Tooltip
-// (see ui/dialog.tsx, ui/select.tsx, ui/tooltip.tsx). It must not be removed —
-// Dialog's backdrop/popup are hardcoded at z-50, so a DropdownMenu without an
-// explicit z-index renders *behind* any open Dialog regardless of DOM portal
-// order (z-auto loses to z-50). Within the same z-layer, stacking falls back to
-// DOM order, which correctly puts later-mounted portals on top.
-// See BYT-9226 and PR #19824 for the original regression.
 function DropdownMenuContent({
   className,
   children,
@@ -38,11 +32,11 @@ function DropdownMenuContent({
   align?: ComponentProps<typeof BaseMenu.Positioner>["align"];
 }) {
   return (
-    <BaseMenu.Portal>
+    <BaseMenu.Portal container={getLayerRoot("overlay")}>
       <BaseMenu.Positioner
         sideOffset={sideOffset}
         align={align}
-        className="z-50"
+        className={LAYER_SURFACE_CLASS}
       >
         <BaseMenu.Popup
           ref={ref}

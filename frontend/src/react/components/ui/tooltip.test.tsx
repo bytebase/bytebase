@@ -13,9 +13,8 @@ describe("Tooltip", () => {
     document.body.innerHTML = "";
   });
 
-  test("applies the overlay z-layer to the tooltip positioner", async () => {
+  test("mounts tooltip content into the overlay layer root", async () => {
     vi.useFakeTimers();
-
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -36,9 +35,9 @@ describe("Tooltip", () => {
       vi.advanceTimersByTime(100);
     });
 
-    expect(document.body.textContent).toContain("Tip content");
-    const positioner = document.body.querySelector('[role="presentation"]');
-    expect(positioner?.className).toContain("z-50");
+    const overlayRoot = document.getElementById("bb-react-layer-overlay");
+    expect(overlayRoot).toBeInstanceOf(HTMLDivElement);
+    expect(overlayRoot?.textContent).toContain("Tip content");
 
     act(() => {
       root.unmount();

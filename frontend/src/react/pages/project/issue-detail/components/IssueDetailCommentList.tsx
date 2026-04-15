@@ -1,22 +1,16 @@
 import { create } from "@bufbuild/protobuf";
-import DOMPurify from "dompurify";
+import { Loader2, Pencil, Play, Plus, ThumbsUp } from "lucide-react";
 import {
-  Bold,
-  Code2,
-  Hash,
-  Heading1,
-  Link2,
-  Loader2,
-  Pencil,
-  Play,
-  Plus,
-  ThumbsUp,
-} from "lucide-react";
-import MarkdownIt from "markdown-it";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { ReadonlyDiffMonaco } from "@/react/components/monaco";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
@@ -25,7 +19,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -61,14 +54,33 @@ import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { getSheetStatement } from "@/utils/v1/sheet";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
-const markdown = new MarkdownIt({
-  html: true,
-  linkify: true,
-});
+function useIssueRefTransform(projectName: string | undefined) {
+  const { t } = useTranslation();
+  return useCallback(
+    (raw: string) =>
+      raw
+        .split(/(#\d+)\b/)
+        .map((part) => {
+          if (!part.startsWith("#")) {
+            return part;
+          }
+          const id = Number.parseInt(part.slice(1), 10);
+          if (!Number.isNaN(id) && id > 0 && projectName) {
+            const projectId = extractProjectResourceName(projectName);
+            const url = `${window.location.origin}/projects/${projectId}/issues/${id}`;
+            return `[${t("common.issue")} #${id}](${url})`;
+          }
+          return part;
+        })
+        .join(""),
+    [projectName, t]
+  );
+}
 
 export function IssueDetailCommentList() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
+  const { setEditing } = page;
   const projectStore = useProjectV1Store();
   const userStore = useUserStore();
   const issueCommentStore = useIssueCommentStore();
@@ -85,6 +97,7 @@ export function IssueDetailCommentList() {
   const [editContent, setEditContent] = useState("");
   const [newComment, setNewComment] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const newCommentTransform = useIssueRefTransform(project?.name);
   const allowCreateComment = Boolean(
     project && hasProjectPermissionV2(project, "bb.issueComments.create")
   );
@@ -97,11 +110,11 @@ export function IssueDetailCommentList() {
   );
 
   useEffect(() => {
-    page.setEditing("comment-row", Boolean(activeCommentName));
+    setEditing("comment-row", Boolean(activeCommentName));
     return () => {
-      page.setEditing("comment-row", false);
+      setEditing("comment-row", false);
     };
-  }, [activeCommentName, page]);
+  }, [activeCommentName, setEditing]);
 
   useEffect(() => {
     if (!issueName) {
@@ -279,14 +292,14 @@ export function IssueDetailCommentList() {
               <h3 className="sr-only" id="issue-comment-editor">
                 {t("common.comment")}
               </h3>
-              <IssueDetailMarkdownEditor
+              <MarkdownEditor
                 content={newComment}
                 onChange={setNewComment}
                 onSubmit={() => {
                   void createComment();
                 }}
                 placeholder={t("issue.leave-a-comment")}
-                projectName={project?.name}
+                transform={newCommentTransform}
               />
               <div className="mt-3 flex items-center justify-end">
                 <Button
@@ -323,6 +336,7 @@ function IssueDescriptionCommentRow({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
+  const { setEditing } = page;
   const projectStore = useProjectV1Store();
   const userStore = useUserStore();
   const projectName = `${projectNamePrefix}${page.projectId}`;
@@ -343,11 +357,11 @@ function IssueDescriptionCommentRow({
   }, [isEditing, page.issue?.description]);
 
   useEffect(() => {
-    page.setEditing("issue-description", isEditing);
+    setEditing("issue-description", isEditing);
     return () => {
-      page.setEditing("issue-description", false);
+      setEditing("issue-description", false);
     };
-  }, [isEditing, page]);
+  }, [isEditing, setEditing]);
 
   const allowEdit = Boolean(
     project && hasProjectPermissionV2(project, "bb.issues.update")
@@ -830,6 +844,7 @@ function EditableMarkdownContent({
   projectName?: string;
 }) {
   const { t } = useTranslation();
+  const transform = useIssueRefTransform(projectName);
 
   if (!isEditing && !content) {
     return (
@@ -841,13 +856,13 @@ function EditableMarkdownContent({
 
   return (
     <div>
-      <IssueDetailMarkdownEditor
+      <MarkdownEditor
         content={isEditing ? editContent : content}
         maxHeight={Number.MAX_SAFE_INTEGER}
         mode={isEditing ? "editor" : "preview"}
         onChange={onChange}
         onSubmit={onSave}
-        projectName={projectName}
+        transform={transform}
       />
       {isEditing && (
         <div className="mt-2 flex items-center justify-end gap-x-2">
@@ -861,232 +876,6 @@ function EditableMarkdownContent({
         </div>
       )}
     </div>
-  );
-}
-
-function IssueDetailMarkdownEditor({
-  content,
-  maxHeight = 192,
-  mode = "editor",
-  onChange,
-  onSubmit,
-  placeholder,
-  projectName,
-}: {
-  content: string;
-  maxHeight?: number;
-  mode?: "editor" | "preview";
-  onChange?: (value: string) => void;
-  onSubmit?: () => void;
-  placeholder?: string;
-  projectName?: string;
-}) {
-  const { t } = useTranslation();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [tab, setTab] = useState<"write" | "preview">(
-    mode === "preview" ? "preview" : "write"
-  );
-  const previewHtml = useMemo(
-    () => renderMarkdown(content, projectName, t),
-    [content, projectName, t]
-  );
-
-  useEffect(() => {
-    setTab(mode === "preview" ? "preview" : "write");
-  }, [mode]);
-
-  useEffect(() => {
-    if (tab === "write" && textareaRef.current) {
-      autoSizeTextarea(textareaRef.current);
-    }
-  }, [content, tab]);
-
-  const insertTemplate = (template: string, position: number) => {
-    const textarea = textareaRef.current;
-    if (!textarea || !onChange) {
-      return;
-    }
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const next = `${content.slice(0, start)}${template.slice(
-      0,
-      position
-    )}${content.slice(start, end)}${template.slice(position)}${content.slice(end)}`;
-    onChange(next);
-    window.requestAnimationFrame(() => {
-      const target = textareaRef.current;
-      if (!target) {
-        return;
-      }
-      const cursor = start + position;
-      target.focus();
-      target.setSelectionRange(cursor, cursor);
-      autoSizeTextarea(target);
-    });
-  };
-
-  if (mode === "preview") {
-    return (
-      <div
-        className="markdown-body min-h-6 wrap-break-word"
-        dangerouslySetInnerHTML={{
-          __html:
-            previewHtml ||
-            `<span class="text-gray-400 italic">${t(
-              "issue.comment-editor.nothing-to-preview"
-            )}</span>`,
-        }}
-      />
-    );
-  }
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between border-b border-control-border">
-        <div className="flex gap-x-4">
-          <button
-            className={cn(
-              "relative px-1 pb-2 text-sm font-medium transition-colors",
-              tab === "write"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("write")}
-            type="button"
-          >
-            {t("issue.comment-editor.write")}
-          </button>
-          <button
-            className={cn(
-              "relative px-1 pb-2 text-sm font-medium transition-colors",
-              tab === "preview"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("preview")}
-            type="button"
-          >
-            {t("issue.comment-editor.preview")}
-          </button>
-        </div>
-        {tab === "write" && (
-          <div className="flex items-center gap-x-1 pb-1">
-            <ToolbarButton
-              icon={<Heading1 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.header")}
-              onClick={() => insertTemplate("### ", 4)}
-            />
-            <ToolbarButton
-              icon={<Bold className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.bold")}
-              onClick={() => insertTemplate("****", 2)}
-            />
-            <ToolbarButton
-              icon={<Code2 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.code")}
-              onClick={() => insertTemplate("```sql\n\n```", 7)}
-            />
-            <ToolbarButton
-              icon={<Link2 className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.link")}
-              onClick={() => insertTemplate("[](url)", 1)}
-            />
-            <ToolbarButton
-              icon={<Hash className="h-4 w-4" />}
-              label={t("issue.comment-editor.toolbar.hashtag")}
-              onClick={() => insertTemplate("#", 1)}
-            />
-          </div>
-        )}
-      </div>
-
-      {tab === "preview" ? (
-        <div className="markdown-body min-h-6 wrap-break-word rounded-md">
-          {previewHtml ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: previewHtml,
-              }}
-            />
-          ) : (
-            <span className="italic text-gray-400">
-              {t("issue.comment-editor.nothing-to-preview")}
-            </span>
-          )}
-        </div>
-      ) : (
-        <Textarea
-          className="whitespace-pre-wrap rounded-lg px-4 py-3"
-          maxLength={65536}
-          onChange={(e) => onChange?.(e.target.value)}
-          onKeyDown={(e) => {
-            const listContinuation = applyMarkdownListContinuation(
-              content,
-              e.currentTarget.selectionStart,
-              e.currentTarget.selectionEnd
-            );
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              !e.metaKey &&
-              !e.ctrlKey &&
-              listContinuation
-            ) {
-              e.preventDefault();
-              onChange?.(listContinuation.content);
-              window.requestAnimationFrame(() => {
-                const target = textareaRef.current;
-                if (!target) {
-                  return;
-                }
-                target.focus();
-                target.setSelectionRange(
-                  listContinuation.cursor,
-                  listContinuation.cursor
-                );
-                autoSizeTextarea(target);
-              });
-              return;
-            }
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              (e.metaKey || e.ctrlKey)
-            ) {
-              e.preventDefault();
-              onSubmit?.();
-            }
-          }}
-          placeholder={placeholder || t("issue.leave-a-comment")}
-          ref={textareaRef}
-          rows={4}
-          style={{ maxHeight }}
-          value={content}
-        />
-      )}
-    </div>
-  );
-}
-
-function ToolbarButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-label={label}
-      className="rounded-xs p-1 text-control transition-colors hover:bg-control-bg hover:text-main"
-      onClick={onClick}
-      title={label}
-      type="button"
-    >
-      {icon}
-    </button>
   );
 }
 
@@ -1169,104 +958,4 @@ function IssueDetailStatementUpdateButton({
       </Dialog>
     </>
   );
-}
-
-function autoSizeTextarea(textarea: HTMLTextAreaElement) {
-  textarea.style.height = "auto";
-  textarea.style.height = `${Math.max(textarea.scrollHeight, 112)}px`;
-}
-
-function applyMarkdownListContinuation(
-  text: string,
-  selectionStart: number,
-  selectionEnd: number
-) {
-  if (selectionStart !== selectionEnd) {
-    return undefined;
-  }
-
-  const lines = text.split("\n");
-  const lineIndex = getActiveLineIndex(text, selectionStart);
-  const currentLine = lines[lineIndex] ?? "";
-  const lineStart = getCursorPosition(lines.slice(0, lineIndex));
-  const indexInCurrentLine = selectionStart - lineStart;
-
-  if (/^\s{0,}(\d{1,}\.|-)\s{1,}$/.test(currentLine)) {
-    lines[lineIndex] = "";
-    return {
-      content: lines.join("\n"),
-      cursor: getCursorPosition(lines.slice(0, lineIndex)),
-    };
-  }
-
-  if (!/^\s{0,}(\d{1,}\.|-)\s/.test(currentLine)) {
-    return undefined;
-  }
-
-  const indent = " ".repeat(
-    currentLine.length - currentLine.trimStart().length
-  );
-  const trailing = currentLine.slice(indexInCurrentLine);
-  lines[lineIndex] = currentLine.slice(0, indexInCurrentLine);
-
-  let nextListStart = "-";
-  if (/^\s{0,}\d{1,}\.\s/.test(currentLine)) {
-    const currentNumber = Number(currentLine.match(/\d+/)?.[0] ?? "1");
-    nextListStart = `${currentNumber + 1}.`;
-  }
-
-  lines.splice(lineIndex + 1, 0, `${indent}${nextListStart} ${trailing}`);
-  return {
-    content: lines.join("\n"),
-    cursor: getCursorPosition(lines.slice(0, lineIndex + 2)) - 1,
-  };
-}
-
-function getActiveLineIndex(content: string, cursorPosition: number): number {
-  const lines = content.split("\n");
-  let count = 0;
-  for (let i = 0; i < lines.length; i++) {
-    count += lines[i].length;
-    if (count >= cursorPosition) {
-      return i;
-    }
-    count += 1;
-  }
-  return lines.length - 1;
-}
-
-function getCursorPosition(lines: string[]): number {
-  let count = 0;
-  for (const line of lines) {
-    count += line.length;
-    count += 1;
-  }
-  return count;
-}
-
-function renderMarkdown(
-  markdownContent: string,
-  projectName: string | undefined,
-  t: (key: string) => string
-) {
-  if (!markdownContent) {
-    return "";
-  }
-  const withIssueLinks = markdownContent
-    .split(/(#\d+)\b/)
-    .map((part) => {
-      if (!part.startsWith("#")) {
-        return part;
-      }
-      const id = Number.parseInt(part.slice(1), 10);
-      if (!Number.isNaN(id) && id > 0 && projectName) {
-        const projectId = extractProjectResourceName(projectName);
-        const url = `${window.location.origin}/projects/${projectId}/issues/${id}`;
-        return `[${t("common.issue")} #${id}](${url})`;
-      }
-      return part;
-    })
-    .join("");
-  const rendered = markdown.render(withIssueLinks);
-  return DOMPurify.sanitize(rendered);
 }

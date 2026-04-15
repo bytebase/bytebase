@@ -95,6 +95,7 @@
       "status": "状态"
     }
   },
+  "auth.token-expired-title": "令牌已过期",
   "banner": {
     "external-url": "Bytebase 还没有配置 --external-url"
   },
@@ -366,6 +367,7 @@
   "common.line": "行",
   "common.load-more": "加载更多",
   "common.loading": "加载中",
+  "common.logout": "登出",
   "common.members": "成员",
   "common.minutes": "分钟",
   "common.n-more": "还有 {{n}} 个",
@@ -1301,7 +1303,7 @@
   "plan.ready-for-review": "准备提交评审",
   "plan.run": "重新检查",
   "plan.select-isolation-level": "选择隔离级别",
-  "plan.spec.change": "Change",
+  "plan.spec.change": "变更",
   "plan.spec.type.database-change": "数据库变更",
   "plan.targets.no-targets-found": "未找到目标",
   "plan.targets.non-env-warning.one": "{{count}} 个数据库因为没有生效环境，将不会进入发布:",
@@ -3020,8 +3022,8 @@
   "task-run.log-viewer.collapse-all": "全部收起",
   "task-run.log-viewer.expand-all": "全部展开",
   "task-run.log-viewer.multiple-replicas-notice": "检测到执行期间服务重启，日志按副本分组显示。",
-  "task-run.log-viewer.replica-n": "副本 #{n}",
-  "task-run.log-viewer.summary": "{sections} 个分组 · {entries} 条记录",
+  "task-run.log-viewer.replica-n": "副本 #{{n}}",
+  "task-run.log-viewer.summary": "{{sections}} 个分组 · {{entries}} 条记录",
   "task-run.status.enqueued": "等待执行。",
   "task-run.status.enqueued-with-rollout-time": "等待执行，{{time}} 后执行。",
   "task-run.status.waiting-max-tasks-per-rollout": "正在等待其他任务完成。已达到每次发布的最大运行任务数限制。上次报告时间：{{time}}。",

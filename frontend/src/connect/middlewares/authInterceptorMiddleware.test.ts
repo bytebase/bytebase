@@ -122,6 +122,7 @@ describe("authInterceptor", () => {
     });
 
     expect(mocks.authStore.unauthenticatedOccurred).toBe(true);
+    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
     expect(mocks.pushNotification).toHaveBeenCalledWith({
       module: "bytebase",
       style: "WARN",

@@ -18,7 +18,6 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
-import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
@@ -291,16 +290,13 @@ export function DatabaseTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                databases.map((db, i) => {
+                databases.map((db) => {
                   const isSelected = selectedNames?.has(db.name) ?? false;
                   const instanceResource = getInstanceResource(db);
                   return (
                     <TableRow
                       key={db.name}
-                      className={cn(
-                        "cursor-pointer",
-                        i % 2 === 1 && "bg-gray-50/50"
-                      )}
+                      className="cursor-pointer"
                       onClick={(e) => handleRowClick(db, e)}
                     >
                       {showSelection && (

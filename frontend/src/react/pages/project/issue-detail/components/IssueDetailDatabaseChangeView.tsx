@@ -69,6 +69,7 @@ import { IssueDetailStatementSection } from "./IssueDetailStatementSection";
 const DEFAULT_VISIBLE_TARGETS = 20;
 const MAX_INLINE_DATABASES = 5;
 const EMPTY_SELECT_VALUE = "__empty__";
+const EMPTY_SPECS: Plan_Spec[] = [];
 
 export function IssueDetailDatabaseChangeView({
   onSelectedSpecIdChange,
@@ -79,11 +80,8 @@ export function IssueDetailDatabaseChangeView({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const { emptySpecIdSet } = useIssueDetailSpecValidation(
-    page.plan?.specs ?? []
-  );
-
-  const specs = page.plan?.specs ?? [];
+  const specs = page.plan?.specs ?? EMPTY_SPECS;
+  const { emptySpecIdSet } = useIssueDetailSpecValidation(specs);
   const selectedSpec = useMemo(() => {
     return specs.find((spec) => spec.id === selectedSpecId) ?? specs[0];
   }, [selectedSpecId, specs]);
@@ -234,6 +232,13 @@ function IssueDetailDatabaseChangeOptions({
       (database) => getInstanceResource(database).engine === Engine.POSTGRES
     );
   }, [databases, isSheetBasedDatabaseChange]);
+  const instanceName = useMemo(() => {
+    const database = databases[0];
+    if (!database) {
+      return "";
+    }
+    return extractDatabaseResourceName(database.name).instance;
+  }, [databases]);
   const showIsolationLevel = useMemo(() => {
     if (!isSheetBasedDatabaseChange) {
       return false;
@@ -330,12 +335,8 @@ function IssueDetailDatabaseChangeOptions({
 
   useEffect(() => {
     let canceled = false;
-    const database = databases[0];
-    const instanceName = database
-      ? extractDatabaseResourceName(database.name).instance
-      : "";
     if (!showInstanceRole || !instanceName) {
-      setInstanceRoles([]);
+      setInstanceRoles((current) => (current.length === 0 ? current : []));
       return;
     }
 
@@ -361,7 +362,7 @@ function IssueDetailDatabaseChangeOptions({
     return () => {
       canceled = true;
     };
-  }, [databases, showInstanceRole]);
+  }, [instanceName, showInstanceRole]);
 
   return (
     <div className={cn("flex flex-col gap-1", !shouldShow && "hidden")}>
@@ -817,7 +818,10 @@ function IssueDetailDatabaseGroupTarget({
   const databaseGroup = useVueState(() =>
     dbGroupStore.getDBGroupByName(target)
   );
-  const databases = databaseGroup.matchedDatabases?.map((db) => db.name) ?? [];
+  const databases = useMemo(
+    () => databaseGroup.matchedDatabases?.map((db) => db.name) ?? [],
+    [databaseGroup.matchedDatabases]
+  );
   const extraDatabases = databases.slice(MAX_INLINE_DATABASES);
 
   useEffect(() => {

@@ -244,7 +244,7 @@ function UserTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user, i) => {
+          {users.map((user) => {
             const accountType = getAccountTypeByEmail(user.email);
             const isDeleted = user.state === State.DELETED;
             const isSelf = currentUser.name === user.name;
@@ -253,7 +253,6 @@ function UserTable({
               <TableRow
                 key={user.name}
                 className={cn(
-                  i % 2 === 1 && "bg-control-bg/50",
                   hasWorkspacePermissionV2(getViewPermission(accountType)) &&
                     "cursor-pointer hover:bg-control-bg focus-visible:outline-none focus-visible:bg-control-bg"
                 )}

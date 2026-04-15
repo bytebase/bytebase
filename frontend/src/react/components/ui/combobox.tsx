@@ -10,6 +10,12 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
 import { HighlightLabelText } from "../HighlightLabelText";
+import {
+  getPortalDropdownStyle,
+  isPortalDropdownStyleEqual,
+  shouldIgnorePortalDropdownScroll,
+} from "./combobox-position";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 import { SearchInput } from "./search-input";
 
 export interface ComboboxOption {
@@ -111,19 +117,6 @@ export function Combobox(props: ComboboxProps) {
     [allOptions, selectedValues]
   );
 
-  // Position dropdown for portal mode — useLayoutEffect prevents a
-  // one-frame flash at a stale/empty position before the browser paints.
-  useLayoutEffect(() => {
-    if (!open || !portal || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setDropdownStyle({
-      position: "fixed",
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-    });
-  }, [open, portal]);
-
   // Debounced server-side search
   useEffect(() => {
     if (!onSearch || !open) return;
@@ -152,6 +145,44 @@ export function Combobox(props: ComboboxProps) {
       }))
       .filter((g) => g.options.length > 0);
   }, [options, search, onSearch]);
+
+  // Position dropdown for portal mode — useLayoutEffect prevents a
+  // one-frame flash at a stale/empty position before the browser paints.
+  useLayoutEffect(() => {
+    if (!open || !portal || !containerRef.current) return;
+
+    const updateDropdownPosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
+      const nextStyle = getPortalDropdownStyle(
+        rect,
+        dropdownHeight,
+        window.innerHeight
+      );
+      setDropdownStyle((previousStyle) =>
+        isPortalDropdownStyleEqual(previousStyle, nextStyle)
+          ? previousStyle
+          : nextStyle
+      );
+    };
+
+    const handleScroll = (event: Event) => {
+      if (shouldIgnorePortalDropdownScroll(event.target, dropdownRef.current)) {
+        return;
+      }
+      updateDropdownPosition();
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open, portal, filteredGroups]);
 
   // Click outside (handles both container and portal dropdown)
   useEffect(() => {
@@ -337,7 +368,8 @@ export function Combobox(props: ComboboxProps) {
       style={portal ? dropdownStyle : undefined}
       className={cn(
         "bg-background border border-control-border rounded-sm shadow-lg overflow-hidden",
-        portal ? "z-[999]" : "absolute z-50 mt-1 min-w-full w-max"
+        portal && LAYER_SURFACE_CLASS,
+        !portal && "absolute z-50 mt-1 min-w-full w-max"
       )}
     >
       <SearchInput
@@ -400,7 +432,7 @@ export function Combobox(props: ComboboxProps) {
       {/* Dropdown */}
       {open &&
         (portal
-          ? createPortal(dropdownContent, document.body)
+          ? createPortal(dropdownContent, getLayerRoot("overlay"))
           : dropdownContent)}
     </div>
   );

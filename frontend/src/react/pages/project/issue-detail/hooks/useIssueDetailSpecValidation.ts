@@ -42,6 +42,18 @@ const checkSpecStatement = async (
   }
 };
 
+const isSameSet = (prev: Set<string>, next: Set<string>) => {
+  if (prev.size !== next.size) {
+    return false;
+  }
+  for (const value of next) {
+    if (!prev.has(value)) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export function useIssueDetailSpecValidation(specs: Plan_Spec[]) {
   const sheetStore = useSheetV1Store();
   const [emptySpecIdSet, setEmptySpecIdSet] = useState<Set<string>>(
@@ -61,7 +73,7 @@ export function useIssueDetailSpecValidation(specs: Plan_Spec[]) {
         })
       );
       if (!canceled) {
-        setEmptySpecIdSet(next);
+        setEmptySpecIdSet((prev) => (isSameSet(prev, next) ? prev : next));
       }
     };
 

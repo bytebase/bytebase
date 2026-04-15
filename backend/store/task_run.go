@@ -239,8 +239,8 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?, updated_at = now(), replica_id = ?
-		WHERE id IN (
-			SELECT task_run.id FROM task_run
+		WHERE (project, id) IN (
+			SELECT task_run.project, task_run.id FROM task_run
 			WHERE task_run.status = ?
 			FOR UPDATE SKIP LOCKED
 		)

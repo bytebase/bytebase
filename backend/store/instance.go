@@ -566,12 +566,13 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 
 	// Delete task_run_log entries for tasks associated with this instance
 	q = qb.Q().Space(`
-		DELETE FROM task_run_log
-		WHERE task_run_id IN (
-			SELECT tr.id FROM task_run tr
-			JOIN task t ON t.project = tr.project AND t.id = tr.task_id
-			WHERE t.instance = ?
-		)
+		DELETE FROM task_run_log trl
+		USING task_run tr, task t
+		WHERE trl.project = tr.project
+		  AND trl.task_run_id = tr.id
+		  AND tr.project = t.project
+		  AND tr.task_id = t.id
+		  AND t.instance = ?
 	`, resourceID)
 	query, args, err = q.ToSQL()
 	if err != nil {
@@ -583,10 +584,11 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 
 	// Delete task_run entries for tasks associated with this instance
 	q = qb.Q().Space(`
-		DELETE FROM task_run
-		WHERE task_id IN (
-			SELECT id FROM task WHERE instance = ?
-		)
+		DELETE FROM task_run tr
+		USING task t
+		WHERE tr.project = t.project
+		  AND tr.task_id = t.id
+		  AND t.instance = ?
 	`, resourceID)
 	query, args, err = q.ToSQL()
 	if err != nil {

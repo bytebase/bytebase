@@ -1351,7 +1351,9 @@ IndexMetadata is the metadata for indexes.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the index. |
-| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
+| expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index.
+
+For PostgreSQL, the canonical shape for each entry matches pg_get_indexdef(oid, col, true) — the tightest `index_elem` grammar form: - column key: bare identifier e.g. &#34;id&#34;, `&#34;Name&#34;` - function-call key: bare func_expr_windowless e.g. &#34;lower(name)&#34; - expression key: parenthesized a_expr e.g. &#34;(payload -&gt;&gt; &#39;k&#39;::text)&#34; The DDL emitter writes entries verbatim into the CREATE INDEX key list. |
 | key_length | [int64](#int64) | repeated | The ordered list of key lengths for the index. If the key length is not specified, it is -1. |
 | descending | [bool](#bool) | repeated | The ordered list of descending flags for the index columns. |
 | type | [string](#string) |  | The type is the type of an index. |
