@@ -22,6 +22,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { getUniqueProjectRoleBindings } from "@/components/Member/projectRoleBindings";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
 import {
@@ -308,10 +309,10 @@ function MemberTable({
               <td className="px-4 py-2">
                 <div className="flex flex-wrap gap-1">
                   {scope === "project"
-                    ? sortRoles(mb.projectRoleBindings.map((b) => b.role)).map(
-                        (role) => (
-                          <Badge key={role} className="text-xs gap-x-1">
-                            {displayRoleTitle(role)}
+                    ? getUniqueProjectRoleBindings(mb.projectRoleBindings).map(
+                        (binding) => (
+                          <Badge key={binding.role} className="text-xs gap-x-1">
+                            {displayRoleTitle(binding.role)}
                           </Badge>
                         )
                       )
@@ -398,7 +399,9 @@ function MemberTableByRole({
     for (const mb of bindings) {
       const roles =
         scope === "project"
-          ? mb.projectRoleBindings.map((b) => b.role)
+          ? getUniqueProjectRoleBindings(mb.projectRoleBindings).map(
+              (b) => b.role
+            )
           : [...mb.workspaceLevelRoles];
       for (const role of roles) {
         if (!map.has(role)) map.set(role, []);
