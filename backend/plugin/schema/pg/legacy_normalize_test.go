@@ -56,6 +56,13 @@ func TestIsBareColumnIdent(t *testing.T) {
 		{"col$1", true},
 		{"a$b$c", true},
 		{"$col", false}, // leading '$' is not allowed
+		// PostgreSQL also allows Unicode letters in unquoted identifiers.
+		// Misclassifying these as expressions would break PK/UNIQUE emission
+		// on columns like `naïve`. Codex review (PR #20009).
+		{"naïve", true},
+		{"café", true},
+		{"名前", true},
+		{"1col", false}, // digit start still rejected
 		{`"Name"`, true},
 		{`"has ""quote"" inside"`, true},
 		{"name + 1", false},

@@ -160,11 +160,11 @@ func stripMatchedOuterParens(s string) (string, bool) {
 }
 
 // reBareColumnIdent matches an unquoted simple identifier. PostgreSQL allows
-// `$` in unquoted identifiers after the first character (e.g. `col$1`), so we
-// mirror that — otherwise such columns would be wrapped as expression keys and
-// break PRIMARY KEY / UNIQUE constraint emission, which require bare column
-// identifiers, not expression keys.
-var reBareColumnIdent = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_$]*$`)
+// Unicode letters and `$` (after the first character) in unquoted identifiers
+// — e.g. `col$1`, `naïve`. We mirror that because otherwise such columns would
+// be wrapped as expression keys and break PRIMARY KEY / UNIQUE constraint
+// emission, which require bare column identifiers, not expression keys.
+var reBareColumnIdent = regexp.MustCompile(`^[\p{L}_][\p{L}\p{N}_$]*$`)
 
 // isBareColumnIdent reports whether s is a simple identifier — either unquoted
 // (`name`) or double-quoted (`"Name"`, `"has ""quote"" inside"`).
