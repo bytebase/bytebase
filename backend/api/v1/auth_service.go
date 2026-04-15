@@ -101,6 +101,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
+	common.SetAuditWorkspaceID(ctx, workspaceID)
 
 	// 3. Post-auth checks (deleted, domain, license)
 	if err := s.validateLoginPermissions(ctx, loginUser, workspaceID, request); err != nil {
@@ -285,6 +286,8 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
 		}
 	}
+
+	common.SetAuditWorkspaceID(ctx, workspaceID)
 
 	// Step 4: Generate token and finalize login.
 	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
@@ -1293,6 +1296,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))
 	}
+	common.SetAuditWorkspaceID(ctx, wi.Workspace)
 
 	// Get workload identity config
 	wicConfig := wi.Config

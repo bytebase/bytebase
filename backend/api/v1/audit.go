@@ -63,6 +63,14 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			serviceData = a
 		})
 
+		// Allow handlers to announce the workspace a request should be audited
+		// against. Needed for allow_without_credential methods (Login/Signup/
+		// ExchangeToken) where the workspace is resolved inside the handler.
+		var handlerAuditWorkspaceID string
+		ctx = common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			handlerAuditWorkspaceID = workspaceID
+		})
+
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
@@ -72,7 +80,18 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			if !common.IsNil(response) {
 				respMsg = response.Any()
 			}
-			if err := createAuditLogConnect(ctx, req.Any(), respMsg, req.Spec().Procedure, in.store, in.secret, in.profile, serviceData, rerr, req.Header(), req.Peer().Addr, latency); err != nil {
+			entry := &auditEntry{
+				request:                 req.Any(),
+				response:                respMsg,
+				method:                  req.Spec().Procedure,
+				serviceData:             serviceData,
+				handlerAuditWorkspaceID: handlerAuditWorkspaceID,
+				rerr:                    rerr,
+				headers:                 req.Header(),
+				peerAddr:                req.Peer().Addr,
+				latency:                 latency,
+			}
+			if err := in.createAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -132,25 +151,52 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 	}
 	// Create audit log for each message pair
 	if c.curRequest != nil {
-		latency := time.Since(c.startTime)
-		if auditErr := createAuditLogConnect(c.ctx, c.curRequest, resp, c.method, c.interceptor.store, c.interceptor.secret, c.interceptor.profile, nil, nil, c.RequestHeader(), c.Peer().Addr, latency); auditErr != nil {
+		entry := &auditEntry{
+			request:  c.curRequest,
+			response: resp,
+			method:   c.method,
+			headers:  c.RequestHeader(),
+			peerAddr: c.Peer().Addr,
+			latency:  time.Since(c.startTime),
+		}
+		if auditErr := c.interceptor.createAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
 	return nil
 }
 
-func createAuditLogConnect(ctx context.Context, request, response any, method string, storage *store.Store, secret string, profile *config.Profile, serviceData *anypb.Any, rerr error, headers http.Header, peerAddr string, latency time.Duration) error {
+// auditEntry bundles the per-request data needed to write an audit log.
+// Bundling here keeps AuditInterceptor.createAuditLog to a short signature
+// (previously 13 positional args — easy to misorder).
+type auditEntry struct {
+	request  any
+	response any
+	method   string
+	// serviceData is populated by handlers via common.WithSetServiceData.
+	serviceData *anypb.Any
+	// handlerAuditWorkspaceID is populated by handlers via
+	// common.SetAuditWorkspaceID. Used as the audit-parent fallback for
+	// allow_without_credential methods (Login/Signup/ExchangeToken) where
+	// authContext.Resources is empty because no workspace is in the context.
+	handlerAuditWorkspaceID string
+	rerr                    error
+	headers                 http.Header
+	peerAddr                string
+	latency                 time.Duration
+}
+
+func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
 	// Skip audit logging for validate-only requests.
-	if isValidateOnlyRequest(request) {
+	if isValidateOnlyRequest(e.request) {
 		return nil
 	}
 
-	requestString, err := getRequestString(request)
+	requestString, err := getRequestString(e.request)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get request string")
 	}
-	responseString, err := getResponseString(response)
+	responseString, err := getResponseString(e.response)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get response string")
 	}
@@ -160,7 +206,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		user = common.FormatUserEmail(u.Email)
 	} else {
 		// Try to get user from successful login response.
-		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {
+		if loginResponse, ok := e.response.(*v1pb.LoginResponse); ok {
 			user = loginResponse.GetUser().GetName()
 		}
 	}
@@ -171,50 +217,86 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
-	requestMetadata := getRequestMetadataFromHeaders(headers, peerAddr)
+	requestMetadata := getRequestMetadataFromHeaders(e.headers, e.peerAddr)
 
-	createAuditLogCtx := context.WithoutCancel(ctx)
+	// Build the list of parents to audit under. Normally these come from the
+	// ACL interceptor via authContext.Resources. For audited methods that run
+	// without a workspace-bound caller (Login/Signup/ExchangeToken), Resources
+	// is empty; fall back to the workspace the handler announced, or any
+	// workspace embedded in the response, so the audit entry is still written.
+	type auditParent struct {
+		parent           string
+		auditWorkspaceID string
+	}
+	var parents []auditParent
 	for _, authResource := range authContext.Resources {
-		var parent string
-		var auditWorkspaceID string
 		switch authResource.Type {
 		case common.ResourceTypeProject:
-			parent = common.FormatProject(authResource.ID)
+			parents = append(parents, auditParent{
+				parent: common.FormatProject(authResource.ID),
+			})
 		case common.ResourceTypeWorkspace:
-			parent = common.FormatWorkspace(authResource.ID)
-			auditWorkspaceID = authResource.ID
+			parents = append(parents, auditParent{
+				parent:           common.FormatWorkspace(authResource.ID),
+				auditWorkspaceID: authResource.ID,
+			})
 		default:
-			continue
 		}
-		resource := getRequestResource(request)
+	}
+	if len(parents) == 0 {
+		fallbackWS := e.handlerAuditWorkspaceID
+		if fallbackWS == "" {
+			if loginResp, ok := e.response.(*v1pb.LoginResponse); ok {
+				if wsID, err := common.GetWorkspaceID(loginResp.GetUser().GetWorkspace()); err == nil && wsID != "" {
+					fallbackWS = wsID
+				}
+			}
+		}
+		// Defensive: covers edge cases where populateRawResources produced no
+		// resource despite the caller being authenticated (e.g. malformed
+		// inputs like "instances/" that match the prefix but fail the regex).
+		if fallbackWS == "" {
+			fallbackWS = common.GetWorkspaceIDFromContext(ctx)
+		}
+		if fallbackWS != "" {
+			parents = append(parents, auditParent{
+				parent:           common.FormatWorkspace(fallbackWS),
+				auditWorkspaceID: fallbackWS,
+			})
+		}
+	}
+
+	createAuditLogCtx := context.WithoutCancel(ctx)
+	for _, ap := range parents {
+		resource := getRequestResource(e.request)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
 		// This handles MFA phase where request doesn't have email field.
-		if resource == "" && method == v1connect.AuthServiceLoginProcedure {
+		if resource == "" && e.method == v1connect.AuthServiceLoginProcedure {
 			if u, ok := GetUserFromContext(ctx); ok {
 				resource = u.Email
-			} else if loginRequest, ok := request.(*v1pb.LoginRequest); ok && loginRequest.MfaTempToken != nil {
+			} else if loginRequest, ok := e.request.(*v1pb.LoginRequest); ok && loginRequest.MfaTempToken != nil {
 				// Extract user email from MFA temp token.
-				if userEmail, err := auth.GetUserEmailFromMFATempToken(*loginRequest.MfaTempToken, secret); err == nil {
+				if userEmail, err := auth.GetUserEmailFromMFATempToken(*loginRequest.MfaTempToken, in.secret); err == nil {
 					resource = userEmail
 				}
 			}
 		}
 
 		p := &storepb.AuditLog{
-			Parent:          parent,
-			Method:          method,
+			Parent:          ap.parent,
+			Method:          e.method,
 			Resource:        resource,
 			Severity:        storepb.AuditLog_INFO,
 			User:            user,
 			Request:         requestString,
 			Response:        responseString,
-			Status:          convertErrToStatus(rerr),
-			Latency:         durationpb.New(latency),
-			ServiceData:     serviceData,
+			Status:          convertErrToStatus(e.rerr),
+			Latency:         durationpb.New(e.latency),
+			ServiceData:     e.serviceData,
 			RequestMetadata: requestMetadata,
 		}
 		// Resolve workspace for audit log.
-		workspaceIDForAudit := auditWorkspaceID
+		workspaceIDForAudit := ap.auditWorkspaceID
 		if workspaceIDForAudit == "" {
 			workspaceIDForAudit = common.GetWorkspaceIDFromContext(createAuditLogCtx)
 		}
@@ -222,12 +304,12 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 			// Skip audit log if no workspace can be determined (e.g., unauthenticated request).
 			continue
 		}
-		if err := storage.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
+		if err := in.store.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
 			return err
 		}
 
 		// Log audit event to stdout using slog (if enabled)
-		if profile.RuntimeEnableAuditLogStdout.Load() {
+		if in.profile.RuntimeEnableAuditLogStdout.Load() {
 			logAuditToStdout(ctx, p)
 		}
 	}
@@ -330,6 +412,8 @@ func getRequestResource(request any) string {
 		return r.GetUser().GetName()
 	case *v1pb.LoginRequest:
 		return r.GetEmail()
+	case *v1pb.SignupRequest:
+		return r.GetEmail()
 	case *v1pb.CreateInstanceRequest:
 		return r.GetInstance().GetName()
 	case *v1pb.UpdateInstanceRequest:
@@ -365,6 +449,8 @@ func getRequestString(request any) (string, error) {
 			return redactUpdateUserRequest(r)
 		case *v1pb.LoginRequest:
 			return redactLoginRequest(r)
+		case *v1pb.SignupRequest:
+			return redactSignupRequest(r)
 		case *v1pb.CreateInstanceRequest:
 			r.Instance = redactInstance(r.Instance)
 			return r
@@ -467,6 +553,17 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	}
 	if r.IdpContext != nil {
 		r.IdpContext = nil
+	}
+	return r
+}
+
+func redactSignupRequest(r *v1pb.SignupRequest) *v1pb.SignupRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.Password != "" {
+		r.Password = maskedString
 	}
 	return r
 }
