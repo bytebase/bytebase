@@ -1299,7 +1299,7 @@
   "plan.options.self": "オプション",
   "plan.overview.no-checks": "No checks",
   "plan.ready-for-review": "Ready for Review",
-  "plan.run": "Run",
+  "plan.run": "再チェック",
   "plan.select-isolation-level": "分離レベルを選択",
   "plan.spec.change": "Change",
   "plan.spec.type.database-change": "データベース変更",

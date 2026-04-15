@@ -1299,7 +1299,7 @@
   "plan.options.self": "Options",
   "plan.overview.no-checks": "No checks",
   "plan.ready-for-review": "Ready for Review",
-  "plan.run": "Run",
+  "plan.run": "Run checks",
   "plan.select-isolation-level": "Select isolation level",
   "plan.spec.change": "Change",
   "plan.spec.type.database-change": "Database Change",

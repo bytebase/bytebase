@@ -1429,7 +1429,7 @@
     "refresh-indicator": {
       "last-refresh": "Làm mới lần cuối: {time}"
     },
-    "run": "Chạy kiểm tra",
+    "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
     "select-targets": "Chọn mục tiêu",
     "sidebar": {
