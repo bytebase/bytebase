@@ -267,7 +267,7 @@ function GroupTable({
             <TableHead className="text-right whitespace-nowrap w-16" />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody striped={false}>
           {groups.map((group, i) => {
             const isExpanded = expandedGroups.has(group.name);
             const members = memberCache.get(group.name);
