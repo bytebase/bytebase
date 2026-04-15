@@ -206,4 +206,78 @@ describe("SessionExpiredSurface", () => {
 
     wrapper.unmount();
   });
+
+  test("unmounts late-mounted roots when the Vue bridge is already gone", async () => {
+    let resolveMount: ((root: unknown) => void) | undefined;
+    const mountedRoot = { unmount: vi.fn(() => {}) };
+    mountMocks.mountReactPage.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveMount = (root) => {
+            resolve(root as { unmount: typeof mountedRoot.unmount });
+          };
+        })
+    );
+
+    const wrapper = mount(SessionExpiredSurfaceMount);
+    await flushPromises();
+
+    wrapper.unmount();
+    resolveMount?.(mountedRoot);
+    await flushPromises();
+
+    expect(mountedRoot.unmount).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps the newest route when async syncs finish out of order", async () => {
+    const mountedRoot = { unmount: vi.fn(() => {}) };
+    const pendingLanguageChanges: Array<() => void> = [];
+    let changeLanguageCall = 0;
+
+    mountMocks.changeLanguage.mockImplementation(async () => {
+      changeLanguageCall++;
+      if (changeLanguageCall === 1) {
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        pendingLanguageChanges.push(resolve);
+      });
+    });
+    mountMocks.mountReactPage.mockResolvedValue(mountedRoot);
+
+    const wrapper = mount(SessionExpiredSurfaceMount);
+    await flushPromises();
+
+    (
+      mountMocks.routePath as {
+        value: string;
+      }
+    ).value = "/projects/first";
+    await nextTick();
+    await flushPromises();
+
+    (
+      mountMocks.routePath as {
+        value: string;
+      }
+    ).value = "/projects/second";
+    await nextTick();
+    await flushPromises();
+
+    expect(pendingLanguageChanges).toHaveLength(2);
+
+    pendingLanguageChanges[1]?.();
+    await flushPromises();
+
+    pendingLanguageChanges[0]?.();
+    await flushPromises();
+
+    expect(mountMocks.updateReactPage).toHaveBeenLastCalledWith(
+      mountedRoot,
+      "SessionExpiredSurface",
+      { currentPath: "/projects/second" }
+    );
+
+    wrapper.unmount();
+  });
 });
