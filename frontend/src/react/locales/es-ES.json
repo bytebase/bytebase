@@ -95,6 +95,7 @@
       "status": "Estado"
     }
   },
+  "auth.token-expired-title": "Token expirado",
   "banner": {
     "external-url": "Bytebase no ha configurado --external-url"
   },

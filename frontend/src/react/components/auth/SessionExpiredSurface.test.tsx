@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("./SigninBridge", () => ({
-  SigninBridge: () => <div data-testid="signin-bridge" />,
+  SigninBridge: () => <button data-testid="signin-bridge">Sign in</button>,
 }));
 
 vi.mock("@/store", () => ({
@@ -69,13 +69,14 @@ describe("SessionExpiredSurface", () => {
     mountMocks.locale.value = "zh-CN";
   });
 
-  test("mounts into the critical root", () => {
+  test("mounts into the critical root", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
 
-    act(() => {
+    await act(async () => {
       root.render(<SessionExpiredSurface currentPath="/instances" />);
+      await Promise.resolve();
     });
 
     const criticalRoot = document.getElementById("bb-react-layer-critical");
@@ -83,6 +84,42 @@ describe("SessionExpiredSurface", () => {
     expect(
       criticalRoot?.querySelector("[data-session-expired-surface]")
     ).toBeTruthy();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("moves focus into the critical dialog", async () => {
+    const backgroundButton = document.createElement("button");
+    backgroundButton.textContent = "Background";
+    document.body.appendChild(backgroundButton);
+    backgroundButton.focus();
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<SessionExpiredSurface currentPath="/instances" />);
+      await Promise.resolve();
+    });
+
+    const criticalRoot = document.getElementById("bb-react-layer-critical");
+    expect(criticalRoot).toBeInstanceOf(HTMLDivElement);
+
+    await act(async () => {
+      await vi.waitFor(() => {
+        expect(document.activeElement).not.toBe(backgroundButton);
+        expect(
+          criticalRoot?.contains(document.activeElement as Node)
+        ).toBeTruthy();
+      });
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 
   test("syncs React i18n before the initial mount", async () => {

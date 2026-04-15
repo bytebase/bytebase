@@ -95,6 +95,7 @@
       "status": "状态"
     }
   },
+  "auth.token-expired-title": "令牌已过期",
   "banner": {
     "external-url": "Bytebase 还没有配置 --external-url"
   },

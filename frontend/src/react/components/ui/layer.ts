@@ -46,5 +46,8 @@ const ensureRoot = (family: LayerFamily) => {
 
 export const getLayerRoot = (family: LayerFamily) => ensureRoot(family);
 
+// Backdrops and popups share one intra-family stack level so nested modal
+// layers can rely on portal mount order: child backdrop above parent surface,
+// child popup above child backdrop.
 export const LAYER_SURFACE_CLASS = "z-10";
-export const LAYER_BACKDROP_CLASS = "z-0";
+export const LAYER_BACKDROP_CLASS = "z-10";

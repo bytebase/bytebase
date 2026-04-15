@@ -95,6 +95,7 @@
       "status": "ステータス"
     }
   },
+  "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
     "external-url": "Bytebase は --extern-url を設定していません"
   },

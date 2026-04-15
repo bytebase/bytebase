@@ -95,6 +95,7 @@
       "status": "Trạng thái"
     }
   },
+  "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
     "external-url": "Bytebase chưa được cấu hình --external-url"
   },
