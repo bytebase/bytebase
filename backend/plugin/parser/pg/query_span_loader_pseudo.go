@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/omni/pg/ast"
 )
 
-// This file builds "pseudo" AST nodes used by the E3 loader when a real
+// This file builds "pseudo" AST nodes used by the Catalog loader when a real
 // install fails. Every pseudo form is backed by built-in types only (text,
 // primarily) so pseudo install itself cannot cascade into further failures.
 //
@@ -18,7 +18,7 @@ import (
 // problem, not a type-resolution problem.
 //
 // Every form in this file corresponds to a PoC test in
-// query_span_v5_poc_test.go (TestV5PoC_E3_Pseudo*).
+// query_span_v5_poc_test.go (TestLoaderPoC_Pseudo*).
 
 // pseudoTextTypeName is the single pseudo column/parameter/return type omni
 // accepts uniformly. Every pseudo form ends up routing to this shape.

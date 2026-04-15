@@ -79,12 +79,12 @@ func buildCreateTableStmt(schema, name string, cols []*ast.ColumnDef) *ast.Creat
 	}
 }
 
-// TestV5PoC_AstOnlyTableInstallAndAnalyze is the main PoC.
+// TestLoaderPoC_AstOnlyTableInstallAndAnalyze is the main PoC.
 //
 // Run with:
 //
-//	go test -v -count=1 -run TestV5PoC github.com/bytebase/bytebase/backend/plugin/parser/pg
-func TestV5PoC_AstOnlyTableInstallAndAnalyze(t *testing.T) {
+//	go test -v -count=1 -run TestLoaderPoC github.com/bytebase/bytebase/backend/plugin/parser/pg
+func TestLoaderPoC_AstOnlyTableInstallAndAnalyze(t *testing.T) {
 	// Step 1: fresh catalog. public / pg_catalog / pg_toast are preloaded.
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
@@ -194,11 +194,11 @@ func TestV5PoC_AstOnlyTableInstallAndAnalyze(t *testing.T) {
 		"AnalyzeSelectStmt pipeline works end-to-end with no DDL text.")
 }
 
-// TestV5PoC_BrokenAstIsIsolated demonstrates blast-radius containment:
+// TestLoaderPoC_BrokenAstIsIsolated demonstrates blast-radius containment:
 // installing a table with an unresolvable type fails locally, and queries
 // against OTHER tables continue to work. This is the core fidelity claim
 // v5 makes over the current whole-schema DDL init path.
-func TestV5PoC_BrokenAstIsIsolated(t *testing.T) {
+func TestLoaderPoC_BrokenAstIsIsolated(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -253,7 +253,7 @@ func TestV5PoC_BrokenAstIsIsolated(t *testing.T) {
 
 // ---------- Risk scenario 1: complex typmods (numeric(10,2)) ----------
 
-func TestV5PoC_ComplexTypmod(t *testing.T) {
+func TestLoaderPoC_ComplexTypmod(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -282,7 +282,7 @@ func TestV5PoC_ComplexTypmod(t *testing.T) {
 
 // ---------- Risk scenario 2: array type ----------
 
-func TestV5PoC_ArrayType(t *testing.T) {
+func TestLoaderPoC_ArrayType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -304,7 +304,7 @@ func TestV5PoC_ArrayType(t *testing.T) {
 
 // ---------- Risk scenario 3: SELECT * expansion ----------
 
-func TestV5PoC_StarExpansion(t *testing.T) {
+func TestLoaderPoC_StarExpansion(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -335,7 +335,7 @@ func TestV5PoC_StarExpansion(t *testing.T) {
 
 // ---------- Risk scenario 4: CTE (WITH clause) ----------
 
-func TestV5PoC_CTE(t *testing.T) {
+func TestLoaderPoC_CTE(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -361,7 +361,7 @@ func TestV5PoC_CTE(t *testing.T) {
 
 // ---------- Risk scenario 5: correlated subquery ----------
 
-func TestV5PoC_CorrelatedSubquery(t *testing.T) {
+func TestLoaderPoC_CorrelatedSubquery(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -392,7 +392,7 @@ func TestV5PoC_CorrelatedSubquery(t *testing.T) {
 
 // ---------- Risk scenario 6: user enum type in column ----------
 
-func TestV5PoC_UserEnumType(t *testing.T) {
+func TestLoaderPoC_UserEnumType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -432,7 +432,7 @@ func TestV5PoC_UserEnumType(t *testing.T) {
 
 // ---------- Risk scenario 7: view via DefineView with parsed body ----------
 
-func TestV5PoC_DefineViewWithParsedBody(t *testing.T) {
+func TestLoaderPoC_DefineViewWithParsedBody(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -487,7 +487,7 @@ func TestV5PoC_DefineViewWithParsedBody(t *testing.T) {
 
 // ---------- Risk scenario 8: nested view (view on view) ----------
 
-func TestV5PoC_NestedView(t *testing.T) {
+func TestLoaderPoC_NestedView(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -560,7 +560,7 @@ func mustParseSelect(t *testing.T, sql string) *ast.SelectStmt {
 
 // ---------- Risk scenario 9: typeNameFromString with quoted/reserved identifier ----------
 
-func TestV5PoC_QuotedIdentifierType(t *testing.T) {
+func TestLoaderPoC_QuotedIdentifierType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -604,7 +604,7 @@ func TestV5PoC_QuotedIdentifierType(t *testing.T) {
 
 // ---------- Risk scenario 10: partitioned table ----------
 
-func TestV5PoC_PartitionedTable(t *testing.T) {
+func TestLoaderPoC_PartitionedTable(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -646,7 +646,7 @@ func TestV5PoC_PartitionedTable(t *testing.T) {
 
 // ---------- Risk scenario 11: inherited table ----------
 
-func TestV5PoC_InheritedTable(t *testing.T) {
+func TestLoaderPoC_InheritedTable(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -699,7 +699,7 @@ func TestV5PoC_InheritedTable(t *testing.T) {
 
 // ---------- Risk scenario 12: materialized view via ExecCreateTableAs ----------
 
-func TestV5PoC_MaterializedView(t *testing.T) {
+func TestLoaderPoC_MaterializedView(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -746,7 +746,7 @@ func TestV5PoC_MaterializedView(t *testing.T) {
 
 // ---------- Risk scenario 13: function + overload via CreateFunctionStmt ----------
 
-func TestV5PoC_FunctionOverload(t *testing.T) {
+func TestLoaderPoC_FunctionOverload(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -830,7 +830,7 @@ func TestV5PoC_FunctionOverload(t *testing.T) {
 
 // ---------- Risk scenario 14: composite type + column referencing it ----------
 
-func TestV5PoC_CompositeType(t *testing.T) {
+func TestLoaderPoC_CompositeType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -868,7 +868,7 @@ func TestV5PoC_CompositeType(t *testing.T) {
 
 // ---------- Risk scenario 15: domain type + column referencing it ----------
 
-func TestV5PoC_DomainType(t *testing.T) {
+func TestLoaderPoC_DomainType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -921,7 +921,7 @@ func TestV5PoC_DomainType(t *testing.T) {
 // would fall through to extractFallbackColumns today (same as the current
 // path does on any analyzer error).
 
-func TestV5PoC_TypesDontMatterForLineage(t *testing.T) {
+func TestLoaderPoC_TypesDontMatterForLineage(t *testing.T) {
 	// Build two catalogs: one with "honest" types, one with everything as text.
 	// Run the same queries against both and compare lineage.
 
@@ -1112,9 +1112,9 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
-// TestV5PoC_UnknownPseudoType explores whether PG's 'unknown' pseudo-type
+// TestLoaderPoC_UnknownPseudoType explores whether PG's 'unknown' pseudo-type
 // can be used as a universal column type that accepts all operators.
-func TestV5PoC_UnknownPseudoType(t *testing.T) {
+func TestLoaderPoC_UnknownPseudoType(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1132,11 +1132,11 @@ func TestV5PoC_UnknownPseudoType(t *testing.T) {
 	}
 }
 
-// TestV5PoC_UnknownTypeQueryBattery installs the same queries as
-// TestV5PoC_TypesDontMatterForLineage but with all columns declared as
+// TestLoaderPoC_UnknownTypeQueryBattery installs the same queries as
+// TestLoaderPoC_TypesDontMatterForLineage but with all columns declared as
 // 'unknown' instead of 'text'. The question: does the analyzer's overload
 // resolution treat unknown differently from text?
-func TestV5PoC_UnknownTypeQueryBattery(t *testing.T) {
+func TestLoaderPoC_UnknownTypeQueryBattery(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1290,12 +1290,12 @@ func TestV5PoC_UnknownTypeQueryBattery(t *testing.T) {
 	}
 }
 
-// TestV5PoC_HybridTypeResolution explores the pragmatic middle ground:
+// TestLoaderPoC_HybridTypeResolution explores the pragmatic middle ground:
 // for each column, try to resolve the metadata type string; if it fails
 // (user type not in catalog, malformed type string), fall back to text.
 // This gives us "best of both" — real types where available, permissive
 // text where not.
-func TestV5PoC_HybridTypeResolution(t *testing.T) {
+func TestLoaderPoC_HybridTypeResolution(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1350,7 +1350,7 @@ func TestV5PoC_HybridTypeResolution(t *testing.T) {
 	t.Log("effect: best of both — operator semantics work where types known, name resolution works where not")
 }
 
-// TestV5PoC_BvsCDivergence pinpoints the exact behavioral difference between
+// TestLoaderPoC_BvsCDivergence pinpoints the exact behavioral difference between
 // Option B (hybrid: builtins honest, user types unknown) and Option C (all
 // honest types, user types installed).
 //
@@ -1362,7 +1362,7 @@ func TestV5PoC_HybridTypeResolution(t *testing.T) {
 //
 // For each query, record (passes/fails, target count, lineage equivalent).
 // The output shows exactly where B and C diverge.
-func TestV5PoC_BvsCDivergence(t *testing.T) {
+func TestLoaderPoC_BvsCDivergence(t *testing.T) {
 	// ----- catC: option C (all honest) -----
 	catC := catalog.New()
 	catC.SetSearchPath([]string{"public"})
@@ -1489,12 +1489,12 @@ func TestV5PoC_BvsCDivergence(t *testing.T) {
 		cOnlyOk, len(cases), 100.0*float64(cOnlyOk)/float64(len(cases)))
 }
 
-// TestV5PoC_BvsCDomainColumn shows the case where B is STRICTLY BETTER than C:
+// TestLoaderPoC_BvsCDomainColumn shows the case where B is STRICTLY BETTER than C:
 // a table with a domain-typed column where the domain is NOT in bytebase metadata
 // (which is the ACTUAL state of bytebase PG sync today — domain/composite/range
 // types are not synced). Option C fails at install time and blocks all queries
 // on the table. Option B uses unknown and only loses type-sensitive aggregates.
-func TestV5PoC_BvsCDomainColumn(t *testing.T) {
+func TestLoaderPoC_BvsCDomainColumn(t *testing.T) {
 	// Simulate reality: bytebase sync does NOT capture the 'public.positive_int'
 	// domain. The table metadata says column 'count' has type 'public.positive_int',
 	// but bytebase has no DomainMetadata for it.
@@ -1612,7 +1612,7 @@ var _ = fmt.Sprintf // keep fmt imported when strings.Builder not used
 // asserts the resulting Relation objects are structurally identical on all
 // fields reachable via public API.
 
-func TestV5PoC_HandBuiltVsDDLEquivalence(t *testing.T) {
+func TestLoaderPoC_HandBuiltVsDDLEquivalence(t *testing.T) {
 	// Catalog A: install via hand-built CreateStmt.
 	catA := catalog.New()
 	catA.SetSearchPath([]string{"public"})
@@ -1693,20 +1693,20 @@ func TestV5PoC_HandBuiltVsDDLEquivalence(t *testing.T) {
 }
 
 // ============================================================================
-// E3 Pseudo-install verification
+// Loader pseudo-install verification
 // ============================================================================
 //
 // These tests probe whether omni accepts minimal "pseudo" forms of each schema
-// object kind, so the E3 strategy ("install everything; on failure install a
+// object kind, so the catalog loader strategy ("install everything; on failure install a
 // pseudo at the same slot to keep downstream installs cascading through") can
 // work inline during catalog init rather than as a query-time retry.
 //
 // Each test exercises one pseudo form in isolation, then the final
-// TestV5PoC_E3_RootPseudoCascadePrevention combines them end-to-end.
+// TestLoaderPoC_RootPseudoCascadePrevention combines them end-to-end.
 
 // ---- Pseudo enum: DefineEnum with minimal vals ----
 
-func TestV5PoC_E3_PseudoEnum_EmptyVals(t *testing.T) {
+func TestLoaderPoC_PseudoEnum_EmptyVals(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1736,7 +1736,7 @@ func TestV5PoC_E3_PseudoEnum_EmptyVals(t *testing.T) {
 	}
 }
 
-func TestV5PoC_E3_PseudoEnum_SingleDummyVal(t *testing.T) {
+func TestLoaderPoC_PseudoEnum_SingleDummyVal(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1778,7 +1778,7 @@ func TestV5PoC_E3_PseudoEnum_SingleDummyVal(t *testing.T) {
 
 // ---- Pseudo domain: DefineDomain with base type text ----
 
-func TestV5PoC_E3_PseudoDomain_OverText(t *testing.T) {
+func TestLoaderPoC_PseudoDomain_OverText(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1814,7 +1814,7 @@ func TestV5PoC_E3_PseudoDomain_OverText(t *testing.T) {
 
 // ---- Pseudo composite: DefineCompositeType with metadata field names all text ----
 
-func TestV5PoC_E3_PseudoComposite_FieldsAllText(t *testing.T) {
+func TestLoaderPoC_PseudoComposite_FieldsAllText(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1856,7 +1856,7 @@ func TestV5PoC_E3_PseudoComposite_FieldsAllText(t *testing.T) {
 
 // ---- Pseudo range: DefineRange with subtype text ----
 
-func TestV5PoC_E3_PseudoRange_SubtypeText(t *testing.T) {
+func TestLoaderPoC_PseudoRange_SubtypeText(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1897,7 +1897,7 @@ func TestV5PoC_E3_PseudoRange_SubtypeText(t *testing.T) {
 
 // ---- Pseudo view: constant SELECT body, no FROM ----
 
-func TestV5PoC_E3_PseudoView_ConstantTargetList(t *testing.T) {
+func TestLoaderPoC_PseudoView_ConstantTargetList(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1941,7 +1941,7 @@ func TestV5PoC_E3_PseudoView_ConstantTargetList(t *testing.T) {
 
 // ---- Pseudo function: all params/return as text ----
 
-func TestV5PoC_E3_PseudoFunction_AllText(t *testing.T) {
+func TestLoaderPoC_PseudoFunction_AllText(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -1994,7 +1994,7 @@ func TestV5PoC_E3_PseudoFunction_AllText(t *testing.T) {
 
 // ---- End-to-end: root-pseudo prevents cascade ----
 
-func TestV5PoC_E3_RootPseudoCascadePrevention(t *testing.T) {
+func TestLoaderPoC_RootPseudoCascadePrevention(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -2077,11 +2077,11 @@ func TestV5PoC_E3_RootPseudoCascadePrevention(t *testing.T) {
 //   fn(int4)  → int4   (real install succeeds)
 //   fn(my_broken_type)  → my_broken_type (real install fails because type is broken)
 //
-// E3 strategy: keep fn(int4) real, install pseudo fn(text) for the broken one.
+// catalog loader strategy: keep fn(int4) real, install pseudo fn(text) for the broken one.
 // Verify: calls to fn(int_col) still pick fn(int4); calls to fn(text_col) pick
 // the pseudo fn(text); calls to fn(literal_string) pick the pseudo.
 
-func TestV5PoC_E3_MixedRealAndPseudoOverloads(t *testing.T) {
+func TestLoaderPoC_MixedRealAndPseudoOverloads(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -2149,13 +2149,13 @@ func TestV5PoC_E3_MixedRealAndPseudoOverloads(t *testing.T) {
 // ---- Corner case 2: pseudo install after a real install has truly failed ----
 //
 // Scenario: real DefineDomain fails because the base type does not exist.
-// E3 must then install a pseudo in the same slot. Verify:
+// The loader must then install a pseudo in the same slot. Verify:
 //   1. real install actually returns an error (otherwise this test is vacuous)
 //   2. catalog does not hold partial state for the failed name
 //   3. pseudo install at the same name succeeds
 //   4. a table column using that pseudo name resolves correctly
 
-func TestV5PoC_E3_PseudoAfterFailedReal(t *testing.T) {
+func TestLoaderPoC_PseudoAfterFailedReal(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 
@@ -2212,23 +2212,23 @@ func TestV5PoC_E3_PseudoAfterFailedReal(t *testing.T) {
 		t.Log("note: real DefineDomain with bogus base type DID NOT fail — " +
 			"omni's validation is looser than expected. Test still exercises " +
 			"the pseudo install path but the 'recovery after failure' premise " +
-			"is weaker. Consider whether E3 needs to handle this case.")
+			"is weaker. Consider whether the loader needs to handle this case.")
 	} else {
 		t.Log("pseudo recovery PoC: real install failed cleanly, pseudo at same " +
 			"name installed successfully, downstream table install works")
 	}
 }
 
-// ---- helpers for E3 tests ----
+// ---- helpers for loader tests ----
 
-// ---- Install cost benchmarks: E3 hand-built vs Exec(DDL text) ----
+// ---- Install cost benchmarks: catalog-loader hand-built vs Exec(DDL text) ----
 //
 // Validates the plan's "5-10× faster than current" claim empirically.
 // Generates synthetic schemas of varying size with representative shapes
 // (tables with mixed-type columns) and times both install paths.
 //
 // Run with:
-//   go test -bench='BenchmarkV5PoC_Install' -benchmem -run='^$' -count=3 \
+//   go test -bench='BenchmarkLoader_Install' -benchmem -run='^$' -count=3 \
 //     github.com/bytebase/bytebase/backend/plugin/parser/pg
 
 func makeSyntheticTables(n int) []*ast.CreateStmt {
@@ -2280,23 +2280,23 @@ func benchmarkDDLInstall(b *testing.B, n int) {
 	}
 }
 
-func BenchmarkV5PoC_Install_E3_100(b *testing.B)   { benchmarkE3Install(b, 100) }
-func BenchmarkV5PoC_Install_E3_500(b *testing.B)   { benchmarkE3Install(b, 500) }
-func BenchmarkV5PoC_Install_E3_2000(b *testing.B)  { benchmarkE3Install(b, 2000) }
-func BenchmarkV5PoC_Install_DDL_100(b *testing.B)  { benchmarkDDLInstall(b, 100) }
-func BenchmarkV5PoC_Install_DDL_500(b *testing.B)  { benchmarkDDLInstall(b, 500) }
-func BenchmarkV5PoC_Install_DDL_2000(b *testing.B) { benchmarkDDLInstall(b, 2000) }
+func BenchmarkLoader_Install_E3_100(b *testing.B)   { benchmarkE3Install(b, 100) }
+func BenchmarkLoader_Install_E3_500(b *testing.B)   { benchmarkE3Install(b, 500) }
+func BenchmarkLoader_Install_E3_2000(b *testing.B)  { benchmarkE3Install(b, 2000) }
+func BenchmarkLoader_Install_DDL_100(b *testing.B)  { benchmarkDDLInstall(b, 100) }
+func BenchmarkLoader_Install_DDL_500(b *testing.B)  { benchmarkDDLInstall(b, 500) }
+func BenchmarkLoader_Install_DDL_2000(b *testing.B) { benchmarkDDLInstall(b, 2000) }
 
 // ---- Overload selection assertions: prove analyzer picks the right overload ----
 //
-// Builds on TestV5PoC_E3_MixedRealAndPseudoOverloads. That test logs outcomes
+// Builds on TestLoaderPoC_MixedRealAndPseudoOverloads. That test logs outcomes
 // but does not assert which overload got picked. Here we install two overloads
 // with DISTINCT return types (int4 vs text) and assert that the analyzer picks
 // the right one by checking the result column's TypeOID.
 //
 // Well-known PG OIDs: int4=23, text=25 (stable; used throughout omni tests).
 
-func TestV5PoC_E3_OverloadSelectionAsserted(t *testing.T) {
+func TestLoaderPoC_OverloadSelectionAsserted(t *testing.T) {
 	const (
 		oidInt4 uint32 = 23
 		oidText uint32 = 25
@@ -2396,7 +2396,7 @@ func TestV5PoC_E3_OverloadSelectionAsserted(t *testing.T) {
 //   View V (SELECT col, title FROM T)      — real DefineView must succeed against real T
 //   Query SELECT col, title FROM V         — must analyze with lineage to T.{col, title}
 
-func TestV5PoC_E3_RealCascadeWithGenuineFailure(t *testing.T) {
+func TestLoaderPoC_RealCascadeWithGenuineFailure(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 

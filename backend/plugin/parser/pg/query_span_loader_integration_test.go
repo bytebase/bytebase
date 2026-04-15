@@ -9,12 +9,12 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// E3 integration tests
+// Catalog loader integration tests
 // ---------------------------------------------------------------------------
 //
 // These tests drive the full GetQuerySpan pipeline (parse → initCatalog via
-// e3Loader → AnalyzeSelectStmt → extractLineage) against hand-built
-// DatabaseSchemaMetadata fixtures that reproduce the bugs E3 is designed to
+// catalogLoader → AnalyzeSelectStmt → extractLineage) against hand-built
+// DatabaseSchemaMetadata fixtures that reproduce the bugs the loader is designed to
 // prevent, plus the cascade-prevention story.
 //
 // Each test asserts one of:
@@ -24,10 +24,10 @@ import (
 //   - A cascade chain (bad root → dependent table → dependent view) installs
 //     downstream objects as real, with query lineage intact.
 
-func TestE3Integration_BYT9215_BadQuotedIdentifier(t *testing.T) {
+func TestLoaderIntegration_BYT9215_BadQuotedIdentifier(t *testing.T) {
 	// BYT-9215 class: a table name contains a character sequence the DDL
 	// deparse-and-reparse loop chokes on. Under the old path this would kill
-	// query span for the entire database. Under E3, the bad table is
+	// query span for the entire database. Under the loader, the bad table is
 	// pseudo-installed and unrelated queries succeed.
 	meta := &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -67,7 +67,7 @@ func TestE3Integration_BYT9215_BadQuotedIdentifier(t *testing.T) {
 	}
 }
 
-func TestE3Integration_BrokenEnumCascade(t *testing.T) {
+func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {
 	// Real failure chain: table references a user-defined type that does
 	// not exist in metadata. Real install of the table fails (omni cannot
 	// resolve the type). Pseudo install of the table succeeds with text
@@ -108,7 +108,7 @@ func TestE3Integration_BrokenEnumCascade(t *testing.T) {
 	}
 }
 
-func TestE3Integration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
+func TestLoaderIntegration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
 	// A query against a healthy table must succeed even when an unrelated
 	// table in the same schema references a broken type. This is the core
 	// blast-radius claim: one bad object does not poison all queries.
@@ -146,7 +146,7 @@ func TestE3Integration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
 	}
 }
 
-func TestE3Integration_ViewOverBrokenTableStillResolves(t *testing.T) {
+func TestLoaderIntegration_ViewOverBrokenTableStillResolves(t *testing.T) {
 	// Chain: enum missing → table T references it (degrades to pseudo) →
 	// view V on T installs real (against pseudo T) → query on V resolves.
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -184,7 +184,7 @@ func TestE3Integration_ViewOverBrokenTableStillResolves(t *testing.T) {
 	}
 }
 
-func TestE3Integration_SimpleHealthyPath(t *testing.T) {
+func TestLoaderIntegration_SimpleHealthyPath(t *testing.T) {
 	// Baseline sanity: a clean schema must produce exact lineage down to
 	// (schema, table, column) — no degraded flags.
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -210,10 +210,10 @@ func TestE3Integration_SimpleHealthyPath(t *testing.T) {
 	mustHaveExactSource(t, span.Results[1], "users", "email")
 }
 
-func TestE3Integration_EnumWorksWhenDeclared(t *testing.T) {
+func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 	// When an enum IS declared in metadata, the table installs as real and
 	// enum-typed columns resolve through their real type. This is the
-	// positive control for TestE3Integration_BrokenEnumCascade.
+	// positive control for TestLoaderIntegration_BrokenEnumCascade.
 	meta := &storepb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*storepb.SchemaMetadata{{
@@ -242,12 +242,12 @@ func TestE3Integration_EnumWorksWhenDeclared(t *testing.T) {
 
 // ---------- helpers ----------
 
-// e3IntegrationDB / e3IntegrationSchema are the fixed database/schema names
-// every E3 integration test uses; keeping them as constants keeps the call
+// loaderTestDB / loaderTestSchema are the fixed database/schema names
+// every catalog-loader integration test uses; keeping them as constants keeps the call
 // sites terse and satisfies the unparam linter.
 const (
-	e3IntegrationDB     = "db"
-	e3IntegrationSchema = "public"
+	loaderTestDB     = "db"
+	loaderTestSchema = "public"
 )
 
 func mustGetQuerySpan(t *testing.T, meta *storepb.DatabaseSchemaMetadata, sql string) *base.QuerySpan {
@@ -256,7 +256,7 @@ func mustGetQuerySpan(t *testing.T, meta *storepb.DatabaseSchemaMetadata, sql st
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
-	}, base.Statement{Text: sql}, e3IntegrationDB, "", false)
+	}, base.Statement{Text: sql}, loaderTestDB, "", false)
 	if err != nil {
 		t.Fatalf("GetQuerySpan(%q): %v", sql, err)
 	}
@@ -269,8 +269,8 @@ func mustGetQuerySpan(t *testing.T, meta *storepb.DatabaseSchemaMetadata, sql st
 func mustHaveExactSource(t *testing.T, result base.QuerySpanResult, table, column string) {
 	t.Helper()
 	want := base.ColumnResource{
-		Database: e3IntegrationDB,
-		Schema:   e3IntegrationSchema,
+		Database: loaderTestDB,
+		Schema:   loaderTestSchema,
 		Table:    table,
 		Column:   column,
 	}

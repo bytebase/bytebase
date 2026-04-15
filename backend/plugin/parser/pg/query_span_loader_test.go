@@ -14,7 +14,7 @@ import (
 
 // ---------------- typeNameFromString ----------------
 
-func TestE3TypeNameFromString(t *testing.T) {
+func TestLoaderTypeNameFromString(t *testing.T) {
 	cases := []struct {
 		in      string
 		wantErr bool
@@ -49,7 +49,7 @@ func TestE3TypeNameFromString(t *testing.T) {
 
 // ---------------- extractUserTypeRefs ----------------
 
-func TestE3ExtractUserTypeRefs(t *testing.T) {
+func TestLoaderExtractUserTypeRefs(t *testing.T) {
 	cases := []struct {
 		in   string
 		want []UserTypeRef
@@ -124,7 +124,7 @@ func userTypeRefsEqual(a, b []UserTypeRef) bool {
 
 // ---------------- helpers ----------------
 
-func TestE3StripTypeModifiers(t *testing.T) {
+func TestLoaderStripTypeModifiers(t *testing.T) {
 	cases := []struct {
 		in, want string
 	}{
@@ -143,7 +143,7 @@ func TestE3StripTypeModifiers(t *testing.T) {
 	}
 }
 
-func TestE3SplitQualifiedName(t *testing.T) {
+func TestLoaderSplitQualifiedName(t *testing.T) {
 	cases := []struct {
 		in         string
 		wantSchema string
@@ -165,7 +165,7 @@ func TestE3SplitQualifiedName(t *testing.T) {
 	}
 }
 
-func TestE3IsSystemSchema(t *testing.T) {
+func TestLoaderIsSystemSchema(t *testing.T) {
 	// Sanity check that extractUserTypeRefs routes system schemas to nil via
 	// IsSystemSchema. The underlying predicate is tested in system_objects.go.
 	cases := map[string]bool{
@@ -189,7 +189,7 @@ func TestE3IsSystemSchema(t *testing.T) {
 
 // ---------------- classifyAnalyzeError ----------------
 
-func TestE3ClassifyAnalyzeError(t *testing.T) {
+func TestLoaderClassifyAnalyzeError(t *testing.T) {
 	cases := []struct {
 		name string
 		err  error
@@ -266,7 +266,7 @@ func TestE3ClassifyAnalyzeError(t *testing.T) {
 
 // ---------------- pseudo builders ----------------
 
-func TestE3PseudoEnum(t *testing.T) {
+func TestLoaderPseudoEnum(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	if err := cat.DefineEnum(pseudoCreateEnumStmt("public", "broken")); err != nil {
@@ -288,7 +288,7 @@ func TestE3PseudoEnum(t *testing.T) {
 	}
 }
 
-func TestE3PseudoDomain(t *testing.T) {
+func TestLoaderPseudoDomain(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	if err := cat.DefineDomain(pseudoCreateDomainStmt("public", "d")); err != nil {
@@ -296,7 +296,7 @@ func TestE3PseudoDomain(t *testing.T) {
 	}
 }
 
-func TestE3PseudoComposite(t *testing.T) {
+func TestLoaderPseudoComposite(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	if err := cat.DefineCompositeType(pseudoCompositeTypeStmt("public", "c")); err != nil {
@@ -304,7 +304,7 @@ func TestE3PseudoComposite(t *testing.T) {
 	}
 }
 
-func TestE3PseudoRange(t *testing.T) {
+func TestLoaderPseudoRange(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	if err := cat.DefineRange(pseudoCreateRangeStmt("public", "r")); err != nil {
@@ -312,7 +312,7 @@ func TestE3PseudoRange(t *testing.T) {
 	}
 }
 
-func TestE3PseudoTable(t *testing.T) {
+func TestLoaderPseudoTable(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	stmt := pseudoCreateTableStmt("public", "t", []string{"id", "name", "email"})
@@ -328,7 +328,7 @@ func TestE3PseudoTable(t *testing.T) {
 	}
 }
 
-func TestE3PseudoView(t *testing.T) {
+func TestLoaderPseudoView(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	stmt, err := pseudoViewStmt("public", "v", []string{"id", "label"})
@@ -347,7 +347,7 @@ func TestE3PseudoView(t *testing.T) {
 	}
 }
 
-func TestE3PseudoMatView(t *testing.T) {
+func TestLoaderPseudoMatView(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	stmt, err := pseudoCreateTableAsStmt("public", "m", []string{"x", "y"})
@@ -359,7 +359,7 @@ func TestE3PseudoMatView(t *testing.T) {
 	}
 }
 
-func TestE3PseudoFunction(t *testing.T) {
+func TestLoaderPseudoFunction(t *testing.T) {
 	cases := []struct {
 		name     string
 		argCount int
@@ -383,7 +383,7 @@ func TestE3PseudoFunction(t *testing.T) {
 	}
 }
 
-func TestE3FunctionArgCountFromSignature(t *testing.T) {
+func TestLoaderFunctionArgCountFromSignature(t *testing.T) {
 	cases := map[string]int{
 		"":                        0,
 		"fn()":                    0,
@@ -400,7 +400,7 @@ func TestE3FunctionArgCountFromSignature(t *testing.T) {
 	}
 }
 
-func TestE3QualifiedNameList(t *testing.T) {
+func TestLoaderQualifiedNameList(t *testing.T) {
 	list := qualifiedNameList("public", "foo")
 	if list == nil || len(list.Items) != 2 {
 		t.Fatalf("qualifiedNameList(public, foo): got %+v, want 2 items", list)
@@ -413,7 +413,7 @@ func TestE3QualifiedNameList(t *testing.T) {
 
 // ---------------- real builders ----------------
 
-func TestE3BuildCreateEnumStmt(t *testing.T) {
+func TestLoaderBuildCreateEnumStmt(t *testing.T) {
 	stmt := buildCreateEnumStmt("public", &storepb.EnumTypeMetadata{
 		Name:   "task_status",
 		Values: []string{"pending", "running", "done"},
@@ -427,7 +427,7 @@ func TestE3BuildCreateEnumStmt(t *testing.T) {
 	}
 }
 
-func TestE3BuildCreateStmt(t *testing.T) {
+func TestLoaderBuildCreateStmt(t *testing.T) {
 	stmt, err := buildCreateStmt("public", &storepb.TableMetadata{
 		Name: "t",
 		Columns: []*storepb.ColumnMetadata{
@@ -453,7 +453,7 @@ func TestE3BuildCreateStmt(t *testing.T) {
 	}
 }
 
-func TestE3BuildCreateStmt_BadTypeErrors(t *testing.T) {
+func TestLoaderBuildCreateStmt_BadTypeErrors(t *testing.T) {
 	_, err := buildCreateStmt("public", &storepb.TableMetadata{
 		Name: "t",
 		Columns: []*storepb.ColumnMetadata{
@@ -465,7 +465,7 @@ func TestE3BuildCreateStmt_BadTypeErrors(t *testing.T) {
 	}
 }
 
-func TestE3BuildCreateStmt_EmptyTypeErrors(t *testing.T) {
+func TestLoaderBuildCreateStmt_EmptyTypeErrors(t *testing.T) {
 	_, err := buildCreateStmt("public", &storepb.TableMetadata{
 		Name:    "t",
 		Columns: []*storepb.ColumnMetadata{{Name: "x", Type: ""}},
@@ -475,7 +475,7 @@ func TestE3BuildCreateStmt_EmptyTypeErrors(t *testing.T) {
 	}
 }
 
-func TestE3BuildViewStmt(t *testing.T) {
+func TestLoaderBuildViewStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	base, err := buildCreateStmt("public", &storepb.TableMetadata{
@@ -503,14 +503,14 @@ func TestE3BuildViewStmt(t *testing.T) {
 	}
 }
 
-func TestE3BuildViewStmt_EmptyDefinition(t *testing.T) {
+func TestLoaderBuildViewStmt_EmptyDefinition(t *testing.T) {
 	_, err := buildViewStmt("public", &storepb.ViewMetadata{Name: "v"})
 	if err == nil {
 		t.Fatal("expected error for empty definition")
 	}
 }
 
-func TestE3BuildCreateTableAsStmt(t *testing.T) {
+func TestLoaderBuildCreateTableAsStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	base, err := buildCreateStmt("public", &storepb.TableMetadata{
@@ -537,7 +537,7 @@ func TestE3BuildCreateTableAsStmt(t *testing.T) {
 	}
 }
 
-func TestE3BuildCreateFunctionStmt(t *testing.T) {
+func TestLoaderBuildCreateFunctionStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	stmt, err := buildCreateFunctionStmt("public", &storepb.FunctionMetadata{
@@ -555,7 +555,7 @@ func TestE3BuildCreateFunctionStmt(t *testing.T) {
 	}
 }
 
-func TestE3BuildCreateFunctionStmt_ZeroArgs(t *testing.T) {
+func TestLoaderBuildCreateFunctionStmt_ZeroArgs(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	stmt, err := buildCreateFunctionStmt("public", &storepb.FunctionMetadata{
@@ -570,7 +570,7 @@ func TestE3BuildCreateFunctionStmt_ZeroArgs(t *testing.T) {
 	}
 }
 
-func TestE3ParseFunctionSignatureArgTypes(t *testing.T) {
+func TestLoaderParseFunctionSignatureArgTypes(t *testing.T) {
 	cases := map[string][]string{
 		"fn()":                    nil,
 		"fn(integer)":             {"integer"},
@@ -603,7 +603,7 @@ func stringSlicesEqual(a, b []string) bool {
 	return true
 }
 
-func TestE3ParseSelectBody(t *testing.T) {
+func TestLoaderParseSelectBody(t *testing.T) {
 	sel, err := parseSelectBody("SELECT 1 AS x")
 	if err != nil {
 		t.Fatalf("parseSelectBody: %v", err)
@@ -621,7 +621,7 @@ func TestE3ParseSelectBody(t *testing.T) {
 
 // ---------------- loader ----------------
 
-func TestE3Loader_HappyPath(t *testing.T) {
+func TestLoaderLoader_HappyPath(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -649,7 +649,7 @@ func TestE3Loader_HappyPath(t *testing.T) {
 			}},
 		}},
 	}
-	loader := newE3Loader(cat, meta)
+	loader := newCatalogLoader(cat, meta)
 	if err := loader.Load(context.Background()); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -667,7 +667,7 @@ func TestE3Loader_HappyPath(t *testing.T) {
 	}
 }
 
-func TestE3Loader_BrokenEnumCascadesToPseudo(t *testing.T) {
+func TestLoaderLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -684,7 +684,7 @@ func TestE3Loader_BrokenEnumCascadesToPseudo(t *testing.T) {
 			}},
 		}},
 	}
-	loader := newE3Loader(cat, meta)
+	loader := newCatalogLoader(cat, meta)
 	if err := loader.Load(context.Background()); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -704,7 +704,7 @@ func TestE3Loader_BrokenEnumCascadesToPseudo(t *testing.T) {
 	}
 }
 
-func TestE3Loader_TopoOrder_DependencyBeforeUse(t *testing.T) {
+func TestLoaderLoader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	meta := &storepb.DatabaseSchemaMetadata{
@@ -728,7 +728,7 @@ func TestE3Loader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 			}},
 		}},
 	}
-	loader := newE3Loader(cat, meta)
+	loader := newCatalogLoader(cat, meta)
 	if err := loader.Load(context.Background()); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -740,7 +740,7 @@ func TestE3Loader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 	}
 }
 
-func TestE3Loader_CycleBreaking(t *testing.T) {
+func TestLoaderLoader_CycleBreaking(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	// Two views referencing each other — a metadata-level cycle.
@@ -765,7 +765,7 @@ func TestE3Loader_CycleBreaking(t *testing.T) {
 			},
 		}},
 	}
-	loader := newE3Loader(cat, meta)
+	loader := newCatalogLoader(cat, meta)
 	if err := loader.Load(context.Background()); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -786,7 +786,7 @@ func TestE3Loader_CycleBreaking(t *testing.T) {
 	}
 }
 
-func TestE3Loader_LoaderObjectsTracksEverything(t *testing.T) {
+func TestLoaderLoader_LoaderObjectsTracksEverything(t *testing.T) {
 	cat := catalog.New()
 	meta := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{{
@@ -800,7 +800,7 @@ func TestE3Loader_LoaderObjectsTracksEverything(t *testing.T) {
 			}},
 		}},
 	}
-	loader := newE3Loader(cat, meta)
+	loader := newCatalogLoader(cat, meta)
 	_ = loader.Load(context.Background())
 	if !loader.loaderObjects["schema:public"] {
 		t.Error("schema:public not tracked")
@@ -813,22 +813,22 @@ func TestE3Loader_LoaderObjectsTracksEverything(t *testing.T) {
 	}
 }
 
-func TestE3Loader_NilMetaIsNoop(t *testing.T) {
+func TestLoaderLoader_NilMetaIsNoop(t *testing.T) {
 	cat := catalog.New()
-	loader := newE3Loader(cat, nil)
+	loader := newCatalogLoader(cat, nil)
 	if err := loader.Load(context.Background()); err != nil {
 		t.Errorf("Load(nil meta): %v", err)
 	}
 }
 
-func TestE3Loader_NilCatalogErrors(t *testing.T) {
-	loader := newE3Loader(nil, &storepb.DatabaseSchemaMetadata{})
+func TestLoaderLoader_NilCatalogErrors(t *testing.T) {
+	loader := newCatalogLoader(nil, &storepb.DatabaseSchemaMetadata{})
 	if err := loader.Load(context.Background()); err == nil {
 		t.Error("expected error for nil catalog")
 	}
 }
 
-func TestE3TopoSort_Determinism(t *testing.T) {
+func TestLoaderTopoSort_Determinism(t *testing.T) {
 	// Build a few fixtures and ensure topoSortObjects returns the same order
 	// for the same input.
 	objects := []*objectEntry{
@@ -849,7 +849,7 @@ func TestE3TopoSort_Determinism(t *testing.T) {
 	}
 }
 
-func TestE3FallbackReasonString(t *testing.T) {
+func TestLoaderFallbackReasonString(t *testing.T) {
 	cases := map[fallbackReason]string{
 		reasonNone:                   "none",
 		reasonExpectedPseudoSemantic: "expected_pseudo_semantic",

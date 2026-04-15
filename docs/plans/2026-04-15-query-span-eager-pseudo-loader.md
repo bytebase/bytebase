@@ -1,4 +1,4 @@
-# Query Span Catalog Loader — E3: Eager Per-Object Install with Inline Root-Pseudo Fallback
+# Query Span Catalog Loader: Eager Per-Object Install with Inline Root-Pseudo Fallback
 
 **Status:** Draft v2.2 (post codex round-2 + main-line re-alignment)
 **Author:** junyi
@@ -19,7 +19,7 @@ Install every schema object eagerly at catalog init in topological order, using 
 
 Effect: one bad object in one schema makes query span fail for **every** query on that database. Masking silently degrades to `extractFallbackColumns`, which produces empty-source results that bypass most masking rules.
 
-## Why closure is hard (and why E3 sidesteps it)
+## Why closure is hard (and why the loader sidesteps it)
 
 A previous iteration (v5) tried to solve this lazily: parse the query, extract its object references, install only those, avoid the full schema cost. The investigation showed accurate closure is not computable:
 
@@ -29,7 +29,7 @@ A previous iteration (v5) tried to solve this lazily: parse the query, extract i
 
 v5's escape hatch was "install all candidates by name, not signature" — a conservative superset. But this layered on metadata-assisted closure expansion, retry loops, and several other under-specified mechanisms.
 
-E3 abandons the closure problem entirely: **install everything**. The analyzer reads what it needs; the rest is idle catalog weight. Install cost is O(schema), but per-object hand-built install is fast enough (measured 1.5-2.3× faster than current DDL path) that this is not a regression.
+the loader abandons the closure problem entirely: **install everything**. The analyzer reads what it needs; the rest is idle catalog weight. Install cost is O(schema), but per-object hand-built install is fast enough (measured 1.5-2.3× faster than current DDL path) that this is not a regression.
 
 ## Core insight: cascade through dependency order, pseudo at the root
 
@@ -41,7 +41,7 @@ Consider enum `E` with a broken definition, table `T` with column of type `E`, v
 - `V` install fails (can't resolve `T`) → skip
 - Any query touching anything in the chain fails.
 
-**E3 inline pseudo**:
+**the loader inline pseudo**:
 - `E` real install fails → immediately install `pseudo(E)` (text-backed enum) at the same slot → `degraded[E] = err`
 - `T` real install: references `pseudo(E)` in the catalog, succeeds as **real** object with correct column names
 - `V` real install: references real `T`, succeeds as **real** object
@@ -51,14 +51,14 @@ Consider enum `E` with a broken definition, table `T` with column of type `E`, v
 1. Topological order — process `E` before `T` before `V`. Otherwise `T`'s failure is indistinguishable from `T` itself being broken.
 2. Inline pseudo — fail real, immediately install pseudo at the same slot, in the same loop. No retry, no second pass.
 
-Empirical validation: `TestV5PoC_E3_RealCascadeWithGenuineFailure` forces a genuine `DefineDomain` SQLSTATE 42704 failure, installs a text-backed pseudo at the same name, then installs downstream table and view as real `DefineRelation` / `DefineView` calls, queries the view, and asserts every target is `*catalog.VarExpr` (full lineage to base-table columns). Not a simulation.
+Empirical validation: `TestLoaderPoC_RealCascadeWithGenuineFailure` forces a genuine `DefineDomain` SQLSTATE 42704 failure, installs a text-backed pseudo at the same name, then installs downstream table and view as real `DefineRelation` / `DefineView` calls, queries the view, and asserts every target is `*catalog.VarExpr` (full lineage to base-table columns). Not a simulation.
 
 ## Proposal
 
 ### Phase 1 — eager loader
 
 ```go
-func (l *e3Loader) Load(ctx context.Context, meta *storepb.DatabaseSchemaMetadata) error {
+func (l *catalogLoader) Load(ctx context.Context, meta *storepb.DatabaseSchemaMetadata) error {
     objects := l.collectObjects(meta)             // flatten metadata into []ObjectEntry
     sccs := l.tarjanSCC(objects)                  // condense cycles
     sorted := l.topoSort(sccs)                    // SCC-level topo sort
@@ -94,9 +94,9 @@ func (e *omniQuerySpanExtractor) ExtractQuerySpan(ctx context.Context) (*base.Qu
 
 `extractLineage` consults the `degraded` set to mark lineage entries whose source is a pseudo object.
 
-### Phase 3 — what E3 does not do
+### Phase 3 — what the loader does not do
 
-No closure discovery. No `ExtractCatalogReferences`. No install-retry loop. No lazy install. These were v5 concepts. E3 deletes them.
+No closure discovery. No `ExtractCatalogReferences`. No install-retry loop. No lazy install. These were v5 concepts. the loader deletes them.
 
 ## Fallback classifier (pure function, used by tests)
 
@@ -163,15 +163,15 @@ Topological order derives from `storepb.DatabaseSchemaMetadata`. Dependency edge
 | MatView | Same as view |
 | Function | Schema; each parameter type *if* user-defined; return type *if* user-defined |
 
-**Unavailable metadata** doesn't block E3:
+**Unavailable metadata** doesn't block the loader:
 
-- **Inheritance**: `sync.go:777` uses `INFORMATION_SCHEMA.COLUMNS`, which returns parent-merged columns for child tables. The child's `columns[]` is complete. E3 installs each child as a standalone table.
+- **Inheritance**: `sync.go:777` uses `INFORMATION_SCHEMA.COLUMNS`, which returns parent-merged columns for child tables. The child's `columns[]` is complete. the loader installs each child as a standalone table.
 - **Partition**: same reasoning. Query span doesn't care about partition bounds.
-- **Composite / Domain / Range internal type refs**: `storepb` doesn't carry these. E3 treats them as leaves in the dep graph. If real install fails because of an unresolved internal reference, pseudo catches it.
+- **Composite / Domain / Range internal type refs**: `storepb` doesn't carry these. the loader treats them as leaves in the dep graph. If real install fails because of an unresolved internal reference, pseudo catches it.
 
 ### Cycle handling — Tarjan SCC + lex ordering
 
-Metadata-level cycles are rare (mutually recursive views via `CREATE OR REPLACE`). E3:
+Metadata-level cycles are rare (mutually recursive views via `CREATE OR REPLACE`). the loader:
 
 1. Tarjan SCC on the dep graph.
 2. Topo sort the condensed DAG of SCCs.
@@ -199,7 +199,7 @@ Lex ordering guarantees determinism for test reproducibility.
 | 7 | ARRAY of user-defined | `_task_status` (schema stripped by sync.go:834) | `[]` (cannot topo-sort; installs fail → pseudo) |
 | 8 | System-schema-qualified | `pg_catalog.int4`, `information_schema.cardinal_number` | `[]` |
 
-Form 7 is an existing sync issue. E3 is resilient to it (pseudo catches). E3 does not fix it.
+Form 7 is an existing sync issue. the loader is resilient to it (pseudo catches). the loader does not fix it.
 
 ### Extractor
 
@@ -249,22 +249,22 @@ Every pseudo form is covered by a green test in `query_span_v5_poc_test.go`.
 
 | Object | Pseudo AST | PoC test |
 |---|---|---|
-| Enum | `CreateEnumStmt{Vals: empty}` | `TestV5PoC_E3_PseudoEnum_EmptyVals` |
-| Domain | `CreateDomainStmt{Typname: text}` | `TestV5PoC_E3_PseudoDomain_OverText` |
-| Composite | `CompositeTypeStmt{Coldeflist: [_broken text]}` | `TestV5PoC_E3_PseudoComposite_FieldsAllText` |
-| Range | `CreateRangeStmt{subtype: text}` | `TestV5PoC_E3_PseudoRange_SubtypeText` |
+| Enum | `CreateEnumStmt{Vals: empty}` | `TestLoaderPoC_PseudoEnum_EmptyVals` |
+| Domain | `CreateDomainStmt{Typname: text}` | `TestLoaderPoC_PseudoDomain_OverText` |
+| Composite | `CompositeTypeStmt{Coldeflist: [_broken text]}` | `TestLoaderPoC_PseudoComposite_FieldsAllText` |
+| Range | `CreateRangeStmt{subtype: text}` | `TestLoaderPoC_PseudoRange_SubtypeText` |
 | Table | `CreateStmt{cols: [(name, text) for name in metadata]}` | Implicit; pseudo is `DefineRelation` with all-text columns |
-| View | `ViewStmt{Query: SELECT NULL::text AS c1, NULL::text AS c2 ...}` | `TestV5PoC_E3_PseudoView_ConstantTargetList` |
+| View | `ViewStmt{Query: SELECT NULL::text AS c1, NULL::text AS c2 ...}` | `TestLoaderPoC_PseudoView_ConstantTargetList` |
 | MatView | `CreateTableAsStmt{Query: SELECT NULL::text AS ...}` | Variant of pseudo view |
-| Function | `CreateFunctionStmt{params: [text], returns: text, body: SELECT $1}` | `TestV5PoC_E3_PseudoFunction_AllText`; selection asserted by `TestV5PoC_E3_OverloadSelectionAsserted` |
+| Function | `CreateFunctionStmt{params: [text], returns: text, body: SELECT $1}` | `TestLoaderPoC_PseudoFunction_AllText`; selection asserted by `TestLoaderPoC_OverloadSelectionAsserted` |
 
-**Cascade prevention end-to-end**: `TestV5PoC_E3_RealCascadeWithGenuineFailure`. Real `DefineDomain` 42704 failure → pseudo at same slot → downstream table + view install as real objects → query on view has full lineage to base-table columns.
+**Cascade prevention end-to-end**: `TestLoaderPoC_RealCascadeWithGenuineFailure`. Real `DefineDomain` 42704 failure → pseudo at same slot → downstream table + view install as real objects → query on view has full lineage to base-table columns.
 
 **Composite field access limitation**: `storepb` doesn't carry composite field names, so pseudo composite uses a single `_broken` field. Queries using `(col).field` fall back to `extractFallbackColumns`. This is no worse than the current path (which also fails BYT-9215-class queries). Medium-term follow-up: add `CompositeTypeMetadata` to proto + sync.
 
-## `storepb` gaps and how E3 handles them
+## `storepb` gaps and how the loader handles them
 
-| Gap | E3 handling | Fidelity impact |
+| Gap | the loader handling | Fidelity impact |
 |---|---|---|
 | `DomainMetadata` missing | Pseudo domain over text | Domain constraints not visible (query span doesn't use them) |
 | `RangeTypeMetadata` missing | Pseudo range subtype=text | Range-specific operators degrade to fallback |
@@ -289,7 +289,7 @@ After:
 func (e *omniQuerySpanExtractor) initCatalog(ctx context.Context) error {
     e.cat = catalog.New()
     e.cat.SetSearchPath(e.searchPath)
-    loader := newE3Loader(e.cat, e.meta)
+    loader := newCatalogLoader(e.cat, e.meta)
     if err := loader.Load(ctx); err != nil {
         return err  // only catastrophic errors, e.g. ctx cancellation
     }
@@ -303,12 +303,12 @@ The DDL render path is deleted outright. BYT-9215 and BYT-9261 cannot recur by c
 
 ## Search path (out of scope)
 
-Two pre-existing search-path issues were scoped into v2/v3 drafts via codex review iterations, but they are orthogonal to BYT-9215 / BYT-9261 and not caused or worsened by E3. They are moved to §Follow-ups:
+Two pre-existing search-path issues were scoped into v2/v3 drafts via codex review iterations, but they are orthogonal to BYT-9215 / BYT-9261 and not caused or worsened by the loader. They are moved to §Follow-ups:
 
 - `ExtractAccessTablesOption.DefaultSchema` is a single string, forcing callers to pass `e.searchPath[0]` and drop the rest of the search path.
 - Fallback path `query_span_omni.go:963` resolves unqualified relations with `searchPath[0]` only.
 
-Neither is a regression E3 introduces, neither blocks BYT-9215 / BYT-9261 remediation, and fixing either would pull unrelated call sites (including `resource_change.go`) into the E3 PR. E3 preserves current search-path behavior unchanged.
+Neither is a regression the loader introduces, neither blocks BYT-9215 / BYT-9261 remediation, and fixing either would pull unrelated call sites (including `resource_change.go`) into the the loader PR. the loader preserves current search-path behavior unchanged.
 
 `$user` expansion is also unchanged: `query_span.go:26` calls `meta.GetSearchPath()` (user-less variant at `backend/store/model/database.go:222`). Plumbing `currentUser` through `GetQuerySpanContext` is a separate product decision.
 
@@ -320,7 +320,7 @@ New files under `backend/plugin/parser/pg/`:
 query_span_e3_type_name.go    — typeNameFromString (cheat parser) + extractUserTypeRefs + allow-list
 query_span_e3_builders.go     — buildCreateStmt, buildViewStmt, buildCreateEnumStmt, ...
 query_span_e3_pseudo.go       — pseudoCreateStmt, pseudoViewStmt, pseudoEnum, ...
-query_span_e3_loader.go       — e3Loader{} + Load() + collectObjects + Tarjan SCC + topoSort
+query_span_e3_loader.go       — catalogLoader{} + Load() + collectObjects + Tarjan SCC + topoSort
 query_span_e3_classify.go     — classifyAnalyzeError + fallbackReason
 query_span_e3_test.go         — loader, topo, cycle, pseudo, classifier, type-grammar unit tests
 query_span_e3_integration_test.go — BYT repros + cascade + search path + PL/pgSQL integration tests
@@ -356,13 +356,13 @@ Masking policy: conservative — `Degraded=true` sources are still subject to ma
 
 **D4. Pseudo types are text-based.** text has the most permissive operator resolution and implicit-cast surface in PG. PoC validates every tested query pattern.
 
-**D5. No catalog cache.** Current path is per-query O(schema); E3 is the same shape but faster. Caching is a post-E3 optimization if profiling demands it.
+**D5. No catalog cache.** Current path is per-query O(schema); the loader is the same shape but faster. Caching is a post-the loader optimization if profiling demands it.
 
 **D6. Ignore inheritance and partition parent metadata.** `sync.go:777` flattens.
 
 **D7. Composite field access is a known degradation.** `storepb` lacks composite field names today. Medium-term follow-up: add `CompositeTypeMetadata`.
 
-**D8. No proto changes in the E3 PR.** Ship the blast-radius fix independent of metadata enrichment.
+**D8. No proto changes in the the loader PR.** Ship the blast-radius fix independent of metadata enrichment.
 
 **D9. No omni PR required.** v2/v3 briefly considered a prerequisite omni `ErrorIdent` PR. Dropped: the value it unlocked (runtime flip gate precision) is not on the main line now that shipping is by test-driven PR review, not automated gate.
 
@@ -372,12 +372,12 @@ Masking policy: conservative — `Degraded=true` sources are still subject to ma
 
 ## Tests
 
-**The test matrix replaces the shadow-diff harness.** No runtime comparison of two code paths. Instead, a comprehensive set of unit + integration tests exercises every E3 path and every known BYT-issue class. Any regression surfaces in CI, not in production.
+**The test matrix replaces the shadow-diff harness.** No runtime comparison of two code paths. Instead, a comprehensive set of unit + integration tests exercises every the loader path and every known BYT-issue class. Any regression surfaces in CI, not in production.
 
 ### Retention
 
 - All 30 existing PoC tests + 6 benchmarks in `query_span_v5_poc_test.go`. Regression baseline.
-- Existing `query_span_test.go` cases run unchanged; they are now covered by the E3 path.
+- Existing `query_span_test.go` cases run unchanged; they are now covered by the the loader path.
 - Existing testcontainer tests (`query_span_ddl_debug_testcontainer_test.go`, `query_span_typecast_testcontainer_test.go`) run unchanged.
 
 ### New unit tests (`query_span_e3_test.go`)
@@ -393,7 +393,7 @@ Masking policy: conservative — `Degraded=true` sources are still subject to ma
 
 ### New integration tests (`query_span_e3_integration_test.go`)
 
-- **BYT-9215 repro**: construct `DatabaseSchemaMetadata` with a table name `"'lib"."address"`. Assert E3 loader installs successfully (real or pseudo), a query on an unrelated table succeeds with full lineage, and a query on the broken object degrades gracefully.
+- **BYT-9215 repro**: construct `DatabaseSchemaMetadata` with a table name `"'lib"."address"`. Assert the loader loader installs successfully (real or pseudo), a query on an unrelated table succeeds with full lineage, and a query on the broken object degrades gracefully.
 - **BYT-9261 repro**: table with a `->>` index expression in metadata. Same assertion pattern.
 - **Broken enum cascade**: `E` with invalid metadata, `T(col E)`, `V` over `T`. After load, `E` is pseudo, `T` and `V` are real. Query on `V` has `Degraded=true` on the `E`-typed column only.
 - **Cyclic view definitions**: two mutually recursive views. After load, one is pseudo (the lex-first), the other is real. Query on either returns lineage; the one referencing the pseudo has `Degraded=true`.
@@ -405,7 +405,7 @@ Masking policy: conservative — `Degraded=true` sources are still subject to ma
 
 ### Benchmarks
 
-- `BenchmarkV5PoC_Install_*` remain in place (kernel benchmarks).
+- `BenchmarkLoader_Install_*` remain in place (kernel benchmarks).
 - Optional additions once full loader exists: benchmark the full `Load()` (including topo, classify, pseudo, PL/pgSQL) on a fixture schema.
 
 ## Rollout
@@ -439,21 +439,21 @@ No feature flag. No shadow mode. No flip gate. `git revert` is the rollback mech
 | Function signature parsing (overloads by signature string) misparses | Medium | Golden tests on common forms. |
 | Tarjan SCC non-determinism | Low | Intra-SCC lex ordering. Unit test asserts order. |
 | Install cost on huge schemas (>10k objects) | Low | Measured 2000 tables at ~4 ms. Extrapolates to ~20 ms at 10k. |
-| `transformFuncCall` / `transformAExpr` drop schema qualification | Medium | E3 installs all function/operator candidates globally; drop is masked at query time. File omni tracking issue separately. |
+| `transformFuncCall` / `transformAExpr` drop schema qualification | Medium | the loader installs all function/operator candidates globally; drop is masked at query time. File omni tracking issue separately. |
 | PL/pgSQL analyzer picks up degraded state unexpectedly | Low | Same `cat`; integration test covers function body using a degraded table. |
 | Cycle semantics untested against real mutually recursive views | Medium | Integration fixture with two mutually recursive views asserts one pseudo, one real. |
 | Inherited columns not actually complete in metadata | Low | Add one integration test with an inheritance chain. |
-| E3 introduces a regression that reaches main | Medium | Test matrix is the safety net (unit + integration + BYT repros + testcontainer). Fix forward if it slips. |
+| the loader introduces a regression that reaches main | Medium | Test matrix is the safety net (unit + integration + BYT repros + testcontainer). Fix forward if it slips. |
 
 ## Alternatives considered
 
-**A. v5 lazy closure + DefineX.** Requires `ExtractCatalogReferences` + closure expansion + retry loop. Four layers gone in E3. Superseded.
+**A. v5 lazy closure + DefineX.** Requires `ExtractCatalogReferences` + closure expansion + retry loop. Four layers gone in the loader. Superseded.
 
 **B. ANTLR-approach manual walker.** ~3000 LOC of hand-written walker replacing `AnalyzeSelectStmt`. Overkill: the broken path is `initCatalog`, not the analyzer. Discarded.
 
-**C. Alt D stopgap (per-statement Exec).** Valid as immediate stopgap if E3 will take >1 week, but with E3 starting immediately it adds a PR and a commit target that E3 will obsolete. Skipped.
+**C. Alt D stopgap (per-statement Exec).** Valid as immediate stopgap if the loader will take >1 week, but with the loader starting immediately it adds a PR and a commit target that the loader will obsolete. Skipped.
 
-**D. Catalog cache.** Optimization on top of E3. Deferred until profiling demands it.
+**D. Catalog cache.** Optimization on top of the loader. Deferred until profiling demands it.
 
 **E. Pseudo the cascade victims instead of the root.** Larger degraded set. Rejected in favor of root-pseudo (D3).
 
@@ -487,7 +487,7 @@ No feature flag. No shadow mode. No flip gate. `git revert` is the rollback mech
 
 ## Complexity honesty
 
-| Dimension | v5 | **E3** |
+| Dimension | v5 | **the loader** |
 |---|---|---|
 | Per-query install cost | O(closure) | O(schema), measured 1.5-2.3× faster than current |
 | Loader code | `ExtractCatalogReferences` + `expandClosure` + `installClosure` + retry | `collectObjects` + `tarjanSCC` + `topoSort` + `installReal`/`installPseudo` |

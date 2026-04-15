@@ -46,7 +46,7 @@ type omniQuerySpanExtractor struct {
 	// Keyed by lowercase CTE name.
 	fallbackCTEAliases map[string][]string
 
-	// E3 loader state — populated by initCatalog.
+	// Catalog loader state — populated by initCatalog.
 	// degraded records objects whose real install failed and fell back to
 	// pseudo. Keyed by loader object key (schema.name with kind prefix).
 	degraded map[string]error
@@ -92,10 +92,10 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 }
 
 // initCatalog initializes the omni catalog from the database metadata using
-// the E3 loader. Every metadata object is installed in dependency order,
+// the Catalog loader. Every metadata object is installed in dependency order,
 // with an inline pseudo fallback at any failed slot (see query_span_e3_*.go).
 //
-// The DDL render + batch-parse path used before E3 is deleted: BYT-9215 and
+// The DDL render + batch-parse path used before this refactor is deleted: BYT-9215 and
 // BYT-9261 are unreachable by construction here.
 func (e *omniQuerySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
@@ -110,16 +110,16 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	loader := newE3Loader(e.cat, meta.GetProto())
+	loader := newCatalogLoader(e.cat, meta.GetProto())
 	if err := loader.Load(e.ctx); err != nil {
-		return errors.Wrapf(err, "e3 loader failed for %q", e.defaultDatabase)
+		return errors.Wrapf(err, "catalog loader failed for %q", e.defaultDatabase)
 	}
 	e.degraded = loader.degraded
 	e.trulyBroken = loader.trulyBroken
 	e.loaderObjects = loader.loaderObjects
 
 	if len(loader.degraded) > 0 || len(loader.trulyBroken) > 0 {
-		slog.Debug("e3 loader degraded objects",
+		slog.Debug("catalog loader degraded objects",
 			slog.String("database", e.defaultDatabase),
 			slog.Int("degraded", len(loader.degraded)),
 			slog.Int("truly_broken", len(loader.trulyBroken)),
@@ -127,7 +127,7 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 	}
 
 	// Populate original (non-stubbed) function definitions for PL/pgSQL body
-	// analysis. This is independent of catalog loading and unchanged by E3.
+	// analysis. This is independent of catalog loading and unchanged by the loader.
 	for _, s := range meta.GetProto().GetSchemas() {
 		for _, f := range s.GetFunctions() {
 			if f.Definition == "" {

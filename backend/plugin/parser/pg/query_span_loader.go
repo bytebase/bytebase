@@ -13,7 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// e3Loader installs every schema object from a storepb.DatabaseSchemaMetadata
+// catalogLoader installs every schema object from a storepb.DatabaseSchemaMetadata
 // into an omni catalog, in dependency-topological order, with an inline
 // pseudo fallback at each failed slot.
 //
@@ -28,7 +28,7 @@ import (
 //
 // The loader holds no reference to the catalog after Load() completes; the
 // catalog object belongs to the caller.
-type e3Loader struct {
+type catalogLoader struct {
 	cat  *catalog.Catalog
 	meta *storepb.DatabaseSchemaMetadata
 
@@ -47,7 +47,7 @@ type e3Loader struct {
 	trulyBroken map[string]error
 }
 
-// objectKind identifies the kind of an E3 loader object. It drives the
+// objectKind identifies the kind of an Catalog loader object. It drives the
 // install switch in installReal/installPseudo and the dependency-edge
 // computation in buildDependencyGraph.
 type objectKind int
@@ -118,10 +118,10 @@ func kindLabel(k objectKind) string {
 	return "9unknown"
 }
 
-// newE3Loader returns a loader primed for Load(). It does not touch the
+// newCatalogLoader returns a loader primed for Load(). It does not touch the
 // catalog until Load() is called.
-func newE3Loader(cat *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) *e3Loader {
-	return &e3Loader{
+func newCatalogLoader(cat *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) *catalogLoader {
+	return &catalogLoader{
 		cat:           cat,
 		meta:          meta,
 		loaderObjects: make(map[string]bool),
@@ -135,9 +135,9 @@ func newE3Loader(cat *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) *e3
 // non-nil only for catastrophic conditions (nil catalog, ctx cancellation);
 // per-object failures are recorded in degraded/trulyBroken and do not stop
 // the loader.
-func (l *e3Loader) Load(ctx context.Context) error {
+func (l *catalogLoader) Load(ctx context.Context) error {
 	if l.cat == nil {
-		return errors.New("e3Loader: nil catalog")
+		return errors.New("catalogLoader: nil catalog")
 	}
 	if l.meta == nil {
 		return nil
@@ -161,7 +161,7 @@ func (l *e3Loader) Load(ctx context.Context) error {
 // collectObjects flattens DatabaseSchemaMetadata into a list of objectEntry
 // values, one per schema object the loader will install. Schemas themselves
 // become kindSchema entries so CREATE SCHEMA is part of the topo order.
-func (l *e3Loader) collectObjects() []*objectEntry {
+func (l *catalogLoader) collectObjects() []*objectEntry {
 	var out []*objectEntry
 	for _, sm := range l.meta.Schemas {
 		if sm.Name == "" {
@@ -503,7 +503,7 @@ func minSortKey(scc []*objectEntry) string {
 // text-backed pseudo function would crowd out that path, producing wrong
 // overload resolution and losing body-level lineage. Tables/views/types are
 // fine to pseudo-install because their lookups only need the object to exist.
-func (l *e3Loader) installOne(obj *objectEntry) {
+func (l *catalogLoader) installOne(obj *objectEntry) {
 	realErr := l.installReal(obj)
 	if realErr == nil {
 		return
@@ -521,7 +521,7 @@ func (l *e3Loader) installOne(obj *objectEntry) {
 // installReal translates the object's metadata into an AST and calls the
 // matching omni DefineX / ExecCreateTableAs / CreateFunctionStmt. Returns
 // the first error encountered.
-func (l *e3Loader) installReal(obj *objectEntry) error {
+func (l *catalogLoader) installReal(obj *objectEntry) error {
 	switch obj.kind {
 	case kindSchema:
 		err := l.cat.CreateSchemaCommand(&ast.CreateSchemaStmt{
@@ -570,7 +570,7 @@ func (l *e3Loader) installReal(obj *objectEntry) error {
 // pseudo form is text-backed and free of user-object dependencies, so this
 // function essentially never fails; the few error paths exist for defense in
 // depth.
-func (l *e3Loader) installPseudo(obj *objectEntry) error {
+func (l *catalogLoader) installPseudo(obj *objectEntry) error {
 	switch obj.kind {
 	case kindSchema:
 		// Schemas have no pseudo form — they either exist or they don't.

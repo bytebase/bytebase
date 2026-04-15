@@ -54,7 +54,7 @@ func typeNameFromString(typeStr string) (*ast.TypeName, error) {
 // PG type string. Built-in types, PG internal array forms (_name), and
 // system-schema-qualified types return nil.
 //
-// Soundness rule (E3 hard contract C5): false negatives are acceptable (the
+// Soundness rule (hard contract C5): false negatives are acceptable (the
 // loader's pseudo fallback catches them); false positives are not, because
 // they invent edges in the dependency graph.
 func extractUserTypeRefs(typeStr string) []UserTypeRef {
