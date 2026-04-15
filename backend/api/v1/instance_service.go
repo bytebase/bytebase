@@ -165,6 +165,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	// Set the workspace ID early so that workspace-scoped license checks
+	// (e.g. EXTERNAL_SECRET_MANAGER) work during the ValidateOnly test
+	// connection below, before the instance is persisted.
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	instanceMessage.Workspace = workspaceID
 	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
@@ -197,7 +202,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(result), nil
 	}
 
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
 	if instanceMessage.Metadata.GetActivation() {
 		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
@@ -209,7 +213,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	instanceMessage.Workspace = workspaceID
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
