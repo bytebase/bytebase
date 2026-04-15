@@ -95,6 +95,7 @@
       "status": "ステータス"
     }
   },
+  "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
     "external-url": "Bytebase は --extern-url を設定していません"
   },
@@ -366,6 +367,7 @@
   "common.line": "行",
   "common.load-more": "さらに読み込む",
   "common.loading": "読み込み中",
+  "common.logout": "サインアウト",
   "common.members": "メンバー",
   "common.minutes": "分",
   "common.n-more": "あと {{n}} 件",

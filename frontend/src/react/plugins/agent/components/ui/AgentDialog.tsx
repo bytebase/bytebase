@@ -1,21 +1,17 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import type { ComponentProps } from "react";
-import { cn } from "@/react/lib/utils";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
-  usePreserveHigherLayerAccess,
-} from "./layer";
+} from "@/react/components/ui/layer";
+import { cn } from "@/react/lib/utils";
 
-// ---- Root ----
-const Dialog = BaseDialog.Root;
+export const AgentDialog = BaseDialog.Root;
 
-// ---- Trigger ----
-const DialogTrigger = BaseDialog.Trigger;
+export const AgentDialogTrigger = BaseDialog.Trigger;
 
-// ---- Overlay / Backdrop ----
-function DialogOverlay({
+function AgentDialogOverlay({
   className,
   ref,
   ...props
@@ -32,20 +28,18 @@ function DialogOverlay({
   );
 }
 
-// ---- Content / Popup ----
-function DialogContent({
+export function AgentDialogContent({
   className,
   children,
   ref,
   ...props
 }: ComponentProps<typeof BaseDialog.Popup>) {
-  usePreserveHigherLayerAccess("overlay");
-
   return (
-    <BaseDialog.Portal container={getLayerRoot("overlay")}>
-      <DialogOverlay />
+    <BaseDialog.Portal container={getLayerRoot("agent")}>
+      <AgentDialogOverlay />
       <BaseDialog.Popup
         ref={ref}
+        data-agent-dialog-content
         className={cn(
           `fixed left-1/2 top-1/2 ${LAYER_SURFACE_CLASS} -translate-x-1/2 -translate-y-1/2`,
           "w-[calc(100vw-8rem)] max-w-3xl 2xl:max-w-[55vw]",
@@ -61,8 +55,7 @@ function DialogContent({
   );
 }
 
-// ---- Title ----
-function DialogTitle({
+export function AgentDialogTitle({
   className,
   ref,
   ...props
@@ -76,8 +69,7 @@ function DialogTitle({
   );
 }
 
-// ---- Description ----
-function DialogDescription({
+export function AgentDialogDescription({
   className,
   ref,
   ...props
@@ -91,15 +83,4 @@ function DialogDescription({
   );
 }
 
-// ---- Close ----
-const DialogClose = BaseDialog.Close;
-
-export {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogOverlay,
-  DialogTitle,
-  DialogTrigger,
-};
+export const AgentDialogClose = BaseDialog.Close;

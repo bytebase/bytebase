@@ -1,26 +1,18 @@
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import type { ComponentProps } from "react";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { cn } from "@/react/lib/utils";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
-// ---- Root ----
-// Default to non-modal: row action menus should let users click through to
-// other elements and dismiss by clicking outside, without locking page scroll.
-// Callers that need modal behavior (rare) can pass `modal` explicitly.
-function DropdownMenu({
+export function AgentDropdownMenu({
   modal = false,
   ...props
 }: ComponentProps<typeof BaseMenu.Root>) {
   return <BaseMenu.Root modal={modal} {...props} />;
 }
 
-// ---- Trigger ----
-// Re-exported as-is so callers pass their own className/children. Base UI
-// renders it as a <button> element by default.
-const DropdownMenuTrigger = BaseMenu.Trigger;
+export const AgentDropdownMenuTrigger = BaseMenu.Trigger;
 
-// ---- Portal + Positioner + Popup ----
-function DropdownMenuContent({
+export function AgentDropdownMenuContent({
   className,
   children,
   sideOffset = 4,
@@ -32,7 +24,7 @@ function DropdownMenuContent({
   align?: ComponentProps<typeof BaseMenu.Positioner>["align"];
 }) {
   return (
-    <BaseMenu.Portal container={getLayerRoot("overlay")}>
+    <BaseMenu.Portal container={getLayerRoot("agent")}>
       <BaseMenu.Positioner
         sideOffset={sideOffset}
         align={align}
@@ -40,6 +32,7 @@ function DropdownMenuContent({
       >
         <BaseMenu.Popup
           ref={ref}
+          data-agent-dropdown-menu-content
           className={cn(
             "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
             "focus:outline-hidden",
@@ -54,8 +47,7 @@ function DropdownMenuContent({
   );
 }
 
-// ---- Item ----
-function DropdownMenuItem({
+export function AgentDropdownMenuItem({
   className,
   children,
   ref,
@@ -65,7 +57,7 @@ function DropdownMenuItem({
     <BaseMenu.Item
       ref={ref}
       className={cn(
-        "relative flex items-center gap-x-2 px-3 py-2 text-sm cursor-pointer select-none",
+        "relative flex cursor-pointer items-center gap-x-2 px-3 py-2 text-sm select-none",
         "hover:bg-control-bg focus:bg-control-bg outline-hidden",
         "data-highlighted:bg-control-bg",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
@@ -78,8 +70,7 @@ function DropdownMenuItem({
   );
 }
 
-// ---- Separator ----
-function DropdownMenuSeparator({
+export function AgentDropdownMenuSeparator({
   className,
   ref,
   ...props
@@ -92,11 +83,3 @@ function DropdownMenuSeparator({
     />
   );
 }
-
-export {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-};

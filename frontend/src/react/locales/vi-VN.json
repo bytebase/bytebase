@@ -95,6 +95,7 @@
       "status": "Trạng thái"
     }
   },
+  "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
     "external-url": "Bytebase chưa được cấu hình --external-url"
   },
@@ -366,6 +367,7 @@
   "common.line": "Dòng",
   "common.load-more": "Tải thêm",
   "common.loading": "Đang tải",
+  "common.logout": "Đăng xuất",
   "common.members": "Thành viên",
   "common.minutes": "Phút",
   "common.n-more": "còn {{n}}",

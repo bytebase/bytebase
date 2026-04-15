@@ -95,6 +95,7 @@
       "status": "Status"
     }
   },
+  "auth.token-expired-title": "Token expired",
   "banner": {
     "external-url": "Bytebase has not configured --external-url"
   },
@@ -366,6 +367,7 @@
   "common.line": "Line",
   "common.load-more": "Load more",
   "common.loading": "Loading",
+  "common.logout": "Logout",
   "common.members": "Members",
   "common.minutes": "Minutes",
   "common.n-more": "{{n}} more",

@@ -1,7 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/react/components/ui/button";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { router } from "@/router";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
@@ -70,6 +80,16 @@ const getCurrentPageSnapshot = () => ({
   title: document.title,
 });
 
+const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
+  left: rect.left,
+  top: rect.top - 4,
+  transform: "translateY(-100%)",
+  width: rect.width,
+});
+
+const getMentionListStyleKey = (rect: DOMRect) =>
+  `${rect.left}:${rect.top}:${rect.width}`;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -101,9 +121,12 @@ export function AgentInput() {
   >([]);
   const [isMentionOpen, setIsMentionOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
+  const [mentionListStyle, setMentionListStyle] =
+    useState<CSSProperties | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mentionListRef = useRef<HTMLDivElement>(null);
+  const mentionListStyleKeyRef = useRef<string | null>(null);
 
   // Derived values
   const isInterrupted = Boolean(currentChat?.interrupted);
@@ -154,6 +177,44 @@ export function AgentInput() {
 
   // Show/hide mention popover
   const showMention = isMentionOpen && mentionOptions.length > 0;
+
+  useLayoutEffect(() => {
+    if (!showMention) {
+      mentionListStyleKeyRef.current = null;
+      setMentionListStyle(null);
+      return;
+    }
+
+    let isCancelled = false;
+    let frameId = 0;
+
+    const updateMentionListPosition = () => {
+      const rect = textareaRef.current?.getBoundingClientRect();
+      if (!rect) {
+        if (mentionListStyleKeyRef.current !== null) {
+          mentionListStyleKeyRef.current = null;
+          setMentionListStyle(null);
+        }
+      } else {
+        const nextStyleKey = getMentionListStyleKey(rect);
+        if (nextStyleKey !== mentionListStyleKeyRef.current) {
+          mentionListStyleKeyRef.current = nextStyleKey;
+          setMentionListStyle(buildMentionListStyle(rect));
+        }
+      }
+
+      if (!isCancelled) {
+        frameId = requestAnimationFrame(updateMentionListPosition);
+      }
+    };
+
+    updateMentionListPosition();
+
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [showMention]);
 
   // Reset highlight when options change
   useEffect(() => {
@@ -712,48 +773,53 @@ export function AgentInput() {
             />
 
             {/* Mention popover */}
-            {showMention && (
-              <div
-                ref={mentionListRef}
-                className="absolute bottom-full left-0 z-50 mb-1 max-h-80 w-full overflow-y-auto rounded-xs border bg-background shadow-lg"
-              >
-                {mentionOptions.map((option, index) => {
-                  const meta = formatDomRefSuggestionMeta(option.suggestion);
-                  return (
-                    <div
-                      key={option.value}
-                      data-mention-option
-                      className={`cursor-pointer px-3 py-2 ${
-                        index === highlightIndex
-                          ? "bg-accent/10"
-                          : "hover:bg-control-bg"
-                      }`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        selectMention(option);
-                      }}
-                      onMouseEnter={() => setHighlightIndex(index)}
-                    >
-                      <div className="flex flex-col text-sm">
-                        <div className="flex items-center gap-x-2 text-main">
-                          <span className="font-medium">
-                            [{option.suggestion.ref}]
-                          </span>
-                          <span className="truncate">
-                            {option.suggestion.label}
-                          </span>
-                        </div>
-                        {meta && (
-                          <div className="mt-1 text-xs text-control-light">
-                            {meta}
+            {showMention &&
+              mentionListStyle &&
+              createPortal(
+                <div
+                  ref={mentionListRef}
+                  data-agent-mention-list
+                  className={`fixed ${LAYER_SURFACE_CLASS} max-h-80 overflow-y-auto rounded-xs border bg-background shadow-lg`}
+                  style={mentionListStyle}
+                >
+                  {mentionOptions.map((option, index) => {
+                    const meta = formatDomRefSuggestionMeta(option.suggestion);
+                    return (
+                      <div
+                        key={option.value}
+                        data-mention-option
+                        className={`cursor-pointer px-3 py-2 ${
+                          index === highlightIndex
+                            ? "bg-accent/10"
+                            : "hover:bg-control-bg"
+                        }`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectMention(option);
+                        }}
+                        onMouseEnter={() => setHighlightIndex(index)}
+                      >
+                        <div className="flex flex-col text-sm">
+                          <div className="flex items-center gap-x-2 text-main">
+                            <span className="font-medium">
+                              [{option.suggestion.ref}]
+                            </span>
+                            <span className="truncate">
+                              {option.suggestion.label}
+                            </span>
                           </div>
-                        )}
+                          {meta && (
+                            <div className="mt-1 text-xs text-control-light">
+                              {meta}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>,
+                getLayerRoot("agent")
+              )}
           </div>
 
           {loading ? (
