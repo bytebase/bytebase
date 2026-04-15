@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "@/react/lib/utils";
 import { HighlightLabelText } from "../HighlightLabelText";
+import { getPortalDropdownStyle } from "./combobox-position";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 import { SearchInput } from "./search-input";
 
@@ -112,19 +113,6 @@ export function Combobox(props: ComboboxProps) {
     [allOptions, selectedValues]
   );
 
-  // Position dropdown for portal mode — useLayoutEffect prevents a
-  // one-frame flash at a stale/empty position before the browser paints.
-  useLayoutEffect(() => {
-    if (!open || !portal || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setDropdownStyle({
-      position: "fixed",
-      top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
-    });
-  }, [open, portal]);
-
   // Debounced server-side search
   useEffect(() => {
     if (!onSearch || !open) return;
@@ -153,6 +141,30 @@ export function Combobox(props: ComboboxProps) {
       }))
       .filter((g) => g.options.length > 0);
   }, [options, search, onSearch]);
+
+  // Position dropdown for portal mode — useLayoutEffect prevents a
+  // one-frame flash at a stale/empty position before the browser paints.
+  useLayoutEffect(() => {
+    if (!open || !portal || !containerRef.current) return;
+
+    const updateDropdownPosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
+      setDropdownStyle(
+        getPortalDropdownStyle(rect, dropdownHeight, window.innerHeight)
+      );
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
+    };
+  }, [open, portal, filteredGroups]);
 
   // Click outside (handles both container and portal dropdown)
   useEffect(() => {
