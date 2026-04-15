@@ -1,8 +1,11 @@
 package partiql
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/partiql"
+	"errors"
+	"unicode/utf8"
+
+	"github.com/bytebase/omni/partiql/analysis"
+	"github.com/bytebase/omni/partiql/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -13,52 +16,57 @@ func init() {
 }
 
 func validateQuery(statement string) (bool, bool, error) {
-	parseResults, err := ParsePartiQL(statement)
-	if err != nil {
-		return false, false, err
+	err := analysis.ValidateQuery(statement)
+	if err == nil {
+		return true, true, nil
 	}
-
-	for _, parseResult := range parseResults {
-		l := &queryValidateListener{
-			valid: true,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
-		if !l.valid {
-			return false, false, nil
-		}
+	// Distinguish syntax errors from validation rejections.
+	// Parse errors (*parser.ParseError) are converted to
+	// *base.SyntaxError so callers (e.g. sql_service.go's
+	// validateQueryRequest) get structured line/column diagnostics
+	// via errors.As(err, &parserbase.SyntaxError{}).
+	// Validation errors (DML/DDL/EXEC rejected) mean the query is
+	// syntactically valid but not read-only.
+	var parseErr *parser.ParseError
+	if errors.As(err, &parseErr) {
+		return false, false, convertParseError(statement, parseErr)
 	}
-	return true, true, nil
+	return false, false, nil
 }
 
-type queryValidateListener struct {
-	*parser.BasePartiQLParserListener
-
-	valid bool
+// convertParseError converts an omni *parser.ParseError to a
+// *base.SyntaxError that sql_service.go recognizes for structured
+// error diagnostics. It converts the byte offset in ParseError.Loc
+// to 1-based line and 1-based column (rune-based) matching the
+// storepb.Position convention used across all omni parser adapters.
+func convertParseError(statement string, pe *parser.ParseError) *base.SyntaxError {
+	line, col := byteOffsetToPosition(statement, pe.Loc.Start)
+	return &base.SyntaxError{
+		Position: &storepb.Position{
+			Line:   int32(line),
+			Column: int32(col),
+		},
+		Message:    pe.Error(),
+		RawMessage: pe.Message,
+	}
 }
 
-func (q *queryValidateListener) EnterRoot(ctx *parser.RootContext) {
-	if !q.valid {
-		return
+// byteOffsetToPosition converts a 0-based byte offset to a 1-based
+// line number and 1-based column (in runes). Both line and column are
+// 1-based to match the storepb.Position convention used by other omni
+// parser adapters (see e.g. tsql/omni.go: "runeCol + 1").
+func byteOffsetToPosition(s string, offset int) (line, col int) {
+	line = 1
+	col = 1
+	for i := 0; i < offset && i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+		i += size
 	}
-	if ctx.EXPLAIN() != nil {
-		return
-	}
-
-	child := ctx.GetChild(0)
-	if child == nil {
-		return
-	}
-	switch child.(type) {
-	case *parser.QueryDqlContext:
-		return
-	case *parser.QueryDdlContext:
-		q.valid = false
-		return
-	case *parser.QueryDmlContext:
-		q.valid = false
-		return
-	case *parser.QueryExecContext:
-		q.valid = false
-		return
-	}
+	return line, col
 }
