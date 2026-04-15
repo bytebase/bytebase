@@ -7,7 +7,9 @@ export const LAYER_ROOT_ID = {
 export const LAYER_Z_INDEX = {
   overlay: 50,
   agent: 60,
-  critical: 70,
+  // Legacy Naive overlays start at 2000 and notifications/messages go higher,
+  // so forced re-auth must sit above that during the Vue->React migration.
+  critical: 7000,
 } as const;
 
 export type LayerFamily = keyof typeof LAYER_ROOT_ID;

@@ -6,7 +6,9 @@ const pluginComponentLoaders = import.meta.glob(
   "./plugins/agent/components/AgentWindow.tsx"
 );
 const workspacePageLoaders = import.meta.glob("./pages/workspace/*.tsx");
-const authComponentLoaders = import.meta.glob("./components/auth/*.tsx");
+const authComponentLoaders = import.meta.glob(
+  "./components/auth/SessionExpiredSurface.tsx"
+);
 const pageLoaders = {
   ...settingsPageLoaders,
   ...projectPageLoaders,
@@ -55,15 +57,25 @@ const pageDirs = [
   "./components/auth",
 ];
 
+export function resolveReactPagePath(name: string): string | undefined {
+  for (const dir of pageDirs) {
+    const path = `${dir}/${name}.tsx`;
+    if (path in pageLoaders) {
+      return path;
+    }
+  }
+  return undefined;
+}
+
 async function loadPage(name: string): Promise<ReactComponent> {
   const hit = cachedPages.get(name);
   if (hit) return hit;
-  let loader: (() => Promise<Record<string, unknown>>) | undefined;
-  for (const dir of pageDirs) {
-    const path = `${dir}/${name}.tsx`;
-    loader = pageLoaders[path] as typeof loader;
-    if (loader) break;
-  }
+  const path = resolveReactPagePath(name);
+  const loader = path
+    ? (pageLoaders[path] as
+        | (() => Promise<Record<string, unknown>>)
+        | undefined)
+    : undefined;
   if (!loader) throw new Error(`Unknown React page: ${name}`);
   const mod = await loader();
   const Component = mod[name] as ReactComponent;

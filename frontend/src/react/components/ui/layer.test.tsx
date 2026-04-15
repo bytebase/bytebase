@@ -38,4 +38,8 @@ describe("layer roots", () => {
       document.querySelectorAll(`#${LAYER_ROOT_ID.critical}`)
     ).toHaveLength(1);
   });
+
+  test("keeps the critical layer above the legacy Naive overlay stack", () => {
+    expect(LAYER_Z_INDEX.critical).toBeGreaterThan(6000);
+  });
 });
