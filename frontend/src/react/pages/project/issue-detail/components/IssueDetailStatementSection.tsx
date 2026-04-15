@@ -65,6 +65,7 @@ export function IssueDetailStatementSection({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
+  const { setEditing } = page;
   const sheetStore = useSheetV1Store();
   const releaseStore = useReleaseStore();
   const projectStore = useProjectV1Store();
@@ -131,11 +132,11 @@ export function IssueDetailStatementSection({
   }, [isEditing, statement]);
 
   useEffect(() => {
-    page.setEditing(editingScope, isEditing);
+    setEditing(editingScope, isEditing);
     return () => {
-      page.setEditing(editingScope, false);
+      setEditing(editingScope, false);
     };
-  }, [editingScope, isEditing, page]);
+  }, [editingScope, isEditing, setEditing]);
 
   useEffect(() => {
     setIsEditing(false);

@@ -69,6 +69,7 @@ import { IssueDetailStatementSection } from "./IssueDetailStatementSection";
 const DEFAULT_VISIBLE_TARGETS = 20;
 const MAX_INLINE_DATABASES = 5;
 const EMPTY_SELECT_VALUE = "__empty__";
+const EMPTY_SPECS: Plan_Spec[] = [];
 
 export function IssueDetailDatabaseChangeView({
   onSelectedSpecIdChange,
@@ -79,11 +80,8 @@ export function IssueDetailDatabaseChangeView({
 }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const { emptySpecIdSet } = useIssueDetailSpecValidation(
-    page.plan?.specs ?? []
-  );
-
-  const specs = page.plan?.specs ?? [];
+  const specs = page.plan?.specs ?? EMPTY_SPECS;
+  const { emptySpecIdSet } = useIssueDetailSpecValidation(specs);
   const selectedSpec = useMemo(() => {
     return specs.find((spec) => spec.id === selectedSpecId) ?? specs[0];
   }, [selectedSpecId, specs]);
@@ -820,7 +818,10 @@ function IssueDetailDatabaseGroupTarget({
   const databaseGroup = useVueState(() =>
     dbGroupStore.getDBGroupByName(target)
   );
-  const databases = databaseGroup.matchedDatabases?.map((db) => db.name) ?? [];
+  const databases = useMemo(
+    () => databaseGroup.matchedDatabases?.map((db) => db.name) ?? [],
+    [databaseGroup.matchedDatabases]
+  );
   const extraDatabases = databases.slice(MAX_INLINE_DATABASES);
 
   useEffect(() => {
