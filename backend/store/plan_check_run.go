@@ -264,8 +264,8 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 	q := qb.Q().Space(`
 		UPDATE plan_check_run
 		SET status = ?, updated_at = now()
-		WHERE id IN (
-			SELECT id FROM plan_check_run
+		WHERE (project, id) IN (
+			SELECT project, id FROM plan_check_run
 			WHERE status = ?
 			FOR UPDATE SKIP LOCKED
 		)
