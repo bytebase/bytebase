@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -106,6 +107,63 @@ func TestAuditLogFormat(t *testing.T) {
 	a.Equal(v1pb.AuditLog_INFO, signupEntry.Severity)
 	a.NotContains(signupEntry.Request, "1024bytebase",
 		"plaintext password must never appear in Signup audit Request")
+
+	// --- Part 2.5: Denied Signup is still audited ---
+	//
+	// Regression guard for #20024 (discussion_r3089978499): Signup failures
+	// that return *before* the original SetAuditWorkspaceID call site (e.g.
+	// DisallowSignup denial on invited/self-hosted signups) must still land
+	// in audit. Signup uses a defer'd SetAuditWorkspaceID so every exit
+	// path announces the resolved workspace.
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceProfile{
+					WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
+						DisallowSignup: true,
+					},
+				},
+			},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{
+			Paths: []string{"value.workspace_profile.disallow_signup"},
+		},
+	}))
+	a.NoError(err)
+
+	// Signup is allow_without_credential; clear token for cleanliness.
+	savedToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	_, signupErr := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+		Email:    "denied@example.com",
+		Password: "1024bytebase",
+		Title:    "denied",
+	}))
+	a.Error(signupErr, "DisallowSignup must reject the new-user signup")
+	ctl.authInterceptor.token = savedToken
+
+	deniedSignupLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:  workspace,
+		Filter:  `method == "/bytebase.v1.AuthService/Signup"`,
+		OrderBy: "create_time desc",
+	}))
+	a.NoError(err)
+
+	var deniedEntry *v1pb.AuditLog
+	for _, e := range deniedSignupLogs.Msg.AuditLogs {
+		if e.Resource == "denied@example.com" {
+			deniedEntry = e
+			break
+		}
+	}
+	a.NotNil(deniedEntry,
+		"denied Signup must produce an audit entry under the workspace "+
+			"(without the defer'd SetAuditWorkspaceID, the handler returns "+
+			"before the workspace is announced and the entry is silently dropped)")
+	a.NotNil(deniedEntry.Status, "denied Signup must carry a non-nil Status")
+	a.NotEqual(int32(0), deniedEntry.Status.Code,
+		"denied Signup must carry a non-zero status code")
 
 	// --- Part 3: SetIamPolicy (project-scoped, authenticated) ---
 	//
