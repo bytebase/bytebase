@@ -120,6 +120,15 @@ const applyDerivedState = (
   };
 };
 
+const isSameSnapshot = (
+  prev: IssueDetailPageSnapshot,
+  next: IssueDetailPageSnapshot
+) => {
+  return (Object.keys(next) as Array<keyof IssueDetailPageSnapshot>).every(
+    (key) => Object.is(prev[key], next[key])
+  );
+};
+
 const loadIssueDetailSnapshot = async (
   projectId: string,
   issueId: string
@@ -292,7 +301,10 @@ export const useIssueDetailPage = ({
 
   const patchState = useCallback(
     (patch: Partial<IssueDetailPageSnapshot>) => {
-      setSnapshot((prev) => applyDerivedState({ ...prev, ...patch }));
+      setSnapshot((prev) => {
+        const next = applyDerivedState({ ...prev, ...patch });
+        return isSameSnapshot(prev, next) ? prev : next;
+      });
     },
     [setSnapshot]
   );

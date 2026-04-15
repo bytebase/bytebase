@@ -132,6 +132,7 @@ export function IssueDetailDatabaseExportView({
 function IssueDetailDatabaseExportOptions() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
+  const { setEditing } = page;
   const exportDataSpec = useMemo(() => {
     return page.plan?.specs.find(
       (spec) => spec.config?.case === "exportDataConfig"
@@ -156,11 +157,11 @@ function IssueDetailDatabaseExportOptions() {
   }, [exportDataConfig, isEditing]);
 
   useEffect(() => {
-    page.setEditing("export-options", isEditing);
+    setEditing("export-options", isEditing);
     return () => {
-      page.setEditing("export-options", false);
+      setEditing("export-options", false);
     };
-  }, [isEditing, page]);
+  }, [isEditing, setEditing]);
 
   const shouldShowEditButton = useMemo(() => {
     if (page.readonly || page.isCreating || isEditing) {
@@ -697,7 +698,10 @@ function IssueDetailDatabaseExportDatabaseGroupTarget({
   const databaseGroup = useVueState(() =>
     dbGroupStore.getDBGroupByName(target)
   );
-  const databases = databaseGroup.matchedDatabases?.map((db) => db.name) ?? [];
+  const databases = useMemo(
+    () => databaseGroup.matchedDatabases?.map((db) => db.name) ?? [],
+    [databaseGroup.matchedDatabases]
+  );
   const extraDatabases = databases.slice(MAX_INLINE_DATABASES);
 
   useEffect(() => {

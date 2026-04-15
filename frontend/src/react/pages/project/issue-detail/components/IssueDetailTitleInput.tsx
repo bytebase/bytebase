@@ -16,6 +16,7 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 export function IssueDetailTitleInput() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
+  const { setEditing } = page;
   const projectStore = useProjectV1Store();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -30,9 +31,9 @@ export function IssueDetailTitleInput() {
 
   useEffect(() => {
     return () => {
-      page.setEditing("title", false);
+      setEditing("title", false);
     };
-  }, [page]);
+  }, [setEditing]);
 
   const allowEdit = useMemo(() => {
     if (page.readonly || !page.issue || !project) {
@@ -43,7 +44,7 @@ export function IssueDetailTitleInput() {
   const isReadOnly = !allowEdit || isUpdating;
 
   const handleBlur = async () => {
-    page.setEditing("title", false);
+    setEditing("title", false);
     setIsEditing(false);
     if (!page.issue || title === page.issue.title) {
       setTitle(page.issue?.title || "");
@@ -100,7 +101,7 @@ export function IssueDetailTitleInput() {
           if (isReadOnly) {
             return;
           }
-          page.setEditing("title", true);
+          setEditing("title", true);
           setIsEditing(true);
         }}
         onKeyDown={(e) => {
