@@ -197,6 +197,36 @@ describe("SessionExpiredSurface", () => {
     });
   });
 
+  test("keeps the agent layer inert while the critical surface is open", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const agentRoot = document.createElement("div");
+
+    agentRoot.id = "bb-react-layer-agent";
+    document.body.appendChild(agentRoot);
+
+    await act(async () => {
+      root.render(
+        <>
+          <Dialog open>
+            <DialogContent>Underlying dialog</DialogContent>
+          </Dialog>
+          <SessionExpiredSurface currentPath="/instances" />
+        </>
+      );
+      await Promise.resolve();
+    });
+
+    await vi.waitFor(() => {
+      expect(agentRoot.getAttribute("aria-hidden")).toBe("true");
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("syncs React i18n before the initial mount", async () => {
     const calls: string[] = [];
     mountMocks.changeLanguage.mockImplementation(async () => {

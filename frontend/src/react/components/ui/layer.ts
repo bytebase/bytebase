@@ -28,6 +28,12 @@ const HIGHER_LAYER_FAMILIES: Record<LayerFamily, LayerFamily[]> = {
   critical: [],
 };
 
+const getExistingLayerRoot = (family: LayerFamily) =>
+  document.getElementById(LAYER_ROOT_ID[family]) as HTMLDivElement | null;
+
+const hasActiveLayerContent = (family: LayerFamily) =>
+  (getExistingLayerRoot(family)?.childElementCount ?? 0) > 0;
+
 const ensureRoot = (family: LayerFamily) => {
   const id = LAYER_ROOT_ID[family];
   const existing = document.getElementById(id);
@@ -62,23 +68,38 @@ export const getLayerRoot = (family: LayerFamily) => ensureRoot(family);
 
 export const usePreserveHigherLayerAccess = (family: LayerFamily) => {
   useLayoutEffect(() => {
-    const higherRoots = HIGHER_LAYER_FAMILIES[family]
-      .map((higherFamily) =>
-        document.getElementById(LAYER_ROOT_ID[higherFamily])
-      )
-      .filter((root): root is HTMLDivElement => root instanceof HTMLDivElement);
+    const preserveableRoots = HIGHER_LAYER_FAMILIES[family]
+      .map((higherFamily) => ({
+        family: higherFamily,
+        root: getExistingLayerRoot(higherFamily),
+      }))
+      .filter(
+        (entry): entry is { family: LayerFamily; root: HTMLDivElement } =>
+          entry.root instanceof HTMLDivElement
+      );
 
-    if (higherRoots.length === 0) {
+    if (preserveableRoots.length === 0) {
       return;
     }
 
-    const revealRoot = (root: HTMLDivElement) => {
+    const shouldRevealRoot = (targetFamily: LayerFamily) =>
+      HIGHER_LAYER_FAMILIES[targetFamily].every(
+        (higherFamily) => !hasActiveLayerContent(higherFamily)
+      );
+
+    const revealRoot = (targetFamily: LayerFamily, root: HTMLDivElement) => {
+      if (!shouldRevealRoot(targetFamily)) {
+        return;
+      }
+
       for (const attribute of LAYER_ACCESSIBLE_ATTRIBUTES) {
         root.removeAttribute(attribute);
       }
     };
 
-    higherRoots.forEach(revealRoot);
+    preserveableRoots.forEach(({ family: targetFamily, root }) => {
+      revealRoot(targetFamily, root);
+    });
 
     const observer = new MutationObserver((records) => {
       for (const record of records) {
@@ -89,12 +110,17 @@ export const usePreserveHigherLayerAccess = (family: LayerFamily) => {
           ) &&
           record.target instanceof HTMLDivElement
         ) {
-          revealRoot(record.target);
+          const targetFamily = record.target.dataset.bbLayerFamily as
+            | LayerFamily
+            | undefined;
+          if (targetFamily) {
+            revealRoot(targetFamily, record.target);
+          }
         }
       }
     });
 
-    for (const root of higherRoots) {
+    for (const { root } of preserveableRoots) {
       observer.observe(root, {
         attributes: true,
         attributeFilter: [...LAYER_ACCESSIBLE_ATTRIBUTES],
