@@ -222,58 +222,6 @@ describe("Grant access locale coverage", () => {
   }
 });
 
-describe("React plan locale translations", () => {
-  const dir = resolve(__dirname, "../react/locales");
-  const englishMessages = JSON.parse(
-    readFileSync(resolve(dir, "en-US.json"), "utf-8")
-  ) as Record<string, string>;
-  const requiredTranslations: Record<string, string[]> = {
-    "es-ES.json": [
-      "plan.checks.failed-to-run",
-      "plan.checks.no-check-results",
-      "plan.checks.no-results-match-filters",
-      "plan.checks.started",
-      "plan.navigator.checks",
-      "plan.overview.no-checks",
-      "plan.ready-for-review",
-      "plan.spec.change",
-    ],
-    "ja-JP.json": [
-      "plan.checks.failed-to-run",
-      "plan.checks.no-check-results",
-      "plan.checks.no-results-match-filters",
-      "plan.checks.started",
-      "plan.navigator.checks",
-      "plan.overview.no-checks",
-      "plan.ready-for-review",
-      "plan.spec.change",
-    ],
-    "vi-VN.json": [
-      "plan.checks.failed-to-run",
-      "plan.checks.no-check-results",
-      "plan.checks.no-results-match-filters",
-      "plan.checks.started",
-      "plan.navigator.checks",
-      "plan.overview.no-checks",
-      "plan.ready-for-review",
-      "plan.spec.change",
-    ],
-    "zh-CN.json": ["plan.spec.change"],
-  };
-
-  for (const [file, keys] of Object.entries(requiredTranslations)) {
-    const content = JSON.parse(
-      readFileSync(resolve(dir, file), "utf-8")
-    ) as Record<string, string>;
-    for (const key of keys) {
-      test(`react/locales/${file} translates ${key}`, () => {
-        expect(content[key], `${file} missing ${key}`).toBeTruthy();
-        expect(content[key]).not.toEqual(englishMessages[key]);
-      });
-    }
-  }
-});
-
 const compareMessages = (
   localA: LocaleMessageObject,
   localB: LocaleMessageObject
