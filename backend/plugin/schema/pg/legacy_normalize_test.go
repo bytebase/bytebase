@@ -278,6 +278,69 @@ func TestNormalizeLegacyMetadata_PartitionAndMV(t *testing.T) {
 	}
 }
 
+// TestGetMultiFileDatabaseDefinition_LegacyIndexExpressionsParse locks the
+// multi-file / SDL export path: legacy stripped-parens expressions stored on
+// tables, partitions, and materialized views must all emit as parseable SQL
+// through GetMultiFileDatabaseDefinition, which has its own entry point and
+// was previously missing the normalization pass (Codex review, PR #20009).
+func TestGetMultiFileDatabaseDefinition_LegacyIndexExpressionsParse(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{{
+				Name: "t",
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "a", Position: 1, Type: "integer"},
+					{Name: "b", Position: 2, Type: "integer"},
+					{Name: "payload", Position: 3, Type: "jsonb"},
+				},
+				Indexes: []*storepb.IndexMetadata{{
+					Name:        "t_legacy_idx",
+					Type:        "btree",
+					Expressions: []string{"payload ->> 'k'::text"}, // legacy
+				}},
+				Partitions: []*storepb.TablePartitionMetadata{{
+					Name: "t_p1",
+					Indexes: []*storepb.IndexMetadata{{
+						Name:        "t_p1_legacy_idx",
+						Type:        "btree",
+						Expressions: []string{"a + b"}, // legacy
+					}},
+				}},
+			}},
+			MaterializedViews: []*storepb.MaterializedViewMetadata{{
+				Name:       "mv",
+				Definition: "SELECT 1 AS x",
+				Indexes: []*storepb.IndexMetadata{{
+					Name:        "mv_legacy_idx",
+					Type:        "btree",
+					Expressions: []string{"payload ->> 'k'::text"}, // legacy
+				}},
+			}},
+		}},
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetMultiFileDatabaseDefinition: %v", err)
+	}
+
+	var sawIndex bool
+	for _, f := range result.Files {
+		if !strings.Contains(f.Content, "CREATE INDEX") && !strings.Contains(f.Content, "CREATE UNIQUE INDEX") {
+			continue
+		}
+		sawIndex = true
+		if _, err := omnipg.Parse(f.Content); err != nil {
+			t.Errorf("omni parse failed for %s:\n%s\nerr: %v", f.Name, f.Content, err)
+		}
+	}
+	if !sawIndex {
+		t.Fatal("no CREATE INDEX emitted in multi-file output; test setup is wrong")
+	}
+}
+
 // TestGetDatabaseDefinition_DoesNotMutateInput guards the proto.Clone at the
 // top of GetDatabaseDefinition. The caller's metadata (often a shared pointer
 // from store.dbSchemaCache) must not be altered by the normalization pass.

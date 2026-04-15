@@ -3621,6 +3621,21 @@ func writeForeignKeyConstraintSDL(out io.Writer, fk *storepb.ForeignKeyMetadata)
 func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
 	metadata = filterBackupSchemaIfNecessary(ctx, metadata)
 
+	// Clone before mutating: the caller's *DatabaseSchemaMetadata is often a
+	// shared pointer returned from store.dbSchemaCache (see
+	// backend/store/model/database.go:GetProto), so concurrent callers could
+	// race on in-place normalization writes below.
+	cloned, ok := proto.Clone(metadata).(*storepb.DatabaseSchemaMetadata)
+	if !ok {
+		return nil, errors.New("proto.Clone returned unexpected type for DatabaseSchemaMetadata")
+	}
+	metadata = cloned
+
+	// Repair historical non-canonical metadata shapes (e.g. index key
+	// expressions stored without outer parens) so emission produces valid SQL.
+	// See legacy_normalize.go for removal criteria.
+	normalizeLegacyMetadata(metadata)
+
 	if len(metadata.Schemas) == 0 {
 		return &schema.MultiFileSchemaResult{Files: []schema.File{}}, nil
 	}
