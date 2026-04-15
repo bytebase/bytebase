@@ -48,6 +48,14 @@ func TestIsBareColumnIdent(t *testing.T) {
 		{"  name  ", true},
 		{"_col", true},
 		{"col1", true},
+		// PostgreSQL allows `$` in unquoted identifiers after the first
+		// character. Columns like `col$1` must be classified as bare
+		// identifiers — otherwise PK/UNIQUE constraint emission on such
+		// columns would wrap them as expression keys, which PG rejects.
+		// Codex review (PR #20009).
+		{"col$1", true},
+		{"a$b$c", true},
+		{"$col", false}, // leading '$' is not allowed
 		{`"Name"`, true},
 		{`"has ""quote"" inside"`, true},
 		{"name + 1", false},

@@ -56,11 +56,7 @@ func GetDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *storepb.Da
 	// shared pointer returned from store.dbSchemaCache (see
 	// backend/store/model/database.go:GetProto), so concurrent callers could
 	// race on in-place normalization writes below.
-	cloned, ok := proto.Clone(metadata).(*storepb.DatabaseSchemaMetadata)
-	if !ok {
-		return "", errors.New("proto.Clone returned unexpected type for DatabaseSchemaMetadata")
-	}
-	metadata = cloned
+	metadata = proto.CloneOf(metadata)
 
 	// Repair historical non-canonical metadata shapes (e.g. index key
 	// expressions stored without outer parens) so emission produces valid SQL.
@@ -3625,11 +3621,7 @@ func GetMultiFileDatabaseDefinition(ctx schema.GetDefinitionContext, metadata *s
 	// shared pointer returned from store.dbSchemaCache (see
 	// backend/store/model/database.go:GetProto), so concurrent callers could
 	// race on in-place normalization writes below.
-	cloned, ok := proto.Clone(metadata).(*storepb.DatabaseSchemaMetadata)
-	if !ok {
-		return nil, errors.New("proto.Clone returned unexpected type for DatabaseSchemaMetadata")
-	}
-	metadata = cloned
+	metadata = proto.CloneOf(metadata)
 
 	// Repair historical non-canonical metadata shapes (e.g. index key
 	// expressions stored without outer parens) so emission produces valid SQL.
