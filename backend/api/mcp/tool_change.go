@@ -405,25 +405,22 @@ func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckI
 		"name": planName,
 	})
 
-	// Poll for results.
+	// Poll for results. Transient errors (404 before row visible, brief 500)
+	// are retried within the budget rather than bailing immediately.
 	deadline := time.Now().Add(s.planCheckBudget())
 	for time.Now().Before(deadline) {
 		pollResp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/GetPlanCheckRun", map[string]any{
 			"name": planName + "/planCheckRun",
 		})
 		if err != nil || pollResp.Status >= 400 {
-			return &PlanCheckInfo{
-				Status:       planCheckRunning,
-				PlanCheckRun: planName + "/planCheckRun",
-			}
+			time.Sleep(planCheckPollInterval)
+			continue
 		}
 
 		var checkRun planCheckRunResponse
 		if err := json.Unmarshal(pollResp.Body, &checkRun); err != nil {
-			return &PlanCheckInfo{
-				Status:       planCheckRunning,
-				PlanCheckRun: planName + "/planCheckRun",
-			}
+			time.Sleep(planCheckPollInterval)
+			continue
 		}
 
 		switch checkRun.Status {
