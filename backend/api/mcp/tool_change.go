@@ -197,13 +197,13 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	project := resolved.project
 
 	// Step 4: Create sheet.
-	sheetName, err := s.createSheet(ctx, project, resolved.engine, input.Title, input.SQL)
+	sheetName, err := s.createSheet(ctx, project, input.SQL)
 	if err != nil {
 		return formatChangeStepError(err, "SHEET_CREATE_FAILED", "bb.sheets.create", nil), nil, nil
 	}
 
 	// Step 5: Create plan.
-	planName, err := s.createPlan(ctx, project, input.Title, resolved.resourceName, sheetName, changeType)
+	planName, err := s.createPlan(ctx, project, input.Title, resolved.resourceName, sheetName)
 	if err != nil {
 		return formatChangeStepError(err, "PLAN_CREATE_FAILED", "bb.plans.create", map[string]string{"sheet": sheetName}), nil, nil
 	}
@@ -309,40 +309,18 @@ func (s *Server) resolveChangeTarget(ctx context.Context, req *mcp.CallToolReque
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.
-// Note: the Sheet proto only has name, content, and content_size.
-// title and engine were removed; the backend discards unknown fields.
-func (s *Server) createSheet(ctx context.Context, project, _, _, sql string) (string, error) {
-	encoded := base64.StdEncoding.EncodeToString([]byte(sql))
-	body := map[string]any{
+func (s *Server) createSheet(ctx context.Context, project, sql string) (string, error) {
+	return s.callAPI(ctx, "/bytebase.v1.SheetService/CreateSheet", "create sheets", "bb.sheets.create", map[string]any{
 		"parent": project,
 		"sheet": map[string]any{
-			"content": encoded,
+			"content": base64.StdEncoding.EncodeToString([]byte(sql)),
 		},
-	}
-
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.SheetService/CreateSheet", body)
-	if err != nil {
-		return "", errors.Wrap(err, "sheet creation request failed")
-	}
-	if err := checkAPIResponse(resp, "create sheets", "bb.sheets.create"); err != nil {
-		return "", err
-	}
-
-	var result struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal(resp.Body, &result); err != nil {
-		return "", errors.Wrap(err, "failed to parse CreateSheet response")
-	}
-	return result.Name, nil
+	})
 }
 
 // createPlan creates a plan with a single changeDatabaseConfig spec.
-// Note: the proto ChangeDatabaseConfig has no `type` field (MIGRATE vs SDL was
-// merged in migration 3.14). The backend auto-detects from sheet content.
-// changeType is accepted as input for forward-compat but not sent on the wire.
-func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, _ string) (string, error) {
-	body := map[string]any{
+func (s *Server) createPlan(ctx context.Context, project, title, target, sheet string) (string, error) {
+	return s.callAPI(ctx, "/bytebase.v1.PlanService/CreatePlan", "create plans", "bb.plans.create", map[string]any{
 		"parent": project,
 		"plan": map[string]any{
 			"title": title,
@@ -356,23 +334,7 @@ func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, 
 				},
 			},
 		},
-	}
-
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/CreatePlan", body)
-	if err != nil {
-		return "", errors.Wrap(err, "plan creation request failed")
-	}
-	if err := checkAPIResponse(resp, "create plans", "bb.plans.create"); err != nil {
-		return "", err
-	}
-
-	var result struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal(resp.Body, &result); err != nil {
-		return "", errors.Wrap(err, "failed to parse CreatePlan response")
-	}
-	return result.Name, nil
+	})
 }
 
 // planCheckBudget returns the effective poll budget, allowing tests to override.
@@ -509,25 +471,9 @@ func (s *Server) createIssue(ctx context.Context, project, title, planName, desc
 
 // createRollout creates a rollout for a plan.
 func (s *Server) createRollout(ctx context.Context, planName string) (string, error) {
-	body := map[string]any{
+	return s.callAPI(ctx, "/bytebase.v1.RolloutService/CreateRollout", "create rollouts", "bb.rollouts.create", map[string]any{
 		"parent": planName,
-	}
-
-	resp, err := s.apiRequest(ctx, "/bytebase.v1.RolloutService/CreateRollout", body)
-	if err != nil {
-		return "", errors.Wrap(err, "rollout creation request failed")
-	}
-	if err := checkAPIResponse(resp, "create rollouts", "bb.rollouts.create"); err != nil {
-		return "", err
-	}
-
-	var result struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal(resp.Body, &result); err != nil {
-		return "", errors.Wrap(err, "failed to parse CreateRollout response")
-	}
-	return result.Name, nil
+	})
 }
 
 // deriveNextAction maps approvalStatus to the next agent action.
@@ -589,6 +535,25 @@ func formatChangeOutput(output *ChangeOutput, warnings []string) string {
 	sb.Write(jsonBytes)
 
 	return sb.String()
+}
+
+// callAPI calls an API endpoint, checks the response, and extracts the resource name.
+// Handles permission errors, HTTP errors, and JSON parsing in one place.
+func (s *Server) callAPI(ctx context.Context, path, operation, permission string, body map[string]any) (string, error) {
+	resp, err := s.apiRequest(ctx, path, body)
+	if err != nil {
+		return "", errors.Wrapf(err, "%s request failed", operation)
+	}
+	if err := checkAPIResponse(resp, operation, permission); err != nil {
+		return "", err
+	}
+	var result struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(resp.Body, &result); err != nil {
+		return "", errors.Wrapf(err, "failed to parse %s response", operation)
+	}
+	return result.Name, nil
 }
 
 // checkAPIResponse checks an API response for permission or general errors.
