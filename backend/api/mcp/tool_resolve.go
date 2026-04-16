@@ -27,10 +27,12 @@ type resolvedDatabase struct {
 	resourceName  string
 	dataSourceID  string
 	engine        string
+	project       string // "projects/{id}" from databaseEntry.Project
 	ambiguous     bool
 	candidates    []Candidate
 	dataSourceIDs map[string]string // resourceName -> dataSourceID (populated when ambiguous)
 	engines       map[string]string // resourceName -> engine (populated when ambiguous)
+	projects      map[string]string // resourceName -> project (populated when ambiguous)
 }
 
 // listDatabasesResponse is the typed response from ListDatabases API.
@@ -156,6 +158,7 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 		resourceName: db.Name,
 		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
 		engine:       db.InstanceResource.Engine,
+		project:      db.Project,
 	}, nil
 }
 
@@ -164,6 +167,7 @@ func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 	candidates := make([]Candidate, 0, len(matches))
 	dsIDs := make(map[string]string, len(matches))
 	engines := make(map[string]string, len(matches))
+	projects := make(map[string]string, len(matches))
 	for _, db := range matches {
 		candidates = append(candidates, Candidate{
 			Database: db.Name,
@@ -173,12 +177,14 @@ func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 		})
 		dsIDs[db.Name] = selectDataSource(db.InstanceResource.DataSources)
 		engines[db.Name] = db.InstanceResource.Engine
+		projects[db.Name] = db.Project
 	}
 	return &resolvedDatabase{
 		ambiguous:     true,
 		candidates:    candidates,
 		dataSourceIDs: dsIDs,
 		engines:       engines,
+		projects:      projects,
 	}
 }
 
@@ -244,6 +250,7 @@ func (*Server) elicitDatabaseChoice(ctx context.Context, req *mcp.CallToolReques
 		resourceName: resourceName,
 		dataSourceID: resolved.dataSourceIDs[resourceName],
 		engine:       resolved.engines[resourceName],
+		project:      resolved.projects[resourceName],
 	}, nil
 }
 

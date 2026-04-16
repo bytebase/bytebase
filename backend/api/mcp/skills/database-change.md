@@ -5,9 +5,11 @@ description: Use when making schema changes (DDL), data migrations, ALTER TABLE,
 
 # Database Change
 
+> **STOP: For single-database changes, call `propose_database_change(database="...", sql="...", title="...")` directly.** It handles everything (sheet, plan, plan checks, issue) in one call with plain SQL — no base64, no manual steps. Only use the manual workflow below for **batch changes across multiple databases**.
+
 ## Overview
 
-Create database changes (DDL/DML) through Bytebase's review workflow. Supports single database or batch changes across multiple databases.
+Manual workflow for batch database changes (DDL/DML) across multiple databases through Bytebase's review workflow.
 
 ## Prerequisites
 
@@ -18,7 +20,7 @@ Create database changes (DDL/DML) through Bytebase's review workflow. Supports s
 
 ### Step 1: Create sheet(s) with SQL
 
-SQL content must be **base64 encoded**. Engine field is **required**.
+SQL content must be **base64 encoded**.
 
 ```
 search_api(operationId="SheetService/CreateSheet")
@@ -27,16 +29,12 @@ search_api(operationId="SheetService/CreateSheet")
 call_api(operationId="SheetService/CreateSheet", body={
   "parent": "projects/{project-id}",
   "sheet": {
-    "title": "Add users table",
-    "engine": "POSTGRES",
     "content": "Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw=="
   }
 })
 ```
 
 Note: `Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw==` decodes to `CREATE TABLE users (id INT PRIMARY KEY);`
-
-Use `search_api(schema="Engine")` to discover valid engine values.
 
 ### Step 2: Create a plan
 
@@ -55,8 +53,7 @@ call_api(operationId="PlanService/CreatePlan", body={
       "id": "spec-1",
       "changeDatabaseConfig": {
         "targets": ["instances/{instance-id}/databases/{database-name}"],
-        "sheet": "projects/{project-id}/sheets/{sheet-id}",
-        "type": "MIGRATE"
+        "sheet": "projects/{project-id}/sheets/{sheet-id}"
       }
     }]
   }
@@ -74,16 +71,14 @@ call_api(operationId="PlanService/CreatePlan", body={
         "id": "spec-dev",
         "changeDatabaseConfig": {
           "targets": ["instances/dev-pg/databases/mydb"],
-          "sheet": "projects/{project-id}/sheets/{sheet-id}",
-          "type": "MIGRATE"
+          "sheet": "projects/{project-id}/sheets/{sheet-id}"
         }
       },
       {
         "id": "spec-prod",
         "changeDatabaseConfig": {
           "targets": ["instances/prod-pg/databases/mydb"],
-          "sheet": "projects/{project-id}/sheets/{sheet-id}",
-          "type": "MIGRATE"
+          "sheet": "projects/{project-id}/sheets/{sheet-id}"
         }
       }
     ]
@@ -134,10 +129,7 @@ call_api(operationId="RolloutService/CreateRollout", body={
 
 ## Change Types
 
-| Type | Use Case |
-|------|----------|
-| `MIGRATE` | Imperative schema/data changes (DDL and DML) |
-| `SDL` | State-based declarative schema migration |
+The backend auto-detects whether a change is imperative (DDL/DML) or SDL (declarative schema) from the sheet content. No `type` field is needed in the plan spec.
 
 ## Common Errors
 
