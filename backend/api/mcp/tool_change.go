@@ -324,15 +324,8 @@ func (s *Server) createSheet(ctx context.Context, project, _, _, sql string) (st
 	if err != nil {
 		return "", errors.Wrap(err, "sheet creation request failed")
 	}
-	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		return "", &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    "you don't have permission to create sheets",
-			Suggestion: "ask your workspace admin to grant you the bb.sheets.create permission",
-		}
-	}
-	if resp.Status >= 400 {
-		return "", errors.Errorf("CreateSheet failed: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	if err := checkAPIResponse(resp, "create sheets", "bb.sheets.create"); err != nil {
+		return "", err
 	}
 
 	var result struct {
@@ -369,15 +362,8 @@ func (s *Server) createPlan(ctx context.Context, project, title, target, sheet, 
 	if err != nil {
 		return "", errors.Wrap(err, "plan creation request failed")
 	}
-	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		return "", &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    "you don't have permission to create plans",
-			Suggestion: "ask your workspace admin to grant you the bb.plans.create permission",
-		}
-	}
-	if resp.Status >= 400 {
-		return "", errors.Errorf("CreatePlan failed: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	if err := checkAPIResponse(resp, "create plans", "bb.plans.create"); err != nil {
+		return "", err
 	}
 
 	var result struct {
@@ -399,25 +385,29 @@ func (s *Server) planCheckBudget() time.Duration {
 
 // runPlanChecks triggers plan checks and polls for results within the poll budget.
 func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckInfo {
+	checkRunName := planName + "/planCheckRun"
+
 	// Trigger plan checks. If this fails, still poll — CreatePlan already
 	// initializes plan checks server-side, so they may be running regardless.
 	_, _ = s.apiRequest(ctx, "/bytebase.v1.PlanService/RunPlanChecks", map[string]any{
 		"name": planName,
 	})
 
+	pendingResult := &PlanCheckInfo{
+		Status:       planCheckRunning,
+		PlanCheckRun: checkRunName,
+	}
+
 	// Poll for results. Transient errors (404 before row visible, brief 500)
 	// are retried within the budget rather than bailing immediately.
 	deadline := time.Now().Add(s.planCheckBudget())
 	for time.Now().Before(deadline) {
 		if ctx.Err() != nil {
-			return &PlanCheckInfo{
-				Status:       planCheckRunning,
-				PlanCheckRun: planName + "/planCheckRun",
-			}
+			return pendingResult
 		}
 
 		pollResp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/GetPlanCheckRun", map[string]any{
-			"name": planName + "/planCheckRun",
+			"name": checkRunName,
 		})
 		if err != nil || pollResp.Status >= 400 {
 			time.Sleep(planCheckPollInterval)
@@ -433,20 +423,17 @@ func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckI
 		switch checkRun.Status {
 		case "DONE":
 			return buildPlanCheckInfo(checkRun)
-		case "FAILED":
+		case "FAILED", "CANCELED":
 			return &PlanCheckInfo{Status: planCheckFailed}
-		case "CANCELED":
-			return &PlanCheckInfo{Status: planCheckFailed}
+		default:
+			// RUNNING or unknown — keep polling.
 		}
 
 		time.Sleep(planCheckPollInterval)
 	}
 
 	// Budget exhausted.
-	return &PlanCheckInfo{
-		Status:       planCheckRunning,
-		PlanCheckRun: planName + "/planCheckRun",
-	}
+	return pendingResult
 }
 
 // planCheckRunResponse mirrors the PlanCheckRun proto response.
@@ -506,15 +493,8 @@ func (s *Server) createIssue(ctx context.Context, project, title, planName, desc
 	if err != nil {
 		return "", "", errors.Wrap(err, "issue creation request failed")
 	}
-	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		return "", "", &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    "you don't have permission to create issues",
-			Suggestion: "ask your workspace admin to grant you the bb.issues.create permission",
-		}
-	}
-	if resp.Status >= 400 {
-		return "", "", errors.Errorf("CreateIssue failed: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	if err := checkAPIResponse(resp, "create issues", "bb.issues.create"); err != nil {
+		return "", "", err
 	}
 
 	var result struct {
@@ -537,15 +517,8 @@ func (s *Server) createRollout(ctx context.Context, planName string) (string, er
 	if err != nil {
 		return "", errors.Wrap(err, "rollout creation request failed")
 	}
-	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		return "", &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    "you don't have permission to create rollouts",
-			Suggestion: "ask your workspace admin to grant you the bb.rollouts.create permission",
-		}
-	}
-	if resp.Status >= 400 {
-		return "", errors.Errorf("CreateRollout failed: HTTP %d: %s", resp.Status, parseError(resp.Body))
+	if err := checkAPIResponse(resp, "create rollouts", "bb.rollouts.create"); err != nil {
+		return "", err
 	}
 
 	var result struct {
@@ -616,6 +589,22 @@ func formatChangeOutput(output *ChangeOutput, warnings []string) string {
 	sb.Write(jsonBytes)
 
 	return sb.String()
+}
+
+// checkAPIResponse checks an API response for permission or general errors.
+// Returns nil if the response is OK, or a structured error otherwise.
+func checkAPIResponse(resp *apiResponse, operation, permission string) error {
+	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
+		return &toolError{
+			Code:       "PERMISSION_DENIED",
+			Message:    fmt.Sprintf("you don't have permission to %s", operation),
+			Suggestion: fmt.Sprintf("ask your workspace admin to grant you the %s permission", permission),
+		}
+	}
+	if resp.Status >= 400 {
+		return errors.Errorf("%s failed: HTTP %d: %s", operation, resp.Status, parseError(resp.Body))
+	}
+	return nil
 }
 
 // formatChangeError formats a changeError into an MCP error result.
