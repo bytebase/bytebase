@@ -49,9 +49,12 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		if err != nil {
 			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "invalid redirect URI format")
 		}
-		// Reject plain HTTP except for localhost (allow HTTPS and custom schemes like cursor://, vscode://)
-		if parsed.Scheme == "http" && !isLocalhostURI(uri) {
-			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "http:// redirect URIs are only allowed for localhost")
+		// Only allow localhost HTTP/HTTPS or specific whitelisted app schemes (cursor, vscode).
+		// This prevents registering arbitrary HTTPS domains or malicious custom schemes.
+		isLocalhostHTTP := isLocalhostURI(uri)
+		isWhitelistedScheme := parsed.Scheme == "cursor" || parsed.Scheme == "vscode"
+		if !isLocalhostHTTP && !isWhitelistedScheme {
+			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL or a whitelisted app scheme (cursor://, vscode://)")
 		}
 	}
 

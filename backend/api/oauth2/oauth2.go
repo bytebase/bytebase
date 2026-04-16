@@ -179,6 +179,9 @@ func isLocalhostURI(uri string) bool {
 	if err != nil {
 		return false
 	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
 	host := parsed.Hostname()
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
