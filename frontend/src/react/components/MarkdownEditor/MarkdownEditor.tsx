@@ -112,7 +112,7 @@ export function MarkdownEditor({
         <div className="flex gap-x-4">
           <button
             className={cn(
-              "relative px-1 pb-2 text-sm transition-colors",
+              "relative px-1 pb-1 text-sm transition-colors",
               tab === "write"
                 ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
                 : "text-control-light hover:text-control"
@@ -124,7 +124,7 @@ export function MarkdownEditor({
           </button>
           <button
             className={cn(
-              "relative px-1 pb-2 text-sm transition-colors",
+              "relative px-1 pb-1 text-sm transition-colors",
               tab === "preview"
                 ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
                 : "text-control-light hover:text-control"

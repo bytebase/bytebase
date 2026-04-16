@@ -400,7 +400,7 @@ function IssueDetailDatabaseChangeOptions({
                 checked={transactionModeChecked}
                 disabled
                 onCheckedChange={() => {}}
-                size="small"
+                size="sm"
               />
             </div>
           </Tooltip>
@@ -433,7 +433,7 @@ function IssueDetailDatabaseChangeOptions({
               checked={preBackupEnabled}
               disabled
               onCheckedChange={() => {}}
-              size="small"
+              size="sm"
             />
           </div>
         </div>
@@ -447,7 +447,7 @@ function IssueDetailDatabaseChangeOptions({
                 checked={ghostEnabled}
                 disabled
                 onCheckedChange={() => {}}
-                size="small"
+                size="sm"
               />
             </div>
           </Tooltip>
@@ -478,7 +478,7 @@ function IssueDetailReadonlySelect({
           onValueChange={() => {}}
           value={value || EMPTY_SELECT_VALUE}
         >
-          <SelectTrigger className={cn("h-6 text-xs", widthClassName)}>
+          <SelectTrigger className={widthClassName} size="xs">
             <SelectValue>
               {options.find((option) => option.value === value)?.label ||
                 placeholder}
