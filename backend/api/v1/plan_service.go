@@ -295,6 +295,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
+	var issueCommentCreates []*store.IssueCommentMessage
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -333,6 +334,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
 			if issue != nil {
+				issueCommentCreates = append(issueCommentCreates, buildPlanSpecUpdateIssueComments(issue.ProjectID, issue.UID, oldPlan.UID, oldPlan.Config.GetSpecs(), allSpecs)...)
 				// Reset approval finding status
 				updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
@@ -366,6 +368,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
+	}
+
+	if len(issueCommentCreates) > 0 {
+		if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
+			slog.Warn("failed to create plan spec update issue comments", log.BBError(err))
+		}
 	}
 
 	if planCheckRunsTrigger {
@@ -1093,6 +1101,57 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 	default:
 	}
 	return storeSpec
+}
+
+func getPlanSpecSheetSha256(spec *storepb.PlanConfig_Spec) string {
+	if spec == nil {
+		return ""
+	}
+	if config := spec.GetChangeDatabaseConfig(); config != nil {
+		return config.GetSheetSha256()
+	}
+	if config := spec.GetExportDataConfig(); config != nil {
+		return config.GetSheetSha256()
+	}
+	return ""
+}
+
+func buildPlanSpecUpdateIssueComments(projectID string, issueUID int64, planUID int64, oldSpecs, newSpecs []*storepb.PlanConfig_Spec) []*store.IssueCommentMessage {
+	oldSpecByID := make(map[string]*storepb.PlanConfig_Spec, len(oldSpecs))
+	for _, spec := range oldSpecs {
+		if spec.GetId() == "" {
+			continue
+		}
+		oldSpecByID[spec.GetId()] = spec
+	}
+
+	var issueCommentCreates []*store.IssueCommentMessage
+	for _, spec := range newSpecs {
+		specID := spec.GetId()
+		oldSpec, ok := oldSpecByID[specID]
+		if !ok {
+			continue
+		}
+		fromSheetSha256 := getPlanSpecSheetSha256(oldSpec)
+		toSheetSha256 := getPlanSpecSheetSha256(spec)
+		if fromSheetSha256 == "" || toSheetSha256 == "" || fromSheetSha256 == toSheetSha256 {
+			continue
+		}
+		issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_PlanSpecUpdate_{
+					PlanSpecUpdate: &storepb.IssueCommentPayload_PlanSpecUpdate{
+						Spec:            common.FormatSpec(projectID, planUID, specID),
+						FromSheetSha256: &fromSheetSha256,
+						ToSheetSha256:   &toSheetSha256,
+					},
+				},
+			},
+		})
+	}
+	return issueCommentCreates
 }
 
 func convertPlanSpecCreateDatabaseConfig(config *v1pb.Plan_Spec_CreateDatabaseConfig) *storepb.PlanConfig_Spec_CreateDatabaseConfig {
