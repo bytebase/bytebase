@@ -409,6 +409,13 @@ func (s *Server) runPlanChecks(ctx context.Context, planName string) *PlanCheckI
 	// are retried within the budget rather than bailing immediately.
 	deadline := time.Now().Add(s.planCheckBudget())
 	for time.Now().Before(deadline) {
+		if ctx.Err() != nil {
+			return &PlanCheckInfo{
+				Status:       planCheckRunning,
+				PlanCheckRun: planName + "/planCheckRun",
+			}
+		}
+
 		pollResp, err := s.apiRequest(ctx, "/bytebase.v1.PlanService/GetPlanCheckRun", map[string]any{
 			"name": planName + "/planCheckRun",
 		})
