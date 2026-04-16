@@ -631,6 +631,14 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: google.protobuf.Duration query_timeout = 21;
    */
   queryTimeout?: Duration;
+
+  /**
+   * Allow signin/signup using email + a 6-digit one-time verification code.
+   * Requires the EMAIL setting to be configured on the workspace.
+   *
+   * @generated from field: bool allow_email_code_signin = 22;
+   */
+  allowEmailCodeSignin: boolean;
 };
 
 /**

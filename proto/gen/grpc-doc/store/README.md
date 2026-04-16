@@ -41,6 +41,9 @@
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
+- [store/auth.proto](#store_auth-proto)
+    - [EmailVerificationCodePurpose](#bytebase-store-EmailVerificationCodePurpose)
+  
 - [store/changelog.proto](#store_changelog-proto)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
@@ -863,6 +866,36 @@ Metadata about the request.
 | CRITICAL | 6 |  |
 | ALERT | 7 |  |
 | EMERGENCY | 8 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_auth-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/auth.proto
+
+
+ 
+
+
+<a name="bytebase-store-EmailVerificationCodePurpose"></a>
+
+### EmailVerificationCodePurpose
+EmailVerificationCodePurpose distinguishes login codes from password reset codes.
+Stored as the enum name string in email_verification_code.purpose column.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED | 0 |  |
+| LOGIN | 1 |  |
+| PASSWORD_RESET | 2 |  |
 
 
  
@@ -4562,6 +4595,7 @@ All other settings live in per-workspace WORKSPACE_PROFILE.
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | query_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
+| allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
 
 
 

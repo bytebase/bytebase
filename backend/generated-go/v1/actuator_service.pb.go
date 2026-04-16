@@ -155,8 +155,10 @@ type Restriction struct {
 	DisallowPasswordSignin bool `protobuf:"varint,2,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Password complexity and restriction requirements.
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,3,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Whether email + 6-digit code signin is enabled for this workspace.
+	AllowEmailCodeSignin bool `protobuf:"varint,4,opt,name=allow_email_code_signin,json=allowEmailCodeSignin,proto3" json:"allow_email_code_signin,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *Restriction) Reset() {
@@ -208,6 +210,13 @@ func (x *Restriction) GetPasswordRestriction() *WorkspaceProfileSetting_Password
 		return x.PasswordRestriction
 	}
 	return nil
+}
+
+func (x *Restriction) GetAllowEmailCodeSignin() bool {
+	if x != nil {
+		return x.AllowEmailCodeSignin
+	}
+	return false
 }
 
 // System information and configuration for the Bytebase instance.
@@ -447,11 +456,12 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x16GetActuatorInfoRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
 	"\x16bytebase.com/WorkspaceR\x04name\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xec\x01\n" +
+	"\x12DeleteCacheRequest\"\xa8\x02\n" +
 	"\vRestriction\x12,\n" +
 	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\"\xbd\a\n" +
+	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
+	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\"\xbd\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +

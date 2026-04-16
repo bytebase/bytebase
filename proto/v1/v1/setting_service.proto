@@ -264,6 +264,10 @@ message WorkspaceProfileSetting {
 
   // The query timeout duration for query and export, works for the SQL Editor and Export Center.
   google.protobuf.Duration query_timeout = 21;
+
+  // Allow signin/signup using email + a 6-digit one-time verification code.
+  // Requires the EMAIL setting to be configured on the workspace.
+  bool allow_email_code_signin = 22;
 }
 
 message Announcement {

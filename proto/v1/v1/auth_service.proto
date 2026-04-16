@@ -77,6 +77,39 @@ service AuthService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
+
+  // Requests a password reset email for the given email address.
+  // Always returns success to avoid leaking whether the email exists.
+  // Permissions required: None
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/auth:requestPasswordReset"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+  }
+
+  // Resets the user's password using a password reset token from email.
+  // Permissions required: None (validates via token)
+  rpc ResetPassword(ResetPasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/auth:resetPassword"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+  }
+
+  // Sends a 6-digit verification code to the email for login/signup.
+  // Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+  // Permissions required: None
+  rpc SendEmailLoginCode(SendEmailLoginCodeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/auth:sendEmailLoginCode"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = true;
+  }
 }
 
 message LoginRequest {
@@ -105,6 +138,10 @@ message LoginRequest {
 
   // The mfa_temp_token is used to verify the user's identity by MFA.
   optional string mfa_temp_token = 8;
+
+  // 6-digit code from email for passwordless login/signup.
+  // Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
+  optional string email_code = 9;
 }
 
 // Context for identity provider authentication.
@@ -177,6 +214,35 @@ message RefreshRequest {}
 
 // Response from refreshing the access token.
 message RefreshResponse {}
+
+message RequestPasswordResetRequest {
+  // The email address of the account to reset.
+  string email = 1;
+  // Optional workspace context captured at send time, used to locate the EMAIL setting,
+  // and later (at verify time) for signup gate checks and workspace assignment.
+  // Unset for SaaS brand-new signup (no workspace exists yet).
+  // Format: workspaces/{workspace}
+  optional string workspace = 2;
+}
+
+message ResetPasswordRequest {
+  // The email address of the account.
+  string email = 1;
+  // The 6-digit code from the reset email.
+  string code = 2;
+  // The new password to set.
+  string new_password = 3;
+}
+
+message SendEmailLoginCodeRequest {
+  // The email address to send the code to.
+  string email = 1;
+  // Optional workspace context captured at send time, used to locate the EMAIL setting,
+  // and later (at verify time) for signup gate checks and workspace assignment.
+  // Unset for SaaS brand-new signup (no workspace exists yet).
+  // Format: workspaces/{workspace}
+  optional string workspace = 2;
+}
 
 message SwitchWorkspaceRequest {
   // The target workspace to switch to.

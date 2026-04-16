@@ -933,6 +933,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RequestPasswordResetRequest"><span class="badge">M</span>RequestPasswordResetRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ResetPasswordRequest"><span class="badge">M</span>ResetPasswordRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.SendEmailLoginCodeRequest"><span class="badge">M</span>SendEmailLoginCodeRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SignupRequest"><span class="badge">M</span>SignupRequest</a>
                 </li>
               
@@ -7643,6 +7655,14 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td><p>The query timeout duration for query and export, works for the SQL Editor and Export Center. </p></td>
                 </tr>
               
+                <tr>
+                  <td>allow_email_code_signin</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Allow signin/signup using email &#43; a 6-digit one-time verification code.
+Requires the EMAIL setting to be configured on the workspace. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8407,6 +8427,13 @@ or no workspace-scoped fields are returned (SaaS). </p></td>
                   <td><a href="#bytebase.v1.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
                   <td></td>
                   <td><p>Password complexity and restriction requirements. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_email_code_signin</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether email &#43; 6-digit code signin is enabled for this workspace. </p></td>
                 </tr>
               
             </tbody>
@@ -10533,6 +10560,14 @@ Format: idps/{idp} </p></td>
                   <td><p>The mfa_temp_token is used to verify the user&#39;s identity by MFA. </p></td>
                 </tr>
               
+                <tr>
+                  <td>email_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>6-digit code from email for passwordless login/signup.
+Pairs with `email`. Mutually exclusive with `password` and `idp_name`. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10652,6 +10687,112 @@ Only returned when web=false. For web=true, the token is set as an HTTP-only coo
         <p>Response from refreshing the access token.</p>
 
         
+
+        
+      
+        <h3 id="bytebase.v1.RequestPasswordResetRequest">RequestPasswordResetRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email address of the account to reset. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Optional workspace context captured at send time, used to locate the EMAIL setting,
+and later (at verify time) for signup gate checks and workspace assignment.
+Unset for SaaS brand-new signup (no workspace exists yet).
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ResetPasswordRequest">ResetPasswordRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email address of the account. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The 6-digit code from the reset email. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>new_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new password to set. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SendEmailLoginCodeRequest">SendEmailLoginCodeRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email address to send the code to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Optional workspace context captured at send time, used to locate the EMAIL setting,
+and later (at verify time) for signup gate checks and workspace assignment.
+Unset for SaaS brand-new signup (no workspace exists yet).
+Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -10811,6 +10952,32 @@ Permissions required: None (validates via refresh token cookie)</p></td>
 The user must be a member of the target workspace.</p></td>
               </tr>
             
+              <tr>
+                <td>RequestPasswordReset</td>
+                <td><a href="#bytebase.v1.RequestPasswordResetRequest">RequestPasswordResetRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Requests a password reset email for the given email address.
+Always returns success to avoid leaking whether the email exists.
+Permissions required: None</p></td>
+              </tr>
+            
+              <tr>
+                <td>ResetPassword</td>
+                <td><a href="#bytebase.v1.ResetPasswordRequest">ResetPasswordRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Resets the user&#39;s password using a password reset token from email.
+Permissions required: None (validates via token)</p></td>
+              </tr>
+            
+              <tr>
+                <td>SendEmailLoginCode</td>
+                <td><a href="#bytebase.v1.SendEmailLoginCodeRequest">SendEmailLoginCodeRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Sends a 6-digit verification code to the email for login/signup.
+Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+Permissions required: None</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -10885,6 +11052,36 @@ The user must be a member of the target workspace.</p></td>
                 <td>SwitchWorkspace</td>
                 <td>POST</td>
                 <td>/v1/auth:switchWorkspace</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RequestPasswordReset</td>
+                <td>POST</td>
+                <td>/v1/auth:requestPasswordReset</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ResetPassword</td>
+                <td>POST</td>
+                <td>/v1/auth:resetPassword</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>SendEmailLoginCode</td>
+                <td>POST</td>
+                <td>/v1/auth:sendEmailLoginCode</td>
                 <td>*</td>
               </tr>
               
