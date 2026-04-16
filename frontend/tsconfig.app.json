@@ -13,7 +13,13 @@
     "src/react/components/MarkdownEditor/index.ts",
     "src/react/components/task-run-log/index.ts",
     "src/react/components/monaco/index.ts",
-    "src/react/components/revision/index.ts"
+    "src/react/components/revision/index.ts",
+    "src/react/components/SchemaEditorLite/index.ts",
+    "src/react/components/SchemaEditorLite/Aside/index.ts",
+    "src/react/components/SchemaEditorLite/Panels/TableColumnEditor/index.ts",
+    "src/react/components/SchemaEditorLite/Panels/IndexesEditor/index.ts",
+    "src/react/components/SchemaEditorLite/Panels/PartitionsEditor/index.ts",
+    "src/react/components/SchemaEditorLite/Panels/TableList/index.ts"
   ],
   "compilerOptions": {
     "composite": true,
