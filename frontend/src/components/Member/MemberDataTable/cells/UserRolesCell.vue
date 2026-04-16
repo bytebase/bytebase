@@ -10,8 +10,8 @@
       :scope="'workspace'"
     />
     <RoleCell
-      v-for="binding in projectRoleBindings"
-      :key="binding.role"
+      v-for="(binding, index) in projectRoleBindings"
+      :key="getProjectRoleBindingKey(binding, index)"
       :bordered="true"
       :binding="binding" :scope="'project'"
     />
@@ -20,10 +20,10 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { orderBy } from "lodash-es";
 import { computed } from "vue";
-import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import { isBindingPolicyExpired, sortRoles } from "@/utils";
+import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
+import { sortRoles } from "@/utils";
+import { getProjectRoleBindingKey } from "../../projectRoleBindings";
 import type { MemberRole } from "../../types";
 import RoleCell from "./RoleCell.vue";
 
@@ -35,24 +35,5 @@ const workspaceLevelRoles = computed(() => {
   return sortRoles([...props.role.workspaceLevelRoles]);
 });
 
-const projectRoleBindings = computed(() => {
-  const roleMap = new Map<string, { expired: boolean; binding: Binding }>();
-  for (const binding of props.role.projectRoleBindings) {
-    const isExpired = isBindingPolicyExpired(binding);
-    if (
-      !roleMap.has(binding.role) ||
-      (roleMap.get(binding.role)?.expired && !isExpired)
-    ) {
-      roleMap.set(binding.role, {
-        expired: isExpired,
-        binding,
-      });
-    }
-  }
-
-  return orderBy(
-    [...roleMap.values()].map((item) => item.binding),
-    ["role"]
-  );
-});
+const projectRoleBindings = computed(() => props.role.projectRoleBindings);
 </script>

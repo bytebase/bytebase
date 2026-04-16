@@ -833,7 +833,7 @@ function GroupForm({
                     }}
                     disabled={!allowEdit}
                   >
-                    <SelectTrigger className="h-9 w-36 shrink-0">
+                    <SelectTrigger className="w-36 shrink-0">
                       <SelectValue>
                         {(value: GroupMember_Role | null) =>
                           value === GroupMember_Role.OWNER

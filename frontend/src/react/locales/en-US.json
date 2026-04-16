@@ -1084,7 +1084,6 @@
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
-    "action-anyway": "{{action}} anyway",
     "advanced-search": {
       "filter": "Filter",
       "scope": {

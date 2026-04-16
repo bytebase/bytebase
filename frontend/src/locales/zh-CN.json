@@ -853,7 +853,7 @@
     "workflow": {
       "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
       "file-hint": "保存为仓库中的 {filePath}",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
+      "provider-not-match": "所选的工作负载身份 (Workload Identity) 仅适用于 {provider}。",
       "self-hosted-runner": "自托管 runner",
       "title": "工作流文件生成"
     },
@@ -2249,7 +2249,7 @@
       "view-by-members": "按成员查看",
       "view-by-roles": "按角色查看",
       "workload-identities": "工作负载身份",
-      "workload-identity": "工作负载标识",
+      "workload-identity": "工作负载身份",
       "workload-identity-advanced": "高级设置",
       "workload-identity-all-branches-tags": "所有分支和标签",
       "workload-identity-allowed-branches-tags": "允许的分支/标签",

@@ -96,6 +96,10 @@ import {
   hexToRgb,
   sqlReviewPolicySlug,
 } from "@/utils";
+import {
+  getEnvironmentListKey,
+  resolveSelectedEnvironmentId,
+} from "./environmentSelection";
 
 // ============================================================
 // EnvironmentName - displays env name with color badge
@@ -1419,6 +1423,7 @@ export function EnvironmentsPage() {
   const environmentList = useVueState(() => [
     ...environmentStore.environmentList,
   ]);
+  const environmentListKey = getEnvironmentListKey(environmentList);
 
   const [selectedId, setSelectedId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -1443,19 +1448,14 @@ export function EnvironmentsPage() {
   // Select from hash or default to first
   useEffect(() => {
     const hash = window.location.hash.slice(1);
-    if (environmentList.length > 0) {
-      const found = environmentList.find((e) => e.id === hash);
-      if (found) {
-        setSelectedId(found.id);
-      } else {
-        setSelectedId((prev) =>
-          prev && environmentList.find((e) => e.id === prev)
-            ? prev
-            : environmentList[0].id
-        );
-      }
-    }
-  }, [environmentList]);
+    setSelectedId((currentId) =>
+      resolveSelectedEnvironmentId({
+        currentId,
+        environmentList,
+        hash,
+      })
+    );
+  }, [environmentListKey]);
 
   // Listen for hash changes
   useEffect(() => {
@@ -1473,7 +1473,7 @@ export function EnvironmentsPage() {
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [environmentList, t]);
+  }, [environmentListKey, t]);
 
   // Guard browser refresh/close
   useEffect(() => {

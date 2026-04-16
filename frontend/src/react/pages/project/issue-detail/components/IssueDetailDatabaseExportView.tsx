@@ -338,7 +338,7 @@ function IssueDetailDatabaseExportOptions() {
               checked={encryptionEnabled}
               disabled={!optionsEditable}
               onCheckedChange={handlePasswordEnabledChange}
-              size="small"
+              size="sm"
             />
           </div>
           {optionsEditable && encryptionEnabled && (

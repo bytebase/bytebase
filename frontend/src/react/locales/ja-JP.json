@@ -1084,7 +1084,6 @@
       "details": "Access Grant Details",
       "expired-at": "Expired at"
     },
-    "action-anyway": "まだ {{action}} が必要です",
     "advanced-search": {
       "filter": "フィルター",
       "scope": {

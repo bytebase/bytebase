@@ -405,7 +405,7 @@ export function Combobox(props: ComboboxProps) {
       {/* Trigger */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-background px-2 py-1 text-sm cursor-pointer",
+          "flex flex-wrap items-center gap-1 min-h-9 w-full rounded-xs border border-control-border bg-background px-3 py-1 text-sm leading-5 cursor-pointer",
           disabled && "opacity-50 cursor-not-allowed",
           open && "border-accent"
         )}

@@ -16,11 +16,12 @@ const buttonVariants = cva(
         link: "text-accent underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        xs: "h-6 px-1.5 text-[11px] gap-1.5",
-        sm: "h-8 px-3 text-xs",
-        md: "h-9 px-4 text-sm",
-        lg: "h-10 px-6",
+        // `default` is an alias for `md` — both render identically.
+        default: "h-9 px-4 text-sm leading-5",
+        xs: "h-6 px-1.5 text-xs leading-4 gap-1.5",
+        sm: "h-8 px-3 text-xs leading-4",
+        md: "h-9 px-4 text-sm leading-5",
+        lg: "h-10 px-6 text-sm leading-5",
         icon: "h-9 w-9",
       },
     },

@@ -462,7 +462,7 @@ export function DatabaseChangelogDetailPage({
                 <Switch
                   checked={showDiff}
                   onCheckedChange={setShowDiff}
-                  size="small"
+                  size="sm"
                 />
                 <span className="text-sm font-semibold">
                   {t("changelog.show-diff")}

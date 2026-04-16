@@ -16,6 +16,7 @@ const (
 	AuthContextKey
 	ServiceDataKey
 	WorkspaceIDContextKey
+	AuditWorkspaceIDKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -25,6 +26,29 @@ func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) 
 func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
 	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
 	return setServiceData, ok
+}
+
+// WithSetAuditWorkspaceID registers a callback handlers can use to tell the
+// audit interceptor which workspace a request should be audited against. This
+// is needed for methods that run with allow_without_credential=true (e.g.
+// Login/Signup/ExchangeToken): the workspace is unknown when the interceptor
+// chain starts, but the handler learns it before returning.
+func WithSetAuditWorkspaceID(ctx context.Context, setAuditWorkspaceID func(workspaceID string)) context.Context {
+	return context.WithValue(ctx, AuditWorkspaceIDKey, setAuditWorkspaceID)
+}
+
+// SetAuditWorkspaceID records the workspace that the current request should be
+// audited against, if the audit interceptor registered a setter on the context.
+// Safe to call even when auditing is disabled for the current method.
+func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
+	if workspaceID == "" {
+		return
+	}
+	setter, ok := ctx.Value(AuditWorkspaceIDKey).(func(string))
+	if !ok {
+		return
+	}
+	setter(workspaceID)
 }
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.

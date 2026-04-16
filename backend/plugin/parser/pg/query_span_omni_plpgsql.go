@@ -100,6 +100,10 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		}
 		query, err := e.cat.AnalyzeSelectStmt(selStmt)
 		if err != nil {
+			// Record the classifier verdict for test inspection; fallback
+			// below always runs.
+			e.lastFallbackReason = classifyAnalyzeError(err)
+
 			// Fall back to parse-tree extraction when analysis fails
 			// (e.g., nested function calls, parameter references).
 			fallbackResults := e.extractFallbackColumns(selStmt)
@@ -424,6 +428,10 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 
 	query, err := a.extractor.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
+		// Record the classifier verdict for test inspection; fallback below
+		// always runs.
+		a.extractor.lastFallbackReason = classifyAnalyzeError(err)
+
 		// When full analysis fails (e.g., type mismatches with aggregate functions),
 		// fall back to extracting column references from the parse tree and resolving
 		// them against known tables in the catalog.

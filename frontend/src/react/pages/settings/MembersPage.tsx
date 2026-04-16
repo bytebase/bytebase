@@ -22,6 +22,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { groupProjectRoleBindings } from "@/components/Member/projectRoleBindings";
 import type { MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
 import {
@@ -145,6 +146,10 @@ const assertNever = (value: never): never => {
   throw new Error(`Unexpected value: ${String(value)}`);
 };
 
+const getProjectRoleSet = (bindings: Binding[]): string[] => {
+  return [...new Set(bindings.map((binding) => binding.role))];
+};
+
 // ============================================================
 // MemberTable (view by members)
 // ============================================================
@@ -205,6 +210,21 @@ function MemberTable({
 
   const isSelectDisabled = (mb: MemberBinding) => {
     return scope === "project" && mb.projectRoleBindings.length === 0;
+  };
+
+  const renderProjectRoleSummary = (bindings: Binding[]) => {
+    return groupProjectRoleBindings(bindings).map((group) => {
+      return (
+        <Badge key={group.role} className="text-xs gap-x-1">
+          {displayRoleTitle(group.role)}
+          {group.bindings.length > 1 && (
+            <span className="text-control-light">
+              ({group.bindings.length})
+            </span>
+          )}
+        </Badge>
+      );
+    });
   };
 
   return (
@@ -308,13 +328,7 @@ function MemberTable({
               <td className="px-4 py-2">
                 <div className="flex flex-wrap gap-1">
                   {scope === "project"
-                    ? sortRoles(mb.projectRoleBindings.map((b) => b.role)).map(
-                        (role) => (
-                          <Badge key={role} className="text-xs gap-x-1">
-                            {displayRoleTitle(role)}
-                          </Badge>
-                        )
-                      )
+                    ? renderProjectRoleSummary(mb.projectRoleBindings)
                     : sortRoles([...mb.workspaceLevelRoles]).map((role) => (
                         <Badge key={role} className="text-xs gap-x-1">
                           <Building2 className="h-3 w-3" />
@@ -398,7 +412,7 @@ function MemberTableByRole({
     for (const mb of bindings) {
       const roles =
         scope === "project"
-          ? mb.projectRoleBindings.map((b) => b.role)
+          ? getProjectRoleSet(mb.projectRoleBindings)
           : [...mb.workspaceLevelRoles];
       for (const role of roles) {
         if (!map.has(role)) map.set(role, []);
