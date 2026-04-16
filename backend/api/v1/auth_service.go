@@ -101,6 +101,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
+	common.SetAuditWorkspaceID(ctx, workspaceID)
 
 	// 3. Post-auth checks (deleted, domain, license)
 	if err := s.validateLoginPermissions(ctx, loginUser, workspaceID, request); err != nil {
@@ -212,6 +213,15 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	}
 
 	var workspaceID string
+	// Announce the workspace on every exit path so early-failure cases
+	// (DisallowSignup, password restriction, CreateUser failure, …) still
+	// produce audit entries for invited/self-hosted signups where the
+	// workspace is already resolved. The setter no-ops on empty input, so
+	// SaaS new-workspace signups that fail before workspace creation stay
+	// (correctly) unaudited — there's genuinely no workspace to attribute
+	// them to.
+	defer func() { common.SetAuditWorkspaceID(ctx, workspaceID) }()
+
 	isMember := existingWS != nil
 	if isMember {
 		workspaceID = existingWS.ResourceID
@@ -1289,6 +1299,10 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	if wi == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("workload identity %q not found", request.Email))
 	}
+	// Announce the workspace as soon as we know it (from the WI record) so
+	// that a deactivated-WI attempt — which compliance wants to see — still
+	// lands in the audit log.
+	common.SetAuditWorkspaceID(ctx, wi.Workspace)
 	if wi.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))
