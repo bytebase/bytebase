@@ -3,12 +3,9 @@ import dayjs from "dayjs";
 import { first, orderBy } from "lodash-es";
 import {
   CalendarX,
-  Check,
   ChevronDown,
   EllipsisVertical,
   Loader2,
-  MessageCircle,
-  X,
 } from "lucide-react";
 import {
   type ReactNode,
@@ -65,7 +62,6 @@ import {
   ListIssueCommentsRequestSchema,
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
   BatchRunTasksRequestSchema,
   CreateRolloutRequestSchema,
@@ -451,7 +447,6 @@ export function IssueDetailActionBar() {
             onClick={() => {
               void router.push(planRoute);
             }}
-            size="sm"
             variant="outline"
           >
             <span>#{extractPlanUID(page.plan.name)}</span>
@@ -505,7 +500,6 @@ export function IssueDetailActionBar() {
                     primaryAction && isActionDisabled(primaryAction)
                   )}
                   onClick={() => setMenuOpen((open) => !open)}
-                  size="sm"
                   variant="ghost"
                 >
                   <EllipsisVertical className="h-4 w-4" />
@@ -609,7 +603,6 @@ function IssueDetailReviewTrigger({
       onClick={() => {
         void onExecute(action.id);
       }}
-      size="sm"
       variant={action.buttonType === "default" ? "outline" : "default"}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -669,7 +662,6 @@ function IssueDetailActionButton({
       onClick={() => {
         void onExecute(action.id);
       }}
-      size="sm"
       variant={action.buttonType === "default" ? "outline" : "default"}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -709,14 +701,10 @@ function IssueDetailConfirmDialog({
             <DialogTitle>{label}</DialogTitle>
             <div className="mt-3 text-sm text-control-light">{content}</div>
             <div className="mt-6 flex items-center justify-end gap-x-2">
-              <Button
-                onClick={() => onOpenChange(false)}
-                size="sm"
-                variant="ghost"
-              >
+              <Button onClick={() => onOpenChange(false)} variant="ghost">
                 {t("common.cancel")}
               </Button>
-              <Button disabled={busy} onClick={onConfirm} size="sm">
+              <Button disabled={busy} onClick={onConfirm}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
                 {label}
               </Button>
@@ -752,61 +740,21 @@ function IssueDetailReviewPopover({
   const [selectedAction, setSelectedAction] = useState<
     "COMMENT" | "APPROVE" | "REJECT"
   >("COMMENT");
-  const [performActionAnyway, setPerformActionAnyway] = useState(false);
   const issue = page.issue;
-  const planCheckWarnings = useMemo(() => {
-    const warnings: string[] = [];
-    for (const run of page.planCheckRuns) {
-      if (run.status === PlanCheckRun_Status.FAILED) {
-        warnings.push(
-          t(
-            "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-          )
-        );
-        break;
-      }
-    }
-    for (const run of page.planCheckRuns) {
-      if (run.status === PlanCheckRun_Status.RUNNING) {
-        warnings.push(
-          t(
-            "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
-          )
-        );
-        break;
-      }
-    }
-    return warnings;
-  }, [page.planCheckRuns, t]);
-  const confirmErrors = useMemo(() => {
-    if (
-      selectedAction === "APPROVE" &&
-      planCheckWarnings.length > 0 &&
-      !performActionAnyway
-    ) {
-      return planCheckWarnings;
-    }
-    return [];
-  }, [comment, performActionAnyway, planCheckWarnings, selectedAction, t]);
   const submitDisabled =
-    loading ||
-    (selectedAction === "COMMENT" && comment.trim().length === 0) ||
-    (selectedAction === "APPROVE" &&
-      planCheckWarnings.length > 0 &&
-      !performActionAnyway);
+    loading || (selectedAction === "COMMENT" && comment.trim().length === 0);
 
   useEffect(() => {
     if (!open) {
       setComment("");
       setSelectedAction("COMMENT");
-      setPerformActionAnyway(false);
     }
   }, [open]);
 
   useClickOutside(popoverRef, open && !mobile, () => onOpenChange(false));
 
   const handleSubmit = useCallback(async () => {
-    if (!issue || confirmErrors.length > 0) {
+    if (!issue) {
       return;
     }
 
@@ -871,13 +819,13 @@ function IssueDetailReviewPopover({
     }
   }, [
     comment,
-    confirmErrors.length,
     issue,
     issueCommentStore,
     onOpenChange,
     onRefreshIssueComments,
     onRefreshState,
     page.issueId,
+    page.patchState,
     page.plan,
     selectedAction,
     t,
@@ -900,7 +848,6 @@ function IssueDetailReviewPopover({
       <div className="flex flex-col gap-y-2.5">
         <IssueDetailReviewOption
           description={t("issue.review.comment-description")}
-          icon={<MessageCircle className="mt-0.5 h-4 w-4 text-gray-600" />}
           label={t("common.comment")}
           onSelect={() => setSelectedAction("COMMENT")}
           selected={selectedAction === "COMMENT"}
@@ -908,7 +855,6 @@ function IssueDetailReviewPopover({
         {context.permissions.isApprovalCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.approve-description")}
-            icon={<Check className="mt-0.5 h-4 w-4 text-green-600" />}
             label={t("common.approve")}
             onSelect={() => setSelectedAction("APPROVE")}
             selected={selectedAction === "APPROVE"}
@@ -917,36 +863,12 @@ function IssueDetailReviewPopover({
         {context.permissions.isApprovalCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.reject-description")}
-            icon={<X className="mt-0.5 h-4 w-4 text-red-600" />}
             label={t("common.reject")}
             onSelect={() => setSelectedAction("REJECT")}
             selected={selectedAction === "REJECT"}
           />
         )}
       </div>
-
-      {selectedAction === "APPROVE" && planCheckWarnings.length > 0 && (
-        <div className="rounded-xs border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
-          <ul className="list-inside list-disc">
-            {planCheckWarnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-          <label className="mt-3 flex items-center gap-x-2 text-main">
-            <input
-              checked={performActionAnyway}
-              className="h-4 w-4 rounded border-control-border"
-              onChange={(e) => setPerformActionAnyway(e.target.checked)}
-              type="checkbox"
-            />
-            <span className="text-sm">
-              {t("issue.action-anyway", {
-                action: t("common.approve"),
-              })}
-            </span>
-          </label>
-        </div>
-      )}
 
       <div className="flex items-center justify-start gap-x-2 pt-1">
         <Button
@@ -994,13 +916,11 @@ function IssueDetailReviewPopover({
 
 function IssueDetailReviewOption({
   description,
-  icon,
   label,
   onSelect,
   selected,
 }: {
   description?: string;
-  icon: ReactNode;
   label: string;
   onSelect: () => void;
   selected: boolean;
@@ -1008,7 +928,7 @@ function IssueDetailReviewOption({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-start gap-3 rounded-xs px-0 py-0.5 text-left transition-colors",
+        "flex cursor-pointer items-start gap-3 text-left transition-colors",
         selected ? "text-main" : "text-control"
       )}
     >
@@ -1018,13 +938,10 @@ function IssueDetailReviewOption({
         onChange={onSelect}
         type="radio"
       />
-      <span className="mt-1 shrink-0">{icon}</span>
-      <span className="flex flex-col gap-y-0.5">
+      <span className="flex flex-col">
         <span className="text-sm font-medium leading-6">{label}</span>
         {description && (
-          <span className="text-sm leading-6 text-control-light">
-            {description}
-          </span>
+          <span className="text-xs text-control-light">{description}</span>
         )}
       </span>
     </label>
