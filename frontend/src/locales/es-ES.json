@@ -7,7 +7,11 @@
       "changed-labels": "etiquetas cambiadas",
       "created-issue": "incidencia creado",
       "reopened-issue": "incidencia reabierta",
-      "resolved-issue": "aprobó la incidencia"
+      "resolved-issue": "marcó la incidencia como completada",
+      "review-done-rollout-created": "Revisión completada, rollout creado",
+      "review-done-rollout-created-for-plan": "Revisión completada, rollout creado para el plan",
+      "review-skipped-rollout-created": "Revisión omitida, rollout creado",
+      "review-skipped-rollout-created-for-plan": "Revisión omitida, rollout creado para el plan"
     }
   },
   "agent": {

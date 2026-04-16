@@ -7,7 +7,11 @@
       "changed-labels": "ラベルを変更しました",
       "created-issue": "イシューを作成する",
       "reopened-issue": "イシューを再開する",
-      "resolved-issue": "イシューを承認した"
+      "resolved-issue": "イシューを完了としてマークしました",
+      "review-done-rollout-created": "レビューが完了し、ロールアウトが作成されました",
+      "review-done-rollout-created-for-plan": "レビューが完了し、プランのロールアウトが作成されました",
+      "review-skipped-rollout-created": "レビューがスキップされ、ロールアウトが作成されました",
+      "review-skipped-rollout-created-for-plan": "レビューがスキップされ、プランのロールアウトが作成されました"
     }
   },
   "agent": {

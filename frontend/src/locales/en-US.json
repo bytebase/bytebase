@@ -7,7 +7,11 @@
       "changed-labels": "changed labels",
       "created-issue": "created issue",
       "reopened-issue": "reopened issue",
-      "resolved-issue": "approved the issue"
+      "resolved-issue": "marked the issue as Done",
+      "review-done-rollout-created": "Review done, rollout created",
+      "review-done-rollout-created-for-plan": "Review done, rollout created for plan",
+      "review-skipped-rollout-created": "Review skipped, rollout created",
+      "review-skipped-rollout-created-for-plan": "Review skipped, rollout created for plan"
     }
   },
   "agent": {

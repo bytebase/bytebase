@@ -5,11 +5,14 @@
 <script lang="tsx" setup>
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import { usePlanContext } from "@/components/Plan/logic";
 import { SpecLink } from "@/components/v2";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import { getIssueCommentType, IssueCommentType } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
+  Issue_ApprovalStatus,
   IssueComment_Approval_Status,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -19,13 +22,14 @@ import {
   getSpecDisplayInfo,
 } from "@/utils";
 import StatementUpdate from "./StatementUpdate.vue";
+import { isDatabaseChangeDoneRolloutComment } from "./utils";
 
 const props = defineProps<{
   issueComment: IssueComment;
 }>();
 
 const { t } = useI18n();
-const { plan } = usePlanContext();
+const { issue, plan } = usePlanContext();
 
 const renderActionSentence = () => {
   const { issueComment } = props;
@@ -70,6 +74,43 @@ const renderActionSentence = () => {
       return t("activity.sentence.changed-description");
     } else if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
+        if (
+          isDatabaseChangeDoneRolloutComment(
+            issue.value,
+            plan.value,
+            issueComment
+          )
+        ) {
+          const planUID = extractPlanUID(plan.value.name);
+          const planLink = () => (
+            <RouterLink
+              to={buildPlanDeployRouteFromPlanName(plan.value.name)}
+              class="font-medium text-accent hover:underline"
+            >
+              #{planUID}
+            </RouterLink>
+          );
+          if (issue.value?.approvalStatus === Issue_ApprovalStatus.APPROVED) {
+            if (planUID) {
+              return (
+                <>
+                  {t("activity.sentence.review-done-rollout-created-for-plan")}{" "}
+                  {planLink()}
+                </>
+              );
+            }
+            return t("activity.sentence.review-done-rollout-created");
+          }
+          if (planUID) {
+            return (
+              <>
+                {t("activity.sentence.review-skipped-rollout-created-for-plan")}{" "}
+                {planLink()}
+              </>
+            );
+          }
+          return t("activity.sentence.review-skipped-rollout-created");
+        }
         return t("activity.sentence.resolved-issue");
       } else if (toStatus === IssueStatus.CANCELED) {
         return t("activity.sentence.canceled-issue");

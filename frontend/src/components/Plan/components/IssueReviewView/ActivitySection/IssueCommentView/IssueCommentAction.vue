@@ -11,7 +11,10 @@
       <div class="px-3 py-2" :class="$slots.comment ? 'bg-gray-50' : ''">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-x-2 text-sm min-w-0 flex-wrap">
-            <ActionCreator :creator="issueComment.creator" />
+            <ActionCreator
+              v-if="!shouldHideCreator(issueComment)"
+              :creator="issueComment.creator"
+            />
 
             <ActionSentence
               :issue-comment="issueComment"
@@ -53,13 +56,25 @@
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
+import { usePlanContext } from "@/components/Plan/logic";
 import { getIssueCommentType, IssueCommentType } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";
+import { isDatabaseChangeDoneRolloutComment } from "./utils";
 
 defineProps<{
   issueComment: IssueComment;
 }>();
+
+const { issue, plan } = usePlanContext();
+
+const shouldHideCreator = (issueComment: IssueComment) => {
+  return isDatabaseChangeDoneRolloutComment(
+    issue.value,
+    plan.value,
+    issueComment
+  );
+};
 </script>

@@ -7,7 +7,11 @@
       "changed-labels": "đã thay đổi nhãn",
       "created-issue": "đã tạo vấn đề",
       "reopened-issue": "đã mở lại vấn đề",
-      "resolved-issue": "đã phê duyệt vấn đề"
+      "resolved-issue": "đã đánh dấu vấn đề là Hoàn tất",
+      "review-done-rollout-created": "Đánh giá đã hoàn tất, rollout đã được tạo",
+      "review-done-rollout-created-for-plan": "Đánh giá đã hoàn tất, rollout đã được tạo cho kế hoạch",
+      "review-skipped-rollout-created": "Đánh giá đã được bỏ qua, rollout đã được tạo",
+      "review-skipped-rollout-created-for-plan": "Đánh giá đã được bỏ qua, rollout đã được tạo cho kế hoạch"
     }
   },
   "agent": {

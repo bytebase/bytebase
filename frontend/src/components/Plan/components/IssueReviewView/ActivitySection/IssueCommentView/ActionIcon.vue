@@ -38,10 +38,12 @@ import {
 import type { Component } from "vue";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
+import { usePlanContext } from "@/components/Plan/logic";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { getIssueCommentType, IssueCommentType, useUserStore } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueComment_Approval_Status } from "@/types/proto-es/v1/issue_service_pb";
+import { isDatabaseChangeDoneRolloutComment } from "./utils";
 
 type ActionIconType =
   | "avatar"
@@ -149,6 +151,7 @@ const props = defineProps<{
 }>();
 
 const userStore = useUserStore();
+const { issue, plan } = usePlanContext();
 
 const user = computedAsync(() => {
   return userStore.getOrFetchUserByIdentifier({
@@ -181,6 +184,11 @@ const iconType = computed((): ActionIconType => {
   ) {
     const { toTitle, toDescription, toLabels, fromLabels } =
       issueComment.event.value;
+    if (
+      isDatabaseChangeDoneRolloutComment(issue.value, plan.value, issueComment)
+    ) {
+      return "complete";
+    }
     if (
       toTitle !== undefined ||
       toDescription !== undefined ||

@@ -13,11 +13,11 @@
         </template>
         {{ $t("common.draft") }}
       </NTag>
-      <NTag v-else-if="showDoneTag" round type="success">
+      <NTag v-else-if="showDoneTag" round :type="doneTagType">
         <template #icon>
           <CheckCircle2Icon class="w-4 h-4" />
         </template>
-        {{ $t("common.approved") }}
+        {{ doneTagLabel }}
       </NTag>
       <TitleInput />
       <div class="flex flex-row items-center justify-end">
@@ -47,6 +47,7 @@ import {
 } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -55,7 +56,10 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { isValidPlanName } from "@/utils";
 import { usePlanContext } from "../../logic";
 import { useSidebarContext } from "../../logic/sidebar";
@@ -64,6 +68,7 @@ import DescriptionSection from "./DescriptionSection.vue";
 import TitleInput from "./TitleInput.vue";
 
 const route = useRoute();
+const { t } = useI18n();
 const { isCreating, plan, issue } = usePlanContext();
 
 const isPlanDetailPage = computed(() => {
@@ -119,6 +124,18 @@ const showDoneTag = computed(() => {
   // Only show done tag on issue detail page
   if (!isIssueDetailPage.value) return false;
   return issue.value?.status === IssueStatus.DONE;
+});
+
+const doneTagLabel = computed(() => {
+  return issue.value?.approvalStatus === Issue_ApprovalStatus.APPROVED
+    ? t("common.approved")
+    : t("common.skipped");
+});
+
+const doneTagType = computed(() => {
+  return issue.value?.approvalStatus === Issue_ApprovalStatus.APPROVED
+    ? "success"
+    : "default";
 });
 
 const showDescriptionSection = computed(() => {

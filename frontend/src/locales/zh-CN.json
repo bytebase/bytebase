@@ -7,7 +7,11 @@
       "changed-labels": "改变标签",
       "created-issue": "创建工单",
       "reopened-issue": "重开工单",
-      "resolved-issue": "批准工单"
+      "resolved-issue": "将工单标记为已完成",
+      "review-done-rollout-created": "审批完成，已创建发布",
+      "review-done-rollout-created-for-plan": "审批完成，已为计划创建发布",
+      "review-skipped-rollout-created": "已跳过审批，已创建发布",
+      "review-skipped-rollout-created-for-plan": "已跳过审批，已为计划创建发布"
     }
   },
   "agent": {
