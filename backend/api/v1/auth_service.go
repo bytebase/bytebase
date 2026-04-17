@@ -1562,22 +1562,35 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 		return nil, err
 	}
 
-	// Enforce the workspace's password restriction on the new password — the workspace
-	// whose policy applies is the one captured on the code row at send time.
-	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
-	if err != nil {
-		return nil, err
-	}
-	if err := validatePasswordWithRestriction(req.Msg.NewPassword, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
-		return nil, err
-	}
-
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
+	}
+
+	// Validate the user is a member of the workspace captured at send time.
+	// Reject if forged — prevents bypassing password policy via a weaker workspace.
+	if codeRow.Workspace != "" {
+		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &codeRow.Workspace,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to verify workspace membership"))
+		}
+		if ws == nil {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user is not a member of the workspace"))
+		}
+	}
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if err := validatePasswordWithRestriction(req.Msg.NewPassword, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
+		return nil, err
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Msg.NewPassword), bcrypt.DefaultCost)
@@ -1780,6 +1793,8 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceNa
 		Subject:  subject,
 		TextBody: body,
 	}); err != nil {
+		// Delete the row so the cooldown doesn't block an immediate retry.
+		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
 		return errors.Wrap(err, "failed to send email")
 	}
 	return nil
