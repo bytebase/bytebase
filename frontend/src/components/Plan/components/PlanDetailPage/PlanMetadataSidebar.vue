@@ -22,7 +22,7 @@
 
     <!-- Issue group: Approval flow + link + Labels -->
     <div v-if="issue" class="flex flex-col gap-3 py-3 border-t">
-      <ApprovalFlowSection :issue="issue" />
+      <ApprovalFlowSection :issue="issue" :has-rollout="!!rollout" />
       <IssueLabels
         :project="project"
         :value="issue.labels || []"

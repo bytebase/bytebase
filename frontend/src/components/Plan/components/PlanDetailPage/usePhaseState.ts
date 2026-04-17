@@ -97,12 +97,14 @@ export const usePhaseState = (
         type: "info",
       },
     };
-    // If review phase is completed but approval is still pending, it was bypassed
+    // If review phase is completed but approval was not explicitly approved/skipped,
+    // the approval was bypassed by manual rollout creation — show "Skipped"
     if (
       statusMap.value.review === "completed" &&
-      issue.value.approvalStatus === Issue_ApprovalStatus.PENDING
+      issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
+      issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED
     ) {
-      return { label: t("common.bypassed"), type: "default" };
+      return { label: t("common.skipped"), type: "default" };
     }
     return map[issue.value.approvalStatus];
   });

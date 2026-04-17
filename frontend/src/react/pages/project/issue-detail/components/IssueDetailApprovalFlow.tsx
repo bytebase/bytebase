@@ -71,7 +71,8 @@ export function IssueDetailApprovalFlow() {
   }
 
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
-  const statusTag = getStatusTag(issue, approvalSteps.length, t);
+  const hasRollout = page.plan?.hasRollout ?? false;
+  const statusTag = getStatusTag(issue, approvalSteps.length, hasRollout, t);
 
   return (
     <div>
@@ -109,7 +110,7 @@ export function IssueDetailApprovalFlow() {
               <ApprovalStepItem
                 key={`${step}-${index}`}
                 issue={issue}
-                readonly={page.readonly}
+                readonly={page.readonly || hasRollout}
                 step={step}
                 stepIndex={index}
                 stepNumber={index + 1}
@@ -417,6 +418,7 @@ function ApprovalRiskLevelIcon({
 function getStatusTag(
   issue: Issue,
   approvalStepCount: number,
+  hasRollout: boolean,
   t: ReturnType<typeof useTranslation>["t"]
 ) {
   if (approvalStepCount === 0) {
@@ -426,6 +428,12 @@ function getStatusTag(
     return {
       className: "bg-success/10 text-success",
       label: t("issue.table.approved"),
+    };
+  }
+  if (hasRollout) {
+    return {
+      className: "bg-control-bg text-control",
+      label: t("common.skipped"),
     };
   }
   if (issue.approvalStatus === Issue_ApprovalStatus.REJECTED) {
