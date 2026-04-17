@@ -314,6 +314,33 @@ func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller,
 	assertAtLeastOneUIDCollides(t, issueUIDs(aIssues), issueUIDs(bIssues), "issue")
 }
 
+// completeRolloutB drives project B's rollout to completion and proves the
+// composite-PK ids collide for every table whose rows are created by the
+// rollout (task, task_run, plan_check_run). This is the ONLY supported way
+// for a collision test to roll out B — every call site gets the full
+// collision invariant for free, so no test can silently become vacuous by
+// forgetting one of the three assertCollide helpers.
+//
+// Why it lives here rather than inside setupCollidingProjects: the fixture
+// returns before B's rollout fires, so task/task_run/plan_check_run don't
+// exist yet at fixture-construction time. Tests that don't need B's rollout
+// (pure read-isolation tests on plan/issue) don't pay the cost.
+func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, ctl *controller) {
+	t.Helper()
+	a := require.New(t)
+
+	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
+		connect.NewRequest(&v1pb.CreateRolloutRequest{
+			Parent: f.PlanB.Name,
+		}))
+	a.NoError(err)
+	a.NoError(ctl.waitRollout(ctx, f.IssueB.Name, rolloutB.Msg.Name))
+
+	assertTasksCollide(ctx, t, ctl, f)
+	assertTaskRunsCollide(ctx, t, ctl, f)
+	assertPlanCheckRunsCollide(ctx, t, ctl, f)
+}
+
 // assertTaskRunsCollide verifies that after both projects have rolled out,
 // their task_run ids collide. Call this from tests that run project B's
 // rollout and depend on task_run collisions.

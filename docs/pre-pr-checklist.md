@@ -89,7 +89,12 @@ If the diff adds or modifies a store method that touches a composite-PK table:
    covers `plan`, `issue`, `task`, `task_run`, and `plan_check_run`. For methods
    touching `task_run_log`, `plan_webhook_delivery`, `db_group`, or `release`,
    add table-specific assertions inline — the shared helper is not sufficient
-3. If testing delete cascades across projects where both projects share an
+3. If your test needs project B rolled out (to create task/task_run/plan_check_run
+   rows that could collide with project A's), call `fixture.completeRolloutB(ctx, t, ctl)`
+   — this is the ONLY supported rollout path and it proves all three table-level
+   collisions automatically. Do NOT hand-roll `CreateRollout` + `waitRollout` —
+   the collision invariant must not be a per-test responsibility
+4. If testing delete cascades across projects where both projects share an
    instance, also consider adding a variant using `setupCollidingProjectsSeparateInstances`
    to catch cross-project over-delete bugs that shared-instance tests cannot detect
 

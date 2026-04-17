@@ -35,26 +35,13 @@ func TestCollisionDeleteProjectCascade(t *testing.T) {
 
 	projectBID := mustGetProjectID(t, fixture.ProjectB.Name)
 
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	beforeB := snapshotProject(ctx, t, s, projectBID)
 	a.Greater(len(beforeB.TaskRuns), 0, "project B should have task_runs")
 	a.Greater(len(beforeB.Plans), 0, "project B should have plans")
 	a.Greater(len(beforeB.Tasks), 0, "project B should have tasks")
 	a.Greater(len(beforeB.Issues), 0, "project B should have issues")
-
-	// Without proven ID overlap on each composite-PK table, a buggy cascade
-	// that matches on id alone can still leave project B's rows untouched
-	// simply because no B row shares an id with a deleted A row.
-	assertTasksCollide(ctx, t, ctl, fixture)
-	assertTaskRunsCollide(ctx, t, ctl, fixture)
-	assertPlanCheckRunsCollide(ctx, t, ctl, fixture)
 
 	// Soft-delete project A (required by DeleteProject per AIP-164).
 	_, err = ctl.projectServiceClient.DeleteProject(ctx,
@@ -116,13 +103,7 @@ func TestCollisionDeleteInstanceNoCrossProjectCorruption(t *testing.T) {
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 	projectBID := mustGetProjectID(t, fixture.ProjectB.Name)
 
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	beforeA := snapshotProject(ctx, t, s, projectAID)
 	beforeB := snapshotProject(ctx, t, s, projectBID)
@@ -197,14 +178,7 @@ func TestCollisionDeleteInstanceCrossProjectIsolation(t *testing.T) {
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 	projectBID := mustGetProjectID(t, fixture.ProjectB.Name)
 
-	// Complete project B's rollout so it has task/task_run rows.
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	beforeA := snapshotProject(ctx, t, s, projectAID)
 	beforeB := snapshotProject(ctx, t, s, projectBID)
@@ -212,12 +186,6 @@ func TestCollisionDeleteInstanceCrossProjectIsolation(t *testing.T) {
 	a.Greater(len(beforeA.TaskRuns), 0, "project A should have task_runs before deletion")
 	a.Greater(len(beforeB.TaskRuns), 0, "project B should have task_runs")
 	a.Greater(len(beforeB.Tasks), 0, "project B should have tasks")
-
-	// Prove task AND task_run IDs actually collide. nextProjectID allocates
-	// per-table, so non-collision would make this test vacuous against
-	// cross-project DELETE USING regressions.
-	assertTasksCollide(ctx, t, ctl, fixture)
-	assertTaskRunsCollide(ctx, t, ctl, fixture)
 
 	// Delete instance A — project B's rows reference instance B and must
 	// survive. A buggy USING join that matches on id alone would also

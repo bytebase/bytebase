@@ -110,14 +110,7 @@ func TestCollisionListTasksIsolation(t *testing.T) {
 
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 
-	// Project B needs tasks to make the isolation check non-trivial.
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	snap := snapshotProject(ctx, t, s, projectAID)
 	for _, tk := range snap.Tasks {
@@ -143,13 +136,7 @@ func TestCollisionListTaskRunsIsolation(t *testing.T) {
 
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	snap := snapshotProject(ctx, t, s, projectAID)
 	for _, tr := range snap.TaskRuns {
@@ -179,20 +166,7 @@ func TestCollisionListPlanCheckRunsIsolation(t *testing.T) {
 
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 
-	// Trigger project B's plan_check_runs so there are colliding rows to
-	// filter against.
-	rolloutB, err := ctl.rolloutServiceClient.CreateRollout(ctx,
-		connect.NewRequest(&v1pb.CreateRolloutRequest{
-			Parent: fixture.PlanB.Name,
-		}))
-	a.NoError(err)
-	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
-	a.NoError(err)
-
-	// Prove the plan_check_run IDs actually overlap. Without this, a
-	// per-table allocation drift (e.g., retries on one project) would
-	// make the isolation check vacuous — no overlap means no bug to leak.
-	assertPlanCheckRunsCollide(ctx, t, ctl, fixture)
+	fixture.completeRolloutB(ctx, t, ctl)
 
 	snap := snapshotProject(ctx, t, s, projectAID)
 	for _, pcr := range snap.PlanCheckRuns {
