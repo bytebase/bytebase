@@ -30,13 +30,13 @@
                 {
                   "name":  "id",
                   "position":  1,
-                  "type":  "integer"
+                  "type":  "int"
                 },
                 {
                   "name":  "name",
                   "position":  2,
                   "nullable":  true,
-                  "type":  "character varying(20)"
+                  "type":  "varchar(20)"
                 }
               ]
             }
@@ -44,12 +44,17 @@
           "views":  [
             {
               "name":  "v1",
-              "definition":  " SELECT id,\n    name\n   FROM test;",
+              "definition":  "SELECT id, name FROM test",
               "dependencyColumns":  [
                 {
                   "schema":  "public",
                   "table":  "test",
-                  "column":  "*"
+                  "column":  "id"
+                },
+                {
+                  "schema":  "public",
+                  "table":  "test",
+                  "column":  "name"
                 }
               ]
             }
