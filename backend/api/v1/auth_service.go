@@ -221,7 +221,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, err := s.resolveWorkspaceIDByEmail(ctx, request.Email)
+	targetWorkspaceID, _, err := s.resolveWorkspaceIDByEmail(ctx, request.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
@@ -329,25 +329,28 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 // applicable workspace restriction before creating a user or provisioning workspaces, so
 // a rejected signup doesn't leave orphan state behind. Returns empty for SaaS brand-new
 // signup (no pre-invite, no workspace) — the caller should apply default restriction.
-func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email string) (string, error) {
+// resolveWorkspaceIDByEmail returns (workspaceID, isMember).
+// isMember is true when the user already has an IAM binding in the returned workspace.
+// When false, the returned workspaceID is the self-host singleton (user needs to be added).
+func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email string) (string, bool, error) {
 	existingWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
 		Email:          email,
 		IncludeAllUser: !s.profile.SaaS,
 	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find workspaces")
+		return "", false, errors.Wrapf(err, "failed to find workspaces")
 	}
 	if existingWS != nil {
-		return existingWS.ResourceID, nil
+		return existingWS.ResourceID, true, nil
 	}
 	if !s.profile.SaaS {
 		singletonID, err := s.store.GetWorkspaceID(ctx)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to resolve singleton workspace")
+			return "", false, errors.Wrapf(err, "failed to resolve singleton workspace")
 		}
-		return singletonID, nil
+		return singletonID, false, nil
 	}
-	return "", nil
+	return "", false, nil
 }
 
 // provisionWorkspaceForNewUser returns a workspace ID for a freshly-created user.
@@ -355,17 +358,17 @@ func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email strin
 // Otherwise creates a new workspace (SaaS: per-user; self-hosted: joins the singleton).
 // Called by both the Signup RPC and the email-code signup branch of Login.
 func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email string) (string, error) {
-	// Step 1: Resolve the target workspace (pre-invited, self-host singleton, or empty for
-	// SaaS brand-new). PatchWorkspaceIamPolicy below is idempotent, so we can unconditionally
-	// call it for self-host without distinguishing "already a member" from "newly joining".
-	workspaceID, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	// Step 1: Resolve the target workspace. isMember indicates whether the user already has
+	// an IAM binding. For pre-invited users we must NOT patch IAM — PatchWorkspaceIamPolicy
+	// is a set-replacement that would downgrade an admin to member.
+	workspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
 
 	if workspaceID != "" {
-		if !s.profile.SaaS {
-			// Self-hosted: ensure the user is a member of the (singleton or pre-invited) workspace.
+		if !s.profile.SaaS && !isMember {
+			// Self-hosted, new user joining the singleton workspace — add as member.
 			if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 				Workspace: workspaceID,
 				Member:    common.FormatUserEmail(email),
@@ -1839,7 +1842,12 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return user, nil
 	}
 
-	// Unknown email → signup path. Gate checks run BEFORE user creation to prevent orphan accounts.
+	// Unknown email → signup path. Validate email format to prevent reserved-namespace collisions.
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
+
+	// Gate checks run BEFORE user creation to prevent orphan accounts.
 	// We only consult AllowEmailCodeSignin here: DisallowSignup governs password self-service
 	// signup (the Signup RPC), not email-code onboarding — the two paths are independent.
 	// Admins who want to block new users via email-code set AllowEmailCodeSignin=false.

@@ -840,7 +840,7 @@ func (s *SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 		// SYSTEM: Internal system settings (auth secret, workspace ID, enterprise license)
 		return true
 	case storepb.SettingName_EMAIL:
-		// EMAIL: not exposed in the SaaS mode right now.
+		// EMAIL: not exposed in the SaaS mode.
 		return s.profile.SaaS
 	default:
 		return false
