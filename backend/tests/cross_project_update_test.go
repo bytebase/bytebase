@@ -178,7 +178,6 @@ func TestCollisionListPlanCheckRunsIsolation(t *testing.T) {
 	s := ctl.server.StoreForTest()
 
 	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-	projectBID := mustGetProjectID(t, fixture.ProjectB.Name)
 
 	// Trigger project B's plan_check_runs so there are colliding rows to
 	// filter against.
@@ -190,10 +189,10 @@ func TestCollisionListPlanCheckRunsIsolation(t *testing.T) {
 	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
 	a.NoError(err)
 
-	// Sanity: project B actually has plan_check_runs now.
-	bSnap := snapshotProject(ctx, t, s, projectBID)
-	a.Greater(len(bSnap.PlanCheckRuns), 0,
-		"project B should have plan_check_runs to make the isolation check meaningful")
+	// Prove the plan_check_run IDs actually overlap. Without this, a
+	// per-table allocation drift (e.g., retries on one project) would
+	// make the isolation check vacuous — no overlap means no bug to leak.
+	assertPlanCheckRunsCollide(ctx, t, ctl, fixture)
 
 	snap := snapshotProject(ctx, t, s, projectAID)
 	for _, pcr := range snap.PlanCheckRuns {

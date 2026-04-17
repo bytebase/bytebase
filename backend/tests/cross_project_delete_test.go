@@ -206,6 +206,12 @@ func TestCollisionDeleteInstanceCrossProjectIsolation(t *testing.T) {
 	a.Greater(len(beforeB.TaskRuns), 0, "project B should have task_runs")
 	a.Greater(len(beforeB.Tasks), 0, "project B should have tasks")
 
+	// Prove task AND task_run IDs actually collide. nextProjectID allocates
+	// per-table, so non-collision would make this test vacuous against
+	// cross-project DELETE USING regressions.
+	assertTasksCollide(ctx, t, ctl, fixture)
+	assertTaskRunsCollide(ctx, t, ctl, fixture)
+
 	// Delete instance A — project B's rows reference instance B and must
 	// survive. A buggy USING join that matches on id alone would also
 	// delete B's colliding rows.

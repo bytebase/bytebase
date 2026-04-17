@@ -112,9 +112,10 @@ func TestClaimAvailablePlanCheckRunsNoCrossProjectTransition(t *testing.T) {
 	err = ctl.waitRollout(ctx, fixture.IssueB.Name, rolloutB.Msg.Name)
 	a.NoError(err, "project B's rollout should complete — claim path broken if this fails")
 
-	// Verify task_run collision invariant as a proxy for plan_check_run
-	// collision (both use per-project nextProjectID allocation).
-	assertTaskRunsCollide(ctx, t, ctl, fixture)
+	// Prove the actual plan_check_run ID overlap. task_run collision would
+	// not imply plan_check_run collision — nextProjectID allocates per-table,
+	// so the two sequences can drift independently (e.g., retries on one side).
+	assertPlanCheckRunsCollide(ctx, t, ctl, fixture)
 
 	afterA := snapshotProject(ctx, t, s, projectAID)
 	assertProjectUnchanged(t, fixture.BaselineA, afterA, "project A after scheduler plan_check_run claim pass")

@@ -315,8 +315,11 @@ func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller,
 }
 
 // assertTaskRunsCollide verifies that after both projects have rolled out,
-// their task_run and plan_check_run ids collide. Call this from tests that
-// run project B's rollout and depend on task_run / plan_check_run collisions.
+// their task_run ids collide. Call this from tests that run project B's
+// rollout and depend on task_run collisions.
+//
+// Note: nextProjectID allocates per table, so task_run collision does not
+// imply plan_check_run collision. Use assertPlanCheckRunsCollide for that.
 func assertTaskRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
 	t.Helper()
 	a := require.New(t)
@@ -334,6 +337,51 @@ func assertTaskRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f
 	a.Greater(len(aTaskRuns), 0, "project A should have at least one task_run")
 	a.Greater(len(bTaskRuns), 0, "project B should have at least one task_run — did you forget to roll out B?")
 	assertAtLeastOneUIDCollides(t, taskRunIDs(aTaskRuns), taskRunIDs(bTaskRuns), "task_run")
+}
+
+// assertPlanCheckRunsCollide verifies that after both projects have plan
+// check runs, their ids collide. Because nextProjectID allocates per-table,
+// task_run and plan_check_run sequences can diverge independently — each
+// table that a test depends on needs its own collision assertion.
+func assertPlanCheckRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
+	t.Helper()
+	a := require.New(t)
+	s := ctl.server.StoreForTest()
+
+	projectAID, err := common.GetProjectID(f.ProjectA.Name)
+	a.NoError(err)
+	projectBID, err := common.GetProjectID(f.ProjectB.Name)
+	a.NoError(err)
+
+	aPCRs, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{ProjectID: projectAID})
+	a.NoError(err)
+	bPCRs, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{ProjectID: projectBID})
+	a.NoError(err)
+	a.Greater(len(aPCRs), 0, "project A should have at least one plan_check_run")
+	a.Greater(len(bPCRs), 0, "project B should have at least one plan_check_run — did you forget to roll out B?")
+	assertAtLeastOneUIDCollides(t, planCheckRunUIDs(aPCRs), planCheckRunUIDs(bPCRs), "plan_check_run")
+}
+
+// assertTasksCollide verifies that after both projects have rolled out,
+// their task ids collide. Needed separately from task_runs because of
+// per-table allocation.
+func assertTasksCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
+	t.Helper()
+	a := require.New(t)
+	s := ctl.server.StoreForTest()
+
+	projectAID, err := common.GetProjectID(f.ProjectA.Name)
+	a.NoError(err)
+	projectBID, err := common.GetProjectID(f.ProjectB.Name)
+	a.NoError(err)
+
+	aTasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectAID})
+	a.NoError(err)
+	bTasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectBID})
+	a.NoError(err)
+	a.Greater(len(aTasks), 0, "project A should have at least one task")
+	a.Greater(len(bTasks), 0, "project B should have at least one task — did you forget to roll out B?")
+	assertAtLeastOneUIDCollides(t, taskIDs(aTasks), taskIDs(bTasks), "task")
 }
 
 func assertAtLeastOneUIDCollides(t *testing.T, aUIDs, bUIDs []int64, label string) {
@@ -371,6 +419,22 @@ func taskRunIDs(trs []*store.TaskRunMessage) []int64 {
 	out := make([]int64, 0, len(trs))
 	for _, tr := range trs {
 		out = append(out, tr.ID)
+	}
+	return out
+}
+
+func planCheckRunUIDs(pcrs []*store.PlanCheckRunMessage) []int64 {
+	out := make([]int64, 0, len(pcrs))
+	for _, pcr := range pcrs {
+		out = append(out, pcr.UID)
+	}
+	return out
+}
+
+func taskIDs(tasks []*store.TaskMessage) []int64 {
+	out := make([]int64, 0, len(tasks))
+	for _, tk := range tasks {
+		out = append(out, tk.ID)
 	}
 	return out
 }
