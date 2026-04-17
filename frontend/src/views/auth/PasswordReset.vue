@@ -37,6 +37,19 @@
             :length="6"
             class="mt-1 w-full email-code-otp"
           />
+          <div class="mt-2 flex items-center justify-end">
+            <NButton
+              text
+              :disabled="resendCountdown > 0"
+              @click="resendCode"
+            >
+              {{
+                resendCountdown > 0
+                  ? $t("auth.sign-in.resend-in", { seconds: resendCountdown })
+                  : $t("auth.sign-in.resend-code")
+              }}
+            </NButton>
+          </div>
         </div>
       </template>
 
@@ -79,7 +92,7 @@
 import { create, create as createProto } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton, NInputOtp } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
@@ -126,6 +139,43 @@ const state = reactive<LocalState>({
 
 const codeMode = computed(() => !!route.query.email);
 
+// Resend cooldown — starts at 60s (code was just sent from PasswordForgot).
+const resendCountdown = ref(60);
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+const startCountdown = () => {
+  resendCountdown.value = 60;
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    resendCountdown.value -= 1;
+    if (resendCountdown.value <= 0 && countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }, 1000);
+};
+
+const resendCode = async () => {
+  if (resendCountdown.value > 0 || !state.email) return;
+  try {
+    await authServiceClientConnect.requestPasswordReset({
+      email: state.email,
+      workspace: resolveWorkspaceName(),
+    });
+    startCountdown();
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("auth.password-forget.failed-to-send-code"),
+    });
+  }
+};
+
+onUnmounted(() => {
+  if (countdownTimer) clearInterval(countdownTimer);
+});
+
 const passwordRestrictionSetting = computed(
   () => useActuatorV1Store().serverInfo?.restriction?.passwordRestriction
 );
@@ -143,6 +193,7 @@ onMounted(() => {
       return;
     }
     state.email = route.query.email as string;
+    startCountdown();
     return;
   }
   // Forced-reset mode: if user doesn't need to reset, redirect away.
