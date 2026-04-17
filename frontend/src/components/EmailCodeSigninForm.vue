@@ -88,7 +88,7 @@ import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { isValidEmail, resolveWorkspaceName } from "@/utils"
+import { isValidEmail, resolveWorkspaceName } from "@/utils";
 
 interface LocalState {
   email: string;
@@ -162,7 +162,7 @@ const sendCode = async () => {
       module: "bytebase",
       style: "CRITICAL",
       title: t("auth.sign-in.failed-to-send-code", {
-        error: e
+        error: e,
       }),
     });
   } finally {

@@ -216,7 +216,8 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   };
 
   const fetchCurrentWorkspace = async () => {
-    const name = actuatorStore.workspaceResourceName || `${workspaceNamePrefix}-`;
+    const name =
+      actuatorStore.workspaceResourceName || `${workspaceNamePrefix}-`;
     const workspace = await workspaceServiceClientConnect.getWorkspace({
       name,
     });

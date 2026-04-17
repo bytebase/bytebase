@@ -96,6 +96,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
+import RequiredStar from "@/components/RequiredStar.vue";
 import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { authServiceClientConnect } from "@/connect";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
@@ -110,10 +111,9 @@ import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { resolveWorkspaceName } from "@/utils";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import RequiredStar from "@/components/RequiredStar.vue";
+import { resolveWorkspaceName } from "@/utils";
 
 interface LocalState {
   email: string;

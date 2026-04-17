@@ -1,3 +1,4 @@
+import { router } from "@/router";
 import {
   AUTH_MFA_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
@@ -8,7 +9,6 @@ import {
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
 } from "@/router/auth";
-import { router } from "@/router";
 import { useActuatorV1Store } from "@/store";
 
 export const isAuthRelatedRoute = (routeName: string) => {

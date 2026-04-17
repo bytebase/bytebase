@@ -29,7 +29,6 @@ import {
   defaultAccessTokenDurationInHours,
   defaultRefreshTokenDurationInHours,
 } from "@/types";
-import { isDev } from "@/utils";
 import type {
   WorkspaceProfileSetting,
   WorkspaceProfileSetting_PasswordRestriction,
@@ -39,6 +38,7 @@ import {
   WorkspaceProfileSetting_PasswordRestrictionSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isDev } from "@/utils";
 import type { SectionHandle } from "./useSettingSection";
 
 const DEFAULT_MIN_LENGTH = 8;

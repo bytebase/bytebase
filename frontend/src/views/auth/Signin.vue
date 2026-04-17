@@ -219,9 +219,8 @@ import {
 } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO } from "@/utils";
+import { openWindowForSSO, resolveWorkspaceName } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
-import { resolveWorkspaceName } from "@/utils"
 
 const props = withDefaults(
   defineProps<{
@@ -287,7 +286,7 @@ const showSignInForm = computed(() => {
 
 const defaultTabValue = computed(() => {
   if (serverInfo.value?.restriction?.allowEmailCodeSignin) {
-    return "email-code"
+    return "email-code";
   }
   if (!serverInfo.value?.restriction?.disallowPasswordSignin) {
     return "standard";
