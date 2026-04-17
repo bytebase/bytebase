@@ -1,0 +1,1002 @@
+# SQL review rule: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+# Cases added incrementally per the TDD plan.
+
+# ---- Basic WARN cases (function on indexed column) ----
+- statement: "SELECT * FROM tech_book WHERE UPPER(name) = 'test'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE MOD(id, 2) = 0"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "MOD" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Basic WARN cases (calculation on indexed column) ----
+- statement: "SELECT * FROM tech_book WHERE id + 1 = 2"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id - 1 = 0"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id * 2 = 10"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id / 2 = 5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE -id > -5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Basic PASS cases (function/calc on value side, or on non-indexed column/table) ----
+- statement: "SELECT * FROM tech_book WHERE id = ABS(-5)"
+- statement: "SELECT * FROM tech_book WHERE id = DBMS_RANDOM.VALUE"
+- statement: "SELECT * FROM tech_book WHERE UPPER(creator) = 'X'"
+- statement: "SELECT * FROM tech_book WHERE id = 1"
+- statement: "SELECT * FROM unknown WHERE UPPER(col) = 'X'"
+- statement: "SELECT * FROM no_index_table WHERE -col_a > 5"
+
+# ---- UPDATE / DELETE WARN ----
+- statement: "UPDATE tech_book SET creator = 'x' WHERE UPPER(name) = 'test'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "UPDATE tech_book SET creator = 'x' WHERE id * 2 = 10"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "DELETE FROM tech_book WHERE UPPER(name) = 'test'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "DELETE FROM tech_book WHERE id + 1 > 10"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- UPDATE / DELETE PASS ----
+- statement: "UPDATE tech_book SET creator = 'x' WHERE id = 1"
+- statement: "DELETE FROM tech_book WHERE id = 1"
+- statement: "UPDATE no_index_table SET col_b = 'x' WHERE UPPER(col_b) = 'Y'"
+
+# ---- JOIN WARN (ANSI) ----
+- statement: "SELECT * FROM tech_book t JOIN orders o ON t.id = o.order_id WHERE UPPER(t.name) = 'X'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book t JOIN orders o ON UPPER(o.customer_name) = 'X' WHERE t.id = 1"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- JOIN WARN (implicit via comma) ----
+- statement: "SELECT * FROM tech_book t, orders o WHERE t.id = o.order_id AND UPPER(t.name) = 'X'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- JOIN PASS ----
+- statement: "SELECT * FROM tech_book t JOIN orders o ON t.id = o.order_id WHERE t.id = 1 AND o.order_id = 1"
+- statement: "SELECT * FROM tech_book t JOIN no_index_table n ON t.id = n.col_a WHERE UPPER(n.col_b) = 'Y'"
+
+# ---- INSERT … SELECT / CTAS / VIEW / MATVIEW WARN ----
+- statement: "INSERT INTO insert_target (id, name) SELECT id, name FROM tech_book WHERE UPPER(name) = 'test'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "CREATE TABLE new_table AS SELECT * FROM tech_book WHERE UPPER(name) = 'test'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "CREATE OR REPLACE VIEW v AS SELECT * FROM tech_book WHERE id + 1 > 5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "CREATE MATERIALIZED VIEW mv AS SELECT * FROM orders WHERE ABS(amount) > 10"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- INSERT / CTAS PASS ----
+- statement: "INSERT INTO insert_target (id, name) SELECT id, name FROM tech_book WHERE id = 1"
+- statement: "CREATE TABLE new_table AS SELECT * FROM no_index_table WHERE UPPER(col_b) = 'X'"
+
+# ---- MERGE ----
+- statement: |
+    MERGE INTO orders t USING products p
+    ON (UPPER(t.customer_name) = p.title)
+    WHEN MATCHED THEN UPDATE SET note = 'x'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+- statement: |
+    MERGE INTO orders t USING products p
+    ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = 'x' WHERE t.amount * 2 > 100
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+- statement: |
+    MERGE INTO orders t USING products p
+    ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = 'x'
+      DELETE WHERE ABS(t.amount) > 100
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+- statement: |
+    MERGE INTO orders t USING products p
+    ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = 'x'
+
+# ---- Subquery WARN: IN / NOT IN / EXISTS / NOT EXISTS / scalar / nested / correlated ----
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'JOHN')"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id NOT IN (SELECT order_id FROM orders WHERE ABS(amount) > 10)"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE EXISTS (SELECT 1 FROM orders WHERE UPPER(customer_name) = 'X')"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE NOT EXISTS (SELECT 1 FROM orders WHERE amount + 1 > 10)"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT id, (SELECT COUNT(*) FROM orders WHERE UPPER(customer_name) = 'X') FROM tech_book WHERE id = 1"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE amount IN (SELECT price FROM products WHERE UPPER(title) = 'X'))"
+
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE amount IN (SELECT price FROM products WHERE UPPER(product_id) = 'X'))"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "PRODUCT_ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM orders o WHERE UPPER(t.name) = 'X')"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE UPPER(name) = 'A' AND id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'X')"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'A') AND id IN (SELECT product_id FROM products WHERE UPPER(title) = 'B')"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Subquery PASS ----
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT col_a FROM no_index_table WHERE UPPER(col_b) = 'X')"
+- statement: "SELECT * FROM tech_book WHERE id IN (SELECT col_a FROM no_index_table WHERE col_a + 1 > 5)"
+
+# ---- UNION / INTERSECT / MINUS ----
+- statement: "SELECT * FROM tech_book WHERE UPPER(name) = 'A' UNION SELECT id, name, creator FROM tech_book WHERE id = 2"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE UPPER(name) = 'A' UNION ALL SELECT id, name, creator FROM tech_book WHERE ABS(id) > 5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT id, name, creator FROM tech_book WHERE id = 1 INTERSECT SELECT id, name, creator FROM tech_book WHERE UPPER(name) = 'A'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT id, name, creator FROM tech_book WHERE id = 1 MINUS SELECT id, name, creator FROM tech_book WHERE UPPER(name) = 'A'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- CTE ----
+- statement: |
+    WITH filtered AS (SELECT * FROM tech_book WHERE UPPER(name) = 'A')
+    SELECT * FROM filtered
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: |
+    WITH filtered AS (SELECT * FROM tech_book WHERE id = 1)
+    SELECT * FROM filtered f, tech_book t WHERE UPPER(t.name) = 'X'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+- statement: |
+    WITH filtered AS (SELECT * FROM tech_book WHERE id + 1 > 5)
+    SELECT * FROM filtered
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: |
+    WITH filtered AS (SELECT * FROM tech_book WHERE id = 1)
+    SELECT * FROM filtered WHERE id = 2
+
+# ---- Oracle (+) outer join syntax + CONNECT BY hierarchical ----
+- statement: "SELECT * FROM tech_book t, orders o WHERE t.id = o.order_id(+) AND UPPER(t.name) = 'X'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: |
+    SELECT id, name FROM tech_book
+    START WITH id = 1
+    CONNECT BY PRIOR id = id AND UPPER(name) = 'X'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+- statement: |
+    SELECT id, name FROM tech_book
+    START WITH id = 1
+    CONNECT BY PRIOR id = id
+
+- statement: |
+    SELECT * FROM tech_book t
+    WHERE t.id IN (
+      SELECT id FROM tech_book
+      CONNECT BY PRIOR id = id AND UPPER(name) = 'X'
+    )
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# ---- HAVING exclusion + wrapper unwrap edge cases ----
+- statement: "SELECT name, COUNT(*) FROM tech_book GROUP BY name HAVING COUNT(name) > 5"
+
+- statement: "SELECT * FROM tech_book WHERE ABS(id + 1) > 5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM tech_book WHERE UPPER(NVL(name, 'x')) = 'TESTX'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "NVL" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+- statement: "SELECT * FROM no_index_table WHERE ABS(col_a + 1) > 5"
+
+# ---- Multi-statement depth-reset regression ----
+- statement: |
+    SELECT * FROM tech_book WHERE UPPER(name) = 'A';
+    UPDATE tech_book SET creator = 'x' WHERE ABS(id) > 5
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# ---- Review fix: MERGE USING (SELECT ... WHERE ...) source subquery ----
+- statement: |
+    MERGE INTO orders t USING (SELECT * FROM products WHERE ABS(price) > 100) p
+    ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = 'x'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "PRICE" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 2 fixes ----------------------------------------------------------
+
+# UPDATE against a derived-table target: violation inside source subquery
+- statement: |
+    UPDATE (SELECT * FROM tech_book WHERE UPPER(name) = 'X') v SET v.creator = 'y'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# DELETE FROM derived-table target: violation inside source subquery
+- statement: |
+    DELETE FROM (SELECT * FROM tech_book WHERE ABS(id) > 5) v
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# MERGE WHEN MATCHED SET col = (SELECT … WHERE …) — inner WHERE violation
+- statement: |
+    MERGE INTO orders t USING products p ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X')
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Adversarial: double-flag regression — correlated EXISTS inside JOIN ON
+- statement: |
+    SELECT * FROM tech_book t JOIN orders o
+      ON EXISTS (SELECT 1 FROM products p JOIN orders o2 ON ABS(t.id) = o2.order_id WHERE p.product_id = o.order_id)
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Regression: DML inside PL/SQL anonymous block IS checked at top-level DML
+- statement: |
+    BEGIN
+      UPDATE tech_book SET creator = 'x' WHERE UPPER(name) = 'A';
+    END;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# ---- Round 3 fixes --------------------------------------------------------
+
+# INSERT ALL with a subquery inside VALUES
+- statement: |
+    INSERT ALL INTO orders (order_id, note) VALUES (1, (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X'))
+      SELECT 1 FROM dual
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# UPDATE ... RETURNING expression with inner subquery violation
+- statement: |
+    UPDATE orders SET note = 'x' WHERE order_id = 1 RETURNING (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X') INTO :var
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# DELETE ... RETURNING expression with inner subquery violation
+- statement: |
+    DELETE FROM orders WHERE order_id = 1 RETURNING (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X') INTO :var
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 4 fixes --------------------------------------------------------
+
+# INSERT ALL WHEN <cond> — conditional predicate with function on indexed col
+- statement: |
+    INSERT ALL
+      WHEN UPPER(name) = 'X' THEN INTO orders (order_id, customer_name) VALUES (id, name)
+      SELECT id, name FROM tech_book
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# MERGE WHEN MATCHED UPDATE ... WHERE EXISTS (SELECT ... WHERE ABS(indexed))
+# — previously double-walked, now should emit exactly one advice
+- statement: |
+    MERGE INTO orders t USING products p ON (t.order_id = p.product_id)
+    WHEN MATCHED THEN UPDATE SET note = 'x'
+      WHERE EXISTS (SELECT 1 FROM tech_book WHERE ABS(id) > 10)
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# MERGE WHEN NOT MATCHED INSERT ... WHERE EXISTS (SELECT ... WHERE UPPER(indexed))
+# — previously double-walked, now single
+- statement: |
+    MERGE INTO orders t USING products p ON (t.order_id = p.product_id)
+    WHEN NOT MATCHED THEN INSERT (order_id, note) VALUES (p.product_id, 'x')
+      WHERE EXISTS (SELECT 1 FROM tech_book b WHERE UPPER(b.name) = 'Y')
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# ---- Round 5 fix ----------------------------------------------------------
+
+# INSERT ALL WHEN EXISTS (subquery) — subquery inside WHEN must emit exactly 1 advice
+- statement: |
+    INSERT ALL
+      WHEN EXISTS (SELECT 1 FROM tech_book b WHERE UPPER(b.name) = 'X') THEN INTO orders (order_id, note) VALUES (id, name)
+      SELECT id, name FROM tech_book
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# ---- Round 6 regression coverage (adversarial hypotheses, all pass) -------
+
+# INSERT FIRST parity with INSERT ALL
+- statement: |
+    INSERT FIRST
+      WHEN UPPER(name) = 'X' THEN INTO orders (order_id, note) VALUES (id, name)
+      SELECT id, name FROM tech_book
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# INSERT ALL ELSE branch with violation inside VALUES subquery
+- statement: |
+    INSERT ALL
+      WHEN id = 1 THEN INTO orders (order_id, note) VALUES (id, name)
+      ELSE INTO orders (order_id, note) VALUES (id, (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X'))
+      SELECT id, name FROM tech_book
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# WHEN with subquery violation AND INTO-VALUES with separate subquery violation
+- statement: |
+    INSERT ALL
+      WHEN EXISTS (SELECT 1 FROM tech_book b WHERE UPPER(b.name) = 'X') THEN INTO orders (order_id, note) VALUES (id, (SELECT MAX(name) FROM tech_book WHERE ABS(id) > 10))
+      SELECT id, name FROM tech_book
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "ABS" is applied to indexed column "ID" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# ---- Codex P1 regression: depth balance across nested contexts -----------
+
+# INSERT ... SELECT source contains a Select_statement nested inside the
+# Insert_statement. Previously OnEnter skipped the increment on the nested
+# Select_statement while OnExit still decremented, leaving depth at 0 mid-
+# statement. The fix makes both events unconditional — depth stays at 1
+# throughout, guarding against any potential re-dispatch.
+- statement: |
+    INSERT INTO insert_target (id, name)
+    SELECT id, name FROM tech_book WHERE UPPER(name) = 'X'
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Sibling EXISTS subqueries with matching violations — exactly 2 advice
+# regardless of walker re-entry semantics.
+- statement: |
+    SELECT * FROM tech_book t
+    WHERE EXISTS (SELECT 1 FROM orders o1 WHERE UPPER(o1.customer_name) = 'X')
+      AND EXISTS (SELECT 1 FROM orders o2 WHERE UPPER(o2.customer_name) = 'Y')
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# ---- Codex P1 round-2 regression: Oracle empty-schema resolution ---------
+
+# Oracle prod sync stores SchemaMetadata{Name: ""}. The rule must use "" as
+# currentSchema (NOT the database name) to find tables. This test exercises
+# both unqualified and database-qualified refs.
+- statement: "SELECT * FROM TEST_DB.tech_book WHERE UPPER(name) = 'X'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Codex round-13 P2 (#3104539932): owner-qualified Oracle refs must
+# distinguish current-owner from cross-owner. Bytebase sync only stores
+# the connected schema's objects, so `HR.tech_book` (HR != TEST_DB) has
+# no metadata and we cannot reason about its indexes — the rule must NOT
+# emit advice for cross-owner refs (would otherwise wrongly attach
+# current-owner indexes). PASS case (no advice expected):
+- statement: "SELECT * FROM HR.tech_book WHERE UPPER(name) = 'X'"
+
+# Codex round-8 P2 (#3104316975): Oracle WITH-factoring name shadows base
+# table. The CTE has no indexes, so what looks like an indexed-column
+# violation against ORDERS is actually against the CTE result. Previously
+# the rule attached real ORDERS indexes to the CTE alias and falsely
+# flagged. With CTE shadowing, the CTE alias is opaque (unresolved) and
+# the rule no longer falsely flags.
+- statement: |
+    WITH orders AS (SELECT 1 AS customer_name FROM dual)
+    SELECT * FROM orders WHERE UPPER(customer_name) = 'X'
+
+# Codex round-9 P2 (#3104448556): same sibling-CTE-shadowing fix, Oracle.
+# C2 body references the prior factoring element ORDERS; it must resolve
+# to the CTE (opaque), not the physical ORDERS table.
+- statement: |
+    WITH orders AS (SELECT 1 AS customer_name FROM dual),
+         c2 AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X')
+    SELECT * FROM c2
+
+# Codex round-11 P2 (#3104501040): containsDerivedTable previously walked
+# all children of From_clause including Join_on_part subqueries. A derived
+# table inside a JOIN ON's nested subquery falsely marked the OUTER
+# query's localUnresolved=true, suppressing outer-scope fallback for
+# unqualified correlated refs. Now mirrors PG's hasOpaqueSource by
+# skipping Join_on_part subtrees.
+- statement: |
+    SELECT * FROM tech_book t WHERE EXISTS (
+      SELECT 1 FROM no_index_table n
+      INNER JOIN products p ON p.product_id = (SELECT y.id FROM (SELECT id FROM tech_book) y)
+      WHERE UPPER(name) = 'X'
+    )
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Codex round-12 P2 (#3104516409): parenthesized table_ref alias must
+# resolve to the underlying base table (Oracle: `FROM (orders) o` is
+# equivalent to `FROM orders o`). Previously the alias was opaque,
+# erasing indexes and missing real violations on `o.indexed_col`.
+- statement: "SELECT * FROM (orders) o WHERE UPPER(o.customer_name) = 'X'"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Doubly-parenthesized — same outcome
+- statement: "SELECT * FROM ((orders)) o WHERE o.amount + 1 > 5"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Parenthesized JOIN: alias spans multiple tables → opaque (no advice).
+# Verifies we DON'T over-fix; the indexed col `customer_name` belongs
+# to the join output (multiple sources), not to a single table via `j`.
+- statement: "SELECT * FROM (orders o JOIN products p ON o.order_id = p.product_id) j WHERE UPPER(j.customer_name) = 'X'"
+
+# Codex round-14 P2 (#3104564089): same as PG #3104564086 — Oracle WITH
+# non-recursive sibling visibility ordering. Earlier `a` body references
+# real ORDERS, NOT the same-named later CTE. Violation must flag.
+- statement: |
+    WITH a AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X'),
+         orders AS (SELECT 1 AS dummy FROM dual)
+    SELECT * FROM a
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Codex round-15 P2 (#3104607277, Oracle): recursive factoring self-ref
+# must resolve to opaque CTE (not same-named base table). Same shape as
+# PG. Oracle has no explicit RECURSIVE keyword — recursion is detected
+# by self-reference. Push-before-each makes self-ref opaque correctly.
+- statement: |
+    WITH orders (n, customer_name) AS (
+      SELECT 1, customer_name FROM orders WHERE rownum <= 1
+      UNION ALL
+      SELECT n + 1, customer_name FROM orders WHERE n < 10
+    )
+    SELECT * FROM orders

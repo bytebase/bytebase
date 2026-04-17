@@ -1,0 +1,948 @@
+# SQL review rule: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+
+# Test: Function on indexed column should flag
+- statement: SELECT * FROM tech_book WHERE UPPER(name) = 'test';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Calculation on indexed column (+) should flag
+- statement: SELECT * FROM tech_book WHERE id + 1 > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Multiplication on indexed column should flag
+- statement: SELECT * FROM tech_book WHERE id * 2 = 10;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Subtraction on indexed column should flag
+- statement: SELECT * FROM tech_book WHERE id - 1 > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Division on indexed column should flag
+- statement: SELECT * FROM tech_book WHERE id / 2 > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Unary minus on indexed column should flag
+- statement: SELECT * FROM tech_book WHERE -id > -5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function on value side should NOT flag
+- statement: SELECT * FROM tech_book WHERE id = ABS(-5);
+
+# Test: Function on non-indexed column should NOT flag
+- statement: SELECT * FROM tech_book WHERE UPPER(creator) = 'test';
+
+# Test: Calculation on non-indexed column should NOT flag
+- statement: SELECT * FROM no_index_table WHERE col_a + 1 > 5;
+
+# Test: Simple comparison should NOT flag
+- statement: SELECT * FROM tech_book WHERE id = 1 AND name = 'test';
+
+# Test: Table not in schema should NOT flag
+- statement: SELECT * FROM unknown_table WHERE UPPER(col) = 'test';
+
+# Test: Unary minus on non-indexed column should NOT flag
+- statement: SELECT * FROM no_index_table WHERE -col_a > 5;
+
+# ---- Medium: UPDATE / DELETE / mixed violations ---------------------------
+
+# Test: Multiple violations in same WHERE — flag each
+- statement: SELECT * FROM tech_book WHERE ABS(id) > 5 AND UPPER(name) = 'test';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function on indexed column in UPDATE WHERE should flag
+- statement: UPDATE tech_book SET creator = 'test' WHERE ABS(id) > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function on indexed column in DELETE WHERE should flag
+- statement: DELETE FROM tech_book WHERE UPPER(name) = 'test';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Mixed — function on indexed + function on non-indexed — only flag indexed
+- statement: SELECT * FROM tech_book WHERE UPPER(name) = 'test' AND LOWER(creator) = 'admin';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- JOIN cases -----------------------------------------------------------
+
+# Test: JOIN with qualified ref to indexed column — should flag
+- statement: SELECT * FROM tech_book t JOIN orders o ON t.id = o.order_id WHERE UPPER(o.customer_name) = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: JOIN, qualified ref to indexed side flags
+- statement: SELECT * FROM tech_book t JOIN orders o ON t.id = o.order_id WHERE UPPER(t.name) = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: JOIN, qualified ref to non-indexed side — should NOT flag
+# tech_book.name is indexed; orders.name is non-indexed. Query uses o.name.
+- statement: SELECT * FROM tech_book t JOIN orders o ON t.id = o.order_id WHERE UPPER(o.name) = 'x';
+
+# ---- INSERT / CTAS / VIEW -------------------------------------------------
+
+# Test: INSERT...SELECT with function on indexed column should flag
+- statement: INSERT INTO insert_target (id, name) SELECT order_id, customer_name FROM orders WHERE UPPER(customer_name) = 'JOHN';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: INSERT...SELECT with plain comparison — PASS
+- statement: INSERT INTO insert_target (id, name) SELECT order_id, customer_name FROM orders WHERE order_id = 1;
+
+# Test: CREATE TABLE AS SELECT with function on indexed column should flag
+- statement: CREATE TABLE new_table AS SELECT * FROM tech_book WHERE UPPER(name) = 'TEST';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CREATE TABLE AS SELECT with plain comparison — PASS
+- statement: CREATE TABLE new_table2 AS SELECT * FROM tech_book WHERE id = 1;
+
+# Test: CREATE VIEW with function on indexed column should flag
+- statement: CREATE VIEW v AS SELECT * FROM tech_book WHERE UPPER(name) = 'test';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CREATE MATERIALIZED VIEW with calculation on indexed column should flag
+- statement: CREATE MATERIALIZED VIEW mv AS SELECT * FROM tech_book WHERE id + 1 > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CREATE VIEW with plain comparison — PASS
+- statement: CREATE VIEW v2 AS SELECT * FROM tech_book WHERE id = 1;
+
+# Test: CREATE MATERIALIZED VIEW with plain comparison — PASS
+- statement: CREATE MATERIALIZED VIEW mv2 AS SELECT * FROM tech_book WHERE id = 1;
+
+# ---- MERGE ----------------------------------------------------------------
+
+# Test: MERGE ON condition with function on indexed column should flag
+- statement: MERGE INTO orders t USING products p ON (UPPER(t.customer_name) = p.title) WHEN MATCHED THEN UPDATE SET note = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: MERGE WHEN MATCHED AND … with calculation on indexed column should flag
+- statement: MERGE INTO orders t USING products p ON (t.order_id = p.product_id) WHEN MATCHED AND t.amount * 2 > 100 THEN UPDATE SET note = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Clean MERGE — PASS
+- statement: MERGE INTO orders t USING products p ON (t.order_id = p.product_id) WHEN MATCHED THEN UPDATE SET note = 'x';
+
+# ---- Subqueries -----------------------------------------------------------
+
+# Test: IN subquery with function on inner indexed column flags
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'JOHN');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function on non-indexed column inside IN subquery should NOT flag
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE UPPER(note) = 'X');
+
+# Test: NOT IN subquery with function on indexed column flags
+- statement: SELECT * FROM tech_book WHERE id NOT IN (SELECT order_id FROM orders WHERE ABS(amount) > 100);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: EXISTS subquery with function on indexed column flags
+- statement: SELECT * FROM tech_book WHERE EXISTS (SELECT 1 FROM orders WHERE UPPER(customer_name) = 'X');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: NOT EXISTS subquery with calculation on indexed column flags
+- statement: SELECT * FROM tech_book WHERE NOT EXISTS (SELECT 1 FROM orders WHERE amount + 10 > 100);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Scalar subquery on value side with function on inner indexed column
+- statement: SELECT * FROM tech_book WHERE id > (SELECT COUNT(*) FROM orders WHERE ABS(amount) > 0);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Violation in BOTH outer and inner subquery — flag both
+- statement: SELECT * FROM tech_book WHERE UPPER(name) = 'A' AND id IN (SELECT order_id FROM orders WHERE ABS(amount) > 0);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: 3-level nested subquery — violation at innermost level
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE amount > (SELECT AVG(amount) FROM orders WHERE LOWER(customer_name) = 'john'));
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"LOWER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: 4-level nested subquery — violation at deepest level
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE amount IN (SELECT amount FROM orders WHERE order_id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'X')));
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Multiple independent subqueries in same WHERE — flag each
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE ABS(amount) > 0) AND name IN (SELECT customer_name FROM orders WHERE UPPER(customer_name) = 'A');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Correlated EXISTS — inner refs outer via qualifier, inner violation flags
+- statement: SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM orders o WHERE o.order_id = t.id AND UPPER(o.customer_name) = 'X');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Correlated EXISTS — function on outer indexed column via qualifier
+- statement: SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM orders o WHERE UPPER(t.name) = 'x');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Correlated — unqualified `id` does not exist in inner (orders), resolves to outer tech_book.id and flags
+- statement: SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM orders o WHERE ABS(id) > 0);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: UPDATE with subquery in WHERE — inner violation should flag
+- statement: UPDATE tech_book SET creator = 'x' WHERE id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'JOHN');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: DELETE with subquery in WHERE — inner violation should flag
+- statement: DELETE FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE ABS(amount) > 10);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- CTE / set-ops --------------------------------------------------------
+
+# Test: CTE body with function on indexed column flags
+- statement: WITH filtered AS (SELECT * FROM tech_book WHERE UPPER(name) = 'TEST') SELECT * FROM filtered WHERE id = 1;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CTE body with calculation on indexed column flags
+- statement: WITH filtered AS (SELECT * FROM tech_book WHERE id + 1 > 5) SELECT * FROM filtered;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CTE body with plain comparison — PASS
+- statement: WITH filtered AS (SELECT * FROM tech_book WHERE id = 1) SELECT * FROM filtered;
+
+# Test: UNION — violation on one side flags
+- statement: SELECT * FROM tech_book WHERE id = 1 UNION SELECT * FROM tech_book WHERE UPPER(name) = 'X';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: UNION with subquery carrying violation
+- statement: SELECT * FROM tech_book WHERE id = 1 UNION SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'A');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: INTERSECT — violation flags
+- statement: SELECT id FROM tech_book WHERE UPPER(name) = 'A' INTERSECT SELECT order_id FROM orders WHERE note = 'b';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: EXCEPT — violation flags
+- statement: SELECT id FROM tech_book WHERE id = 1 EXCEPT SELECT order_id FROM orders WHERE ABS(amount) > 0;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- HAVING exclusion + wrapper unwrap -----------------------------------
+
+# Test: HAVING predicate should NOT be flagged even when wrapping indexed col
+- statement: SELECT name, COUNT(*) FROM tech_book GROUP BY name HAVING COUNT(name) > 5;
+
+# Test: HAVING with calculation — PASS
+- statement: SELECT id, AVG(id) FROM tech_book GROUP BY id HAVING AVG(id) * 3 + 1 > 100;
+
+# Test: Subquery inside HAVING — inner WHERE violation still flags
+- statement: SELECT name FROM tech_book GROUP BY name HAVING name IN (SELECT order_id::text FROM orders WHERE UPPER(customer_name) = 'x');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function wrapping calculation on indexed column flags (inner calc)
+- statement: SELECT * FROM tech_book WHERE ABS(id + 1) > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function with non-indexed column inside calc — PASS
+- statement: SELECT * FROM no_index_table WHERE ABS(col_a + 1) > 5;
+
+# Test: CAST wrap on indexed column — function should still flag
+- statement: SELECT * FROM tech_book WHERE UPPER(CAST(name AS text)) = 'TEST';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- PG extras: UPDATE FROM / DELETE USING / ON CONFLICT WHERE / dmCTE ---
+
+# Test: UPDATE ... FROM — function on target-side indexed column flags
+- statement: UPDATE orders o SET note = 'x' FROM products p WHERE UPPER(o.customer_name) = p.title;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: DELETE ... USING — calculation on target-side indexed column flags
+- statement: DELETE FROM orders o USING products p WHERE ABS(o.amount) > 5;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: INSERT ON CONFLICT WHERE — function on target indexed column flags
+- statement: INSERT INTO orders (order_id, customer_name) VALUES (1, 'a') ON CONFLICT (order_id) DO UPDATE SET note = 'x' WHERE UPPER(orders.customer_name) = 'A';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: INSERT ON CONFLICT WHERE — function on non-indexed target column — PASS
+- statement: INSERT INTO orders (order_id, customer_name) VALUES (1, 'a') ON CONFLICT (order_id) DO UPDATE SET note = 'x' WHERE UPPER(orders.note) = 'A';
+
+# Test: Data-modifying CTE — UPDATE inside WITH flags
+- statement: WITH upd AS (UPDATE orders SET note = 'x' WHERE ABS(order_id) > 5 RETURNING *) SELECT * FROM upd;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"order_id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Documented limitation — outer WHERE over derived-table alias is NOT flagged
+# (column lineage through projections is not traced).
+- statement: SELECT * FROM (SELECT name FROM tech_book) s WHERE UPPER(s.name) = 'x';
+
+# Test: Derived table in FROM with a violation in its own WHERE flags
+- statement: SELECT * FROM (SELECT order_id FROM orders WHERE UPPER(customer_name) = 'x') s;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Scalar subquery in SELECT list with violation — should flag
+- statement: SELECT (SELECT MAX(order_id) FROM orders WHERE UPPER(customer_name) = 'x') FROM tech_book;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (truth table R5): qualified ref to unknown alias — should NOT flag.
+- statement: SELECT * FROM tech_book WHERE ABS(unknown.id) > 0;
+
+# Test (codex P1): CTE reference in inner FROM — unqualified `id` owns by inner CTE, should NOT falsely flag outer tech_book.id.
+- statement: WITH c AS (SELECT order_id AS id FROM orders) SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM c WHERE ABS(id) > 0);
+
+# Test (codex P1): Derived table in inner FROM — unqualified `id` owns by inner derived, should NOT falsely flag outer tech_book.id.
+- statement: SELECT * FROM tech_book t WHERE EXISTS (SELECT 1 FROM (SELECT order_id AS id FROM orders) d WHERE ABS(id) > 0);
+
+# ---- Review fixes ---------------------------------------------------------
+
+# JOIN ON predicate with function on indexed column should flag
+- statement: SELECT * FROM tech_book t JOIN orders o ON UPPER(t.name) = 'X' WHERE t.id = o.order_id;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# JOIN ON predicate with calculation on indexed column should flag
+- statement: SELECT * FROM tech_book t JOIN orders o ON t.id + 1 = o.order_id;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# MERGE with source subquery WHERE violation should flag
+- statement: "MERGE INTO orders t USING (SELECT * FROM products WHERE ABS(price) > 100) p ON (t.order_id = p.product_id) WHEN MATCHED THEN UPDATE SET note = 'x';"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"price\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 2 fixes --------------------------------------------------------
+
+# UPDATE ... FROM ... JOIN ON indexed col
+- statement: UPDATE orders o SET note = 'x' FROM products p JOIN tech_book t ON UPPER(t.name) = p.title WHERE o.order_id = t.id;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# DELETE ... USING ... JOIN ON indexed col
+- statement: DELETE FROM orders o USING products p JOIN tech_book t ON ABS(t.id) = p.product_id WHERE o.order_id = t.id;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# MERGE USING a JOIN b ON indexed col
+- statement: "MERGE INTO orders t USING products p JOIN tech_book b ON UPPER(b.name) = p.title ON (t.order_id = p.product_id) WHEN MATCHED THEN UPDATE SET note = 'x';"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Adversarial: correlated EXISTS in JOIN ON — expect exactly ONE advice (not two)
+- statement: SELECT * FROM tech_book t JOIN orders o ON EXISTS (SELECT 1 FROM products p JOIN orders o2 ON ABS(t.id) = o2.order_id WHERE p.product_id = o.order_id);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 3 fixes --------------------------------------------------------
+
+# CTE body is a MERGE with violation
+- statement: "WITH m AS (MERGE INTO orders t USING products p ON (UPPER(t.customer_name) = p.title) WHEN MATCHED THEN UPDATE SET note = 'x' RETURNING t.*) SELECT * FROM m;"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# UPDATE ... RETURNING (subquery with WHERE violation)
+- statement: UPDATE orders SET note = 'x' WHERE order_id = 1 RETURNING note, (SELECT COUNT(*) FROM tech_book WHERE UPPER(name) = 'X');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# DELETE ... RETURNING (subquery with WHERE violation)
+- statement: DELETE FROM orders WHERE order_id = 1 RETURNING order_id, (SELECT COUNT(*) FROM tech_book WHERE ABS(id) > 10);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# INSERT ... RETURNING (subquery with WHERE violation)
+- statement: INSERT INTO insert_target (id, name) VALUES (1, 'a') RETURNING id, (SELECT COUNT(*) FROM tech_book WHERE UPPER(name) = 'X');
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 4 fix ----------------------------------------------------------
+
+# INSERT ... VALUES ((SELECT ... WHERE ...)) — inner WHERE violation
+- statement: INSERT INTO insert_target (id, name) VALUES (1, (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X'));
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Round 4 fixes --------------------------------------------------------
+
+# PG MERGE ... RETURNING (subquery with WHERE violation)
+- statement: "MERGE INTO orders t USING products p ON (t.order_id = p.product_id) WHEN MATCHED THEN UPDATE SET note = 'x' RETURNING (SELECT MAX(name) FROM tech_book WHERE UPPER(name) = 'X');"
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# PG ON CONFLICT (col) WHERE <pred> — Infer WHERE with indexed col
+- statement: INSERT INTO orders (order_id, customer_name) VALUES (1, 'a') ON CONFLICT (order_id) WHERE UPPER(customer_name) = 'A' DO UPDATE SET note = 'x';
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# ---- Codex P2 round-3 regression -----------------------------------------
+
+# PG exponent operator `^` on indexed column — must flag as calculation
+- statement: SELECT * FROM tech_book WHERE id ^ 2 > 10;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# RangeFunction (generate_series) aliased in FROM — its presence marks the
+# local source unresolved; a bare `n` in WHERE no longer falls through to
+# an outer scope and cannot cause a false positive against a same-named
+# outer column. Structural regression: must PASS (no advice, no panic).
+- statement: SELECT * FROM tech_book t, generate_series(1, 10) AS s(n) WHERE s.n = t.id;
+
+# ---- Codex P2 round-4 regression ------------------------------------------
+
+# Correlated outer ref + inner JOIN with subquery in ON predicate. Previously
+# localHasUnresolvedSources set localUnresolved=true because of the ON
+# subquery, suppressing the outer-scope fallback in isIndexed for unqualified
+# refs. The fix walks only SOURCE positions (Larg/Rarg/top-level FROM items)
+# when determining unresolved-ness.
+- statement: |
+    SELECT * FROM tech_book WHERE id IN (
+      SELECT 1 FROM no_index_table n
+        JOIN products p ON p.price > (SELECT MIN(price) FROM products)
+      WHERE UPPER(name) = 'X'
+    );
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Codex round-8 P2 (#3104316972): CTE name shadows base table.
+# `WITH orders AS (...)` makes the inner FROM `orders` refer to the CTE
+# (which has no indexes), NOT the real `orders` table. Previously the
+# rule attached real-`orders` indexes to the CTE alias and falsely
+# flagged UPPER(customer_name). With CTE shadowing, the local scope is
+# unresolved (CTE is opaque) and the rule no longer falsely flags.
+- statement: |
+    WITH orders AS (SELECT 1 AS customer_name)
+    SELECT * FROM orders WHERE UPPER(customer_name) = 'X';
+
+# Codex round-9 P2 (#3104448555): sibling CTE shadowing within same WITH.
+# `c2`'s body references `orders` — should resolve as the EARLIER sibling
+# CTE (no indexes), NOT the base orders table. Previously the rule walked
+# c2's body before pushing CTE names, so `FROM orders` resolved as the
+# real table and falsely flagged UPPER(customer_name).
+- statement: |
+    WITH orders AS (SELECT 1 AS customer_name),
+         c2 AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X')
+    SELECT * FROM c2;
+
+# Codex round-14 P2 (#3104564086): non-recursive WITH visibility ordering.
+# Earlier CTE `a` references base `orders` (real indexed table).
+# Later CTE `orders` is a same-named CTE. Per SQL, `a` cannot see `orders`
+# the CTE (it's defined later, non-recursive WITH). So `FROM orders` in
+# `a` must resolve to the REAL orders table — and the UPPER(customer_name)
+# violation must still flag.
+- statement: |
+    WITH a AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X'),
+         orders AS (SELECT 1 AS dummy)
+    SELECT * FROM a;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Codex round-15 P2 (#3104607277): recursive WITH self-reference must
+# resolve to opaque CTE, NOT to a same-named base table. Without the fix,
+# the recursive arm's `FROM cte` resolved to a base table, which (if
+# happens to have indexed columns) emits false-positive advice attaching
+# real indexes to CTE columns. With push-before-each, the CTE name is
+# visible during its own body walk → opaque → no false positive.
+- statement: |
+    WITH RECURSIVE orders AS (
+      SELECT order_id, customer_name FROM orders WHERE order_id = 1
+      UNION ALL
+      SELECT order_id + 1, customer_name FROM orders WHERE order_id < 10
+    )
+    SELECT * FROM orders;
