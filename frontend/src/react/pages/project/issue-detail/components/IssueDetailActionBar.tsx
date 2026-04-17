@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   EllipsisVertical,
+  ExternalLink,
   Loader2,
   MessageCircle,
   X,
@@ -456,6 +457,7 @@ export function IssueDetailActionBar() {
           >
             <span>#{extractPlanUID(page.plan.name)}</span>
             <span>{t("common.plan")}</span>
+            <ExternalLink className="size-3.5" />
           </Button>
         )}
 

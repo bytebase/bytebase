@@ -1,15 +1,16 @@
 import {
-  useCurrentProjectV1,
   useCurrentUserV1,
   usePolicyV1Store,
   useProjectIamPolicyStore,
+  useProjectV1Store,
 } from "@/store";
-import { roleNamePrefix } from "@/store/modules/v1/common";
+import { projectNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractProjectResourceName,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   memberMapToRolesInProjectIAM,
@@ -21,6 +22,17 @@ const rolloutPolicyAccessStateByEnvironment = new Map<
   string,
   RolloutPolicyAccessState
 >();
+
+/**
+ * Derive the full project resource name from the issue or first task.
+ * Both carry the project id in their resource name
+ * (e.g. "projects/foo/issues/1" or "projects/foo/rollouts/…").
+ */
+const resolveProjectName = (tasks: Task[], issue?: Issue): string => {
+  const source = issue?.name ?? tasks[0]?.name ?? "";
+  const id = extractProjectResourceName(source);
+  return id ? `${projectNamePrefix}${id}` : "";
+};
 
 /**
  * Check if the current user can rollout the given tasks
@@ -47,12 +59,15 @@ export const canRolloutTasks = (
     return issue.creator === currentUser.value.name;
   }
 
-  const { project } = useCurrentProjectV1();
+  // Resolve project from issue/task resource name instead of useRoute()
+  // so the check works correctly inside async callbacks (after await).
+  const projectName = resolveProjectName(tasks, issue);
+  const project = useProjectV1Store().getProjectByName(projectName);
 
   // First check: if user has bb.taskRuns.create permission, always allow rollout
   const hasCreatePermission =
     hasWorkspacePermissionV2("bb.taskRuns.create") ||
-    hasProjectPermissionV2(project.value, "bb.taskRuns.create");
+    hasProjectPermissionV2(project, "bb.taskRuns.create");
   if (hasCreatePermission) {
     return true;
   }
@@ -61,7 +76,7 @@ export const canRolloutTasks = (
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const policyStore = usePolicyV1Store();
   const projectIamPolicy = projectIamPolicyStore.getProjectIamPolicy(
-    project.value.name
+    project.name
   );
   const memberRoles = memberMapToRolesInProjectIAM(projectIamPolicy);
   const userRoles = memberRoles.get(currentUser.value.name);
@@ -112,33 +127,28 @@ export const canRolloutTasks = (
 
 export const preloadRolloutPermissionContext = async (
   tasks: Task[],
-  environment?: string
+  environment?: string,
+  issue?: Issue
 ) => {
   if (tasks.length === 0 || !environment) return;
 
-  const { project } = useCurrentProjectV1();
+  const projectName = resolveProjectName(tasks, issue);
   const policyStore = usePolicyV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 
-  const environmentNames = [environment];
-
   await Promise.allSettled([
-    projectIamPolicyStore.getOrFetchProjectIamPolicy(project.value.name),
+    projectIamPolicyStore.getOrFetchProjectIamPolicy(projectName),
   ]);
 
-  const policyResults = await Promise.allSettled(
-    environmentNames.map((environmentName) =>
-      policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: environmentName,
-        policyType: PolicyType.ROLLOUT_POLICY,
-      })
-    )
-  );
+  const policyResults = await Promise.allSettled([
+    policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: environment,
+      policyType: PolicyType.ROLLOUT_POLICY,
+    }),
+  ]);
 
-  policyResults.forEach((result, index) => {
-    rolloutPolicyAccessStateByEnvironment.set(
-      environmentNames[index],
-      result.status === "fulfilled" ? "loaded" : "unavailable"
-    );
-  });
+  rolloutPolicyAccessStateByEnvironment.set(
+    environment,
+    policyResults[0]?.status === "fulfilled" ? "loaded" : "unavailable"
+  );
 };

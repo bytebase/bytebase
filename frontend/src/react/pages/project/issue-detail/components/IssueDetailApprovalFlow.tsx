@@ -71,6 +71,7 @@ export function IssueDetailApprovalFlow() {
   }
 
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
+  const hasRollout = page.plan?.hasRollout ?? false;
   const statusTag = getStatusTag(issue, approvalSteps.length, t);
 
   return (
@@ -109,7 +110,7 @@ export function IssueDetailApprovalFlow() {
               <ApprovalStepItem
                 key={`${step}-${index}`}
                 issue={issue}
-                readonly={page.readonly}
+                readonly={page.readonly || hasRollout}
                 step={step}
                 stepIndex={index}
                 stepNumber={index + 1}
