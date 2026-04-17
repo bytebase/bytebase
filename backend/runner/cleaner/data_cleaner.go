@@ -79,6 +79,7 @@ func (c *DataCleaner) cleanup(ctx context.Context) {
 	c.cleanupExportArchives(ctx)
 	c.cleanupOAuth2Data(ctx)
 	c.cleanupWebRefreshTokens(ctx)
+	c.cleanupEmailVerificationCodes(ctx)
 	c.cleanupStaleHeartbeats(ctx)
 }
 
@@ -155,5 +156,13 @@ func (c *DataCleaner) cleanupWebRefreshTokens(ctx context.Context) {
 		slog.Error("Failed to clean up expired web refresh tokens", log.BBError(err))
 	} else if rowsAffected > 0 {
 		slog.Info("Cleaned up expired web refresh tokens", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) cleanupEmailVerificationCodes(ctx context.Context) {
+	if rowsAffected, err := c.store.DeleteExpiredEmailVerificationCodes(ctx); err != nil {
+		slog.Error("Failed to clean up expired email verification codes", log.BBError(err))
+	} else if rowsAffected > 0 {
+		slog.Info("Cleaned up expired email verification codes", slog.Int64("count", rowsAffected))
 	}
 }
