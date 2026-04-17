@@ -18,7 +18,10 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 		return original
 	}
 
-	result := proto.Clone(original).(*storepb.DatabaseSchemaMetadata)
+	result, ok := proto.Clone(original).(*storepb.DatabaseSchemaMetadata)
+	if !ok {
+		return original
+	}
 
 	for _, s := range diff.Schemas {
 		switch s.Action {
@@ -26,6 +29,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 			result.Schemas = append(result.Schemas, &storepb.SchemaMetadata{Name: s.Name})
 		case catalog.DiffDrop:
 			result.Schemas = removeSchema(result.Schemas, s.Name)
+		default:
 		}
 	}
 
@@ -42,6 +46,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 			addRelation(sm, cat, rel)
 		case catalog.DiffModify:
 			modifyRelation(sm, cat, rel)
+		default:
 		}
 	}
 
@@ -67,6 +72,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 					}
 				}
 			}
+		default:
 		}
 	}
 
@@ -91,6 +97,7 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 					break
 				}
 			}
+		default:
 		}
 	}
 
@@ -151,6 +158,7 @@ func addRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalog.R
 		sm.Views = append(sm.Views, relationToViewProto(cat, rel.To))
 	case 'm':
 		sm.MaterializedViews = append(sm.MaterializedViews, relationToMatViewProto(cat, rel.To))
+	default:
 	}
 }
 
@@ -181,6 +189,7 @@ func modifyRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalo
 	case 'm':
 		sm.MaterializedViews = removeMatViewByName(sm.MaterializedViews, rel.Name)
 		sm.MaterializedViews = append(sm.MaterializedViews, relationToMatViewProto(cat, rel.To))
+	default:
 	}
 }
 
@@ -202,6 +211,7 @@ func applyColumnDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel cata
 					}
 				}
 			}
+		default:
 		}
 	}
 }
@@ -224,6 +234,7 @@ func applyIndexDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catal
 					}
 				}
 			}
+		default:
 		}
 	}
 }
@@ -246,6 +257,7 @@ func applyConstraintDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel 
 			if cd.To != nil {
 				addConstraintToTable(tbl, cat, rel, cd.To)
 			}
+		default:
 		}
 	}
 }
@@ -269,6 +281,7 @@ func addConstraintToTable(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel 
 			Name:       con.Name,
 			Expression: con.CheckExpr,
 		})
+	default:
 	}
 }
 
@@ -305,6 +318,7 @@ func removeConstraintFromTable(tbl *storepb.TableMetadata, cat *catalog.Catalog,
 			}
 		}
 		tbl.ExcludeConstraints = out
+	default:
 	}
 }
 
@@ -331,12 +345,13 @@ func columnToProto(cat *catalog.Catalog, col *catalog.Column) *storepb.ColumnMet
 			cm.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
 		case 'd':
 			cm.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+		default:
 		}
 	}
 	return cm
 }
 
-func indexToProto(cat *catalog.Catalog, rel *catalog.Relation, idx *catalog.Index) *storepb.IndexMetadata {
+func indexToProto(_ *catalog.Catalog, rel *catalog.Relation, idx *catalog.Index) *storepb.IndexMetadata {
 	im := &storepb.IndexMetadata{
 		Name:         idx.Name,
 		Type:         idx.AccessMethod,
