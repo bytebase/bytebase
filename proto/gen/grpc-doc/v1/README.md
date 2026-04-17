@@ -200,6 +200,9 @@
     - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
     - [RefreshRequest](#bytebase-v1-RefreshRequest)
     - [RefreshResponse](#bytebase-v1-RefreshResponse)
+    - [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest)
+    - [ResetPasswordRequest](#bytebase-v1-ResetPasswordRequest)
+    - [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest)
     - [SignupRequest](#bytebase-v1-SignupRequest)
     - [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest)
   
@@ -2488,6 +2491,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | enable_debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | sql_result_size | [int64](#int64) |  | The maximum result size limit in bytes for query and export, works for the SQL Editor and Export Center. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 | query_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The query timeout duration for query and export, works for the SQL Editor and Export Center. |
+| allow_email_code_signin | [bool](#bool) |  | Allow signin/signup using email &#43; a 6-digit one-time verification code. Requires the EMAIL setting to be configured on the workspace. |
 
 
 
@@ -2747,6 +2751,7 @@ Request message for getting actuator information.
 | disallow_signup | [bool](#bool) |  | Whether self-service user signup is disabled. |
 | disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password complexity and restriction requirements. |
+| allow_email_code_signin | [bool](#bool) |  | Whether email &#43; 6-digit code signin is enabled for this workspace. |
 
 
 
@@ -3553,6 +3558,7 @@ Context for identity provider authentication.
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
 | mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
+| email_code | [string](#string) | optional | 6-digit code from email for passwordless login/signup. Pairs with `email`. Mutually exclusive with `password` and `idp_name`. |
 
 
 
@@ -3637,6 +3643,55 @@ Response from refreshing the access token.
 
 
 
+<a name="bytebase-v1-RequestPasswordResetRequest"></a>
+
+### RequestPasswordResetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | The email address of the account to reset. |
+| workspace | [string](#string) | optional | Optional workspace context captured at send time, used to locate the EMAIL setting, and later (at verify time) for signup gate checks and workspace assignment. Unset for SaaS brand-new signup (no workspace exists yet). Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-ResetPasswordRequest"></a>
+
+### ResetPasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | The email address of the account. |
+| code | [string](#string) |  | The 6-digit code from the reset email. |
+| new_password | [string](#string) |  | The new password to set. |
+
+
+
+
+
+
+<a name="bytebase-v1-SendEmailLoginCodeRequest"></a>
+
+### SendEmailLoginCodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| email | [string](#string) |  | The email address to send the code to. |
+| workspace | [string](#string) | optional | Optional workspace context captured at send time, used to locate the EMAIL setting, and later (at verify time) for signup gate checks and workspace assignment. Unset for SaaS brand-new signup (no workspace exists yet). Format: workspaces/{workspace} |
+
+
+
+
+
+
 <a name="bytebase-v1-SignupRequest"></a>
 
 ### SignupRequest
@@ -3692,6 +3747,9 @@ AuthService handles user authentication operations.
 | Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 | SwitchWorkspace | [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Switches the current user&#39;s active workspace and issues new tokens. The user must be a member of the target workspace. |
+| RequestPasswordReset | [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Requests a password reset email for the given email address. Always returns success to avoid leaking whether the email exists. Permissions required: None |
+| ResetPassword | [ResetPasswordRequest](#bytebase-v1-ResetPasswordRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Resets the user&#39;s password using a password reset token from email. Permissions required: None (validates via token) |
+| SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup. Always returns success (no email enumeration). Enforces 60-sec resend cooldown. Permissions required: None |
 
  
 

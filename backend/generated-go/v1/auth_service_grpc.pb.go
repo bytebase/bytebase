@@ -20,12 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName           = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName          = "/bytebase.v1.AuthService/Logout"
-	AuthService_ExchangeToken_FullMethodName   = "/bytebase.v1.AuthService/ExchangeToken"
-	AuthService_Signup_FullMethodName          = "/bytebase.v1.AuthService/Signup"
-	AuthService_Refresh_FullMethodName         = "/bytebase.v1.AuthService/Refresh"
-	AuthService_SwitchWorkspace_FullMethodName = "/bytebase.v1.AuthService/SwitchWorkspace"
+	AuthService_Login_FullMethodName                = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName               = "/bytebase.v1.AuthService/Logout"
+	AuthService_ExchangeToken_FullMethodName        = "/bytebase.v1.AuthService/ExchangeToken"
+	AuthService_Signup_FullMethodName               = "/bytebase.v1.AuthService/Signup"
+	AuthService_Refresh_FullMethodName              = "/bytebase.v1.AuthService/Refresh"
+	AuthService_SwitchWorkspace_FullMethodName      = "/bytebase.v1.AuthService/SwitchWorkspace"
+	AuthService_RequestPasswordReset_FullMethodName = "/bytebase.v1.AuthService/RequestPasswordReset"
+	AuthService_ResetPassword_FullMethodName        = "/bytebase.v1.AuthService/ResetPassword"
+	AuthService_SendEmailLoginCode_FullMethodName   = "/bytebase.v1.AuthService/SendEmailLoginCode"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -55,6 +58,17 @@ type AuthServiceClient interface {
 	// Switches the current user's active workspace and issues new tokens.
 	// The user must be a member of the target workspace.
 	SwitchWorkspace(ctx context.Context, in *SwitchWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// Requests a password reset email for the given email address.
+	// Always returns success to avoid leaking whether the email exists.
+	// Permissions required: None
+	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Resets the user's password using a password reset token from email.
+	// Permissions required: None (validates via token)
+	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// Permissions required: None
+	SendEmailLoginCode(ctx context.Context, in *SendEmailLoginCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type authServiceClient struct {
@@ -125,6 +139,36 @@ func (c *authServiceClient) SwitchWorkspace(ctx context.Context, in *SwitchWorks
 	return out, nil
 }
 
+func (c *authServiceClient) RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AuthService_RequestPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AuthService_ResetPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, in *SendEmailLoginCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, AuthService_SendEmailLoginCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -152,6 +196,17 @@ type AuthServiceServer interface {
 	// Switches the current user's active workspace and issues new tokens.
 	// The user must be a member of the target workspace.
 	SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error)
+	// Requests a password reset email for the given email address.
+	// Always returns success to avoid leaking whether the email exists.
+	// Permissions required: None
+	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*emptypb.Empty, error)
+	// Resets the user's password using a password reset token from email.
+	// Permissions required: None (validates via token)
+	ResetPassword(context.Context, *ResetPasswordRequest) (*emptypb.Empty, error)
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// Permissions required: None
+	SendEmailLoginCode(context.Context, *SendEmailLoginCodeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -179,6 +234,15 @@ func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) 
 }
 func (UnimplementedAuthServiceServer) SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SwitchWorkspace not implemented")
+}
+func (UnimplementedAuthServiceServer) RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestPasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) ResetPassword(context.Context, *ResetPasswordRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetPassword not implemented")
+}
+func (UnimplementedAuthServiceServer) SendEmailLoginCode(context.Context, *SendEmailLoginCodeRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendEmailLoginCode not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -309,6 +373,60 @@ func _AuthService_SwitchWorkspace_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_RequestPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RequestPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, req.(*RequestPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResetPassword(ctx, req.(*ResetPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SendEmailLoginCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendEmailLoginCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SendEmailLoginCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SendEmailLoginCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SendEmailLoginCode(ctx, req.(*SendEmailLoginCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -339,6 +457,18 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SwitchWorkspace",
 			Handler:    _AuthService_SwitchWorkspace_Handler,
+		},
+		{
+			MethodName: "RequestPasswordReset",
+			Handler:    _AuthService_RequestPasswordReset_Handler,
+		},
+		{
+			MethodName: "ResetPassword",
+			Handler:    _AuthService_ResetPassword_Handler,
+		},
+		{
+			MethodName: "SendEmailLoginCode",
+			Handler:    _AuthService_SendEmailLoginCode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

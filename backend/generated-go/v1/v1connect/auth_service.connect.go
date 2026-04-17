@@ -48,6 +48,15 @@ const (
 	// AuthServiceSwitchWorkspaceProcedure is the fully-qualified name of the AuthService's
 	// SwitchWorkspace RPC.
 	AuthServiceSwitchWorkspaceProcedure = "/bytebase.v1.AuthService/SwitchWorkspace"
+	// AuthServiceRequestPasswordResetProcedure is the fully-qualified name of the AuthService's
+	// RequestPasswordReset RPC.
+	AuthServiceRequestPasswordResetProcedure = "/bytebase.v1.AuthService/RequestPasswordReset"
+	// AuthServiceResetPasswordProcedure is the fully-qualified name of the AuthService's ResetPassword
+	// RPC.
+	AuthServiceResetPasswordProcedure = "/bytebase.v1.AuthService/ResetPassword"
+	// AuthServiceSendEmailLoginCodeProcedure is the fully-qualified name of the AuthService's
+	// SendEmailLoginCode RPC.
+	AuthServiceSendEmailLoginCodeProcedure = "/bytebase.v1.AuthService/SendEmailLoginCode"
 )
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
@@ -73,6 +82,17 @@ type AuthServiceClient interface {
 	// Switches the current user's active workspace and issues new tokens.
 	// The user must be a member of the target workspace.
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
+	// Requests a password reset email for the given email address.
+	// Always returns success to avoid leaking whether the email exists.
+	// Permissions required: None
+	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
+	// Resets the user's password using a password reset token from email.
+	// Permissions required: None (validates via token)
+	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// Permissions required: None
+	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewAuthServiceClient constructs a client for the bytebase.v1.AuthService service. By default, it
@@ -122,17 +142,38 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("SwitchWorkspace")),
 			connect.WithClientOptions(opts...),
 		),
+		requestPasswordReset: connect.NewClient[v1.RequestPasswordResetRequest, emptypb.Empty](
+			httpClient,
+			baseURL+AuthServiceRequestPasswordResetProcedure,
+			connect.WithSchema(authServiceMethods.ByName("RequestPasswordReset")),
+			connect.WithClientOptions(opts...),
+		),
+		resetPassword: connect.NewClient[v1.ResetPasswordRequest, emptypb.Empty](
+			httpClient,
+			baseURL+AuthServiceResetPasswordProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ResetPassword")),
+			connect.WithClientOptions(opts...),
+		),
+		sendEmailLoginCode: connect.NewClient[v1.SendEmailLoginCodeRequest, emptypb.Empty](
+			httpClient,
+			baseURL+AuthServiceSendEmailLoginCodeProcedure,
+			connect.WithSchema(authServiceMethods.ByName("SendEmailLoginCode")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login           *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	logout          *connect.Client[v1.LogoutRequest, emptypb.Empty]
-	exchangeToken   *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
-	signup          *connect.Client[v1.SignupRequest, v1.LoginResponse]
-	refresh         *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
-	switchWorkspace *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
+	login                *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout               *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	exchangeToken        *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	signup               *connect.Client[v1.SignupRequest, v1.LoginResponse]
+	refresh              *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	switchWorkspace      *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
+	requestPasswordReset *connect.Client[v1.RequestPasswordResetRequest, emptypb.Empty]
+	resetPassword        *connect.Client[v1.ResetPasswordRequest, emptypb.Empty]
+	sendEmailLoginCode   *connect.Client[v1.SendEmailLoginCodeRequest, emptypb.Empty]
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -165,6 +206,21 @@ func (c *authServiceClient) SwitchWorkspace(ctx context.Context, req *connect.Re
 	return c.switchWorkspace.CallUnary(ctx, req)
 }
 
+// RequestPasswordReset calls bytebase.v1.AuthService.RequestPasswordReset.
+func (c *authServiceClient) RequestPasswordReset(ctx context.Context, req *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.requestPasswordReset.CallUnary(ctx, req)
+}
+
+// ResetPassword calls bytebase.v1.AuthService.ResetPassword.
+func (c *authServiceClient) ResetPassword(ctx context.Context, req *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.resetPassword.CallUnary(ctx, req)
+}
+
+// SendEmailLoginCode calls bytebase.v1.AuthService.SendEmailLoginCode.
+func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, req *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.sendEmailLoginCode.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
 	// Authenticates a user and returns access tokens.
@@ -188,6 +244,17 @@ type AuthServiceHandler interface {
 	// Switches the current user's active workspace and issues new tokens.
 	// The user must be a member of the target workspace.
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
+	// Requests a password reset email for the given email address.
+	// Always returns success to avoid leaking whether the email exists.
+	// Permissions required: None
+	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
+	// Resets the user's password using a password reset token from email.
+	// Permissions required: None (validates via token)
+	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// Permissions required: None
+	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -233,6 +300,24 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("SwitchWorkspace")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceRequestPasswordResetHandler := connect.NewUnaryHandler(
+		AuthServiceRequestPasswordResetProcedure,
+		svc.RequestPasswordReset,
+		connect.WithSchema(authServiceMethods.ByName("RequestPasswordReset")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceResetPasswordHandler := connect.NewUnaryHandler(
+		AuthServiceResetPasswordProcedure,
+		svc.ResetPassword,
+		connect.WithSchema(authServiceMethods.ByName("ResetPassword")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceSendEmailLoginCodeHandler := connect.NewUnaryHandler(
+		AuthServiceSendEmailLoginCodeProcedure,
+		svc.SendEmailLoginCode,
+		connect.WithSchema(authServiceMethods.ByName("SendEmailLoginCode")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceLoginProcedure:
@@ -247,6 +332,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceRefreshHandler.ServeHTTP(w, r)
 		case AuthServiceSwitchWorkspaceProcedure:
 			authServiceSwitchWorkspaceHandler.ServeHTTP(w, r)
+		case AuthServiceRequestPasswordResetProcedure:
+			authServiceRequestPasswordResetHandler.ServeHTTP(w, r)
+		case AuthServiceResetPasswordProcedure:
+			authServiceResetPasswordHandler.ServeHTTP(w, r)
+		case AuthServiceSendEmailLoginCodeProcedure:
+			authServiceSendEmailLoginCodeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -278,4 +369,16 @@ func (UnimplementedAuthServiceHandler) Refresh(context.Context, *connect.Request
 
 func (UnimplementedAuthServiceHandler) SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.SwitchWorkspace is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.RequestPasswordReset is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.ResetPassword is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.SendEmailLoginCode is not implemented"))
 }

@@ -246,6 +246,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ExchangeTokenResponse'
+  /v1/auth:requestPasswordReset:
+    post:
+      tags:
+        - AuthService
+      summary: RequestPasswordReset
+      description: |-
+        Requests a password reset email for the given email address.
+         Always returns success to avoid leaking whether the email exists.
+         Permissions required: None
+      operationId: AuthService_RequestPasswordReset
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RequestPasswordResetRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /v1/auth:resetPassword:
+    post:
+      tags:
+        - AuthService
+      summary: ResetPassword
+      description: |-
+        Resets the user's password using a password reset token from email.
+         Permissions required: None (validates via token)
+      operationId: AuthService_ResetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ResetPasswordRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /v1/auth:sendEmailLoginCode:
+    post:
+      tags:
+        - AuthService
+      summary: SendEmailLoginCode
+      description: |-
+        Sends a 6-digit verification code to the email for login/signup.
+         Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+         Permissions required: None
+      operationId: AuthService_SendEmailLoginCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.SendEmailLoginCodeRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
   /v1/auth:switchWorkspace:
     post:
       tags:
@@ -23245,6 +23313,14 @@ components:
             - "null"
           title: mfa_temp_token
           description: The mfa_temp_token is used to verify the user's identity by MFA.
+        emailCode:
+          type:
+            - string
+            - "null"
+          title: email_code
+          description: |-
+            6-digit code from email for passwordless login/signup.
+             Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
       title: LoginRequest
       additionalProperties: false
     bytebase.v1.LoginResponse:
@@ -25265,6 +25341,42 @@ components:
       title: RequestMetadata
       additionalProperties: false
       description: Metadata about the incoming request.
+    bytebase.v1.RequestPasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email address of the account to reset.
+        workspace:
+          type:
+            - string
+            - "null"
+          title: workspace
+          description: |-
+            Optional workspace context captured at send time, used to locate the EMAIL setting,
+             and later (at verify time) for signup gate checks and workspace assignment.
+             Unset for SaaS brand-new signup (no workspace exists yet).
+             Format: workspaces/{workspace}
+      title: RequestPasswordResetRequest
+      additionalProperties: false
+    bytebase.v1.ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email address of the account.
+        code:
+          type: string
+          title: code
+          description: The 6-digit code from the reset email.
+        newPassword:
+          type: string
+          title: new_password
+          description: The new password to set.
+      title: ResetPasswordRequest
+      additionalProperties: false
     bytebase.v1.Restriction:
       type: object
       properties:
@@ -25283,6 +25395,11 @@ components:
           description: Password complexity and restriction requirements.
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction'
+        allowEmailCodeSignin:
+          type: boolean
+          title: allow_email_code_signin
+          description: Whether email + 6-digit code signin is enabled for this workspace.
+          readOnly: true
       title: Restriction
       additionalProperties: false
     bytebase.v1.ReviewConfig:
@@ -26510,6 +26627,25 @@ components:
           title: icon
           description: icon is the icon for semantic type, it can be emoji or base64 encoded image.
       title: SemanticType
+      additionalProperties: false
+    bytebase.v1.SendEmailLoginCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: The email address to send the code to.
+        workspace:
+          type:
+            - string
+            - "null"
+          title: workspace
+          description: |-
+            Optional workspace context captured at send time, used to locate the EMAIL setting,
+             and later (at verify time) for signup gate checks and workspace assignment.
+             Unset for SaaS brand-new signup (no workspace exists yet).
+             Format: workspaces/{workspace}
+      title: SendEmailLoginCodeRequest
       additionalProperties: false
     bytebase.v1.SequenceMetadata:
       type: object
@@ -29640,6 +29776,12 @@ components:
           title: query_timeout
           description: The query timeout duration for query and export, works for the SQL Editor and Export Center.
           $ref: '#/components/schemas/google.protobuf.Duration'
+        allowEmailCodeSignin:
+          type: boolean
+          title: allow_email_code_signin
+          description: |-
+            Allow signin/signup using email + a 6-digit one-time verification code.
+             Requires the EMAIL setting to be configured on the workspace.
       title: WorkspaceProfileSetting
       additionalProperties: false
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:

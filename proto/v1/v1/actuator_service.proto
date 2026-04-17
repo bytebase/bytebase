@@ -71,6 +71,9 @@ message Restriction {
 
   // Password complexity and restriction requirements.
   WorkspaceProfileSetting.PasswordRestriction password_restriction = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether email + 6-digit code signin is enabled for this workspace.
+  bool allow_email_code_signin = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // System information and configuration for the Bytebase instance.

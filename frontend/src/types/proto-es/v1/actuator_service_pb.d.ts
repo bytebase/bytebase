@@ -87,6 +87,13 @@ export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
    * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
    */
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
+
+  /**
+   * Whether email + 6-digit code signin is enabled for this workspace.
+   *
+   * @generated from field: bool allow_email_code_signin = 4;
+   */
+  allowEmailCodeSignin: boolean;
 };
 
 /**

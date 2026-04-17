@@ -322,6 +322,21 @@
         
           
           <li>
+            <a href="#store%2fauth.proto">store/auth.proto</a>
+            <ul>
+              
+              
+                <li>
+                  <a href="#bytebase.store.EmailVerificationCodePurpose"><span class="badge">E</span>EmailVerificationCodePurpose</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fchangelog.proto">store/changelog.proto</a>
             <ul>
               
@@ -2922,6 +2937,49 @@ This information is not authenticated and should be treated accordingly. </p></t
               <tr>
                 <td>EMERGENCY</td>
                 <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/auth.proto">store/auth.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+        <h3 id="bytebase.store.EmailVerificationCodePurpose">EmailVerificationCodePurpose</h3>
+        <p>EmailVerificationCodePurpose distinguishes login codes from password reset codes.</p><p>Stored as the enum name string in email_verification_code.purpose column.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LOGIN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD_RESET</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             
@@ -12542,6 +12600,14 @@ The default value is 100MB, we will use the default value if the setting not exi
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>The query timeout duration for query and export, works for the SQL Editor and Export Center. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_email_code_signin</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Allow signin/signup using email &#43; a 6-digit one-time verification code.
+Requires the EMAIL setting to be configured on the workspace. </p></td>
                 </tr>
               
             </tbody>

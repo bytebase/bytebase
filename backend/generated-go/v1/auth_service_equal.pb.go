@@ -34,6 +34,9 @@ func (x *LoginRequest) Equal(y *LoginRequest) bool {
 	if p, q := x.MfaTempToken, y.MfaTempToken; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if p, q := x.EmailCode, y.EmailCode; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 
@@ -175,6 +178,57 @@ func (x *RefreshResponse) Equal(y *RefreshResponse) bool {
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *RequestPasswordResetRequest) Equal(y *RequestPasswordResetRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	if p, q := x.Workspace, y.Workspace; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	return true
+}
+
+func (x *ResetPasswordRequest) Equal(y *ResetPasswordRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	if x.Code != y.Code {
+		return false
+	}
+	if x.NewPassword != y.NewPassword {
+		return false
+	}
+	return true
+}
+
+func (x *SendEmailLoginCodeRequest) Equal(y *SendEmailLoginCodeRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	if p, q := x.Workspace, y.Workspace; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
 	}
 	return true
 }

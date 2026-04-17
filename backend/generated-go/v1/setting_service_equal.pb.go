@@ -393,6 +393,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if p, q := x.QueryTimeout, y.QueryTimeout; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if x.AllowEmailCodeSignin != y.AllowEmailCodeSignin {
+		return false
+	}
 	return true
 }
 

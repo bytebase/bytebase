@@ -603,9 +603,12 @@ type WorkspaceProfileSetting struct {
 	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
 	SqlResultSize int64 `protobuf:"varint,20,opt,name=sql_result_size,json=sqlResultSize,proto3" json:"sql_result_size,omitempty"`
 	// The query timeout duration for query and export, works for the SQL Editor and Export Center.
-	QueryTimeout  *durationpb.Duration `protobuf:"bytes,21,opt,name=query_timeout,json=queryTimeout,proto3" json:"query_timeout,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	QueryTimeout *durationpb.Duration `protobuf:"bytes,21,opt,name=query_timeout,json=queryTimeout,proto3" json:"query_timeout,omitempty"`
+	// Allow signin/signup using email + a 6-digit one-time verification code.
+	// Requires the EMAIL setting to be configured on the workspace.
+	AllowEmailCodeSignin bool `protobuf:"varint,22,opt,name=allow_email_code_signin,json=allowEmailCodeSignin,proto3" json:"allow_email_code_signin,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -776,6 +779,13 @@ func (x *WorkspaceProfileSetting) GetQueryTimeout() *durationpb.Duration {
 		return x.QueryTimeout
 	}
 	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetAllowEmailCodeSignin() bool {
+	if x != nil {
+		return x.AllowEmailCodeSignin
+	}
+	return false
 }
 
 type WorkspaceApprovalSetting struct {
@@ -2702,7 +2712,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"P\n" +
 	"\rSystemSetting\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xb0\x0f\n" +
+	"\alicense\x18\x03 \x01(\tR\alicenseJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03R\vauth_secretR\fworkspace_id\"\xe7\x0f\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2725,7 +2735,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12!\n" +
 	"\fenable_debug\x18\x13 \x01(\bR\venableDebug\x12&\n" +
 	"\x0fsql_result_size\x18\x14 \x01(\x03R\rsqlResultSize\x12>\n" +
-	"\rquery_timeout\x18\x15 \x01(\v2\x19.google.protobuf.DurationR\fqueryTimeout\x1a\xdd\x01\n" +
+	"\rquery_timeout\x18\x15 \x01(\v2\x19.google.protobuf.DurationR\fqueryTimeout\x125\n" +
+	"\x17allow_email_code_signin\x18\x16 \x01(\bR\x14allowEmailCodeSignin\x1a\xdd\x01\n" +
 	"\fAnnouncement\x12U\n" +
 	"\x05level\x18\x01 \x01(\x0e2?.bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +

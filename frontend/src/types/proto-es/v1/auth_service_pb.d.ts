@@ -73,6 +73,14 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
    * @generated from field: optional string mfa_temp_token = 8;
    */
   mfaTempToken?: string;
+
+  /**
+   * 6-digit code from email for passwordless login/signup.
+   * Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
+   *
+   * @generated from field: optional string email_code = 9;
+   */
+  emailCode?: string;
 };
 
 /**
@@ -314,6 +322,94 @@ export declare type RefreshResponse = Message<"bytebase.v1.RefreshResponse"> & {
 export declare const RefreshResponseSchema: GenMessage<RefreshResponse>;
 
 /**
+ * @generated from message bytebase.v1.RequestPasswordResetRequest
+ */
+export declare type RequestPasswordResetRequest = Message<"bytebase.v1.RequestPasswordResetRequest"> & {
+  /**
+   * The email address of the account to reset.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * Optional workspace context captured at send time, used to locate the EMAIL setting,
+   * and later (at verify time) for signup gate checks and workspace assignment.
+   * Unset for SaaS brand-new signup (no workspace exists yet).
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: optional string workspace = 2;
+   */
+  workspace?: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RequestPasswordResetRequest.
+ * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
+ */
+export declare const RequestPasswordResetRequestSchema: GenMessage<RequestPasswordResetRequest>;
+
+/**
+ * @generated from message bytebase.v1.ResetPasswordRequest
+ */
+export declare type ResetPasswordRequest = Message<"bytebase.v1.ResetPasswordRequest"> & {
+  /**
+   * The email address of the account.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * The 6-digit code from the reset email.
+   *
+   * @generated from field: string code = 2;
+   */
+  code: string;
+
+  /**
+   * The new password to set.
+   *
+   * @generated from field: string new_password = 3;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ResetPasswordRequest.
+ * Use `create(ResetPasswordRequestSchema)` to create a new message.
+ */
+export declare const ResetPasswordRequestSchema: GenMessage<ResetPasswordRequest>;
+
+/**
+ * @generated from message bytebase.v1.SendEmailLoginCodeRequest
+ */
+export declare type SendEmailLoginCodeRequest = Message<"bytebase.v1.SendEmailLoginCodeRequest"> & {
+  /**
+   * The email address to send the code to.
+   *
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * Optional workspace context captured at send time, used to locate the EMAIL setting,
+   * and later (at verify time) for signup gate checks and workspace assignment.
+   * Unset for SaaS brand-new signup (no workspace exists yet).
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: optional string workspace = 2;
+   */
+  workspace?: string;
+};
+
+/**
+ * Describes the message bytebase.v1.SendEmailLoginCodeRequest.
+ * Use `create(SendEmailLoginCodeRequestSchema)` to create a new message.
+ */
+export declare const SendEmailLoginCodeRequestSchema: GenMessage<SendEmailLoginCodeRequest>;
+
+/**
  * @generated from message bytebase.v1.SwitchWorkspaceRequest
  */
 export declare type SwitchWorkspaceRequest = Message<"bytebase.v1.SwitchWorkspaceRequest"> & {
@@ -434,6 +530,41 @@ export declare const AuthService: GenService<{
     methodKind: "unary";
     input: typeof SwitchWorkspaceRequestSchema;
     output: typeof LoginResponseSchema;
+  },
+  /**
+   * Requests a password reset email for the given email address.
+   * Always returns success to avoid leaking whether the email exists.
+   * Permissions required: None
+   *
+   * @generated from rpc bytebase.v1.AuthService.RequestPasswordReset
+   */
+  requestPasswordReset: {
+    methodKind: "unary";
+    input: typeof RequestPasswordResetRequestSchema;
+    output: typeof EmptySchema;
+  },
+  /**
+   * Resets the user's password using a password reset token from email.
+   * Permissions required: None (validates via token)
+   *
+   * @generated from rpc bytebase.v1.AuthService.ResetPassword
+   */
+  resetPassword: {
+    methodKind: "unary";
+    input: typeof ResetPasswordRequestSchema;
+    output: typeof EmptySchema;
+  },
+  /**
+   * Sends a 6-digit verification code to the email for login/signup.
+   * Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+   * Permissions required: None
+   *
+   * @generated from rpc bytebase.v1.AuthService.SendEmailLoginCode
+   */
+  sendEmailLoginCode: {
+    methodKind: "unary";
+    input: typeof SendEmailLoginCodeRequestSchema;
+    output: typeof EmptySchema;
   },
 }>;
 

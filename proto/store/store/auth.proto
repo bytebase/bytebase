@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// EmailVerificationCodePurpose distinguishes login codes from password reset codes.
+// Stored as the enum name string in email_verification_code.purpose column.
+enum EmailVerificationCodePurpose {
+  EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED = 0;
+  LOGIN = 1;
+  PASSWORD_RESET = 2;
+}
