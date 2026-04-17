@@ -1,7 +1,6 @@
 package tsql
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -75,12 +75,7 @@ func TestGetQuerySpan(t *testing.T) {
 		}
 
 		if record {
-			var buf bytes.Buffer
-			enc := yaml.NewEncoder(&buf)
-			enc.SetIndent(2)
-			a.NoError(enc.Encode(testCases))
-			a.NoError(enc.Close())
-			a.NoError(os.WriteFile(testDataPath, buf.Bytes(), 0644))
+			yamltest.Record(t, testDataPath, testCases)
 		}
 	}
 }

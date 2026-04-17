@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -70,10 +71,7 @@ func TestGetQuerySpan(t *testing.T) {
 		}
 
 		if record {
-			byteValue, err := yaml.Marshal(testCases)
-			a.NoError(err)
-			err = os.WriteFile(testDataPath, byteValue, 0644)
-			a.NoError(err)
+			yamltest.Record(t, testDataPath, testCases)
 		}
 	}
 }

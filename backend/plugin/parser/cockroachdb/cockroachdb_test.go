@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
 func TestSplitSQLStatement(t *testing.T) {
@@ -37,9 +39,6 @@ func TestSplitSQLStatement(t *testing.T) {
 	}
 
 	if record {
-		content, err = yaml.Marshal(testCases)
-		a.NoError(err)
-		err = os.WriteFile(testFilepath, content, 0644)
-		a.NoError(err)
+		yamltest.Record(t, testFilepath, testCases)
 	}
 }
