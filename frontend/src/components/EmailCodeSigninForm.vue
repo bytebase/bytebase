@@ -53,7 +53,7 @@
         v-if="step === 'email'"
         attr-type="button"
         type="primary"
-        :disabled="!state.email || state.sending"
+        :disabled="!isValidEmail(state.email) || state.sending"
         :loading="state.sending"
         size="large"
         style="width: 100%"
@@ -88,7 +88,7 @@ import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { resolveWorkspaceName } from "@/utils"
+import { isValidEmail, resolveWorkspaceName } from "@/utils"
 
 interface LocalState {
   email: string;
@@ -150,7 +150,8 @@ const startCountdown = () => {
 };
 
 const sendCode = async () => {
-  if (!state.email || state.sending || resendCountdown.value > 0) return;
+  if (!isValidEmail(state.email) || state.sending || resendCountdown.value > 0)
+    return;
   state.sending = true;
   try {
     await authStore.sendEmailLoginCode(state.email, resolveWorkspaceName());

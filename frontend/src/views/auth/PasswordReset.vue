@@ -93,7 +93,11 @@ import {
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
-import { ResetPasswordRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
+import {
+  LoginRequestSchema,
+  ResetPasswordRequestSchema,
+} from "@/types/proto-es/v1/auth_service_pb";
+import { resolveWorkspaceName } from "@/utils";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -172,7 +176,14 @@ const onConfirm = async () => {
         style: "SUCCESS",
         title: t("common.updated"),
       });
-      router.push({ name: AUTH_SIGNIN_MODULE, query: { email: state.email } });
+      // Auto-login with the new password so the user doesn't have to re-enter it.
+      await authStore.login({
+        request: create(LoginRequestSchema, {
+          email: state.email,
+          password: state.password,
+          workspace: resolveWorkspaceName(),
+        }),
+      });
     } catch {
       pushNotification({
         module: "bytebase",

@@ -40,7 +40,7 @@
             type="primary"
             size="large"
             style="width: 100%"
-            :disabled="!email || isLoading"
+            :disabled="!isValidEmail(email) || isLoading"
             :loading="isLoading"
             @click="onSubmit"
           >
@@ -75,7 +75,7 @@ import { BBAttention, BBTextField } from "@/bbkit";
 import { authServiceClientConnect } from "@/connect";
 import { AUTH_PASSWORD_RESET_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { pushNotification, useActuatorV1Store } from "@/store";
-import { resolveWorkspaceName } from "@/utils";
+import { isValidEmail, resolveWorkspaceName } from "@/utils";
 
 const actuatorStore = useActuatorV1Store();
 const router = useRouter();
@@ -96,7 +96,7 @@ const email = ref("");
 const isLoading = ref(false);
 
 const onSubmit = async () => {
-  if (!email.value || isLoading.value) return;
+  if (!isValidEmail(email.value) || isLoading.value) return;
   isLoading.value = true;
   try {
     await authServiceClientConnect.requestPasswordReset({
