@@ -49,6 +49,13 @@ func TestCollisionDeleteProjectCascade(t *testing.T) {
 	a.Greater(len(beforeB.Tasks), 0, "project B should have tasks")
 	a.Greater(len(beforeB.Issues), 0, "project B should have issues")
 
+	// Without proven ID overlap on each composite-PK table, a buggy cascade
+	// that matches on id alone can still leave project B's rows untouched
+	// simply because no B row shares an id with a deleted A row.
+	assertTasksCollide(ctx, t, ctl, fixture)
+	assertTaskRunsCollide(ctx, t, ctl, fixture)
+	assertPlanCheckRunsCollide(ctx, t, ctl, fixture)
+
 	// Soft-delete project A (required by DeleteProject per AIP-164).
 	_, err = ctl.projectServiceClient.DeleteProject(ctx,
 		connect.NewRequest(&v1pb.DeleteProjectRequest{
