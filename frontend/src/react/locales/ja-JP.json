@@ -6,7 +6,11 @@
   "activity.sentence.created-issue": "created issue",
   "activity.sentence.modified-sql-of": "modified SQL of",
   "activity.sentence.reopened-issue": "reopened issue",
-  "activity.sentence.resolved-issue": "approved the issue",
+  "activity.sentence.resolved-issue": "イシューを完了としてマークしました",
+  "activity.sentence.review-done-rollout-created": "レビューが完了し、ロールアウトが作成されました",
+  "activity.sentence.review-done-rollout-created-for-plan": "レビューが完了し、プランのロールアウトが作成されました",
+  "activity.sentence.review-skipped-rollout-created": "レビューがスキップされ、ロールアウトが作成されました",
+  "activity.sentence.review-skipped-rollout-created-for-plan": "レビューがスキップされ、プランのロールアウトが作成されました",
   "agent": {
     "active-only-chats": "アクティブのみ",
     "ai-not-configured": {

@@ -5,6 +5,7 @@ import {
   CalendarX,
   ChevronDown,
   EllipsisVertical,
+  ExternalLink,
   Loader2,
 } from "lucide-react";
 import {
@@ -451,6 +452,7 @@ export function IssueDetailActionBar() {
           >
             <span>#{extractPlanUID(page.plan.name)}</span>
             <span>{t("common.plan")}</span>
+            <ExternalLink className="size-3.5" />
           </Button>
         )}
 

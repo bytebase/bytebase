@@ -104,20 +104,18 @@
       <!-- Task metadata - expanded only -->
       <div v-if="isExpanded" class="space-y-3">
         <!-- Task information line with quick actions -->
-        <div class="flex items-center justify-between gap-x-2">
+        <div class="flex items-center gap-x-2">
           <div
             v-if="timingType === 'scheduled'"
             class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600"
           >
-            <template>
-              <ScheduledTimeIndicator
-                :time="scheduledTime"
-                :label="t('task.scheduled-time')"
-              />
-            </template>
+            <ScheduledTimeIndicator
+              :time="scheduledTime"
+              :label="t('task.scheduled-time')"
+            />
           </div>
           <!-- Quick action buttons -->
-          <div v-if="hasActions" class="flex items-center gap-x-2 shrink-0">
+          <div v-if="hasActions" class="ml-auto flex items-center gap-x-2 shrink-0">
             <NButton
               v-if="canRun"
               size="tiny"

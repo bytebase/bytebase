@@ -6,7 +6,11 @@
   "activity.sentence.created-issue": "created issue",
   "activity.sentence.modified-sql-of": "modified SQL of",
   "activity.sentence.reopened-issue": "reopened issue",
-  "activity.sentence.resolved-issue": "approved the issue",
+  "activity.sentence.resolved-issue": "đã đánh dấu vấn đề là Hoàn tất",
+  "activity.sentence.review-done-rollout-created": "Đánh giá đã hoàn tất, rollout đã được tạo",
+  "activity.sentence.review-done-rollout-created-for-plan": "Đánh giá đã hoàn tất, rollout đã được tạo cho kế hoạch",
+  "activity.sentence.review-skipped-rollout-created": "Đánh giá đã được bỏ qua, rollout đã được tạo",
+  "activity.sentence.review-skipped-rollout-created-for-plan": "Đánh giá đã được bỏ qua, rollout đã được tạo cho kế hoạch",
   "agent": {
     "active-only-chats": "Chỉ hoạt động",
     "ai-not-configured": {
