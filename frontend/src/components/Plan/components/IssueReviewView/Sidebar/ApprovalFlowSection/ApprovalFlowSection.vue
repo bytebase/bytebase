@@ -94,12 +94,6 @@ const statusTag = computed((): StatusTag | undefined => {
       type: "success",
     };
   }
-  if (props.hasRollout) {
-    return {
-      label: t("common.skipped"),
-      type: "default",
-    };
-  }
   if (status === Issue_ApprovalStatus.REJECTED) {
     return {
       label: t("common.rejected"),
