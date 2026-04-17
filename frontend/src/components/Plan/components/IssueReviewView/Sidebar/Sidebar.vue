@@ -9,7 +9,7 @@
     </div>
 
     <!-- 2. Approval Flow - Reviewers -->
-    <ApprovalFlowSection :issue="issue" />
+    <ApprovalFlowSection :issue="issue" :has-rollout="plan.hasRollout" />
 
     <!-- 3. Labels - Metadata -->
     <IssueLabels
