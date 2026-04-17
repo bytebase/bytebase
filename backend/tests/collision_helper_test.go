@@ -285,11 +285,12 @@ func setupCollidingProjectsSeparateInstances(
 //   - issue      — asserted here (both projects have issues at fixture time)
 //   - task       — asserted in completeRolloutB (B's rollout required)
 //   - task_run   — asserted in completeRolloutB (B's rollout required)
-//   - plan_check_run — NOT ASSERTED. The v1 API exposes PCRs via a UID-less
-//     singleton name, so the UID is not observable from public gRPC. The
-//     claim test for PCRs relies on the task_run collision assertion as
-//     evidence that per-project nextProjectID behaves correctly, since
-//     PCR/task_run share the same allocator.
+//   - plan_check_run — NOT ASSERTED. The v1 API exposes PCRs via a
+//     UID-less singleton name, so the UID is not observable from public
+//     gRPC. nextProjectID is per-table, so task_run collision does NOT
+//     imply PCR collision. The PCR claim test should be treated as
+//     belt-and-suspenders for the task_run claim test, not an
+//     independent regression lock.
 func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
 	t.Helper()
 	a := require.New(t)
@@ -308,23 +309,23 @@ func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller,
 }
 
 // completeRolloutB drives project B's rollout to completion and proves that
-// the composite-PK ids collide across the two projects for every table the
-// collision harness can observe via gRPC (task, task_run). This is the ONLY
+// task and task_run ids collide across the two projects. This is the ONLY
 // supported way for a collision test to roll out B — every call site gets
 // the collision invariants for free, so no test can silently become vacuous
 // by forgetting an assertion.
 //
-// Coverage caveat — plan_check_run:
-// The v1 API exposes only one consolidated plan_check_run per plan via a
-// UID-less singleton name ({plan.name}/planCheckRun), so PCR UIDs are not
-// observable from public gRPC. As a result, PCR collision cannot be
-// asserted here, which means the PCR-specific claim test
-// (TestClaimAvailablePlanCheckRunsNoCrossProjectTransition) is best
-// understood as a weaker sibling of the task_run claim test: the scheduler
-// claim SQL shares the same pattern across both tables, so a regression
-// that leaks across projects on plan_check_run would almost certainly
-// also leak on task_run — and the task_run test DOES prove collision.
-// Accept the gap rather than reintroducing a test-only store accessor.
+// Known coverage gap — plan_check_run:
+// The v1 API exposes plan_check_runs via a UID-less singleton name
+// ({plan.name}/planCheckRun), so PCR UIDs cannot be observed from public
+// gRPC. The store's nextProjectID allocator is keyed per-table per-project,
+// so task_run collision is NOT evidence of PCR collision — the two
+// sequences can diverge independently. This means
+// TestClaimAvailablePlanCheckRunsNoCrossProjectTransition exercises the
+// PCR claim SQL path (via the scheduler) but cannot prove its assertions
+// fire against a genuinely colliding row. The regression lock for the
+// BYT-9259 SQL pattern is TestClaimAvailableTaskRunsNoCrossProjectResurrection,
+// which does prove collision. The PCR test is kept as belt-and-suspenders
+// coverage; do not read it as an independent guarantee.
 //
 // Why this method lives here rather than inside setupCollidingProjects:
 // the fixture returns before B's rollout fires, so task and task_run don't
