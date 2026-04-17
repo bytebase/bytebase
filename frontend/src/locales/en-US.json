@@ -1159,14 +1159,9 @@
       "self": "Approval flow"
     },
     "batch-transition": {
-      "action-n-issues": "{action} {n} issue | {action} {n} issues",
-      "canceled-cannot-close": "Canceled issues cannot be closed",
       "close": "Close",
       "closed": "closed",
-      "done-cannot-close": "Done issues cannot be closed",
-      "done-cannot-reopen": "Done issues cannot be reopened",
       "not-allowed-tips": "Some of selected issues cannot be {operation}",
-      "open-cannot-reopen": "Open issues cannot be reopened",
       "reopen": "Reopen",
       "reopened": "reopened"
     },
