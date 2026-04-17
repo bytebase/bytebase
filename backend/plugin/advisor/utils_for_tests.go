@@ -58,6 +58,10 @@ var (
 								Name: "name",
 								Type: "varchar(255)",
 							},
+							{
+								Name: "creator",
+								Type: "varchar(255)",
+							},
 						},
 						Indexes: []*storepb.IndexMetadata{
 							{
@@ -74,6 +78,34 @@ var (
 							{
 								Name:        MockOldIndexName,
 								Expressions: []string{"id", "name"},
+							},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "order_id", Type: "int"},
+							{Name: "customer_name", Type: "varchar(255)"},
+							{Name: "amount", Type: "decimal(10,2)"},
+							{Name: "note", Type: "varchar(255)"},
+							// name also exists here (non-indexed) so tests can verify
+							// qualified lookups distinguish tech_book.name (indexed) from orders.name.
+							{Name: "name", Type: "varchar(255)"},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "PRIMARY",
+								Expressions: []string{"order_id"},
+								Unique:      true,
+								Primary:     true,
+							},
+							{
+								Name:        "idx_customer",
+								Expressions: []string{"customer_name"},
+							},
+							{
+								Name:        "idx_amount",
+								Expressions: []string{"amount"},
 							},
 						},
 					},
@@ -127,6 +159,15 @@ var (
 				Tables: []*storepb.TableMetadata{
 					{
 						Name: "pokes",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "c1", Type: "int"},
+							{Name: "c2", Type: "int"},
+							{Name: "c3", Type: "int"},
+							{Name: "c10", Type: "int"},
+							{Name: "c20", Type: "int"},
+							{Name: "foo", Type: "int"},
+							{Name: "bar", Type: "int"},
+						},
 						Indexes: []*storepb.IndexMetadata{
 							{
 								Name:        "idx_0",
@@ -138,8 +179,42 @@ var (
 							},
 						},
 					},
-					{Name: "pokes2"},
+					{
+						Name: "pokes2",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "foo", Type: "int"},
+							{Name: "bar", Type: "int"},
+							// c1 also exists here (non-indexed) so tests can verify
+							// qualified lookups distinguish pokes.c1 (indexed) from pokes2.c1.
+							{Name: "c1", Type: "int"},
+						},
+					},
 					{Name: "pokes3"},
+				},
+			},
+			{
+				Name: "sales",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "order_id", Type: "int"},
+							{Name: "customer_id", Type: "int"},
+							{Name: "note", Type: "varchar"},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "PRIMARY",
+								Expressions: []string{"order_id"},
+								Unique:      true,
+								Primary:     true,
+							},
+							{
+								Name:        "idx_customer",
+								Expressions: []string{"customer_id"},
+							},
+						},
+					},
 				},
 			},
 		},

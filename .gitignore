@@ -39,3 +39,6 @@ scripts/azure-marketplace/.cnab/
 scripts/azure-marketplace/*.tgz
 scripts/azure-marketplace/*.backup
 /main
+
+# playwright-cli local session artifacts
+.playwright-cli/
