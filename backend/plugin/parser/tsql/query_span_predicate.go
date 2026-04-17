@@ -134,18 +134,27 @@ func (q *querySpanExtractor) extractPredicateColumnFromSubquery(
 		return nil
 	}
 
-	subquery := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-
-	// TODO: outer table reference.
-	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx, q.ignoreCaseSensitive)
-	newQ.ctes = q.ctes
-	span, err := newQ.getQuerySpan(q.ctx, subquery)
+	// Clone the extractor so the subquery sees the enclosing FROM clause as
+	// outer table sources. Without this, correlated subqueries like
+	// `WHERE EXISTS (SELECT 1 FROM t e WHERE e.col = outer.col)` cannot
+	// resolve the `outer` alias and fail with "no matching column".
+	cloneExtractor := &querySpanExtractor{
+		ctx:                 q.ctx,
+		defaultDatabase:     q.defaultDatabase,
+		defaultSchema:       q.defaultSchema,
+		ignoreCaseSensitive: q.ignoreCaseSensitive,
+		gCtx:                q.gCtx,
+		ctes:                q.ctes,
+		outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
+		predicateColumns:    make(base.SourceColumnSet),
+	}
+	tableSource, err := cloneExtractor.extractTSqlSensitiveFieldsFromSubquery(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get query span for subquery: %s", subquery)
+		return errors.Wrapf(err, "failed to get query span for subquery")
 	}
 
-	q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, span.PredicateColumns)
-	for _, r := range span.Results {
+	q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, cloneExtractor.predicateColumns)
+	for _, r := range tableSource.GetQuerySpanResult() {
 		q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, r.SourceColumns)
 	}
 
