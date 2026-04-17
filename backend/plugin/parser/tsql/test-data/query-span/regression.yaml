@@ -369,3 +369,68 @@
         schema: dbo
         table: TableA
         column: HMNum
+
+- description: Test VIEW with correlated subquery referencing outer table - fix for BYT-9298
+  statement: |-
+    SELECT WanGrNumber FROM dbo.vw_gr_wan_number WHERE WanGrNumber = '123'
+  defaultDatabase: Invoice
+  ignoreCaseSensitive: true
+  metadata:
+    - |-
+      {
+        "name": "Invoice",
+        "schemas": [
+          {
+            "name": "dbo",
+            "views": [
+              {
+                "name": "vw_gr_wan_number",
+                "definition": "CREATE VIEW [dbo].[vw_gr_wan_number] AS SELECT gr.SAP_NO AS WanGrNumber FROM dbo.gr_table gr WHERE NOT EXISTS (SELECT 1 FROM dbo.existing_gr_number e WHERE e.wan_gr_number = gr.SAP_NO)"
+              }
+            ],
+            "tables": [
+              {
+                "name": "gr_table",
+                "columns": [
+                  {
+                    "name": "SAP_NO"
+                  }
+                ]
+              },
+              {
+                "name": "existing_gr_number",
+                "columns": [
+                  {
+                    "name": "wan_gr_number"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+  querySpan:
+    type: 1
+    results:
+      - name: wangrnumber
+        sourcecolumns:
+          - server: ""
+            database: Invoice
+            schema: dbo
+            table: gr_table
+            column: SAP_NO
+        isplainfield: true
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns:
+      - server: ""
+        database: Invoice
+        schema: dbo
+        table: vw_gr_wan_number
+        column: ""
+    predicatecolumns:
+      - server: ""
+        database: Invoice
+        schema: dbo
+        table: gr_table
+        column: SAP_NO
