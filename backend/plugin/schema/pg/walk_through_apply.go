@@ -2,7 +2,6 @@ package pg
 
 import (
 	"fmt"
-	"strings"
 
 	"google.golang.org/protobuf/proto"
 
@@ -556,49 +555,12 @@ func removeEnumByName(enums []*storepb.EnumTypeMetadata, name string) []*storepb
 	return out
 }
 
-func functionToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.FunctionMetadata {
-	fm := &storepb.FunctionMetadata{
-		Name:      up.Name,
-		Signature: identity,
+func functionToProto(_ *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.FunctionMetadata {
+	return &storepb.FunctionMetadata{
+		Name:       up.Name,
+		Definition: up.Body,
+		Signature:  identity,
 	}
-	// Build a reasonable definition from UserProc fields.
-	var b strings.Builder
-	if up.Kind == 'p' {
-		b.WriteString("CREATE OR REPLACE PROCEDURE ")
-	} else {
-		b.WriteString("CREATE OR REPLACE FUNCTION ")
-	}
-	if up.Schema != nil {
-		b.WriteString(up.Schema.Name)
-		b.WriteByte('.')
-	}
-	b.WriteString(up.Name)
-	b.WriteByte('(')
-	for i, t := range up.ArgTypes {
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		if i < len(up.ArgNames) && up.ArgNames[i] != "" {
-			b.WriteString(up.ArgNames[i])
-			b.WriteByte(' ')
-		}
-		b.WriteString(cat.FormatType(t, -1))
-	}
-	b.WriteByte(')')
-	if up.Kind != 'p' {
-		b.WriteString("\n RETURNS ")
-		if up.RetSet {
-			b.WriteString("SETOF ")
-		}
-		b.WriteString(cat.FormatType(up.RetType, -1))
-	}
-	b.WriteString("\n LANGUAGE ")
-	b.WriteString(up.Language)
-	b.WriteString("\nAS $function$")
-	b.WriteString(up.Body)
-	b.WriteString("$function$")
-	fm.Definition = b.String()
-	return fm
 }
 
 func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string) []*storepb.FunctionMetadata {
