@@ -186,6 +186,24 @@ func isLocalhostURI(uri string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
+func isAllowedDynamicClientRedirectURI(uri string) bool {
+	parsed, err := url.Parse(uri)
+	if err != nil {
+		return false
+	}
+
+	switch parsed.Scheme {
+	case "http", "https":
+		return isLocalhostURI(uri)
+	case "cursor", "vscode", "vscode-insiders":
+		return true
+	case "jetbrains":
+		return parsed.Host == "gateway" && parsed.Path != "" && parsed.Path != "/"
+	default:
+		return false
+	}
+}
+
 func oauth2Error(c *echo.Context, statusCode int, errorCode, description string) error {
 	return c.JSON(statusCode, map[string]string{
 		"error":             errorCode,

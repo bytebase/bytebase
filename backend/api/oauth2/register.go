@@ -2,7 +2,6 @@ package oauth2
 
 import (
 	"net/http"
-	"net/url"
 	"slices"
 
 	"github.com/labstack/echo/v5"
@@ -45,16 +44,8 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "redirect_uris is required")
 	}
 	for _, uri := range req.RedirectURIs {
-		parsed, err := url.Parse(uri)
-		if err != nil {
-			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "invalid redirect URI format")
-		}
-		// Only allow localhost HTTP/HTTPS or specific whitelisted app schemes (cursor, vscode).
-		// This prevents registering arbitrary HTTPS domains or malicious custom schemes.
-		isLocalhostHTTP := isLocalhostURI(uri)
-		isWhitelistedScheme := parsed.Scheme == "cursor" || parsed.Scheme == "vscode"
-		if !isLocalhostHTTP && !isWhitelistedScheme {
-			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL or a whitelisted app scheme (cursor://, vscode://)")
+		if !isAllowedDynamicClientRedirectURI(uri) {
+			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL or a whitelisted app scheme (cursor://, vscode://, vscode-insiders://, jetbrains://gateway/...)")
 		}
 	}
 
