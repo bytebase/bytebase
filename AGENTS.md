@@ -155,6 +155,25 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Use American English
 - Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
 
+## Composite Primary Keys
+
+Several tables use composite primary keys (e.g., `(project, id)`). Check
+`backend/migrator/migration/LATEST.sql` for the full list — any table with a
+multi-column PRIMARY KEY.
+
+When writing or modifying queries on these tables:
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key
+  columns — never filter by `id` alone
+- When adding a new store method touching a composite-PK table, add a corresponding
+  `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
+  fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
+  and `plan_check_run`. For tables not in that set (e.g., `plan_webhook_delivery`,
+  `task_run_log`, `db_group`, `release`), write table-specific seed and assertion
+  helpers — or extend the shared helper first
+- Collision tests use `ctl.server.StoreForTest()` — a test-only accessor. Run with:
+  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
+- For the full pre-PR checklist, see `docs/pre-pr-checklist.md`
+
 ### Imports
 
 - Use organized imports (sorted by the import path)
@@ -186,6 +205,7 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 5. **Behavior changes** — changed default values, altered existing workflows, modified permission/access control logic
 6. **Webhook/event changes** — renamed/removed events, changed payload formats
 7. **UI workflow changes** — redesigned user-facing flows that change how users perform existing tasks (e.g., merging steps, splitting pages, changing navigation)
+8. **Composite-PK migration** — adding a composite PK to an existing table, or changing the PK columns of an existing table (not: new queries — those are bugs; not: new tables with composite PKs — those are additive)
 
 **If ANY of the above apply:**
 1. Add `--label breaking` to the `gh pr create` command
