@@ -9,7 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -280,10 +280,16 @@ func setupCollidingProjectsSeparateInstances(
 // stop exercising the composite-PK collision case; this assertion fails
 // fast in that case.
 //
-// Covers plan and issue (both created in fixture). task_run/plan_check_run
-// are only created in project A at fixture time (B's rollout is deferred to
-// individual tests), so those collisions are verified by the asserts in
-// completeRolloutB after project B has actually rolled out.
+// Coverage matrix (by table):
+//   - plan       — asserted here (both projects have plans at fixture time)
+//   - issue      — asserted here (both projects have issues at fixture time)
+//   - task       — asserted in completeRolloutB (B's rollout required)
+//   - task_run   — asserted in completeRolloutB (B's rollout required)
+//   - plan_check_run — NOT ASSERTED. The v1 API exposes PCRs via a UID-less
+//     singleton name, so the UID is not observable from public gRPC. The
+//     claim test for PCRs relies on the task_run collision assertion as
+//     evidence that per-project nextProjectID behaves correctly, since
+//     PCR/task_run share the same allocator.
 func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
 	t.Helper()
 	a := require.New(t)
@@ -302,23 +308,28 @@ func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller,
 }
 
 // completeRolloutB drives project B's rollout to completion and proves that
-// task_run ids collide across the two projects. This is the ONLY supported
-// way for a collision test to roll out B — every call site gets the
-// collision invariant for free, so no test can silently become vacuous by
-// forgetting the assert.
+// the composite-PK ids collide across the two projects for every table the
+// collision harness can observe via gRPC (task, task_run). This is the ONLY
+// supported way for a collision test to roll out B — every call site gets
+// the collision invariants for free, so no test can silently become vacuous
+// by forgetting an assertion.
 //
-// Why plan_check_run collisions are not asserted here: the v1 API intentionally
-// exposes only one consolidated plan_check_run per plan via a UID-less name
-// ({plan.name}/planCheckRun), so the internal UID is not observable through
-// public gRPC. The same property also means public API consumers can't trigger
-// the cross-project claim bug via plan_check_run — the surface we need to
-// protect is the scheduler-internal SQL, and the snapshot's before/after
-// Status comparison catches a regression there.
+// Coverage caveat — plan_check_run:
+// The v1 API exposes only one consolidated plan_check_run per plan via a
+// UID-less singleton name ({plan.name}/planCheckRun), so PCR UIDs are not
+// observable from public gRPC. As a result, PCR collision cannot be
+// asserted here, which means the PCR-specific claim test
+// (TestClaimAvailablePlanCheckRunsNoCrossProjectTransition) is best
+// understood as a weaker sibling of the task_run claim test: the scheduler
+// claim SQL shares the same pattern across both tables, so a regression
+// that leaks across projects on plan_check_run would almost certainly
+// also leak on task_run — and the task_run test DOES prove collision.
+// Accept the gap rather than reintroducing a test-only store accessor.
 //
-// Why it lives here rather than inside setupCollidingProjects: the fixture
-// returns before B's rollout fires, so task_run doesn't exist yet at
-// fixture-construction time. Tests that don't need B's rollout (pure
-// read-isolation tests on plan/issue) don't pay the cost.
+// Why this method lives here rather than inside setupCollidingProjects:
+// the fixture returns before B's rollout fires, so task and task_run don't
+// exist yet at fixture-construction time. Tests that don't need B's
+// rollout (pure read-isolation tests on plan/issue) don't pay the cost.
 func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, ctl *controller) {
 	t.Helper()
 	a := require.New(t)
@@ -330,6 +341,7 @@ func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, c
 	a.NoError(err)
 	a.NoError(ctl.waitRollout(ctx, f.IssueB.Name, rolloutB.Msg.Name))
 
+	assertTasksCollide(ctx, t, ctl, f)
 	assertTaskRunsCollide(ctx, t, ctl, f)
 }
 
@@ -343,11 +355,25 @@ func assertTaskRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f
 	t.Helper()
 	a := require.New(t)
 
-	aTaskRuns := listTaskRunUIDs(ctx, t, ctl, f.PlanA.Name)
-	bTaskRuns := listTaskRunUIDs(ctx, t, ctl, f.PlanB.Name)
+	aTaskRuns, _ := listTaskRunAndTaskUIDs(ctx, t, ctl, f.PlanA.Name)
+	bTaskRuns, _ := listTaskRunAndTaskUIDs(ctx, t, ctl, f.PlanB.Name)
 	a.Greater(len(aTaskRuns), 0, "project A should have at least one task_run")
 	a.Greater(len(bTaskRuns), 0, "project B should have at least one task_run — did you forget to roll out B?")
 	assertAtLeastOneUIDCollides(t, aTaskRuns, bTaskRuns, "task_run")
+}
+
+// assertTasksCollide verifies that task UIDs collide across projects.
+// Task UIDs are embedded in task_run resource names, so we can derive
+// them without a separate ListTasks API (which gRPC does not expose).
+func assertTasksCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
+	t.Helper()
+	a := require.New(t)
+
+	_, aTasks := listTaskRunAndTaskUIDs(ctx, t, ctl, f.PlanA.Name)
+	_, bTasks := listTaskRunAndTaskUIDs(ctx, t, ctl, f.PlanB.Name)
+	a.Greater(len(aTasks), 0, "project A should have at least one task")
+	a.Greater(len(bTasks), 0, "project B should have at least one task — did you forget to roll out B?")
+	assertAtLeastOneUIDCollides(t, aTasks, bTasks, "task")
 }
 
 func assertAtLeastOneUIDCollides(t *testing.T, aUIDs, bUIDs []int64, label string) {
@@ -402,22 +428,29 @@ func listIssueUIDs(ctx context.Context, t *testing.T, ctl *controller, projectNa
 	return out
 }
 
-// listTaskRunUIDs returns every task_run UID for a plan's rollout, via the
-// public gRPC ListTaskRuns API with its supported wildcard parent.
-func listTaskRunUIDs(ctx context.Context, t *testing.T, ctl *controller, planName string) []int64 {
+// listTaskRunAndTaskUIDs returns every task_run UID and the set of task UIDs
+// underneath a plan's rollout. Both come from parsing task_run names
+// (projects/X/plans/Y/rollout/stages/Z/tasks/{taskUID}/taskRuns/{taskRunUID}),
+// so one ListTaskRuns call covers both composite-PK tables without needing
+// a separate ListTasks gRPC (which doesn't exist).
+func listTaskRunAndTaskUIDs(ctx context.Context, t *testing.T, ctl *controller, planName string) (taskRunUIDs, taskUIDs []int64) {
 	t.Helper()
 	a := require.New(t)
 	resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
 		Parent: planName + "/rollout/stages/-/tasks/-",
 	}))
 	a.NoError(err, "ListTaskRuns(%s)", planName)
-	out := make([]int64, 0, len(resp.Msg.TaskRuns))
+	seenTasks := make(map[int64]bool)
 	for _, tr := range resp.Msg.TaskRuns {
-		_, _, _, _, uid, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(tr.Name)
+		_, _, _, taskUID, trUID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(tr.Name)
 		a.NoError(err, "parse task_run name %q", tr.Name)
-		out = append(out, uid)
+		taskRunUIDs = append(taskRunUIDs, trUID)
+		if !seenTasks[taskUID] {
+			seenTasks[taskUID] = true
+			taskUIDs = append(taskUIDs, taskUID)
+		}
 	}
-	return out
+	return taskRunUIDs, taskUIDs
 }
 
 // createSQLiteInstance provisions and registers a SQLite instance for test use.
@@ -594,7 +627,7 @@ func assertProjectUnchanged(
 	assertNoChange(t, before.Plans, after.Plans,
 		func(p *v1pb.Plan) string { return p.Name },
 		func(b, af *v1pb.Plan) {
-			a.True(protoEqual(b.UpdateTime, af.UpdateTime), "%s: plan %s update_time changed", label, b.Name)
+			a.True(proto.Equal(b.UpdateTime, af.UpdateTime), "%s: plan %s update_time changed", label, b.Name)
 		},
 		label, "plan")
 
@@ -610,7 +643,7 @@ func assertProjectUnchanged(
 		func(tr *v1pb.TaskRun) string { return tr.Name },
 		func(b, af *v1pb.TaskRun) {
 			a.Equal(b.Status, af.Status, "%s: task_run %s status changed from %v to %v", label, b.Name, b.Status, af.Status)
-			a.True(protoEqual(b.UpdateTime, af.UpdateTime), "%s: task_run %s update_time changed", label, b.Name)
+			a.True(proto.Equal(b.UpdateTime, af.UpdateTime), "%s: task_run %s update_time changed", label, b.Name)
 		},
 		label, "task_run")
 
@@ -653,11 +686,3 @@ func assertNoChange[T any](
 	}
 }
 
-// protoEqual returns true if both timestamps represent the same instant.
-// Using proto.Equal would be simpler but requires the proto package.
-func protoEqual(a, b *timestamppb.Timestamp) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.Seconds == b.Seconds && a.Nanos == b.Nanos
-}
