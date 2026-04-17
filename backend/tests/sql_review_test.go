@@ -23,6 +23,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -461,15 +462,7 @@ func writeTestData(filepath string, tests []test) error {
 		yamlTests = append(yamlTests, yamlTest)
 	}
 
-	byteValue, err := yaml.Marshal(yamlTests)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filepath, byteValue, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return yamltest.WriteFile(filepath, yamlTests)
 }
 
 func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Assertions, ctl *controller, project *v1pb.Project, database *v1pb.Database, statement string, wait bool) []*v1pb.PlanCheckRun_Result {
