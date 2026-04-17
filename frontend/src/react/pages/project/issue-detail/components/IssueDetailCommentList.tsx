@@ -1,5 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { Loader2, Pencil, Play, Plus, ThumbsUp } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Pencil,
+  Play,
+  Plus,
+  ThumbsUp,
+} from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -23,6 +30,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
+import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   extractUserEmail,
   getIssueCommentType,
@@ -37,6 +45,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import {
+  Issue_ApprovalStatus,
   type IssueComment,
   IssueComment_Approval_Status,
   IssueSchema,
@@ -53,6 +62,7 @@ import {
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { getSheetStatement } from "@/utils/v1/sheet";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
+import { isDatabaseChangeDoneRolloutComment } from "../utils/activity";
 
 function useIssueRefTransform(projectName: string | undefined) {
   const { t } = useTranslation();
@@ -535,6 +545,7 @@ function IssueCommentRow({
 
 function CommentActionHeader({ issueComment }: { issueComment: IssueComment }) {
   const { t } = useTranslation();
+  const page = useIssueDetailContext();
   const userStore = useUserStore();
   const creator = useVueState(
     () =>
@@ -549,7 +560,11 @@ function CommentActionHeader({ issueComment }: { issueComment: IssueComment }) {
 
   return (
     <>
-      <CommentCreator creator={creator} />
+      {!isDatabaseChangeDoneRolloutComment(
+        page.issue,
+        page.plan,
+        issueComment
+      ) && <CommentCreator creator={creator} />}
       <CommentActionSentence issueComment={issueComment} />
       {issueComment.createTime && (
         <HumanizeTs className="text-gray-500" ts={createdTs / 1000} />
@@ -640,6 +655,44 @@ function CommentActionSentence({
     }
     if (fromStatus !== undefined && toStatus !== undefined) {
       if (toStatus === IssueStatus.DONE) {
+        if (
+          isDatabaseChangeDoneRolloutComment(
+            page.issue,
+            page.plan,
+            issueComment
+          )
+        ) {
+          const planUID = page.plan ? extractPlanUID(page.plan.name) : "";
+          const planHref = page.plan
+            ? router.resolve(buildPlanDeployRouteFromPlanName(page.plan.name))
+                .href
+            : "";
+          const sentence =
+            page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+              ? planUID
+                ? t("activity.sentence.review-done-rollout-created-for-plan")
+                : t("activity.sentence.review-done-rollout-created")
+              : planUID
+                ? t("activity.sentence.review-skipped-rollout-created-for-plan")
+                : t("activity.sentence.review-skipped-rollout-created");
+
+          return (
+            <span className="wrap-break-word min-w-0 text-gray-600">
+              {sentence}
+              {planUID && planHref && (
+                <>
+                  {" "}
+                  <a
+                    className="font-medium text-accent hover:underline"
+                    href={planHref}
+                  >
+                    #{planUID}
+                  </a>
+                </>
+              )}
+            </span>
+          );
+        }
         return (
           <span className="wrap-break-word min-w-0 text-gray-600">
             {t("activity.sentence.resolved-issue")}
@@ -717,6 +770,7 @@ function CommentActionSentence({
 }
 
 function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
+  const page = useIssueDetailContext();
   const userStore = useUserStore();
   const user = useVueState(
     () =>
@@ -760,6 +814,17 @@ function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
     commentType === IssueCommentType.ISSUE_UPDATE &&
     issueComment.event.case === "issueUpdate"
   ) {
+    if (
+      isDatabaseChangeDoneRolloutComment(page.issue, page.plan, issueComment)
+    ) {
+      return (
+        <CommentIconBadge
+          className="bg-success text-white"
+          icon={<CheckCircle2 className="size-4" />}
+        />
+      );
+    }
+
     const { fromLabels, toDescription, toLabels, toTitle } =
       issueComment.event.value;
     if (

@@ -35,6 +35,7 @@
           :step-index="index"
           :step-number="index + 1"
           :issue="issue"
+          :readonly="hasRollout"
         />
       </NTimeline>
       <div
@@ -65,9 +66,13 @@ interface StatusTag {
   type?: TagProps["type"];
 }
 
-const props = defineProps<{
-  issue: Issue;
-}>();
+const props = withDefaults(
+  defineProps<{
+    issue: Issue;
+    hasRollout?: boolean;
+  }>(),
+  { hasRollout: false }
+);
 
 const { t } = useI18n();
 

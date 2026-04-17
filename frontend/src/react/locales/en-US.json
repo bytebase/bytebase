@@ -6,7 +6,11 @@
   "activity.sentence.created-issue": "created issue",
   "activity.sentence.modified-sql-of": "modified SQL of",
   "activity.sentence.reopened-issue": "reopened issue",
-  "activity.sentence.resolved-issue": "approved the issue",
+  "activity.sentence.resolved-issue": "marked the issue as Done",
+  "activity.sentence.review-done-rollout-created": "Review done, rollout created",
+  "activity.sentence.review-done-rollout-created-for-plan": "Review done, rollout created for plan",
+  "activity.sentence.review-skipped-rollout-created": "Review skipped, rollout created",
+  "activity.sentence.review-skipped-rollout-created-for-plan": "Review skipped, rollout created for plan",
   "agent": {
     "active-only-chats": "Active only",
     "ai-not-configured": {
