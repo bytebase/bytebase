@@ -86,6 +86,10 @@ func TestCollisionListPlansIsolation(t *testing.T) {
 		connect.NewRequest(&v1pb.ListPlansRequest{Parent: fixture.ProjectA.Name, PageSize: 100}))
 	a.NoError(err)
 
+	// Positive precondition — without this, an over-filtering regression
+	// that returned zero rows would silently pass the prefix check below.
+	a.Greater(len(resp.Msg.Plans), 0, "project A should have plans (fixture creates them)")
+
 	for _, p := range resp.Msg.Plans {
 		a.True(strings.HasPrefix(p.Name, fixture.ProjectA.Name+"/"),
 			"ListPlans for project A returned a plan from another project: %s", p.Name)
@@ -113,6 +117,11 @@ func TestCollisionListTaskRunsIsolation(t *testing.T) {
 			Parent: fixture.PlanA.Name + "/rollout/stages/-/tasks/-",
 		}))
 	a.NoError(err)
+
+	// Positive precondition: project A's rollout completed during fixture
+	// setup, so it must have task_runs. Without this, an over-filtering
+	// regression returning zero rows would silently pass the prefix check.
+	a.Greater(len(resp.Msg.TaskRuns), 0, "project A should have task_runs after fixture rollout")
 
 	for _, tr := range resp.Msg.TaskRuns {
 		a.True(strings.HasPrefix(tr.Name, fixture.ProjectA.Name+"/"),
@@ -188,6 +197,10 @@ func TestCollisionListIssuesIsolation(t *testing.T) {
 			PageSize: 100,
 		}))
 	a.NoError(err)
+
+	// Positive precondition — guard against an over-filter regression
+	// that would make the prefix check vacuously true.
+	a.Greater(len(resp.Msg.Issues), 0, "project A should have issues (fixture creates them)")
 
 	for _, issue := range resp.Msg.Issues {
 		a.True(strings.HasPrefix(issue.Name, fixture.ProjectA.Name+"/"),

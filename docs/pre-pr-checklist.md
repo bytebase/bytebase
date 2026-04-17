@@ -91,12 +91,20 @@ If the diff adds or modifies a store method that touches a composite-PK table:
    add table-specific assertions inline — the shared helper is not sufficient
 3. If your test needs project B rolled out (to create task/task_run/plan_check_run
    rows that could collide with project A's), call `fixture.completeRolloutB(ctx, t, ctl)`
-   — this is the ONLY supported rollout path and it proves all three table-level
-   collisions automatically. Do NOT hand-roll `CreateRollout` + `waitRollout` —
-   the collision invariant must not be a per-test responsibility
+   — this is the ONLY supported rollout path and it proves `task` and `task_run`
+   id collisions automatically. (Plan-check-run id collision is NOT proven —
+   the v1 API uses a UID-less name for PCRs, so the collision can't be observed
+   from public gRPC. The PCR claim test is belt-and-suspenders coverage; the
+   load-bearing regression lock is the task_run claim test.) Do NOT hand-roll
+   `CreateRollout` + `waitRollout` — the collision invariant must not be a
+   per-test responsibility
 4. If testing delete cascades across projects where both projects share an
    instance, also consider adding a variant using `setupCollidingProjectsSeparateInstances`
    to catch cross-project over-delete bugs that shared-instance tests cannot detect
+5. **Every cross-project / isolation test must have a positive precondition.**
+   `assert(rows belong to project A)` is vacuously true when the list is
+   empty. Add `Greater(len, 0, ...)` for the list under test before iterating
+   so that an over-filtering regression cannot pass silently.
 
 If the diff adds a NEW composite-PK table via migration:
 
@@ -115,6 +123,24 @@ go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 
 ```
 
 All must pass before proceeding.
+
+### Step 3e: Doc-code drift check
+
+**Skip if:** the diff didn't remove or rename any exported symbol or any
+documented helper.
+
+If you removed `Server.StoreForTest()`, renamed `assertFooCollide`, etc.,
+grep for stale references that would now lie to the reader:
+
+```bash
+git diff main...HEAD --name-only -- '*.go' | xargs -I{} grep -l 'OldSymbolName' AGENTS.md docs/ backend/ 2>/dev/null
+```
+
+For each match, either delete the prose or update it to reference the
+current API. AGENTS.md and `docs/pre-pr-checklist.md` are the highest-leak
+spots — they document what helpers exist and what guarantees they make.
+Stale references don't break the build but they actively mislead future
+contributors and AI agents that read these docs at session start.
 
 ## 4. Lint and Format Gate
 

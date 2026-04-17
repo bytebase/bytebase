@@ -170,7 +170,9 @@ When writing or modifying queries on these tables:
   and `plan_check_run`. For tables not in that set (e.g., `plan_webhook_delivery`,
   `task_run_log`, `db_group`, `release`), write table-specific seed and assertion
   helpers — or extend the shared helper first
-- Collision tests use `ctl.server.StoreForTest()` — a test-only accessor. Run with:
+- Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
+  and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
+  the public gRPC API, no store access. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
 
 ### Imports

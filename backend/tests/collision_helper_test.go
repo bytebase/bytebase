@@ -593,12 +593,19 @@ func snapshotProject(
 		pcrResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
 			Name: p.Name + "/planCheckRun",
 		}))
-		if err == nil {
+		// A plan may not have a check run yet; only NotFound is acceptable here.
+		// Other codes (Internal, Permission, Unavailable) likely indicate a
+		// real regression in the read path and should fail the snapshot.
+		switch {
+		case err == nil:
 			a.True(strings.HasPrefix(pcrResp.Msg.Name, project.Name+"/"),
 				"GetPlanCheckRun for plan %s returned %q — read-path leak", p.Name, pcrResp.Msg.Name)
 			planCheckRuns = append(planCheckRuns, pcrResp.Msg)
+		case connect.CodeOf(err) == connect.CodeNotFound:
+			// expected: plan has no PCR yet
+		default:
+			a.NoError(err, "GetPlanCheckRun for plan %s", p.Name)
 		}
-		// A plan may not have a check run yet; that's not an error.
 	}
 
 	return &projectSnapshot{
