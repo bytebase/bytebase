@@ -34,7 +34,6 @@ type EmailVerificationCodeMessage struct {
 // RETURNING is used (not RowsAffected) because Postgres returns unreliable counts
 // when the DO UPDATE's WHERE filters out the update.
 func (s *Store) UpsertEmailVerificationCodeIfCooldownExpired(ctx context.Context, msg *EmailVerificationCodeMessage, cooldown time.Duration) (bool, error) {
-	cooldownSeconds := int64(cooldown.Seconds())
 	var workspace sql.NullString
 	if msg.Workspace != "" {
 		workspace = sql.NullString{String: msg.Workspace, Valid: true}
@@ -48,9 +47,9 @@ func (s *Store) UpsertEmailVerificationCodeIfCooldownExpired(ctx context.Context
 			expires_at = EXCLUDED.expires_at,
 			last_sent_at = EXCLUDED.last_sent_at,
 			workspace = EXCLUDED.workspace
-		WHERE email_verification_code.last_sent_at < EXCLUDED.last_sent_at - (?::bigint * interval '1 second')
+		WHERE email_verification_code.last_sent_at < EXCLUDED.last_sent_at - make_interval(secs => ?)
 		RETURNING 1
-	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt, workspace, cooldownSeconds)
+	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt, workspace, cooldown.Seconds())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
