@@ -41,6 +41,8 @@ export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 const planDetailComponent = () =>
   import("@/components/Plan/components/PlanDetailPage/PlanDetailLayout.vue");
 
+export const preloadPlanDetailComponent = () => planDetailComponent();
+
 const planDetailMeta: RouteRecordRaw["meta"] = {
   requiredPermissionList: () => [
     "bb.plans.get",
@@ -76,7 +78,7 @@ const planRoutes: RouteRecordRaw[] = [
   },
 ];
 
-// Issue routes — uses IssueLayout (issue-only)
+// Issue routes
 const issueRoutes: RouteRecordRaw[] = [
   {
     path: "issues/:issueId(\\d+)",
