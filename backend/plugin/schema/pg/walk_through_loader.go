@@ -4,6 +4,7 @@ package pg
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -160,6 +161,9 @@ func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
 			})
 		}
 		for _, seq := range sm.Sequences {
+			if wtIsIdentitySequence(seq, sm.Tables) {
+				continue
+			}
 			out = append(out, &wtObjectEntry{
 				kind:    kindWTSequence,
 				schema:  sm.Name,
@@ -226,6 +230,15 @@ func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
 				name:        mv.Name,
 				matViewMeta: mv,
 			})
+			for _, idx := range mv.Indexes {
+				out = append(out, &wtObjectEntry{
+					kind:       kindWTIndex,
+					schema:     sm.Name,
+					name:       idx.Name,
+					parentName: mv.Name,
+					idxMeta:    idx,
+				})
+			}
 		}
 		for _, fn := range sm.Functions {
 			out = append(out, &wtObjectEntry{
@@ -568,13 +581,7 @@ func wtInstallReal(cat *catalog.Catalog, obj *wtObjectEntry) error {
 		})
 
 	case kindWTSequence:
-		return cat.DefineSequence(&ast.CreateSeqStmt{
-			Sequence: &ast.RangeVar{
-				Schemaname:     obj.schema,
-				Relname:        obj.name,
-				Relpersistence: 'p',
-			},
-		})
+		return wtInstallSequence(cat, obj)
 
 	case kindWTTable:
 		return wtInstallTable(cat, obj)
@@ -609,6 +616,72 @@ func wtInstallReal(cat *catalog.Catalog, obj *wtObjectEntry) error {
 		return wtInstallConstraint(cat, obj)
 	}
 	return errors.Errorf("unknown object kind %d", obj.kind)
+}
+
+func wtInstallSequence(cat *catalog.Catalog, obj *wtObjectEntry) error {
+	seq := obj.seqMeta
+	if seq == nil {
+		return errors.New("sequence has no metadata")
+	}
+
+	stmt := &ast.CreateSeqStmt{
+		Sequence: &ast.RangeVar{
+			Schemaname:     obj.schema,
+			Relname:        seq.Name,
+			Relpersistence: 'p',
+		},
+	}
+
+	var opts []ast.Node
+	if seq.Increment != "" && seq.Increment != "0" {
+		opts = append(opts, &ast.DefElem{Defname: "increment", Arg: &ast.Integer{Ival: wtParseInt64(seq.Increment)}})
+	}
+	if seq.MinValue != "" && seq.MinValue != "0" {
+		opts = append(opts, &ast.DefElem{Defname: "minvalue", Arg: &ast.Integer{Ival: wtParseInt64(seq.MinValue)}})
+	}
+	if seq.MaxValue != "" && seq.MaxValue != "0" {
+		opts = append(opts, &ast.DefElem{Defname: "maxvalue", Arg: &ast.Integer{Ival: wtParseInt64(seq.MaxValue)}})
+	}
+	if seq.Start != "" && seq.Start != "0" {
+		opts = append(opts, &ast.DefElem{Defname: "start", Arg: &ast.Integer{Ival: wtParseInt64(seq.Start)}})
+	}
+	if seq.CacheSize != "" && seq.CacheSize != "0" {
+		opts = append(opts, &ast.DefElem{Defname: "cache", Arg: &ast.Integer{Ival: wtParseInt64(seq.CacheSize)}})
+	}
+	if seq.Cycle {
+		opts = append(opts, &ast.DefElem{Defname: "cycle", Arg: &ast.Boolean{Boolval: true}})
+	}
+	if len(opts) > 0 {
+		stmt.Options = &ast.List{Items: opts}
+	}
+
+	return cat.DefineSequence(stmt)
+}
+
+// wtIsIdentitySequence checks if a sequence is owned by an identity column.
+// Identity columns auto-create their sequence during DefineRelation, so
+// pre-creating it would cause a duplicate error.
+func wtIsIdentitySequence(seq *storepb.SequenceMetadata, tables []*storepb.TableMetadata) bool {
+	if seq.OwnerTable == "" || seq.OwnerColumn == "" {
+		return false
+	}
+	for _, tbl := range tables {
+		if tbl.Name != seq.OwnerTable {
+			continue
+		}
+		for _, col := range tbl.Columns {
+			if col.Name == seq.OwnerColumn && col.IsIdentity {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func wtParseInt64(s string) int64 {
+	var v int64
+	_, _ = fmt.Sscanf(s, "%d", &v)
+	return v
 }
 
 func wtInstallTable(cat *catalog.Catalog, obj *wtObjectEntry) error {
