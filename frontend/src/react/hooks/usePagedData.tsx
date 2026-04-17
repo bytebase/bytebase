@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -24,6 +24,83 @@ export type PagedDataResult<T> = {
   onPageSizeChange: (size: number) => void;
 };
 
+type FetchMode = "refresh" | "append";
+
+type PagedDataState<T> = {
+  dataList: T[];
+  status: "idle" | "loading" | "ready" | "loadingMore";
+  hasMore: boolean;
+};
+
+type PagedDataAction<T> =
+  | { type: "fetch-start"; mode: FetchMode }
+  | {
+      type: "fetch-success";
+      mode: FetchMode;
+      list: T[];
+      hasMore: boolean;
+    }
+  | { type: "fetch-error" }
+  | { type: "update-cache"; items: T[] }
+  | { type: "remove-cache"; item: T };
+
+const initialPagedDataState = <
+  T extends { name: string },
+>(): PagedDataState<T> => ({
+  dataList: [],
+  status: "idle",
+  hasMore: false,
+});
+
+const pagedDataReducer = <T extends { name: string }>(
+  state: PagedDataState<T>,
+  action: PagedDataAction<T>
+): PagedDataState<T> => {
+  switch (action.type) {
+    case "fetch-start":
+      return {
+        ...state,
+        status: action.mode === "refresh" ? "loading" : "loadingMore",
+      };
+    case "fetch-success":
+      return {
+        dataList:
+          action.mode === "refresh"
+            ? action.list
+            : [...state.dataList, ...action.list],
+        status: "ready",
+        hasMore: action.hasMore,
+      };
+    case "fetch-error":
+      return {
+        ...state,
+        status: "ready",
+      };
+    case "update-cache": {
+      const dataList = [...state.dataList];
+      for (const item of action.items) {
+        const index = dataList.findIndex((data) => data.name === item.name);
+        if (index >= 0) {
+          dataList[index] = item;
+        } else {
+          dataList.push(item);
+        }
+      }
+      return {
+        ...state,
+        dataList,
+      };
+    }
+    case "remove-cache":
+      return {
+        ...state,
+        dataList: state.dataList.filter(
+          (data) => data.name !== action.item.name
+        ),
+      };
+  }
+};
+
 export function usePagedData<T extends { name: string }>({
   sessionKey,
   fetchList,
@@ -39,11 +116,11 @@ export function usePagedData<T extends { name: string }>({
   const [pageSize, setPageSize] = useSessionPageSize(sessionKey);
   const pageSizeOptions = getPageSizeOptions();
 
-  const [dataList, setDataList] = useState<T[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [state, dispatch] = useReducer(
+    pagedDataReducer<T>,
+    undefined,
+    initialPagedDataState<T>
+  );
 
   const abortRef = useRef<AbortController | null>(null);
   const fetchIdRef = useRef(0);
@@ -56,30 +133,26 @@ export function usePagedData<T extends { name: string }>({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      if (isRefresh) {
-        setIsLoading(true);
-      } else {
-        setIsFetchingMore(true);
-      }
+      const mode: FetchMode = isRefresh ? "refresh" : "append";
+      dispatch({ type: "fetch-start", mode });
 
       try {
         const token = isRefresh ? "" : nextPageTokenRef.current;
         const result = await fetchList({ pageSize, pageToken: token });
         if (controller.signal.aborted || currentFetchId !== fetchIdRef.current)
           return;
-        setDataList((prev) =>
-          isRefresh ? result.list : [...prev, ...result.list]
-        );
         nextPageTokenRef.current = result.nextPageToken ?? "";
-        setHasMore(Boolean(result.nextPageToken));
+        dispatch({
+          type: "fetch-success",
+          mode,
+          list: result.list,
+          hasMore: Boolean(result.nextPageToken),
+        });
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
         console.error(e);
-      } finally {
         if (currentFetchId === fetchIdRef.current) {
-          setIsLoading(false);
-          setIsFetchingMore(false);
-          setHasFetched(true);
+          dispatch({ type: "fetch-error" });
         }
       }
     },
@@ -87,32 +160,21 @@ export function usePagedData<T extends { name: string }>({
   );
 
   const loadMore = useCallback(() => {
-    if (hasMore && !isFetchingMore) {
+    if (state.hasMore && state.status === "ready") {
       doFetch(false);
     }
-  }, [hasMore, isFetchingMore, doFetch]);
+  }, [doFetch, state.hasMore, state.status]);
 
   const refresh = useCallback(() => {
     doFetch(true);
   }, [doFetch]);
 
   const updateCache = useCallback((items: T[]) => {
-    setDataList((prev) => {
-      const next = [...prev];
-      for (const item of items) {
-        const idx = next.findIndex((d) => d.name === item.name);
-        if (idx >= 0) {
-          next[idx] = item;
-        } else {
-          next.push(item);
-        }
-      }
-      return next;
-    });
+    dispatch({ type: "update-cache", items });
   }, []);
 
   const removeCache = useCallback((item: T) => {
-    setDataList((prev) => prev.filter((d) => d.name !== item.name));
+    dispatch({ type: "remove-cache", item });
   }, []);
 
   // Fetch on mount and when fetchList/pageSize changes (handles search text reactivity)
@@ -124,6 +186,9 @@ export function usePagedData<T extends { name: string }>({
       doFetch(true);
       return;
     }
+    fetchIdRef.current++;
+    abortRef.current?.abort();
+    dispatch({ type: "fetch-start", mode: "refresh" });
     const timer = setTimeout(() => doFetch(true), 300);
     return () => clearTimeout(timer);
   }, [doFetch, enabled]);
@@ -135,10 +200,11 @@ export function usePagedData<T extends { name: string }>({
   }, []);
 
   return {
-    dataList,
-    isLoading: enabled && (isLoading || !hasFetched),
-    isFetchingMore,
-    hasMore,
+    dataList: state.dataList,
+    isLoading:
+      enabled && (state.status === "idle" || state.status === "loading"),
+    isFetchingMore: state.status === "loadingMore",
+    hasMore: state.hasMore,
     loadMore,
     refresh,
     updateCache,

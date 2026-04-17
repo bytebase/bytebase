@@ -134,9 +134,14 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const [searchParams, setSearchParams] =
     useState<SearchParams>(defaultSearchParams);
 
+  const didMountRef = useRef(false);
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     setSearchParams(defaultSearchParams());
-  }, [projectId]);
+  }, [defaultSearchParams, projectId]);
 
   // Scope options
   const scopeOptions: ScopeOption[] = useMemo(
@@ -232,7 +237,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 
   // Handle spec created from AddSpecDrawer
   const handleSpecCreated = useCallback(
-    (spec: Plan_Spec) => {
+    async (spec: Plan_Spec) => {
       if (!project) return;
 
       const template = "bb.plan.change-database";
@@ -276,7 +281,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         }
       }
 
-      router.push({
+      await router.push({
         name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
         params: {
           projectId,
@@ -752,7 +757,7 @@ function AddSpecDrawer({
   open: boolean;
   onClose: () => void;
   projectName: string;
-  onCreated: (spec: Plan_Spec) => void;
+  onCreated: (spec: Plan_Spec) => void | Promise<void>;
   title: string;
 }) {
   const { t } = useTranslation();
@@ -809,7 +814,7 @@ function AddSpecDrawer({
         },
       });
 
-      onCreated(spec);
+      await onCreated(spec);
       onClose();
     } catch (error) {
       pushNotification({
