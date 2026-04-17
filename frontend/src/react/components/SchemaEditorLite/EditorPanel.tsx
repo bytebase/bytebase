@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useSchemaEditorContext } from "./context";
 import { DatabaseEditor } from "./Panels/DatabaseEditor";
 import { FunctionEditor } from "./Panels/FunctionEditor";
@@ -10,9 +10,27 @@ import { TabsContainer } from "./TabsContainer";
 export function EditorPanel() {
   const { tabs } = useSchemaEditorContext();
   const { currentTab } = tabs;
-  const [selectedSchemaName, setSelectedSchemaName] = useState<
-    string | undefined
-  >();
+
+  // Per-tab schema selection. User choices are stored by tab ID so they
+  // don't leak across tabs. Falls back to the tab's initial selectedSchema
+  // (set when navigating from a schema node in the tree).
+  const [selectedSchemas, setSelectedSchemas] = useState<
+    Record<string, string | undefined>
+  >({});
+
+  const selectedSchemaName = currentTab
+    ? (selectedSchemas[currentTab.id] ??
+      (currentTab.type === "database" ? currentTab.selectedSchema : undefined))
+    : undefined;
+
+  const handleSchemaNameChange = useCallback(
+    (name: string | undefined) => {
+      if (currentTab) {
+        setSelectedSchemas((prev) => ({ ...prev, [currentTab.id]: name }));
+      }
+    },
+    [currentTab]
+  );
 
   return (
     <main className="flex size-full flex-col overflow-y-hidden">
@@ -27,8 +45,8 @@ export function EditorPanel() {
           <DatabaseEditor
             db={currentTab.database}
             database={currentTab.metadata.database}
-            selectedSchemaName={currentTab.selectedSchema ?? selectedSchemaName}
-            onSelectedSchemaNameChange={setSelectedSchemaName}
+            selectedSchemaName={selectedSchemaName}
+            onSelectedSchemaNameChange={handleSchemaNameChange}
           />
         )}
         {currentTab?.type === "table" && (
