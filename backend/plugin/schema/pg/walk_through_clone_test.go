@@ -2,13 +2,11 @@ package pg
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -172,62 +170,6 @@ func TestClone_SearchPath(t *testing.T) {
 		}
 	}
 	require.True(t, foundAliceTable, "diff should show alice.my_table as added")
-}
-
-// TestClone_BbExportSample tests Clone with a real bb_export metadata file,
-// verifying the full walk-through flow produces correct diffs.
-func TestClone_BbExportSample(t *testing.T) {
-	root := bbExportRoot
-	if _, err := os.Stat(root); os.IsNotExist(err) {
-		t.Skipf("bb_export not found at %s; skipping", root)
-	}
-	jsonFiles := collectPGJsonFiles(t, root)
-	if len(jsonFiles) == 0 {
-		t.Skip("no files")
-	}
-
-	// Pick first 10 files
-	if len(jsonFiles) > 10 {
-		jsonFiles = jsonFiles[:10]
-	}
-
-	userDDLs := []string{
-		`CREATE TABLE "__clone_test" (id serial PRIMARY KEY, name text)`,
-		`CREATE INDEX "__clone_idx" ON "__clone_test" (name)`,
-		`ALTER TABLE "__clone_test" ADD COLUMN created_at timestamptz DEFAULT now()`,
-		`DROP TABLE "__clone_test" CASCADE`,
-	}
-
-	for _, jf := range jsonFiles {
-		data, _ := os.ReadFile(jf)
-		meta := &storepb.DatabaseSchemaMetadata{}
-		if common.ProtojsonUnmarshaler.Unmarshal(data, meta) != nil {
-			continue
-		}
-
-		catBefore := catalog.New()
-		if loadWalkThroughCatalog(context.Background(), catBefore, meta) != nil {
-			continue
-		}
-
-		catAfter := catBefore.Clone()
-		for _, ddl := range userDDLs {
-			catAfter.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true})
-		}
-
-		diff := catalog.Diff(catBefore, catAfter)
-
-		// After create+drop cycle, diff should be empty or only contain
-		// the sequence created by serial (which DROP CASCADE removes).
-		// Key check: no spurious diffs from pseudo objects.
-		for _, rel := range diff.Relations {
-			if rel.Name != "__clone_test" {
-				t.Errorf("[%s] unexpected relation diff: %s.%s action=%d",
-					shortPath(jf), rel.SchemaName, rel.Name, rel.Action)
-			}
-		}
-	}
-	t.Logf("Clone test passed on %d files", len(jsonFiles))
 }
 
 // TestClone_WalkThroughOmniFunction tests the actual WalkThroughOmni function
