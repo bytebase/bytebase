@@ -1672,6 +1672,11 @@
             "self": "Không gian làm việc"
           }
         },
+        "allow-email-code-signin": {
+          "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
+          "enable": "Cho phép đăng nhập bằng mã qua email",
+          "require-email-setting": "Phải cấu hình cài đặt email (SMTP) trước khi bật tùy chọn này."
+        },
         "disallow-password-signin": {
           "description": "Người dùng không thể đăng nhập bằng email & mật khẩu, chỉ cho phép SSO.",
           "enable": "Không cho phép đăng nhập bằng email & mật khẩu",

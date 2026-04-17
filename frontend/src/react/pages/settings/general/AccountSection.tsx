@@ -29,8 +29,15 @@ import {
   defaultAccessTokenDurationInHours,
   defaultRefreshTokenDurationInHours,
 } from "@/types";
-import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
-import { WorkspaceProfileSetting_PasswordRestrictionSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { isDev } from "@/utils";
+import type {
+  WorkspaceProfileSetting,
+  WorkspaceProfileSetting_PasswordRestriction,
+} from "@/types/proto-es/v1/setting_service_pb";
+import {
+  Setting_SettingName,
+  WorkspaceProfileSetting_PasswordRestrictionSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -40,6 +47,7 @@ interface ToggleState {
   disallowSignup: boolean;
   require2fa: boolean;
   disallowPasswordSignin: boolean;
+  allowEmailCodeSignin: boolean;
 }
 
 interface TokenState {
@@ -93,11 +101,20 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       () => idpStore.identityProviderList.length > 0
     );
 
-    // Fetch identity providers on mount
+    // Track whether the EMAIL setting is configured (required to enable email-code signin).
+    // Reactively reads from the Vue store so the value updates when EMAIL is (un)configured.
+    const hasEmailSetting = useVueState(
+      () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
+    );
+
+    // Fetch identity providers and EMAIL setting on mount.
     useEffect(() => {
       idpStore.fetchIdentityProviderList(
         useActuatorV1Store().workspaceResourceName
       );
+      // Populate the EMAIL setting into the store cache; useVueState above
+      // picks up the change reactively.
+      settingV1Store.getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
     }, []);
 
     // --- Toggle state ---
@@ -107,6 +124,8 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         require2fa: settingV1Store.workspaceProfile.require2fa,
         disallowPasswordSignin:
           settingV1Store.workspaceProfile.disallowPasswordSignin,
+        allowEmailCodeSignin:
+          settingV1Store.workspaceProfile.allowEmailCodeSignin,
       };
     }, []);
 
@@ -220,19 +239,16 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
     // --- Update ---
     const handleUpdate = useCallback(async () => {
+      const updateMaskPaths: string[] = [];
+      const payload: Partial<WorkspaceProfileSetting> = {};
+
       // Password restriction
       if (!isEqual(passwordState, getInitialPasswordRestriction())) {
-        await settingV1Store.updateWorkspaceProfile({
-          payload: {
-            passwordRestriction: create(
-              WorkspaceProfileSetting_PasswordRestrictionSchema,
-              { ...passwordState }
-            ),
-          },
-          updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.password_restriction"],
-          }),
-        });
+        payload.passwordRestriction = create(
+          WorkspaceProfileSetting_PasswordRestrictionSchema,
+          { ...passwordState }
+        );
+        updateMaskPaths.push("value.workspace_profile.password_restriction");
       }
 
       // Token durations
@@ -245,17 +261,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
           tokenState.accessTokenTimeFormat === "MINUTES"
             ? tokenState.accessTokenDuration * 60
             : tokenState.accessTokenDuration * 60 * 60;
-        await settingV1Store.updateWorkspaceProfile({
-          payload: {
-            accessTokenDuration: create(DurationSchema, {
-              seconds: BigInt(seconds),
-              nanos: 0,
-            }),
-          },
-          updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.access_token_duration"],
-          }),
+        payload.accessTokenDuration = create(DurationSchema, {
+          seconds: BigInt(seconds),
+          nanos: 0,
         });
+        updateMaskPaths.push("value.workspace_profile.access_token_duration");
       }
 
       if (
@@ -266,59 +276,60 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
           tokenState.refreshTokenTimeFormat === "HOURS"
             ? tokenState.refreshTokenDuration * 60 * 60
             : tokenState.refreshTokenDuration * 24 * 60 * 60;
-        await settingV1Store.updateWorkspaceProfile({
-          payload: {
-            refreshTokenDuration: create(DurationSchema, {
-              seconds: BigInt(seconds),
-              nanos: 0,
-            }),
-          },
-          updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.refresh_token_duration"],
-          }),
+        payload.refreshTokenDuration = create(DurationSchema, {
+          seconds: BigInt(seconds),
+          nanos: 0,
         });
+        updateMaskPaths.push("value.workspace_profile.refresh_token_duration");
       }
 
       if (initToken.inactiveTimeout !== tokenState.inactiveTimeout) {
-        await settingV1Store.updateWorkspaceProfile({
-          payload: {
-            inactiveSessionTimeout: create(DurationSchema, {
-              seconds: BigInt(tokenState.inactiveTimeout * 60 * 60),
-              nanos: 0,
-            }),
-          },
-          updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.inactive_session_timeout"],
-          }),
+        payload.inactiveSessionTimeout = create(DurationSchema, {
+          seconds: BigInt(tokenState.inactiveTimeout * 60 * 60),
+          nanos: 0,
         });
+        updateMaskPaths.push(
+          "value.workspace_profile.inactive_session_timeout"
+        );
       }
 
       // Toggle fields
       const initToggle = getInitialToggleState();
-      const updateMaskPaths: string[] = [];
       if (toggleState.disallowSignup !== initToggle.disallowSignup) {
+        payload.disallowSignup = toggleState.disallowSignup;
         updateMaskPaths.push("value.workspace_profile.disallow_signup");
       }
       if (toggleState.require2fa !== initToggle.require2fa) {
+        payload.require2fa = toggleState.require2fa;
         updateMaskPaths.push("value.workspace_profile.require_2fa");
       }
       if (
         toggleState.disallowPasswordSignin !== initToggle.disallowPasswordSignin
       ) {
+        payload.disallowPasswordSignin = toggleState.disallowPasswordSignin;
         updateMaskPaths.push(
           "value.workspace_profile.disallow_password_signin"
         );
       }
-      if (updateMaskPaths.length > 0) {
-        await settingV1Store.updateWorkspaceProfile({
-          payload: {
-            disallowSignup: toggleState.disallowSignup,
-            require2fa: toggleState.require2fa,
-            disallowPasswordSignin: toggleState.disallowPasswordSignin,
-          },
-          updateMask: create(FieldMaskSchema, { paths: updateMaskPaths }),
-        });
+      if (
+        toggleState.allowEmailCodeSignin !== initToggle.allowEmailCodeSignin
+      ) {
+        payload.allowEmailCodeSignin = toggleState.allowEmailCodeSignin;
+        updateMaskPaths.push("value.workspace_profile.allow_email_code_signin");
       }
+
+      if (updateMaskPaths.length === 0) return;
+
+      await settingV1Store.updateWorkspaceProfile({
+        payload,
+        updateMask: create(FieldMaskSchema, { paths: updateMaskPaths }),
+      });
+
+      // Reset local state from the (now-updated) Vue store so isDirty clears
+      // and the parent's bottom bar disappears.
+      setToggleState(getInitialToggleState());
+      setPasswordState(getInitialPasswordRestriction());
+      setTokenState(getInitialTokenState());
     }, [
       toggleState,
       passwordState,
@@ -651,6 +662,49 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   <div className="mt-1 text-sm text-gray-400">
                     {t(
                       "settings.general.workspace.disallow-password-signin.description"
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-section 5: Allow email-code signin (non-SaaS only; requires EMAIL setting).
+                  Hidden in production until the email configuration UI is built. */}
+              {!isSaaSMode && isDev() && (
+                <div className="lg:mt-0">
+                  <div className="flex items-center gap-x-2">
+                    <input
+                      type="checkbox"
+                      checked={toggleState.allowEmailCodeSignin}
+                      disabled={
+                        disabled ||
+                        (!toggleState.allowEmailCodeSignin && !hasEmailSetting)
+                      }
+                      onChange={(e) =>
+                        setToggleState((s) => ({
+                          ...s,
+                          allowEmailCodeSignin: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span className="text-base font-semibold flex items-center gap-x-2">
+                      {t(
+                        "settings.general.workspace.allow-email-code-signin.enable"
+                      )}
+                      {!toggleState.allowEmailCodeSignin &&
+                        !hasEmailSetting && (
+                          <span
+                            title={t(
+                              "settings.general.workspace.allow-email-code-signin.require-email-setting"
+                            )}
+                          >
+                            <TriangleAlert className="w-4 text-warning" />
+                          </span>
+                        )}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-400">
+                    {t(
+                      "settings.general.workspace.allow-email-code-signin.description"
                     )}
                   </div>
                 </div>

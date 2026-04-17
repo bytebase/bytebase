@@ -1672,6 +1672,11 @@
             "self": "Espacio de trabajo"
           }
         },
+        "allow-email-code-signin": {
+          "description": "Los usuarios pueden iniciar sesión o registrarse introduciendo un código de 6 dígitos enviado a su correo electrónico.",
+          "enable": "Permitir inicio de sesión con código por email",
+          "require-email-setting": "Primero se debe configurar el ajuste de correo (SMTP) antes de habilitar esto."
+        },
         "disallow-password-signin": {
           "description": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO.",
           "enable": "No permitir el inicio de sesión con correo electrónico y contraseña",

@@ -215,6 +215,14 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     return specificRoles;
   };
 
+  const fetchCurrentWorkspace = async () => {
+    const name = actuatorStore.workspaceResourceName || `${workspaceNamePrefix}-`;
+    const workspace = await workspaceServiceClientConnect.getWorkspace({
+      name,
+    });
+    currentWorkspace.value = workspace;
+  };
+
   const fetchWorkspaceList = async () => {
     const resp = await workspaceServiceClientConnect.listWorkspaces({});
     workspaceList.value = resp.workspaces;
@@ -244,6 +252,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     workspaceList,
     currentWorkspace,
     updateWorkspace,
+    fetchCurrentWorkspace,
     fetchWorkspaceList,
     switchWorkspace,
   };

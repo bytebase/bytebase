@@ -143,6 +143,7 @@
 import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
@@ -163,6 +164,8 @@ interface LocalState {
   isLoading: boolean;
 }
 
+const router = useRouter();
+const route = useRoute();
 const actuatorStore = useActuatorV1Store();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
@@ -193,6 +196,11 @@ const allowSignup = computed(() => {
 });
 
 onMounted(() => {
+  // Signup is closed — redirect to signin. Admin-setup (first user) is always allowed.
+  if (!needAdminSetup.value && serverInfo.value?.restriction?.disallowSignup) {
+    router.replace({ name: AUTH_SIGNIN_MODULE, query: route.query });
+    return;
+  }
   if (needAdminSetup.value) {
     state.acceptTermsAndPolicy = false;
   }

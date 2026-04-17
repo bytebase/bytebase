@@ -1672,6 +1672,11 @@
             "self": "工作区"
           }
         },
+        "allow-email-code-signin": {
+          "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
+          "enable": "允许使用邮箱验证码登录",
+          "require-email-setting": "必须先配置邮件 (SMTP) 设置后才能启用。"
+        },
         "disallow-password-signin": {
           "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。",
           "enable": "禁止使用密码登录",

@@ -8,26 +8,45 @@
     </div>
 
     <div class="mt-8">
-      <div class="mt-6">
-        <!-- TODO(ed): support self-service reset password -->
-        <BBAttention type="warning" :title="hint">
-          <template v-if="actuatorStore.isSaaSMode && !hint">
-            <i18n-t
-              tag="h3"
-              class="text-sm font-medium text-yellow-800"
-              keypath="auth.password-forget.contact-us"
+      <div class="mt-6 flex flex-col gap-y-4">
+        <BBAttention
+          v-if="!passwordResetEnabled"
+          type="warning"
+          :title="$t('auth.password-forget.selfhost')"
+        />
+        <template v-else>
+          <div>
+            <label
+              for="forgot-email"
+              class="block text-sm font-medium leading-5 text-control"
             >
-              <template #email>
-                <a
-                  href="mailto:help@bytebase.com"
-                  class="normal-link"
-                >
-                  help@bytebase.com
-                </a>
-              </template>
-            </i18n-t>
-          </template>
-        </BBAttention>
+              {{ $t("common.email") }}
+            </label>
+            <div class="mt-1">
+              <BBTextField
+                v-model:value="email"
+                required
+                :input-props="{
+                  id: 'forgot-email',
+                  autocomplete: 'email',
+                  type: 'email',
+                }"
+                placeholder="jim@example.com"
+                @keyup.enter="onSubmit"
+              />
+            </div>
+          </div>
+          <NButton
+            type="primary"
+            size="large"
+            style="width: 100%"
+            :disabled="!email || isLoading"
+            :loading="isLoading"
+            @click="onSubmit"
+          >
+            {{ $t("auth.password-forget.send-reset-code") }}
+          </NButton>
+        </template>
       </div>
     </div>
 
@@ -48,26 +67,54 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { NButton } from "naive-ui";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
-import { BBAttention } from "@/bbkit";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useActuatorV1Store } from "@/store";
+import { useRoute, useRouter } from "vue-router";
+import { BBAttention, BBTextField } from "@/bbkit";
+import { authServiceClientConnect } from "@/connect";
+import { AUTH_PASSWORD_RESET_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
+import { pushNotification, useActuatorV1Store } from "@/store";
+import { resolveWorkspaceName } from "@/utils";
 
+const actuatorStore = useActuatorV1Store();
+const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
-const actuatorStore = useActuatorV1Store();
 
-const hint = computed(() => {
-  const hint = route.query.hint as string;
-  if (hint) {
-    return hint;
-  }
-  if (!actuatorStore.isSaaSMode) {
-    return t("auth.password-forget.selfhost");
-  }
+const passwordResetEnabled = computed(
+  () => actuatorStore.serverInfo?.restriction?.passwordResetEnabled ?? false
+);
 
-  return "";
+onMounted(() => {
+  if (actuatorStore.serverInfo?.restriction?.disallowPasswordSignin) {
+    router.replace({ name: AUTH_SIGNIN_MODULE, query: route.query });
+  }
 });
+
+const email = ref("");
+const isLoading = ref(false);
+
+const onSubmit = async () => {
+  if (!email.value || isLoading.value) return;
+  isLoading.value = true;
+  try {
+    await authServiceClientConnect.requestPasswordReset({
+      email: email.value,
+      workspace: resolveWorkspaceName(),
+    });
+    router.push({
+      name: AUTH_PASSWORD_RESET_MODULE,
+      query: { email: email.value },
+    });
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("auth.password-forget.failed-to-send-code"),
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>

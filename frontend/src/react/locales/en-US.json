@@ -1672,6 +1672,11 @@
             "self": "Workspace"
           }
         },
+        "allow-email-code-signin": {
+          "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
+          "enable": "Allow signin with email code",
+          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
+        },
         "disallow-password-signin": {
           "description": "Users cannot sign in with email & password, only SSO is allowed.",
           "enable": "Disallow signin with email & password",

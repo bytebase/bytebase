@@ -96,6 +96,7 @@ import {
   type LoginRequest,
   LoginRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
+import { resolveWorkspaceName } from "@/utils";
 
 interface LocalState {
   email: string;
@@ -142,6 +143,7 @@ const trySignin = async () => {
     create(LoginRequestSchema, {
       email: state.email,
       password: state.password,
+      workspace: resolveWorkspaceName(),
     })
   );
 };
