@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 
@@ -102,9 +103,15 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 	}
 
 	for _, f := range diff.Functions {
+		isProcedure := f.To != nil && f.To.Kind == 'p'
+		wasProcedure := f.From != nil && f.From.Kind == 'p'
 		if f.Action == catalog.DiffDrop {
 			if sm := findSchema(result, f.SchemaName); sm != nil {
-				sm.Functions = removeFunctionByIdentity(sm.Functions, f.Identity)
+				if wasProcedure {
+					sm.Procedures = removeProcedureByIdentity(sm.Procedures, f.Identity)
+				} else {
+					sm.Functions = removeFunctionByIdentity(sm.Functions, f.Identity)
+				}
 			}
 			continue
 		}
@@ -112,12 +119,24 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 		switch f.Action {
 		case catalog.DiffAdd:
 			if f.To != nil {
-				sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+				if isProcedure {
+					sm.Procedures = append(sm.Procedures, procedureToProto(cat, f.To, f.Identity))
+				} else {
+					sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+				}
 			}
 		case catalog.DiffModify:
-			sm.Functions = removeFunctionByIdentity(sm.Functions, f.Identity)
+			if wasProcedure {
+				sm.Procedures = removeProcedureByIdentity(sm.Procedures, f.Identity)
+			} else {
+				sm.Functions = removeFunctionByIdentity(sm.Functions, f.Identity)
+			}
 			if f.To != nil {
-				sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+				if isProcedure {
+					sm.Procedures = append(sm.Procedures, procedureToProto(cat, f.To, f.Identity))
+				} else {
+					sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+				}
 			}
 		default:
 		}
@@ -555,12 +574,109 @@ func removeEnumByName(enums []*storepb.EnumTypeMetadata, name string) []*storepb
 	return out
 }
 
-func functionToProto(_ *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.FunctionMetadata {
+func functionToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.FunctionMetadata {
 	return &storepb.FunctionMetadata{
 		Name:       up.Name,
-		Definition: up.Body,
+		Definition: buildUserProcDDL(cat, up),
 		Signature:  identity,
 	}
+}
+
+func procedureToProto(cat *catalog.Catalog, up *catalog.UserProc, identity string) *storepb.ProcedureMetadata {
+	return &storepb.ProcedureMetadata{
+		Name:       up.Name,
+		Definition: buildUserProcDDL(cat, up),
+		Signature:  identity,
+	}
+}
+
+func buildUserProcDDL(cat *catalog.Catalog, up *catalog.UserProc) string {
+	var b strings.Builder
+	if up.Kind == 'p' {
+		b.WriteString("CREATE OR REPLACE PROCEDURE ")
+	} else {
+		b.WriteString("CREATE OR REPLACE FUNCTION ")
+	}
+	if up.Schema != nil && up.Schema.Name != "" {
+		b.WriteString(up.Schema.Name)
+		b.WriteByte('.')
+	}
+	b.WriteString(up.Name)
+	b.WriteByte('(')
+	argTypes := up.ArgTypes
+	if len(up.AllArgTypes) > 0 {
+		argTypes = up.AllArgTypes
+	}
+	for i, t := range argTypes {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		if i < len(up.ArgModes) {
+			switch up.ArgModes[i] {
+			case 'o':
+				b.WriteString("OUT ")
+			case 'b':
+				b.WriteString("INOUT ")
+			case 'v':
+				b.WriteString("VARIADIC ")
+			default:
+			}
+		}
+		if i < len(up.ArgNames) && up.ArgNames[i] != "" {
+			b.WriteString(up.ArgNames[i])
+			b.WriteByte(' ')
+		}
+		b.WriteString(cat.FormatType(t, -1))
+	}
+	b.WriteString(")\n")
+	if up.Kind != 'p' {
+		b.WriteString(" RETURNS ")
+		if up.RetSet {
+			b.WriteString("SETOF ")
+		}
+		b.WriteString(cat.FormatType(up.RetType, -1))
+		b.WriteByte('\n')
+	}
+	b.WriteString(" LANGUAGE ")
+	b.WriteString(up.Language)
+	b.WriteByte('\n')
+	switch up.Volatile {
+	case 'i':
+		b.WriteString(" IMMUTABLE\n")
+	case 's':
+		b.WriteString(" STABLE\n")
+	default:
+	}
+	if up.IsStrict {
+		b.WriteString(" STRICT\n")
+	}
+	if up.SecDef {
+		b.WriteString(" SECURITY DEFINER\n")
+	}
+	if up.LeakProof {
+		b.WriteString(" LEAKPROOF\n")
+	}
+	switch up.Parallel {
+	case 's':
+		b.WriteString(" PARALLEL SAFE\n")
+	case 'r':
+		b.WriteString(" PARALLEL RESTRICTED\n")
+	default:
+	}
+	b.WriteString("AS $function$")
+	b.WriteString(up.Body)
+	b.WriteString("$function$\n")
+	return b.String()
+}
+
+func removeProcedureByIdentity(procs []*storepb.ProcedureMetadata, identity string) []*storepb.ProcedureMetadata {
+	out := make([]*storepb.ProcedureMetadata, 0, len(procs))
+	for _, p := range procs {
+		if p.Signature != identity {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func removeFunctionByIdentity(funcs []*storepb.FunctionMetadata, identity string) []*storepb.FunctionMetadata {
