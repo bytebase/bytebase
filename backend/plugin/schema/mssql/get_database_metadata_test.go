@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
 type getDatabaseMetadataCase struct {
@@ -48,9 +50,6 @@ func TestGetDatabaseMetadata(t *testing.T) {
 		}
 	}
 	if record {
-		byteValue, err := yaml.Marshal(tests)
-		a.NoError(err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		a.NoError(err)
+		yamltest.Record(t, filepath, tests)
 	}
 }
