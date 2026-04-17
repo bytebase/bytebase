@@ -115,12 +115,13 @@ func (s *Store) IncrementEmailVerificationCodeAttempts(ctx context.Context, emai
 	return nil
 }
 
-// DeleteEmailVerificationCode deletes the verification code record for the given email and purpose.
-func (s *Store) DeleteEmailVerificationCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose) error {
+// DeleteEmailVerificationCodeIfMatch deletes the row only if it still has the given code hash.
+// Used to roll back on SMTP failure without wiping a newer code from a concurrent request.
+func (s *Store) DeleteEmailVerificationCodeIfMatch(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, codeHash string) error {
 	q := qb.Q().Space(`
 		DELETE FROM email_verification_code
-		WHERE email = ? AND purpose = ?
-	`, email, purpose.String())
+		WHERE email = ? AND purpose = ? AND code_hash = ?
+	`, email, purpose.String(), codeHash)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

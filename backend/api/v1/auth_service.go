@@ -1794,7 +1794,8 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceNa
 		TextBody: body,
 	}); err != nil {
 		// Delete the row so the cooldown doesn't block an immediate retry.
-		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+		// Match on code_hash to avoid wiping a newer code from a concurrent request.
+		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, s.hashEmailCode(code))
 		return errors.Wrap(err, "failed to send email")
 	}
 	return nil
@@ -1814,18 +1815,18 @@ func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
 	}
 	if time.Now().After(row.ExpiresAt) {
-		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
 	}
 	if row.Attempts >= emailCodeMaxAttempts {
-		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("too many attempts"))
 	}
 	if subtle.ConstantTimeCompare([]byte(s.hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
 		_ = s.store.IncrementEmailVerificationCodeAttempts(ctx, email, purpose)
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
 	}
-	_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+	_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
 	return row, nil
 }
 

@@ -105,7 +105,7 @@ const onSubmit = async () => {
     });
     router.push({
       name: AUTH_PASSWORD_RESET_MODULE,
-      query: { email: email.value },
+      query: { ...route.query, email: email.value },
     });
   } catch {
     pushNotification({
