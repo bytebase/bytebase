@@ -42,6 +42,23 @@ func TestPLSQLParser(t *testing.T) {
 			statement:    "SELECT 1 FROM DUAL;\n   SELEC 5 FROM DUAL;\nSELECT 6 FROM DUAL;",
 			errorMessage: "Syntax error at line 2:10 \nrelated text: SELECT 1 FROM DUAL;\n   SELEC 5",
 		},
+		// BYT-9302: CREATE TABLE with INTERVAL partitioning and DATE literal bound.
+		{
+			statement: `CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
+(
+  TXN_DATE  DATE,
+  USERID    VARCHAR2(100),
+  CUSTID    VARCHAR2(100),
+  SCREENID  VARCHAR2(500),
+  EVENTTIME DATE,
+  STATUS    NUMBER
+)
+PARTITION BY RANGE (TXN_DATE)
+INTERVAL (NUMTODSINTERVAL(1,'DAY'))
+(
+  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
+);`,
+		},
 	}
 
 	for _, test := range tests {
