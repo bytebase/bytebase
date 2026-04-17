@@ -1,6 +1,7 @@
 package tsql
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -74,10 +75,12 @@ func TestGetQuerySpan(t *testing.T) {
 		}
 
 		if record {
-			byteValue, err := yaml.Marshal(testCases)
-			a.NoError(err)
-			err = os.WriteFile(testDataPath, byteValue, 0644)
-			a.NoError(err)
+			var buf bytes.Buffer
+			enc := yaml.NewEncoder(&buf)
+			enc.SetIndent(2)
+			a.NoError(enc.Encode(testCases))
+			a.NoError(enc.Close())
+			a.NoError(os.WriteFile(testDataPath, buf.Bytes(), 0644))
 		}
 	}
 }
