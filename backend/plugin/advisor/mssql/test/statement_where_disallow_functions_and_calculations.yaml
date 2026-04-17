@@ -1,35 +1,74 @@
-- statement: |-
-    CREATE TABLE pokes(foo int);
-    SELECT foo FROM pokes WHERE (foo + 1) * 2 > 0;
-    INSERT INTO pokes VALUES(1);
-    SELECT foo FROM pokes WHERE ~foo > 0;
+# Test: Function on indexed column should flag
+- statement: SELECT c1 FROM pokes WHERE ABS(c1) > 5;
   changeType: 1
   want:
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Performing calculations in 'WHERE' clause is not allowed
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
-    - status: 2
-      code: 234
-      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Performing calculations in 'WHERE' clause is not allowed
-      startposition:
-        line: 4
-        column: 0
-      endposition: null
-- statement: |-
-    SELECT foo FROM pokes WHERE foo | -foo > 0;
-    SELECT bar FROM pokes WHERE bar > AVG(bar);
+
+# Test: Calculation on indexed column should flag
+- statement: SELECT c1 FROM pokes WHERE c1 + 1 > 5;
   changeType: 1
   want:
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Performing calculations in 'WHERE' clause is not allowed
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Unary operator on indexed column should flag
+- statement: SELECT c1 FROM pokes WHERE ~c1 > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function on non-indexed column should NOT flag
+- statement: SELECT bar FROM pokes WHERE ABS(bar) > 0;
+  changeType: 1
+
+# Test: Calculation on non-indexed column should NOT flag
+- statement: SELECT foo FROM pokes WHERE (foo + 1) * 2 > 0;
+  changeType: 1
+
+# Test: Unary operator on non-indexed column should NOT flag
+- statement: SELECT foo FROM pokes WHERE ~foo > 0;
+  changeType: 1
+
+# Test: Function on value side should NOT flag
+- statement: SELECT c1 FROM pokes WHERE c1 = ABS(-5);
+  changeType: 1
+
+# Test: Simple comparison should NOT flag
+- statement: SELECT c1 FROM pokes WHERE c1 > 1;
+  changeType: 1
+
+# Test: Table with no indexes should NOT flag
+- statement: SELECT foo FROM pokes2 WHERE ABS(foo) > 5;
+  changeType: 1
+
+# Test: Multiple indexed-column violations
+- statement: SELECT c1, c10 FROM pokes WHERE ABS(c1) > 5 AND c10 + 1 > 10;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c10\" in the WHERE clause, which prevents index usage"
       startposition:
         line: 1
         column: 0
@@ -37,26 +76,541 @@
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Calling function 'AVG' in 'WHERE' clause is not allowed
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
       startposition:
-        line: 2
+        line: 1
         column: 0
       endposition: null
-- statement: SELECT bar FROM pokes WHERE bar > 1;
+
+# Test: Bitwise operator on non-indexed column should NOT flag
+- statement: SELECT foo FROM pokes WHERE foo | -foo > 0;
   changeType: 1
+
+# Test: HAVING clause should NOT flag
 - statement: |-
-    SELECT Department, AVG(Salary) AS AvgSalary
-    FROM Employees
-    GROUP BY Department
-    HAVING AVG(Salary) * 3 + 1 > 50000;
+    SELECT c1, AVG(c2) AS avg_c2
+    FROM pokes
+    GROUP BY c1
+    HAVING AVG(c2) * 3 + 1 > 50000;
   changeType: 1
-- statement: select * from (select * from t where t.a > 1) t1 where a > AVG(a);
+
+# ---- Subquery tests ----
+
+# Test: IN subquery on non-indexed table — inner should not flag
+- statement: SELECT c1 FROM pokes WHERE c1 IN (SELECT foo FROM pokes2 WHERE ABS(foo) > 0);
+  changeType: 1
+
+# Test: Outer on non-indexed table, inner on indexed table — inner should flag
+- statement: SELECT foo FROM pokes2 WHERE foo IN (SELECT c1 FROM pokes WHERE ABS(c1) > 5);
   changeType: 1
   want:
     - status: 2
       code: 234
       title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
-      content: Calling function 'AVG' in 'WHERE' clause is not allowed
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Three-level nested subquery — violation at innermost level
+- statement: SELECT foo FROM pokes2 WHERE foo IN (SELECT foo FROM pokes2 WHERE foo IN (SELECT c1 FROM pokes WHERE ABS(c1) > 0));
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: EXISTS subquery with calculation on inner indexed column
+- statement: SELECT foo FROM pokes2 WHERE EXISTS (SELECT 1 FROM pokes WHERE c1 + 1 > 5);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Scalar subquery on value side — only flag inner WHERE violation, not SELECT list
+- statement: SELECT foo FROM pokes2 WHERE foo > (SELECT MAX(c1) FROM pokes WHERE ABS(c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CTE body with function on indexed column should flag
+- statement: WITH filtered AS (SELECT c1, c2 FROM pokes WHERE ABS(c1) > 5) SELECT * FROM filtered WHERE c1 = 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: INSERT...SELECT with function on indexed column should flag
+- statement: INSERT INTO pokes2 (foo) SELECT c1 FROM pokes WHERE ABS(c1) > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: Function wrapping expression with indexed column should flag (as calculation)
+- statement: SELECT c1 FROM pokes WHERE ABS(c1 + 1) > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CREATE TABLE AS SELECT with function on indexed column should flag
+- statement: CREATE TABLE new_table WITH (DISTRIBUTION = ROUND_ROBIN) AS SELECT c1 FROM pokes WHERE ABS(c1) > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P1): Same column name, indexed in one JOIN table, non-indexed in another —
+# qualified ref to the non-indexed side should NOT flag.
+# pokes.c1 is indexed; pokes2.c1 exists (non-indexed). Query uses p2.c1.
+- statement: SELECT * FROM pokes p JOIN pokes2 p2 ON p.c1 = p2.c1 WHERE ABS(p2.c1) > 0;
+  changeType: 1
+
+# Test (codex P1): Qualified ref to indexed side of a same-named JOIN column should flag.
+- statement: SELECT * FROM pokes p JOIN pokes2 p2 ON p.c1 = p2.c1 WHERE ABS(p.c1) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): Table in non-default schema with non-indexed column — should NOT flag.
+- statement: SELECT * FROM sales.orders WHERE UPPER(note) = 'x';
+  changeType: 1
+
+# Test (codex P2): Indexed column in non-dbo schema — should flag.
+- statement: SELECT * FROM sales.orders WHERE ABS(customer_id) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"customer_id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (reviewer #1): Derived table in FROM with violation in its own WHERE.
+- statement: SELECT * FROM (SELECT c1 FROM pokes WHERE ABS(c1) > 0) s;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (reviewer #3): Scalar subquery in SELECT list with violation.
+- statement: SELECT (SELECT MAX(c1) FROM pokes WHERE ABS(c1) > 0) FROM pokes2;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (reviewer #4): MSSQL UPDATE with FROM ... JOIN — violation on JOINed indexed column.
+- statement: UPDATE pokes2 SET foo = 0 FROM pokes2 p2 JOIN pokes p ON p2.foo = p.c1 WHERE ABS(p.c1) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex new P2): Cross-database reference should NOT flag (can't resolve).
+- statement: SELECT * FROM otherdb.dbo.orders_unknown WHERE UPPER(col) = 'x';
+  changeType: 1
+
+# Test (codex new P1): Reference to unknown schema — should NOT panic and NOT flag.
+- statement: SELECT * FROM unknown_schema.orders WHERE UPPER(col) = 'x';
+  changeType: 1
+
+# Test (adversarial): Function wrapping a parenthesized indexed column — should flag.
+- statement: SELECT c1 FROM pokes WHERE ABS((c1)) > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): Calculation on parenthesized indexed column — should flag.
+- statement: SELECT c1 FROM pokes WHERE (c1) + 1 > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): Calculation on CAST indexed column — should flag.
+- statement: SELECT c1 FROM pokes WHERE CAST(c1 AS int) + 1 > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (adversarial): MERGE with SourceAlias — alias in WHEN condition should resolve.
+- statement: |-
+    MERGE INTO pokes2 AS tgt
+    USING pokes AS src
+    ON tgt.foo = src.c1
+    WHEN MATCHED AND ABS(src.c1) > 0 THEN UPDATE SET foo = 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Test (adversarial high): Case-insensitive match — ABS(C1) on indexed `c1`.
+- statement: SELECT c1 FROM pokes WHERE ABS(C1) > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"C1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (adversarial high): Mixed-case alias — P.c1 + 1 on aliased indexed pokes.c1.
+- statement: SELECT c1 FROM pokes P WHERE P.c1 + 1 > 5;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (adversarial high): MERGE with subquery source — inner violation in subquery's WHERE should flag.
+- statement: |-
+    MERGE INTO pokes2 AS tgt
+    USING (SELECT c1 FROM pokes WHERE ABS(c1) > 0) AS src
+    ON tgt.foo = src.c1
+    WHEN MATCHED THEN UPDATE SET foo = 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Test (adversarial high): MERGE with subquery source — src.col in ON/WHEN does NOT flag
+# (we can't trace subquery aliases through; false negatives are safer than false positives).
+- statement: |-
+    MERGE INTO pokes2 AS tgt
+    USING (SELECT c1 FROM pokes2) AS src
+    ON tgt.foo = src.c1
+    WHEN MATCHED AND ABS(src.c1) > 0 THEN UPDATE SET foo = 0;
+  changeType: 1
+
+# Test (codex P2): UPDATE SET with scalar subquery — inner violation must flag.
+- statement: UPDATE pokes2 SET foo = (SELECT TOP 1 c1 FROM pokes WHERE ABS(c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): UPDATE SET with calculation inside subquery — should flag.
+- statement: UPDATE pokes2 SET foo = (SELECT TOP 1 c1 FROM pokes WHERE c1 + 1 > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): UPDATE ... FROM with derived-table subquery — inner WHERE violation should flag.
+- statement: UPDATE pokes2 SET foo = 0 FROM pokes2 p2 JOIN (SELECT c1 FROM pokes WHERE ABS(c1) > 0) s ON p2.foo = s.c1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): DELETE ... FROM with derived-table subquery — inner WHERE violation should flag.
+- statement: DELETE p2 FROM pokes2 p2 JOIN (SELECT c1 FROM pokes WHERE c1 + 1 > 0) s ON p2.foo = s.c1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): MERGE WHEN MATCHED THEN UPDATE SET with scalar subquery — inner violation should flag.
+- statement: |-
+    MERGE INTO pokes2 AS tgt
+    USING pokes AS src
+    ON tgt.foo = src.c1
+    WHEN MATCHED THEN UPDATE SET foo = (SELECT TOP 1 c1 FROM pokes WHERE ABS(c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Test (codex P2): MERGE WHEN NOT MATCHED INSERT VALUES with scalar subquery — inner violation should flag.
+- statement: |-
+    MERGE INTO pokes2 AS tgt
+    USING pokes AS src
+    ON tgt.foo = src.c1
+    WHEN NOT MATCHED THEN INSERT (foo) VALUES ((SELECT TOP 1 c1 FROM pokes WHERE c1 + 1 > 0));
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Test (codex P2): unqualified table in non-dbo schema (sales.orders) — indexed column should flag.
+- statement: SELECT * FROM orders WHERE ABS(customer_id) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"customer_id\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): INSERT VALUES with scalar subquery — inner violation should flag.
+- statement: INSERT INTO pokes2 (foo) VALUES ((SELECT TOP 1 c1 FROM pokes WHERE ABS(c1) > 0));
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (adversarial): correlated EXISTS subquery — inner WHERE references outer indexed column.
+- statement: SELECT * FROM pokes t WHERE EXISTS (SELECT 1 FROM pokes2 o WHERE ABS(t.c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): CREATE VIEW with function on indexed column in WHERE — should flag.
+- statement: CREATE VIEW v AS SELECT * FROM pokes WHERE ABS(c1) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P2): correlated subquery — unqualified `c1` resolves to inner (pokes2.c1 non-indexed), should NOT flag.
+- statement: SELECT * FROM pokes t WHERE EXISTS (SELECT 1 FROM pokes2 o WHERE ABS(c1) > 0);
+  changeType: 1
+
+# Test (codex P2): correlated unqualified outer column — inner (pokes2) has no `c10`, should resolve to outer pokes.c10 and flag.
+- statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM pokes2 p2 WHERE ABS(c10) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c10\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test (codex P1): CTE reference in inner FROM — unqualified `c1` owns by inner CTE, should NOT falsely flag outer pokes.c1.
+- statement: |-
+    WITH c AS (SELECT foo AS c1 FROM pokes2)
+    SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM c WHERE ABS(c1) > 0);
+  changeType: 1
+
+# Test (codex P1): Derived table in inner FROM — unqualified `c1` owns by inner derived, should NOT falsely flag outer pokes.c1.
+- statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM (SELECT foo AS c1 FROM pokes2) d WHERE ABS(c1) > 0);
+  changeType: 1
+
+# Test (design gap): CREATE MATERIALIZED VIEW with function on indexed column — should flag.
+- statement: |-
+    CREATE MATERIALIZED VIEW v
+    WITH (DISTRIBUTION = ROUND_ROBIN)
+    AS SELECT c1 FROM pokes WHERE ABS(c1) > 0;
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# Test (truth table R5): qualified ref to unknown alias — should NOT flag.
+- statement: SELECT * FROM pokes WHERE ABS(unknown.c1) > 0;
+  changeType: 1
+
+# Test (truth table R4): qualified correlated ref to outer non-indexed column — should NOT flag.
+- statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM pokes2 o WHERE ABS(p.foo) > 0);
+  changeType: 1
+
+# Test (codex P2): inner derived-table alias shadows outer — qualified p.c1 resolves to inner derived, should NOT flag outer pokes.c1.
+- statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM (SELECT foo AS c1 FROM pokes2) p WHERE ABS(p.c1) > 0);
+  changeType: 1
+
+# Test (codex P2): inner CTE ref with qualified correlated outer ref — p.c1 is outer, should flag.
+- statement: |-
+    WITH c AS (SELECT foo AS c1 FROM pokes2)
+    SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM c WHERE ABS(p.c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Test (codex P2): inner derived with qualified correlated outer ref — p.c1 is outer, should flag.
+- statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM (SELECT foo FROM pokes2) d WHERE ABS(p.c1) > 0);
+  changeType: 1
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"ABS\" is applied to indexed column \"c1\" in the WHERE clause, which prevents index usage"
       startposition:
         line: 1
         column: 0
