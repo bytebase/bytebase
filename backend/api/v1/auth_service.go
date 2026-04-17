@@ -2,7 +2,11 @@ package v1
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"os"
@@ -31,11 +35,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
+	"github.com/bytebase/bytebase/backend/plugin/mailer"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
+	emailCodeLength         = 6
+	emailCodeExpiry         = 10 * time.Minute
+	emailCodeMaxAttempts    = 5
+	emailCodeResendCooldown = 60 * time.Second
+
 	// mfaTempTokenDuration is the duration for MFA temporary tokens.
 	// Following industry standards (Okta: 5 minutes, Auth0: 10 minutes, AWS Cognito: 3 minutes).
 	// A short duration reduces the attack window for TOTP brute-force attempts.
@@ -97,7 +107,8 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 
 	// 2. Resolve workspace early so all subsequent checks can use it.
 	// Login is allow_without_credential, so workspace is NOT in the context from auth middleware.
-	workspaceID, err := s.resolveWorkspaceForLogin(ctx, loginUser)
+	preferredWS, _ := parseOptionalWorkspace(request.Workspace)
+	workspaceID, err := s.resolveWorkspaceForLogin(ctx, loginUser, preferredWS)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
@@ -132,10 +143,6 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
-		return false
-	}
-
 	restriction, err := getAccountRestriction(
 		ctx,
 		s.store,
@@ -148,16 +155,25 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
+	// Don't need to reset password if password signin is not allowed.
+	if restriction.DisallowPasswordSignin {
+		return false
+	}
+
 	if user.Profile.LastLoginTime == nil {
 		if !restriction.PasswordRestriction.GetRequireResetPasswordForFirstLogin() {
 			return false
 		}
 		iamPolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 		if err != nil {
-			slog.Error("failed to get workspace IAM policy", log.BBError(err))
+			slog.Error("failed to get workspace IAM policy", log.BBError(err), slog.String("workspace", workspaceID))
 			return false
 		}
-		count, _ := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy, s.profile.SaaS)
+		count, err := countUsersInIamPolicy(ctx, s.store, workspaceID, iamPolicy.Policy, s.profile.SaaS)
+		if err != nil {
+			slog.Error("failed to count users in workspace IAM policy", log.BBError(err), slog.String("workspace", workspaceID))
+			return false
+		}
 		// The 1st workspace admin login don't need to reset the password
 		return count > 1
 	}
@@ -203,16 +219,35 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already registered", request.Email))
 	}
 
-	// Step 1: Resolve workspace — check if user belongs to an existing workspace.
-	existingWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-		Email:          request.Email,
-		IncludeAllUser: !s.profile.SaaS,
-	})
+	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
+	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
+	targetWorkspaceID, err := s.resolveWorkspaceIDByEmail(ctx, request.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspaces"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
 
-	var workspaceID string
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		targetWorkspaceID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if restriction.DisallowSignup {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace %v", targetWorkspaceID))
+	}
+	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
+		return nil, err
+	}
+
+	workspaceID, err := s.provisionWorkspaceForNewUser(ctx, request.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
+	}
+
 	// Announce the workspace on every exit path so early-failure cases
 	// (DisallowSignup, password restriction, CreateUser failure, …) still
 	// produce audit entries for invited/self-hosted signups where the
@@ -221,37 +256,6 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	// (correctly) unaudited — there's genuinely no workspace to attribute
 	// them to.
 	defer func() { common.SetAuditWorkspaceID(ctx, workspaceID) }()
-
-	isMember := existingWS != nil
-	if isMember {
-		workspaceID = existingWS.ResourceID
-	} else if !s.profile.SaaS {
-		// Self-hosted: join the existing workspace (will be added as member in step 3).
-		// No workspace membership found. Check if any workspace exists.
-		existingWsID, err := s.store.GetWorkspaceID(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check workspace"))
-		}
-
-		workspaceID = existingWsID
-	}
-
-	restriction, err := getAccountRestriction(
-		ctx,
-		s.store,
-		s.licenseService,
-		s.profile.SaaS,
-		workspaceID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if restriction.DisallowSignup {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace %v", workspaceID))
-	}
-	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
-		return nil, err
-	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -269,34 +273,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 
-	// Step 3: Resolve workspace if not yet assigned.
-	if workspaceID == "" {
-		// Create a new workspace with the user as admin.
-		wsID, err := common.RandomString(16)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate workspace ID"))
-		}
-		ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
-			ResourceID:         wsID,
-			Payload:            &storepb.WorkspacePayload{Title: "Default workspace"},
-			AdditionalSettings: s.getAdditionalWorkspaceSettings(),
-		}, request.Email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workspace"))
-		}
-		workspaceID = ws.ResourceID
-	} else if !isMember {
-		// Self-hosted: add user as workspace member to the existing workspace.
-		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-			Workspace: workspaceID,
-			Member:    common.FormatUserEmail(request.Email),
-			Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
-		}); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to add user to workspace"))
-		}
-	}
-
-	// Step 4: Generate token and finalize login.
+	// Step 3: Generate token and finalize login.
 	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 	token, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, tokenDuration)
 	if err != nil {
@@ -345,6 +322,94 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	response.User = v1User
 
 	return resp, nil
+}
+
+// resolveWorkspaceIDByEmail determines which workspace a signing-up email would
+// land in WITHOUT mutating anything. Used by signup/signup-via-code to look up the
+// applicable workspace restriction before creating a user or provisioning workspaces, so
+// a rejected signup doesn't leave orphan state behind. Returns empty for SaaS brand-new
+// signup (no pre-invite, no workspace) — the caller should apply default restriction.
+func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email string) (string, error) {
+	existingWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		Email:          email,
+		IncludeAllUser: !s.profile.SaaS,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to find workspaces")
+	}
+	if existingWS != nil {
+		return existingWS.ResourceID, nil
+	}
+	if !s.profile.SaaS {
+		singletonID, err := s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to resolve singleton workspace")
+		}
+		return singletonID, nil
+	}
+	return "", nil
+}
+
+// provisionWorkspaceForNewUser returns a workspace ID for a freshly-created user.
+// If the email was pre-invited to existing workspaces (via IAM), returns the first one.
+// Otherwise creates a new workspace (SaaS: per-user; self-hosted: joins the singleton).
+// Called by both the Signup RPC and the email-code signup branch of Login.
+func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email string) (string, error) {
+	// Step 1: Resolve the target workspace (pre-invited, self-host singleton, or empty for
+	// SaaS brand-new). PatchWorkspaceIamPolicy below is idempotent, so we can unconditionally
+	// call it for self-host without distinguishing "already a member" from "newly joining".
+	workspaceID, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	if err != nil {
+		return "", err
+	}
+
+	if workspaceID != "" {
+		if !s.profile.SaaS {
+			// Self-hosted: ensure the user is a member of the (singleton or pre-invited) workspace.
+			if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+				Workspace: workspaceID,
+				Member:    common.FormatUserEmail(email),
+				Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+			}); err != nil {
+				return "", errors.Wrapf(err, "failed to add user to workspace")
+			}
+		}
+		return workspaceID, nil
+	}
+
+	// Step 2: No existing workspace — create a new one with the user as admin.
+	wsID, err := common.RandomString(16)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate workspace ID")
+	}
+	ws, err := s.store.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID:         wsID,
+		Payload:            &storepb.WorkspacePayload{Title: "Default workspace"},
+		AdditionalSettings: s.getAdditionalWorkspaceSettings(),
+	}, email)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create workspace")
+	}
+
+	// TODO(ed): check this later.
+	// When EMAIL_CONFIG is set, enable email code signin for the new workspace.
+	if os.Getenv("EMAIL_CONFIG") != "" {
+		profile, err := s.store.GetWorkspaceProfileSetting(ctx, ws.ResourceID)
+		if err != nil {
+			slog.Warn("failed to get workspace profile for email code signin patch", log.BBError(err))
+		} else {
+			profile.AllowEmailCodeSignin = true
+			if _, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
+				Name:      storepb.SettingName_WORKSPACE_PROFILE,
+				Workspace: ws.ResourceID,
+				Value:     profile,
+			}); err != nil {
+				slog.Warn("failed to enable allow_email_code_signin for new workspace", log.BBError(err))
+			}
+		}
+	}
+
+	return ws.ResourceID, nil
 }
 
 // Logout is the auth logout method.
@@ -603,7 +668,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 	// User login through global SSO, then we should auth-resolve the workspace id.
 	if user != nil && workspaceID == "" {
-		wsID, err := s.resolveWorkspaceForLogin(ctx, user)
+		wsID, err := s.resolveWorkspaceForLogin(ctx, user, "")
 		if err != nil {
 			slog.Warn("failed to resolve workspace", slog.String("user", user.Email), log.BBError(err))
 		}
@@ -881,6 +946,10 @@ func (s *AuthService) authenticateLogin(ctx context.Context, request *v1pb.Login
 		return s.getOrCreateUserWithIDP(ctx, request)
 	}
 
+	if request.EmailCode != nil && *request.EmailCode != "" {
+		return s.authenticateEmailCodeLogin(ctx, request)
+	}
+
 	return s.getAndVerifyUser(ctx, request)
 }
 
@@ -938,20 +1007,26 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		return nil
 	}
 
-	// Check disallow password signin when not through IDP
+	restriction, err := getAccountRestriction(
+		ctx,
+		s.store,
+		s.licenseService,
+		s.profile.SaaS,
+		workspaceID,
+	)
+	if err != nil {
+		return err
+	}
 	if request.GetIdpName() == "" {
-		restriction, err := getAccountRestriction(
-			ctx,
-			s.store,
-			s.licenseService,
-			s.profile.SaaS,
-			workspaceID,
-		)
-		if err != nil {
-			return err
+		if request.Password != "" {
+			if restriction.DisallowPasswordSignin {
+				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
+			}
 		}
-		if restriction.DisallowPasswordSignin {
-			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
+		if request.EmailCode != nil && *request.EmailCode != "" {
+			if !restriction.AllowEmailCodeSignin {
+				return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+			}
 		}
 	}
 
@@ -1004,9 +1079,13 @@ func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMe
 
 // resolveWorkspaceForLogin determines the workspace for a login token.
 // For SA/WI: looks up the account record to get workspace.
-// For END_USER: prefers the last login workspace (from user profile) if still valid,
-// otherwise falls back to the first workspace from IAM membership.
-func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.UserMessage) (string, error) {
+// For END_USER: resolution order:
+//  1. preferredWorkspaceID (from the login request's ?workspace= hint, e.g. invite links)
+//  2. Last login workspace (from user profile)
+//  3. First workspace from IAM membership
+//
+// Each candidate is validated for membership before use.
+func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.UserMessage, preferredWorkspaceID string) (string, error) {
 	// Determine member name format based on user type.
 	switch user.Type {
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
@@ -1021,6 +1100,22 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 		return "", errors.Errorf("service account %q not found", user.Email)
 	case storepb.PrincipalType_END_USER:
 		includeAllUser := !s.profile.SaaS
+
+		// Prefer the workspace from the login request hint (e.g. invite link).
+		if preferredWorkspaceID != "" {
+			ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+				WorkspaceID:    &preferredWorkspaceID,
+				Email:          user.Email,
+				IncludeAllUser: includeAllUser,
+			})
+			if err != nil {
+				return "", errors.Wrap(err, "failed to find workspace")
+			}
+			if ws != nil {
+				return ws.ResourceID, nil
+			}
+			// Not a member of preferred workspace — fall through.
+		}
 
 		// Prefer the last login workspace if it's still valid.
 		if lastWS := user.Profile.GetLastLoginWorkspace(); lastWS != "" {
@@ -1369,7 +1464,14 @@ func getAccountRestriction(
 	restriction := &v1pb.Restriction{
 		DisallowSignup:         false,
 		DisallowPasswordSignin: false,
+		AllowEmailCodeSignin:   false,
+		PasswordResetEnabled:   false,
 		PasswordRestriction:    defaultPasswordRestriction,
+	}
+
+	emailSetting, err := resolvePreLoginEmailSetting(ctx, stores, workspaceID)
+	if err != nil {
+		return nil, err
 	}
 
 	if workspaceID != "" {
@@ -1382,6 +1484,7 @@ func getAccountRestriction(
 			PasswordRestriction:    convertToV1PasswordRestriction(setting.GetPasswordRestriction()),
 			DisallowSignup:         setting.DisallowSignup,
 			DisallowPasswordSignin: setting.DisallowPasswordSignin,
+			AllowEmailCodeSignin:   setting.AllowEmailCodeSignin,
 		}
 
 		// Override if features are not enabled
@@ -1400,9 +1503,397 @@ func getAccountRestriction(
 	if saas {
 		restriction.DisallowSignup = true
 		restriction.DisallowPasswordSignin = true
+		restriction.AllowEmailCodeSignin = true
+	}
+
+	if !restriction.DisallowPasswordSignin {
+		restriction.PasswordResetEnabled = emailSetting != nil
+	}
+	if emailSetting == nil {
+		restriction.AllowEmailCodeSignin = false
 	}
 
 	return restriction, nil
+}
+
+// RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
+func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Request[v1pb.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
+	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	if email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
+	}
+
+	// Send synchronously, but swallow errors to avoid email enumeration — a fast silent
+	// "success" for unknown emails must be indistinguishable from an SMTP failure for
+	// known ones. Errors are logged server-side for operator visibility.
+	if err := s.sendEmailVerificationCode(
+		ctx,
+		req.Msg.Workspace,
+		email,
+		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
+		"[Bytebase] Reset your password",
+		"Hi,\n\nYour password reset code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+	); err != nil {
+		slog.Warn("failed to send password reset email", slog.String("to", email), log.BBError(err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// ResetPassword verifies the 6-digit code and updates the user's password.
+// Also revokes all refresh tokens to force re-login.
+func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1pb.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error) {
+	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	if email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
+	}
+	if req.Msg.Code == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("code is required"))
+	}
+	if req.Msg.NewPassword == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("new_password is required"))
+	}
+
+	codeRow, err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_PASSWORD_RESET, req.Msg.Code)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enforce the workspace's password restriction on the new password — the workspace
+	// whose policy applies is the one captured on the code row at send time.
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if err := validatePasswordWithRestriction(req.Msg.NewPassword, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
+		return nil, err
+	}
+
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Msg.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash password"))
+	}
+	passwordHashStr := string(passwordHash)
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		Email:        &user.Email,
+		PasswordHash: &passwordHashStr,
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update password"))
+	}
+
+	if err := s.store.DeleteWebRefreshTokensByUser(ctx, user.Email); err != nil {
+		slog.Warn("failed to revoke refresh tokens after password reset", log.BBError(err))
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// parseOptionalWorkspace extracts the workspace ID from an optional "workspaces/{id}"
+// resource name. Returns empty when the caller has no workspace context yet
+// (SaaS brand-new signup flow).
+func parseOptionalWorkspace(name *string) (string, error) {
+	if name == nil || *name == "" {
+		return "", nil
+	}
+	return common.GetWorkspaceID(*name)
+}
+
+// generateEmailCode returns a cryptographically-random 6-digit numeric code.
+func generateEmailCode() (string, error) {
+	const digits = "0123456789"
+	b := make([]byte, emailCodeLength)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	for i := range b {
+		b[i] = digits[int(b[i])%len(digits)]
+	}
+	return string(b), nil
+}
+
+// hashEmailCode returns HMAC-SHA256(code) hex-encoded, keyed with the server's auth secret.
+// HMAC with a server-side secret (vs. bare SHA-256) prevents offline brute force of the
+// 10^6-size code space if the DB is ever compromised — the attacker would also need the
+// auth secret to verify candidate codes.
+func (s *AuthService) hashEmailCode(code string) string {
+	mac := hmac.New(sha256.New, []byte(s.secret))
+	mac.Write([]byte(code))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// SendEmailLoginCode sends a 6-digit verification code. Always returns success
+// (no email enumeration). Rate limit: 60-sec resend cooldown enforced atomically
+// via the store — effective cap ≈ 60 sends/hour/email.
+func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Request[v1pb.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error) {
+	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	if email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
+	}
+	workspaceID, err := parseOptionalWorkspace(req.Msg.Workspace)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// Gate on AllowEmailCodeSignin — no point emailing a code the workspace won't accept.
+	// getAccountRestriction handles all cases (including empty workspace for brand-new SaaS
+	// signup, where it resolves via EMAIL_CONFIG + SaaS override).
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if !restriction.AllowEmailCodeSignin {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+	}
+
+	// Send synchronously so the caller learns about actionable failures (missing EMAIL
+	// setting, SMTP unreachable, etc.). No enumeration risk here: LOGIN always attempts to
+	// send regardless of whether the email exists (sign-up is handled on verify).
+	if err := s.sendEmailVerificationCode(
+		ctx,
+		req.Msg.Workspace,
+		email,
+		storepb.EmailVerificationCodePurpose_LOGIN,
+		"[Bytebase] Your sign-in code",
+		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+	); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// resolvePreLoginEmailSetting returns the EMAIL setting to use for unauthenticated flows
+// (email-code sign-in, password reset). Resolution order:
+//  1. If `workspaceID` is provided, use that workspace's EMAIL setting. The frontend
+//     resolves the workspace (from the route query or actuator context) and always passes
+//     it when one exists — self-host, multi-workspace SaaS, and pre-invited emails all
+//     flow through this path.
+//  2. EMAIL_CONFIG env var — deployment-wide fallback for SaaS brand-new signup, where
+//     the caller has no workspace context yet (no pre-invite, no workspace in the URL).
+func resolvePreLoginEmailSetting(
+	ctx context.Context,
+	stores *store.Store,
+	workspaceID string,
+) (*storepb.EmailSetting, error) {
+	if workspaceID != "" {
+		emailSettingMsg, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to load email setting")
+		}
+		if emailSettingMsg == nil {
+			return nil, nil
+		}
+		es, ok := emailSettingMsg.Value.(*storepb.EmailSetting)
+		if !ok {
+			return nil, nil
+		}
+		return es, nil
+	}
+
+	if raw := os.Getenv("EMAIL_CONFIG"); raw != "" {
+		emailSetting := &storepb.EmailSetting{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), emailSetting); err != nil {
+			return nil, errors.Wrap(err, "failed to parse EMAIL_CONFIG")
+		}
+		return emailSetting, nil
+	}
+
+	return nil, errors.Errorf("no email setting configured")
+}
+
+// sendEmailVerificationCode generates a code, atomically stores its hash (subject to cooldown),
+// and emails the plain code. Returns nil on a successful send as well as on silent-skip paths
+// (cooldown active, or PASSWORD_RESET for an unknown email) — both are intentionally
+// indistinguishable to the caller, since both correspond to "no new email was delivered".
+// Returns an error only on actionable failures (missing EMAIL setting, SMTP failure, DB error).
+// Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
+// to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
+// the account exists. `bodyFmt` must contain one %s for the 6-digit code.
+func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceName *string, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
+	// For password reset, only send to existing principals — no upsert, no email for unknown addresses.
+	// Prevents arbitrary email spam. LOGIN intentionally skips this check (also covers signup).
+	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
+		account, err := s.store.GetAccountByEmail(ctx, email)
+		if err != nil {
+			return errors.Wrap(err, "failed to look up account for password reset")
+		}
+		if account == nil || account.Type != storepb.PrincipalType_END_USER {
+			return nil // silent: account doesn't exist
+		}
+	}
+
+	workspaceID, err := parseOptionalWorkspace(workspaceName)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse workspace id")
+	}
+
+	// Resolve the EMAIL setting FIRST — fail fast if misconfigured so we don't write a
+	// verification row we can't actually deliver.
+	emailSetting, err := resolvePreLoginEmailSetting(ctx, s.store, workspaceID)
+	if err != nil {
+		return err
+	}
+	if emailSetting == nil {
+		return errors.Errorf("cannot found email config for workspace %v", workspaceID)
+	}
+
+	code, err := generateEmailCode()
+	if err != nil {
+		return errors.Wrap(err, "failed to generate code")
+	}
+
+	now := time.Now()
+	sent, err := s.store.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
+		Email:      email,
+		Purpose:    purpose,
+		CodeHash:   s.hashEmailCode(code),
+		ExpiresAt:  now.Add(emailCodeExpiry),
+		LastSentAt: now,
+		Workspace:  workspaceID,
+	}, emailCodeResendCooldown)
+	if err != nil {
+		return errors.Wrap(err, "failed to upsert verification code")
+	}
+	if !sent {
+		return nil // cooldown active — silent skip
+	}
+
+	sender, err := mailer.NewSender(emailSetting)
+	if err != nil {
+		return errors.Wrap(err, "failed to create mail sender")
+	}
+
+	body := fmt.Sprintf(bodyFmt, code, int(emailCodeExpiry.Minutes()))
+	if err := sender.Send(ctx, &mailer.SendRequest{
+		To:       []string{email},
+		Subject:  subject,
+		TextBody: body,
+	}); err != nil {
+		return errors.Wrap(err, "failed to send email")
+	}
+	return nil
+}
+
+// verifyEmailCode checks a submitted code against the stored row.
+// Enforces expiry, attempt limit (5), and constant-time hash compare.
+// On successful match, deletes the row (one-time use) and returns it so the
+// caller can use its captured workspace context (e.g. for gate checks and
+// workspace assignment on the email-code signup path).
+func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, submittedCode string) (*store.EmailVerificationCodeMessage, error) {
+	row, err := s.store.GetEmailVerificationCode(ctx, email, purpose)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get email verification code"))
+	}
+	if row == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
+	}
+	if time.Now().After(row.ExpiresAt) {
+		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
+	}
+	if row.Attempts >= emailCodeMaxAttempts {
+		_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("too many attempts"))
+	}
+	if subtle.ConstantTimeCompare([]byte(s.hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
+		_ = s.store.IncrementEmailVerificationCodeAttempts(ctx, email, purpose)
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
+	}
+	_ = s.store.DeleteEmailVerificationCode(ctx, email, purpose)
+	return row, nil
+}
+
+// authenticateEmailCodeLogin handles the email + 6-digit code flow.
+// Existing users: verify code → return user (downstream pipeline handles workspace-level gates).
+// Unknown emails: verify code → gate checks on pre-invited workspace → create user + provision workspace.
+func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	if request.Password != "" || request.GetIdpName() != "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email_code is mutually exclusive with password and idp_name"))
+	}
+	email := strings.ToLower(strings.TrimSpace(request.Email))
+	if email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
+	}
+
+	codeRow, err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, *request.EmailCode)
+	if err != nil {
+		return nil, err
+	}
+
+	// Existing user → return. allow_email_code_signin is checked later in validateLoginPermissions
+	// against the actually-resolved login workspace (which may not match the send-time workspace
+	// for multi-workspace users — resolveWorkspaceForLogin prefers LastLoginWorkspace).
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
+	}
+	if user != nil {
+		return user, nil
+	}
+
+	// Unknown email → signup path. Gate checks run BEFORE user creation to prevent orphan accounts.
+	// We only consult AllowEmailCodeSignin here: DisallowSignup governs password self-service
+	// signup (the Signup RPC), not email-code onboarding — the two paths are independent.
+	// Admins who want to block new users via email-code set AllowEmailCodeSignin=false.
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	if !restriction.AllowEmailCodeSignin {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
+	}
+	// Signup is always allowed for SaaS
+	if !s.profile.SaaS {
+		if restriction.DisallowSignup {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
+		}
+	}
+
+	// Provision workspace BEFORE creating the user so retries are self-healing: if user
+	// creation fails, the next attempt's FindWorkspace(email) finds the already-provisioned
+	// workspace via its IAM binding and returns it. The reverse order would leave a user
+	// without a workspace, and subsequent retries would early-return via GetUserByEmail and
+	// never re-run provisioning — permanently stuck. Matches the Signup RPC's ordering.
+	if _, err := s.provisionWorkspaceForNewUser(ctx, email); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
+	}
+
+	// Create principal with random bcrypt password.
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate random password"))
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword(randomBytes, bcrypt.DefaultCost)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to hash password"))
+	}
+
+	// Derive display name from email local-part.
+	name := email
+	if i := strings.Index(email, "@"); i > 0 {
+		name = email[:i]
+	}
+
+	newUser, err := s.store.CreateUser(ctx, &store.UserMessage{
+		Email:        email,
+		Name:         name,
+		Type:         storepb.PrincipalType_END_USER,
+		PasswordHash: string(passwordHash),
+		Profile:      &storepb.UserProfile{},
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
+	}
+
+	return newUser, nil
 }
 
 // getAdditionalWorkspaceSettings returns extra settings to inject during workspace creation.

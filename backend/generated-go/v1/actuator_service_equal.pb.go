@@ -55,6 +55,9 @@ func (x *Restriction) Equal(y *Restriction) bool {
 	if x.AllowEmailCodeSignin != y.AllowEmailCodeSignin {
 		return false
 	}
+	if x.PasswordResetEnabled != y.PasswordResetEnabled {
+		return false
+	}
 	return true
 }
 

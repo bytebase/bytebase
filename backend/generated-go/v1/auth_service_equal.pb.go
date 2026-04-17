@@ -37,6 +37,9 @@ func (x *LoginRequest) Equal(y *LoginRequest) bool {
 	if p, q := x.EmailCode, y.EmailCode; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
+	if p, q := x.Workspace, y.Workspace; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 

@@ -94,6 +94,14 @@ export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
    * @generated from field: bool allow_email_code_signin = 4;
    */
   allowEmailCodeSignin: boolean;
+
+  /**
+   * Whether password reset via email is available for this workspace.
+   * True when the workspace (or deployment) has an email setting configured.
+   *
+   * @generated from field: bool password_reset_enabled = 5;
+   */
+  passwordResetEnabled: boolean;
 };
 
 /**

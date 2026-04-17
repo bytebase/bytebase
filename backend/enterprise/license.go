@@ -252,6 +252,7 @@ func (s *LicenseService) loadSubscriptionFromDB(ctx context.Context, workspaceID
 
 	slog.Debug(
 		"Load valid license",
+		slog.String("workspace", workspaceID),
 		slog.String("plan", subscription.Plan.String()),
 		slog.Time("expiresAt", subscription.ExpiresTime.AsTime()),
 		slog.Int("activeInstances", int(subscription.ActiveInstances)),

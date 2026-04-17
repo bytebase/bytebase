@@ -2752,6 +2752,7 @@ Request message for getting actuator information.
 | disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
 | password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password complexity and restriction requirements. |
 | allow_email_code_signin | [bool](#bool) |  | Whether email &#43; 6-digit code signin is enabled for this workspace. |
+| password_reset_enabled | [bool](#bool) |  | Whether password reset via email is available for this workspace. True when the workspace (or deployment) has an email setting configured. |
 
 
 
@@ -3559,6 +3560,7 @@ Context for identity provider authentication.
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
 | mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
 | email_code | [string](#string) | optional | 6-digit code from email for passwordless login/signup. Pairs with `email`. Mutually exclusive with `password` and `idp_name`. |
+| workspace | [string](#string) | optional | Preferred workspace to land in after login. If the user is a member of this workspace, the token is issued for it; otherwise falls back to the default resolution (last login workspace → first membership). Typically populated from the ?workspace= query parameter in invite links. Format: workspaces/{workspace} |
 
 
 
