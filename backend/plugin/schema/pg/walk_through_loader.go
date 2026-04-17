@@ -248,6 +248,18 @@ func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
 				funcMeta: fn,
 			})
 		}
+		for _, proc := range sm.Procedures {
+			out = append(out, &wtObjectEntry{
+				kind:   kindWTFunction,
+				schema: sm.Name,
+				name:   proc.Name,
+				funcMeta: &storepb.FunctionMetadata{
+					Name:       proc.Name,
+					Definition: proc.Definition,
+					Signature:  proc.Signature,
+				},
+			})
+		}
 	}
 	return out
 }

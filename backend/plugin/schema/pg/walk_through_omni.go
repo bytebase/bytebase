@@ -76,7 +76,7 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 	// Step 4: Diff before/after catalogs and apply to original metadata.
 	diff := catalog.Diff(catBefore, catAfter)
 	if diff != nil && !diff.IsEmpty() {
-		newProto := applyDiffToMetadata(d.GetProto(), catAfter, diff)
+		newProto := applyDiffToMetadata(d.GetProto(), catBefore, catAfter, diff)
 		newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_POSTGRES, true)
 		d.ReplaceFrom(newMetadata)
 	}

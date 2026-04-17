@@ -14,7 +14,7 @@ import (
 // applyDiffToMetadata applies a SchemaDiff (from user DDL execution) to a
 // clone of the original metadata proto, producing the post-DDL metadata.
 // The original proto is NOT modified.
-func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.Catalog, diff *catalog.SchemaDiff) *storepb.DatabaseSchemaMetadata {
+func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, catBefore, catAfter *catalog.Catalog, diff *catalog.SchemaDiff) *storepb.DatabaseSchemaMetadata {
 	if diff == nil || diff.IsEmpty() {
 		return original
 	}
@@ -44,9 +44,9 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 		sm := findOrCreateSchema(result, rel.SchemaName)
 		switch rel.Action {
 		case catalog.DiffAdd:
-			addRelation(sm, cat, rel)
+			addRelation(sm, catAfter, rel)
 		case catalog.DiffModify:
-			modifyRelation(sm, cat, rel)
+			modifyRelation(sm, catBefore, catAfter, rel)
 		default:
 		}
 	}
@@ -62,13 +62,13 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 		switch seq.Action {
 		case catalog.DiffAdd:
 			if seq.To != nil {
-				sm.Sequences = append(sm.Sequences, sequenceToProto(cat, seq.To))
+				sm.Sequences = append(sm.Sequences, sequenceToProto(catAfter, seq.To))
 			}
 		case catalog.DiffModify:
 			if seq.To != nil {
 				for i, s := range sm.Sequences {
 					if s.Name == seq.Name {
-						sm.Sequences[i] = sequenceToProto(cat, seq.To)
+						sm.Sequences[i] = sequenceToProto(catAfter, seq.To)
 						break
 					}
 				}
@@ -120,9 +120,9 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 		case catalog.DiffAdd:
 			if f.To != nil {
 				if isProcedure {
-					sm.Procedures = append(sm.Procedures, procedureToProto(cat, f.To, f.Identity))
+					sm.Procedures = append(sm.Procedures, procedureToProto(catAfter, f.To, f.Identity))
 				} else {
-					sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+					sm.Functions = append(sm.Functions, functionToProto(catAfter, f.To, f.Identity))
 				}
 			}
 		case catalog.DiffModify:
@@ -133,9 +133,9 @@ func applyDiffToMetadata(original *storepb.DatabaseSchemaMetadata, cat *catalog.
 			}
 			if f.To != nil {
 				if isProcedure {
-					sm.Procedures = append(sm.Procedures, procedureToProto(cat, f.To, f.Identity))
+					sm.Procedures = append(sm.Procedures, procedureToProto(catAfter, f.To, f.Identity))
 				} else {
-					sm.Functions = append(sm.Functions, functionToProto(cat, f.To, f.Identity))
+					sm.Functions = append(sm.Functions, functionToProto(catAfter, f.To, f.Identity))
 				}
 			}
 		default:
@@ -197,7 +197,7 @@ func dropRelation(sm *storepb.SchemaMetadata, rel catalog.RelationDiffEntry) {
 	sm.MaterializedViews = removeMatViewByName(sm.MaterializedViews, name)
 }
 
-func modifyRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func modifyRelation(sm *storepb.SchemaMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	if rel.To == nil {
 		return
 	}
@@ -210,7 +210,7 @@ func modifyRelation(sm *storepb.SchemaMetadata, cat *catalog.Catalog, rel catalo
 		}
 		applyColumnDiffs(tbl, cat, rel)
 		applyIndexDiffs(tbl, cat, rel)
-		applyConstraintDiffs(tbl, cat, rel)
+		applyConstraintDiffs(tbl, catBefore, cat, rel)
 	case 'v':
 		sm.Views = removeViewByName(sm.Views, rel.Name)
 		sm.Views = append(sm.Views, relationToViewProto(cat, rel.To))
@@ -267,23 +267,23 @@ func applyIndexDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catal
 	}
 }
 
-func applyConstraintDiffs(tbl *storepb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+func applyConstraintDiffs(tbl *storepb.TableMetadata, catBefore, catAfter *catalog.Catalog, rel catalog.RelationDiffEntry) {
 	for _, cd := range rel.Constraints {
 		switch cd.Action {
 		case catalog.DiffAdd:
 			if cd.To != nil {
-				addConstraintToTable(tbl, cat, rel, cd.To)
+				addConstraintToTable(tbl, catAfter, rel, cd.To)
 			}
 		case catalog.DiffDrop:
 			if cd.From != nil {
-				removeConstraintFromTable(tbl, cat, cd.From)
+				removeConstraintFromTable(tbl, catBefore, cd.From)
 			}
 		case catalog.DiffModify:
 			if cd.From != nil {
-				removeConstraintFromTable(tbl, cat, cd.From)
+				removeConstraintFromTable(tbl, catBefore, cd.From)
 			}
 			if cd.To != nil {
-				addConstraintToTable(tbl, cat, rel, cd.To)
+				addConstraintToTable(tbl, catAfter, rel, cd.To)
 			}
 		default:
 		}

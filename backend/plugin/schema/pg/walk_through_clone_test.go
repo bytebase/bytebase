@@ -109,7 +109,7 @@ func TestClone_WalkThroughIntegration(t *testing.T) {
 	require.False(t, diff.IsEmpty())
 
 	// Apply diff to original metadata
-	newProto := applyDiffToMetadata(meta, catAfter, diff)
+	newProto := applyDiffToMetadata(meta, catBefore, catAfter, diff)
 	newMeta := model.NewDatabaseMetadata(newProto, nil, nil, storepb.Engine_POSTGRES, true)
 
 	// Verify: users table should have 3 columns
