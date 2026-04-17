@@ -2,9 +2,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/bytebase/omni/pg/catalog"
 
@@ -15,62 +12,40 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// WalkThroughOmni performs DDL simulation using omni catalog.Exec().
-// It replaces the ANTLR-based walkthrough with the following flow:
-//  1. GetDatabaseDefinition(metadata) → schemaDDL
-//  2. catalog.Exec(schemaDDL) → load existing schema state
-//  3. catalog.Exec(userSQL) → execute user DDL
-//  4. Map errors → *storepb.Advice
-//  5. Convert updated catalog → DatabaseMetadata (for downstream rules)
+// WalkThroughOmni performs DDL simulation using omni catalog.
+//  1. loadWalkThroughCatalog(metadata) → load existing schema into catalog
+//  2. catalog.Exec(userSQL) → execute user DDL, collect per-statement Changes
+//  3. Map exec errors → *storepb.Advice
+//  4. Merge Changes into original metadata → FinalMetadata for downstream rules
 func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _ []base.AST) *storepb.Advice {
 	if ctx.RawSQL == "" {
 		return nil
 	}
 
-	// Step 1: Generate DDL from current schema state.
-	schemaDDL, err := schema.GetDatabaseDefinition(
-		storepb.Engine_POSTGRES,
-		schema.GetDefinitionContext{},
-		d.GetProto(),
-	)
-	if err != nil {
+	// Step 1: Load existing schema into two catalogs — one as snapshot, one for exec.
+	// TODO(BYT-9215): Thread a real context.Context through the call chain instead of using context.Background().
+	// WalkThroughContext is not a context.Context and the caller does not pass one.
+	catBefore := catalog.New()
+	if ctx.SessionUser != "" {
+		catBefore.SetSessionUser(ctx.SessionUser)
+	}
+	if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
+		catBefore.SetSearchPath(searchPath)
+	}
+	if err := loadWalkThroughCatalog(context.Background(), catBefore, d.GetProto()); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),
-			Title:         "Failed to generate schema DDL",
+			Title:         "Failed to load schema",
 			Content:       err.Error(),
 			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
-	// Step 2: Create catalog and load existing schema.
-	c := catalog.New()
-	if ctx.SessionUser != "" {
-		c.SetSessionUser(ctx.SessionUser)
-	}
+	catAfter := catBefore.Clone()
 
-	// Set initial search path from metadata config.
-	if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
-		c.SetSearchPath(searchPath)
-	}
-
-	if schemaDDL != "" {
-		// Load existing schema. Use ContinueOnError so partial schemas
-		// (e.g. columns without types in metadata) still load what they can.
-		if _, err := c.Exec(schemaDDL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-			return &storepb.Advice{
-				Status:        storepb.Advice_ERROR,
-				Code:          code.DDLSimulationFailed.Int32(),
-				Title:         "Failed to load schema DDL",
-				Content:       err.Error(),
-				StartPosition: &storepb.Position{Line: 0},
-			}
-		}
-	}
-
-	// Step 3: Execute user SQL with ContinueOnError so that downstream
-	// rules can check FinalMetadata even when some statements fail.
-	results, execErr := c.Exec(ctx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
+	// Step 2: Execute user SQL on catAfter.
+	results, execErr := catAfter.Exec(ctx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
@@ -81,7 +56,7 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 		}
 	}
 
-	// Step 4: Report the first error from the simulation.
+	// Step 3: Report the first exec error.
 	for _, r := range results {
 		if r.Error == nil {
 			continue
@@ -98,11 +73,13 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 		}
 	}
 
-	// Step 5: Convert catalog state back to DatabaseMetadata for downstream rules.
-	newProto := catalogToProto(c)
-	extractViewDependencies(newProto)
-	newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_POSTGRES, true)
-	d.ReplaceFrom(newMetadata)
+	// Step 4: Diff before/after catalogs and apply to original metadata.
+	diff := catalog.Diff(catBefore, catAfter)
+	if diff != nil && !diff.IsEmpty() {
+		newProto := applyDiffToMetadata(d.GetProto(), catBefore, catAfter, diff)
+		newMetadata := model.NewDatabaseMetadata(newProto, nil, d.GetConfig(), storepb.Engine_POSTGRES, true)
+		d.ReplaceFrom(newMetadata)
+	}
 
 	return nil
 }
@@ -184,65 +161,6 @@ func getConfiguredSearchPath(d *model.DatabaseMetadata) []string {
 		searchPath = append(searchPath, item.Schema)
 	}
 	return searchPath
-}
-
-// catalogToProto converts the omni catalog state to a storepb.DatabaseSchemaMetadata proto.
-func catalogToProto(c *catalog.Catalog) *storepb.DatabaseSchemaMetadata {
-	dbMeta := &storepb.DatabaseSchemaMetadata{
-		Name: "postgres",
-	}
-
-	for _, s := range c.UserSchemas() {
-		schemaMeta := &storepb.SchemaMetadata{
-			Name: s.Name,
-		}
-
-		// Convert tables, views, materialized views.
-		// Sort relations for deterministic output.
-		relNames := make([]string, 0, len(s.Relations))
-		for name := range s.Relations {
-			relNames = append(relNames, name)
-		}
-		slices.Sort(relNames)
-
-		for _, relName := range relNames {
-			rel := s.Relations[relName]
-			switch rel.RelKind {
-			case 'r', 'p', 'f': // table, partitioned table, foreign table
-				schemaMeta.Tables = append(schemaMeta.Tables, relationToTableProto(c, rel))
-			case 'v':
-				schemaMeta.Views = append(schemaMeta.Views, relationToViewProto(c, rel))
-			case 'm':
-				schemaMeta.MaterializedViews = append(schemaMeta.MaterializedViews, relationToMatViewProto(c, rel))
-			default:
-			}
-		}
-
-		// Convert sequences.
-		seqNames := make([]string, 0, len(s.Sequences))
-		for name := range s.Sequences {
-			seqNames = append(seqNames, name)
-		}
-		slices.Sort(seqNames)
-
-		for _, seqName := range seqNames {
-			seq := s.Sequences[seqName]
-			schemaMeta.Sequences = append(schemaMeta.Sequences, &storepb.SequenceMetadata{
-				Name:      seq.Name,
-				DataType:  c.FormatType(seq.TypeOID, -1),
-				Start:     fmt.Sprintf("%d", seq.Start),
-				MinValue:  fmt.Sprintf("%d", seq.MinValue),
-				MaxValue:  fmt.Sprintf("%d", seq.MaxValue),
-				Increment: fmt.Sprintf("%d", seq.Increment),
-				Cycle:     seq.Cycle,
-				CacheSize: fmt.Sprintf("%d", seq.CacheValue),
-			})
-		}
-
-		dbMeta.Schemas = append(dbMeta.Schemas, schemaMeta)
-	}
-
-	return dbMeta
 }
 
 // relationToTableProto converts an omni Relation to a storepb.TableMetadata.
@@ -356,9 +274,9 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 				}
 			}
 			// Actions.
-			fk.OnUpdate = fkActionToString(con.FKUpdAction)
-			fk.OnDelete = fkActionToString(con.FKDelAction)
-			fk.MatchType = fkMatchToString(con.FKMatchType)
+			fk.OnUpdate = wtFKActionToString(con.FKUpdAction)
+			fk.OnDelete = wtFKActionToString(con.FKDelAction)
+			fk.MatchType = wtFKMatchToString(con.FKMatchType)
 			table.ForeignKeys = append(table.ForeignKeys, fk)
 		case 'c': // CHECK
 			table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
@@ -439,86 +357,4 @@ func relationToMatViewProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.
 	}
 
 	return mv
-}
-
-func fkActionToString(action byte) string {
-	switch action {
-	case 'a':
-		return "NO ACTION"
-	case 'r':
-		return "RESTRICT"
-	case 'c':
-		return "CASCADE"
-	case 'n':
-		return "SET NULL"
-	case 'd':
-		return "SET DEFAULT"
-	default:
-		return "NO ACTION"
-	}
-}
-
-func fkMatchToString(match byte) string {
-	switch match {
-	case 'f':
-		return "FULL"
-	case 'p':
-		return "PARTIAL"
-	default:
-		return "SIMPLE"
-	}
-}
-
-func extractViewDependencies(schemaMetadata *storepb.DatabaseSchemaMetadata) {
-	for _, s := range schemaMetadata.Schemas {
-		for _, view := range s.Views {
-			view.DependencyColumns = getViewDependencies(view.Definition, s.Name, schemaMetadata)
-		}
-		for _, mv := range s.MaterializedViews {
-			mv.DependencyColumns = getViewDependencies(mv.Definition, s.Name, schemaMetadata)
-		}
-	}
-}
-
-func getViewDependencies(viewDef string, schemaName string, fullSchemaMetadata *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
-	queryStatement := strings.TrimSpace(viewDef)
-	spans, err := base.GetQuerySpan(
-		context.Background(),
-		base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-				dbMetadata := model.NewDatabaseMetadata(fullSchemaMetadata, nil, nil, storepb.Engine_POSTGRES, false)
-				return databaseName, dbMetadata, nil
-			},
-			ListDatabaseNamesFunc: func(_ context.Context, _ string) ([]string, error) {
-				return []string{}, nil
-			},
-		},
-		storepb.Engine_POSTGRES,
-		[]base.Statement{{Text: queryStatement}},
-		"",
-		schemaName,
-		false,
-	)
-	if err != nil || len(spans) == 0 {
-		return []*storepb.DependencyColumn{}
-	}
-	span := spans[0]
-
-	dependencyMap := make(map[string]*storepb.DependencyColumn)
-	for sourceColumn := range span.SourceColumns {
-		key := fmt.Sprintf("%s.%s", sourceColumn.Schema, sourceColumn.Table)
-		if _, exists := dependencyMap[key]; !exists {
-			dependencyMap[key] = &storepb.DependencyColumn{
-				Schema: sourceColumn.Schema,
-				Table:  sourceColumn.Table,
-				Column: "*",
-			}
-		}
-	}
-
-	var dependencies []*storepb.DependencyColumn
-	for _, dep := range dependencyMap {
-		dependencies = append(dependencies, dep)
-	}
-	return dependencies
 }
