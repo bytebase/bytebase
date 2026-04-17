@@ -1634,6 +1634,11 @@
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",
           "self": "Allow querying the admin data source"
         },
+        "allow-email-code-signin": {
+          "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
+          "enable": "Allow signin with email code",
+          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
+        },
         "announcement": {
           "self": "Announcement"
         },
@@ -1671,11 +1676,6 @@
             "description": "Use issue to request, review, rollout, and version database changes, suitable for teams with access control and CI & CD workflow.",
             "self": "Workspace"
           }
-        },
-        "allow-email-code-signin": {
-          "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
-          "enable": "Allow signin with email code",
-          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
         },
         "disallow-password-signin": {
           "description": "Users cannot sign in with email & password, only SSO is allowed.",

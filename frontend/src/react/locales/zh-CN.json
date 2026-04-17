@@ -1634,6 +1634,11 @@
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",
           "self": "允许查询主数据源"
         },
+        "allow-email-code-signin": {
+          "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
+          "enable": "允许使用邮箱验证码登录",
+          "require-email-setting": "必须先配置邮件 (SMTP) 设置后才能启用。"
+        },
         "announcement": {
           "self": "公告"
         },
@@ -1671,11 +1676,6 @@
             "description": "使用工单来请求、审查、推出和版本数据库更改，适用于具有访问控制和 CI 与 CD 工作流的团队。",
             "self": "工作区"
           }
-        },
-        "allow-email-code-signin": {
-          "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
-          "enable": "允许使用邮箱验证码登录",
-          "require-email-setting": "必须先配置邮件 (SMTP) 设置后才能启用。"
         },
         "disallow-password-signin": {
           "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。",

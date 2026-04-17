@@ -1706,7 +1706,7 @@ func resolvePreLoginEmailSetting(
 		return emailSetting, nil
 	}
 
-	return nil, errors.Errorf("no email setting configured")
+	return nil, nil
 }
 
 // sendEmailVerificationCode generates a code, atomically stores its hash (subject to cooldown),

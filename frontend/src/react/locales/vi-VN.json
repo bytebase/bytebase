@@ -1634,6 +1634,11 @@
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
+        "allow-email-code-signin": {
+          "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
+          "enable": "Cho phép đăng nhập bằng mã qua email",
+          "require-email-setting": "Phải cấu hình cài đặt email (SMTP) trước khi bật tùy chọn này."
+        },
         "announcement": {
           "self": "Thông báo"
         },
@@ -1671,11 +1676,6 @@
             "description": "Sử dụng issue để yêu cầu, xem xét, triển khai và thay đổi phiên bản cơ sở dữ liệu, phù hợp với các nhóm có kiểm soát truy cập và quy trình làm việc CI & CD.",
             "self": "Không gian làm việc"
           }
-        },
-        "allow-email-code-signin": {
-          "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
-          "enable": "Cho phép đăng nhập bằng mã qua email",
-          "require-email-setting": "Phải cấu hình cài đặt email (SMTP) trước khi bật tùy chọn này."
         },
         "disallow-password-signin": {
           "description": "Người dùng không thể đăng nhập bằng email & mật khẩu, chỉ cho phép SSO.",
