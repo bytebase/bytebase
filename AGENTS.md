@@ -172,7 +172,6 @@ When writing or modifying queries on these tables:
   helpers — or extend the shared helper first
 - Collision tests use `ctl.server.StoreForTest()` — a test-only accessor. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
-- For the full pre-PR checklist, see `docs/pre-pr-checklist.md`
 
 ### Imports
 
@@ -187,6 +186,8 @@ When writing or modifying queries on these tables:
 - Be explicit but concise about error cases
 
 ## Pull Request Guidelines
+
+**Before running `gh pr create`, walk through [`docs/pre-pr-checklist.md`](docs/pre-pr-checklist.md).** It covers the breaking-change review, composite-PK query safety, lint/test gates, and SonarCloud properties — the checks that lint and CI can't catch on their own.
 
 - **Code Review** — Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
 - **Author Responsibility** — Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests
