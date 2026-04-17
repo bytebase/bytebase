@@ -45,15 +45,16 @@ export function AsideTree() {
     selection,
     scrollStatus,
     rebuildTree,
+    treeBuildVersion,
   } = context;
 
   const [searchPattern, setSearchPattern] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Tree data
+  // Tree data — treeBuildVersion busts the cache after in-place metadata mutations
   const { tree, nodeMap } = useMemo(
     () => buildTree(targets, { byInstance: targets.length > 1 }),
-    [targets]
+    [targets, treeBuildVersion]
   );
 
   const arboristData = useMemo(() => convertToArboristData(tree), [tree]);

@@ -49,7 +49,7 @@ export const SchemaEditorLite = forwardRef<
   const combinedLoading = loading || !ready;
 
   // Tree rebuild trigger — version bumps cause AsideTree to re-derive tree data
-  const [, setTreeBuildVersion] = useState(0);
+  const [treeBuildVersion, setTreeBuildVersion] = useState(0);
   const rebuildTreeCallbackRef = useRef<
     ((openFirstChild: boolean) => void) | null
   >(null);
@@ -127,6 +127,7 @@ export const SchemaEditorLite = forwardRef<
       targets,
       hidePreview,
       options,
+      treeBuildVersion,
       tabs,
       editStatus,
       selection,
@@ -144,6 +145,7 @@ export const SchemaEditorLite = forwardRef<
       targets,
       hidePreview,
       options,
+      treeBuildVersion,
       tabs,
       editStatus,
       selection,

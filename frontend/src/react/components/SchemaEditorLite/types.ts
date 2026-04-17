@@ -331,6 +331,9 @@ export type SchemaEditorContextValue = {
   hidePreview: boolean;
   options?: SchemaEditorOptions;
 
+  // Rebuild signal — bumped by rebuildTree() so memos can invalidate
+  treeBuildVersion: number;
+
   // Sub-contexts
   tabs: TabsContext;
   editStatus: EditStatusContext;

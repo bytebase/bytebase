@@ -1,8 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { generateDiffDDL } from "@/components/SchemaEditorLite/common";
+import { databaseServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
 import type {
   Database,
@@ -10,8 +11,13 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import {
+  DatabaseMetadataSchema,
+  GetSchemaStringRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { getDatabaseEngine } from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 import { useSchemaEditorContext } from "../context";
 
 interface Props {
@@ -54,10 +60,11 @@ export function PreviewPane({ db, database, schema, table }: Props) {
     });
   }, []);
 
-  // Build mocked metadata (filter dropped columns)
-  const mockedTable = useMemo(() => {
+  // Build mocked metadata (filter dropped columns, wrap in single-table DatabaseMetadata)
+  const mockedMetadata = useMemo(() => {
     const cloned = cloneDeep(table);
     cloned.columns = cloned.columns.filter((column) => {
+      if (!column.name) return false;
       const status = editStatus.getColumnStatus(db, {
         schema,
         table,
@@ -65,41 +72,43 @@ export function PreviewPane({ db, database, schema, table }: Props) {
       });
       return status !== "dropped";
     });
-    return cloned;
-  }, [table, editStatus, db, schema]);
+    return create(DatabaseMetadataSchema, {
+      name: database.name,
+      characterSet: database.characterSet,
+      collation: database.collation,
+      schemas: [{ name: schema.name, tables: [cloned] }],
+    }) as DatabaseMetadata;
+  }, [table, editStatus, db, schema, database]);
 
-  // Fetch DDL preview
-  const fetchDDL = useCallback(async () => {
+  // Fetch schema string for the mocked metadata
+  const fetchSchemaString = useCallback(async () => {
     const id = ++fetchIdRef.current;
     setPending(true);
     setError("");
     try {
-      const result = await generateDiffDDL({
-        database: db,
-        sourceMetadata: database,
-        targetMetadata: database,
+      const request = create(GetSchemaStringRequestSchema, {
+        name: `${db.name}/schemaString`,
+        metadata: mockedMetadata,
       });
+      const response =
+        await databaseServiceClientConnect.getSchemaString(request);
       if (id !== fetchIdRef.current) return;
-      if (result.errors.length > 0) {
-        setError(result.errors.join("\n"));
-      } else {
-        setDdl(result.statement);
-      }
+      setDdl(response.schemaString);
     } catch (err) {
       if (id !== fetchIdRef.current) return;
-      setError(String(err));
+      setError(extractGrpcErrorMessage(err));
     } finally {
       if (id === fetchIdRef.current) {
         setPending(false);
       }
     }
-  }, [db, database]);
+  }, [db, mockedMetadata]);
 
   useEffect(() => {
     if (expanded && !hidePreview) {
-      fetchDDL();
+      fetchSchemaString();
     }
-  }, [expanded, hidePreview, fetchDDL, mockedTable]);
+  }, [expanded, hidePreview, fetchSchemaString]);
 
   if (hidePreview) return null;
 
