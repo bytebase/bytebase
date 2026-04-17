@@ -69,8 +69,7 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 }
 
 // TestCollisionListPlansIsolation verifies that ListPlans scoped to project A
-// does not leak project B's plans — closing the readback oracle for the
-// `snapshotProject` helper which relies on this method.
+// does not leak project B's plans.
 func TestCollisionListPlansIsolation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -82,45 +81,20 @@ func TestCollisionListPlansIsolation(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
 
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-
-	snap := snapshotProject(ctx, t, s, projectAID)
-	for _, p := range snap.Plans {
-		a.Equal(projectAID, p.ProjectID,
-			"ListPlans for project A returned a row from another project")
-	}
-}
-
-// TestCollisionListTasksIsolation verifies that ListTasks scoped to project A
-// does not leak project B's tasks.
-func TestCollisionListTasksIsolation(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	resp, err := ctl.planServiceClient.ListPlans(ctx,
+		connect.NewRequest(&v1pb.ListPlansRequest{Parent: fixture.ProjectA.Name, PageSize: 100}))
 	a.NoError(err)
-	defer ctl.Close(ctx)
 
-	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
-
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-
-	fixture.completeRolloutB(ctx, t, ctl)
-
-	snap := snapshotProject(ctx, t, s, projectAID)
-	for _, tk := range snap.Tasks {
-		a.Equal(projectAID, tk.ProjectID,
-			"ListTasks for project A returned a row from another project")
+	for _, p := range resp.Msg.Plans {
+		a.True(strings.HasPrefix(p.Name, fixture.ProjectA.Name+"/"),
+			"ListPlans for project A returned a plan from another project: %s", p.Name)
 	}
 }
 
-// TestCollisionListTaskRunsIsolation verifies that listing task_runs for
-// project A returns only project A's rows, not project B's.
+// TestCollisionListTaskRunsIsolation verifies that ListTaskRuns scoped to a
+// project A rollout does not leak project B's task_runs, using the wildcard
+// parent form that the production API supports.
 func TestCollisionListTaskRunsIsolation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -132,26 +106,24 @@ func TestCollisionListTaskRunsIsolation(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
-
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-
 	fixture.completeRolloutB(ctx, t, ctl)
 
-	snap := snapshotProject(ctx, t, s, projectAID)
-	for _, tr := range snap.TaskRuns {
-		a.Equal(projectAID, tr.ProjectID,
-			"ListTaskRuns for project A returned a row from another project")
+	resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx,
+		connect.NewRequest(&v1pb.ListTaskRunsRequest{
+			Parent: fixture.PlanA.Name + "/rollout/stages/-/tasks/-",
+		}))
+	a.NoError(err)
+
+	for _, tr := range resp.Msg.TaskRuns {
+		a.True(strings.HasPrefix(tr.Name, fixture.ProjectA.Name+"/"),
+			"ListTaskRuns for project A returned %s from another project", tr.Name)
 	}
 }
 
-// TestCollisionListPlanCheckRunsIsolation verifies that listing plan_check_runs
-// for project A returns only project A's rows — even when project B has
-// plan_check_runs with the same composite-PK (id) values.
-//
-// We must roll out project B first so it actually has plan_check_runs;
-// otherwise the isolation loop is vacuously true.
-func TestCollisionListPlanCheckRunsIsolation(t *testing.T) {
+// TestCollisionGetPlanCheckRunIsolation verifies that GetPlanCheckRun for
+// project A's plan returns only project A's check run, even when project B
+// has a plan_check_run with the same numeric composite-PK id.
+func TestCollisionGetPlanCheckRunIsolation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -162,17 +134,15 @@ func TestCollisionListPlanCheckRunsIsolation(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
-
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-
 	fixture.completeRolloutB(ctx, t, ctl)
 
-	snap := snapshotProject(ctx, t, s, projectAID)
-	for _, pcr := range snap.PlanCheckRuns {
-		a.Equal(projectAID, pcr.ProjectID,
-			"ListPlanCheckRuns for project A returned a row from another project")
-	}
+	resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx,
+		connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: fixture.PlanA.Name + "/planCheckRun",
+		}))
+	a.NoError(err)
+	a.True(strings.HasPrefix(resp.Msg.Name, fixture.ProjectA.Name+"/"),
+		"GetPlanCheckRun for plan A returned %s from another project", resp.Msg.Name)
 }
 
 // TestCollisionGetIssueIsolation verifies that GetIssue with project A's

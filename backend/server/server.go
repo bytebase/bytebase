@@ -93,21 +93,6 @@ type Server struct {
 	cancel context.CancelFunc
 }
 
-// StoreForTest returns the store for use by integration tests in the
-// backend/tests package, which need raw store access to call methods like
-// ClaimAvailableTaskRuns and ListPlans directly. It bypasses service-layer
-// validation, authorization, and audit logging, so production callers MUST
-// NOT use it — the `ForTest` suffix is a lint/review signal.
-//
-// Trade-off note: a `//go:build testaccess` approach would eliminate the
-// possibility of production misuse but would also skip these tests from the
-// default `go test` run — which is worse for the safety harness this accessor
-// enables. If stricter enforcement is ever needed, add a lint rule rejecting
-// `*ForTest` calls from non-`_test.go` files.
-func (s *Server) StoreForTest() *store.Store {
-	return s.store
-}
-
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s := &Server{

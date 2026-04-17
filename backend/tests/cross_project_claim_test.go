@@ -7,8 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // TestClaimAvailableTaskRunsNoCrossProjectResurrection verifies that the
@@ -35,23 +34,19 @@ func TestClaimAvailableTaskRunsNoCrossProjectResurrection(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
-
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
 
 	// fixture.BaselineA was captured inside setupCollidingProjects BEFORE
 	// project B's plan was created, so it reflects project A's state
 	// uncontaminated by any scheduler side effect on project B.
 	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
 	for _, tr := range fixture.BaselineA.TaskRuns {
-		a.Equal(storepb.TaskRun_DONE, tr.Status,
+		a.Equal(v1pb.TaskRun_DONE, tr.Status,
 			"project A task_run should be DONE before any project B activity")
 	}
 
 	fixture.completeRolloutB(ctx, t, ctl)
 
-	// The regression invariant: project A's task_runs are completely unchanged.
-	afterA := snapshotProject(ctx, t, s, projectAID)
+	afterA := snapshotProject(ctx, t, ctl, fixture.ProjectA)
 	assertProjectUnchanged(t, fixture.BaselineA, afterA, "project A after scheduler claim pass")
 }
 
@@ -69,22 +64,20 @@ func TestClaimAvailablePlanCheckRunsNoCrossProjectTransition(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
-	s := ctl.server.StoreForTest()
 
-	projectAID := mustGetProjectID(t, fixture.ProjectA.Name)
-
-	// Use the pre-B-plan baseline to ensure any corruption during project B's
-	// creation is detected (not baked into the oracle).
+	// Project A's consolidated plan_check_run must be in a terminal state
+	// before B does any work — otherwise a corruption during fixture setup
+	// could be baked into the "before" oracle and escape detection.
 	a.Greater(len(fixture.BaselineA.PlanCheckRuns), 0, "project A should have plan_check_runs")
 	for _, pcr := range fixture.BaselineA.PlanCheckRuns {
-		a.NotEqual(store.PlanCheckRunStatusAvailable, pcr.Status,
-			"project A plan_check_run should not be AVAILABLE at baseline")
-		a.NotEqual(store.PlanCheckRunStatusRunning, pcr.Status,
+		a.NotEqual(v1pb.PlanCheckRun_STATUS_UNSPECIFIED, pcr.Status,
+			"project A plan_check_run status should be set at baseline")
+		a.NotEqual(v1pb.PlanCheckRun_RUNNING, pcr.Status,
 			"project A plan_check_run should not be RUNNING at baseline")
 	}
 
 	fixture.completeRolloutB(ctx, t, ctl)
 
-	afterA := snapshotProject(ctx, t, s, projectAID)
+	afterA := snapshotProject(ctx, t, ctl, fixture.ProjectA)
 	assertProjectUnchanged(t, fixture.BaselineA, afterA, "project A after scheduler plan_check_run claim pass")
 }

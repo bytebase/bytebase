@@ -3,15 +3,16 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // collisionFixture holds references to entities created in two projects
@@ -154,9 +155,7 @@ func setupCollidingProjects(
 	// below (CreatePlan, CreateIssue) can tickle the scheduler; a cross-project
 	// bug would fire here and corrupt project A. By snapshotting now, tests
 	// get a clean oracle that reflects A's true post-rollout state.
-	projectAID, err := common.GetProjectID(projectA.Msg.Name)
-	a.NoError(err)
-	baselineA := snapshotProject(ctx, t, ctl.server.StoreForTest(), projectAID)
+	baselineA := snapshotProject(ctx, t, ctl, projectA.Msg)
 
 	sheetB, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: projectB.Msg.Name,
@@ -254,9 +253,7 @@ func setupCollidingProjectsSeparateInstances(
 	a.NoError(ctl.waitRollout(ctx, issueA.Name, rolloutA.Name))
 
 	// Snapshot A BEFORE creating project B's plan — see note in setupCollidingProjects.
-	projectAID, err := common.GetProjectID(projectA.Msg.Name)
-	a.NoError(err)
-	baselineA := snapshotProject(ctx, t, ctl.server.StoreForTest(), projectAID)
+	baselineA := snapshotProject(ctx, t, ctl, projectA.Msg)
 
 	planB, issueB := createPlanAndIssue(ctx, t, ctl, projectB.Msg, dbB.Msg, "Collision test B")
 
@@ -283,48 +280,45 @@ func setupCollidingProjectsSeparateInstances(
 // stop exercising the composite-PK collision case; this assertion fails
 // fast in that case.
 //
-// Covers plan and issue (both created in fixture). task/task_run/plan_check_run
+// Covers plan and issue (both created in fixture). task_run/plan_check_run
 // are only created in project A at fixture time (B's rollout is deferred to
-// individual tests), so those collisions are verified by assertTaskRunsCollide
-// which tests may call after running project B's rollout.
+// individual tests), so those collisions are verified by the asserts in
+// completeRolloutB after project B has actually rolled out.
 func assertFixtureIDsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
 	t.Helper()
 	a := require.New(t)
-	s := ctl.server.StoreForTest()
 
-	projectAID, err := common.GetProjectID(f.ProjectA.Name)
-	a.NoError(err)
-	projectBID, err := common.GetProjectID(f.ProjectB.Name)
-	a.NoError(err)
-
-	aPlans, err := s.ListPlans(ctx, &store.FindPlanMessage{ProjectID: projectAID})
-	a.NoError(err)
-	bPlans, err := s.ListPlans(ctx, &store.FindPlanMessage{ProjectID: projectBID})
-	a.NoError(err)
+	aPlans := listPlanUIDs(ctx, t, ctl, f.ProjectA.Name)
+	bPlans := listPlanUIDs(ctx, t, ctl, f.ProjectB.Name)
 	a.Greater(len(aPlans), 0, "project A should have at least one plan")
 	a.Greater(len(bPlans), 0, "project B should have at least one plan")
-	assertAtLeastOneUIDCollides(t, planUIDs(aPlans), planUIDs(bPlans), "plan")
+	assertAtLeastOneUIDCollides(t, aPlans, bPlans, "plan")
 
-	aIssues, err := s.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectAID}})
-	a.NoError(err)
-	bIssues, err := s.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectBID}})
-	a.NoError(err)
+	aIssues := listIssueUIDs(ctx, t, ctl, f.ProjectA.Name)
+	bIssues := listIssueUIDs(ctx, t, ctl, f.ProjectB.Name)
 	a.Greater(len(aIssues), 0, "project A should have at least one issue")
 	a.Greater(len(bIssues), 0, "project B should have at least one issue")
-	assertAtLeastOneUIDCollides(t, issueUIDs(aIssues), issueUIDs(bIssues), "issue")
+	assertAtLeastOneUIDCollides(t, aIssues, bIssues, "issue")
 }
 
-// completeRolloutB drives project B's rollout to completion and proves the
-// composite-PK ids collide for every table whose rows are created by the
-// rollout (task, task_run, plan_check_run). This is the ONLY supported way
-// for a collision test to roll out B — every call site gets the full
+// completeRolloutB drives project B's rollout to completion and proves that
+// task_run ids collide across the two projects. This is the ONLY supported
+// way for a collision test to roll out B — every call site gets the
 // collision invariant for free, so no test can silently become vacuous by
-// forgetting one of the three assertCollide helpers.
+// forgetting the assert.
+//
+// Why plan_check_run collisions are not asserted here: the v1 API intentionally
+// exposes only one consolidated plan_check_run per plan via a UID-less name
+// ({plan.name}/planCheckRun), so the internal UID is not observable through
+// public gRPC. The same property also means public API consumers can't trigger
+// the cross-project claim bug via plan_check_run — the surface we need to
+// protect is the scheduler-internal SQL, and the snapshot's before/after
+// Status comparison catches a regression there.
 //
 // Why it lives here rather than inside setupCollidingProjects: the fixture
-// returns before B's rollout fires, so task/task_run/plan_check_run don't
-// exist yet at fixture-construction time. Tests that don't need B's rollout
-// (pure read-isolation tests on plan/issue) don't pay the cost.
+// returns before B's rollout fires, so task_run doesn't exist yet at
+// fixture-construction time. Tests that don't need B's rollout (pure
+// read-isolation tests on plan/issue) don't pay the cost.
 func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, ctl *controller) {
 	t.Helper()
 	a := require.New(t)
@@ -336,9 +330,7 @@ func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, c
 	a.NoError(err)
 	a.NoError(ctl.waitRollout(ctx, f.IssueB.Name, rolloutB.Msg.Name))
 
-	assertTasksCollide(ctx, t, ctl, f)
 	assertTaskRunsCollide(ctx, t, ctl, f)
-	assertPlanCheckRunsCollide(ctx, t, ctl, f)
 }
 
 // assertTaskRunsCollide verifies that after both projects have rolled out,
@@ -346,69 +338,16 @@ func (f *collisionFixture) completeRolloutB(ctx context.Context, t *testing.T, c
 // rollout and depend on task_run collisions.
 //
 // Note: nextProjectID allocates per table, so task_run collision does not
-// imply plan_check_run collision. Use assertPlanCheckRunsCollide for that.
+// imply plan_check_run collision. Each table needs its own assertion.
 func assertTaskRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
 	t.Helper()
 	a := require.New(t)
-	s := ctl.server.StoreForTest()
 
-	projectAID, err := common.GetProjectID(f.ProjectA.Name)
-	a.NoError(err)
-	projectBID, err := common.GetProjectID(f.ProjectB.Name)
-	a.NoError(err)
-
-	aTaskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{ProjectID: projectAID})
-	a.NoError(err)
-	bTaskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{ProjectID: projectBID})
-	a.NoError(err)
+	aTaskRuns := listTaskRunUIDs(ctx, t, ctl, f.PlanA.Name)
+	bTaskRuns := listTaskRunUIDs(ctx, t, ctl, f.PlanB.Name)
 	a.Greater(len(aTaskRuns), 0, "project A should have at least one task_run")
 	a.Greater(len(bTaskRuns), 0, "project B should have at least one task_run — did you forget to roll out B?")
-	assertAtLeastOneUIDCollides(t, taskRunIDs(aTaskRuns), taskRunIDs(bTaskRuns), "task_run")
-}
-
-// assertPlanCheckRunsCollide verifies that after both projects have plan
-// check runs, their ids collide. Because nextProjectID allocates per-table,
-// task_run and plan_check_run sequences can diverge independently — each
-// table that a test depends on needs its own collision assertion.
-func assertPlanCheckRunsCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
-	t.Helper()
-	a := require.New(t)
-	s := ctl.server.StoreForTest()
-
-	projectAID, err := common.GetProjectID(f.ProjectA.Name)
-	a.NoError(err)
-	projectBID, err := common.GetProjectID(f.ProjectB.Name)
-	a.NoError(err)
-
-	aPCRs, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{ProjectID: projectAID})
-	a.NoError(err)
-	bPCRs, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{ProjectID: projectBID})
-	a.NoError(err)
-	a.Greater(len(aPCRs), 0, "project A should have at least one plan_check_run")
-	a.Greater(len(bPCRs), 0, "project B should have at least one plan_check_run — did you forget to roll out B?")
-	assertAtLeastOneUIDCollides(t, planCheckRunUIDs(aPCRs), planCheckRunUIDs(bPCRs), "plan_check_run")
-}
-
-// assertTasksCollide verifies that after both projects have rolled out,
-// their task ids collide. Needed separately from task_runs because of
-// per-table allocation.
-func assertTasksCollide(ctx context.Context, t *testing.T, ctl *controller, f *collisionFixture) {
-	t.Helper()
-	a := require.New(t)
-	s := ctl.server.StoreForTest()
-
-	projectAID, err := common.GetProjectID(f.ProjectA.Name)
-	a.NoError(err)
-	projectBID, err := common.GetProjectID(f.ProjectB.Name)
-	a.NoError(err)
-
-	aTasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectAID})
-	a.NoError(err)
-	bTasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectBID})
-	a.NoError(err)
-	a.Greater(len(aTasks), 0, "project A should have at least one task")
-	a.Greater(len(bTasks), 0, "project B should have at least one task — did you forget to roll out B?")
-	assertAtLeastOneUIDCollides(t, taskIDs(aTasks), taskIDs(bTasks), "task")
+	assertAtLeastOneUIDCollides(t, aTaskRuns, bTaskRuns, "task_run")
 }
 
 func assertAtLeastOneUIDCollides(t *testing.T, aUIDs, bUIDs []int64, label string) {
@@ -426,42 +365,57 @@ func assertAtLeastOneUIDCollides(t *testing.T, aUIDs, bUIDs []int64, label strin
 		"projects A and B should have at least one %s UID in common. Got A=%v, B=%v", label, aUIDs, bUIDs)
 }
 
-func planUIDs(plans []*store.PlanMessage) []int64 {
-	out := make([]int64, 0, len(plans))
-	for _, p := range plans {
-		out = append(out, p.UID)
+// listPlanUIDs returns every plan UID in the project, via the public gRPC
+// ListPlans API. UIDs are parsed from the resource names.
+func listPlanUIDs(ctx context.Context, t *testing.T, ctl *controller, projectName string) []int64 {
+	t.Helper()
+	a := require.New(t)
+	resp, err := ctl.planServiceClient.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
+		Parent:   projectName,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListPlans(%s)", projectName)
+	out := make([]int64, 0, len(resp.Msg.Plans))
+	for _, p := range resp.Msg.Plans {
+		_, uid, err := common.GetProjectIDPlanID(p.Name)
+		a.NoError(err, "parse plan name %q", p.Name)
+		out = append(out, uid)
 	}
 	return out
 }
 
-func issueUIDs(issues []*store.IssueMessage) []int64 {
-	out := make([]int64, 0, len(issues))
-	for _, i := range issues {
-		out = append(out, i.UID)
+// listIssueUIDs returns every issue UID in the project.
+func listIssueUIDs(ctx context.Context, t *testing.T, ctl *controller, projectName string) []int64 {
+	t.Helper()
+	a := require.New(t)
+	resp, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{
+		Parent:   projectName,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListIssues(%s)", projectName)
+	out := make([]int64, 0, len(resp.Msg.Issues))
+	for _, i := range resp.Msg.Issues {
+		_, uid, err := common.GetProjectIDIssueUID(i.Name)
+		a.NoError(err, "parse issue name %q", i.Name)
+		out = append(out, uid)
 	}
 	return out
 }
 
-func taskRunIDs(trs []*store.TaskRunMessage) []int64 {
-	out := make([]int64, 0, len(trs))
-	for _, tr := range trs {
-		out = append(out, tr.ID)
-	}
-	return out
-}
-
-func planCheckRunUIDs(pcrs []*store.PlanCheckRunMessage) []int64 {
-	out := make([]int64, 0, len(pcrs))
-	for _, pcr := range pcrs {
-		out = append(out, pcr.UID)
-	}
-	return out
-}
-
-func taskIDs(tasks []*store.TaskMessage) []int64 {
-	out := make([]int64, 0, len(tasks))
-	for _, tk := range tasks {
-		out = append(out, tk.ID)
+// listTaskRunUIDs returns every task_run UID for a plan's rollout, via the
+// public gRPC ListTaskRuns API with its supported wildcard parent.
+func listTaskRunUIDs(ctx context.Context, t *testing.T, ctl *controller, planName string) []int64 {
+	t.Helper()
+	a := require.New(t)
+	resp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+		Parent: planName + "/rollout/stages/-/tasks/-",
+	}))
+	a.NoError(err, "ListTaskRuns(%s)", planName)
+	out := make([]int64, 0, len(resp.Msg.TaskRuns))
+	for _, tr := range resp.Msg.TaskRuns {
+		_, _, _, _, uid, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(tr.Name)
+		a.NoError(err, "parse task_run name %q", tr.Name)
+		out = append(out, uid)
 	}
 	return out
 }
@@ -539,84 +493,96 @@ func createPlanIssueRollout(ctx context.Context, t *testing.T, ctl *controller, 
 	return plan, issue, rollout.Msg
 }
 
-// projectSnapshot captures the state of composite-PK rows for a project.
+// projectSnapshot captures the state of a project's composite-PK rows as
+// observed through the public gRPC API. Each slice's rows are keyed by the
+// UID parsed from their resource name.
 type projectSnapshot struct {
-	Plans         []*store.PlanMessage
-	Issues        []*store.IssueMessage
-	Tasks         []*store.TaskMessage
-	TaskRuns      []*store.TaskRunMessage
-	PlanCheckRuns []*store.PlanCheckRunMessage
+	Plans         []*v1pb.Plan
+	Issues        []*v1pb.Issue
+	TaskRuns      []*v1pb.TaskRun
+	PlanCheckRuns []*v1pb.PlanCheckRun
 }
 
-// snapshotProject queries the store for composite-PK rows belonging to a project.
+// snapshotProject captures every plan/issue/task_run/plan_check_run row
+// visible to the public gRPC API for the given project. Every read goes
+// through the service layer (auth + audit), not the raw store — so a
+// read-path regression that leaks cross-project data would also surface in
+// these calls.
+//
+// PlanCheckRuns are fetched via GetPlanCheckRun(planName+"/planCheckRun"),
+// which is the single-consolidated-PCR endpoint the UI itself uses. One
+// PCR per plan.
 func snapshotProject(
 	ctx context.Context,
 	t *testing.T,
-	s *store.Store,
-	projectID string,
+	ctl *controller,
+	project *v1pb.Project,
 ) *projectSnapshot {
 	t.Helper()
 	a := require.New(t)
 
-	plans, err := s.ListPlans(ctx, &store.FindPlanMessage{
-		ProjectID: projectID,
-	})
-	a.NoError(err, "ListPlans for project %s", projectID)
+	plansResp, err := ctl.planServiceClient.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
+		Parent:   project.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListPlans(%s)", project.Name)
+	plans := plansResp.Msg.Plans
 	for _, p := range plans {
-		a.Equal(projectID, p.ProjectID,
-			"ListPlans(%s) returned a row belonging to project %s — read-path leak", projectID, p.ProjectID)
+		a.True(strings.HasPrefix(p.Name, project.Name+"/"),
+			"ListPlans(%s) returned %q — read-path leak", project.Name, p.Name)
 	}
 
-	issues, err := s.ListIssues(ctx, &store.FindIssueMessage{
-		ProjectIDs: []string{projectID},
-	})
-	a.NoError(err, "ListIssues for project %s", projectID)
+	issuesResp, err := ctl.issueServiceClient.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{
+		Parent:   project.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err, "ListIssues(%s)", project.Name)
+	issues := issuesResp.Msg.Issues
 	for _, i := range issues {
-		a.Equal(projectID, i.ProjectID,
-			"ListIssues(%s) returned a row belonging to project %s — read-path leak", projectID, i.ProjectID)
+		a.True(strings.HasPrefix(i.Name, project.Name+"/"),
+			"ListIssues(%s) returned %q — read-path leak", project.Name, i.Name)
 	}
 
-	tasks, err := s.ListTasks(ctx, &store.TaskFind{
-		ProjectID: projectID,
-	})
-	a.NoError(err, "ListTasks for project %s", projectID)
-	for _, tk := range tasks {
-		a.Equal(projectID, tk.ProjectID,
-			"ListTasks(%s) returned a row belonging to project %s — read-path leak", projectID, tk.ProjectID)
-	}
+	var taskRuns []*v1pb.TaskRun
+	var planCheckRuns []*v1pb.PlanCheckRun
+	for _, p := range plans {
+		trResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+			Parent: p.Name + "/rollout/stages/-/tasks/-",
+		}))
+		a.NoError(err, "ListTaskRuns for plan %s", p.Name)
+		for _, tr := range trResp.Msg.TaskRuns {
+			a.True(strings.HasPrefix(tr.Name, project.Name+"/"),
+				"ListTaskRuns for plan %s returned %q — read-path leak", p.Name, tr.Name)
+		}
+		taskRuns = append(taskRuns, trResp.Msg.TaskRuns...)
 
-	taskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		ProjectID: projectID,
-	})
-	a.NoError(err, "ListTaskRuns for project %s", projectID)
-	for _, tr := range taskRuns {
-		a.Equal(projectID, tr.ProjectID,
-			"ListTaskRuns(%s) returned a row belonging to project %s — read-path leak", projectID, tr.ProjectID)
-	}
-
-	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		ProjectID: projectID,
-	})
-	a.NoError(err, "ListPlanCheckRuns for project %s", projectID)
-	for _, pcr := range planCheckRuns {
-		a.Equal(projectID, pcr.ProjectID,
-			"ListPlanCheckRuns(%s) returned a row belonging to project %s — read-path leak", projectID, pcr.ProjectID)
+		pcrResp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: p.Name + "/planCheckRun",
+		}))
+		if err == nil {
+			a.True(strings.HasPrefix(pcrResp.Msg.Name, project.Name+"/"),
+				"GetPlanCheckRun for plan %s returned %q — read-path leak", p.Name, pcrResp.Msg.Name)
+			planCheckRuns = append(planCheckRuns, pcrResp.Msg)
+		}
+		// A plan may not have a check run yet; that's not an error.
 	}
 
 	return &projectSnapshot{
 		Plans:         plans,
 		Issues:        issues,
-		Tasks:         tasks,
 		TaskRuns:      taskRuns,
 		PlanCheckRuns: planCheckRuns,
 	}
 }
 
-// assertProjectUnchanged compares two snapshots and fails if any row was
-// added, removed, or modified. Rows are keyed by primary-key identifier so
-// the comparison is insensitive to result ordering. Duplicate keys in a
-// single snapshot (which would indicate a JOIN regression) are caught
-// explicitly rather than silently collapsed by the map.
+// assertProjectUnchanged fails if any row in the `before` snapshot went
+// missing or got mutated in `after`. Keyed by resource name (unique per
+// project by construction) so comparison is order-insensitive.
+//
+// Issue.UpdateTime is deliberately NOT compared — the approval runner
+// actively updates open issues in the background, which is expected
+// behavior, not a cross-project leak. Title and Status are the fields a
+// cross-project corruption would mutate.
 func assertProjectUnchanged(
 	t *testing.T,
 	before, after *projectSnapshot,
@@ -625,127 +591,73 @@ func assertProjectUnchanged(
 	t.Helper()
 	a := require.New(t)
 
-	beforePlans := make(map[int64]*store.PlanMessage, len(before.Plans))
-	for _, p := range before.Plans {
-		_, dup := beforePlans[p.UID]
-		a.False(dup, "%s: duplicate plan UID %d in before snapshot", label, p.UID)
-		beforePlans[p.UID] = p
-	}
-	a.Equal(len(before.Plans), len(after.Plans),
-		"%s: plan count changed", label)
-	seenPlans := make(map[int64]bool, len(after.Plans))
-	for _, p := range after.Plans {
-		a.False(seenPlans[p.UID], "%s: duplicate plan UID %d in after snapshot", label, p.UID)
-		seenPlans[p.UID] = true
-		b, ok := beforePlans[p.UID]
-		a.True(ok, "%s: plan %d appeared after", label, p.UID)
-		if ok {
-			a.Equal(b.UpdatedAt, p.UpdatedAt,
-				"%s: plan %d updated_at changed", label, p.UID)
-		}
-	}
+	assertNoChange(t, before.Plans, after.Plans,
+		func(p *v1pb.Plan) string { return p.Name },
+		func(b, af *v1pb.Plan) {
+			a.True(protoEqual(b.UpdateTime, af.UpdateTime), "%s: plan %s update_time changed", label, b.Name)
+		},
+		label, "plan")
 
-	// Note: Issue.UpdatedAt is NOT compared — the approval runner actively
-	// updates open issues' updated_at timestamps in the background, which
-	// is expected behavior, not a cross-project leak. Title and Status are
-	// the fields a cross-project corruption would mutate.
-	beforeIssues := make(map[int64]*store.IssueMessage, len(before.Issues))
-	for _, i := range before.Issues {
-		_, dup := beforeIssues[i.UID]
-		a.False(dup, "%s: duplicate issue UID %d in before snapshot", label, i.UID)
-		beforeIssues[i.UID] = i
-	}
-	a.Equal(len(before.Issues), len(after.Issues),
-		"%s: issue count changed", label)
-	seenIssues := make(map[int64]bool, len(after.Issues))
-	for _, i := range after.Issues {
-		a.False(seenIssues[i.UID], "%s: duplicate issue UID %d in after snapshot", label, i.UID)
-		seenIssues[i.UID] = true
-		b, ok := beforeIssues[i.UID]
-		a.True(ok, "%s: issue %d appeared after", label, i.UID)
-		if ok {
-			a.Equal(b.Title, i.Title, "%s: issue %d title changed", label, i.UID)
-			a.Equal(b.Status, i.Status, "%s: issue %d status changed", label, i.UID)
-		}
-	}
+	assertNoChange(t, before.Issues, after.Issues,
+		func(i *v1pb.Issue) string { return i.Name },
+		func(b, af *v1pb.Issue) {
+			a.Equal(b.Title, af.Title, "%s: issue %s title changed", label, b.Name)
+			a.Equal(b.Status, af.Status, "%s: issue %s status changed", label, b.Name)
+		},
+		label, "issue")
 
-	beforeTasks := make(map[int64]*store.TaskMessage, len(before.Tasks))
-	for _, tk := range before.Tasks {
-		_, dup := beforeTasks[tk.ID]
-		a.False(dup, "%s: duplicate task ID %d in before snapshot", label, tk.ID)
-		beforeTasks[tk.ID] = tk
-	}
-	a.Equal(len(before.Tasks), len(after.Tasks),
-		"%s: task count changed", label)
-	seenTasks := make(map[int64]bool, len(after.Tasks))
-	for _, tk := range after.Tasks {
-		a.False(seenTasks[tk.ID], "%s: duplicate task ID %d in after snapshot", label, tk.ID)
-		seenTasks[tk.ID] = true
-		b, ok := beforeTasks[tk.ID]
-		a.True(ok, "%s: task %d appeared after", label, tk.ID)
-		if ok {
-			a.Equal(b.UpdatedAt, tk.UpdatedAt,
-				"%s: task %d updated_at changed", label, tk.ID)
-		}
-	}
+	assertNoChange(t, before.TaskRuns, after.TaskRuns,
+		func(tr *v1pb.TaskRun) string { return tr.Name },
+		func(b, af *v1pb.TaskRun) {
+			a.Equal(b.Status, af.Status, "%s: task_run %s status changed from %v to %v", label, b.Name, b.Status, af.Status)
+			a.True(protoEqual(b.UpdateTime, af.UpdateTime), "%s: task_run %s update_time changed", label, b.Name)
+		},
+		label, "task_run")
 
-	beforeTaskRuns := make(map[int64]*store.TaskRunMessage, len(before.TaskRuns))
-	for _, tr := range before.TaskRuns {
-		_, dup := beforeTaskRuns[tr.ID]
-		a.False(dup, "%s: duplicate task_run ID %d in before snapshot", label, tr.ID)
-		beforeTaskRuns[tr.ID] = tr
-	}
-	a.Equal(len(before.TaskRuns), len(after.TaskRuns),
-		"%s: task_run count changed", label)
-	seenTaskRuns := make(map[int64]bool, len(after.TaskRuns))
-	for _, tr := range after.TaskRuns {
-		a.False(seenTaskRuns[tr.ID], "%s: duplicate task_run ID %d in after snapshot", label, tr.ID)
-		seenTaskRuns[tr.ID] = true
-		b, ok := beforeTaskRuns[tr.ID]
-		a.True(ok, "%s: task_run %d appeared after", label, tr.ID)
-		if ok {
-			a.Equal(b.Status, tr.Status,
-				"%s: task_run %d status changed from %v to %v", label, tr.ID, b.Status, tr.Status)
-			a.Equal(b.UpdatedAt, tr.UpdatedAt,
-				"%s: task_run %d updated_at changed", label, tr.ID)
-		}
-	}
+	assertNoChange(t, before.PlanCheckRuns, after.PlanCheckRuns,
+		func(p *v1pb.PlanCheckRun) string { return p.Name },
+		func(b, af *v1pb.PlanCheckRun) {
+			a.Equal(b.Status, af.Status, "%s: plan_check_run %s status changed from %v to %v", label, b.Name, b.Status, af.Status)
+		},
+		label, "plan_check_run")
+}
 
-	beforePlanCheckRuns := make(map[int64]*store.PlanCheckRunMessage, len(before.PlanCheckRuns))
-	for _, pcr := range before.PlanCheckRuns {
-		_, dup := beforePlanCheckRuns[pcr.UID]
-		a.False(dup, "%s: duplicate plan_check_run UID %d in before snapshot", label, pcr.UID)
-		beforePlanCheckRuns[pcr.UID] = pcr
+// assertNoChange compares two row slices keyed by name, fails if any
+// row disappeared, appeared, or duplicated. Per-row equality beyond
+// identity is delegated to the caller's `compare` func.
+func assertNoChange[T any](
+	t *testing.T,
+	before, after []T,
+	key func(T) string,
+	compare func(b, af T),
+	label, kind string,
+) {
+	t.Helper()
+	a := require.New(t)
+	byKey := make(map[string]T, len(before))
+	for _, r := range before {
+		_, dup := byKey[key(r)]
+		a.False(dup, "%s: duplicate %s %q in before snapshot", label, kind, key(r))
+		byKey[key(r)] = r
 	}
-	a.Equal(len(before.PlanCheckRuns), len(after.PlanCheckRuns),
-		"%s: plan_check_run count changed", label)
-	seenPlanCheckRuns := make(map[int64]bool, len(after.PlanCheckRuns))
-	for _, pcr := range after.PlanCheckRuns {
-		a.False(seenPlanCheckRuns[pcr.UID], "%s: duplicate plan_check_run UID %d in after snapshot", label, pcr.UID)
-		seenPlanCheckRuns[pcr.UID] = true
-		b, ok := beforePlanCheckRuns[pcr.UID]
-		a.True(ok, "%s: plan_check_run %d appeared after", label, pcr.UID)
+	a.Equal(len(before), len(after), "%s: %s count changed", label, kind)
+	seen := make(map[string]bool, len(after))
+	for _, r := range after {
+		a.False(seen[key(r)], "%s: duplicate %s %q in after snapshot", label, kind, key(r))
+		seen[key(r)] = true
+		b, ok := byKey[key(r)]
+		a.True(ok, "%s: %s %q appeared after", label, kind, key(r))
 		if ok {
-			a.Equal(b.Status, pcr.Status,
-				"%s: plan_check_run %d status changed from %v to %v", label, pcr.UID, b.Status, pcr.Status)
-			a.Equal(b.UpdatedAt, pcr.UpdatedAt,
-				"%s: plan_check_run %d updated_at changed", label, pcr.UID)
+			compare(b, r)
 		}
 	}
 }
 
-// mustGetProjectID extracts the resource ID from a project name, failing the test on error.
-func mustGetProjectID(t *testing.T, name string) string {
-	t.Helper()
-	id, err := common.GetProjectID(name)
-	require.NoError(t, err, "failed to extract project ID from %q", name)
-	return id
-}
-
-// mustGetInstanceID extracts the resource ID from an instance name, failing the test on error.
-func mustGetInstanceID(t *testing.T, name string) string {
-	t.Helper()
-	id, err := common.GetInstanceID(name)
-	require.NoError(t, err, "failed to extract instance ID from %q", name)
-	return id
+// protoEqual returns true if both timestamps represent the same instant.
+// Using proto.Equal would be simpler but requires the proto package.
+func protoEqual(a, b *timestamppb.Timestamp) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Seconds == b.Seconds && a.Nanos == b.Nanos
 }
