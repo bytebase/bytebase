@@ -6,7 +6,11 @@
   "activity.sentence.created-issue": "created issue",
   "activity.sentence.modified-sql-of": "modified SQL of",
   "activity.sentence.reopened-issue": "reopened issue",
-  "activity.sentence.resolved-issue": "approved the issue",
+  "activity.sentence.resolved-issue": "将工单标记为已完成",
+  "activity.sentence.review-done-rollout-created": "审批完成，已创建发布",
+  "activity.sentence.review-done-rollout-created-for-plan": "审批完成，已为计划创建发布",
+  "activity.sentence.review-skipped-rollout-created": "已跳过审批，已创建发布",
+  "activity.sentence.review-skipped-rollout-created-for-plan": "已跳过审批，已为计划创建发布",
   "agent": {
     "active-only-chats": "仅活跃",
     "ai-not-configured": {

@@ -2,7 +2,10 @@ import { Ban, CheckCircle2, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_ApprovalStatus,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
 import { IssueDetailTitleInput } from "./IssueDetailTitleInput";
@@ -12,6 +15,14 @@ export function IssueDetailHeader() {
   const page = useIssueDetailContext();
   const showClosedTag = page.issue?.status === IssueStatus.CANCELED;
   const showDoneTag = page.issue?.status === IssueStatus.DONE;
+  const doneTagLabel =
+    page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+      ? t("common.approved")
+      : t("common.skipped");
+  const doneTagVariant =
+    page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+      ? "success"
+      : "default";
   const showMobileSidebarButton = page.sidebarMode === "MOBILE";
 
   return (
@@ -29,10 +40,10 @@ export function IssueDetailHeader() {
         {showDoneTag && !showClosedTag && (
           <Badge
             className="shrink-0 gap-x-1.5 rounded-full px-3 py-1"
-            variant="success"
+            variant={doneTagVariant}
           >
             <CheckCircle2 className="h-4 w-4" />
-            {t("common.approved")}
+            {doneTagLabel}
           </Badge>
         )}
 
