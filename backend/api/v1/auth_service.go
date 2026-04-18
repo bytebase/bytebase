@@ -225,6 +225,10 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
+	// Announce the workspace on every exit path so denied signups (DisallowSignup,
+	// password restriction) still produce audit entries. Uses targetWorkspaceID (resolved
+	// before any writes) rather than the provisioned workspaceID.
+	defer func() { common.SetAuditWorkspaceID(ctx, targetWorkspaceID) }()
 
 	restriction, err := getAccountRestriction(
 		ctx,
@@ -247,15 +251,6 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
-
-	// Announce the workspace on every exit path so early-failure cases
-	// (DisallowSignup, password restriction, CreateUser failure, …) still
-	// produce audit entries for invited/self-hosted signups where the
-	// workspace is already resolved. The setter no-ops on empty input, so
-	// SaaS new-workspace signups that fail before workspace creation stay
-	// (correctly) unaudited — there's genuinely no workspace to attribute
-	// them to.
-	defer func() { common.SetAuditWorkspaceID(ctx, workspaceID) }()
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 	if err != nil {
