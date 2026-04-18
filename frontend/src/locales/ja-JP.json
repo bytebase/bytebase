@@ -109,22 +109,32 @@
       "title": "別のユーザーとしてログインしています"
     },
     "password-forget": {
-      "contact-us": "{email} までお問い合わせください。",
+      "failed-to-send-code": "パスワードリセットコードの送信に失敗しました。もう一度お試しください。",
       "return-to-sign-in": "ログインに戻る",
       "selfhost": "Bytebase 管理者に連絡してパスワードをリセットしてください",
+      "send-reset-code": "リセットコードを送信",
       "title": "パスワードをお忘れですか？"
     },
     "password-forgot": "パスワードを忘れる",
     "password-reset": {
+      "code-label": "認証コード",
       "content": "パスワード制限ポリシーに従ってパスワードをリセットする必要があります。",
+      "invalid-or-expired-code": "コードが無効または期限切れです。新しいコードをリクエストしてください。",
       "title": "あなたのパスワードをリセット"
     },
     "sign-in": {
+      "code-sent-hint": "{email} に認証コードを送信しました。",
       "demo-account": "Demo Account",
+      "email-code-tab": "メール認証コード",
+      "failed-to-send-code": "認証コードの送信に失敗しました。もう一度お試しください。",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{email} でログインしてください",
       "new-user": "Bytebase を初めて使用しますか?",
-      "sign-in-with-idp": "{idp} 経由でログイン"
+      "resend-code": "コードを再送信",
+      "resend-in": "{seconds}秒後に再送信可能",
+      "send-code": "コードを送信",
+      "sign-in-with-idp": "{idp} 経由でログイン",
+      "verification-code": "認証コード"
     },
     "sign-up": {
       "accept-terms-and-policy": "Bytebase の {terms} と {policy} に同意します",
@@ -2011,6 +2021,11 @@
         "allow-admin-data-source": {
           "description": "有効にすると、ユーザーは管理データソースと読み取り専用データソースのどちらかを選択できます。無効にすると、読み取り専用データソースが設定されている場合は強制的に読み取り専用データソースを使用し、設定されていない場合は管理データソースにフォールバックします。",
           "self": "管理データソースのクエリを許可する"
+        },
+        "allow-email-code-signin": {
+          "description": "ユーザーはメールアドレスに送信された6桁のコードを入力してサインインまたはサインアップできます。",
+          "enable": "メール認証コードによるサインインを許可する",
+          "require-email-setting": "有効にする前に、メール (SMTP) 設定を構成する必要があります。"
         },
         "announcement": {
           "self": "お知らせ"

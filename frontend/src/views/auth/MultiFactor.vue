@@ -73,6 +73,7 @@ import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import { useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
+import { resolveWorkspaceName } from "@/utils";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 
@@ -113,6 +114,7 @@ const onOtpCodeFinish = async (value: string[]) => {
 const challenge = async () => {
   const request = create(LoginRequestSchema, {
     mfaTempToken: mfaTempToken.value,
+    workspace: resolveWorkspaceName(),
   });
   if (state.selectedMFAType === "OTP") {
     request.otpCode = state.otpCodes.join("");

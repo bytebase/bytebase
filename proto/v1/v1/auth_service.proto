@@ -142,6 +142,13 @@ message LoginRequest {
   // 6-digit code from email for passwordless login/signup.
   // Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
   optional string email_code = 9;
+
+  // Preferred workspace to land in after login. If the user is a member of this
+  // workspace, the token is issued for it; otherwise falls back to the default
+  // resolution (last login workspace → first membership). Typically populated
+  // from the ?workspace= query parameter in invite links.
+  // Format: workspaces/{workspace}
+  optional string workspace = 10;
 }
 
 // Context for identity provider authentication.

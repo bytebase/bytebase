@@ -157,6 +157,9 @@ type Restriction struct {
 	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,3,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// Whether email + 6-digit code signin is enabled for this workspace.
 	AllowEmailCodeSignin bool `protobuf:"varint,4,opt,name=allow_email_code_signin,json=allowEmailCodeSignin,proto3" json:"allow_email_code_signin,omitempty"`
+	// Whether password reset via email is available for this workspace.
+	// True when the workspace (or deployment) has an email setting configured.
+	PasswordResetEnabled bool `protobuf:"varint,5,opt,name=password_reset_enabled,json=passwordResetEnabled,proto3" json:"password_reset_enabled,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -215,6 +218,13 @@ func (x *Restriction) GetPasswordRestriction() *WorkspaceProfileSetting_Password
 func (x *Restriction) GetAllowEmailCodeSignin() bool {
 	if x != nil {
 		return x.AllowEmailCodeSignin
+	}
+	return false
+}
+
+func (x *Restriction) GetPasswordResetEnabled() bool {
+	if x != nil {
+		return x.PasswordResetEnabled
 	}
 	return false
 }
@@ -456,12 +466,13 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x16GetActuatorInfoRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
 	"\x16bytebase.com/WorkspaceR\x04name\"\x14\n" +
-	"\x12DeleteCacheRequest\"\xa8\x02\n" +
+	"\x12DeleteCacheRequest\"\xe3\x02\n" +
 	"\vRestriction\x12,\n" +
 	"\x0fdisallow_signup\x18\x01 \x01(\bB\x03\xe0A\x03R\x0edisallowSignup\x12=\n" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
-	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\"\xbd\a\n" +
+	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xbd\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +

@@ -55,6 +55,17 @@
               </template>
             </NTabPane>
 
+            <NTabPane
+              v-if="serverInfo?.restriction?.allowEmailCodeSignin"
+              name="email-code"
+              :tab="$t('auth.sign-in.email-code-tab')"
+            >
+              <EmailCodeSigninForm
+                :loading="state.isLoading"
+                @signin="trySignin"
+              />
+            </NTabPane>
+
             <template
               v-for="identityProvider in groupedIdentityProviderList"
               :key="identityProvider.name"
@@ -191,6 +202,7 @@ import { useRoute, useRouter } from "vue-router";
 import { BBAttention, BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import DemoSigninForm from "@/components/DemoSigninForm.vue";
+import EmailCodeSigninForm from "@/components/EmailCodeSigninForm.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
@@ -207,7 +219,7 @@ import {
 } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO } from "@/utils";
+import { openWindowForSSO, resolveWorkspaceName } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
 const props = withDefaults(
@@ -267,11 +279,15 @@ const groupedIdentityProviderList = computed(() =>
 const showSignInForm = computed(() => {
   return (
     !serverInfo.value?.restriction?.disallowPasswordSignin ||
-    groupedIdentityProviderList.value.length > 0
+    groupedIdentityProviderList.value.length > 0 ||
+    serverInfo.value.restriction.allowEmailCodeSignin
   );
 });
 
 const defaultTabValue = computed(() => {
+  if (serverInfo.value?.restriction?.allowEmailCodeSignin) {
+    return "email-code";
+  }
   if (!serverInfo.value?.restriction?.disallowPasswordSignin) {
     return "standard";
   }
@@ -296,12 +312,7 @@ watchEffect(() => {
 
 onMounted(async () => {
   // If a workspace is specified in the query, fetch workspace-scoped actuator and IDPs.
-  const workspaceID = route.query["workspace"] as string | undefined;
-  const workspaceNameFromQuery = workspaceID
-    ? `workspaces/${workspaceID}`
-    : undefined;
-  const workspaceName =
-    actuatorStore.workspaceResourceName || workspaceNameFromQuery;
+  const workspaceName = resolveWorkspaceName();
 
   try {
     const [idpList, _] = await Promise.all([
@@ -346,6 +357,7 @@ const trySigninWithIdp = (idpName: string) => {
       email: state.email,
       password: state.password,
       idpName: idpName,
+      workspace: resolveWorkspaceName(),
     })
   );
 };

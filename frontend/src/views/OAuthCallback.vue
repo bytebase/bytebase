@@ -34,6 +34,7 @@ import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
+import { resolveWorkspaceName } from "@/utils";
 import { clearOAuthState, retrieveOAuthState } from "@/utils/sso";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
@@ -194,6 +195,7 @@ const triggerAuthCallback = async () => {
             },
           },
         },
+        workspace: resolveWorkspaceName(),
       }),
       redirect: true,
       redirectUrl: oAuthState.redirect,

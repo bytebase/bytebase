@@ -1638,6 +1638,11 @@
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
         },
+        "allow-email-code-signin": {
+          "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
+          "enable": "Cho phép đăng nhập bằng mã qua email",
+          "require-email-setting": "Phải cấu hình cài đặt email (SMTP) trước khi bật tùy chọn này."
+        },
         "announcement": {
           "self": "Thông báo"
         },

@@ -23321,6 +23321,17 @@ components:
           description: |-
             6-digit code from email for passwordless login/signup.
              Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
+        workspace:
+          type:
+            - string
+            - "null"
+          title: workspace
+          description: |-
+            Preferred workspace to land in after login. If the user is a member of this
+             workspace, the token is issued for it; otherwise falls back to the default
+             resolution (last login workspace → first membership). Typically populated
+             from the ?workspace= query parameter in invite links.
+             Format: workspaces/{workspace}
       title: LoginRequest
       additionalProperties: false
     bytebase.v1.LoginResponse:
@@ -25399,6 +25410,13 @@ components:
           type: boolean
           title: allow_email_code_signin
           description: Whether email + 6-digit code signin is enabled for this workspace.
+          readOnly: true
+        passwordResetEnabled:
+          type: boolean
+          title: password_reset_enabled
+          description: |-
+            Whether password reset via email is available for this workspace.
+             True when the workspace (or deployment) has an email setting configured.
           readOnly: true
       title: Restriction
       additionalProperties: false

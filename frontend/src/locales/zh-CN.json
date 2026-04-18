@@ -109,22 +109,32 @@
       "title": "您已以其他用户身份登录"
     },
     "password-forget": {
-      "contact-us": "请联系 {email} 获取帮助。",
+      "failed-to-send-code": "发送密码重置验证码失败，请重试。",
       "return-to-sign-in": "返回登录",
       "selfhost": "请联系您的 Bytebase 管理员重置密码",
+      "send-reset-code": "发送重置验证码",
       "title": "忘记了您的密码？"
     },
     "password-forgot": "忘记密码",
     "password-reset": {
+      "code-label": "验证码",
       "content": "依据密码限制策略，您需要重置登录密码。",
+      "invalid-or-expired-code": "验证码无效或已过期，请重新申请。",
       "title": "重置您的密码"
     },
     "sign-in": {
+      "code-sent-hint": "验证码已发送至 {email}。",
       "demo-account": "Demo Account",
+      "email-code-tab": "邮箱验证码",
+      "failed-to-send-code": "发送验证码失败，请重试。",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {email} 登录",
       "new-user": "第一次使用 Bytebase?",
-      "sign-in-with-idp": "通过 {idp} 登录"
+      "resend-code": "重新发送验证码",
+      "resend-in": "{seconds} 秒后重新发送",
+      "send-code": "发送验证码",
+      "sign-in-with-idp": "通过 {idp} 登录",
+      "verification-code": "验证码"
     },
     "sign-up": {
       "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
@@ -2011,6 +2021,11 @@
         "allow-admin-data-source": {
           "description": "启用时，用户可以在主数据源和只读数据源之间进行选择。禁用时，如果配置了只读数据源，则强制用户使用只读数据源，否则回退到使用主数据源。",
           "self": "允许查询主数据源"
+        },
+        "allow-email-code-signin": {
+          "description": "用户可以通过输入发送到邮箱的 6 位验证码进行登录或注册。",
+          "enable": "允许使用邮箱验证码登录",
+          "require-email-setting": "必须先配置邮件 (SMTP) 设置后才能启用。"
         },
         "announcement": {
           "self": "公告"

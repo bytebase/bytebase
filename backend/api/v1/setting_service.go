@@ -66,7 +66,7 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 
 	response := &v1pb.ListSettingsResponse{}
 	for _, setting := range settings {
-		if isSettingDisallowed(setting.Name) {
+		if s.isSettingDisallowed(setting.Name) {
 			continue
 		}
 		settingMessage, err := convertToSettingMessage(setting)
@@ -92,7 +92,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(storeSettingName) {
+	if s.isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
@@ -142,7 +142,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
 	}
-	if isSettingDisallowed(storeSettingName) {
+	if s.isSettingDisallowed(storeSettingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 	if s.profile.IsFeatureUnavailable(settingName) {
@@ -286,6 +286,20 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
 			case "value.workspace_profile.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
+			case "value.workspace_profile.allow_email_code_signin":
+				if s.profile.SaaS {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("allow_email_code_signin cannot be changed in SaaS mode"))
+				}
+				if payload.AllowEmailCodeSignin {
+					emailSetting, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
+					if err != nil {
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to load email setting"))
+					}
+					if emailSetting == nil {
+						return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot enable email code signin without an EMAIL setting"))
+					}
+				}
+				oldSetting.AllowEmailCodeSignin = payload.AllowEmailCodeSignin
 			case "value.workspace_profile.disallow_password_signin":
 				if s.profile.SaaS {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("the disallow_password_signin cannot be changed in SaaS mode"))
@@ -819,10 +833,18 @@ var disallowedDomains = map[string]bool{
 	"yeah.net":       true,
 }
 
-func isSettingDisallowed(name storepb.SettingName) bool {
+func (s *SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 	// Backend-only settings that should never be exposed via the API.
-	// SYSTEM: Internal system settings (auth secret, workspace ID, enterprise license)
-	return name == storepb.SettingName_SYSTEM
+	switch name {
+	case storepb.SettingName_SYSTEM:
+		// SYSTEM: Internal system settings (auth secret, workspace ID, enterprise license)
+		return true
+	case storepb.SettingName_EMAIL:
+		// EMAIL: not exposed in the SaaS mode.
+		return s.profile.SaaS
+	default:
+		return false
+	}
 }
 
 func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {

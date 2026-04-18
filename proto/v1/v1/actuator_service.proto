@@ -74,6 +74,10 @@ message Restriction {
 
   // Whether email + 6-digit code signin is enabled for this workspace.
   bool allow_email_code_signin = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether password reset via email is available for this workspace.
+  // True when the workspace (or deployment) has an email setting configured.
+  bool password_reset_enabled = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // System information and configuration for the Bytebase instance.

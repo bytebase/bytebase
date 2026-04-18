@@ -109,22 +109,32 @@
       "title": "You have logged in as another user"
     },
     "password-forget": {
-      "contact-us": "Please contact us at {email} for help.",
+      "failed-to-send-code": "Failed to send password reset code. Please try again.",
       "return-to-sign-in": "Return to Sign in",
       "selfhost": "Please contact your Bytebase Admin to reset your password.",
+      "send-reset-code": "Send reset code",
       "title": "Forgot your password?"
     },
     "password-forgot": "Forgot Password",
     "password-reset": {
+      "code-label": "Verification code",
       "content": "You need to reset your password according to the password restriction policy.",
+      "invalid-or-expired-code": "Invalid or expired code. Please request a new one.",
       "title": "Reset your password"
     },
     "sign-in": {
+      "code-sent-hint": "A verification code was sent to {email}.",
       "demo-account": "Demo Account",
+      "email-code-tab": "Email Code",
+      "failed-to-send-code": "Failed to send verification code. {error}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {email}",
       "new-user": "New to Bytebase?",
-      "sign-in-with-idp": "Sign in with {idp}"
+      "resend-code": "Resend code",
+      "resend-in": "Resend in {seconds}s",
+      "send-code": "Send code",
+      "sign-in-with-idp": "Sign in with {idp}",
+      "verification-code": "Verification code"
     },
     "sign-up": {
       "accept-terms-and-policy": "I accept Bytebase's {terms} and {policy}",
@@ -2011,6 +2021,11 @@
         "allow-admin-data-source": {
           "description": "When enabled, users can choose between admin and read-only data sources. When disabled, users are forced to use read-only data sources if configured, otherwise fall back to admin data sources.",
           "self": "Allow querying the admin data source"
+        },
+        "allow-email-code-signin": {
+          "description": "Users can sign in or sign up by entering a 6-digit code delivered to their email address.",
+          "enable": "Allow signin with email code",
+          "require-email-setting": "An email (SMTP) setting must be configured first before enabling this."
         },
         "announcement": {
           "self": "Announcement"

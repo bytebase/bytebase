@@ -109,22 +109,32 @@
       "title": "Bạn đã đăng nhập với tư cách người dùng khác"
     },
     "password-forget": {
-      "contact-us": "Vui lòng liên hệ {email} để được hỗ trợ.",
+      "failed-to-send-code": "Không gửi được mã đặt lại mật khẩu. Vui lòng thử lại.",
       "return-to-sign-in": "Quay lại Đăng nhập",
       "selfhost": "Vui lòng liên hệ với Quản trị viên Bytebase của bạn để đặt lại mật khẩu của bạn.",
+      "send-reset-code": "Gửi mã đặt lại",
       "title": "Quên mật khẩu?"
     },
     "password-forgot": "Quên mật khẩu",
     "password-reset": {
+      "code-label": "Mã xác minh",
       "content": "Bạn cần đặt lại mật khẩu của mình theo chính sách hạn chế mật khẩu.",
+      "invalid-or-expired-code": "Mã không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
       "title": "Đặt lại mật khẩu của bạn"
     },
     "sign-in": {
+      "code-sent-hint": "Mã xác minh đã được gửi đến {email}.",
       "demo-account": "Demo Account",
+      "email-code-tab": "Mã qua email",
+      "failed-to-send-code": "Không gửi được mã xác minh. Vui lòng thử lại.",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {email}",
       "new-user": "Mới sử dụng Bytebase?",
-      "sign-in-with-idp": "Đăng nhập bằng {idp}"
+      "resend-code": "Gửi lại mã",
+      "resend-in": "Gửi lại sau {seconds}s",
+      "send-code": "Gửi mã",
+      "sign-in-with-idp": "Đăng nhập bằng {idp}",
+      "verification-code": "Mã xác minh"
     },
     "sign-up": {
       "accept-terms-and-policy": "Tôi chấp nhận {terms} và {policy} của Bytebase",
@@ -2011,6 +2021,11 @@
         "allow-admin-data-source": {
           "description": "Khi được bật, người dùng có thể chọn giữa nguồn dữ liệu quản trị và nguồn dữ liệu chỉ đọc. Khi bị tắt, người dùng buộc phải sử dụng nguồn dữ liệu chỉ đọc nếu được cấu hình, nếu không sẽ quay lại sử dụng nguồn dữ liệu quản trị.",
           "self": "Cho phép truy vấn nguồn dữ liệu quản trị"
+        },
+        "allow-email-code-signin": {
+          "description": "Người dùng có thể đăng nhập hoặc đăng ký bằng cách nhập mã 6 chữ số được gửi đến email của họ.",
+          "enable": "Cho phép đăng nhập bằng mã qua email",
+          "require-email-setting": "Phải cấu hình cài đặt email (SMTP) trước khi bật tùy chọn này."
         },
         "announcement": {
           "self": "Thông báo"

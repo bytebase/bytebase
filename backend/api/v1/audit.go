@@ -557,6 +557,9 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r.MfaTempToken != nil {
 		r.MfaTempToken = &maskedString
 	}
+	if r.EmailCode != nil {
+		r.EmailCode = &maskedString
+	}
 	if r.IdpContext != nil {
 		r.IdpContext = nil
 	}

@@ -14,11 +14,17 @@ import {
 } from "@/router/auth";
 import { SETUP_MODULE } from "@/router/setup";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useActuatorV1Store, useAppFeature, useUserStore } from "@/store";
+import {
+  useActuatorV1Store,
+  useAppFeature,
+  useUserStore,
+  useWorkspaceV1Store,
+} from "@/store";
 import { UNKNOWN_USER_NAME, unknownUser } from "@/types";
 import {
   type LoginRequest,
   LoginRequestSchema,
+  SendEmailLoginCodeRequestSchema,
   SignupRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
@@ -117,6 +123,10 @@ export const useAuthStore = defineStore("auth_v1", () => {
 
     setRequireResetPassword(resp.requireResetPassword);
     await actuatorStore.fetchServerInfo(user?.workspace);
+    // Re-fetch the current workspace now that we're authenticated — the
+    // workspace store watcher may have tried (and failed) pre-login when
+    // workspaceResourceName was already set from the signin page's actuator fetch.
+    await useWorkspaceV1Store().fetchCurrentWorkspace();
 
     // After user login, we need to reset the auth session key.
     authSessionKey.value = uniqueId();
@@ -216,6 +226,12 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
+  const sendEmailLoginCode = async (email: string, workspace?: string) => {
+    await authServiceClientConnect.sendEmailLoginCode(
+      create(SendEmailLoginCodeRequestSchema, { email, workspace })
+    );
+  };
+
   // Update currentUserName after self email change.
   // Sets flag to suppress "logged in as another user" notification.
   const updateCurrentUserNameForEmailChange = (newName: string) => {
@@ -235,6 +251,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     logout,
     fetchCurrentUser,
     setRequireResetPassword,
+    sendEmailLoginCode,
     updateCurrentUserNameForEmailChange,
   };
 });

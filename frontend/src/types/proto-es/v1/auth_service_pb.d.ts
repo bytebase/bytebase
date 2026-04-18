@@ -81,6 +81,17 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
    * @generated from field: optional string email_code = 9;
    */
   emailCode?: string;
+
+  /**
+   * Preferred workspace to land in after login. If the user is a member of this
+   * workspace, the token is issued for it; otherwise falls back to the default
+   * resolution (last login workspace → first membership). Typically populated
+   * from the ?workspace= query parameter in invite links.
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: optional string workspace = 10;
+   */
+  workspace?: string;
 };
 
 /**

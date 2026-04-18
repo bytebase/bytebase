@@ -45,7 +45,13 @@ type LoginRequest struct {
 	MfaTempToken *string `protobuf:"bytes,8,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`
 	// 6-digit code from email for passwordless login/signup.
 	// Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
-	EmailCode     *string `protobuf:"bytes,9,opt,name=email_code,json=emailCode,proto3,oneof" json:"email_code,omitempty"`
+	EmailCode *string `protobuf:"bytes,9,opt,name=email_code,json=emailCode,proto3,oneof" json:"email_code,omitempty"`
+	// Preferred workspace to land in after login. If the user is a member of this
+	// workspace, the token is issued for it; otherwise falls back to the default
+	// resolution (last login workspace → first membership). Typically populated
+	// from the ?workspace= query parameter in invite links.
+	// Format: workspaces/{workspace}
+	Workspace     *string `protobuf:"bytes,10,opt,name=workspace,proto3,oneof" json:"workspace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -139,6 +145,13 @@ func (x *LoginRequest) GetMfaTempToken() string {
 func (x *LoginRequest) GetEmailCode() string {
 	if x != nil && x.EmailCode != nil {
 		return *x.EmailCode
+	}
+	return ""
+}
+
+func (x *LoginRequest) GetWorkspace() string {
+	if x != nil && x.Workspace != nil {
+		return *x.Workspace
 	}
 	return ""
 }
@@ -930,7 +943,7 @@ var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x15v1/user_service.proto\"\x8e\x03\n" +
+	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x15v1/user_service.proto\"\xbf\x03\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x10\n" +
@@ -942,11 +955,15 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\rrecovery_code\x18\a \x01(\tH\x01R\frecoveryCode\x88\x01\x01\x12)\n" +
 	"\x0emfa_temp_token\x18\b \x01(\tH\x02R\fmfaTempToken\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"email_code\x18\t \x01(\tH\x03R\temailCode\x88\x01\x01B\v\n" +
+	"email_code\x18\t \x01(\tH\x03R\temailCode\x88\x01\x01\x12!\n" +
+	"\tworkspace\x18\n" +
+	" \x01(\tH\x04R\tworkspace\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
 	"\x0f_mfa_temp_tokenB\r\n" +
-	"\v_email_code\"\xc8\x01\n" +
+	"\v_email_codeB\f\n" +
+	"\n" +
+	"_workspace\"\xc8\x01\n" +
 	"\x17IdentityProviderContext\x12S\n" +
 	"\x0eoauth2_context\x18\x01 \x01(\v2*.bytebase.v1.OAuth2IdentityProviderContextH\x00R\roauth2Context\x12M\n" +
 	"\foidc_context\x18\x02 \x01(\v2(.bytebase.v1.OIDCIdentityProviderContextH\x00R\voidcContextB\t\n" +
