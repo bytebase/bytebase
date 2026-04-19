@@ -57,6 +57,7 @@ import {
   extractProjectResourceName,
   formatIssueTitle,
   getDatabaseNameOptionConfig,
+  normalizeTitle,
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
@@ -213,7 +214,7 @@ function RequestRoleForm({
   const canSubmit =
     !submitting &&
     !!role &&
-    (!reasonRequired || reason.trim().length > 0) &&
+    (!reasonRequired || normalizeTitle(reason).length > 0) &&
     (!expirationRequired || !!expirationTimestamp) &&
     !expirationIsInPast &&
     !expirationExceedsMax &&
@@ -225,7 +226,7 @@ function RequestRoleForm({
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      const trimmedReason = reason.trim();
+      const trimmedReason = normalizeTitle(reason);
       const expirationTimestampInMS = expirationTimestamp
         ? dayjs(expirationTimestamp).valueOf()
         : undefined;

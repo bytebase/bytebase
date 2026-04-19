@@ -185,6 +185,7 @@ vi.mock("@/utils", () => ({
   extractProjectResourceName: (name: string) => name.split("/")[1] ?? name,
   formatIssueTitle: (title: string) => `FMT(${title})`,
   getDatabaseNameOptionConfig: () => ({ options: [] }),
+  normalizeTitle: (s: string) => s.trim(),
 }));
 
 vi.mock("@/types", () => ({
