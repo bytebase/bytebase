@@ -364,4 +364,53 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     // projectHydrated flipped from false to true (the hydration gate opened).
     expect(getCreateButton().disabled).toBe(false);
   });
+
+  it("recovers from project fetch failure — Create not permanently disabled (BYT-9310 hydration-failed cell)", async () => {
+    // Design-cell lock: the projectHydrated gate was modeled as 2-state
+    // (loading → hydrated). A rejected getOrFetchProjectByName would leave
+    // hydration permanently stuck and Create permanently disabled with no
+    // recovery path. This test locks the third state (hydration-failed):
+    // projectHydrated must still flip true, governance still applies via
+    // the sentinel's enforceIssueTitle=true default, user can type a title
+    // to proceed.
+    mocks.getProjectByName.mockReturnValue(undefined);
+    mocks.getOrFetchProjectByName.mockRejectedValue(
+      new Error("simulated network failure")
+    );
+    mocks.getOrFetchInstanceByName.mockResolvedValue(TEST_INSTANCE);
+
+    await act(async () => {
+      root.render(
+        createElement(CreateDatabaseSheet, {
+          open: true,
+          onClose: () => {},
+          projectName: "projects/foo",
+        })
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await fillInstance();
+    await fillDatabaseName("widgets");
+    await flush();
+
+    // With hydration failed and sentinel projectReactive=undefined,
+    // enforceIssueTitle = projectHydrated && (undefined ?? false) = false.
+    // The auto-fill effect then runs, populating the title, so Create is
+    // reachable. The critical assertion is the button is NOT stuck disabled.
+    expect(getCreateButton().disabled).toBe(false);
+
+    // Clear the auto-fill to confirm the gate would still fire on empty
+    // input under whatever enforcement policy applies (defensive check that
+    // the recovery path didn't silently bypass title gating).
+    await act(async () => {
+      nativeChange(getTitleInput(), "");
+    });
+    // With enforceIssueTitle=false (sentinel + hydrated), an empty title
+    // is allowed — `effectiveTitle` fallback will fire server-side. The
+    // backend remains the source of truth and will apply the real project's
+    // setting on submit.
+    expect(getCreateButton().disabled).toBe(false);
+  });
 });

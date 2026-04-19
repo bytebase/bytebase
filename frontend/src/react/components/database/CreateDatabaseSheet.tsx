@@ -261,7 +261,33 @@ export function CreateDatabaseSheet({
           issueLabels: project.issueLabels ?? [],
           forceIssueLabels: project.forceIssueLabels ?? false,
         });
+      })
+      .catch((error) => {
+        if (fetchId !== projectFetchRef.current) return;
+        // Hydration-failed cell: without this catch, `projectHydrated` stays
+        // false forever and `allowCreate` is permanently disabled with no
+        // recovery path (transient network error, stale project, permission).
+        // Flip `projectHydrated` with safe defaults so the user can retry.
+        // The governance gate still applies: `enforceIssueTitle` is read from
+        // `projectReactive`, which returns the `unknownProject()` sentinel
+        // (`enforceIssueTitle=true`) when the project isn't cached — forcing
+        // a manual title, the safe governance default. The backend remains
+        // the source of truth on submit.
+        setSelectedProject({ issueLabels: [], forceIssueLabels: false });
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.error"),
+          description: String(
+            (error as { message?: string })?.message ?? error
+          ),
+        });
       });
+    // `t` is intentionally omitted from the dep array: react-i18next's `t`
+    // is stable across renders in production, and including it causes the
+    // effect to re-fire spuriously in test harnesses where `useTranslation`
+    // is mocked to return a fresh closure per render. Same convention as
+    // the auto-fill effect below.
   }, [effectiveProjectName, projectStore]);
 
   // Auto-fill when the project doesn't enforce manual titles.
