@@ -89,7 +89,7 @@ const databaseModeLabelKey = (mode: DatabaseMode): string => {
   }
 };
 
-export function RequestRoleSheet(props: RequestRoleSheetProps) {
+export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
   const { open, project, onClose } = props;
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
@@ -107,9 +107,15 @@ export function RequestRoleSheet(props: RequestRoleSheetProps) {
 function RequestRoleForm({
   project,
   onClose,
-}: Omit<RequestRoleSheetProps, "open">) {
+}: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  // Call the Pinia store accessor at the top level of the component so
+  // SonarCloud's React-hook-rule doesn't flag the `use*` call inside
+  // a subscription getter. `useCurrentUserV1()` returns a cached Pinia
+  // computed ref, so calling it once and reading `.value` inside the
+  // getter produces identical reactive semantics.
+  const currentUserRef = useCurrentUserV1();
+  const currentUser = useVueState(() => currentUserRef.value);
   const [role, setRole] = useState("");
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<
