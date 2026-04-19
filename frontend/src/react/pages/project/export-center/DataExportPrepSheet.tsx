@@ -54,6 +54,7 @@ import {
   generatePlanTitle,
   getDatabaseEnvironment,
   getInstanceResource,
+  normalizeTitle,
   setSheetStatement,
 } from "@/utils";
 
@@ -149,15 +150,15 @@ export function DataExportPrepSheet({
 
   const canCreate = useMemo(() => {
     if (!validSelectState) return false;
-    if (project?.enforceIssueTitle && !title.trim()) return false;
+    if (project?.enforceIssueTitle && !normalizeTitle(title)) return false;
     if (project?.forceIssueLabels && labels.length === 0) return false;
     if (!statement.trim()) return false;
     return true;
   }, [validSelectState, project, title, labels, statement]);
 
   const effectiveTitle = useMemo(() => {
-    const trimmed = title.trim();
-    if (trimmed) return trimmed;
+    const normalized = normalizeTitle(title);
+    if (normalized) return normalized;
     return generatePlanTitle("bb.plan.export-data", targetTitleNames);
   }, [title, targetTitleNames]);
 
@@ -166,7 +167,7 @@ export function DataExportPrepSheet({
   useEffect(() => {
     if (project?.enforceIssueTitle) return;
     if (targetTitleNames.length === 0) return;
-    if (titleEdited && title.trim()) return;
+    if (titleEdited && normalizeTitle(title)) return;
     setTitle(generatePlanTitle("bb.plan.export-data", targetTitleNames));
   }, [targetKey]);
 

@@ -47,6 +47,7 @@ import {
   getDefaultPagination,
   getIssueRoute,
   instanceV1HasCollationAndCharacterSet,
+  normalizeTitle,
 } from "@/utils";
 
 const INTERNAL_RDS_USERS = ["rds_ad", "rdsadmin", "rds_iam"];
@@ -292,7 +293,7 @@ export function CreateDatabaseSheet({
     (!requireOwner || !!ownerName) &&
     (!forceIssueLabels || issueLabels.length > 0) &&
     projectHydrated &&
-    !(enforceIssueTitle && !title.trim());
+    !(enforceIssueTitle && !normalizeTitle(title));
 
   const searchProjects = useCallback(
     (query: string) => {
@@ -381,7 +382,8 @@ export function CreateDatabaseSheet({
         config: { case: "createDatabaseConfig", value: createDatabaseConfig },
       });
       const effectiveTitle =
-        title.trim() || `${t("quick-action.create-db")} '${databaseName}'`;
+        normalizeTitle(title) ||
+        `${t("quick-action.create-db")} '${databaseName}'`;
       const planCreate = create(PlanSchema, {
         title: effectiveTitle,
         specs: [spec],

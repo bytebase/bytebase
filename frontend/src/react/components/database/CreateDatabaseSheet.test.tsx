@@ -165,6 +165,7 @@ vi.mock("@/utils", () => ({
   getDefaultPagination: () => 20,
   getIssueRoute: vi.fn(() => "/issues/1"),
   instanceV1HasCollationAndCharacterSet: () => false,
+  normalizeTitle: (s: string) => s.trim(),
 }));
 
 import { nativeChange } from "@/react/test-utils/nativeChange";

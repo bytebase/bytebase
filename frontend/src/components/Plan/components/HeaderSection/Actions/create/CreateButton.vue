@@ -105,6 +105,7 @@ import {
   extractProjectResourceName,
   extractSheetUID,
   hasProjectPermissionV2,
+  normalizeTitle,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -141,7 +142,7 @@ const planCreateErrorList = computed(() => {
   if (!hasProjectPermissionV2(project.value, "bb.plans.create")) {
     errorList.push(t("common.missing-required-permission"));
   }
-  if (!plan.value.title.trim()) {
+  if (!normalizeTitle(plan.value.title)) {
     errorList.push("Missing plan title");
   }
   if (plan.value.specs.some((spec) => isSpecEmpty(spec))) {

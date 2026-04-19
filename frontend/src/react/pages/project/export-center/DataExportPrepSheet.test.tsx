@@ -164,6 +164,7 @@ vi.mock("@/utils", () => ({
   },
   getDatabaseEnvironment: () => undefined,
   getInstanceResource: () => undefined,
+  normalizeTitle: (s: string) => s.trim(),
   setSheetStatement: () => {},
 }));
 
