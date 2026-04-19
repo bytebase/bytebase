@@ -2,7 +2,6 @@ import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
-  TextareaHTMLAttributes,
 } from "react";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -438,6 +437,3 @@ describe("DataExportPrepSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getCreateButton().disabled).toBe(false);
   });
 });
-
-// Silence "unused" warnings for imported types we only need for mock typing.
-export type _Unused = TextareaHTMLAttributes<HTMLTextAreaElement>;
