@@ -899,7 +899,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		updateMasks[path] = true
 		switch path {
 		case "title":
-			if req.Msg.Issue.Title == "" {
+			if strings.TrimSpace(req.Msg.Issue.Title) == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
 

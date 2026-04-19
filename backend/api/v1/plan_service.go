@@ -304,6 +304,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "title":
+			if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Plan.Title) == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Plan.Name))
+			}
 			planUpdate.Name = new(req.Plan.Title)
 		case "description":
 			planUpdate.Description = new(req.Plan.Description)
