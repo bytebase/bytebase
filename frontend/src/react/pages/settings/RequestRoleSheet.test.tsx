@@ -12,12 +12,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 // ---------------------------------------------------------------------------
-// Stub the MembersPage module to break the circular import. RequestRoleSheet
-// only consumes EnvironmentMultiSelect (runtime) and DatabaseMode (type) from
-// MembersPage — pulling the real file in would drag in the whole page tree.
+// Stub EnvironmentMultiSelect — the real component mounts Pinia-backed
+// environment state that's not worth wiring up for these tests.
 // ---------------------------------------------------------------------------
 
-vi.mock("./MembersPage", () => ({
+vi.mock("@/react/components/EnvironmentMultiSelect", () => ({
   EnvironmentMultiSelect: () =>
     createElement("div", { "data-testid": "env-multi-select" }),
 }));

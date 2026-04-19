@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import {
   Building2,
-  Check,
   ChevronDown,
   ChevronRight,
   Info,
@@ -30,6 +29,7 @@ import {
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -51,7 +51,6 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -59,7 +58,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  useEnvironmentV1Store,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useRoleStore,
@@ -94,6 +92,7 @@ import {
 } from "@/utils/issue/cel";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 import { RequestRoleSheet } from "./RequestRoleSheet";
+import type { DatabaseMode } from "./types";
 import {
   getRequestRoleButtonState,
   REQUEST_ROLE_REQUIRED_PERMISSIONS,
@@ -617,8 +616,6 @@ function formatExpirationDate(timestampMs?: number): string {
 // ProjectRoleBindingForm — one role binding form in create mode
 // ============================================================
 
-export type DatabaseMode = "ALL" | "EXPRESSION" | "SELECT";
-
 interface RoleBindingFormState {
   id: string;
   role: string;
@@ -629,108 +626,6 @@ interface RoleBindingFormState {
   databaseResources: DatabaseResource[];
   celExpression: string;
   environments: string[];
-}
-
-// ============================================================
-// EnvironmentMultiSelect
-// ============================================================
-
-export function EnvironmentMultiSelect({
-  value,
-  onChange,
-}: {
-  value: string[];
-  onChange: (envs: string[]) => void;
-}) {
-  const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environmentList = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const handleClickOutside = useCallback(() => setOpen(false), []);
-  useClickOutside(containerRef, open, handleClickOutside);
-
-  const toggle = (name: string) => {
-    onChange(
-      value.includes(name) ? value.filter((v) => v !== name) : [...value, name]
-    );
-  };
-
-  const remove = (name: string) => {
-    onChange(value.filter((v) => v !== name));
-  };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <div
-        className={cn(
-          "flex items-center flex-wrap gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
-          open && "border-accent"
-        )}
-        onClick={() => setOpen(!open)}
-      >
-        {value.length === 0 && (
-          <span className="text-control-placeholder">
-            {t("environment.select")}
-          </span>
-        )}
-        {value.map((name) => (
-          <span
-            key={name}
-            className="inline-flex items-center gap-x-1 rounded-xs border border-control-border px-1 py-0.5 text-xs"
-          >
-            <EnvironmentLabel environmentName={name} className="text-xs" />
-            <button
-              type="button"
-              className="text-control-light hover:text-control"
-              onClick={(e) => {
-                e.stopPropagation();
-                remove(name);
-              }}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        ))}
-        <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
-      </div>
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
-          {environmentList.length === 0 && (
-            <div className="px-3 py-2 text-sm text-control-light">
-              {t("common.no-data")}
-            </div>
-          )}
-          {environmentList.map((env) => {
-            const selected = value.includes(env.name);
-            return (
-              <div
-                key={env.name}
-                className="flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
-                onClick={() => toggle(env.name)}
-              >
-                <div
-                  className={cn(
-                    "size-4 rounded-xs border flex items-center justify-center shrink-0",
-                    selected
-                      ? "bg-accent border-accent text-accent-text"
-                      : "border-control-border"
-                  )}
-                >
-                  {selected && <Check className="h-3 w-3" />}
-                </div>
-                <EnvironmentLabel environment={env} />
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ============================================================

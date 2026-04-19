@@ -16,6 +16,7 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
+import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
 import type { OptionConfig } from "@/react/components/ExprEditor";
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
@@ -66,7 +67,7 @@ import {
   buildConditionExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { type DatabaseMode, EnvironmentMultiSelect } from "./MembersPage";
+import type { DatabaseMode } from "./types";
 
 export interface RequestRoleSheetProps {
   open: boolean;
