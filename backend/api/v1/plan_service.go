@@ -185,7 +185,8 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
-	if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Plan.Title) == "" {
+	trimmedTitle := strings.TrimSpace(req.Plan.Title)
+	if project.Setting.EnforceIssueTitle && trimmedTitle == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Parent))
 	}
 
@@ -197,7 +198,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
-		Name:        strings.TrimSpace(req.Plan.Title),
+		Name:        trimmedTitle,
 		Description: req.Plan.Description,
 		Config:      convertPlan(req.Plan),
 	}
