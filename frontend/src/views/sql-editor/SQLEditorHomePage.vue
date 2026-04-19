@@ -78,6 +78,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
+import { unknownProject } from "@/types";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
@@ -126,9 +127,14 @@ useEmitteryEventListener(
   "alter-schema",
   async ({ databaseName, schema, table }) => {
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    const project = await projectStore.getOrFetchProjectByName(
-      database.project
-    );
+    // Project-fetch-failed cell: if the project lookup rejects, still
+    // launch the plan page using the known `database.project`. Fall back
+    // to `unknownProject()` (enforceIssueTitle=true) — the launcher
+    // drops `query.name` so the user types a deliberate title before
+    // submitting. Backend remains the source of truth on submit.
+    const project = await projectStore
+      .getOrFetchProjectByName(database.project)
+      .catch(() => unknownProject());
     const exampleSQL = ["ALTER TABLE"];
     if (table) {
       if (schema) {

@@ -56,6 +56,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
+import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
@@ -144,7 +145,16 @@ const gotoCreateIssue = async () => {
   emit("close");
 
   const db = await databaseStore.getOrFetchDatabaseByName(database);
-  const project = await projectStore.getOrFetchProjectByName(db.project);
+  // Project-fetch-failed cell: if the project lookup rejects (transient
+  // network/permission failure), still open the plan page using the
+  // already-known `db.project`. Fall back to `unknownProject()` which
+  // has `enforceIssueTitle=true` — that is the safe governance default:
+  // the launcher drops `query.name` so the plan page opens with a blank
+  // title and the user types a deliberate one before submitting. Backend
+  // remains the source of truth on submit.
+  const project = await projectStore
+    .getOrFetchProjectByName(db.project)
+    .catch(() => unknownProject());
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   storageStore.put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
