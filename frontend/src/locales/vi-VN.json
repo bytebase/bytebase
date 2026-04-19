@@ -1169,14 +1169,9 @@
       "self": "Quy trình phê duyệt"
     },
     "batch-transition": {
-      "action-n-issues": "{action} {n} vấn đề | {action} {n} vấn đề",
-      "canceled-cannot-close": "Canceled issues cannot be closed",
       "close": "Đóng",
       "closed": "đã đóng",
-      "done-cannot-close": "Vấn đề đã phê duyệt không thể đóng",
-      "done-cannot-reopen": "Vấn đề đã phê duyệt không thể mở lại",
       "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
-      "open-cannot-reopen": "Open issues cannot be reopened",
       "reopen": "Mở lại",
       "reopened": "đã mở lại"
     },

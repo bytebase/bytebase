@@ -76,7 +76,7 @@ const planRoutes: RouteRecordRaw[] = [
   },
 ];
 
-// Issue routes — uses IssueLayout (issue-only)
+// Issue routes
 const issueRoutes: RouteRecordRaw[] = [
   {
     path: "issues/:issueId(\\d+)",

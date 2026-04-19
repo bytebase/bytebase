@@ -1169,14 +1169,9 @@
       "self": "Flujo de aprobación"
     },
     "batch-transition": {
-      "action-n-issues": "{action} {n} incidencia | {action} {n} incidencias",
-      "canceled-cannot-close": "Canceled issues cannot be closed",
       "close": "Cerrar",
       "closed": "cerrado",
-      "done-cannot-close": "Los problemas aprobados no se pueden cerrar",
-      "done-cannot-reopen": "Los problemas aprobados no se pueden reabrir",
       "not-allowed-tips": "Algunos de las incidencias seleccionadas no se pueden {operation}",
-      "open-cannot-reopen": "Open issues cannot be reopened",
       "reopen": "Reabrir",
       "reopened": "reabierto"
     },

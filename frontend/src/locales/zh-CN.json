@@ -1169,14 +1169,9 @@
       "self": "审批流"
     },
     "batch-transition": {
-      "action-n-issues": "{action} {n} 个工单",
-      "canceled-cannot-close": "已取消的工单无法关闭",
       "close": "关闭",
       "closed": "关闭",
-      "done-cannot-close": "已完成的工单无法关闭",
-      "done-cannot-reopen": "已完成的工单无法重开",
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "open-cannot-reopen": "打开中的工单无法重开",
       "reopen": "重开",
       "reopened": "重开"
     },
