@@ -1286,7 +1286,6 @@
     },
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
-      "create-database": "Tạo cơ sở dữ liệu",
       "export-data": "Xuất dữ liệu",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{role}\""

@@ -1286,7 +1286,6 @@
     },
     "title": {
       "change-database": "Modificar base de datos",
-      "create-database": "Crear base de datos",
       "export-data": "Exportar datos",
       "request-role": "Rol de solicitud",
       "request-specific-role": "Solicitar rol \"{role}\""

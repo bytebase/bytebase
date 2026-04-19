@@ -1286,7 +1286,6 @@
     },
     "title": {
       "change-database": "データベースの変更",
-      "create-database": "データベースを作成する",
       "export-data": "データをエクスポート",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{role}」ロールをリクエスト"

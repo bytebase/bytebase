@@ -92,11 +92,11 @@ import {
 } from "@/utils/issue/cel";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 import { RequestRoleSheet } from "./RequestRoleSheet";
-import type { DatabaseMode } from "./types";
 import {
   getRequestRoleButtonState,
   REQUEST_ROLE_REQUIRED_PERMISSIONS,
 } from "./requestRoleButton";
+import type { DatabaseMode } from "./types";
 
 const EMPTY_ROLE_SET = new Set<string>();
 

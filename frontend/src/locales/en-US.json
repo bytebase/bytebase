@@ -1286,7 +1286,6 @@
     },
     "title": {
       "change-database": "Change database",
-      "create-database": "Create database",
       "export-data": "Export data",
       "request-role": "Request role",
       "request-specific-role": "Request \"{role}\" role"
