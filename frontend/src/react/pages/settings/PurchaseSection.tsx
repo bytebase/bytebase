@@ -117,26 +117,20 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     const sessionId = params.get("session_id");
     if (!sessionId || !allowManage) return;
 
-    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
         const status = await subscriptionStore.verifyCheckoutSession(sessionId);
-        if (status !== "complete" || cancelled) return;
+        if (status !== "complete" || controller.signal.aborted) return;
 
-        // Poll without updating the store to avoid UI flash.
-        // On first check, if subscription is already non-FREE (webhook arrived before page load),
-        // we update the store and skip polling immediately.
         setPendingPayment(true);
-        for (let i = 0; i < 30; i++) {
-          if (cancelled) break;
-          const sub = await subscriptionStore.fetchSubscription(false);
-          if (sub && sub.plan !== PlanType.FREE) {
-            subscriptionStore.setSubscription(sub);
-            break;
-          }
-          await new Promise((r) => setTimeout(r, 2000));
+        await subscriptionStore.pollSubscriptionUntil(
+          (sub) => sub.plan !== PlanType.FREE,
+          { signal: controller.signal }
+        );
+        if (!controller.signal.aborted) {
+          setPendingPayment(false);
         }
-        setPendingPayment(false);
       } catch (e) {
         console.error("failed to verify checkout session", e);
       }
@@ -145,7 +139,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -306,16 +300,11 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
-        // Direct update — poll without updating store to avoid UI flashing.
+        // Direct update — wait for the webhook-driven reconciliation.
         setPendingPayment(true);
-        for (let i = 0; i < 30; i++) {
-          const sub = await subscriptionStore.fetchSubscription(false);
-          if (sub && sub.plan !== PlanType.FREE && sub.seats === seats) {
-            subscriptionStore.setSubscription(sub);
-            break;
-          }
-          await new Promise((r) => setTimeout(r, 2000));
-        }
+        await subscriptionStore.pollSubscriptionUntil(
+          (sub) => sub.plan !== PlanType.FREE && sub.seats === seats
+        );
         setPendingPayment(false);
       }
     } catch (e) {
@@ -330,6 +319,11 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     setCanceling(true);
     try {
       await subscriptionStore.cancelPurchase();
+      // Wait for the Stripe webhook to reconcile before releasing the UI,
+      // so the cached subscription/license reflects the new state.
+      await subscriptionStore.pollSubscriptionUntil(
+        (sub) => sub.plan === PlanType.FREE
+      );
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
