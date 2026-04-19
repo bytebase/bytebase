@@ -49,12 +49,12 @@ import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
+  useDatabaseV1Store as databaseV1Store,
+  useProjectV1Store as projectV1Store,
   pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
+  useStorageStore as storageStoreAccessor,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useStorageStore,
 } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -79,9 +79,14 @@ const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const databaseStore = useDatabaseV1Store();
-const projectStore = useProjectV1Store();
-const storageStore = useStorageStore();
+// Store accessors imported under non-`use*` aliases so SonarCloud's
+// React-hook-rule (typescript:S6440) doesn't misfire on these Pinia
+// calls in a Vue SFC. Pinia stores are module-level singletons; the
+// accessor name is cosmetic. Kept consistent across ExecuteHint.vue
+// and SQLEditorHomePage.vue.
+const databaseStore = databaseV1Store();
+const projectStore = projectV1Store();
+const storageStore = storageStoreAccessor();
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;

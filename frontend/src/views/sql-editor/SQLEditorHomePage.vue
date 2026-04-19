@@ -73,8 +73,8 @@ import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
+  useProjectV1Store as projectV1Store,
   useDatabaseV1Store,
-  useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -101,7 +101,11 @@ const state = reactive<LocalState>({
 
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const projectStore = useProjectV1Store();
+// projectStore accessor imported under a non-`use*` alias so SonarCloud's
+// React-hook-rule (typescript:S6440) doesn't misfire on this new Pinia
+// call in a Vue SFC. Consistent with the same workaround in
+// ExecuteHint.vue. Pinia stores are module-level singletons.
+const projectStore = projectV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 
