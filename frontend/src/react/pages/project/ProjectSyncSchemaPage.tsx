@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
+import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
@@ -393,12 +394,16 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
     useStorageStore().put(sqlMapStorageKey, sqlMap);
     query.sqlMapStorageKey = sqlMapStorageKey;
-    query.name = generatePlanTitle(
-      "bb.plan.change-database",
-      targetDatabases.map(
-        (db) => extractDatabaseResourceName(db.name).databaseName
+    if (!project) return; // defensive: should not happen if the page rendered
+    const name = planQueryNameForProject(project, () =>
+      generatePlanTitle(
+        "bb.plan.change-database",
+        targetDatabases.map(
+          (db) => extractDatabaseResourceName(db.name).databaseName
+        )
       )
     );
+    if (name !== undefined) query.name = name;
 
     router.push({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
