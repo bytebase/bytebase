@@ -76,6 +76,19 @@ export interface RequestRoleSheetProps {
   onClose: () => void;
 }
 
+// i18n key lookup for the three DatabaseMode radio labels. Kept as a flat
+// function to avoid nested ternaries in the render tree.
+const databaseModeLabelKey = (mode: DatabaseMode): string => {
+  switch (mode) {
+    case "ALL":
+      return "issue.role-grant.all-databases";
+    case "EXPRESSION":
+      return "issue.role-grant.use-cel";
+    case "SELECT":
+      return "issue.role-grant.manually-select";
+  }
+};
+
 export function RequestRoleSheet(props: RequestRoleSheetProps) {
   const { open, project, onClose } = props;
   return (
@@ -267,7 +280,7 @@ function RequestRoleForm({
         // silently drop the database scope filter and produce a broader
         // grant than the user requested — refuse instead and surface an
         // error so the user can retry.
-        if (!exprString || !exprString.trim()) {
+        if (!exprString?.trim()) {
           pushNotification({
             module: "bytebase",
             style: "CRITICAL",
@@ -438,11 +451,7 @@ function RequestRoleForm({
                           setExprGroup(wrapAsGroup(emptySimpleExpr()));
                         }}
                       />
-                      {m === "ALL"
-                        ? t("issue.role-grant.all-databases")
-                        : m === "EXPRESSION"
-                          ? t("issue.role-grant.use-cel")
-                          : t("issue.role-grant.manually-select")}
+                      {t(databaseModeLabelKey(m))}
                     </label>
                   )
                 )}
