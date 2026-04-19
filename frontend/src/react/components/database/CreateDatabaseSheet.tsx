@@ -271,7 +271,7 @@ export function CreateDatabaseSheet({
     if (!projectHydrated) return;
     if (enforceIssueTitle) return;
     if (!databaseName) return;
-    if (titleEdited && title.trim()) return;
+    if (titleEdited && normalizeTitle(title)) return;
     setTitle(`${t("quick-action.create-db")} '${databaseName}'`);
   }, [databaseName, enforceIssueTitle, projectHydrated]);
 
