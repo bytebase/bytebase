@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -263,22 +264,24 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         const databaseGroupName = targets[0];
         if (!databaseGroupName) return;
         query.databaseGroupName = databaseGroupName;
-        if (!project.enforceIssueTitle) {
-          query.name = generatePlanTitle(template, [
+        const name = planQueryNameForProject(project, () =>
+          generatePlanTitle(template, [
             extractDatabaseGroupName(databaseGroupName),
-          ]);
-        }
+          ])
+        );
+        if (name !== undefined) query.name = name;
       } else {
         query.databaseList = targets.join(",");
-        if (!project.enforceIssueTitle) {
-          query.name = generatePlanTitle(
+        const name = planQueryNameForProject(project, () =>
+          generatePlanTitle(
             template,
             targets.map((db) => {
               const { databaseName } = extractDatabaseResourceName(db);
               return databaseName;
             })
-          );
-        }
+          )
+        );
+        if (name !== undefined) query.name = name;
       }
 
       await router.push({
