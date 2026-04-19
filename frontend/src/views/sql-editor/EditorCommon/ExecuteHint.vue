@@ -45,11 +45,13 @@ import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
+  useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
   useStorageStore,
@@ -134,16 +136,21 @@ const gotoCreateIssue = async () => {
   emit("close");
 
   const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
+  const project = await useProjectV1Store().getOrFetchProjectByName(db.project);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
 
-  const query = {
+  const name = planQueryNameForProject(
+    project,
+    () => `[${databaseName}] Change from SQL Editor`
+  );
+  const query: Record<string, string> = {
     template: "bb.plan.change-database",
-    name: `[${databaseName}] Change from SQL Editor`,
     databaseList: db.name,
     sqlStorageKey,
   };
+  if (name !== undefined) query.name = name;
 
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
