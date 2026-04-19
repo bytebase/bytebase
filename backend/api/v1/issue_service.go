@@ -485,7 +485,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			Expiration: request.Issue.RoleGrant.Expiration,
 		}
 
-		title = request.Issue.Title
+		title = strings.TrimSpace(request.Issue.Title)
 		description = request.Issue.Description
 
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_DATABASE_EXPORT:
@@ -509,8 +509,8 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		planUID = &plan.UID
 
 		// Use plan's title and description as defaults if not provided by request
-		title = request.Issue.Title
-		if strings.TrimSpace(title) == "" {
+		title = strings.TrimSpace(request.Issue.Title)
+		if title == "" {
 			title = plan.Name
 		}
 		description = request.Issue.Description
@@ -899,11 +899,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		updateMasks[path] = true
 		switch path {
 		case "title":
-			if strings.TrimSpace(req.Msg.Issue.Title) == "" {
+			trimmed := strings.TrimSpace(req.Msg.Issue.Title)
+			if trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
 
-			patch.Title = &req.Msg.Issue.Title
+			patch.Title = &trimmed
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -911,7 +912,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
 							FromTitle: &issue.Title,
-							ToTitle:   &req.Msg.Issue.Title,
+							ToTitle:   &trimmed,
 						},
 					},
 				},

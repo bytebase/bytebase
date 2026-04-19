@@ -197,7 +197,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
-		Name:        req.Plan.Title,
+		Name:        strings.TrimSpace(req.Plan.Title),
 		Description: req.Plan.Description,
 		Config:      convertPlan(req.Plan),
 	}
@@ -304,10 +304,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "title":
-			if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Plan.Title) == "" {
+			trimmed := strings.TrimSpace(req.Plan.Title)
+			if project.Setting.EnforceIssueTitle && trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Plan.Name))
 			}
-			planUpdate.Name = new(req.Plan.Title)
+			planUpdate.Name = &trimmed
 		case "description":
 			planUpdate.Description = new(req.Plan.Description)
 		case "state":
