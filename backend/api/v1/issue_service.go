@@ -398,9 +398,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
-	if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Msg.Issue.Title) == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual issue title (enforce_issue_title is enabled)", req.Msg.Parent))
-	}
+	// enforceIssueTitle is enforced on CreatePlan (plan.Name is gated there). Issues
+	// with empty Title inherit plan.Name via buildIssueMessage; ROLE_GRANT issues
+	// have their own title-required check below. No gate needed here.
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
