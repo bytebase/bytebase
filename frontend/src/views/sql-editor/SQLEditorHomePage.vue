@@ -101,6 +101,7 @@ const state = reactive<LocalState>({
 
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 
@@ -121,7 +122,7 @@ useEmitteryEventListener(
   "alter-schema",
   async ({ databaseName, schema, table }) => {
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    const project = await useProjectV1Store().getOrFetchProjectByName(
+    const project = await projectStore.getOrFetchProjectByName(
       database.project
     );
     const exampleSQL = ["ALTER TABLE"];

@@ -79,6 +79,9 @@ const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
+const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
+const storageStore = useStorageStore();
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -135,10 +138,10 @@ const gotoCreateIssue = async () => {
 
   emit("close");
 
-  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
-  const project = await useProjectV1Store().getOrFetchProjectByName(db.project);
+  const db = await databaseStore.getOrFetchDatabaseByName(database);
+  const project = await projectStore.getOrFetchProjectByName(db.project);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  useStorageStore().put(sqlStorageKey, statement.value);
+  storageStore.put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
 
   const query: Record<string, string> = {
