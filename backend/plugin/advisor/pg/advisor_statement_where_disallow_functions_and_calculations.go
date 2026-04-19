@@ -545,7 +545,9 @@ func (r *whereDisallowFuncPgRule) walkCTEBody(query ast.Node) {
 func (r *whereDisallowFuncPgRule) handleWithClause(with *ast.WithClause) func() {
 	// noop is the intentional empty cleanup returned when there's nothing to pop —
 	// callers always `defer` the result, so the no-op keeps the call-site uniform.
-	noop := func() {}
+	noop := func() {
+		// Intentionally empty: no CTE frame was pushed, so nothing to pop.
+	}
 	if with == nil || with.Ctes == nil {
 		return noop
 	}
