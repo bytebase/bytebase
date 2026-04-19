@@ -171,6 +171,10 @@ const sendCode = async () => {
 };
 
 const handleSubmit = async () => {
+  if (step.value === "email") {
+    await sendCode();
+    return;
+  }
   const code = state.codeParts.join("");
   if (!state.email || code.length !== 6) return;
   emit(

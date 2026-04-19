@@ -280,7 +280,7 @@ const showSignInForm = computed(() => {
   return (
     !serverInfo.value?.restriction?.disallowPasswordSignin ||
     groupedIdentityProviderList.value.length > 0 ||
-    serverInfo.value.restriction.allowEmailCodeSignin
+    serverInfo.value?.restriction?.allowEmailCodeSignin
   );
 });
 

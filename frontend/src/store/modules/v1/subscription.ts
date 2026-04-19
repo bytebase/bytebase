@@ -231,6 +231,34 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     }
   };
 
+  // Poll GetSubscription until predicate returns true, timeout, or abort.
+  // Used after webhook-driven state changes (purchase, update, cancel) to reflect
+  // the new subscription in the store without requiring a manual page refresh.
+  // On match, the store is updated and the subscription is returned. Returns
+  // undefined on timeout or abort without mutating the store.
+  const pollSubscriptionUntil = async (
+    predicate: (sub: Subscription) => boolean,
+    options: {
+      timeoutMs?: number;
+      intervalMs?: number;
+      signal?: AbortSignal;
+    } = {}
+  ): Promise<Subscription | undefined> => {
+    const { timeoutMs = 60_000, intervalMs = 2_000, signal } = options;
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (signal?.aborted) return undefined;
+      const sub = await fetchSubscription(false);
+      if (signal?.aborted) return undefined;
+      if (sub && predicate(sub)) {
+        setSubscription(sub);
+        return sub;
+      }
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+    return undefined;
+  };
+
   const uploadLicense = async (license: string) => {
     const request = create(UploadLicenseRequestSchema, {
       license,
@@ -338,6 +366,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     instanceMissingLicense,
     getMinimumRequiredPlan,
     fetchSubscription,
+    pollSubscriptionUntil,
     uploadLicense,
     setSubscription,
     // Purchase actions (SaaS)
