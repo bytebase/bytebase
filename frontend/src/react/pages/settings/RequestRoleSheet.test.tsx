@@ -184,17 +184,7 @@ vi.mock("@/utils", () => ({
   displayRoleTitle: (role: string) => `TITLE(${role})`,
   extractIssueUID: (name: string) => name.split("/").pop() ?? "",
   extractProjectResourceName: (name: string) => name.split("/")[1] ?? name,
-  formatIssueTitle: (title: string, databaseNameList?: string[]) => {
-    const parts: string[] = [];
-    if (databaseNameList !== undefined) {
-      if (databaseNameList.length === 0) parts.push(`[All databases]`);
-      else if (databaseNameList.length === 1)
-        parts.push(`[${databaseNameList[0]}]`);
-      else parts.push(`[${databaseNameList.length} databases]`);
-    }
-    parts.push(title);
-    return parts.join(" ");
-  },
+  formatIssueTitle: (title: string) => `FMT(${title})`,
   getDatabaseNameOptionConfig: () => ({ options: [] }),
 }));
 
@@ -390,8 +380,8 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     const req = mocks.createIssue.mock.calls[0][0] as {
       issue: { title: string };
     };
-    // formatIssueTitle mock: no database list → no `[...]` prefix,
-    // title is just the i18n key as rendered by t().
-    expect(req.issue.title).toBe("issue.title.request-specific-role");
+    // formatIssueTitle sentinel: mock wraps in FMT(...) so if the production
+    // code drops the formatIssueTitle() call, this assertion fails.
+    expect(req.issue.title).toBe("FMT(issue.title.request-specific-role)");
   });
 });
