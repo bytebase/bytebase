@@ -543,6 +543,8 @@ func (r *whereDisallowFuncPgRule) walkCTEBody(query ast.Node) {
 // fell through to base tables — codex round 15). Push-before-each is the
 // common-denominator that handles both correctly.
 func (r *whereDisallowFuncPgRule) handleWithClause(with *ast.WithClause) func() {
+	// noop is the intentional empty cleanup returned when there's nothing to pop —
+	// callers always `defer` the result, so the no-op keeps the call-site uniform.
 	noop := func() {}
 	if with == nil || with.Ctes == nil {
 		return noop
