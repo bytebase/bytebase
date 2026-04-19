@@ -355,12 +355,12 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
 
     await act(async () => {
       resolveHydration({
-        enforceIssueTitle: true,
+        enforceIssueTitle: false,
         issueLabels: [],
         forceIssueLabels: false,
       });
       mocks.getProjectByName.mockReturnValue({
-        enforceIssueTitle: true,
+        enforceIssueTitle: false,
         issueLabels: [],
         forceIssueLabels: false,
       });
@@ -368,6 +368,10 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
       await Promise.resolve();
     });
 
-    expect(getCreateButton().disabled).toBe(true);
+    // After hydration resolves with enforceIssueTitle: false, the auto-fill
+    // effect triggers (db name "widgets" was typed earlier), setting title to
+    // the generated string. Create must now be enabled, proving that
+    // projectHydrated flipped from false to true (the hydration gate opened).
+    expect(getCreateButton().disabled).toBe(false);
   });
 });
