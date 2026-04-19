@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { planQueryNameForProject } from "./title";
+import { applyPlanTitleToQuery, planQueryNameForProject } from "./title";
 
 describe("planQueryNameForProject", () => {
   it("returns undefined when the project enforces manual title", () => {
@@ -28,5 +28,54 @@ describe("planQueryNameForProject", () => {
     const generate = vi.fn(() => "Auto Title");
     planQueryNameForProject({ enforceIssueTitle: false }, generate);
     expect(generate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("applyPlanTitleToQuery", () => {
+  it("does not set query.name when the project enforces manual title", () => {
+    const query: Record<string, string> = {
+      template: "bb.plan.change-database",
+    };
+    applyPlanTitleToQuery(
+      query,
+      { enforceIssueTitle: true },
+      () => "Auto Title"
+    );
+    expect(query).toEqual({ template: "bb.plan.change-database" });
+    expect(query.name).toBeUndefined();
+  });
+
+  it("sets query.name to the generator output when manual title is not enforced", () => {
+    const query: Record<string, string> = {};
+    applyPlanTitleToQuery(
+      query,
+      { enforceIssueTitle: false },
+      () => "Auto Title"
+    );
+    expect(query.name).toBe("Auto Title");
+  });
+
+  it("does not invoke the generator when manual title is enforced", () => {
+    const generate = vi.fn(() => "Auto Title");
+    const query: Record<string, string> = {};
+    applyPlanTitleToQuery(query, { enforceIssueTitle: true }, generate);
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("preserves pre-existing keys on the query", () => {
+    const query: Record<string, string> = {
+      template: "bb.plan.change-database",
+      databaseList: "db1,db2",
+    };
+    applyPlanTitleToQuery(
+      query,
+      { enforceIssueTitle: false },
+      () => "Auto Title"
+    );
+    expect(query).toEqual({
+      template: "bb.plan.change-database",
+      databaseList: "db1,db2",
+      name: "Auto Title",
+    });
   });
 });

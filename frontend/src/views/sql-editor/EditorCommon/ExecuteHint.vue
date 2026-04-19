@@ -45,7 +45,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { planQueryNameForProject } from "@/components/Plan/logic/title";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -141,16 +141,16 @@ const gotoCreateIssue = async () => {
   useStorageStore().put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
 
-  const name = planQueryNameForProject(
-    project,
-    () => `[${databaseName}] Change from SQL Editor`
-  );
   const query: Record<string, string> = {
     template: "bb.plan.change-database",
     databaseList: db.name,
     sqlStorageKey,
   };
-  if (name !== undefined) query.name = name;
+  applyPlanTitleToQuery(
+    query,
+    project,
+    () => `[${databaseName}] Change from SQL Editor`
+  );
 
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,

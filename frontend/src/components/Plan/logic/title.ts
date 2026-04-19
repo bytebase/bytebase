@@ -20,3 +20,21 @@ export const planQueryNameForProject = (
   project: Pick<Project, "enforceIssueTitle">,
   generate: () => string
 ): string | undefined => (project.enforceIssueTitle ? undefined : generate());
+
+/**
+ * Writes the auto-generated plan title into `query.name` unless the project
+ * enforces manual titles. When `enforceIssueTitle` is true, leaves `query.name`
+ * unset so the plan-create page opens with an empty title — the user must type
+ * a deliberate title before `CreateButton.vue` allows submit.
+ *
+ * Use this at every plan-route launcher. It centralizes the governance contract
+ * in one callable so there's exactly one place to audit.
+ */
+export const applyPlanTitleToQuery = (
+  query: Record<string, string>,
+  project: Pick<Project, "enforceIssueTitle">,
+  generate: () => string
+): void => {
+  const name = planQueryNameForProject(project, generate);
+  if (name !== undefined) query.name = name;
+};

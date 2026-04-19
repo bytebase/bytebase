@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
-import { planQueryNameForProject } from "@/components/Plan/logic/title";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -395,7 +395,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     useStorageStore().put(sqlMapStorageKey, sqlMap);
     query.sqlMapStorageKey = sqlMapStorageKey;
     if (!project) return; // defensive: should not happen if the page rendered
-    const name = planQueryNameForProject(project, () =>
+    applyPlanTitleToQuery(query, project, () =>
       generatePlanTitle(
         "bb.plan.change-database",
         targetDatabases.map(
@@ -403,7 +403,6 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         )
       )
     );
-    if (name !== undefined) query.name = name;
 
     router.push({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,

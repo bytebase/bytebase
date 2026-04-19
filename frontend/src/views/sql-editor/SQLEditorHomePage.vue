@@ -67,7 +67,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
-import { planQueryNameForProject } from "@/components/Plan/logic/title";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -133,16 +133,12 @@ useEmitteryEventListener(
       }
     }
     const { databaseName: dbName } = extractDatabaseResourceName(database.name);
-    const name = planQueryNameForProject(
-      project,
-      () => `[${dbName}] Edit schema`
-    );
     const query: Record<string, string> = {
       template: "bb.plan.change-database",
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };
-    if (name !== undefined) query.name = name;
+    applyPlanTitleToQuery(query, project, () => `[${dbName}] Edit schema`);
     const route = router.resolve({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
       params: {

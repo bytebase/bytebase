@@ -1,4 +1,3 @@
-import type { LocationQueryRaw } from "vue-router";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -13,7 +12,7 @@ import {
   extractProjectResourceName,
   generatePlanTitle,
 } from "@/utils";
-import { planQueryNameForProject } from "./title";
+import { applyPlanTitleToQuery } from "./title";
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
   const type = "bb.plan.change-database";
@@ -40,26 +39,24 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
   const projectEntity = await projectStore.getOrFetchProjectByName(project);
 
   // Navigate to plan detail page
-  const query: LocationQueryRaw = {
+  const query: Record<string, string> = {
     template: type,
   };
 
   if (isDatabaseGroup) {
     const databaseGroupName = targets[0];
     query.databaseGroupName = databaseGroupName;
-    const name = planQueryNameForProject(projectEntity, () =>
+    applyPlanTitleToQuery(query, projectEntity, () =>
       generatePlanTitle(type, [extractDatabaseGroupName(databaseGroupName)])
     );
-    if (name !== undefined) query.name = name;
   } else {
     query.databaseList = targets.join(",");
-    const name = planQueryNameForProject(projectEntity, () =>
+    applyPlanTitleToQuery(query, projectEntity, () =>
       generatePlanTitle(
         type,
         targets.map((db) => extractDatabaseResourceName(db).databaseName)
       )
     );
-    if (name !== undefined) query.name = name;
   }
 
   router.push({
