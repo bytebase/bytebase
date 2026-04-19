@@ -438,7 +438,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 	switch request.Issue.Type {
 	case v1pb.Issue_ROLE_GRANT:
 		// Title is required for role grant requests.
-		if request.Issue.Title == "" {
+		if strings.TrimSpace(request.Issue.Title) == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 		}
 
@@ -510,7 +510,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 
 		// Use plan's title and description as defaults if not provided by request
 		title = request.Issue.Title
-		if title == "" {
+		if strings.TrimSpace(title) == "" {
 			title = plan.Name
 		}
 		description = request.Issue.Description
