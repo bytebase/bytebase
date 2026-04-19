@@ -13,8 +13,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";

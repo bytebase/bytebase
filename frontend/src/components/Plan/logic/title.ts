@@ -19,5 +19,4 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 export const planQueryNameForProject = (
   project: Pick<Project, "enforceIssueTitle">,
   generate: () => string
-): string | undefined =>
-  project.enforceIssueTitle ? undefined : generate();
+): string | undefined => (project.enforceIssueTitle ? undefined : generate());
