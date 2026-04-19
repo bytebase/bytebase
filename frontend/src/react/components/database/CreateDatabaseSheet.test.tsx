@@ -167,6 +167,7 @@ vi.mock("@/utils", () => ({
   instanceV1HasCollationAndCharacterSet: () => false,
 }));
 
+import { nativeChange } from "@/react/test-utils/nativeChange";
 import { CreateDatabaseSheet } from "./CreateDatabaseSheet";
 
 const TEST_INSTANCE = {
@@ -219,18 +220,6 @@ async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
     await Promise.resolve();
     await Promise.resolve();
   });
-}
-
-/** Fire a React-compatible change event on an input by using the native value
- *  setter (required because React 18 detects value mutation via the descriptor). */
-function nativeChange(input: HTMLInputElement, value: string) {
-  const descriptor = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value"
-  );
-  descriptor?.set?.call(input, value);
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-  input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 async function fillInstance(): Promise<void> {

@@ -233,6 +233,7 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
+import { nativeChange } from "@/react/test-utils/nativeChange";
 import { DataExportPrepSheet } from "./DataExportPrepSheet";
 
 // ---------------------------------------------------------------------------
@@ -304,22 +305,6 @@ async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
     getNextButton().click();
   });
   await flush();
-}
-
-/** Fire a React-compatible change event on an input by using the native value
- *  setter (required because React 18 detects value mutation via the descriptor). */
-function nativeChange(
-  el: HTMLInputElement | HTMLTextAreaElement,
-  value: string
-): void {
-  const proto =
-    el instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
-  const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
-  descriptor?.set?.call(el, value);
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function getTitleInput(): HTMLInputElement {

@@ -223,6 +223,7 @@ vi.mock("@/store", () => ({
 // Import SUT after mocks are registered.
 // ---------------------------------------------------------------------------
 
+import { nativeChange } from "@/react/test-utils/nativeChange";
 import { RequestRoleSheet } from "./RequestRoleSheet";
 
 const PROJECT_BASE = {
@@ -250,20 +251,6 @@ afterEach(() => {
   });
   document.body.removeChild(container);
 });
-
-function nativeChange(
-  el: HTMLInputElement | HTMLTextAreaElement,
-  value: string
-): void {
-  const proto =
-    el instanceof HTMLTextAreaElement
-      ? HTMLTextAreaElement.prototype
-      : HTMLInputElement.prototype;
-  const descriptor = Object.getOwnPropertyDescriptor(proto, "value");
-  descriptor?.set?.call(el, value);
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
-}
 
 async function flush(): Promise<void> {
   await act(async () => {
