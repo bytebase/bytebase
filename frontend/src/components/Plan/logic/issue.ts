@@ -13,6 +13,7 @@ import {
   extractProjectResourceName,
   generatePlanTitle,
 } from "@/utils";
+import { planQueryNameForProject } from "./title";
 
 export const preCreateIssue = async (project: string, targets: string[]) => {
   const type = "bb.plan.change-database";
@@ -46,24 +47,19 @@ export const preCreateIssue = async (project: string, targets: string[]) => {
   if (isDatabaseGroup) {
     const databaseGroupName = targets[0];
     query.databaseGroupName = databaseGroupName;
-    // Only set title from generated if enforceIssueTitle is false.
-    if (!projectEntity.enforceIssueTitle) {
-      query.name = generatePlanTitle(type, [
-        extractDatabaseGroupName(databaseGroupName),
-      ]);
-    }
+    const name = planQueryNameForProject(projectEntity, () =>
+      generatePlanTitle(type, [extractDatabaseGroupName(databaseGroupName)])
+    );
+    if (name !== undefined) query.name = name;
   } else {
     query.databaseList = targets.join(",");
-    // Only set title from generated if enforceIssueTitle is false.
-    if (!projectEntity.enforceIssueTitle) {
-      query.name = generatePlanTitle(
+    const name = planQueryNameForProject(projectEntity, () =>
+      generatePlanTitle(
         type,
-        targets.map((db) => {
-          const { databaseName } = extractDatabaseResourceName(db);
-          return databaseName;
-        })
-      );
-    }
+        targets.map((db) => extractDatabaseResourceName(db).databaseName)
+      )
+    );
+    if (name !== undefined) query.name = name;
   }
 
   router.push({
