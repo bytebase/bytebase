@@ -398,6 +398,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
+	if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Msg.Issue.Title) == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual issue title (enforce_issue_title is enabled)", req.Msg.Parent))
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))

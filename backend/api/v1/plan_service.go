@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -182,6 +183,10 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
+	}
+
+	if project.Setting.EnforceIssueTitle && strings.TrimSpace(req.Plan.Title) == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Parent))
 	}
 
 	// Validate plan specs
