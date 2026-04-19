@@ -78,4 +78,14 @@ describe("applyPlanTitleToQuery", () => {
       name: "Auto Title",
     });
   });
+
+  it("clears a pre-existing query.name when enforceIssueTitle is true", () => {
+    const query: Record<string, string> = {
+      template: "bb.plan.change-database",
+      name: "stale auto title",
+    };
+    applyPlanTitleToQuery(query, { enforceIssueTitle: true }, () => "fresh");
+    expect(query.name).toBeUndefined();
+    expect(query.template).toBe("bb.plan.change-database"); // untouched
+  });
 });

@@ -27,6 +27,10 @@ export const planQueryNameForProject = (
  * unset so the plan-create page opens with an empty title — the user must type
  * a deliberate title before `CreateButton.vue` allows submit.
  *
+ * If `query.name` is already set by the caller, this helper clears it when
+ * enforcement is on, to prevent a stale pre-fill from reaching an enforced
+ * project.
+ *
  * Use this at every plan-route launcher. It centralizes the governance contract
  * in one callable so there's exactly one place to audit.
  */
@@ -36,5 +40,9 @@ export const applyPlanTitleToQuery = (
   generate: () => string
 ): void => {
   const name = planQueryNameForProject(project, generate);
-  if (name !== undefined) query.name = name;
+  if (name === undefined) {
+    delete query.name;
+  } else {
+    query.name = name;
+  }
 };
