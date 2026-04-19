@@ -197,6 +197,8 @@ export function CreateDatabaseSheet({
   const [characterSet, setCharacterSet] = useState("");
   const [collation, setCollation] = useState("");
   const [creating, setCreating] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleEdited, setTitleEdited] = useState(false);
   const [issueLabels, setIssueLabels] = useState<string[]>([]);
   const [instanceRoles, setInstanceRoles] = useState<
     { name: string; roleName: string }[]
@@ -222,6 +224,28 @@ export function CreateDatabaseSheet({
 
   const effectiveProjectName = fixedProjectName || projectName;
 
+  // Intentional split: enforceIssueTitle is read reactively via useVueState
+  // because it's a governance gate that MUST reflect the live project state
+  // (workspace-picker swaps change projects mid-form). `issueLabels` /
+  // `forceIssueLabels` stay on the pre-existing `selectedProject` snapshot
+  // pattern below — they have a known staleness seam that is out of scope
+  // for BYT-9310. Do not collapse these back together without a separate spec.
+  const projectReactive = useVueState(() =>
+    effectiveProjectName
+      ? projectStore.getProjectByName(effectiveProjectName)
+      : undefined
+  );
+
+  // Note on hydration: projectStore.getProjectByName returns an
+  // unknownProject() sentinel when the project is not yet cached. The sentinel
+  // has restrictive defaults (enforceIssueTitle=true). Rather than depend on
+  // the sentinel value, we mask the pre-hydration state entirely with
+  // `projectHydrated` — this keeps the gate correct regardless of the sentinel
+  // and makes the intent ("we haven't seen the real project yet") explicit.
+  const projectHydrated = selectedProject !== undefined;
+  const enforceIssueTitle =
+    projectHydrated && (projectReactive?.enforceIssueTitle ?? false);
+
   const projectFetchRef = useRef(0);
   useEffect(() => {
     setIssueLabels([]);
@@ -239,6 +263,17 @@ export function CreateDatabaseSheet({
       });
   }, [effectiveProjectName, projectStore]);
 
+  // Auto-fill when the project doesn't enforce manual titles.
+  // Intentional omissions from the dep array: `title` and `titleEdited` are
+  // read inside the guard (not reactive triggers); `t` is stable.
+  useEffect(() => {
+    if (!projectHydrated) return;
+    if (enforceIssueTitle) return;
+    if (!databaseName) return;
+    if (titleEdited && title.trim()) return;
+    setTitle(`${t("quick-action.create-db")} '${databaseName}'`);
+  }, [databaseName, enforceIssueTitle, projectHydrated]);
+
   const projectIssueLabels = selectedProject?.issueLabels ?? [];
   const forceIssueLabels = selectedProject?.forceIssueLabels ?? false;
 
@@ -255,7 +290,9 @@ export function CreateDatabaseSheet({
     !!databaseName &&
     !isReservedName &&
     (!requireOwner || !!ownerName) &&
-    (!forceIssueLabels || issueLabels.length > 0);
+    (!forceIssueLabels || issueLabels.length > 0) &&
+    projectHydrated &&
+    !(enforceIssueTitle && !title.trim());
 
   const searchProjects = useCallback(
     (query: string) => {
@@ -286,6 +323,8 @@ export function CreateDatabaseSheet({
     setCollation("");
     setCreating(false);
     setInstanceRoles([]);
+    setTitle("");
+    setTitleEdited(false);
     if (!fixedProjectName) searchProjects("");
   }, [open, searchProjects, fixedProjectName]);
 
@@ -341,12 +380,15 @@ export function CreateDatabaseSheet({
         id: uuidv4(),
         config: { case: "createDatabaseConfig", value: createDatabaseConfig },
       });
+      const effectiveTitle =
+        title.trim() || `${t("quick-action.create-db")} '${databaseName}'`;
       const planCreate = create(PlanSchema, {
-        title: `${t("quick-action.create-db")} '${databaseName}'`,
+        title: effectiveTitle,
         specs: [spec],
         creator: currentUser.value.name,
       });
       const issueCreate = create(IssueSchema, {
+        title: effectiveTitle,
         type: Issue_Type.DATABASE_CHANGE,
         creator: `users/${currentUser.value.email}`,
         labels: issueLabels,
@@ -440,6 +482,21 @@ export function CreateDatabaseSheet({
                 {t("create-db.reserved-db-error", { databaseName })}
               </p>
             )}
+          </div>
+
+          <div className="flex flex-col gap-y-2">
+            <label className="block text-sm font-medium">
+              {t("common.title")}
+              {enforceIssueTitle && <span className="text-error"> *</span>}
+            </label>
+            <Input
+              value={title}
+              placeholder={t("common.title")}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleEdited(true);
+              }}
+            />
           </div>
 
           {selectedInstance?.engine === Engine.MONGODB && (
