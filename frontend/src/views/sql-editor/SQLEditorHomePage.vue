@@ -67,12 +67,14 @@ import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
+import { planQueryNameForProject } from "@/components/Plan/logic/title";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
+  useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
@@ -119,6 +121,9 @@ useEmitteryEventListener(
   "alter-schema",
   async ({ databaseName, schema, table }) => {
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
+    const project = await useProjectV1Store().getOrFetchProjectByName(
+      database.project
+    );
     const exampleSQL = ["ALTER TABLE"];
     if (table) {
       if (schema) {
@@ -128,12 +133,16 @@ useEmitteryEventListener(
       }
     }
     const { databaseName: dbName } = extractDatabaseResourceName(database.name);
-    const query = {
+    const name = planQueryNameForProject(
+      project,
+      () => `[${dbName}] Edit schema`
+    );
+    const query: Record<string, string> = {
       template: "bb.plan.change-database",
-      name: `[${dbName}] Edit schema`,
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };
+    if (name !== undefined) query.name = name;
     const route = router.resolve({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
       params: {
