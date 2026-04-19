@@ -1,4 +1,5 @@
 import { Check, ChevronDown, X } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
@@ -35,14 +36,43 @@ export function EnvironmentMultiSelect({
     onChange(value.filter((v) => v !== name));
   };
 
+  // Keyboard activation for the trigger and option rows. Base UI's Select
+  // would handle this natively, but we render a custom combobox here because
+  // the trigger hosts inline chip buttons (removing a selected env must not
+  // toggle the popover). Enter/Space toggle or select; Escape closes.
+  const handleTriggerKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpen((o) => !o);
+    } else if (e.key === "Escape" && open) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  };
+
+  const handleOptionKeyDown = (
+    e: KeyboardEvent<HTMLDivElement>,
+    name: string
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggle(name);
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative">
       <div
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        tabIndex={0}
         className={cn(
           "flex items-center flex-wrap gap-1 min-h-[2.25rem] w-full rounded-xs border border-control-border bg-transparent px-2 py-1 text-sm cursor-pointer",
           open && "border-accent"
         )}
         onClick={() => setOpen(!open)}
+        onKeyDown={handleTriggerKeyDown}
       >
         {value.length === 0 && (
           <span className="text-control-placeholder">
@@ -71,7 +101,11 @@ export function EnvironmentMultiSelect({
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto"
+        >
           {environmentList.length === 0 && (
             <div className="px-3 py-2 text-sm text-control-light">
               {t("common.no-data")}
@@ -82,8 +116,12 @@ export function EnvironmentMultiSelect({
             return (
               <div
                 key={env.name}
+                role="option"
+                aria-selected={selected}
+                tabIndex={0}
                 className="flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer"
                 onClick={() => toggle(env.name)}
+                onKeyDown={(e) => handleOptionKeyDown(e, env.name)}
               >
                 <div
                   className={cn(

@@ -79,6 +79,11 @@ const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
+// Hoist store accessors out of the async callback so they satisfy the
+// "hooks-at-top-level" convention that SonarCloud enforces on `use*` names
+// and match the tabStore/editorStore pattern used elsewhere in this file.
+const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -135,8 +140,8 @@ const gotoCreateIssue = async () => {
 
   emit("close");
 
-  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
-  const project = await useProjectV1Store().getOrFetchProjectByName(db.project);
+  const db = await databaseStore.getOrFetchDatabaseByName(database);
+  const project = await projectStore.getOrFetchProjectByName(db.project);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
