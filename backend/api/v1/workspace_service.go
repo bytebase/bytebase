@@ -298,13 +298,8 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 
 // sendInviteEmails sends invite emails to newly added members. Errors are logged, never returned.
 func (s *WorkspaceService) sendInviteEmails(ctx context.Context, workspaceID string, oldPolicy *storepb.IamPolicy, deltas []*v1pb.BindingDelta) {
-	// Load email config.
-	emailSettingMsg, err := s.store.GetSetting(ctx, workspaceID, storepb.SettingName_EMAIL)
-	if err != nil || emailSettingMsg == nil {
-		return
-	}
-	emailSetting, ok := emailSettingMsg.Value.(*storepb.EmailSetting)
-	if !ok || emailSetting == nil {
+	emailSetting, err := resolvePreLoginEmailSetting(ctx, s.store, workspaceID)
+	if err != nil || emailSetting == nil {
 		return
 	}
 

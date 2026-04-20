@@ -110,6 +110,7 @@ import {
   RoleGrantSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
@@ -286,6 +287,11 @@ function MemberTable({
                         mb.user?.name === currentUser.name && (
                           <Badge className="text-xs">{t("common.you")}</Badge>
                         )}
+                      {mb.type === "users" && mb.pending && (
+                        <Badge variant="warning" className="text-xs">
+                          {t("settings.members.pending-invite")}
+                        </Badge>
+                      )}
                       {mb.type === "users" &&
                         mb.user?.email &&
                         getAccountTypeByEmail(mb.user.email) ===
@@ -509,6 +515,11 @@ function MemberTableByRole({
                                     {t("common.you")}
                                   </Badge>
                                 )}
+                              {mb.type === "users" && mb.pending && (
+                                <Badge variant="warning" className="text-xs">
+                                  {t("settings.members.pending-invite")}
+                                </Badge>
+                              )}
                               {mb.type === "users" &&
                                 mb.user?.email &&
                                 getAccountTypeByEmail(mb.user.email) ===
@@ -1050,6 +1061,13 @@ function EditMemberRoleDrawer({
   const workspaceStore = useWorkspaceV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const settingV1Store = useSettingV1Store();
+  const hasEmailSetting = useVueState(
+    () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
+  );
+  useEffect(() => {
+    settingV1Store.getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
+  }, [settingV1Store]);
 
   const isEditMode = !!member;
   const isProjectCreateMode = !!projectName && !isEditMode;
@@ -1600,6 +1618,13 @@ function EditMemberRoleDrawer({
 
         <div className="flex-1 overflow-auto px-6 py-6">
           <div className="flex flex-col gap-y-6">
+            {!isEditMode && !projectName && hasEmailSetting && (
+              <Alert variant="info">
+                <AlertDescription>
+                  {t("settings.members.invite-email-hint")}
+                </AlertDescription>
+              </Alert>
+            )}
             {/* Member input */}
             <div className="flex flex-col gap-y-2">
               <label className="block text-sm font-medium text-control">

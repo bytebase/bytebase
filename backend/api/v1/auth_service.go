@@ -389,24 +389,6 @@ func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email st
 		return "", errors.Wrapf(err, "failed to create workspace")
 	}
 
-	// TODO(ed): check this later.
-	// When EMAIL_CONFIG is set, enable email code signin for the new workspace.
-	if os.Getenv("EMAIL_CONFIG") != "" {
-		profile, err := s.store.GetWorkspaceProfileSetting(ctx, ws.ResourceID)
-		if err != nil {
-			slog.Warn("failed to get workspace profile for email code signin patch", log.BBError(err))
-		} else {
-			profile.AllowEmailCodeSignin = true
-			if _, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
-				Name:      storepb.SettingName_WORKSPACE_PROFILE,
-				Workspace: ws.ResourceID,
-				Value:     profile,
-			}); err != nil {
-				slog.Warn("failed to enable allow_email_code_signin for new workspace", log.BBError(err))
-			}
-		}
-	}
-
 	return ws.ResourceID, nil
 }
 

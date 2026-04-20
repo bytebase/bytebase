@@ -1850,6 +1850,8 @@
       "inactive-service-accounts": "Cuentas de servicio inactivas",
       "inactive-users": "Usuarios inactivos",
       "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
+      "invite-email-hint": "Se enviarán correos de invitación a los nuevos miembros.",
+      "pending-invite": "Invitado",
       "reset-service-key": "Restablecer Clave de Servicio",
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "revoke-access": "Revocar acceso",
