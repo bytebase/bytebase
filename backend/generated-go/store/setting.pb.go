@@ -565,8 +565,8 @@ type WorkspaceProfileSetting struct {
 	ExternalUrl string `protobuf:"bytes,1,opt,name=external_url,json=externalUrl,proto3" json:"external_url,omitempty"`
 	// Disallow self-service signup, users can only be invited by the owner.
 	DisallowSignup bool `protobuf:"varint,2,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
-	// Require MFA for all users.
-	RequireMfa bool `protobuf:"varint,3,opt,name=require_mfa,json=requireMfa,proto3" json:"require_mfa,omitempty"`
+	// Require 2FA for all users.
+	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
 	// The duration for refresh token. Default is 7 days.
 	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
 	// The setting of custom announcement
@@ -655,9 +655,9 @@ func (x *WorkspaceProfileSetting) GetDisallowSignup() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetRequireMfa() bool {
+func (x *WorkspaceProfileSetting) GetRequire_2Fa() bool {
 	if x != nil {
-		return x.RequireMfa
+		return x.Require_2Fa
 	}
 	return false
 }
@@ -2716,8 +2716,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
-	"\vrequire_mfa\x18\x03 \x01(\bR\n" +
-	"requireMfa\x12O\n" +
+	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
+	"require2fa\x12O\n" +
 	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12X\n" +
 	"\fannouncement\x18\x05 \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +

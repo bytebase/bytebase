@@ -230,7 +230,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID strin
 	if setting.DisallowSignup {
 		features = append(features, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP)
 	}
-	if setting.RequireMfa {
+	if setting.Require_2Fa {
 		features = append(features, v1pb.PlanFeature_FEATURE_TWO_FA)
 	}
 	if setting.GetRefreshTokenDuration().GetSeconds() > 0 && float64(setting.GetRefreshTokenDuration().GetSeconds()) != auth.DefaultRefreshTokenDuration.Seconds() {

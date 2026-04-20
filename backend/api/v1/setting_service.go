@@ -237,7 +237,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
-				oldSetting.RequireMfa = payload.RequireMfa
+				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile.access_token_duration":
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)

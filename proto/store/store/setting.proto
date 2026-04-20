@@ -69,8 +69,8 @@ message WorkspaceProfileSetting {
   // Disallow self-service signup, users can only be invited by the owner.
   bool disallow_signup = 2;
 
-  // Require MFA for all users.
-  bool require_mfa = 3;
+  // Require 2FA for all users.
+  bool require_2fa = 3;
 
   // The duration for refresh token. Default is 7 days.
   google.protobuf.Duration refresh_token_duration = 4;
