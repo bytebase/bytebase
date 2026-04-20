@@ -226,6 +226,24 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.ObfuscatedSslKey != y.ObfuscatedSslKey {
 		return false
 	}
+	if x.SslCaPath != y.SslCaPath {
+		return false
+	}
+	if x.ObfuscatedSslCaPath != y.ObfuscatedSslCaPath {
+		return false
+	}
+	if x.SslCertPath != y.SslCertPath {
+		return false
+	}
+	if x.ObfuscatedSslCertPath != y.ObfuscatedSslCertPath {
+		return false
+	}
+	if x.SslKeyPath != y.SslKeyPath {
+		return false
+	}
+	if x.ObfuscatedSslKeyPath != y.ObfuscatedSslKeyPath {
+		return false
+	}
 	if x.VerifyTlsCertificate != y.VerifyTlsCertificate {
 		return false
 	}

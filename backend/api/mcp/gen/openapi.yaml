@@ -9831,6 +9831,30 @@ components:
               type: string
               title: ssl_key
               description: The SSL client private key.
+            sslCaPath:
+              type: string
+              title: ssl_ca_path
+              description: The local filesystem path to the SSL certificate authority certificate.
+            sslCertPath:
+              type: string
+              title: ssl_cert_path
+              description: The local filesystem path to the SSL client certificate.
+            sslKeyPath:
+              type: string
+              title: ssl_key_path
+              description: The local filesystem path to the SSL client private key.
+            hasSslCaPath:
+              type: boolean
+              title: has_ssl_ca_path
+              description: Whether an SSL certificate authority path has been configured.
+            hasSslCertPath:
+              type: boolean
+              title: has_ssl_cert_path
+              description: Whether an SSL client certificate path has been configured.
+            hasSslKeyPath:
+              type: boolean
+              title: has_ssl_key_path
+              description: Whether an SSL client private key path has been configured.
             verifyTlsCertificate:
               type: boolean
               title: verify_tls_certificate
