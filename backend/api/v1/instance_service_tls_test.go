@@ -62,170 +62,118 @@ xiUZS4SoaJq6ZvcBYS62Yr1t8n09iG47YL8ibgtmH3L+svaotvpVxVK+d7BLevA/
 ZboOWVe3icTy64BT3OQhmg==
 -----END RSA PRIVATE KEY-----`
 
-func fullTLSMask() []string {
-	return []string{
-		"use_ssl",
-		"ssl_ca",
-		"ssl_cert",
-		"ssl_key",
-		"ssl_ca_path",
-		"ssl_cert_path",
-		"ssl_key_path",
-	}
-}
-
-func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterial(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSRejectsSameSlotMixedMaterial(t *testing.T) {
 	tests := []struct {
 		name string
 		ds   *storepb.DataSource
-		mask []string
 		want string
 	}{
 		{
 			name: "ca",
 			ds:   &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"},
-			mask: []string{"ssl_ca", "ssl_ca_path"},
 			want: "cannot set both ssl_ca and ssl_ca_path",
 		},
 		{
 			name: "cert",
 			ds:   &storepb.DataSource{UseSsl: true, SslCert: "inline-cert", SslCertPath: "/tmp/cert.pem"},
-			mask: []string{"ssl_cert", "ssl_cert_path"},
 			want: "cannot set both ssl_cert and ssl_cert_path",
 		},
 		{
 			name: "key",
 			ds:   &storepb.DataSource{UseSsl: true, SslKey: "inline-key", SslKeyPath: "/tmp/key.pem"},
-			mask: []string{"ssl_key", "ssl_key_path"},
 			want: "cannot set both ssl_key and ssl_key_path",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDataSourceTLSWrite(tc.ds, tc.ds, tc.mask)
+			err := validateAndSanitizeDataSourceTLS(tc.ds)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tc.want)
 		})
 	}
 }
 
-func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterialWithPartialMask(t *testing.T) {
-	requested := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
-	merged := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca"}
+func TestValidateAndSanitizeDataSourceTLSRejectsMergedSameSlotMixedMaterial(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
 
-	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca"})
+	err := validateAndSanitizeDataSourceTLS(ds)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot set both ssl_ca and ssl_ca_path")
 }
 
-func TestValidateDataSourceTLSWriteAllowsCrossSlotMixedMaterial(t *testing.T) {
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"},
-		&storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"},
-		[]string{"ssl_ca", "ssl_cert_path", "ssl_key_path"},
-	)
+func TestValidateAndSanitizeDataSourceTLSAllowsCrossSlotMixedMaterial(t *testing.T) {
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"})
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteMatchesRuntimeCAPoolParsing(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeCAPoolParsing(t *testing.T) {
 	caBundle := validKeyPEM + "\n" + validCAPEM
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCa: caBundle},
-		&storepb.DataSource{UseSsl: true, SslCa: caBundle},
-		[]string{"ssl_ca"},
-	)
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCa: caBundle})
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromInlineToPath(t *testing.T) {
-	requested := &storepb.DataSource{UseSsl: true, SslCaPath: "/tmp/ca.pem"}
-	merged := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
+func TestValidateAndSanitizeDataSourceTLSRejectsSourceSwitchWithoutClearingOldField(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
 
-	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca_path"})
-	require.NoError(t, err)
-
-	normalizeDataSourceTLS(merged, []string{"ssl_ca_path"})
-	require.Empty(t, merged.GetSslCa())
-	require.Equal(t, "/tmp/ca.pem", merged.GetSslCaPath())
+	err := validateAndSanitizeDataSourceTLS(ds)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `cannot set both ssl_ca and ssl_ca_path`)
+	require.Contains(t, err.Error(), `clear one of them by including the field in the update_mask with an empty value`)
 }
 
-func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromPathToInline(t *testing.T) {
-	requested := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM}
-	merged := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
+func TestValidateAndSanitizeDataSourceTLSAllowsSourceSwitchWithExplicitOldFieldClear(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCaPath: "/tmp/ca.pem"}
 
-	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca"})
-	require.NoError(t, err)
-
-	normalizeDataSourceTLS(merged, []string{"ssl_ca"})
-	require.Equal(t, validCAPEM, merged.GetSslCa())
-	require.Empty(t, merged.GetSslCaPath())
-}
-
-func TestValidateDataSourceTLSWriteAllowsCertPathAndInlineKey(t *testing.T) {
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: validKeyPEM},
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: validKeyPEM},
-		[]string{"ssl_cert_path", "ssl_key"},
-	)
+	err := validateAndSanitizeDataSourceTLS(ds)
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteAllowsCertInlineAndKeyPath(t *testing.T) {
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"},
-		&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"},
-		[]string{"ssl_cert", "ssl_key_path"},
-	)
+func TestValidateAndSanitizeDataSourceTLSRejectsPathToInlineSwitchWithoutClearingOldField(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
+
+	err := validateAndSanitizeDataSourceTLS(ds)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `cannot set both ssl_ca and ssl_ca_path`)
+	require.Contains(t, err.Error(), `clear one of them by including the field in the update_mask with an empty value`)
+}
+
+func TestValidateAndSanitizeDataSourceTLSAllowsCertPathAndInlineKey(t *testing.T) {
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: validKeyPEM})
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteMatchesRuntimeCertPEMScanning(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSAllowsCertInlineAndKeyPath(t *testing.T) {
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"})
+	require.NoError(t, err)
+}
+
+func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeCertPEMScanning(t *testing.T) {
 	certBundle := validKeyPEM + "\n" + validCAPEM
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"},
-		&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"},
-		[]string{"ssl_cert", "ssl_key_path"},
-	)
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"})
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteRejectsMalformedInlineCertWithKeyPath(t *testing.T) {
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCert: "not-a-cert", SslKeyPath: "/tmp/key.pem"},
-		&storepb.DataSource{UseSsl: true, SslCert: "not-a-cert", SslKeyPath: "/tmp/key.pem"},
-		[]string{"ssl_cert", "ssl_key_path"},
-	)
+func TestValidateAndSanitizeDataSourceTLSRejectsMalformedInlineCertWithKeyPath(t *testing.T) {
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCert: "not-a-cert", SslKeyPath: "/tmp/key.pem"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_cert PEM")
 }
 
-func TestValidateDataSourceTLSWriteRejectsMalformedInlineKeyWithCertPath(t *testing.T) {
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "not-a-key"},
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "not-a-key"},
-		[]string{"ssl_cert_path", "ssl_key"},
-	)
+func TestValidateAndSanitizeDataSourceTLSRejectsMalformedInlineKeyWithCertPath(t *testing.T) {
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "not-a-key"})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_key PEM")
 }
 
-func TestValidateDataSourceTLSWriteMatchesRuntimeKeyPEMScanning(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSMatchesRuntimeKeyPEMScanning(t *testing.T) {
 	keyBundle := validCAPEM + "\n" + validKeyPEM
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle},
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle},
-		[]string{"ssl_cert_path", "ssl_key"},
-	)
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle})
 	require.NoError(t, err)
 }
 
-func TestValidateDataSourceTLSWriteAllowsEd25519PrivateKey(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSAllowsEd25519PrivateKey(t *testing.T) {
 	keyPEM := generateEd25519KeyPEM(t)
-	err := validateDataSourceTLSWrite(
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM},
-		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM},
-		[]string{"ssl_cert_path", "ssl_key"},
-	)
+	err := validateAndSanitizeDataSourceTLS(&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM})
 	require.NoError(t, err)
 }
 
@@ -239,78 +187,30 @@ func generateEd25519KeyPEM(t *testing.T) string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
 }
 
-func TestValidateDataSourceTLSWriteRejectsRelativePathOnAdd(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSRejectsRelativePath(t *testing.T) {
 	ds := &storepb.DataSource{UseSsl: true, SslCaPath: "ca.pem"}
 
-	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	err := validateAndSanitizeDataSourceTLS(ds)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "ssl_ca_path must be an absolute path")
 }
 
-func TestValidateDataSourceTLSWriteRejectsIncompleteCertPathOnAdd(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSRejectsIncompleteCertPath(t *testing.T) {
 	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem"}
 
-	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	err := validateAndSanitizeDataSourceTLS(ds)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "ssl_cert and ssl_key must be both set or unset")
 }
 
-func TestValidateDataSourceTLSWriteAllowsValidPathOnlyCertOnAdd(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSAllowsValidPathOnlyCert(t *testing.T) {
 	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"}
 
-	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	err := validateAndSanitizeDataSourceTLS(ds)
 	require.NoError(t, err)
 }
 
-func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsRelativePath(t *testing.T) {
-	dataSources := []*storepb.DataSource{{UseSsl: true, SslCaPath: "ca.pem"}}
-
-	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "ssl_ca_path must be an absolute path")
-}
-
-func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsIncompleteCertPath(t *testing.T) {
-	dataSources := []*storepb.DataSource{{UseSsl: true, SslCertPath: "/tmp/cert.pem"}}
-
-	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "ssl_cert and ssl_key must be both set or unset")
-}
-
-func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsSameSlotConflict(t *testing.T) {
-	dataSources := []*storepb.DataSource{{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}}
-
-	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot set both ssl_ca and ssl_ca_path")
-}
-
-func TestValidateAndNormalizeDataSourceTLSForReplaceAllowsValidPathOnlyCert(t *testing.T) {
-	dataSources := []*storepb.DataSource{{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"}}
-
-	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
-	require.NoError(t, err)
-	require.Equal(t, "/tmp/cert.pem", dataSources[0].GetSslCertPath())
-	require.Equal(t, "/tmp/key.pem", dataSources[0].GetSslKeyPath())
-}
-
-func TestNormalizeDataSourceTLSClearsSameSlotConflictsOnly(t *testing.T) {
-	ds := &storepb.DataSource{
-		UseSsl:     true,
-		SslCa:      "inline-ca",
-		SslCaPath:  "/tmp/ca.pem",
-		SslCert:    "inline-cert",
-		SslKeyPath: "/tmp/key.pem",
-	}
-	normalizeDataSourceTLS(ds, []string{"ssl_ca_path", "ssl_key_path"})
-	require.Empty(t, ds.GetSslCa())
-	require.Equal(t, "/tmp/ca.pem", ds.GetSslCaPath())
-	require.Equal(t, "inline-cert", ds.GetSslCert())
-	require.Equal(t, "/tmp/key.pem", ds.GetSslKeyPath())
-}
-
-func TestNormalizeDataSourceTLSClearsAllWhenDisabled(t *testing.T) {
+func TestValidateAndSanitizeDataSourceTLSClearsAllWhenDisabled(t *testing.T) {
 	ds := &storepb.DataSource{
 		UseSsl:      false,
 		SslCa:       "inline-ca",
@@ -320,17 +220,12 @@ func TestNormalizeDataSourceTLSClearsAllWhenDisabled(t *testing.T) {
 		SslCertPath: "/tmp/cert.pem",
 		SslKeyPath:  "/tmp/key.pem",
 	}
-	normalizeDataSourceTLS(ds, []string{"use_ssl"})
+	err := validateAndSanitizeDataSourceTLS(ds)
+	require.NoError(t, err)
 	require.Empty(t, ds.GetSslCa())
 	require.Empty(t, ds.GetSslCert())
 	require.Empty(t, ds.GetSslKey())
 	require.Empty(t, ds.GetSslCaPath())
 	require.Empty(t, ds.GetSslCertPath())
 	require.Empty(t, ds.GetSslKeyPath())
-}
-
-func TestValidateDataSourceTLSConfigRejectsRelativePath(t *testing.T) {
-	err := validateDataSourceTLSConfig(&storepb.DataSource{UseSsl: true, SslCaPath: "ca.pem"})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "ssl_ca_path must be an absolute path")
 }

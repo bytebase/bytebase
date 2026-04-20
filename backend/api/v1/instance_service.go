@@ -10,7 +10,6 @@ import (
 	"encoding/pem"
 	"log/slog"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -178,8 +177,10 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
-	if err := validateAndNormalizeDataSourceTLSForReplace(instanceMessage.Metadata.GetDataSources()); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	for _, ds := range instanceMessage.Metadata.GetDataSources() {
+		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
 	}
 	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
 		return nil, err
@@ -263,84 +264,14 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 	return nil
 }
 
-func fullDataSourceTLSMask() []string {
-	return []string{
-		"use_ssl",
-		"ssl_ca",
-		"ssl_cert",
-		"ssl_key",
-		"ssl_ca_path",
-		"ssl_cert_path",
-		"ssl_key_path",
-	}
-}
-
-func validateAndNormalizeDataSourceTLSForReplace(dataSources []*storepb.DataSource) error {
-	for _, ds := range dataSources {
-		if err := validateDataSourceTLSWrite(ds, ds, fullDataSourceTLSMask()); err != nil {
-			return err
-		}
-		normalizeDataSourceTLS(ds, nil)
-	}
-	return nil
-}
-
-func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []string) error {
-	if !merged.GetUseSsl() {
-		return nil
-	}
-	if requested != nil {
-		for _, conflict := range []struct {
-			inlineField string
-			pathField   string
-			inlineValue string
-			pathValue   string
-		}{
-			{"ssl_ca", "ssl_ca_path", requested.GetSslCa(), requested.GetSslCaPath()},
-			{"ssl_cert", "ssl_cert_path", requested.GetSslCert(), requested.GetSslCertPath()},
-			{"ssl_key", "ssl_key_path", requested.GetSslKey(), requested.GetSslKeyPath()},
-		} {
-			if conflict.inlineValue != "" && conflict.pathValue != "" {
-				return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
-			}
-		}
-	}
-	for _, conflict := range []struct {
-		inlineField string
-		pathField   string
-		inlineValue string
-		pathValue   string
-	}{
-		{"ssl_ca", "ssl_ca_path", merged.GetSslCa(), merged.GetSslCaPath()},
-		{"ssl_cert", "ssl_cert_path", merged.GetSslCert(), merged.GetSslCertPath()},
-		{"ssl_key", "ssl_key_path", merged.GetSslKey(), merged.GetSslKeyPath()},
-	} {
-		if conflict.inlineValue == "" || conflict.pathValue == "" {
-			continue
-		}
-		if requested == nil {
-			continue
-		}
-		if conflict.inlineField == "ssl_ca" && requested.GetSslCa() != "" && requested.GetSslCaPath() != "" {
-			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
-		}
-		if conflict.inlineField == "ssl_cert" && requested.GetSslCert() != "" && requested.GetSslCertPath() != "" {
-			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
-		}
-		if conflict.inlineField == "ssl_key" && requested.GetSslKey() != "" && requested.GetSslKeyPath() != "" {
-			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
-		}
-	}
-	mergedCopy, ok := proto.Clone(merged).(*storepb.DataSource)
-	if !ok {
-		return errors.New("failed to clone data source")
-	}
-	normalizeDataSourceTLS(mergedCopy, mask)
-	return validateDataSourceTLSConfig(mergedCopy)
-}
-
-func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
+func validateAndSanitizeDataSourceTLS(ds *storepb.DataSource) error {
 	if !ds.GetUseSsl() {
+		ds.SslCa = ""
+		ds.SslCert = ""
+		ds.SslKey = ""
+		ds.SslCaPath = ""
+		ds.SslCertPath = ""
+		ds.SslKeyPath = ""
 		return nil
 	}
 	for _, conflict := range []struct {
@@ -354,7 +285,7 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 		{"ssl_key", "ssl_key_path", ds.GetSslKey(), ds.GetSslKeyPath()},
 	} {
 		if conflict.inlineValue != "" && conflict.pathValue != "" {
-			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
+			return errors.Errorf("cannot set both %s and %s; clear one of them by including the field in the update_mask with an empty value when switching TLS material source", conflict.inlineField, conflict.pathField)
 		}
 	}
 	for _, pathField := range []struct {
@@ -457,44 +388,6 @@ func parseInlinePrivateKey(der []byte) (any, error) {
 		return key, nil
 	}
 	return nil, errors.New("failed to parse private key")
-}
-
-func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
-	if !ds.GetUseSsl() {
-		clearInlineTLSMaterial(ds)
-		clearPathTLSMaterial(ds)
-		return
-	}
-	if slices.Contains(mask, "ssl_ca") && ds.GetSslCa() != "" {
-		ds.SslCaPath = ""
-	}
-	if slices.Contains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "" {
-		ds.SslCa = ""
-	}
-	if slices.Contains(mask, "ssl_cert") && ds.GetSslCert() != "" {
-		ds.SslCertPath = ""
-	}
-	if slices.Contains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "" {
-		ds.SslCert = ""
-	}
-	if slices.Contains(mask, "ssl_key") && ds.GetSslKey() != "" {
-		ds.SslKeyPath = ""
-	}
-	if slices.Contains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "" {
-		ds.SslKey = ""
-	}
-}
-
-func clearInlineTLSMaterial(ds *storepb.DataSource) {
-	ds.SslCa = ""
-	ds.SslCert = ""
-	ds.SslKey = ""
-}
-
-func clearPathTLSMaterial(ds *storepb.DataSource) {
-	ds.SslCaPath = ""
-	ds.SslCertPath = ""
-	ds.SslKeyPath = ""
 }
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
@@ -618,8 +511,10 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			if err := validateAndNormalizeDataSourceTLSForReplace(dataSources); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			for _, ds := range dataSources {
+				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, err)
+				}
 			}
 			if err := s.checkInstanceDataSources(ctx, instance, dataSources); err != nil {
 				return nil, err
@@ -882,10 +777,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
-	if err := validateDataSourceTLSWrite(dataSource, dataSource, fullDataSourceTLSMask()); err != nil {
+	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	normalizeDataSourceTLS(dataSource, nil)
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
@@ -1106,14 +1000,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 
 	clearDataSourceAuthentication(dataSource)
-	requestedDataSource, err := convertV1DataSource(req.Msg.DataSource)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("failed to convert data source"))
-	}
-	if err := validateDataSourceTLSWrite(requestedDataSource, dataSource, req.Msg.UpdateMask.GetPaths()); err != nil {
+	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	normalizeDataSourceTLS(dataSource, req.Msg.UpdateMask.GetPaths())
 
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err
