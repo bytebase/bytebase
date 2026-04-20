@@ -2,8 +2,11 @@ package v1
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"log/slog"
 	"path/filepath"
 	"strings"
@@ -349,9 +352,8 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 		}
 	}
 	if ds.GetSslCa() != "" {
-		pool := x509.NewCertPool()
-		if ok := pool.AppendCertsFromPEM([]byte(ds.GetSslCa())); !ok {
-			return errors.New("invalid ssl_ca PEM")
+		if err := validateInlineCertPEM([]byte(ds.GetSslCa())); err != nil {
+			return errors.Wrap(err, "invalid ssl_ca PEM")
 		}
 	}
 	certSet := ds.GetSslCert() != "" || ds.GetSslCertPath() != ""
@@ -363,6 +365,60 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 		if _, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey())); err != nil {
 			return errors.Wrap(err, "invalid ssl_cert or ssl_key PEM")
 		}
+	}
+	if ds.GetSslCert() != "" && ds.GetSslKey() == "" {
+		if err := validateInlineCertPEM([]byte(ds.GetSslCert())); err != nil {
+			return errors.Wrap(err, "invalid ssl_cert PEM")
+		}
+	}
+	if ds.GetSslKey() != "" && ds.GetSslCert() == "" {
+		if err := validateInlineKeyPEM([]byte(ds.GetSslKey())); err != nil {
+			return errors.Wrap(err, "invalid ssl_key PEM")
+		}
+	}
+	return nil
+}
+
+func validateInlineCertPEM(data []byte) error {
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "CERTIFICATE" {
+		return errors.New("no CERTIFICATE PEM block found")
+	}
+	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateInlineKeyPEM(data []byte) error {
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return errors.New("no PEM block found")
+	}
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		if _, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+			return nil
+		}
+		if _, err := x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
+			return err
+		}
+	case "EC PRIVATE KEY":
+		if _, err := x509.ParseECPrivateKey(block.Bytes); err != nil {
+			return err
+		}
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return err
+		}
+		switch key.(type) {
+		case *rsa.PrivateKey, *ecdsa.PrivateKey:
+		default:
+			return errors.Errorf("unsupported private key type %T", key)
+		}
+	default:
+		return errors.Errorf("unsupported private key type %s", block.Type)
 	}
 	return nil
 }
