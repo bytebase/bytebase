@@ -596,6 +596,74 @@ func containsDerivedTable(node antlr.Tree) bool {
 	return false
 }
 
+// elementReferencesName reports whether a factoring element is recursive —
+// i.e. its body is a UNION ALL composition AND at least one branch
+// references the element's own name as a FROM source.
+//
+// Why require UNION ALL (not just self-reference):
+//   - Oracle's recursive subquery factoring REQUIRES a UNION ALL between an
+//     anchor member and a recursive member; a single-branch self-shadow
+//     (e.g. `WITH orders AS (SELECT * FROM orders …)`) is NON-recursive and
+//     resolves the inner FROM to the REAL base table per SQL scope rules.
+//   - Using UNION ALL as the gate means the function's "recursive" return
+//     value matches Oracle's runtime binding: recursive members see the
+//     CTE (opaque); non-recursive bodies see the base table (indexed).
+//
+// Walk rule for self-reference inside a branch: scan every descendant
+// Dml_table_expression_clause; match on Tableview_name iff it has no
+// schema qualifier and its normalized name equals `name`. Nested derived
+// tables (dte with its own Select_statement) are opaque — their inner
+// FROMs belong to a different scope and must not trigger a false match.
+func (r *WhereDisallowFunctionsAndCalculationsRule) elementReferencesName(sub parser.ISubqueryContext, name string) bool {
+	if sub == nil || name == "" {
+		return false
+	}
+	parts := sub.AllSubquery_operation_part()
+	if len(parts) == 0 {
+		return false
+	}
+	hasUnionAll := false
+	for _, p := range parts {
+		if p == nil {
+			continue
+		}
+		if p.UNION() != nil && p.ALL() != nil {
+			hasUnionAll = true
+			break
+		}
+	}
+	if !hasUnionAll {
+		return false
+	}
+	return r.treeReferencesName(sub, name)
+}
+
+func (r *WhereDisallowFunctionsAndCalculationsRule) treeReferencesName(node antlr.Tree, name string) bool {
+	if node == nil {
+		return false
+	}
+	if dte, ok := node.(*parser.Dml_table_expression_clauseContext); ok && dte != nil {
+		// Derived table: its inner SELECT is an opaque nested scope — do NOT
+		// descend. Its own Tableview_name IS in the element's FROM scope.
+		if dte.Select_statement() != nil {
+			return false
+		}
+		if tvn := dte.Tableview_name(); tvn != nil {
+			schema, tname := r.splitTableviewName(tvn)
+			if schema == "" && r.normalizeIdent(tname) == name {
+				return true
+			}
+			return false
+		}
+	}
+	for i := 0; i < node.GetChildCount(); i++ {
+		if r.treeReferencesName(node.GetChild(i), name) {
+			return true
+		}
+	}
+	return false
+}
+
 // ---- Column reference resolution -----------------------------------------
 
 // extractColumnRefFromGeneralElement returns (qualifier, column) if the
@@ -743,29 +811,43 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkQueryBlock(qb parser.IQ
 	if qb == nil {
 		return
 	}
-	// CTE visibility matrix — same shape as the PG rule (see handleWithClause):
+	// CTE visibility matrix — per-factoring-element, matching the PG rule's
+	// handleWithClause but at element granularity because Oracle has no
+	// RECURSIVE keyword at the factoring-clause level (it is implicit —
+	// an element is recursive iff its body is a UNION ALL composition AND
+	// at least one branch references its own query_name in a FROM position,
+	// which matches Oracle's syntactic requirement for recursive subquery
+	// factoring):
 	//
-	//	| Mode                 | body sees self | preceding siblings | later siblings |
+	//	| Element kind         | body sees self | preceding siblings | later siblings |
 	//	|----------------------|----------------|--------------------|----------------|
-	//	| Non-recursive WITH   |       No       |         Yes        |        No      |
+	//	| Non-recursive        |       No       |         Yes        |        No      |
+	//	| Recursive            |      Yes       |         Yes        |        No      |
 	//
-	// Oracle has no RECURSIVE keyword at the factoring-clause level, so
-	// syntactically every factoring element uses non-recursive visibility
-	// for CTE-name shadowing. Inner `FROM same_name` inside a body therefore
-	// resolves to the REAL base table (if any), NOT to the CTE being
-	// defined — matching Oracle's actual scope rule for the common case.
+	// Why per-element (not per-factoring-clause):
+	//   - Non-recursive body self-shadow (e.g. `WITH orders AS (SELECT * FROM
+	//     orders …)`, no UNION ALL) — inner `FROM orders` resolves to the
+	//     REAL base table per SQL scope rules; must push-AFTER so the
+	//     body-walk sees the base table and can emit `UPPER(indexed_col)`
+	//     advice. Otherwise false negative.
+	//   - Recursive body self-ref (e.g. `WITH orders AS (SELECT … FROM dual
+	//     UNION ALL SELECT … FROM orders WHERE UPPER(customer_name)=…)`) —
+	//     inner `FROM orders` resolves to the CTE itself; must push-BEFORE
+	//     so body-walk sees it as opaque and DOESN'T attach the same-named
+	//     base table's indexes. Otherwise false positive on recursive
+	//     members.
 	//
-	// Practically: push an empty frame, walk each body with no visibility
-	// of its own name, and add that name to the frame AFTER the walk so
-	// the subsequent sibling and the outer query see it as opaque CTE.
+	// Detection rule (elementReferencesName):
+	//   1. body has at least one Subquery_operation_part that is `UNION ALL`,
+	//   2. any descendant Dml_table_expression_clause's Tableview_name is a
+	//      single-component (unqualified) name whose normalized text equals
+	//      the element's own query_name.
+	// Derived-table subquery sources are treated as opaque (not descended).
 	//
-	// Recursive subquery factoring (11g+): the body's self-reference
-	// falls through to the base table here. That keeps the common shape
-	// (non-recursive self-shadow like `WITH orders AS (SELECT * FROM orders …)`)
-	// correctly detecting violations on the real table. A recursive CTE
-	// body that ALSO applies a function/calculation to an indexed base-
-	// table column of the same-named table would over-flag — a narrow,
-	// rarely-seen shape acknowledged as a known limitation.
+	// Prior commit 1ee832f7f0 collapsed push-before/push-after into an
+	// unconditional push-after, which fixed the non-recursive false negative
+	// but re-opened the recursive false positive — addressed by codex
+	// #3109425426.
 	if sfc := qb.Subquery_factoring_clause(); sfc != nil {
 		frame := make(map[string]bool)
 		r.pushCTEs(frame)
@@ -774,15 +856,28 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkQueryBlock(qb parser.IQ
 			if fe == nil {
 				continue
 			}
-			if sub := fe.Subquery(); sub != nil {
-				r.checkSubqueryInScope(sub, nil)
-			}
+			name := ""
 			if qn := fe.Query_name(); qn != nil {
 				if id := qn.Identifier(); id != nil {
 					if text := id.GetText(); text != "" {
-						frame[r.normalizeIdent(text)] = true
+						name = r.normalizeIdent(text)
 					}
 				}
+			}
+			sub := fe.Subquery()
+			recursive := name != "" && sub != nil && r.elementReferencesName(sub, name)
+			if recursive && name != "" {
+				// Push-BEFORE: body's self-reference resolves to the CTE
+				// (opaque), not the same-named base table.
+				frame[name] = true
+			}
+			if sub != nil {
+				r.checkSubqueryInScope(sub, nil)
+			}
+			if !recursive && name != "" {
+				// Push-AFTER: body's self-reference resolves to the REAL
+				// base table per non-recursive SQL scope rules.
+				frame[name] = true
 			}
 		}
 	}

@@ -989,21 +989,34 @@
         column: 0
       endposition: null
 
-# Recursive factoring, no false positive.
-# Oracle has no explicit RECURSIVE keyword at the factoring-clause level,
-# so this rule uses non-recursive CTE-visibility: inner `FROM orders`
-# falls through to the real base table. No advice fires because:
-#   - The anchor's WHERE uses rownum (not in the indexed-column set).
-#   - The recursive arm's WHERE references `n`, a CTE column alias
-#     declared by `WITH orders (n, customer_name) AS …`; `n` does not
-#     match any base-table column, so scope resolution is unresolved and
-#     the rule correctly emits no advice.
-# The SELECT list's `n + 1` is never inspected (rule only walks WHERE).
+# Recursive factoring, no false positive (column-alias variant).
+# Oracle detects recursiveness per-element via self-reference in FROM:
+# when the body of `orders` contains `FROM orders`, the element is
+# recursive and its name is pushed BEFORE walking, so the body's self-ref
+# resolves to the (opaque) CTE rather than the same-named base table.
+# The recursive arm's `n < 10` therefore references the CTE column alias,
+# which yields no advice regardless.
 - statement: |
     WITH orders (n, customer_name) AS (
       SELECT 1, customer_name FROM orders WHERE rownum <= 1
       UNION ALL
       SELECT n + 1, customer_name FROM orders WHERE n < 10
+    )
+    SELECT * FROM orders
+
+# Codex round-17 P2 (#3109425426): recursive subquery factoring body
+# must treat self-referring `FROM <same_name>` as opaque, NOT as the
+# same-named base table. Prior to this fix (commit 1ee832f7f0 collapsed
+# push-before/push-after into unconditional push-after), a recursive
+# member applying `UPPER(customer_name)` on what looks like an indexed
+# base-table column of ORDERS would falsely flag (code 234 advice).
+# With per-element recursiveness detection, `FROM orders` inside the
+# body is now opaque → no advice.
+- statement: |
+    WITH orders AS (
+      SELECT order_id, customer_name FROM dual
+      UNION ALL
+      SELECT order_id + 1, customer_name FROM orders WHERE UPPER(customer_name) = 'X'
     )
     SELECT * FROM orders
 
