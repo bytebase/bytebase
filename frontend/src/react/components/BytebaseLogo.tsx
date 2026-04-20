@@ -16,8 +16,9 @@ type Props = {
  * the first React caller needs it.
  */
 export function BytebaseLogo(_props: Props) {
+  const workspaceStore = useWorkspaceV1Store();
   const customLogo = useVueState(
-    () => useWorkspaceV1Store().currentWorkspace?.logo ?? ""
+    () => workspaceStore.currentWorkspace?.logo ?? ""
   );
 
   return (

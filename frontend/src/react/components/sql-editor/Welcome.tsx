@@ -19,11 +19,13 @@ export type WelcomeProps = {
 
 export function Welcome({ onChangeConnection }: WelcomeProps) {
   const { t } = useTranslation();
+  const sqlEditorStore = useSQLEditorStore();
+  const projectV1Store = useProjectV1Store();
 
   const project = useVueState(() => {
-    const projectName = useSQLEditorStore().project;
+    const projectName = sqlEditorStore.project;
     return projectName
-      ? useProjectV1Store().getProjectByName(projectName)
+      ? projectV1Store.getProjectByName(projectName)
       : undefined;
   });
 
