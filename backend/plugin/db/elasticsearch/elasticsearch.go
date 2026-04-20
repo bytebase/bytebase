@@ -138,6 +138,12 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 }
 
 func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
+	resolvedConfig, err := resolveTLSDataSourceConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve TLS material")
+	}
+	config = resolvedConfig
+
 	// Get TLS config that respects verify_tls_certificate setting
 	tlsConfig, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
@@ -155,27 +161,12 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		tlsConfig.MinVersion = tls.VersionTLS12
 	}
 
-	esConfig := elasticsearch.Config{
-		Username:  config.DataSource.Username,
-		Password:  config.Password,
-		Addresses: []string{address},
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: 5 * time.Second,
-			TLSClientConfig:       tlsConfig,
-		},
-	}
+	esConfig := newElasticsearchConfig(config, address, tlsConfig)
 	// default http client.
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
-	}
-
-	// If CA cert is provided, update the config
-	// Note: util.GetTLSConfig already handles CA cert configuration
-	if config.DataSource.GetSslCert() != "" {
-		esConfig.CACert = []byte(config.DataSource.GetSslCert())
 	}
 
 	// typed elasticsearch client.
@@ -200,6 +191,32 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		},
 		config: config,
 	}, nil
+}
+
+func resolveTLSDataSourceConfig(config db.ConnectionConfig) (db.ConnectionConfig, error) {
+	resolvedDataSource, err := util.ResolveTLSMaterial(config.DataSource)
+	if err != nil {
+		return db.ConnectionConfig{}, err
+	}
+	config.DataSource = resolvedDataSource
+	return config, nil
+}
+
+func newElasticsearchConfig(config db.ConnectionConfig, address string, tlsConfig *tls.Config) elasticsearch.Config {
+	esConfig := elasticsearch.Config{
+		Username:  config.DataSource.Username,
+		Password:  config.Password,
+		Addresses: []string{address},
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost:   10,
+			ResponseHeaderTimeout: 5 * time.Second,
+			TLSClientConfig:       tlsConfig,
+		},
+	}
+	if config.DataSource.GetSslCa() != "" {
+		esConfig.CACert = []byte(config.DataSource.GetSslCa())
+	}
+	return esConfig
 }
 
 func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {

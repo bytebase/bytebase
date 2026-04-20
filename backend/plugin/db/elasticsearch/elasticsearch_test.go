@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -59,6 +60,46 @@ func TestOpenWithAWSAuth(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewElasticsearchConfigUsesCACert(t *testing.T) {
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     "localhost",
+			Port:     "9200",
+			SslCa:    "ca-pem",
+			SslCert:  "cert-pem",
+			SslKey:   "key-pem",
+			UseSsl:   false,
+			Username: "elastic",
+		},
+		Password: "password123",
+	}
+
+	esConfig := newElasticsearchConfig(config, "https://localhost:9200", nil)
+	require.Equal(t, []byte("ca-pem"), esConfig.CACert)
+	require.NotEqual(t, []byte("cert-pem"), esConfig.CACert)
+}
+
+func TestNewElasticsearchConfigUsesPathCACert(t *testing.T) {
+	caPath := t.TempDir() + "/ca.pem"
+	require.NoError(t, os.WriteFile(caPath, []byte("path-ca-pem"), 0o600))
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:      "localhost",
+			Port:      "9200",
+			UseSsl:    true,
+			SslCaPath: caPath,
+			Username:  "elastic",
+		},
+		Password: "password123",
+	}
+
+	resolvedConfig, err := resolveTLSDataSourceConfig(config)
+	require.NoError(t, err)
+	esConfig := newElasticsearchConfig(resolvedConfig, "https://localhost:9200", nil)
+	require.Equal(t, []byte("path-ca-pem"), esConfig.CACert)
+	require.Empty(t, resolvedConfig.DataSource.GetSslCaPath())
 }
 
 func TestURLConstructionWithQueryParams(t *testing.T) {
