@@ -420,8 +420,8 @@
       "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Flags destructive TRUNCATE operations. TRUNCATE is irreversible on Oracle and MySQL (implicit commit) and bypasses triggers on all four engines; prior-backup treats TRUNCATE as DDL and does not produce row-level snapshots. Also catches ALTER TABLE … TRUNCATE PARTITION on Oracle and MySQL. MSSQL TRUNCATE is transactional (rolls back inside explicit BEGIN/COMMIT) but still requires ALTER TABLE permission and bypasses DELETE triggers. PG TRUNCATE is transactional, so customers may opt the PG level lower than the other engines. Does NOT detect TRUNCATE inside EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedures, or PG DO $$ … $$ blocks. Suggested: WARNING in dev, ERROR in prod.",
-      "title": "Prohibit \"TRUNCATE TABLE\" and partition-truncate"
+      "description": "破壊的な TRUNCATE 操作にフラグを立てます。Oracle と MySQL では TRUNCATE は元に戻せず（暗黙的な COMMIT）、4 つのエンジンすべてでトリガーをバイパスします。prior-backup は TRUNCATE を DDL として扱い、行レベルのスナップショットを作成しません。Oracle と MySQL の ALTER TABLE … TRUNCATE PARTITION も検出します。MSSQL の TRUNCATE はトランザクション対応（明示的な BEGIN/COMMIT 内でロールバック可能）ですが、依然として ALTER TABLE 権限を必要とし、DELETE トリガーをバイパスします。PG の TRUNCATE はトランザクション対応なので、PG の重大度を他のエンジンより低く設定することもできます。EXECUTE IMMEDIATE、sp_executesql、PL/pgSQL、ストアドプロシージャ、PG の DO $$ … $$ ブロック内の TRUNCATE は検出しません。推奨：開発環境では WARNING、本番環境では ERROR。",
+      "title": "\"TRUNCATE TABLE\" とパーティション truncate を禁止する"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "ファイルソートは、データの大量の読み書きを伴うため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告",

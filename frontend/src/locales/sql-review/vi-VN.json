@@ -420,8 +420,8 @@
       "title": "Cấm sử dụng CASCADE khi xóa bảng"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Flags destructive TRUNCATE operations. TRUNCATE is irreversible on Oracle and MySQL (implicit commit) and bypasses triggers on all four engines; prior-backup treats TRUNCATE as DDL and does not produce row-level snapshots. Also catches ALTER TABLE … TRUNCATE PARTITION on Oracle and MySQL. MSSQL TRUNCATE is transactional (rolls back inside explicit BEGIN/COMMIT) but still requires ALTER TABLE permission and bypasses DELETE triggers. PG TRUNCATE is transactional, so customers may opt the PG level lower than the other engines. Does NOT detect TRUNCATE inside EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedures, or PG DO $$ … $$ blocks. Suggested: WARNING in dev, ERROR in prod.",
-      "title": "Prohibit \"TRUNCATE TABLE\" and partition-truncate"
+      "description": "Gắn cờ các thao tác TRUNCATE phá hủy dữ liệu. TRUNCATE không thể khôi phục trên Oracle và MySQL (commit ngầm) và bỏ qua trigger trên cả bốn engine; prior-backup coi TRUNCATE là DDL và không tạo snapshot cấp hàng. Cũng phát hiện ALTER TABLE … TRUNCATE PARTITION trên Oracle và MySQL. TRUNCATE của MSSQL là transactional (có thể rollback bên trong BEGIN/COMMIT rõ ràng) nhưng vẫn yêu cầu quyền ALTER TABLE và bỏ qua DELETE trigger. TRUNCATE của PG là transactional, vì vậy khách hàng có thể đặt mức PG thấp hơn so với các engine khác. KHÔNG phát hiện TRUNCATE bên trong EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedure hoặc block DO $$ … $$ của PG. Đề xuất: WARNING trong dev, ERROR trong prod.",
+      "title": "Cấm \"TRUNCATE TABLE\" và truncate phân vùng"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "Filesort là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",

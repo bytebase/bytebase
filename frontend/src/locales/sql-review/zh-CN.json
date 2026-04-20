@@ -420,8 +420,8 @@
       "title": "禁止在删除表时使用 CASCADE 选项"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Flags destructive TRUNCATE operations. TRUNCATE is irreversible on Oracle and MySQL (implicit commit) and bypasses triggers on all four engines; prior-backup treats TRUNCATE as DDL and does not produce row-level snapshots. Also catches ALTER TABLE … TRUNCATE PARTITION on Oracle and MySQL. MSSQL TRUNCATE is transactional (rolls back inside explicit BEGIN/COMMIT) but still requires ALTER TABLE permission and bypasses DELETE triggers. PG TRUNCATE is transactional, so customers may opt the PG level lower than the other engines. Does NOT detect TRUNCATE inside EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedures, or PG DO $$ … $$ blocks. Suggested: WARNING in dev, ERROR in prod.",
-      "title": "Prohibit \"TRUNCATE TABLE\" and partition-truncate"
+      "description": "标记破坏性的 TRUNCATE 操作。在 Oracle 与 MySQL 上 TRUNCATE 不可回滚（隐式 COMMIT），并且在四种引擎上都会绕过触发器；prior-backup 将 TRUNCATE 视为 DDL，不会生成行级快照。同时会捕获 Oracle 与 MySQL 上的 ALTER TABLE … TRUNCATE PARTITION。MSSQL 的 TRUNCATE 是事务性的（在显式 BEGIN/COMMIT 内可以回滚），但仍需要 ALTER TABLE 权限并且会绕过 DELETE 触发器。PG 的 TRUNCATE 是事务性的，因此用户可以将 PG 的级别设置得比其他引擎更低。不会检测 EXECUTE IMMEDIATE、sp_executesql、PL/pgSQL、存储过程或 PG DO $$ … $$ 块内的 TRUNCATE。建议：开发环境使用 WARNING，生产环境使用 ERROR。",
+      "title": "禁止 \"TRUNCATE TABLE\" 与分区 truncate"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "禁止 Using filesort 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。通常，通过合适的索引、查询优化和数据模型设计，可以避免或减少文件排序的需要。建议错误等级：警告",
