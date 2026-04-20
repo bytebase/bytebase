@@ -733,10 +733,16 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.Password = req.Msg.DataSource.Password
 		case "ssl_ca":
 			dataSource.SslCa = req.Msg.DataSource.SslCa
+		case "ssl_ca_path":
+			dataSource.SslCaPath = req.Msg.DataSource.SslCaPath
 		case "ssl_cert":
 			dataSource.SslCert = req.Msg.DataSource.SslCert
+		case "ssl_cert_path":
+			dataSource.SslCertPath = req.Msg.DataSource.SslCertPath
 		case "ssl_key":
 			dataSource.SslKey = req.Msg.DataSource.SslKey
+		case "ssl_key_path":
+			dataSource.SslKeyPath = req.Msg.DataSource.SslKeyPath
 		case "host":
 			dataSource.Host = req.Msg.DataSource.Host
 		case "port":
