@@ -268,6 +268,22 @@ func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []st
 	if !merged.GetUseSsl() {
 		return nil
 	}
+	if requested != nil {
+		for _, conflict := range []struct {
+			inlineField string
+			pathField   string
+			inlineValue string
+			pathValue   string
+		}{
+			{"ssl_ca", "ssl_ca_path", requested.GetSslCa(), requested.GetSslCaPath()},
+			{"ssl_cert", "ssl_cert_path", requested.GetSslCert(), requested.GetSslCertPath()},
+			{"ssl_key", "ssl_key_path", requested.GetSslKey(), requested.GetSslKeyPath()},
+		} {
+			if conflict.inlineValue != "" && conflict.pathValue != "" {
+				return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
+			}
+		}
+	}
 	for _, conflict := range []struct {
 		inlineField string
 		pathField   string
@@ -338,10 +354,12 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 			return errors.New("invalid ssl_ca PEM")
 		}
 	}
-	if (ds.GetSslCert() == "") != (ds.GetSslKey() == "") {
+	certSet := ds.GetSslCert() != "" || ds.GetSslCertPath() != ""
+	keySet := ds.GetSslKey() != "" || ds.GetSslKeyPath() != ""
+	if certSet != keySet {
 		return errors.New("ssl_cert and ssl_key must be both set or unset")
 	}
-	if ds.GetSslCert() != "" {
+	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
 		if _, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey())); err != nil {
 			return errors.Wrap(err, "invalid ssl_cert or ssl_key PEM")
 		}

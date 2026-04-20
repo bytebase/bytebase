@@ -67,7 +67,7 @@ func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterial(t *testing.T) {
 
 func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterialWithPartialMask(t *testing.T) {
 	requested := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
-	merged := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
+	merged := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca"}
 
 	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca"})
 	require.Error(t, err)
@@ -105,6 +105,24 @@ func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromPathToInline(t *testing
 	normalizeDataSourceTLS(merged, []string{"ssl_ca"})
 	require.Equal(t, validCAPEM, merged.GetSslCa())
 	require.Empty(t, merged.GetSslCaPath())
+}
+
+func TestValidateDataSourceTLSWriteAllowsCertPathAndInlineKey(t *testing.T) {
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "inline-key"},
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: "inline-key"},
+		[]string{"ssl_cert_path", "ssl_key"},
+	)
+	require.NoError(t, err)
+}
+
+func TestValidateDataSourceTLSWriteAllowsCertInlineAndKeyPath(t *testing.T) {
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"},
+		&storepb.DataSource{UseSsl: true, SslCert: validCAPEM, SslKeyPath: "/tmp/key.pem"},
+		[]string{"ssl_cert", "ssl_key_path"},
+	)
+	require.NoError(t, err)
 }
 
 func TestNormalizeDataSourceTLSClearsSameSlotConflictsOnly(t *testing.T) {
