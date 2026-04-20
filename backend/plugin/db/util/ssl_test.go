@@ -44,6 +44,27 @@ func TestResolveTLSMaterialReadsPathFields(t *testing.T) {
 	require.Empty(t, resolved.GetSslKeyPath())
 }
 
+func TestResolveTLSMaterialPreservesInlineCrossSlotMaterial(t *testing.T) {
+	dir := t.TempDir()
+	keyPath := filepath.Join(dir, "key.pem")
+	require.NoError(t, os.WriteFile(keyPath, []byte("path-key"), 0o600))
+
+	ds := &storepb.DataSource{
+		UseSsl:     true,
+		SslCa:      "inline-ca",
+		SslCert:    "inline-cert",
+		SslKeyPath: keyPath,
+	}
+
+	resolved, err := ResolveTLSMaterial(ds)
+	require.NoError(t, err)
+	require.Equal(t, "inline-ca", resolved.GetSslCa())
+	require.Equal(t, "inline-cert", resolved.GetSslCert())
+	require.Equal(t, "path-key", resolved.GetSslKey())
+	require.Empty(t, resolved.GetSslKeyPath())
+	require.Equal(t, keyPath, ds.GetSslKeyPath())
+}
+
 func TestResolveTLSMaterialRejectsRelativePath(t *testing.T) {
 	_, err := ResolveTLSMaterial(&storepb.DataSource{
 		UseSsl:    true,
