@@ -307,7 +307,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		case "title":
 			trimmed := strings.TrimSpace(req.Plan.Title)
 			if project.Setting.EnforceIssueTitle && trimmed == "" {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Plan.Name))
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", common.FormatProject(project.ResourceID)))
 			}
 			planUpdate.Name = &trimmed
 		case "description":
