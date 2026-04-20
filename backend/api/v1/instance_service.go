@@ -2,7 +2,10 @@ package v1
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -250,6 +253,111 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return nil
+}
+
+func hasInlineTLSMaterial(ds *storepb.DataSource) bool {
+	return ds.GetSslCa() != "" || ds.GetSslCert() != "" || ds.GetSslKey() != ""
+}
+
+func hasPathTLSMaterial(ds *storepb.DataSource) bool {
+	return ds.GetSslCaPath() != "" || ds.GetSslCertPath() != "" || ds.GetSslKeyPath() != ""
+}
+
+func hasExplicitInlineTLSMaterial(ds *storepb.DataSource, mask []string) bool {
+	return (tlsMaskContains(mask, "ssl_ca") && ds.GetSslCa() != "") ||
+		(tlsMaskContains(mask, "ssl_cert") && ds.GetSslCert() != "") ||
+		(tlsMaskContains(mask, "ssl_key") && ds.GetSslKey() != "")
+}
+
+func hasExplicitPathTLSMaterial(ds *storepb.DataSource, mask []string) bool {
+	return (tlsMaskContains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "") ||
+		(tlsMaskContains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "") ||
+		(tlsMaskContains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "")
+}
+
+func tlsMaskContains(mask []string, field string) bool {
+	for _, path := range mask {
+		if path == field {
+			return true
+		}
+	}
+	return false
+}
+
+func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []string) error {
+	if !merged.GetUseSsl() {
+		return nil
+	}
+	if hasExplicitInlineTLSMaterial(requested, mask) && hasExplicitPathTLSMaterial(requested, mask) {
+		return errors.Errorf("cannot set both inline TLS material and TLS file paths")
+	}
+	if hasPathTLSMaterial(merged) && hasExplicitInlineTLSMaterial(requested, mask) {
+		return errors.Errorf("cannot set inline TLS material while TLS file paths are configured")
+	}
+	return validateDataSourceTLSConfig(merged)
+}
+
+func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
+	if !ds.GetUseSsl() {
+		return nil
+	}
+	if hasPathTLSMaterial(ds) {
+		pathFields := map[string]string{
+			"ssl_ca_path":   ds.GetSslCaPath(),
+			"ssl_cert_path": ds.GetSslCertPath(),
+			"ssl_key_path":  ds.GetSslKeyPath(),
+		}
+		for field, path := range pathFields {
+			if path != "" && !filepath.IsAbs(path) {
+				return errors.Errorf("%s must be an absolute path", field)
+			}
+		}
+		return nil
+	}
+	if ds.GetSslCa() != "" {
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM([]byte(ds.GetSslCa())); !ok {
+			return errors.New("invalid ssl_ca PEM")
+		}
+	}
+	if (ds.GetSslCert() == "") != (ds.GetSslKey() == "") {
+		return errors.New("ssl_cert and ssl_key must be both set or unset")
+	}
+	if ds.GetSslCert() != "" {
+		if _, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey())); err != nil {
+			return errors.Wrap(err, "invalid ssl_cert or ssl_key PEM")
+		}
+	}
+	return nil
+}
+
+func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
+	if !ds.GetUseSsl() {
+		clearInlineTLSMaterial(ds)
+		clearPathTLSMaterial(ds)
+		return
+	}
+	if hasExplicitInlineTLSMaterial(ds, mask) {
+		clearPathTLSMaterial(ds)
+		return
+	}
+	if hasPathTLSMaterial(ds) {
+		clearInlineTLSMaterial(ds)
+		return
+	}
+	clearPathTLSMaterial(ds)
+}
+
+func clearInlineTLSMaterial(ds *storepb.DataSource) {
+	ds.SslCa = ""
+	ds.SslCert = ""
+	ds.SslKey = ""
+}
+
+func clearPathTLSMaterial(ds *storepb.DataSource) {
+	ds.SslCaPath = ""
+	ds.SslCertPath = ""
+	ds.SslKeyPath = ""
 }
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
@@ -634,6 +742,18 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
+	if err := validateDataSourceTLSWrite(dataSource, dataSource, []string{
+		"use_ssl",
+		"ssl_ca",
+		"ssl_cert",
+		"ssl_key",
+		"ssl_ca_path",
+		"ssl_cert_path",
+		"ssl_key_path",
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	normalizeDataSourceTLS(dataSource, nil)
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
@@ -854,6 +974,14 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 
 	clearDataSourceAuthentication(dataSource)
+	requestedDataSource, err := convertV1DataSource(req.Msg.DataSource)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("failed to convert data source"))
+	}
+	if err := validateDataSourceTLSWrite(requestedDataSource, dataSource, req.Msg.UpdateMask.GetPaths()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	normalizeDataSourceTLS(dataSource, req.Msg.UpdateMask.GetPaths())
 
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err
