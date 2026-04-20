@@ -419,6 +419,10 @@
       "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggested error level: Error",
       "title": "Prohibit using CASCADE when removing a table"
     },
+    "STATEMENT_DISALLOW_TRUNCATE": {
+      "description": "Flags destructive TRUNCATE operations. TRUNCATE is irreversible on Oracle and MySQL (implicit commit) and bypasses triggers on all four engines; prior-backup treats TRUNCATE as DDL and does not produce row-level snapshots. Also catches ALTER TABLE … TRUNCATE PARTITION on Oracle and MySQL. MSSQL TRUNCATE is transactional (rolls back inside explicit BEGIN/COMMIT) but still requires ALTER TABLE permission and bypasses DELETE triggers. PG TRUNCATE is transactional, so customers may opt the PG level lower than the other engines. Does NOT detect TRUNCATE inside EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedures, or PG DO $$ … $$ blocks. Suggested: WARNING in dev, ERROR in prod.",
+      "title": "Prohibit \"TRUNCATE TABLE\" and partition-truncate"
+    },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggested error level: Warning",
       "title": "Prohibit using filesort"

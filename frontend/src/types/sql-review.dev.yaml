@@ -253,6 +253,18 @@ ruleList:
   - type: STATEMENT_DISALLOW_RM_TBL_CASCADE
     level: ERROR
     engine: POSTGRES
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: WARNING
+    engine: MYSQL
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: WARNING
+    engine: POSTGRES
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: WARNING
+    engine: ORACLE
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: WARNING
+    engine: MSSQL
   - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: MYSQL
