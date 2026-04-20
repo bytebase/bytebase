@@ -255,22 +255,6 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 	return nil
 }
 
-func hasPathTLSMaterial(ds *storepb.DataSource) bool {
-	return ds.GetSslCaPath() != "" || ds.GetSslCertPath() != "" || ds.GetSslKeyPath() != ""
-}
-
-func hasExplicitInlineTLSMaterial(ds *storepb.DataSource, mask []string) bool {
-	return (tlsMaskContains(mask, "ssl_ca") && ds.GetSslCa() != "") ||
-		(tlsMaskContains(mask, "ssl_cert") && ds.GetSslCert() != "") ||
-		(tlsMaskContains(mask, "ssl_key") && ds.GetSslKey() != "")
-}
-
-func hasExplicitPathTLSMaterial(ds *storepb.DataSource, mask []string) bool {
-	return (tlsMaskContains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "") ||
-		(tlsMaskContains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "") ||
-		(tlsMaskContains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "")
-}
-
 func tlsMaskContains(mask []string, field string) bool {
 	for _, path := range mask {
 		if path == field {
@@ -280,15 +264,26 @@ func tlsMaskContains(mask []string, field string) bool {
 	return false
 }
 
-func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []string) error {
+func validateDataSourceTLSWrite(_ *storepb.DataSource, merged *storepb.DataSource, mask []string) error {
 	if !merged.GetUseSsl() {
 		return nil
 	}
-	if hasExplicitInlineTLSMaterial(requested, mask) && hasExplicitPathTLSMaterial(requested, mask) {
-		return errors.Errorf("cannot set both inline TLS material and TLS file paths")
-	}
-	if hasPathTLSMaterial(merged) && hasExplicitInlineTLSMaterial(requested, mask) {
-		return errors.Errorf("cannot set inline TLS material while TLS file paths are configured")
+	for _, conflict := range []struct {
+		inlineField string
+		pathField   string
+		inlineValue string
+		pathValue   string
+	}{
+		{"ssl_ca", "ssl_ca_path", merged.GetSslCa(), merged.GetSslCaPath()},
+		{"ssl_cert", "ssl_cert_path", merged.GetSslCert(), merged.GetSslCertPath()},
+		{"ssl_key", "ssl_key_path", merged.GetSslKey(), merged.GetSslKeyPath()},
+	} {
+		if conflict.inlineValue == "" || conflict.pathValue == "" {
+			continue
+		}
+		if tlsMaskContains(mask, conflict.inlineField) || tlsMaskContains(mask, conflict.pathField) {
+			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
+		}
 	}
 	return validateDataSourceTLSConfig(merged)
 }
@@ -297,18 +292,31 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 	if !ds.GetUseSsl() {
 		return nil
 	}
-	if hasPathTLSMaterial(ds) {
-		pathFields := map[string]string{
-			"ssl_ca_path":   ds.GetSslCaPath(),
-			"ssl_cert_path": ds.GetSslCertPath(),
-			"ssl_key_path":  ds.GetSslKeyPath(),
+	for _, conflict := range []struct {
+		inlineField string
+		pathField   string
+		inlineValue string
+		pathValue   string
+	}{
+		{"ssl_ca", "ssl_ca_path", ds.GetSslCa(), ds.GetSslCaPath()},
+		{"ssl_cert", "ssl_cert_path", ds.GetSslCert(), ds.GetSslCertPath()},
+		{"ssl_key", "ssl_key_path", ds.GetSslKey(), ds.GetSslKeyPath()},
+	} {
+		if conflict.inlineValue != "" && conflict.pathValue != "" {
+			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
 		}
-		for field, path := range pathFields {
-			if path != "" && !filepath.IsAbs(path) {
-				return errors.Errorf("%s must be an absolute path", field)
-			}
+	}
+	for _, pathField := range []struct {
+		field string
+		path  string
+	}{
+		{"ssl_ca_path", ds.GetSslCaPath()},
+		{"ssl_cert_path", ds.GetSslCertPath()},
+		{"ssl_key_path", ds.GetSslKeyPath()},
+	} {
+		if pathField.path != "" && !filepath.IsAbs(pathField.path) {
+			return errors.Errorf("%s must be an absolute path", pathField.field)
 		}
-		return nil
 	}
 	if ds.GetSslCa() != "" {
 		pool := x509.NewCertPool()
@@ -333,15 +341,24 @@ func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
 		clearPathTLSMaterial(ds)
 		return
 	}
-	if hasExplicitInlineTLSMaterial(ds, mask) {
-		clearPathTLSMaterial(ds)
-		return
+	if tlsMaskContains(mask, "ssl_ca") {
+		ds.SslCaPath = ""
 	}
-	if hasPathTLSMaterial(ds) {
-		clearInlineTLSMaterial(ds)
-		return
+	if tlsMaskContains(mask, "ssl_ca_path") {
+		ds.SslCa = ""
 	}
-	clearPathTLSMaterial(ds)
+	if tlsMaskContains(mask, "ssl_cert") {
+		ds.SslCertPath = ""
+	}
+	if tlsMaskContains(mask, "ssl_cert_path") {
+		ds.SslCert = ""
+	}
+	if tlsMaskContains(mask, "ssl_key") {
+		ds.SslKeyPath = ""
+	}
+	if tlsMaskContains(mask, "ssl_key_path") {
+		ds.SslKey = ""
+	}
 }
 
 func clearInlineTLSMaterial(ds *storepb.DataSource) {
