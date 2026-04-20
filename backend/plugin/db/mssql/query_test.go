@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
 func TestGetStatementWithResultLimit(t *testing.T) {
@@ -44,9 +46,6 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	if record {
 		err := yamlFile.Close()
 		require.NoError(t, err)
-		byteValue, err = yaml.Marshal(testCases)
-		require.NoError(t, err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		require.NoError(t, err)
+		yamltest.Record(t, filepath, testCases)
 	}
 }

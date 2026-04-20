@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -45,9 +46,6 @@ func TestStatementRanges(t *testing.T) {
 	}
 
 	if record {
-		byteValue, err := yaml.Marshal(testCases)
-		a.NoError(err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		a.NoError(err)
+		yamltest.Record(t, filepath, testCases)
 	}
 }

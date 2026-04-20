@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -337,10 +338,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 	if record {
 		err := yamlFile.Close()
 		require.NoError(t, err)
-		byteValue, err := yaml.Marshal(tests)
-		require.NoError(t, err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		require.NoError(t, err)
+		yamltest.Record(t, filepath, tests)
 	}
 }
 

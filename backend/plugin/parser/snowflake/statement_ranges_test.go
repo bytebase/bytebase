@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -54,10 +55,7 @@ func TestGetStatementRange(t *testing.T) {
 		}
 
 		if record {
-			yamlData, err := yaml.Marshal(testCases)
-			a.NoError(err)
-			err = os.WriteFile(filepath, yamlData, 0644)
-			a.NoError(err)
+			yamltest.Record(t, filepath, testCases)
 		}
 	}
 }

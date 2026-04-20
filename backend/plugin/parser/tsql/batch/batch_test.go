@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
 func TestBuildGoCommands(t *testing.T) {
@@ -87,9 +89,7 @@ func TestBatch(t *testing.T) {
 		}
 	}
 	if record {
-		bytes, err := yaml.Marshal(testCases)
-		a.NoError(err)
-		a.NoError(os.WriteFile(filePath, bytes, 0644))
+		yamltest.Record(t, filePath, testCases)
 	}
 }
 

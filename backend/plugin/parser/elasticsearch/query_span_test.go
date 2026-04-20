@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -50,10 +51,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	if record {
-		byteValue, err := yaml.Marshal(testCases)
-		a.NoError(err)
-		err = os.WriteFile(testDataPath, byteValue, 0644)
-		a.NoError(err)
+		yamltest.Record(t, testDataPath, testCases)
 	}
 }
 

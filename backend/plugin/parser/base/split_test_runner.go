@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 )
 
 // record is a flag to update expected results in YAML files.
@@ -186,11 +188,7 @@ func recordTestResults(t *testing.T, fullPath string, testCases []SplitTestCase,
 		}
 	}
 
-	data, err := yaml.Marshal(updated)
-	require.NoError(t, err, "failed to marshal updated test cases")
-
-	err = os.WriteFile(fullPath, data, 0644)
-	require.NoError(t, err, "failed to write updated test file: %s", fullPath)
+	yamltest.Record(t, fullPath, updated)
 
 	t.Logf("Updated %s with %d test cases", fullPath, len(updated))
 }
