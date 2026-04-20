@@ -420,7 +420,7 @@
       "title": "Cấm sử dụng CASCADE khi xóa bảng"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Gắn cờ các thao tác TRUNCATE phá hủy dữ liệu. TRUNCATE không thể khôi phục trên Oracle và MySQL (commit ngầm) và bỏ qua trigger trên cả bốn engine; prior-backup coi TRUNCATE là DDL và không tạo snapshot cấp hàng. Cũng phát hiện ALTER TABLE … TRUNCATE PARTITION trên Oracle và MySQL. TRUNCATE của MSSQL là transactional (có thể rollback bên trong BEGIN/COMMIT rõ ràng) nhưng vẫn yêu cầu quyền ALTER TABLE và bỏ qua DELETE trigger. TRUNCATE của PG là transactional, vì vậy khách hàng có thể đặt mức PG thấp hơn so với các engine khác. KHÔNG phát hiện TRUNCATE bên trong EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, stored procedure hoặc block DO $$ … $$ của PG. Đề xuất: WARNING trong dev, ERROR trong prod.",
+      "description": "Gắn cờ các thao tác TRUNCATE trên bảng và phân vùng. TRUNCATE là câu lệnh thuộc lớp DDL có tính phá hủy, bỏ qua trigger và không được prior-backup cấp hàng bao phủ. Không phát hiện TRUNCATE được chạy bên trong SQL động hoặc các routine lưu trữ.",
       "title": "Cấm \"TRUNCATE TABLE\" và truncate phân vùng"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {

@@ -420,7 +420,7 @@
       "title": "Prohibir el uso de CASCADE al eliminar una tabla"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Marca operaciones TRUNCATE destructivas. En Oracle y MySQL, TRUNCATE es irreversible (commit implícito) y omite los triggers en los cuatro motores; prior-backup trata TRUNCATE como DDL y no genera snapshots a nivel de fila. También detecta ALTER TABLE … TRUNCATE PARTITION en Oracle y MySQL. El TRUNCATE de MSSQL es transaccional (se revierte dentro de un BEGIN/COMMIT explícito), pero aún requiere el permiso ALTER TABLE y omite los triggers DELETE. El TRUNCATE de PG es transaccional, por lo que los clientes pueden establecer el nivel de PG más bajo que el de los demás motores. NO detecta TRUNCATE dentro de EXECUTE IMMEDIATE, sp_executesql, PL/pgSQL, procedimientos almacenados ni bloques DO $$ … $$ de PG. Sugerido: WARNING en desarrollo, ERROR en producción.",
+      "description": "Marca las operaciones TRUNCATE sobre tablas y particiones. TRUNCATE es una sentencia de clase DDL destructiva que omite los triggers y no está cubierta por el prior-backup a nivel de fila. No detecta TRUNCATE ejecutado dentro de SQL dinámico ni de rutinas almacenadas.",
       "title": "Prohibir \"TRUNCATE TABLE\" y truncate de particiones"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {

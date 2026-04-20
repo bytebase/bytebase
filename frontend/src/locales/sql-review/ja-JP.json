@@ -420,7 +420,7 @@
       "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "破壊的な TRUNCATE 操作にフラグを立てます。Oracle と MySQL では TRUNCATE は元に戻せず（暗黙的な COMMIT）、4 つのエンジンすべてでトリガーをバイパスします。prior-backup は TRUNCATE を DDL として扱い、行レベルのスナップショットを作成しません。Oracle と MySQL の ALTER TABLE … TRUNCATE PARTITION も検出します。MSSQL の TRUNCATE はトランザクション対応（明示的な BEGIN/COMMIT 内でロールバック可能）ですが、依然として ALTER TABLE 権限を必要とし、DELETE トリガーをバイパスします。PG の TRUNCATE はトランザクション対応なので、PG の重大度を他のエンジンより低く設定することもできます。EXECUTE IMMEDIATE、sp_executesql、PL/pgSQL、ストアドプロシージャ、PG の DO $$ … $$ ブロック内の TRUNCATE は検出しません。推奨：開発環境では WARNING、本番環境では ERROR。",
+      "description": "テーブルおよびパーティションに対する TRUNCATE 操作にフラグを立てます。TRUNCATE は DDL クラスの破壊的なステートメントで、トリガーをバイパスし、行レベルの prior-backup の対象外です。動的 SQL やストアドルーチン内で実行される TRUNCATE は検出しません。",
       "title": "\"TRUNCATE TABLE\" とパーティション truncate を禁止する"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
