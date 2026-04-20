@@ -934,11 +934,10 @@
       endposition: null
 
 # Codex round-15 P2 (#3104607277): recursive WITH self-reference must
-# resolve to opaque CTE, NOT to a same-named base table. Without the fix,
-# the recursive arm's `FROM cte` resolved to a base table, which (if
-# happens to have indexed columns) emits false-positive advice attaching
-# real indexes to CTE columns. With push-before-each, the CTE name is
-# visible during its own body walk → opaque → no false positive.
+# resolve to opaque CTE, NOT to a same-named base table. Handled by the
+# `with.Recursive` branch — push every CTE name BEFORE walking any body,
+# so inner `FROM orders` resolves to the CTE (opaque) and no false
+# positive fires against the real `orders` table's indexes.
 - statement: |
     WITH RECURSIVE orders AS (
       SELECT order_id, customer_name FROM orders WHERE order_id = 1
@@ -946,3 +945,38 @@
       SELECT order_id + 1, customer_name FROM orders WHERE order_id < 10
     )
     SELECT * FROM orders;
+
+# Codex round-16 P2 (#3109237788): non-recursive WITH self-shadow must
+# resolve inner `FROM orders` to the REAL base table (SQL:2011: a
+# non-recursive CTE body cannot see itself). Previously push-before-each
+# made inner `orders` opaque and silently dropped the violation — a false
+# negative on a valid, common query shape. Fixed by splitting push timing
+# by `with.Recursive`: non-recursive pushes the CTE's name AFTER walking
+# its body.
+- statement: |
+    WITH orders AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X')
+    SELECT * FROM orders;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Function \"UPPER\" is applied to indexed column \"customer_name\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Same shape, calculation variant (not just function), to lock the whole
+# category for non-recursive self-shadow.
+- statement: |
+    WITH orders AS (SELECT * FROM orders WHERE amount + 1 > 10)
+    SELECT * FROM orders;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: "Calculation is applied to indexed column \"amount\" in the WHERE clause, which prevents index usage"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

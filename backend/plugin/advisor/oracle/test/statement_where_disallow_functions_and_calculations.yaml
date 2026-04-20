@@ -989,10 +989,16 @@
         column: 0
       endposition: null
 
-# Codex round-15 P2 (#3104607277, Oracle): recursive factoring self-ref
-# must resolve to opaque CTE (not same-named base table). Same shape as
-# PG. Oracle has no explicit RECURSIVE keyword — recursion is detected
-# by self-reference. Push-before-each makes self-ref opaque correctly.
+# Recursive factoring, no false positive.
+# Oracle has no explicit RECURSIVE keyword at the factoring-clause level,
+# so this rule uses non-recursive CTE-visibility: inner `FROM orders`
+# falls through to the real base table. No advice fires because:
+#   - The anchor's WHERE uses rownum (not in the indexed-column set).
+#   - The recursive arm's WHERE references `n`, a CTE column alias
+#     declared by `WITH orders (n, customer_name) AS …`; `n` does not
+#     match any base-table column, so scope resolution is unresolved and
+#     the rule correctly emits no advice.
+# The SELECT list's `n + 1` is never inspected (rule only walks WHERE).
 - statement: |
     WITH orders (n, customer_name) AS (
       SELECT 1, customer_name FROM orders WHERE rownum <= 1
@@ -1000,3 +1006,35 @@
       SELECT n + 1, customer_name FROM orders WHERE n < 10
     )
     SELECT * FROM orders
+
+# Codex round-16 P2 (#3109237788, Oracle variant): non-recursive WITH
+# self-shadow must resolve inner `FROM orders` to the REAL base table.
+# Without the fix, push-before-each made inner `orders` opaque → missed
+# the UPPER(customer_name) violation. Fixed by push-after-body in the
+# non-recursive branch (Oracle's default CTE-visibility mode).
+- statement: |
+    WITH orders AS (SELECT * FROM orders WHERE UPPER(customer_name) = 'X')
+    SELECT * FROM orders
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Function "UPPER" is applied to indexed column "CUSTOMER_NAME" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Same shape, calculation variant — locks the calculation category too.
+- statement: |
+    WITH orders AS (SELECT * FROM orders WHERE amount + 1 > 10)
+    SELECT * FROM orders
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: 'Calculation is applied to indexed column "AMOUNT" in the WHERE clause, which prevents index usage'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

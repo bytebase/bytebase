@@ -743,43 +743,47 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkQueryBlock(qb parser.IQ
 	if qb == nil {
 		return
 	}
-	// CTE visibility per Oracle WITH semantics: push each factoring name
-	// BEFORE walking its body, in declaration order. The body sees all
-	// preceding siblings AND itself; later siblings remain invisible.
+	// CTE visibility matrix — same shape as the PG rule (see handleWithClause):
 	//
-	// This invariant satisfies both:
-	//   - non-recursive WITH (preceding siblings)
-	//   - recursive factoring (self-reference inside body resolves to
-	//     opaque CTE, preventing false positives that would otherwise
-	//     attach a same-named base table's indexes to CTE columns).
+	//	| Mode                 | body sees self | preceding siblings | later siblings |
+	//	|----------------------|----------------|--------------------|----------------|
+	//	| Non-recursive WITH   |       No       |         Yes        |        No      |
 	//
-	// Mirrors the PG handleWithClause logic (see that function's comment
-	// for the full design history of why earlier oscillations between
-	// push-all-first and push-after-body were both wrong).
+	// Oracle has no RECURSIVE keyword at the factoring-clause level, so
+	// syntactically every factoring element uses non-recursive visibility
+	// for CTE-name shadowing. Inner `FROM same_name` inside a body therefore
+	// resolves to the REAL base table (if any), NOT to the CTE being
+	// defined — matching Oracle's actual scope rule for the common case.
+	//
+	// Practically: push an empty frame, walk each body with no visibility
+	// of its own name, and add that name to the frame AFTER the walk so
+	// the subsequent sibling and the outer query see it as opaque CTE.
+	//
+	// Recursive subquery factoring (11g+): the body's self-reference
+	// falls through to the base table here. That keeps the common shape
+	// (non-recursive self-shadow like `WITH orders AS (SELECT * FROM orders …)`)
+	// correctly detecting violations on the real table. A recursive CTE
+	// body that ALSO applies a function/calculation to an indexed base-
+	// table column of the same-named table would over-flag — a narrow,
+	// rarely-seen shape acknowledged as a known limitation.
 	if sfc := qb.Subquery_factoring_clause(); sfc != nil {
 		frame := make(map[string]bool)
-		pushed := false
+		r.pushCTEs(frame)
+		defer r.popCTEs()
 		for _, fe := range sfc.AllFactoring_element() {
 			if fe == nil {
 				continue
+			}
+			if sub := fe.Subquery(); sub != nil {
+				r.checkSubqueryInScope(sub, nil)
 			}
 			if qn := fe.Query_name(); qn != nil {
 				if id := qn.Identifier(); id != nil {
 					if text := id.GetText(); text != "" {
 						frame[r.normalizeIdent(text)] = true
-						if !pushed {
-							r.pushCTEs(frame)
-							pushed = true
-						}
 					}
 				}
 			}
-			if sub := fe.Subquery(); sub != nil {
-				r.checkSubqueryInScope(sub, nil)
-			}
-		}
-		if pushed {
-			defer r.popCTEs()
 		}
 	}
 	from := qb.From_clause()

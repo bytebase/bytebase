@@ -521,30 +521,34 @@ func (r *whereDisallowFuncPgRule) walkCTEBody(query ast.Node) {
 // handleWithClause walks the CTE bodies AND maintains the cteStack with
 // SQL-correct visibility, returning a cleanup func the caller must defer.
 //
-// Invariant: push each CTE's name onto the stack BEFORE walking that CTE's
-// body, in declaration order. The body therefore sees:
-//   - all preceding siblings (already pushed in earlier iterations)
-//   - itself (just pushed) — required for recursive WITH self-references
+// CTE visibility matrix (SQL:2011):
 //
-// Later siblings remain invisible until their own iteration. This satisfies
-// SQL semantics for the common shapes:
-//   - Non-recursive WITH: preceding siblings only is the spec; the only
-//     deviation is that a body's `FROM self_name` resolves to opaque CTE
-//     instead of the (probably non-existent) same-named base table. That
-//     case is invalid SQL anyway, and the conservative outcome (no
-//     warning) is acceptable.
-//   - WITH RECURSIVE: each body sees self → self-reference resolves to
-//     opaque CTE (correct, prevents false-positive base-table indexes).
-//     Mutual recursion across siblings (rare) only sees preceding ones.
+//	| Mode                  | body sees self | preceding siblings | later siblings |
+//	|-----------------------|----------------|--------------------|----------------|
+//	| Non-recursive WITH    |       No       |         Yes        |        No      |
+//	| WITH RECURSIVE        |       Yes      |         Yes        |  Yes (mutual)  |
 //
-// Prior iterations of this fix oscillated between push-all-first (broke
-// non-recursive: later siblings wrongly shadowed earlier base tables —
-// codex round 14) and push-after-body (broke recursive: self-references
-// fell through to base tables — codex round 15). Push-before-each is the
-// common-denominator that handles both correctly.
+// The distinction matters for this rule because when a CTE name shadows a
+// real base table (e.g. `WITH orders AS (SELECT * FROM orders WHERE …) …`):
+//   - In NON-recursive WITH, inner `FROM orders` resolves to the REAL base
+//     table (per SQL spec). We MUST resolve indexes against it, otherwise
+//     we silently miss `UPPER(indexed_col)` violations — a false negative.
+//   - In WITH RECURSIVE, inner `FROM orders` resolves to the CTE itself
+//     (self-reference). We MUST treat it as opaque to avoid attaching the
+//     same-named base table's indexes to the CTE — a false positive.
+//
+// Strategy: push-timing depends on `with.Recursive`.
+//   - Recursive: collect all CTE names first, push the whole frame ONCE,
+//     then walk every body. Every body sees every name (self + others).
+//   - Non-recursive: push an EMPTY frame, then for each CTE: walk its body
+//     first (current name invisible), then add its name to the frame so
+//     subsequent siblings see it.
+//
+// On exit, the frame contains every CTE name in both modes, so the OUTER
+// query (walked by the caller after handleWithClause returns) always sees
+// the full set of CTE names — preserving the existing opaque-on-outer
+// behavior.
 func (r *whereDisallowFuncPgRule) handleWithClause(with *ast.WithClause) func() {
-	// noop is the intentional empty cleanup returned when there's nothing to pop —
-	// callers always `defer` the result, so the no-op keeps the call-site uniform.
 	noop := func() {
 		// Intentionally empty: no CTE frame was pushed, so nothing to pop.
 	}
@@ -552,25 +556,37 @@ func (r *whereDisallowFuncPgRule) handleWithClause(with *ast.WithClause) func() 
 		return noop
 	}
 	frame := make(map[string]bool)
-	pushed := false
+	r.pushCTEs(frame)
+
+	if with.Recursive {
+		for _, item := range with.Ctes.Items {
+			cte, ok := item.(*ast.CommonTableExpr)
+			if !ok || cte.Ctename == "" {
+				continue
+			}
+			frame[r.normalizeIdent(cte.Ctename)] = true
+		}
+		for _, item := range with.Ctes.Items {
+			cte, ok := item.(*ast.CommonTableExpr)
+			if !ok || cte.Ctequery == nil {
+				continue
+			}
+			r.walkCTEBody(cte.Ctequery)
+		}
+		return r.popCTEs
+	}
+
 	for _, item := range with.Ctes.Items {
 		cte, ok := item.(*ast.CommonTableExpr)
 		if !ok || cte.Ctequery == nil {
 			continue
 		}
+		r.walkCTEBody(cte.Ctequery)
 		if cte.Ctename != "" {
 			frame[r.normalizeIdent(cte.Ctename)] = true
-			if !pushed {
-				r.pushCTEs(frame)
-				pushed = true
-			}
 		}
-		r.walkCTEBody(cte.Ctequery)
 	}
-	if pushed {
-		return r.popCTEs
-	}
-	return noop
+	return r.popCTEs
 }
 
 // checkWhereWithScopes builds the scopeIndexed and inspects the WHERE body,
