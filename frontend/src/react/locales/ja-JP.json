@@ -529,8 +529,18 @@
     },
     "ssl": {
       "ca-cert": "CA証明書",
+      "ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
+      "ca-path": "CA証明書のパス",
       "client-cert": "クライアント証明書",
+      "client-cert-path": "クライアント証明書のパス",
       "client-key": "クライアントキー",
+      "client-key-path": "クライアントキーのパス",
+      "source": {
+        "disabled": "無効",
+        "file-path": "ファイルパス",
+        "inline-pem": "インラインPEM",
+        "self": "TLSソース"
+      },
       "verify-certificate": "TLS証明書を検証",
       "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
     },
@@ -562,8 +572,16 @@
   "data-source.ssh.user": "ユーザー名",
   "data-source.ssl-connection": "SSL接続",
   "data-source.ssl.ca-cert": "CA証明書",
+  "data-source.ssl.ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
+  "data-source.ssl.ca-path": "CA証明書のパス",
   "data-source.ssl.client-cert": "クライアント証明書",
+  "data-source.ssl.client-cert-path": "クライアント証明書のパス",
   "data-source.ssl.client-key": "クライアントキー",
+  "data-source.ssl.client-key-path": "クライアントキーのパス",
+  "data-source.ssl.source.disabled": "無効",
+  "data-source.ssl.source.file-path": "ファイルパス",
+  "data-source.ssl.source.inline-pem": "インラインPEM",
+  "data-source.ssl.source.self": "TLSソース",
   "data-source.ssl.verify-certificate": "TLS証明書を検証",
   "data-source.ssl.verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません",
   "database": {

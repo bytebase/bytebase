@@ -207,6 +207,7 @@ func TestBuildMongoshBaseArgsUsesTempDirForTLSFiles(t *testing.T) {
 			caFile = args[i+1]
 		case "--tlsCertificateKeyFile":
 			clientCertFile = args[i+1]
+		default:
 		}
 	}
 

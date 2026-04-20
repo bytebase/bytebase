@@ -529,8 +529,18 @@
     },
     "ssl": {
       "ca-cert": "CA 证书",
+      "ca-empty-uses-system-trust": "留空以使用系统信任存储",
+      "ca-path": "CA 证书路径",
       "client-cert": "客户端证书",
+      "client-cert-path": "客户端证书路径",
       "client-key": "客户端密钥",
+      "client-key-path": "客户端密钥路径",
+      "source": {
+        "disabled": "已禁用",
+        "file-path": "文件路径",
+        "inline-pem": "内联 PEM",
+        "self": "TLS 来源"
+      },
       "verify-certificate": "验证 TLS 证书",
       "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
     },
@@ -562,8 +572,16 @@
   "data-source.ssh.user": "用户名",
   "data-source.ssl-connection": "SSL 连接",
   "data-source.ssl.ca-cert": "CA 证书",
+  "data-source.ssl.ca-empty-uses-system-trust": "留空以使用系统信任存储",
+  "data-source.ssl.ca-path": "CA 证书路径",
   "data-source.ssl.client-cert": "客户端证书",
+  "data-source.ssl.client-cert-path": "客户端证书路径",
   "data-source.ssl.client-key": "客户端密钥",
+  "data-source.ssl.client-key-path": "客户端密钥路径",
+  "data-source.ssl.source.disabled": "已禁用",
+  "data-source.ssl.source.file-path": "文件路径",
+  "data-source.ssl.source.inline-pem": "内联 PEM",
+  "data-source.ssl.source.self": "TLS 来源",
   "data-source.ssl.verify-certificate": "验证 TLS 证书",
   "data-source.ssl.verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的",
   "database": {

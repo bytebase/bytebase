@@ -255,10 +255,6 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 	return nil
 }
 
-func hasInlineTLSMaterial(ds *storepb.DataSource) bool {
-	return ds.GetSslCa() != "" || ds.GetSslCert() != "" || ds.GetSslKey() != ""
-}
-
 func hasPathTLSMaterial(ds *storepb.DataSource) bool {
 	return ds.GetSslCaPath() != "" || ds.GetSslCertPath() != "" || ds.GetSslKeyPath() != ""
 }

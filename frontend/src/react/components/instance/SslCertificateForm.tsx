@@ -103,17 +103,11 @@ function TlsSourceSelector({
   disabled?: boolean;
 }) {
   const { t } = useTranslation();
-  const options: LocalTlsSource[] = ["DISABLED", "INLINE_PEM", "FILE_PATH"];
-  const sourceLabelKey = (option: LocalTlsSource) => {
-    switch (option) {
-      case "DISABLED":
-        return "data-source.ssl.source.disabled";
-      case "INLINE_PEM":
-        return "data-source.ssl.source.inline-pem";
-      case "FILE_PATH":
-        return "data-source.ssl.source.file-path";
-    }
-  };
+  const options: { value: LocalTlsSource; label: string }[] = [
+    { value: "DISABLED", label: t("data-source.ssl.source.disabled") },
+    { value: "INLINE_PEM", label: t("data-source.ssl.source.inline-pem") },
+    { value: "FILE_PATH", label: t("data-source.ssl.source.file-path") },
+  ];
 
   return (
     <RadioGroup
@@ -123,8 +117,12 @@ function TlsSourceSelector({
       className="mt-2 gap-x-4"
     >
       {options.map((option) => (
-        <RadioGroupItem key={option} value={option} disabled={disabled}>
-          {t(sourceLabelKey(option))}
+        <RadioGroupItem
+          key={option.value}
+          value={option.value}
+          disabled={disabled}
+        >
+          {option.label}
         </RadioGroupItem>
       ))}
     </RadioGroup>

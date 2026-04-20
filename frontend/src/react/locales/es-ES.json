@@ -529,8 +529,18 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
+      "ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
+      "ca-path": "Ruta del certificado de CA",
       "client-cert": "Certificado del cliente",
+      "client-cert-path": "Ruta del certificado del cliente",
       "client-key": "Clave del cliente",
+      "client-key-path": "Ruta de la clave del cliente",
+      "source": {
+        "disabled": "Deshabilitado",
+        "file-path": "Ruta de archivo",
+        "inline-pem": "PEM en línea",
+        "self": "Origen TLS"
+      },
       "verify-certificate": "Verificar certificado TLS",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },
@@ -562,8 +572,16 @@
   "data-source.ssh.user": "Nombre de usuario",
   "data-source.ssl-connection": "Conexión SSL",
   "data-source.ssl.ca-cert": "Certificado de CA",
+  "data-source.ssl.ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
+  "data-source.ssl.ca-path": "Ruta del certificado de CA",
   "data-source.ssl.client-cert": "Certificado del cliente",
+  "data-source.ssl.client-cert-path": "Ruta del certificado del cliente",
   "data-source.ssl.client-key": "Clave del cliente",
+  "data-source.ssl.client-key-path": "Ruta de la clave del cliente",
+  "data-source.ssl.source.disabled": "Deshabilitado",
+  "data-source.ssl.source.file-path": "Ruta de archivo",
+  "data-source.ssl.source.inline-pem": "PEM en línea",
+  "data-source.ssl.source.self": "Origen TLS",
   "data-source.ssl.verify-certificate": "Verificar certificado TLS",
   "data-source.ssl.verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro",
   "database": {
