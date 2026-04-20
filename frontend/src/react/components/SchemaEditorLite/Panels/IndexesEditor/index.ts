@@ -1,0 +1,1 @@
+export { IndexesEditor } from "./IndexesEditor";

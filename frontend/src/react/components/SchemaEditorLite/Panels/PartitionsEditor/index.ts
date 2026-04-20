@@ -1,0 +1,1 @@
+export { PartitionsEditor } from "./PartitionsEditor";

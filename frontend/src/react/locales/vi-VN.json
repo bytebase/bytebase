@@ -1581,7 +1581,67 @@
     "task-execution-errors": "Lỗi thực hiện tác vụ"
   },
   "schema-editor": {
-    "raw-sql": "Raw SQL"
+    "actions": {
+      "add-column": "Add column",
+      "add-index": "Add index",
+      "add-partition": "Add partition",
+      "create-function": "Create function",
+      "create-procedure": "Create procedure",
+      "create-schema": "Create schema",
+      "create-table": "New table",
+      "create-view": "Create view",
+      "drop": "Drop",
+      "drop-schema": "Drop schema",
+      "drop-table": "Drop table",
+      "rename": "Rename",
+      "rename-table": "Rename table",
+      "restore": "Restore"
+    },
+    "column": {
+      "comment": "Comment",
+      "default": "Default",
+      "name": "Name",
+      "not-null": "Not Null",
+      "operations": "Operations",
+      "primary": "Primary",
+      "type": "Type"
+    },
+    "columns": "Columns",
+    "create-foreign-key": "Create Foreign Key",
+    "default": {
+      "placeholder": "Default value"
+    },
+    "edit-foreign-key": "Edit Foreign Key",
+    "foreign-key": {
+      "name": "Foreign Key Name",
+      "referenced-column": "Referenced Column",
+      "referenced-schema": "Referenced Schema",
+      "referenced-table": "Referenced Table"
+    },
+    "index": {
+      "columns": "Columns",
+      "primary": "Primary",
+      "unique": "Unique"
+    },
+    "indexes": "Indexes",
+    "partition": {
+      "expression": "Expression",
+      "type": "Type",
+      "value": "Value"
+    },
+    "partitions": "Partitions",
+    "preview": "Preview",
+    "raw-sql": "Raw SQL",
+    "schema": {
+      "duplicate-name": "Schema name already exists",
+      "name-placeholder": "Schema name"
+    },
+    "table": {
+      "duplicate-name": "Table name already exists",
+      "name-placeholder": "Table name",
+      "no-match": "No tables match the search",
+      "no-tables": "No tables"
+    }
   },
   "schema-template": {
     "classification": {
