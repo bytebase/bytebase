@@ -624,6 +624,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		storeSettingValue = environmentSetting
 	case storepb.SettingName_EMAIL:
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email setting cannot be changed in SaaS mode"))
+		}
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
