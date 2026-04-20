@@ -74,6 +74,30 @@ func TestValidateDataSourceTLSWriteAllowsCrossSlotMixedMaterial(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromInlineToPath(t *testing.T) {
+	requested := &storepb.DataSource{UseSsl: true, SslCaPath: "/tmp/ca.pem"}
+	merged := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
+
+	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca_path"})
+	require.NoError(t, err)
+
+	normalizeDataSourceTLS(merged, []string{"ssl_ca_path"})
+	require.Empty(t, merged.GetSslCa())
+	require.Equal(t, "/tmp/ca.pem", merged.GetSslCaPath())
+}
+
+func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromPathToInline(t *testing.T) {
+	requested := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM}
+	merged := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
+
+	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca"})
+	require.NoError(t, err)
+
+	normalizeDataSourceTLS(merged, []string{"ssl_ca"})
+	require.Equal(t, validCAPEM, merged.GetSslCa())
+	require.Empty(t, merged.GetSslCaPath())
+}
+
 func TestNormalizeDataSourceTLSClearsSameSlotConflictsOnly(t *testing.T) {
 	ds := &storepb.DataSource{
 		UseSsl:     true,

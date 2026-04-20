@@ -264,7 +264,7 @@ func tlsMaskContains(mask []string, field string) bool {
 	return false
 }
 
-func validateDataSourceTLSWrite(_ *storepb.DataSource, merged *storepb.DataSource, mask []string) error {
+func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []string) error {
 	if !merged.GetUseSsl() {
 		return nil
 	}
@@ -281,11 +281,28 @@ func validateDataSourceTLSWrite(_ *storepb.DataSource, merged *storepb.DataSourc
 		if conflict.inlineValue == "" || conflict.pathValue == "" {
 			continue
 		}
-		if tlsMaskContains(mask, conflict.inlineField) || tlsMaskContains(mask, conflict.pathField) {
+		if !tlsMaskContains(mask, conflict.inlineField) || !tlsMaskContains(mask, conflict.pathField) {
+			continue
+		}
+		if requested == nil {
+			continue
+		}
+		if conflict.inlineField == "ssl_ca" && requested.GetSslCa() != "" && requested.GetSslCaPath() != "" {
+			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
+		}
+		if conflict.inlineField == "ssl_cert" && requested.GetSslCert() != "" && requested.GetSslCertPath() != "" {
+			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
+		}
+		if conflict.inlineField == "ssl_key" && requested.GetSslKey() != "" && requested.GetSslKeyPath() != "" {
 			return errors.Errorf("cannot set both %s and %s", conflict.inlineField, conflict.pathField)
 		}
 	}
-	return validateDataSourceTLSConfig(merged)
+	mergedCopy, ok := proto.Clone(merged).(*storepb.DataSource)
+	if !ok {
+		return errors.New("failed to clone data source")
+	}
+	normalizeDataSourceTLS(mergedCopy, mask)
+	return validateDataSourceTLSConfig(mergedCopy)
 }
 
 func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
