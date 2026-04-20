@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -124,6 +127,16 @@ func TestValidateDataSourceTLSWriteAllowsCrossSlotMixedMaterial(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestValidateDataSourceTLSWriteMatchesRuntimeCAPoolParsing(t *testing.T) {
+	caBundle := validKeyPEM + "\n" + validCAPEM
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCa: caBundle},
+		&storepb.DataSource{UseSsl: true, SslCa: caBundle},
+		[]string{"ssl_ca"},
+	)
+	require.NoError(t, err)
+}
+
 func TestValidateDataSourceTLSWriteAllowsSourceSwitchFromInlineToPath(t *testing.T) {
 	requested := &storepb.DataSource{UseSsl: true, SslCaPath: "/tmp/ca.pem"}
 	merged := &storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCaPath: "/tmp/ca.pem"}
@@ -166,6 +179,16 @@ func TestValidateDataSourceTLSWriteAllowsCertInlineAndKeyPath(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestValidateDataSourceTLSWriteMatchesRuntimeCertPEMScanning(t *testing.T) {
+	certBundle := validKeyPEM + "\n" + validCAPEM
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"},
+		&storepb.DataSource{UseSsl: true, SslCert: certBundle, SslKeyPath: "/tmp/key.pem"},
+		[]string{"ssl_cert", "ssl_key_path"},
+	)
+	require.NoError(t, err)
+}
+
 func TestValidateDataSourceTLSWriteRejectsMalformedInlineCertWithKeyPath(t *testing.T) {
 	err := validateDataSourceTLSWrite(
 		&storepb.DataSource{UseSsl: true, SslCert: "not-a-cert", SslKeyPath: "/tmp/key.pem"},
@@ -184,6 +207,36 @@ func TestValidateDataSourceTLSWriteRejectsMalformedInlineKeyWithCertPath(t *test
 	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_key PEM")
+}
+
+func TestValidateDataSourceTLSWriteMatchesRuntimeKeyPEMScanning(t *testing.T) {
+	keyBundle := validCAPEM + "\n" + validKeyPEM
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle},
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyBundle},
+		[]string{"ssl_cert_path", "ssl_key"},
+	)
+	require.NoError(t, err)
+}
+
+func TestValidateDataSourceTLSWriteAllowsEd25519PrivateKey(t *testing.T) {
+	keyPEM := generateEd25519KeyPEM(t)
+	err := validateDataSourceTLSWrite(
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM},
+		&storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKey: keyPEM},
+		[]string{"ssl_cert_path", "ssl_key"},
+	)
+	require.NoError(t, err)
+}
+
+func generateEd25519KeyPEM(t *testing.T) string {
+	t.Helper()
+
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	der, err := x509.MarshalPKCS8PrivateKey(key)
+	require.NoError(t, err)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
 }
 
 func TestValidateDataSourceTLSWriteRejectsRelativePathOnAdd(t *testing.T) {
@@ -274,12 +327,6 @@ func TestNormalizeDataSourceTLSClearsAllWhenDisabled(t *testing.T) {
 	require.Empty(t, ds.GetSslCaPath())
 	require.Empty(t, ds.GetSslCertPath())
 	require.Empty(t, ds.GetSslKeyPath())
-}
-
-func TestTLSMaskPaths(t *testing.T) {
-	mask := &fieldmaskpb.FieldMask{Paths: []string{"ssl_ca_path", "host"}}
-	require.True(t, tlsMaskContains(mask.GetPaths(), "ssl_ca_path"))
-	require.False(t, tlsMaskContains(mask.GetPaths(), "ssl_cert_path"))
 }
 
 func TestValidateDataSourceTLSConfigRejectsRelativePath(t *testing.T) {

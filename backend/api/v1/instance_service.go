@@ -3,12 +3,14 @@ package v1
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -261,15 +263,6 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 	return nil
 }
 
-func tlsMaskContains(mask []string, field string) bool {
-	for _, path := range mask {
-		if path == field {
-			return true
-		}
-	}
-	return false
-}
-
 func fullDataSourceTLSMask() []string {
 	return []string{
 		"use_ssl",
@@ -377,7 +370,7 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 		}
 	}
 	if ds.GetSslCa() != "" {
-		if err := validateInlineCertPEM([]byte(ds.GetSslCa())); err != nil {
+		if err := validateInlineCAPEM([]byte(ds.GetSslCa())); err != nil {
 			return errors.Wrap(err, "invalid ssl_ca PEM")
 		}
 	}
@@ -404,48 +397,66 @@ func validateDataSourceTLSConfig(ds *storepb.DataSource) error {
 	return nil
 }
 
+func validateInlineCAPEM(data []byte) error {
+	pool := x509.NewCertPool()
+	if ok := pool.AppendCertsFromPEM(data); !ok {
+		return errors.New("no valid CERTIFICATE PEM block found")
+	}
+	return nil
+}
+
 func validateInlineCertPEM(data []byte) error {
-	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "CERTIFICATE" {
+	var certs [][]byte
+	for {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		if block.Type == "CERTIFICATE" {
+			certs = append(certs, block.Bytes)
+		}
+	}
+	if len(certs) == 0 {
 		return errors.New("no CERTIFICATE PEM block found")
 	}
-	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+	if _, err := x509.ParseCertificate(certs[0]); err != nil {
 		return err
 	}
 	return nil
 }
 
 func validateInlineKeyPEM(data []byte) error {
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return errors.New("no PEM block found")
+	var block *pem.Block
+	for {
+		block, data = pem.Decode(data)
+		if block == nil {
+			return errors.New("no PRIVATE KEY PEM block found")
+		}
+		if block.Type == "PRIVATE KEY" || strings.HasSuffix(block.Type, " PRIVATE KEY") {
+			break
+		}
 	}
-	switch block.Type {
-	case "RSA PRIVATE KEY":
-		if _, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
-			return nil
-		}
-		if _, err := x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
-			return err
-		}
-	case "EC PRIVATE KEY":
-		if _, err := x509.ParseECPrivateKey(block.Bytes); err != nil {
-			return err
-		}
-	case "PRIVATE KEY":
-		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-		if err != nil {
-			return err
-		}
-		switch key.(type) {
-		case *rsa.PrivateKey, *ecdsa.PrivateKey:
+	_, err := parseInlinePrivateKey(block.Bytes)
+	return err
+}
+
+func parseInlinePrivateKey(der []byte) (any, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(der); err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
+			return key, nil
 		default:
-			return errors.Errorf("unsupported private key type %T", key)
+			return nil, errors.Errorf("unsupported private key type %T", key)
 		}
-	default:
-		return errors.Errorf("unsupported private key type %s", block.Type)
 	}
-	return nil
+	if key, err := x509.ParseECPrivateKey(der); err == nil {
+		return key, nil
+	}
+	return nil, errors.New("failed to parse private key")
 }
 
 func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
@@ -454,22 +465,22 @@ func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
 		clearPathTLSMaterial(ds)
 		return
 	}
-	if tlsMaskContains(mask, "ssl_ca") && ds.GetSslCa() != "" {
+	if slices.Contains(mask, "ssl_ca") && ds.GetSslCa() != "" {
 		ds.SslCaPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "" {
+	if slices.Contains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "" {
 		ds.SslCa = ""
 	}
-	if tlsMaskContains(mask, "ssl_cert") && ds.GetSslCert() != "" {
+	if slices.Contains(mask, "ssl_cert") && ds.GetSslCert() != "" {
 		ds.SslCertPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "" {
+	if slices.Contains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "" {
 		ds.SslCert = ""
 	}
-	if tlsMaskContains(mask, "ssl_key") && ds.GetSslKey() != "" {
+	if slices.Contains(mask, "ssl_key") && ds.GetSslKey() != "" {
 		ds.SslKeyPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "" {
+	if slices.Contains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "" {
 		ds.SslKey = ""
 	}
 }
