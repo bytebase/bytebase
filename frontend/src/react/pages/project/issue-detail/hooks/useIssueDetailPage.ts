@@ -33,7 +33,7 @@ import {
   Task_Status,
   type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { unknownPlan } from "@/types/v1/issue/plan";
+import { UNKNOWN_PLAN_NAME, unknownPlan } from "@/types/v1/issue/plan";
 import { getRolloutFromPlan, minmax, setDocumentTitle } from "@/utils";
 import type { ProjectIssueDetailPageProps } from "../types";
 import {
@@ -209,7 +209,13 @@ const refreshIssueDetailSnapshot = async (
         .catch(() => undefined)
     : undefined;
 
-  const planName = snapshot.plan?.name || issue?.plan;
+  // Prefer the authoritative `issue.plan`; fall back to the snapshot only when
+  // it holds a real plan (not the UNKNOWN placeholder used for access/role grants).
+  const snapshotPlanName =
+    snapshot.plan?.name && snapshot.plan.name !== UNKNOWN_PLAN_NAME
+      ? snapshot.plan.name
+      : undefined;
+  const planName = issue?.plan || snapshotPlanName;
   if (!planName) {
     return {
       issue,
