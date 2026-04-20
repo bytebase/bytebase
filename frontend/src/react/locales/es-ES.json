@@ -2164,6 +2164,8 @@
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
+    "add-a-new-instance": "Agregar nueva instancia",
+    "connect-to-a-database": "Conectar a base de datos",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
