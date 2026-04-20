@@ -420,8 +420,8 @@
       "title": "Cấm sử dụng CASCADE khi xóa bảng"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Gắn cờ các thao tác TRUNCATE trên bảng và phân vùng. TRUNCATE là câu lệnh thuộc lớp DDL có tính phá hủy, bỏ qua trigger và không được prior-backup cấp hàng bao phủ. Không phát hiện TRUNCATE được chạy bên trong SQL động hoặc các routine lưu trữ.",
-      "title": "Cấm \"TRUNCATE TABLE\" và truncate phân vùng"
+      "description": "TRUNCATE là câu lệnh DDL có tính phá hủy, xóa toàn bộ các hàng trong bảng và bỏ qua trigger. prior-backup không tạo snapshot cấp hàng cho TRUNCATE, nên dữ liệu bị mất do thao tác nhầm không thể khôi phục qua đường backup tích hợp. Mức độ lỗi gợi ý: Lỗi",
+      "title": "Cấm câu lệnh \"TRUNCATE\""
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "Filesort là một hoạt động tốn nhiều tài nguyên và có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi gợi ý: Cảnh báo",

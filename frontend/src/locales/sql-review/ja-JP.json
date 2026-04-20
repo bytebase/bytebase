@@ -420,8 +420,8 @@
       "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "テーブルおよびパーティションに対する TRUNCATE 操作にフラグを立てます。TRUNCATE は DDL クラスの破壊的なステートメントで、トリガーをバイパスし、行レベルの prior-backup の対象外です。動的 SQL やストアドルーチン内で実行される TRUNCATE は検出しません。",
-      "title": "\"TRUNCATE TABLE\" とパーティション truncate を禁止する"
+      "description": "TRUNCATE はテーブルのすべての行を削除してトリガーをバイパスする破壊的な DDL ステートメントです。prior-backup は TRUNCATE の行レベルのスナップショットを作成しないため、誤操作によるデータ損失は組み込みバックアップ経路では復旧できません。提案エラーレベル：エラー",
+      "title": "\"TRUNCATE\" ステートメントを禁止する"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "ファイルソートは、データの大量の読み書きを伴うため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告",

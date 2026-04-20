@@ -420,8 +420,8 @@
       "title": "Prohibit using CASCADE when removing a table"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Flags TRUNCATE operations on tables and partitions. TRUNCATE is a destructive, DDL-class statement that bypasses triggers and is not covered by row-level prior-backup. Does not detect TRUNCATE issued inside dynamic SQL or stored routines.",
-      "title": "Prohibit \"TRUNCATE TABLE\" and partition-truncate"
+      "description": "TRUNCATE is a destructive DDL statement that removes all rows from a table and bypasses triggers. Prior-backup does not produce row-level snapshots for TRUNCATE, so accidental data loss cannot be recovered through the built-in backup path. Suggested error level: Error",
+      "title": "Prohibit \"TRUNCATE\" statement"
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggested error level: Warning",

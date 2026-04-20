@@ -420,8 +420,8 @@
       "title": "Prohibir el uso de CASCADE al eliminar una tabla"
     },
     "STATEMENT_DISALLOW_TRUNCATE": {
-      "description": "Marca las operaciones TRUNCATE sobre tablas y particiones. TRUNCATE es una sentencia de clase DDL destructiva que omite los triggers y no está cubierta por el prior-backup a nivel de fila. No detecta TRUNCATE ejecutado dentro de SQL dinámico ni de rutinas almacenadas.",
-      "title": "Prohibir \"TRUNCATE TABLE\" y truncate de particiones"
+      "description": "TRUNCATE es una sentencia DDL destructiva que elimina todas las filas de una tabla y omite los triggers. prior-backup no genera snapshots a nivel de fila para TRUNCATE, por lo que una pérdida accidental de datos no puede recuperarse mediante la ruta de backup integrada. Nivel de error sugerido: Error",
+      "title": "Prohibir la sentencia \"TRUNCATE\""
     },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "El uso de filesort puede causar un impacto grave en el rendimiento. Nivel de error sugerido: Advertencia",
