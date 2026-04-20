@@ -4,14 +4,80 @@ package util
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+func HasTLSPath(ds *storepb.DataSource) bool {
+	if ds == nil {
+		return false
+	}
+	return ds.GetSslCaPath() != "" || ds.GetSslCertPath() != "" || ds.GetSslKeyPath() != ""
+}
+
+func ResolveTLSMaterial(ds *storepb.DataSource) (*storepb.DataSource, error) {
+	if ds == nil {
+		return nil, nil
+	}
+	resolved := proto.Clone(ds).(*storepb.DataSource)
+	if !resolved.GetUseSsl() || !HasTLSPath(resolved) {
+		return resolved, nil
+	}
+
+	if resolved.GetSslCaPath() != "" {
+		content, err := readTLSPathFile("CA certificate", resolved.GetSslCaPath())
+		if err != nil {
+			return nil, err
+		}
+		resolved.SslCa = content
+		resolved.SslCaPath = ""
+	}
+	if resolved.GetSslCertPath() != "" {
+		content, err := readTLSPathFile("client certificate", resolved.GetSslCertPath())
+		if err != nil {
+			return nil, err
+		}
+		resolved.SslCert = content
+		resolved.SslCertPath = ""
+	}
+	if resolved.GetSslKeyPath() != "" {
+		content, err := readTLSPathFile("client key", resolved.GetSslKeyPath())
+		if err != nil {
+			return nil, err
+		}
+		resolved.SslKey = content
+		resolved.SslKeyPath = ""
+	}
+
+	return resolved, nil
+}
+
+func readTLSPathFile(label, path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return "", errors.Errorf("%s path must be absolute", label)
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", errors.Errorf("failed to read %s file", label)
+	}
+	if len(content) == 0 {
+		return "", errors.Errorf("%s file is empty", label)
+	}
+	return string(content), nil
+}
+
 // GetTLSConfig gets the TLS config for connection.
 func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
+	resolved, err := ResolveTLSMaterial(ds)
+	if err != nil {
+		return nil, err
+	}
+	ds = resolved
 	if !ds.GetUseSsl() {
 		return nil, nil
 	}
