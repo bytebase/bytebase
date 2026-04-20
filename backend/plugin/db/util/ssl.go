@@ -72,14 +72,13 @@ func readTLSPathFile(label, path string) (string, error) {
 }
 
 // GetTLSConfig gets the TLS config for connection.
+// The datasource must already have path-backed TLS material resolved via ResolveTLSMaterial.
 func GetTLSConfig(ds *storepb.DataSource) (*tls.Config, error) {
-	resolved, err := ResolveTLSMaterial(ds)
-	if err != nil {
-		return nil, err
-	}
-	ds = resolved
 	if !ds.GetUseSsl() {
 		return nil, nil
+	}
+	if HasTLSPath(ds) {
+		return nil, errors.New("TLS material must be resolved before building TLS config")
 	}
 
 	cfg := &tls.Config{}

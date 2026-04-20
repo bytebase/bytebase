@@ -1,3 +1,4 @@
+//nolint:revive
 package util
 
 import (
@@ -89,4 +90,23 @@ func TestResolveTLSMaterialRedactsReadErrors(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to read CA certificate file")
 	require.False(t, strings.Contains(err.Error(), missingPath), err.Error())
 	require.NotContains(t, err.Error(), "no such file")
+}
+
+func TestGetTLSConfigRequiresResolvedTLSMaterial(t *testing.T) {
+	_, err := GetTLSConfig(&storepb.DataSource{
+		UseSsl:    true,
+		SslCaPath: filepath.Join(t.TempDir(), "missing.pem"),
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "TLS material must be resolved before building TLS config")
+	require.NotContains(t, err.Error(), "failed to read CA certificate file")
+}
+
+func TestGetTLSConfigIgnoresUnresolvedTLSMaterialWhenDisabled(t *testing.T) {
+	tlsConfig, err := GetTLSConfig(&storepb.DataSource{
+		UseSsl:    false,
+		SslCaPath: filepath.Join(t.TempDir(), "missing.pem"),
+	})
+	require.NoError(t, err)
+	require.Nil(t, tlsConfig)
 }
