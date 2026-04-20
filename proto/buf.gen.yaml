@@ -15,7 +15,7 @@ plugins:
   - remote: buf.build/grpc/go
     out: ../backend/generated-go
     opt: paths=source_relative
-  - remote: buf.build/connectrpc/go:v1.18.1
+  - remote: buf.build/connectrpc/go:v1.19.1
     out: ../backend/generated-go
     opt:
       - paths=source_relative
