@@ -205,6 +205,10 @@ func (*GenericChecker) getNodeType(ctx antlr.ParserRuleContext) string {
 		return "Alter_table_properties"
 	case *parser.Compound_expressionContext:
 		return "Compound_expression"
+	case *parser.Truncate_tableContext:
+		return "Truncate_table"
+	case *parser.Truncate_table_partitionContext:
+		return "Truncate_table_partition"
 	default:
 		// Return a generic type name if not found
 		return "Unknown"
