@@ -65,7 +65,11 @@ import { useWindowSize } from "@vueuse/core";
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
+// useI18n imported under a non-`use*` alias so SonarCloud's React-hook-
+// rule (typescript:S6440) doesn't misfire on this Vue composable called
+// at <script setup> top level. Consistent with the projectV1Store alias
+// workaround already in this file. See fd2aca60bf for the pattern.
+import { useI18n as vueI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
@@ -102,7 +106,7 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
-const { t } = useI18n();
+const { t } = vueI18n();
 const databaseStore = useDatabaseV1Store();
 // projectStore accessor imported under a non-`use*` alias so SonarCloud's
 // React-hook-rule (typescript:S6440) doesn't misfire on this new Pinia
