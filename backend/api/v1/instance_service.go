@@ -281,9 +281,6 @@ func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []st
 		if conflict.inlineValue == "" || conflict.pathValue == "" {
 			continue
 		}
-		if !tlsMaskContains(mask, conflict.inlineField) || !tlsMaskContains(mask, conflict.pathField) {
-			continue
-		}
 		if requested == nil {
 			continue
 		}

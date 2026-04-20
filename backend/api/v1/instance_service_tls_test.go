@@ -65,6 +65,15 @@ func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterial(t *testing.T) {
 	}
 }
 
+func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterialWithPartialMask(t *testing.T) {
+	requested := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
+	merged := &storepb.DataSource{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}
+
+	err := validateDataSourceTLSWrite(requested, merged, []string{"ssl_ca"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot set both ssl_ca and ssl_ca_path")
+}
+
 func TestValidateDataSourceTLSWriteAllowsCrossSlotMixedMaterial(t *testing.T) {
 	err := validateDataSourceTLSWrite(
 		&storepb.DataSource{UseSsl: true, SslCa: validCAPEM, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"},
