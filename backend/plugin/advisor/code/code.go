@@ -81,6 +81,7 @@ const (
 	SDLViewDependencyNotFound                 Code = 254
 	SDLDropOperation                          Code = 255
 	SDLReplaceOperation                       Code = 256
+	StatementDisallowTruncate                 Code = 257
 
 	// 260 DDL simulation error code.
 	DDLSimulationFailed Code = 260
