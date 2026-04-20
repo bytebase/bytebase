@@ -174,7 +174,8 @@ function MemberTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const actuatorStore = useActuatorV1Store();
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
 
   const selectableBindings = useMemo(
     () =>
@@ -411,7 +412,8 @@ function MemberTableByRole({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const actuatorStore = useActuatorV1Store();
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
