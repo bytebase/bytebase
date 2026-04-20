@@ -610,8 +610,18 @@
     },
     "ssl": {
       "ca-cert": "CA証明書",
+      "ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
+      "ca-path": "CA証明書のパス",
       "client-cert": "クライアント証明書",
+      "client-cert-path": "クライアント証明書のパス",
       "client-key": "クライアントキー",
+      "client-key-path": "クライアントキーのパス",
+      "source": {
+        "disabled": "無効",
+        "file-path": "ファイルパス",
+        "inline-pem": "インラインPEM",
+        "self": "TLSソース"
+      },
       "verify-certificate": "TLS証明書を検証",
       "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
     },

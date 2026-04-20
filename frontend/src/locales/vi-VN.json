@@ -610,8 +610,18 @@
     },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
+      "ca-empty-uses-system-trust": "Để trống để dùng kho tin cậy của hệ thống",
+      "ca-path": "Đường dẫn chứng chỉ CA",
       "client-cert": "Chứng chỉ máy khách",
+      "client-cert-path": "Đường dẫn chứng chỉ máy khách",
       "client-key": "Khóa máy khách",
+      "client-key-path": "Đường dẫn khóa máy khách",
+      "source": {
+        "disabled": "Tắt",
+        "file-path": "Đường dẫn tệp",
+        "inline-pem": "PEM nội tuyến",
+        "self": "Nguồn TLS"
+      },
       "verify-certificate": "Xác minh chứng chỉ TLS",
       "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
     },

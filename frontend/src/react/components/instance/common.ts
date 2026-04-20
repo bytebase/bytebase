@@ -13,6 +13,7 @@ import {
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
+import { hasSslConfig, SSL_UPDATE_MASK_FIELDS } from "./tls";
 
 export type BasicInfo = Omit<
   Instance,
@@ -127,10 +128,7 @@ export const calcDataSourceUpdateMask = (
     updateMask.add("password");
   }
   if (updateSsl) {
-    updateMask.add("use_ssl");
-    updateMask.add("ssl_ca");
-    updateMask.add("ssl_key");
-    updateMask.add("ssl_cert");
+    SSL_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
   }
 
   if (updateMask.has("iam_extension")) {
@@ -150,3 +148,5 @@ export const calcDataSourceUpdateMask = (
 
   return Array.from(updateMask);
 };
+
+export { hasSslConfig };

@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Info } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
@@ -32,6 +32,7 @@ import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
 import { SslCertificateForm } from "./SslCertificateForm";
+import { applyLocalTlsSource, getLocalTlsSource } from "./tls";
 
 interface DataSourceFormProps {
   dataSource: EditDataSource;
@@ -81,6 +82,10 @@ export function DataSourceForm({
   );
   const [newParamKey, setNewParamKey] = useState("");
   const [newParamValue, setNewParamValue] = useState("");
+  const [localTlsSource, setLocalTlsSource] = useState(
+    getLocalTlsSource(dataSource)
+  );
+  const previousDataSourceIdRef = useRef(dataSource.id);
 
   // Sync passwordType when externalSecret changes
   useEffect(() => {
@@ -92,6 +97,27 @@ export function DataSourceForm({
       );
     }
   }, [dataSource.externalSecret]);
+
+  useEffect(() => {
+    if (previousDataSourceIdRef.current !== dataSource.id) {
+      previousDataSourceIdRef.current = dataSource.id;
+      setLocalTlsSource(getLocalTlsSource(dataSource));
+      return;
+    }
+    if (!dataSource.updateSsl) {
+      setLocalTlsSource(getLocalTlsSource(dataSource));
+    }
+  }, [
+    dataSource.id,
+    dataSource.useSsl,
+    dataSource.sslCaPath,
+    dataSource.sslCertPath,
+    dataSource.sslKeyPath,
+    dataSource.hasSslCaPath,
+    dataSource.hasSslCertPath,
+    dataSource.hasSslKeyPath,
+    dataSource.updateSsl,
+  ]);
 
   const update = useCallback(
     (partial: Partial<EditDataSource>) => {
@@ -304,14 +330,6 @@ export function DataSourceForm({
       }
     }
     update({ port: value.trim() });
-  };
-
-  const handleUseSslChanged = (useSSL: boolean) => {
-    update({ useSsl: useSSL, updateSsl: true });
-  };
-
-  const handleEditSSL = () => {
-    update({ sslCa: "", sslCert: "", sslKey: "", updateSsl: true });
   };
 
   const handleSSHChange = (
@@ -1590,19 +1608,6 @@ export function DataSourceForm({
             <div className="sm:col-span-3 sm:col-start-1">
               <div className="flex items-center justify-start gap-x-2 textlabel">
                 {t("data-source.ssl-connection")}
-                <button
-                  type="button"
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    dataSource.useSsl ? "bg-accent" : "bg-control-bg-hover"
-                  }`}
-                  onClick={() => handleUseSslChanged(!dataSource.useSsl)}
-                >
-                  <span
-                    className={`inline-block size-3.5 transform rounded-full bg-background transition-transform ${
-                      dataSource.useSsl ? "translate-x-4.5" : "translate-x-0.5"
-                    }`}
-                  />
-                </button>
                 {isCreating && onOpenInfoPanel && hasSslInfo && (
                   <button
                     type="button"
@@ -1613,41 +1618,40 @@ export function DataSourceForm({
                   </button>
                 )}
               </div>
-              {dataSource.useSsl && (
-                <>
-                  {dataSource.pendingCreate || dataSource.updateSsl ? (
-                    <SslCertificateForm
-                      verify={dataSource.verifyTlsCertificate}
-                      onVerifyChange={(val) =>
-                        update({ verifyTlsCertificate: val })
-                      }
-                      ca={dataSource.sslCa}
-                      onCaChange={(val) =>
-                        update({ sslCa: val, updateSsl: true })
-                      }
-                      cert={dataSource.sslCert}
-                      onCertChange={(val) =>
-                        update({ sslCert: val, updateSsl: true })
-                      }
-                      sslKey={dataSource.sslKey}
-                      onKeyChange={(val) =>
-                        update({ sslKey: val, updateSsl: true })
-                      }
-                      engineType={basicInfo.engine}
-                      disabled={!allowEdit}
-                    />
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="mt-2"
-                      disabled={!allowEdit}
-                      onClick={handleEditSSL}
-                    >
-                      {t("common.edit")} - {t("common.write-only")}
-                    </Button>
-                  )}
-                </>
-              )}
+              <SslCertificateForm
+                source={localTlsSource}
+                onSourceChange={(source) => {
+                  setLocalTlsSource(source);
+                  update({
+                    ...applyLocalTlsSource(dataSource, source),
+                    updateSsl: true,
+                  });
+                }}
+                verify={dataSource.verifyTlsCertificate}
+                onVerifyChange={(val) => update({ verifyTlsCertificate: val })}
+                ca={dataSource.sslCa}
+                onCaChange={(val) => update({ sslCa: val, updateSsl: true })}
+                caPath={dataSource.sslCaPath}
+                onCaPathChange={(val) =>
+                  update({ sslCaPath: val, updateSsl: true })
+                }
+                cert={dataSource.sslCert}
+                onCertChange={(val) =>
+                  update({ sslCert: val, updateSsl: true })
+                }
+                certPath={dataSource.sslCertPath}
+                onCertPathChange={(val) =>
+                  update({ sslCertPath: val, updateSsl: true })
+                }
+                sslKey={dataSource.sslKey}
+                onKeyChange={(val) => update({ sslKey: val, updateSsl: true })}
+                keyPath={dataSource.sslKeyPath}
+                onKeyPathChange={(val) =>
+                  update({ sslKeyPath: val, updateSsl: true })
+                }
+                engineType={basicInfo.engine}
+                disabled={!allowEdit}
+              />
             </div>
           )}
 

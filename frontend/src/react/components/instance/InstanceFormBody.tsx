@@ -50,6 +50,7 @@ import {
   urlfy,
 } from "@/utils";
 import type { EditDataSource } from "./common";
+import { hasSslConfig } from "./common";
 import {
   EngineIconPath,
   MongoDBConnectionStringSchemaList,
@@ -854,7 +855,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
     if (!ds) return false;
     const hasExtraParameters =
       Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
-    const hasSslConfig = !!(ds.useSsl || ds.sslCa || ds.sslCert || ds.sslKey);
     const hasSshConfig = !!(
       ds.sshHost ||
       ds.sshPort ||
@@ -862,7 +862,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       ds.sshPassword ||
       ds.sshPrivateKey
     );
-    return hasExtraParameters || hasSslConfig || hasSshConfig;
+    return hasExtraParameters || hasSslConfig(ds) || hasSshConfig;
   }, [editingDataSource]);
 
   // Collapse state management based on visibility and configuration
