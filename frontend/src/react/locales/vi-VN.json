@@ -1850,6 +1850,8 @@
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
       "inactive-workload-identities": "Danh tính Workload không hoạt động",
+      "invite-email-hint": "Email mời sẽ được gửi đến các thành viên mới.",
+      "pending-invite": "Đã mời",
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoke-access": "Thu hồi Quyền truy cập",

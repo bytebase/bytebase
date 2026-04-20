@@ -23,7 +23,7 @@ import {
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
-import { convertMemberToFullname } from "@/utils";
+import { convertMemberToFullname, hasWorkspacePermissionV2 } from "@/utils";
 import type { GroupBinding, MemberBinding } from "./types";
 
 const getMemberBinding = (
@@ -65,6 +65,7 @@ const getMemberBinding = (
     };
   } else {
     let user: User | undefined = unknownUser(member);
+    let isPending = false;
     const fullname = convertMemberToFullname(member);
     if (fullname.startsWith(serviceAccountNamePrefix)) {
       const sa = serviceAccountStore.getServiceAccount(fullname);
@@ -73,8 +74,10 @@ const getMemberBinding = (
       const wi = workloadIdentityStore.getWorkloadIdentity(fullname);
       user = workloadIdentityToUser(wi);
     } else {
-      user = userStore.getUserByIdentifier(member);
-      if (!user) {
+      const realUser = userStore.getUserByIdentifier(member);
+      if (realUser) {
+        user = realUser;
+      } else {
         const email = extractUserEmail(member);
         user = create(UserSchema, {
           title: email,
@@ -82,6 +85,12 @@ const getMemberBinding = (
           email: email,
         });
       }
+      // Mark as pending (no principal) only when we can trust the lookup —
+      // i.e. the current user has permission to list or get users.
+      isPending =
+        !realUser &&
+        (hasWorkspacePermissionV2("bb.users.list") ||
+          hasWorkspacePermissionV2("bb.users.get"));
     }
 
     memberBinding = {
@@ -91,6 +100,7 @@ const getMemberBinding = (
       binding: member,
       workspaceLevelRoles: new Set<string>(),
       projectRoleBindings: [],
+      pending: isPending,
     };
   }
 

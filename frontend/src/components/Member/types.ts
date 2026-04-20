@@ -19,4 +19,8 @@ export interface MemberBinding extends MemberRole {
   type: "users" | "groups";
   user?: User;
   group?: GroupBinding;
+  // True when the email is in the IAM policy but has no principal (user hasn't
+  // signed up yet). Only set when the current user has permission to list/get
+  // users — otherwise we can't tell and this stays undefined.
+  pending?: boolean;
 }

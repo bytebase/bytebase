@@ -1850,6 +1850,8 @@
       "inactive-service-accounts": "Inactive service accounts",
       "inactive-users": "Inactive users",
       "inactive-workload-identities": "Inactive workload identities",
+      "invite-email-hint": "Invitation emails will be sent to new members.",
+      "pending-invite": "Invited",
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",

@@ -624,6 +624,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 		storeSettingValue = environmentSetting
 	case storepb.SettingName_EMAIL:
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email setting cannot be changed in SaaS mode"))
+		}
 		if request.Msg.UpdateMask == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
@@ -833,15 +836,12 @@ var disallowedDomains = map[string]bool{
 	"yeah.net":       true,
 }
 
-func (s *SettingService) isSettingDisallowed(name storepb.SettingName) bool {
+func (*SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 	// Backend-only settings that should never be exposed via the API.
 	switch name {
 	case storepb.SettingName_SYSTEM:
 		// SYSTEM: Internal system settings (auth secret, workspace ID, enterprise license)
 		return true
-	case storepb.SettingName_EMAIL:
-		// EMAIL: not exposed in the SaaS mode.
-		return s.profile.SaaS
 	default:
 		return false
 	}

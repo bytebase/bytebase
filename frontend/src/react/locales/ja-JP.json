@@ -1850,6 +1850,8 @@
       "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-users": "非アクティブユーザー",
       "inactive-workload-identities": "非アクティブワークロードID",
+      "invite-email-hint": "新しいメンバーに招待メールが送信されます。",
+      "pending-invite": "招待済み",
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoke-access": "アクセスを取り消す",
