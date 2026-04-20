@@ -81,6 +81,7 @@ const OPERATOR_DISPLAY: Record<string, string> = {
   ">=": "≥",
   "==": "=",
   "!=": "≠",
+  "@in": "in",
   "@not_in": "not in",
   "@not_contains": "not contains",
 };
