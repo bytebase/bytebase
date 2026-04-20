@@ -16775,6 +16775,7 @@ components:
         - ADVICE_ONLINE_MIGRATION
         - BUILTIN_PRIOR_BACKUP_CHECK
         - BUILTIN_WALK_THROUGH_CHECK
+        - STATEMENT_DISALLOW_TRUNCATE
     bytebase.v1.SchemaCatalog:
       type: object
       properties:
