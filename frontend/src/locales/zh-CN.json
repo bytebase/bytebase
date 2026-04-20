@@ -612,6 +612,7 @@
       "ca-cert": "CA 证书",
       "ca-empty-uses-system-trust": "留空以使用系统信任存储",
       "ca-path": "CA 证书路径",
+      "ca-placeholder": "输入或拖放 YOUR_CA_CERTIFICATE",
       "ca-source": {
         "file-path": "文件路径",
         "inline-pem": "内联 PEM",
@@ -620,6 +621,7 @@
       },
       "client-cert": "客户端证书",
       "client-cert-path": "客户端证书路径",
+      "client-cert-placeholder": "输入或拖放 YOUR_CLIENT_CERT",
       "client-cert-source": {
         "file-path": "文件路径",
         "inline-pem": "内联 PEM",
@@ -628,6 +630,7 @@
       },
       "client-key": "客户端密钥",
       "client-key-path": "客户端密钥路径",
+      "client-key-placeholder": "输入或拖放 YOUR_CLIENT_KEY",
       "verify-certificate": "验证 TLS 证书",
       "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
     },

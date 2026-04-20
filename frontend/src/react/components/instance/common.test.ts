@@ -34,6 +34,8 @@ describe("TLS local source helpers", () => {
         sslCaPath: "/tmp/ca.pem",
         sslCert: "inline-cert",
         sslKeyPath: "/tmp/key.pem",
+        hasSslCertPath: true,
+        hasSslKeyPath: true,
       } as never,
       "SYSTEM_TRUST"
     );
@@ -41,6 +43,8 @@ describe("TLS local source helpers", () => {
     expect(next.sslCaPath).toBe("");
     expect(next.sslCert).toBe("inline-cert");
     expect(next.sslKeyPath).toBe("/tmp/key.pem");
+    expect(next.hasSslCertPath).toBe(true);
+    expect(next.hasSslKeyPath).toBe(true);
   });
 
   test("clears only client cert fields when selecting none", () => {
@@ -52,10 +56,12 @@ describe("TLS local source helpers", () => {
         sslKey: "inline-key",
         sslCertPath: "/tmp/cert.pem",
         sslKeyPath: "/tmp/key.pem",
+        hasSslCaPath: true,
       } as never,
       "NONE"
     );
     expect(next.sslCaPath).toBe("/tmp/ca.pem");
+    expect(next.hasSslCaPath).toBe(true);
     expect(next.sslCert).toBe("");
     expect(next.sslKey).toBe("");
     expect(next.sslCertPath).toBe("");

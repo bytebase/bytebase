@@ -27,7 +27,7 @@ import {
 import { onlyAllowNumber } from "@/utils";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
-import type { EditDataSource } from "./common";
+import type { EditDataSource, TlsUpdateState } from "./common";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
@@ -47,6 +47,29 @@ interface DataSourceFormProps {
   onDataSourceChange: (ds: EditDataSource) => void;
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
+
+const mergeTlsUpdateState = (
+  current: TlsUpdateState | undefined,
+  next: TlsUpdateState
+): TlsUpdateState => {
+  if (current === true || next === true) {
+    return true;
+  }
+  if (!current) {
+    return next;
+  }
+  if (typeof current === "boolean") {
+    return next;
+  }
+  if (typeof next === "boolean") {
+    return current;
+  }
+  return {
+    useSsl: current.useSsl || next.useSsl,
+    ca: current.ca || next.ca,
+    clientCert: current.clientCert || next.clientCert,
+  };
+};
 
 export function DataSourceForm({
   dataSource,
@@ -1636,9 +1659,16 @@ export function DataSourceForm({
                 useSsl={dataSource.useSsl}
                 onUseSslChange={(useSsl) => {
                   if (useSsl) {
-                    update({ useSsl: true, updateSsl: true });
+                    update({
+                      useSsl: true,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        useSsl: true,
+                      }),
+                    });
                     return;
                   }
+                  setLocalTlsCaSource("SYSTEM_TRUST");
+                  setLocalTlsClientCertSource("NONE");
                   update({ ...disableLocalTls(dataSource), updateSsl: true });
                 }}
                 caSource={localTlsCaSource}
@@ -1646,7 +1676,9 @@ export function DataSourceForm({
                   setLocalTlsCaSource(source);
                   update({
                     ...applyLocalTlsCaSource(dataSource, source),
-                    updateSsl: true,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
                   });
                 }}
                 clientCertSource={localTlsClientCertSource}
@@ -1654,30 +1686,66 @@ export function DataSourceForm({
                   setLocalTlsClientCertSource(source);
                   update({
                     ...applyLocalTlsClientCertSource(dataSource, source),
-                    updateSsl: true,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
                   });
                 }}
                 verify={dataSource.verifyTlsCertificate}
                 onVerifyChange={(val) => update({ verifyTlsCertificate: val })}
                 ca={dataSource.sslCa}
-                onCaChange={(val) => update({ sslCa: val, updateSsl: true })}
+                onCaChange={(val) =>
+                  update({
+                    sslCa: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
+                  })
+                }
                 caPath={dataSource.sslCaPath}
                 onCaPathChange={(val) =>
-                  update({ sslCaPath: val, updateSsl: true })
+                  update({
+                    sslCaPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
+                  })
                 }
                 cert={dataSource.sslCert}
                 onCertChange={(val) =>
-                  update({ sslCert: val, updateSsl: true })
+                  update({
+                    sslCert: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
                 }
                 certPath={dataSource.sslCertPath}
                 onCertPathChange={(val) =>
-                  update({ sslCertPath: val, updateSsl: true })
+                  update({
+                    sslCertPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
                 }
                 sslKey={dataSource.sslKey}
-                onKeyChange={(val) => update({ sslKey: val, updateSsl: true })}
+                onKeyChange={(val) =>
+                  update({
+                    sslKey: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
+                }
                 keyPath={dataSource.sslKeyPath}
                 onKeyPathChange={(val) =>
-                  update({ sslKeyPath: val, updateSsl: true })
+                  update({
+                    sslKeyPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
                 }
                 engineType={basicInfo.engine}
                 disabled={!allowEdit}

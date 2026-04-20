@@ -15,6 +15,24 @@ import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
 import { hasSslConfig, SSL_UPDATE_MASK_FIELDS } from "./tls";
 
+export type TlsUpdateState =
+  | boolean
+  | {
+      useSsl?: boolean;
+      ca?: boolean;
+      clientCert?: boolean;
+    };
+
+const SSL_CA_UPDATE_MASK_FIELDS = ["use_ssl", "ssl_ca", "ssl_ca_path"] as const;
+
+const SSL_CLIENT_CERT_UPDATE_MASK_FIELDS = [
+  "use_ssl",
+  "ssl_cert",
+  "ssl_key",
+  "ssl_cert_path",
+  "ssl_key_path",
+] as const;
+
 export type BasicInfo = Omit<
   Instance,
   "$typeName" | "dataSources" | "engineVersion" | "lastSyncTime"
@@ -26,7 +44,7 @@ export type EditDataSource = DataSource & {
   updatedMasterPassword: string;
   useEmptyPassword?: boolean;
   useEmptyMasterPassword?: boolean;
-  updateSsl?: boolean;
+  updateSsl?: TlsUpdateState;
   extraConnectionParameters?: Record<string, string>;
 };
 
@@ -127,8 +145,23 @@ export const calcDataSourceUpdateMask = (
     editing.password = "";
     updateMask.add("password");
   }
-  if (updateSsl) {
+  updateMask.delete("has_ssl_ca_path");
+  updateMask.delete("has_ssl_cert_path");
+  updateMask.delete("has_ssl_key_path");
+  if (updateSsl === true) {
     SSL_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+  } else if (updateSsl) {
+    if (updateSsl.useSsl) {
+      updateMask.add("use_ssl");
+    }
+    if (updateSsl.ca) {
+      SSL_CA_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+    }
+    if (updateSsl.clientCert) {
+      SSL_CLIENT_CERT_UPDATE_MASK_FIELDS.forEach((field) =>
+        updateMask.add(field)
+      );
+    }
   }
 
   if (updateMask.has("iam_extension")) {

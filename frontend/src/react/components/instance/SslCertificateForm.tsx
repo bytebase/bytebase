@@ -233,6 +233,9 @@ export function SslCertificateForm({
   const resolvedCertPathLabel = t("data-source.ssl.client-cert-path");
   const resolvedKeyPathLabel = t("data-source.ssl.client-key-path");
   const resolvedCaHint = t("data-source.ssl.ca-empty-uses-system-trust");
+  const resolvedCaPlaceholder = t("data-source.ssl.ca-placeholder");
+  const resolvedCertPlaceholder = t("data-source.ssl.client-cert-placeholder");
+  const resolvedKeyPlaceholder = t("data-source.ssl.client-key-placeholder");
   const resolvedUseSsl = useSsl ?? true;
   const showUseSslSwitch = useSsl !== undefined && !!onUseSslChange;
   const showCaSourceUi = caSource !== undefined && !!onCaSourceChange;
@@ -304,7 +307,7 @@ export function SslCertificateForm({
           value={ca}
           onChange={(val) => onCaChange?.(val)}
           disabled={disabled}
-          placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
+          placeholder={resolvedCaPlaceholder}
         />
         <p className="text-xs textinfolabel">{resolvedCaHint}</p>
       </div>
@@ -352,7 +355,7 @@ export function SslCertificateForm({
             value={sslKey}
             onChange={(val) => onKeyChange?.(val)}
             disabled={disabled}
-            placeholder="Input or drag and drop YOUR_CLIENT_KEY"
+            placeholder={resolvedKeyPlaceholder}
           />
         </div>
         <div className="flex flex-col gap-y-1">
@@ -361,7 +364,7 @@ export function SslCertificateForm({
             value={cert}
             onChange={(val) => onCertChange?.(val)}
             disabled={disabled}
-            placeholder="Input or drag and drop YOUR_CLIENT_CERT"
+            placeholder={resolvedCertPlaceholder}
           />
         </div>
       </div>
@@ -423,7 +426,7 @@ export function SslCertificateForm({
             value={ca}
             onChange={(val) => onCaChange?.(val)}
             disabled={disabled}
-            placeholder="Input or drag and drop YOUR_CA_CERTIFICATE"
+            placeholder={resolvedCaPlaceholder}
           />
           <p className="mt-1 text-xs textinfolabel">{resolvedCaHint}</p>
         </TabsPanel>
@@ -433,7 +436,7 @@ export function SslCertificateForm({
               value={sslKey}
               onChange={(val) => onKeyChange?.(val)}
               disabled={disabled}
-              placeholder="Input or drag and drop YOUR_CLIENT_KEY"
+              placeholder={resolvedKeyPlaceholder}
             />
           </TabsPanel>
         )}
@@ -443,7 +446,7 @@ export function SslCertificateForm({
               value={cert}
               onChange={(val) => onCertChange?.(val)}
               disabled={disabled}
-              placeholder="Input or drag and drop YOUR_CLIENT_CERT"
+              placeholder={resolvedCertPlaceholder}
             />
           </TabsPanel>
         )}
