@@ -279,6 +279,7 @@ func buildRuleTypeMapping() map[string]string {
 		"STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE":            "storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE",
 		"STATEMENT_DISALLOW_ON_DEL_CASCADE":                   "storepb.SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE",
 		"STATEMENT_DISALLOW_RM_TBL_CASCADE":                   "storepb.SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE",
+		"STATEMENT_DISALLOW_TRUNCATE":                         "storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE",
 		"STATEMENT_DISALLOW_COMMIT":                           "storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT",
 		"STATEMENT_DISALLOW_LIMIT":                            "storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT",
 		"STATEMENT_DISALLOW_ORDER_BY":                         "storepb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY",
