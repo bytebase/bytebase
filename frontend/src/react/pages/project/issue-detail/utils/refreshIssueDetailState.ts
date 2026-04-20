@@ -14,13 +14,27 @@ import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
+import { UNKNOWN_PLAN_NAME } from "@/types/v1/issue/plan";
 import { getRolloutFromPlan } from "@/utils";
 import type { IssueDetailPageState } from "../hooks/useIssueDetailPage";
 
 export async function refreshIssueDetailState(
   page: Pick<IssueDetailPageState, "issue" | "patchState" | "plan">
 ) {
-  if (!page.plan?.name) {
+  // Issues without a plan (e.g., access/role grants) use an UNKNOWN placeholder.
+  // Fetching it would hit "project -1 not found" — refresh only the issue instead.
+  if (!page.plan?.name || page.plan.name === UNKNOWN_PLAN_NAME) {
+    if (!page.issue?.name) {
+      return;
+    }
+    const issueResult = await issueServiceClientConnect
+      .getIssue(
+        create(GetIssueRequestSchema, {
+          name: page.issue.name,
+        })
+      )
+      .catch(() => undefined);
+    page.patchState({ issue: issueResult });
     return;
   }
 
