@@ -833,7 +833,7 @@ var disallowedDomains = map[string]bool{
 	"yeah.net":       true,
 }
 
-func (s *SettingService) isSettingDisallowed(name storepb.SettingName) bool {
+func (*SettingService) isSettingDisallowed(name storepb.SettingName) bool {
 	// Backend-only settings that should never be exposed via the API.
 	switch name {
 	case storepb.SettingName_SYSTEM:

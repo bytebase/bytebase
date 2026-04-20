@@ -287,7 +287,7 @@ function MemberTable({
                         mb.user?.name === currentUser.name && (
                           <Badge className="text-xs">{t("common.you")}</Badge>
                         )}
-                      {mb.type === "users" && mb.pending && (
+                      {isSaaSMode && mb.type === "users" && mb.pending && (
                         <Badge variant="warning" className="text-xs">
                           {t("settings.members.pending-invite")}
                         </Badge>
@@ -515,11 +515,13 @@ function MemberTableByRole({
                                     {t("common.you")}
                                   </Badge>
                                 )}
-                              {mb.type === "users" && mb.pending && (
-                                <Badge variant="warning" className="text-xs">
-                                  {t("settings.members.pending-invite")}
-                                </Badge>
-                              )}
+                              {isSaaSMode &&
+                                mb.type === "users" &&
+                                mb.pending && (
+                                  <Badge variant="warning" className="text-xs">
+                                    {t("settings.members.pending-invite")}
+                                  </Badge>
+                                )}
                               {mb.type === "users" &&
                                 mb.user?.email &&
                                 getAccountTypeByEmail(mb.user.email) ===
