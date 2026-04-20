@@ -32,7 +32,13 @@ import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
 import { SslCertificateForm } from "./SslCertificateForm";
-import { applyLocalTlsSource, getLocalTlsSource } from "./tls";
+import {
+  applyLocalTlsCaSource,
+  applyLocalTlsClientCertSource,
+  disableLocalTls,
+  getLocalTlsCaSource,
+  getLocalTlsClientCertSource,
+} from "./tls";
 
 interface DataSourceFormProps {
   dataSource: EditDataSource;
@@ -82,8 +88,11 @@ export function DataSourceForm({
   );
   const [newParamKey, setNewParamKey] = useState("");
   const [newParamValue, setNewParamValue] = useState("");
-  const [localTlsSource, setLocalTlsSource] = useState(
-    getLocalTlsSource(dataSource)
+  const [localTlsCaSource, setLocalTlsCaSource] = useState(
+    getLocalTlsCaSource(dataSource)
+  );
+  const [localTlsClientCertSource, setLocalTlsClientCertSource] = useState(
+    getLocalTlsClientCertSource(dataSource)
   );
   const previousDataSourceIdRef = useRef(dataSource.id);
 
@@ -101,15 +110,20 @@ export function DataSourceForm({
   useEffect(() => {
     if (previousDataSourceIdRef.current !== dataSource.id) {
       previousDataSourceIdRef.current = dataSource.id;
-      setLocalTlsSource(getLocalTlsSource(dataSource));
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
       return;
     }
     if (!dataSource.updateSsl) {
-      setLocalTlsSource(getLocalTlsSource(dataSource));
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
     }
   }, [
     dataSource.id,
     dataSource.useSsl,
+    dataSource.sslCa,
+    dataSource.sslCert,
+    dataSource.sslKey,
     dataSource.sslCaPath,
     dataSource.sslCertPath,
     dataSource.sslKeyPath,
@@ -1619,11 +1633,27 @@ export function DataSourceForm({
                 )}
               </div>
               <SslCertificateForm
-                source={localTlsSource}
-                onSourceChange={(source) => {
-                  setLocalTlsSource(source);
+                useSsl={dataSource.useSsl}
+                onUseSslChange={(useSsl) => {
+                  if (useSsl) {
+                    update({ useSsl: true, updateSsl: true });
+                    return;
+                  }
+                  update({ ...disableLocalTls(dataSource), updateSsl: true });
+                }}
+                caSource={localTlsCaSource}
+                onCaSourceChange={(source) => {
+                  setLocalTlsCaSource(source);
                   update({
-                    ...applyLocalTlsSource(dataSource, source),
+                    ...applyLocalTlsCaSource(dataSource, source),
+                    updateSsl: true,
+                  });
+                }}
+                clientCertSource={localTlsClientCertSource}
+                onClientCertSourceChange={(source) => {
+                  setLocalTlsClientCertSource(source);
+                  update({
+                    ...applyLocalTlsClientCertSource(dataSource, source),
                     updateSsl: true,
                   });
                 }}

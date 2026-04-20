@@ -43,4 +43,38 @@ describe("SslCertificateForm", () => {
       root.unmount();
     });
   });
+
+  test("renders explicit CA and client certificate source controls", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          useSsl={true}
+          caSource="SYSTEM_TRUST"
+          onCaSourceChange={() => {}}
+          clientCertSource="FILE_PATH"
+          onClientCertSourceChange={() => {}}
+          showKeyAndCert={true}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain("data-source.ssl.ca-source.self");
+    expect(container.textContent).toContain(
+      "data-source.ssl.ca-source.system-trust"
+    );
+    expect(container.textContent).toContain(
+      "data-source.ssl.client-cert-source.self"
+    );
+    expect(container.textContent).toContain(
+      "data-source.ssl.client-cert-source.file-path"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

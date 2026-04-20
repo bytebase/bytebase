@@ -531,16 +531,22 @@
       "ca-cert": "Chứng chỉ CA",
       "ca-empty-uses-system-trust": "Để trống để dùng kho tin cậy của hệ thống",
       "ca-path": "Đường dẫn chứng chỉ CA",
-      "client-cert": "Chứng chỉ máy khách",
-      "client-cert-path": "Đường dẫn chứng chỉ máy khách",
-      "client-key": "Khóa máy khách",
-      "client-key-path": "Đường dẫn khóa máy khách",
-      "source": {
-        "disabled": "Đã tắt",
+      "ca-source": {
         "file-path": "Đường dẫn tệp",
         "inline-pem": "PEM nội tuyến",
-        "self": "Nguồn TLS"
+        "self": "Nguồn chứng chỉ CA",
+        "system-trust": "Tin cậy hệ thống"
       },
+      "client-cert": "Chứng chỉ máy khách",
+      "client-cert-path": "Đường dẫn chứng chỉ máy khách",
+      "client-cert-source": {
+        "file-path": "Đường dẫn tệp",
+        "inline-pem": "PEM nội tuyến",
+        "none": "Không có",
+        "self": "Nguồn chứng chỉ máy khách"
+      },
+      "client-key": "Khóa máy khách",
+      "client-key-path": "Đường dẫn khóa máy khách",
       "verify-certificate": "Xác minh chứng chỉ TLS",
       "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
     },
@@ -578,10 +584,6 @@
   "data-source.ssl.client-cert-path": "Đường dẫn chứng chỉ máy khách",
   "data-source.ssl.client-key": "Khóa máy khách",
   "data-source.ssl.client-key-path": "Đường dẫn khóa máy khách",
-  "data-source.ssl.source.disabled": "Đã tắt",
-  "data-source.ssl.source.file-path": "Đường dẫn tệp",
-  "data-source.ssl.source.inline-pem": "PEM nội tuyến",
-  "data-source.ssl.source.self": "Nguồn TLS",
   "data-source.ssl.verify-certificate": "Xác minh chứng chỉ TLS",
   "data-source.ssl.verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn",
   "database": {

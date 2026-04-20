@@ -612,16 +612,22 @@
       "ca-cert": "CA Certificate",
       "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
       "ca-path": "CA Certificate Path",
-      "client-cert": "Client Certificate",
-      "client-cert-path": "Client Certificate Path",
-      "client-key": "Client Key",
-      "client-key-path": "Client Key Path",
-      "source": {
-        "disabled": "Disabled",
+      "ca-source": {
         "file-path": "File Path",
         "inline-pem": "Inline PEM",
-        "self": "TLS Source"
+        "self": "CA Certificate Source",
+        "system-trust": "System Trust"
       },
+      "client-cert": "Client Certificate",
+      "client-cert-path": "Client Certificate Path",
+      "client-cert-source": {
+        "file-path": "File Path",
+        "inline-pem": "Inline PEM",
+        "none": "None",
+        "self": "Client Certificate Source"
+      },
+      "client-key": "Client Key",
+      "client-key-path": "Client Key Path",
       "verify-certificate": "Verify TLS certificate",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
