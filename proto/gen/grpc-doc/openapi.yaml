@@ -29711,10 +29711,10 @@ components:
           type: boolean
           title: disallow_signup
           description: Disallow self-service signup, users can only be invited by the owner.
-        require2fa:
+        requireMfa:
           type: boolean
-          title: require_2fa
-          description: Require 2FA for all users.
+          title: require_mfa
+          description: Require MFA for all users.
         refreshTokenDuration:
           title: refresh_token_duration
           description: The duration for refresh token. Default is 7 days.

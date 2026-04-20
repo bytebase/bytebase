@@ -409,7 +409,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 				}
-				if setting.Require_2Fa {
+				if setting.RequireMfa {
 					isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser, common.GetWorkspaceIDFromContext(ctx))
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))

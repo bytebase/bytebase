@@ -84,7 +84,7 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.DisallowSignup != y.DisallowSignup {
 		return false
 	}
-	if x.Require_2Fa != y.Require_2Fa {
+	if x.RequireMfa != y.RequireMfa {
 		return false
 	}
 	if p, q := x.RefreshTokenDuration, y.RefreshTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {

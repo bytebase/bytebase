@@ -207,7 +207,7 @@ router.beforeEach((to, from, next) => {
   const currentUserV1 = useCurrentUserV1();
   if (
     hasFeature(PlanFeature.FEATURE_TWO_FA) &&
-    settingV1Store.workspaceProfile.require2fa &&
+    settingV1Store.workspaceProfile.requireMfa &&
     currentUserV1.value &&
     !currentUserV1.value.mfaEnabled &&
     to.name !== AUTH_2FA_SETUP_MODULE // Prevent redirect loop

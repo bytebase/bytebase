@@ -45,7 +45,7 @@ const DEFAULT_MIN_LENGTH = 8;
 
 interface ToggleState {
   disallowSignup: boolean;
-  require2fa: boolean;
+  requireMfa: boolean;
   disallowPasswordSignin: boolean;
   allowEmailCodeSignin: boolean;
 }
@@ -121,7 +121,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const getInitialToggleState = useCallback((): ToggleState => {
       return {
         disallowSignup: settingV1Store.workspaceProfile.disallowSignup,
-        require2fa: settingV1Store.workspaceProfile.require2fa,
+        requireMfa: settingV1Store.workspaceProfile.requireMfa,
         disallowPasswordSignin:
           settingV1Store.workspaceProfile.disallowPasswordSignin,
         allowEmailCodeSignin:
@@ -299,9 +299,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         payload.disallowSignup = toggleState.disallowSignup;
         updateMaskPaths.push("value.workspace_profile.disallow_signup");
       }
-      if (toggleState.require2fa !== initToggle.require2fa) {
-        payload.require2fa = toggleState.require2fa;
-        updateMaskPaths.push("value.workspace_profile.require_2fa");
+      if (toggleState.requireMfa !== initToggle.requireMfa) {
+        payload.requireMfa = toggleState.requireMfa;
+        updateMaskPaths.push("value.workspace_profile.require_mfa");
       }
       if (
         toggleState.disallowPasswordSignin !== initToggle.disallowPasswordSignin
@@ -600,12 +600,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <div className="flex items-center gap-x-2">
                   <input
                     type="checkbox"
-                    checked={toggleState.require2fa}
+                    checked={toggleState.requireMfa}
                     disabled={disabled || !has2FAFeature}
                     onChange={(e) =>
                       setToggleState((s) => ({
                         ...s,
-                        require2fa: e.target.checked,
+                        requireMfa: e.target.checked,
                       }))
                     }
                   />
