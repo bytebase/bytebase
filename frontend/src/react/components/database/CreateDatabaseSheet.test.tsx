@@ -283,6 +283,24 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(titleInput.value).toBe("");
   });
 
+  it("clears the auto-filled title when the database name is cleared (BYT-9310 stale-ghost fix)", async () => {
+    // Design-cell lock: the auto-fill effect must handle the empty-
+    // databaseName transition by clearing the title, not by early-
+    // returning and leaving a stale `Create database 'T'` ghost from
+    // the last non-empty keystroke.
+    await renderSheet(false);
+    await fillInstance();
+    await fillDatabaseName("widgets");
+    await flush();
+    expect(getTitleInput().value).toBe("quick-action.create-db 'widgets'");
+
+    // Clear the database name.
+    await fillDatabaseName("");
+    await flush();
+
+    expect(getTitleInput().value).toBe("");
+  });
+
   it("preserves a user-typed title across database-name changes", async () => {
     await renderSheet(false);
     await fillInstance();

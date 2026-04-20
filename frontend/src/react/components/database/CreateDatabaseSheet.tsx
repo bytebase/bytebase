@@ -296,9 +296,13 @@ export function CreateDatabaseSheet({
   useEffect(() => {
     if (!projectHydrated) return;
     if (enforceIssueTitle) return;
-    if (!databaseName) return;
     if (titleEdited && normalizeTitle(title)) return;
-    setTitle(`${t("quick-action.create-db")} '${databaseName}'`);
+    // Derive from databaseName; clear when input is empty so the title
+    // doesn't retain a stale derivation from the prior keystroke (the
+    // `Create database 'T'` ghost after the user backspaces to empty).
+    setTitle(
+      databaseName ? `${t("quick-action.create-db")} '${databaseName}'` : ""
+    );
   }, [databaseName, enforceIssueTitle, projectHydrated]);
 
   const projectIssueLabels = selectedProject?.issueLabels ?? [];
