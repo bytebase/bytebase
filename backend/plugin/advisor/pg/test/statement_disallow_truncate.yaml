@@ -1,0 +1,112 @@
+- statement: TRUNCATE TABLE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE public.techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "public.techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE a, b, c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "c" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE ONLY techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE techbook CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE techbook RESTART IDENTITY;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. RESTART IDENTITY will reset owned sequences.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE tech_book(id int);
+    TRUNCATE TABLE tech_book;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "tech_book" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: DELETE FROM techbook WHERE id = 1;
+  changeType: 1
+- statement: SELECT 'TRUNCATE TABLE foo' AS x;
+  changeType: 1
+- statement: DROP TABLE techbook;
+  changeType: 1
