@@ -233,7 +233,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					payload.ExternalUrl = externalURL
 				}
 				oldSetting.ExternalUrl = payload.ExternalUrl
-			case "value.workspace_profile.require_2fa":
+			case "value.workspace_profile.require_mfa":
 				if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_TWO_FA); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}

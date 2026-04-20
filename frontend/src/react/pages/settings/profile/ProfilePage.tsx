@@ -96,8 +96,8 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     hasFeature(PlanFeature.FEATURE_TWO_FA)
   );
 
-  const require2fa = useVueState(
-    () => settingV1Store.workspaceProfile.require2fa
+  const requireMfa = useVueState(
+    () => settingV1Store.workspaceProfile.requireMfa
   );
 
   const tempRecoveryCodes = useVueState(() => currentUser.tempRecoveryCodes);
@@ -348,7 +348,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   }, [has2FAFeature]);
 
   const disable2FA = useCallback(() => {
-    if (require2fa && !hasWorkspacePermissionV2("bb.policies.update")) {
+    if (requireMfa && !hasWorkspacePermissionV2("bb.policies.update")) {
       pushNotification({
         module: "bytebase",
         style: "WARN",
@@ -357,7 +357,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     } else {
       setShowDisable2FAConfirm(true);
     }
-  }, [require2fa, t]);
+  }, [requireMfa, t]);
 
   const handleDisable2FA = useCallback(async () => {
     await userStore.updateUser(

@@ -253,7 +253,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 	storeSetting := &storepb.WorkspaceProfileSetting{
 		ExternalUrl:            v1Setting.ExternalUrl,
 		DisallowSignup:         v1Setting.DisallowSignup,
-		Require_2Fa:            v1Setting.Require_2Fa,
+		Require_2Fa:            v1Setting.RequireMfa,
 		RefreshTokenDuration:   v1Setting.RefreshTokenDuration,
 		AccessTokenDuration:    v1Setting.AccessTokenDuration,
 		InactiveSessionTimeout: v1Setting.InactiveSessionTimeout,
@@ -326,7 +326,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 	return &v1pb.WorkspaceProfileSetting{
 		ExternalUrl:            storeSetting.ExternalUrl,
 		DisallowSignup:         storeSetting.DisallowSignup,
-		Require_2Fa:            storeSetting.Require_2Fa,
+		RequireMfa:             storeSetting.Require_2Fa,
 		RefreshTokenDuration:   storeSetting.RefreshTokenDuration,
 		AccessTokenDuration:    storeSetting.AccessTokenDuration,
 		InactiveSessionTimeout: storeSetting.InactiveSessionTimeout,

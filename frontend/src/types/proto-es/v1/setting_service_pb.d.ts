@@ -504,11 +504,11 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   disallowSignup: boolean;
 
   /**
-   * Require 2FA for all users.
+   * Require MFA for all users.
    *
-   * @generated from field: bool require_2fa = 3;
+   * @generated from field: bool require_mfa = 3;
    */
-  require2fa: boolean;
+  requireMfa: boolean;
 
   /**
    * The duration for refresh token. Default is 7 days.
