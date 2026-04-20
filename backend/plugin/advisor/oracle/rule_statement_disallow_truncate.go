@@ -15,6 +15,23 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// Oracle grammar snapshot (PlSqlParser.g4 v0.0.0-20260417075056-…):
+//
+//	truncate_table            : TRUNCATE TABLE tableview_name PURGE? SEMICOLON ;
+//	truncate_table_partition  : TRUNCATE (partition_extended_names | subpartition_extended_names) ... ;
+//	partition_extended_names  : (PARTITION | PARTITIONS) ( partition_name
+//	                                                     | '(' partition_name (',' partition_name)* ')'
+//	                                                     | FOR '('? partition_key_value (',' partition_key_value)* ')'? ) ;
+//	subpartition_extended_names : same shape, swapping SUBPARTITION + subpartition_key_value.
+//
+// Advisor resolution truth table:
+//   - Truncate_table           → emit table-variant advice; bare PURGE is allowed
+//                                by the grammar and does not exempt.
+//   - Truncate_table_partition → walk the chosen names branch (partition OR
+//                                subpartition) and for each, extract either
+//                                the identifier list or the FOR(value) literal.
+//                                Emit one advice per named target.
+
 var _ advisor.Advisor = (*StatementDisallowTruncateAdvisor)(nil)
 
 func init() {
@@ -71,11 +88,12 @@ func (r *StatementDisallowTruncateRule) OnEnter(ctx antlr.ParserRuleContext, nod
 		if !ok {
 			return nil
 		}
-		table, partition := oracleExtractTruncatePartition(pc)
+		table := oracleEnclosingAlterTable(pc)
+		keyword, target := oracleExtractTruncatePartitionTarget(pc)
 		r.AddAdvice(
 			r.level,
 			code.StatementDisallowTruncate.Int32(),
-			fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.`, table, partition),
+			fmt.Sprintf(`ALTER TABLE %q TRUNCATE %s %q is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.`, table, keyword, target),
 			common.ConvertANTLRLineToPosition(r.baseLine+ctx.GetStart().GetLine()),
 		)
 	default:
@@ -85,31 +103,72 @@ func (r *StatementDisallowTruncateRule) OnEnter(ctx antlr.ParserRuleContext, nod
 
 func (*StatementDisallowTruncateRule) OnExit(_ antlr.ParserRuleContext, _ string) error { return nil }
 
-// oracleExtractTruncatePartition walks up from the Truncate_table_partition
-// context to the enclosing Alter_table context (via Alter_table_partitioning)
-// to obtain the target table, and reads the partition name(s) off the
-// current context's grammar-generated accessor.
-func oracleExtractTruncatePartition(ctx *parser.Truncate_table_partitionContext) (table, partition string) {
-	if names := ctx.Partition_extended_names(); names != nil {
-		// Partition_extended_names covers `PARTITION ( p1, p2, ... )` as a
-		// whole rule; GetText() on it concatenates tokens without spaces and
-		// includes the PARTITION keyword itself. Read the partition-name
-		// children directly to obtain just the identifiers.
-		if pen, ok := names.(*parser.Partition_extended_namesContext); ok {
-			var parts []string
-			for _, pn := range pen.AllPartition_name() {
-				parts = append(parts, pn.GetText())
-			}
-			partition = strings.Join(parts, ", ")
-		}
-	}
+// oracleEnclosingAlterTable walks up from a child context to the enclosing
+// Alter_table and returns its Tableview_name text. Returns "" if the parent
+// chain is absent (should not happen for a well-formed AST).
+func oracleEnclosingAlterTable(ctx antlr.ParserRuleContext) string {
 	for p := ctx.GetParent(); p != nil; p = p.GetParent() {
 		if at, ok := p.(*parser.Alter_tableContext); ok {
 			if tv := at.Tableview_name(); tv != nil {
-				table = tv.GetText()
+				return tv.GetText()
 			}
-			return table, partition
+			return ""
 		}
 	}
-	return table, partition
+	return ""
+}
+
+// oracleExtractTruncatePartitionTarget returns ("PARTITION"|"SUBPARTITION",
+// name) for a Truncate_table_partition context. For the `FOR (value)` form,
+// the target is rendered as `FOR(<value>)`. For comma-separated lists the
+// names are joined with `, ` into a single advice target; the single-advice
+// shape matches a single AST node and the grammar treats the whole list as
+// one truncate command.
+func oracleExtractTruncatePartitionTarget(ctx *parser.Truncate_table_partitionContext) (keyword, target string) {
+	if pen := ctx.Partition_extended_names(); pen != nil {
+		if c, ok := pen.(*parser.Partition_extended_namesContext); ok {
+			return "PARTITION", oraclePartitionNames(c.AllPartition_name(), c.FOR() != nil, partitionKeyValueTexts(c))
+		}
+	}
+	if sen := ctx.Subpartition_extended_names(); sen != nil {
+		if c, ok := sen.(*parser.Subpartition_extended_namesContext); ok {
+			return "SUBPARTITION", oraclePartitionNames(c.AllPartition_name(), c.FOR() != nil, subpartitionKeyValueTexts(c))
+		}
+	}
+	return "PARTITION", ""
+}
+
+// oraclePartitionNames renders the target string for either partition- or
+// subpartition-extended names. Prefers explicit identifier names; falls back
+// to FOR(value) literal when the grammar took the FOR branch.
+func oraclePartitionNames(names []parser.IPartition_nameContext, isFor bool, forValues []string) string {
+	if len(names) > 0 {
+		parts := make([]string, 0, len(names))
+		for _, pn := range names {
+			parts = append(parts, pn.GetText())
+		}
+		return strings.Join(parts, ", ")
+	}
+	if isFor && len(forValues) > 0 {
+		return "FOR(" + strings.Join(forValues, ", ") + ")"
+	}
+	return ""
+}
+
+func partitionKeyValueTexts(c *parser.Partition_extended_namesContext) []string {
+	vals := c.AllPartition_key_value()
+	out := make([]string, 0, len(vals))
+	for _, v := range vals {
+		out = append(out, v.GetText())
+	}
+	return out
+}
+
+func subpartitionKeyValueTexts(c *parser.Subpartition_extended_namesContext) []string {
+	vals := c.AllSubpartition_key_value()
+	out := make([]string, 0, len(vals))
+	for _, v := range vals {
+		out = append(out, v.GetText())
+	}
+	return out
 }

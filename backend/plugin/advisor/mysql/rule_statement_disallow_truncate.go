@@ -51,12 +51,17 @@ func (r *statementDisallowTruncateOmniRule) OnStatement(node ast.Node) {
 			if cmd.Type != ast.ATTruncatePartition {
 				continue
 			}
+			// Point the advice at the individual ALTER command, not the
+			// ALTER TABLE statement. A multi-command ALTER TABLE splits the
+			// truncate clause onto its own line and the user needs to jump
+			// to that line, not the statement head.
+			loc := cmd.Loc
 			if cmd.AllPartitions {
-				r.emitPartition(n.Table, "ALL PARTITIONS", n.Loc)
+				r.emitPartition(n.Table, "ALL PARTITIONS", loc)
 				continue
 			}
 			for _, pname := range cmd.PartitionNames {
-				r.emitPartition(n.Table, pname, n.Loc)
+				r.emitPartition(n.Table, pname, loc)
 			}
 		}
 	default:

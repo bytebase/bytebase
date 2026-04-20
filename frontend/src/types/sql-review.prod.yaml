@@ -281,6 +281,12 @@ ruleList:
     engine: MYSQL
   - type: STATEMENT_DISALLOW_TRUNCATE
     level: ERROR
+    engine: MARIADB
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: OCEANBASE
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
     engine: POSTGRES
   - type: STATEMENT_DISALLOW_TRUNCATE
     level: ERROR

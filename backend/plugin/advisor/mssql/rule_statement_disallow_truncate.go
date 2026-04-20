@@ -40,8 +40,10 @@ func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
 	if !ok || n.Table == nil {
 		return
 	}
-	// Carveout: MSSQL temp tables (local `#t`, global `##t`) — session-scoped
-	// so blast radius is zero.
+	// Carveout: MSSQL temp tables. Local `#t` is session-scoped; global `##t`
+	// is visible across sessions but lives only until the creator disconnects
+	// (and is never persisted). Both are safe targets for TRUNCATE, so skip
+	// any object whose name begins with '#'.
 	if strings.HasPrefix(n.Table.Object, "#") {
 		return
 	}

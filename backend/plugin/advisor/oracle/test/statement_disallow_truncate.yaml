@@ -51,6 +51,19 @@
         column: 0
       endposition: null
 
+# Test: bare PURGE qualifier (grammar `TRUNCATE TABLE … PURGE? SEMICOLON`)
+- statement: TRUNCATE TABLE techbook PURGE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: it issues an implicit COMMIT and cannot be rolled back. Any prior uncommitted work in the same transaction is also committed. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
 # --- Positive cases: partition truncate ---
 
 # Test: single partition
@@ -74,6 +87,58 @@
       code: 257
       title: STATEMENT_DISALLOW_TRUNCATE
       content: 'ALTER TABLE "scott.sales" TRUNCATE PARTITION "p_2024_q4" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: partition-list form — one advice, names joined in advice target
+- statement: ALTER TABLE sales TRUNCATE PARTITION (p_jan, p_feb);
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_jan, p_feb" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: partition FOR(value) form — value rendered as FOR(<key>)
+- statement: ALTER TABLE sales TRUNCATE PARTITION FOR ('2024-01-15');
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "FOR(''2024-01-15'')" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: SUBPARTITION form — emit SUBPARTITION-variant advice
+- statement: ALTER TABLE sales TRUNCATE SUBPARTITION sp_2024_q4_east;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE SUBPARTITION "sp_2024_q4_east" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: SUBPARTITION list form
+- statement: ALTER TABLE sales TRUNCATE SUBPARTITION (sp_east, sp_west);
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE SUBPARTITION "sp_east, sp_west" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
       startposition:
         line: 1
         column: 0

@@ -75,6 +75,38 @@
         column: 0
       endposition: null
 
+# Test: multi-line multi-relation — each advice points to its relation's line
+- statement: |-
+    TRUNCATE TABLE a,
+                   b,
+                   c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "c" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
 # Test: ONLY qualifier — same TruncateStmt AST, still fires
 - statement: TRUNCATE ONLY techbook;
   changeType: 1

@@ -139,6 +139,23 @@
         column: 0
       endposition: null
 
+# Test: multi-command ALTER TABLE — advice line points to the TRUNCATE
+# PARTITION command (line 3), not the ALTER TABLE statement head (line 1).
+- statement: |-
+    ALTER TABLE sales
+      ADD COLUMN region VARCHAR(32),
+      TRUNCATE PARTITION p_2024_q4;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "sales" TRUNCATE PARTITION "p_2024_q4" is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
 # Test: multi-statement — advice line must point to the TRUNCATE, not stmt 1
 - statement: |-
     CREATE TABLE tech_book(id int);

@@ -59,6 +59,10 @@ func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
 		if restartSeqs {
 			suffix += " RESTART IDENTITY will reset owned sequences."
 		}
+		// Point each advice at its own relation in a multi-relation form,
+		// not at the TRUNCATE keyword. Loc falls back to the statement
+		// start when the parser did not record a byte offset (LocToLine's
+		// defined fallback), which preserves the single-relation case.
 		r.AddAdvice(&storepb.Advice{
 			Status: r.Level,
 			Code:   code.StatementDisallowTruncate.Int32(),
@@ -67,7 +71,7 @@ func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
 				`TRUNCATE TABLE %q is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.%s`,
 				name, suffix,
 			),
-			StartPosition: &storepb.Position{Line: r.ContentStartLine(), Column: 0},
+			StartPosition: &storepb.Position{Line: r.LocToLine(rv.Loc)},
 		})
 	}
 }
