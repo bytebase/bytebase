@@ -209,6 +209,39 @@ func TestValidateDataSourceTLSWriteAllowsValidPathOnlyCertOnAdd(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsRelativePath(t *testing.T) {
+	dataSources := []*storepb.DataSource{{UseSsl: true, SslCaPath: "ca.pem"}}
+
+	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssl_ca_path must be an absolute path")
+}
+
+func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsIncompleteCertPath(t *testing.T) {
+	dataSources := []*storepb.DataSource{{UseSsl: true, SslCertPath: "/tmp/cert.pem"}}
+
+	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssl_cert and ssl_key must be both set or unset")
+}
+
+func TestValidateAndNormalizeDataSourceTLSForReplaceRejectsSameSlotConflict(t *testing.T) {
+	dataSources := []*storepb.DataSource{{UseSsl: true, SslCa: "inline-ca", SslCaPath: "/tmp/ca.pem"}}
+
+	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot set both ssl_ca and ssl_ca_path")
+}
+
+func TestValidateAndNormalizeDataSourceTLSForReplaceAllowsValidPathOnlyCert(t *testing.T) {
+	dataSources := []*storepb.DataSource{{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"}}
+
+	err := validateAndNormalizeDataSourceTLSForReplace(dataSources)
+	require.NoError(t, err)
+	require.Equal(t, "/tmp/cert.pem", dataSources[0].GetSslCertPath())
+	require.Equal(t, "/tmp/key.pem", dataSources[0].GetSslKeyPath())
+}
+
 func TestNormalizeDataSourceTLSClearsSameSlotConflictsOnly(t *testing.T) {
 	ds := &storepb.DataSource{
 		UseSsl:     true,

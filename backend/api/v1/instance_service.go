@@ -176,6 +176,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
+	if err := validateAndNormalizeDataSourceTLSForReplace(instanceMessage.Metadata.GetDataSources()); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
@@ -265,6 +268,28 @@ func tlsMaskContains(mask []string, field string) bool {
 		}
 	}
 	return false
+}
+
+func fullDataSourceTLSMask() []string {
+	return []string{
+		"use_ssl",
+		"ssl_ca",
+		"ssl_cert",
+		"ssl_key",
+		"ssl_ca_path",
+		"ssl_cert_path",
+		"ssl_key_path",
+	}
+}
+
+func validateAndNormalizeDataSourceTLSForReplace(dataSources []*storepb.DataSource) error {
+	for _, ds := range dataSources {
+		if err := validateDataSourceTLSWrite(ds, ds, fullDataSourceTLSMask()); err != nil {
+			return err
+		}
+		normalizeDataSourceTLS(ds, nil)
+	}
+	return nil
 }
 
 func validateDataSourceTLSWrite(requested, merged *storepb.DataSource, mask []string) error {
@@ -582,6 +607,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
+			if err := validateAndNormalizeDataSourceTLSForReplace(dataSources); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
 			if err := s.checkInstanceDataSources(ctx, instance, dataSources); err != nil {
 				return nil, err
 			}
@@ -843,15 +871,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
-	if err := validateDataSourceTLSWrite(dataSource, dataSource, []string{
-		"use_ssl",
-		"ssl_ca",
-		"ssl_cert",
-		"ssl_key",
-		"ssl_ca_path",
-		"ssl_cert_path",
-		"ssl_key_path",
-	}); err != nil {
+	if err := validateDataSourceTLSWrite(dataSource, dataSource, fullDataSourceTLSMask()); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	normalizeDataSourceTLS(dataSource, nil)
