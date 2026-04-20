@@ -58,11 +58,15 @@ func TestResolveTLSMaterialPreservesInlineCrossSlotMaterial(t *testing.T) {
 
 	resolved, err := ResolveTLSMaterial(ds)
 	require.NoError(t, err)
+	require.NotSame(t, ds, resolved)
 	require.Equal(t, "inline-ca", resolved.GetSslCa())
 	require.Equal(t, "inline-cert", resolved.GetSslCert())
 	require.Equal(t, "path-key", resolved.GetSslKey())
 	require.Empty(t, resolved.GetSslKeyPath())
 	require.Equal(t, keyPath, ds.GetSslKeyPath())
+	require.Equal(t, "inline-ca", ds.GetSslCa())
+	require.Equal(t, "inline-cert", ds.GetSslCert())
+	require.Empty(t, ds.GetSslKey())
 }
 
 func TestResolveTLSMaterialRejectsRelativePath(t *testing.T) {
