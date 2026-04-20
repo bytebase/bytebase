@@ -429,22 +429,22 @@ func normalizeDataSourceTLS(ds *storepb.DataSource, mask []string) {
 		clearPathTLSMaterial(ds)
 		return
 	}
-	if tlsMaskContains(mask, "ssl_ca") {
+	if tlsMaskContains(mask, "ssl_ca") && ds.GetSslCa() != "" {
 		ds.SslCaPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_ca_path") {
+	if tlsMaskContains(mask, "ssl_ca_path") && ds.GetSslCaPath() != "" {
 		ds.SslCa = ""
 	}
-	if tlsMaskContains(mask, "ssl_cert") {
+	if tlsMaskContains(mask, "ssl_cert") && ds.GetSslCert() != "" {
 		ds.SslCertPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_cert_path") {
+	if tlsMaskContains(mask, "ssl_cert_path") && ds.GetSslCertPath() != "" {
 		ds.SslCert = ""
 	}
-	if tlsMaskContains(mask, "ssl_key") {
+	if tlsMaskContains(mask, "ssl_key") && ds.GetSslKey() != "" {
 		ds.SslKeyPath = ""
 	}
-	if tlsMaskContains(mask, "ssl_key_path") {
+	if tlsMaskContains(mask, "ssl_key_path") && ds.GetSslKeyPath() != "" {
 		ds.SslKey = ""
 	}
 }

@@ -59,6 +59,18 @@ xiUZS4SoaJq6ZvcBYS62Yr1t8n09iG47YL8ibgtmH3L+svaotvpVxVK+d7BLevA/
 ZboOWVe3icTy64BT3OQhmg==
 -----END RSA PRIVATE KEY-----`
 
+func fullTLSMask() []string {
+	return []string{
+		"use_ssl",
+		"ssl_ca",
+		"ssl_cert",
+		"ssl_key",
+		"ssl_ca_path",
+		"ssl_cert_path",
+		"ssl_key_path",
+	}
+}
+
 func TestValidateDataSourceTLSWriteRejectsSameSlotMixedMaterial(t *testing.T) {
 	tests := []struct {
 		name string
@@ -172,6 +184,29 @@ func TestValidateDataSourceTLSWriteRejectsMalformedInlineKeyWithCertPath(t *test
 	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid ssl_key PEM")
+}
+
+func TestValidateDataSourceTLSWriteRejectsRelativePathOnAdd(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCaPath: "ca.pem"}
+
+	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssl_ca_path must be an absolute path")
+}
+
+func TestValidateDataSourceTLSWriteRejectsIncompleteCertPathOnAdd(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem"}
+
+	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "ssl_cert and ssl_key must be both set or unset")
+}
+
+func TestValidateDataSourceTLSWriteAllowsValidPathOnlyCertOnAdd(t *testing.T) {
+	ds := &storepb.DataSource{UseSsl: true, SslCertPath: "/tmp/cert.pem", SslKeyPath: "/tmp/key.pem"}
+
+	err := validateDataSourceTLSWrite(ds, ds, fullTLSMask())
+	require.NoError(t, err)
 }
 
 func TestNormalizeDataSourceTLSClearsSameSlotConflictsOnly(t *testing.T) {
