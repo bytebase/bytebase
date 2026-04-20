@@ -137,7 +137,7 @@ const gotoCreateIssue = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "No database selected",
+      title: t("sql-editor.no-database-selected"),
     });
     return;
   }
@@ -167,7 +167,7 @@ const gotoCreateIssue = async () => {
   applyPlanTitleToQuery(
     query,
     project,
-    () => `[${databaseName}] Change from SQL Editor`
+    () => `[${databaseName}] ${t("issue.title.change-from-sql-editor")}`
   );
 
   const route = router.resolve({

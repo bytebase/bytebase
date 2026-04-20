@@ -1286,6 +1286,8 @@
     },
     "title": {
       "change-database": "Change database",
+      "change-from-sql-editor": "Change from SQL Editor",
+      "edit-schema": "Edit schema",
       "export-data": "Export data",
       "request-role": "Request role",
       "request-specific-role": "Request \"{role}\" role"
@@ -2603,6 +2605,7 @@
     "next-row": "Next Row",
     "no-access-requests": "No access requests",
     "no-data-available": "No data available",
+    "no-database-selected": "No database selected",
     "no-history-found": "No history found",
     "no-project": {
       "contact-the-admin-to-grant-access": "Contact to the admin to grant access.",

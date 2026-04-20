@@ -65,6 +65,7 @@ import { useWindowSize } from "@vueuse/core";
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
@@ -101,6 +102,7 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
+const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 // projectStore accessor imported under a non-`use*` alias so SonarCloud's
 // React-hook-rule (typescript:S6440) doesn't misfire on this new Pinia
@@ -149,7 +151,11 @@ useEmitteryEventListener(
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };
-    applyPlanTitleToQuery(query, project, () => `[${dbName}] Edit schema`);
+    applyPlanTitleToQuery(
+      query,
+      project,
+      () => `[${dbName}] ${t("issue.title.edit-schema")}`
+    );
     const route = router.resolve({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
       params: {

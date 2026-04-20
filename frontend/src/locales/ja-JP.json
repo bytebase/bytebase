@@ -1286,6 +1286,8 @@
     },
     "title": {
       "change-database": "データベースの変更",
+      "change-from-sql-editor": "SQL エディタからの変更",
+      "edit-schema": "スキーマを編集",
       "export-data": "データをエクスポート",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{role}」ロールをリクエスト"
@@ -2603,6 +2605,7 @@
     "next-row": "次の行",
     "no-access-requests": "No access requests",
     "no-data-available": "データなし",
+    "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
     "no-project": {
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。",

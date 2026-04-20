@@ -1286,6 +1286,8 @@
     },
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
+      "change-from-sql-editor": "Thay đổi từ SQL Editor",
+      "edit-schema": "Chỉnh sửa schema",
       "export-data": "Xuất dữ liệu",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{role}\""
@@ -2603,6 +2605,7 @@
     "next-row": "Dòng tiếp theo",
     "no-access-requests": "No access requests",
     "no-data-available": "Không có dữ liệu",
+    "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
     "no-project": {
       "contact-the-admin-to-grant-access": "Liên hệ với quản trị viên để cấp quyền truy cập.",

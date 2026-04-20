@@ -1286,6 +1286,8 @@
     },
     "title": {
       "change-database": "变更数据库",
+      "change-from-sql-editor": "从 SQL 编辑器变更",
+      "edit-schema": "编辑 Schema",
       "export-data": "导出数据",
       "request-role": "请求角色",
       "request-specific-role": "请求“{role}”角色"
@@ -2603,6 +2605,7 @@
     "next-row": "下一行",
     "no-access-requests": "暂无访问请求",
     "no-data-available": "暂无数据",
+    "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
     "no-project": {
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。",
