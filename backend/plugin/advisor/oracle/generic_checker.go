@@ -127,6 +127,10 @@ func (*GenericChecker) getNodeType(ctx antlr.ParserRuleContext) string {
 		return "Drop_table"
 	case *parser.Create_indexContext:
 		return "Create_index"
+	case *parser.Create_viewContext:
+		return "Create_view"
+	case *parser.Create_materialized_viewContext:
+		return "Create_materialized_view"
 	case *parser.Drop_indexContext:
 		return "Drop_index"
 	case *parser.Insert_statementContext:

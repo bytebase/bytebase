@@ -126,6 +126,7 @@ var (
 						Columns: []*storepb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "name", Type: "text", Position: 2},
+							{Name: "creator", Type: "text", Position: 3},
 						},
 						Indexes: []*storepb.IndexMetadata{
 							{
@@ -143,6 +144,47 @@ var (
 								Name:        MockOldIndexName,
 								Expressions: []string{"id", "name"},
 							},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "order_id", Type: "integer", Position: 1},
+							{Name: "customer_name", Type: "text", Position: 2},
+							{Name: "amount", Type: "numeric", Position: 3},
+							{Name: "note", Type: "text", Position: 4},
+							{Name: "name", Type: "text", Position: 5},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "orders_pkey", Expressions: []string{"order_id"}, Unique: true, Primary: true},
+							{Name: "idx_orders_customer", Expressions: []string{"customer_name"}},
+							{Name: "idx_orders_amount", Expressions: []string{"amount"}},
+						},
+					},
+					{
+						Name: "products",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "product_id", Type: "integer", Position: 1},
+							{Name: "title", Type: "text", Position: 2},
+							{Name: "price", Type: "numeric", Position: 3},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "products_pkey", Expressions: []string{"product_id"}, Unique: true, Primary: true},
+							{Name: "idx_products_price", Expressions: []string{"price"}},
+						},
+					},
+					{
+						Name: "no_index_table",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "col_a", Type: "integer", Position: 1},
+							{Name: "col_b", Type: "text", Position: 2},
+						},
+					},
+					{
+						Name: "insert_target",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer", Position: 1},
+							{Name: "name", Type: "text", Position: 2},
 						},
 					},
 				},
@@ -220,6 +262,73 @@ var (
 			},
 		},
 	}
+	// MockOracleDatabase is the mock Oracle database for test. Oracle sync
+	// (`backend/plugin/db/oracle/sync.go`) stores SchemaMetadata{Name: ""}
+	// — a single anonymous schema containing every object. The mock mirrors
+	// this so advisors resolve tables the same way in tests and production.
+	MockOracleDatabase = &storepb.DatabaseSchemaMetadata{
+		Name: "TEST_DB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "TECH_BOOK",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "NAME", Type: "VARCHAR2(255)"},
+							{Name: "CREATOR", Type: "VARCHAR2(255)"},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "TECH_BOOK_PK", Expressions: []string{"ID", "NAME"}, Unique: true, Primary: true},
+							{Name: "IDX_TECH_BOOK_NAME", Expressions: []string{"ID", "NAME"}},
+						},
+					},
+					{
+						Name: "ORDERS",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "ORDER_ID", Type: "NUMBER"},
+							{Name: "CUSTOMER_NAME", Type: "VARCHAR2(255)"},
+							{Name: "AMOUNT", Type: "NUMBER"},
+							{Name: "NOTE", Type: "VARCHAR2(255)"},
+							{Name: "NAME", Type: "VARCHAR2(255)"},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "ORDERS_PK", Expressions: []string{"ORDER_ID"}, Unique: true, Primary: true},
+							{Name: "IDX_ORDERS_CUSTOMER", Expressions: []string{"CUSTOMER_NAME"}},
+							{Name: "IDX_ORDERS_AMOUNT", Expressions: []string{"AMOUNT"}},
+						},
+					},
+					{
+						Name: "PRODUCTS",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "PRODUCT_ID", Type: "NUMBER"},
+							{Name: "TITLE", Type: "VARCHAR2(255)"},
+							{Name: "PRICE", Type: "NUMBER"},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "PRODUCTS_PK", Expressions: []string{"PRODUCT_ID"}, Unique: true, Primary: true},
+							{Name: "IDX_PRODUCTS_PRICE", Expressions: []string{"PRICE"}},
+						},
+					},
+					{
+						Name: "NO_INDEX_TABLE",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "COL_A", Type: "NUMBER"},
+							{Name: "COL_B", Type: "VARCHAR2(255)"},
+						},
+					},
+					{
+						Name: "INSERT_TARGET",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "ID", Type: "NUMBER"},
+							{Name: "NAME", Type: "VARCHAR2(255)"},
+						},
+					},
+				},
+			},
+		},
+	}
 )
 
 // TestCase is the data struct for test.
@@ -270,6 +379,13 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 			curDB = "master"
 		case storepb.Engine_MYSQL:
 			schemaMetadata = MockMySQLDatabase
+		case storepb.Engine_ORACLE:
+			schemaMetadata = MockOracleDatabase
+			curDB = "TEST_DB"
+			// Match production: store.IsObjectCaseSensitive(Oracle) returns
+			// true via the default branch in backend/store/instance.go. Test
+			// fixtures use upper-case identifiers like the real Oracle sync.
+			isCaseSensitive = true
 		default:
 			// Fallback to MySQL for engines without specific mock
 			schemaMetadata = MockMySQLDatabase
@@ -291,15 +407,16 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		ruleList := []*storepb.SQLReviewRule{rule}
 
 		checkCtx := Context{
-			DBType:            dbType,
-			OriginalMetadata:  originalMetadata,
-			FinalMetadata:     finalMetadata,
-			Driver:            nil,
-			CurrentDatabase:   curDB,
-			DBSchema:          schemaMetadata,
-			EnablePriorBackup: true, // Enable backup for testing
-			NoAppendBuiltin:   true,
-			TenantMode:        true,
+			DBType:                dbType,
+			OriginalMetadata:      originalMetadata,
+			FinalMetadata:         finalMetadata,
+			Driver:                nil,
+			CurrentDatabase:       curDB,
+			DBSchema:              schemaMetadata,
+			IsObjectCaseSensitive: isCaseSensitive,
+			EnablePriorBackup:     true, // Enable backup for testing
+			NoAppendBuiltin:       true,
+			TenantMode:            true,
 		}
 
 		adviceList, err := SQLReviewCheck(t.Context(), sm, tc.Statement, ruleList, checkCtx)
