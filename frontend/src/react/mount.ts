@@ -9,12 +9,16 @@ const workspacePageLoaders = import.meta.glob("./pages/workspace/*.tsx");
 const authComponentLoaders = import.meta.glob(
   "./components/auth/SessionExpiredSurface.tsx"
 );
+const sqlEditorComponentLoaders = import.meta.glob(
+  "./components/sql-editor/*.tsx"
+);
 const pageLoaders = {
   ...settingsPageLoaders,
   ...projectPageLoaders,
   ...pluginComponentLoaders,
   ...workspacePageLoaders,
   ...authComponentLoaders,
+  ...sqlEditorComponentLoaders,
 };
 
 // biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
@@ -55,6 +59,7 @@ const pageDirs = [
   "./plugins/agent/components",
   "./pages/workspace",
   "./components/auth",
+  "./components/sql-editor",
 ];
 
 export function resolveReactPagePath(name: string): string | undefined {

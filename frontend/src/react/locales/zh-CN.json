@@ -2164,6 +2164,8 @@
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
+    "add-a-new-instance": "添加新实例",
+    "connect-to-a-database": "连接数据库",
     "expired": "已过期",
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",

@@ -52,7 +52,12 @@
               </div>
             </template>
           </NSplit>
-          <Welcome v-else />
+          <div v-else class="flex-1 flex flex-col min-h-0">
+            <ReactPageMount
+              page="Welcome"
+              :onChangeConnection="changeConnection"
+            />
+          </div>
 
           <ExecutingHintModal />
 
@@ -81,6 +86,7 @@ import { computed, defineAsyncComponent, nextTick, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
@@ -95,15 +101,24 @@ import {
 } from "../../EditorCommon";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
-import Welcome from "../Welcome";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
-const { showAIPanel, editorPanelSize, handleEditorPanelResize } =
-  useSQLEditorContext();
+const {
+  showAIPanel,
+  editorPanelSize,
+  handleEditorPanelResize,
+  showConnectionPanel,
+  asidePanelTab,
+} = useSQLEditorContext();
+
+const changeConnection = () => {
+  asidePanelTab.value = "SCHEMA";
+  showConnectionPanel.value = true;
+};
 const sqlEditorRef = ref<InstanceType<typeof SQLEditor>>();
 
 const allowReadonlyMode = computed(() => {
