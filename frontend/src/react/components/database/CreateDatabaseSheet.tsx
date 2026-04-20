@@ -525,8 +525,14 @@ export function CreateDatabaseSheet({
               value={title}
               placeholder={t("common.title")}
               onChange={(e) => {
-                setTitle(e.target.value);
-                setTitleEdited(true);
+                const next = e.target.value;
+                setTitle(next);
+                // Invariant: titleEdited ⇒ title is non-empty user intent.
+                // When the user deletes to empty, reset the flag so the
+                // auto-fill effect resumes tracking databaseName — otherwise
+                // the flag stays sticky and the next auto-fill (first char
+                // of a re-typed databaseName) gets frozen by the guard.
+                setTitleEdited(next !== "");
               }}
             />
           </div>

@@ -283,6 +283,49 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(titleInput.value).toBe("");
   });
 
+  it("resumes auto-fill after the user clears a manually-typed title then retypes the database name (BYT-9310 titleEdited invariant)", async () => {
+    // Design-cell lock: titleEdited must follow the invariant
+    //   title === "" ⇒ titleEdited === false
+    // so a stale titleEdited=true doesn't freeze the guard after the user
+    // clears their manual title. User scenario:
+    //   1. type title, 2. type dbName (preserved), 3. clear title,
+    //   4. clear dbName, 5. retype dbName → auto-fill should track
+    //      each keystroke, not stick at the first character.
+    await renderSheet(false);
+    await fillInstance();
+    await fillDatabaseName("widgets");
+    await flush();
+    expect(getTitleInput().value).toBe("quick-action.create-db 'widgets'");
+
+    // Step 1: type a custom title.
+    await act(async () => {
+      nativeChange(getTitleInput(), "my title");
+    });
+    // Step 2: dbName preserved across manual title.
+    await fillDatabaseName("cogs");
+    await flush();
+    expect(getTitleInput().value).toBe("my title");
+
+    // Step 3: clear title manually (invariant reset).
+    await act(async () => {
+      nativeChange(getTitleInput(), "");
+    });
+    // Step 4: clear dbName.
+    await fillDatabaseName("");
+    await flush();
+
+    // Step 5: retype dbName and verify each keystroke tracks.
+    await fillDatabaseName("f");
+    await flush();
+    expect(getTitleInput().value).toBe("quick-action.create-db 'f'");
+    await fillDatabaseName("fo");
+    await flush();
+    expect(getTitleInput().value).toBe("quick-action.create-db 'fo'");
+    await fillDatabaseName("foo");
+    await flush();
+    expect(getTitleInput().value).toBe("quick-action.create-db 'foo'");
+  });
+
   it("clears the auto-filled title when the database name is cleared (BYT-9310 stale-ghost fix)", async () => {
     // Design-cell lock: the auto-fill effect must handle the empty-
     // databaseName transition by clearing the title, not by early-

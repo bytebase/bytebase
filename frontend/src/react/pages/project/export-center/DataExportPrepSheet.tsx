@@ -359,8 +359,11 @@ export function DataExportPrepSheet({
                   value={title}
                   placeholder={t("common.title")}
                   onChange={(e) => {
-                    setTitle(e.target.value);
-                    setTitleEdited(true);
+                    const next = e.target.value;
+                    setTitle(next);
+                    // Invariant: titleEdited ⇒ title is non-empty user intent.
+                    // See CreateDatabaseSheet for the detailed rationale.
+                    setTitleEdited(next !== "");
                   }}
                 />
               </div>
