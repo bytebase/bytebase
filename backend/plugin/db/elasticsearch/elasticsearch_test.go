@@ -13,6 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestOpenWithAWSAuth(t *testing.T) {
@@ -95,8 +96,10 @@ func TestNewElasticsearchConfigUsesPathCACert(t *testing.T) {
 		Password: "password123",
 	}
 
-	resolvedConfig, err := resolveTLSDataSourceConfig(config)
+	resolvedDataSource, err := dbutil.ResolveTLSMaterial(config.DataSource)
 	require.NoError(t, err)
+	resolvedConfig := config
+	resolvedConfig.DataSource = resolvedDataSource
 	esConfig := newElasticsearchConfig(resolvedConfig, "https://localhost:9200", nil)
 	require.Equal(t, []byte("path-ca-pem"), esConfig.CACert)
 	require.Empty(t, resolvedConfig.DataSource.GetSslCaPath())

@@ -138,12 +138,6 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 }
 
 func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {
-	resolvedConfig, err := resolveTLSDataSourceConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to resolve TLS material")
-	}
-	config = resolvedConfig
-
 	// Get TLS config that respects verify_tls_certificate setting
 	tlsConfig, err := util.GetTLSConfig(config.DataSource)
 	if err != nil {
@@ -191,15 +185,6 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		},
 		config: config,
 	}, nil
-}
-
-func resolveTLSDataSourceConfig(config db.ConnectionConfig) (db.ConnectionConfig, error) {
-	resolvedDataSource, err := util.ResolveTLSMaterial(config.DataSource)
-	if err != nil {
-		return db.ConnectionConfig{}, err
-	}
-	config.DataSource = resolvedDataSource
-	return config, nil
 }
 
 func newElasticsearchConfig(config db.ConnectionConfig, address string, tlsConfig *tls.Config) elasticsearch.Config {
