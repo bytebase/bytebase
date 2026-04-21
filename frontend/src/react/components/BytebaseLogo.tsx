@@ -1,10 +1,12 @@
 import logoFull from "@/assets/logo-full.svg";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
 import { useWorkspaceV1Store } from "@/store";
 
 type Props = {
   /** Optional route name — when set, the logo is wrapped in a link that records the visit. */
   readonly redirect?: string;
+  readonly className?: string;
 };
 
 /**
@@ -15,14 +17,19 @@ type Props = {
  * the SQL Editor Welcome screen. Router-link behavior will be added when
  * the first React caller needs it.
  */
-export function BytebaseLogo(_props: Props) {
+export function BytebaseLogo({ className }: Props) {
   const workspaceStore = useWorkspaceV1Store();
   const customLogo = useVueState(
     () => workspaceStore.currentWorkspace?.logo ?? ""
   );
 
   return (
-    <div className="shrink-0 max-w-44 flex items-center overflow-hidden">
+    <div
+      className={cn(
+        "shrink-0 max-w-44 flex items-center overflow-hidden",
+        className
+      )}
+    >
       <span className="h-full w-full select-none flex flex-row justify-center items-center">
         {customLogo ? (
           <img

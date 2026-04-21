@@ -6,7 +6,7 @@
   <template v-if="!isAuthRoute && authStore.isLoggedIn">
     <!-- Do not show the modal when the user is in auth related pages. -->
     <SessionExpiredSurfaceMount v-if="authStore.unauthenticatedOccurred" />
-    <InactiveRemindModal v-else />
+    <ReactPageMount v-else page="InactiveRemindModal" />
   </template>
 </template>
 
@@ -15,8 +15,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import SessionExpiredSurfaceMount from "@/components/SessionExpiredSurfaceMount.vue";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { isAuthRelatedRoute } from "@/utils/auth";
-import InactiveRemindModal from "@/views/auth/InactiveRemindModal.vue";
 import { t } from "./plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import {

@@ -99,6 +99,60 @@
       "status": "ステータス"
     }
   },
+  "auth": {
+    "back-to-signin": "サインインに戻る",
+    "close-window": "このウィンドウを閉じる",
+    "inactive-modal": {
+      "description": "しばらく操作がありませんでした。セキュリティのため、{{minutes}}分後に自動的にログアウトします。",
+      "stay-signed-in": "ログインしたままにする",
+      "title": "セッションの有効期限が近づいています"
+    },
+    "oauth-callback": {
+      "invalid-state": "認証に失敗しました：無効なコールバック状態です。もう一度お試しください。",
+      "opener-failed": "認証は完了しましたが、親ウィンドウとの通信に失敗しました。このウィンドウを閉じてもう一度お試しください。",
+      "opener-unavailable": "認証は完了しましたが、親ウィンドウを利用できなくなっています。このウィンドウを閉じてもう一度お試しください。",
+      "please-close": "認証が完了しました。このウィンドウを閉じてください。",
+      "processing": "認証を処理しています...",
+      "security-failed": "認証に失敗しました：セキュリティ検証に失敗しました。もう一度お試しください。",
+      "session-expired": "認証に失敗しました：セッションが期限切れまたは無効です。もう一度お試しください。",
+      "success-close": "認証が完了しました。このウィンドウを閉じることができます。",
+      "success-redirecting": "認証に成功しました。Bytebase にリダイレクトしています..."
+    },
+    "password-forget": {
+      "failed-to-send-code": "パスワードリセットコードの送信に失敗しました。もう一度お試しください。",
+      "return-to-sign-in": "ログインに戻る",
+      "selfhost": "Bytebase 管理者に連絡してパスワードをリセットしてください",
+      "send-reset-code": "リセットコードを送信",
+      "title": "パスワードをお忘れですか？"
+    },
+    "password-reset": {
+      "code-label": "認証コード",
+      "content": "パスワード制限ポリシーに従ってパスワードをリセットする必要があります。",
+      "invalid-or-expired-code": "コードが無効または期限切れです。新しいコードをリクエストしてください。",
+      "title": "あなたのパスワードをリセット"
+    },
+    "sign-in": {
+      "code-sent-hint": "{{email}} に認証コードを送信しました。",
+      "demo-account": "Demo Account",
+      "email-code-tab": "メール認証コード",
+      "failed-to-send-code": "認証コードの送信に失敗しました。もう一度お試しください。",
+      "forget-password": "パスワードを忘れましたか？",
+      "invited-email": "招待されました。{{email}} でログインしてください",
+      "new-user": "Bytebase を初めて使用しますか?",
+      "resend-code": "コードを再送信",
+      "resend-in": "{{seconds}}秒後に再送信可能",
+      "send-code": "コードを送信",
+      "sign-in-with-idp": "{{idp}} 経由でログイン",
+      "verification-code": "認証コード"
+    },
+    "sign-up": {
+      "accept-terms-and-policy": "Bytebase の <terms>利用規約</terms> と <policy>プライバシーポリシー</policy> に同意します",
+      "admin-title": "<account>管理者アカウント</account> の登録",
+      "create-admin-account": "管理者アカウントを作成",
+      "existing-user": "すでにアカウントをお持ちですか？",
+      "title": "アカウントを登録してください"
+    }
+  },
   "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
     "external-url": "Bytebase は --extern-url を設定していません"
@@ -148,6 +202,7 @@
     "address": "接続先",
     "admin": "管理者",
     "all": "全て",
+    "allow": "許可",
     "approve": "Approve",
     "approved": "承認済み",
     "archive": "アーカイブ",
@@ -191,6 +246,7 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "削除されました",
+    "deny": "拒否",
     "description": "説明",
     "deselect-all": "Deselect all",
     "detailed-guide": "詳細ガイド",
@@ -221,6 +277,7 @@
     "filter-by-name": "名前でフィルタリングする",
     "from": "開始",
     "general": "全般",
+    "go-back": "戻る",
     "group": "グループ",
     "groups": "グループ",
     "history": "履歴",
@@ -238,6 +295,7 @@
     "leave-without-saving": "変更を保存していませんか?",
     "load-more": "もっと読み込む",
     "loading": "読み込み中",
+    "logout": "サインアウト",
     "manage": "管理",
     "manually-select": "Manually select",
     "members_one": "メンバー",
@@ -254,6 +312,7 @@
     "ok": "わかりました",
     "operations": "操作",
     "optional": "Optional",
+    "or": "または",
     "overview": "概要",
     "password": "パスワード",
     "pending": "保留中",
@@ -301,6 +360,9 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "setting": "設定",
     "settings": "設定",
+    "sign-in": "ログイン",
+    "sign-in-as-admin": "管理者としてサインイン",
+    "sign-up": "登録する",
     "skipped": "スキップ",
     "snapshot": "スナップショット",
     "sql": "SQL",
@@ -330,6 +392,7 @@
     "username": "ユーザー名",
     "users": "ユーザー",
     "value": "値",
+    "verify": "確認する",
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
@@ -1310,6 +1373,29 @@
       "visit-prjects": "プロジェクトを開く"
     }
   },
+  "multi-factor": {
+    "auth-code": "認証コード",
+    "other-methods": {
+      "self": "その他の方法",
+      "use-auth-app": {
+        "description": "モバイル デバイスで Two-Factor Authenticator (TOTP) アプリを開き、認証コードを表示します。",
+        "self": "認証アプリを使用する"
+      },
+      "use-recovery-code": {
+        "description": "モバイルデバイスにアクセスできない場合は、回復コードを入力して身元を確認してください。",
+        "self": "リカバリーコードを使用する"
+      }
+    },
+    "recovery-code": "リカバリーコード"
+  },
+  "oauth2": {
+    "consent": {
+      "description": "{{clientName}} があなたのアカウントへのアクセスを要求しています",
+      "permission-access": "あなたの権限で Bytebase アカウントにアクセス",
+      "permissions": "このアプリケーションは以下のことができます:",
+      "title": "認証リクエスト"
+    }
+  },
   "plan": {
     "checks": {
       "self": "チェック"
@@ -2195,6 +2281,26 @@
         "user-information-mapping": "ユーザー情報のマッピング",
         "user-information-mapping-description": "フィールド マップには、API ユーザー情報のフィールド名が保持されます。"
       }
+    }
+  },
+  "setup": {
+    "basic-info": "基本情報",
+    "data": {
+      "built-in": "組み込みサンプルを使用する",
+      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する",
+      "self-setup": "プロジェクトのセットアップ"
+    },
+    "purposes": {
+      "alter-schema": "スキーマの変更",
+      "query-data": "クエリデータ",
+      "self": "Bytebase の主な目的は何ですか?"
+    },
+    "self": "設定",
+    "skip-setup": "セットアップをスキップ",
+    "workflow": {
+      "self": "データベースのワークフローは何ですか?",
+      "simple": "複雑なワークフローは不要、UIツールだけが必要です",
+      "team": "チームメイトと協力し、CI/CD パイプラインが必要"
     }
   },
   "sql-editor": {
@@ -3176,6 +3282,7 @@
     "messages": {
       "2fa-disabled": "二要素認証が正常に無効になりました",
       "2fa-enabled": "二要素認証が正常にオンになりました",
+      "2fa-required": "管理者は、すべてのユーザーに 2 要素認証を設定するよう要求します。引き続き使用する前に、2 要素認証を設定してください。",
       "cannot-disable": "管理者は、すべてのユーザーに 2 要素認証を設定するよう要求します。 2 要素認証を無効にすることはできません。",
       "recovery-codes-regenerated": "リカバリコードが再生成されました"
     },

@@ -99,6 +99,60 @@
       "status": "Trạng thái"
     }
   },
+  "auth": {
+    "back-to-signin": "Quay lại Đăng nhập",
+    "close-window": "Đóng cửa sổ này",
+    "inactive-modal": {
+      "description": "Bạn đã không hoạt động trong một thời gian. Để bảo mật cho bạn, chúng tôi sẽ tự động đăng xuất bạn sau {{minutes}} phút nữa.",
+      "stay-signed-in": "Tiếp tục duy trì đăng nhập",
+      "title": "Phiên của bạn sắp kết thúc"
+    },
+    "oauth-callback": {
+      "invalid-state": "Xác thực thất bại: Trạng thái gọi lại không hợp lệ. Vui lòng thử lại.",
+      "opener-failed": "Xác thực đã hoàn tất, nhưng không thể giao tiếp với cửa sổ cha. Vui lòng đóng cửa sổ này và thử lại.",
+      "opener-unavailable": "Xác thực đã hoàn tất, nhưng cửa sổ cha không còn khả dụng. Vui lòng đóng cửa sổ này và thử lại.",
+      "please-close": "Xác thực đã hoàn tất. Vui lòng đóng cửa sổ này.",
+      "processing": "Đang xử lý xác thực...",
+      "security-failed": "Xác thực thất bại: Xác minh bảo mật không thành công. Vui lòng thử lại.",
+      "session-expired": "Xác thực thất bại: Phiên đã hết hạn hoặc không hợp lệ. Vui lòng thử lại.",
+      "success-close": "Xác thực đã hoàn tất. Bạn có thể đóng cửa sổ này.",
+      "success-redirecting": "Đã ủy quyền thành công. Đang chuyển hướng về Bytebase..."
+    },
+    "password-forget": {
+      "failed-to-send-code": "Không gửi được mã đặt lại mật khẩu. Vui lòng thử lại.",
+      "return-to-sign-in": "Quay lại Đăng nhập",
+      "selfhost": "Vui lòng liên hệ với Quản trị viên Bytebase của bạn để đặt lại mật khẩu của bạn.",
+      "send-reset-code": "Gửi mã đặt lại",
+      "title": "Quên mật khẩu?"
+    },
+    "password-reset": {
+      "code-label": "Mã xác minh",
+      "content": "Bạn cần đặt lại mật khẩu của mình theo chính sách hạn chế mật khẩu.",
+      "invalid-or-expired-code": "Mã không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
+      "title": "Đặt lại mật khẩu của bạn"
+    },
+    "sign-in": {
+      "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
+      "demo-account": "Demo Account",
+      "email-code-tab": "Mã qua email",
+      "failed-to-send-code": "Không gửi được mã xác minh. Vui lòng thử lại.",
+      "forget-password": "Quên mật khẩu?",
+      "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
+      "new-user": "Mới sử dụng Bytebase?",
+      "resend-code": "Gửi lại mã",
+      "resend-in": "Gửi lại sau {{seconds}}s",
+      "send-code": "Gửi mã",
+      "sign-in-with-idp": "Đăng nhập bằng {{idp}}",
+      "verification-code": "Mã xác minh"
+    },
+    "sign-up": {
+      "accept-terms-and-policy": "Tôi chấp nhận <terms>Điều khoản dịch vụ</terms> và <policy>Chính sách bảo mật</policy> của Bytebase",
+      "admin-title": "Thiết lập <account>tài khoản quản trị</account>",
+      "create-admin-account": "Tạo tài khoản quản trị",
+      "existing-user": "Đã có tài khoản?",
+      "title": "Đăng ký tài khoản của bạn"
+    }
+  },
   "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
     "external-url": "Bytebase chưa được cấu hình --external-url"
@@ -148,6 +202,7 @@
     "address": "Địa chỉ",
     "admin": "Quản trị viên",
     "all": "Tất cả",
+    "allow": "Cho phép",
     "approve": "Approve",
     "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
@@ -191,6 +246,7 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Đã xóa",
+    "deny": "Từ chối",
     "description": "Mô tả",
     "deselect-all": "Deselect all",
     "detailed-guide": "Hướng dẫn chi tiết",
@@ -221,6 +277,7 @@
     "filter-by-name": "Lọc theo tên",
     "from": "Từ",
     "general": "Chung",
+    "go-back": "Quay lại",
     "group": "Nhóm",
     "groups": "Nhóm",
     "history": "Lịch sử",
@@ -238,6 +295,7 @@
     "leave-without-saving": "Thoát mà không lưu?",
     "load-more": "Tải thêm",
     "loading": "Đang tải",
+    "logout": "Đăng xuất",
     "manage": "Quản lý",
     "manually-select": "Manually select",
     "members_one": "Thành viên",
@@ -254,6 +312,7 @@
     "ok": "OK",
     "operations": "Các thao tác",
     "optional": "Optional",
+    "or": "hoặc",
     "overview": "Tổng quan",
     "password": "Mật khẩu",
     "pending": "Đang chờ",
@@ -301,6 +360,9 @@
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "setting": "Cài đặt",
     "settings": "Cài đặt",
+    "sign-in": "Đăng nhập",
+    "sign-in-as-admin": "Đăng nhập với tư cách quản trị viên",
+    "sign-up": "Đăng ký",
     "skipped": "Đã bỏ qua",
     "snapshot": "Ảnh chụp nhanh",
     "sql": "SQL",
@@ -330,6 +392,7 @@
     "username": "Tên người dùng",
     "users": "Người dùng",
     "value": "Giá trị",
+    "verify": "Xác minh",
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
@@ -1310,6 +1373,29 @@
       "visit-prjects": "Truy cập Dự án"
     }
   },
+  "multi-factor": {
+    "auth-code": "Mã xác thực",
+    "other-methods": {
+      "self": "Các phương pháp khác",
+      "use-auth-app": {
+        "description": "Mở ứng dụng xác thực hai yếu tố (TOTP) trên thiết bị di động của bạn để xem mã xác thực của bạn.",
+        "self": "Sử dụng ứng dụng xác thực của bạn"
+      },
+      "use-recovery-code": {
+        "description": "Nếu bạn không thể truy cập thiết bị di động của mình, hãy nhập một trong các mã khôi phục của bạn để xác minh danh tính của bạn.",
+        "self": "Sử dụng mã khôi phục"
+      }
+    },
+    "recovery-code": "Mã khôi phục"
+  },
+  "oauth2": {
+    "consent": {
+      "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
+      "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn",
+      "permissions": "Ứng dụng này sẽ có thể:",
+      "title": "Yêu cầu ủy quyền"
+    }
+  },
   "plan": {
     "checks": {
       "self": "Kiểm tra"
@@ -2195,6 +2281,26 @@
         "user-information-mapping": "Ánh xạ thông tin người dùng",
         "user-information-mapping-description": "Ánh xạ tên trường từ API thông tin người dùng sang người dùng Bytebase."
       }
+    }
+  },
+  "setup": {
+    "basic-info": "Thông tin cơ bản",
+    "data": {
+      "built-in": "Sử dụng mẫu tích hợp",
+      "built-in-desc": "Tạo dự án mẫu và các trường hợp",
+      "self-setup": "Thiết lập dự án"
+    },
+    "purposes": {
+      "alter-schema": "Thay đổi lược đồ",
+      "query-data": "Truy vấn dữ liệu",
+      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?"
+    },
+    "self": "Thiết lập",
+    "skip-setup": "Bỏ qua thiết lập",
+    "workflow": {
+      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
+      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI",
+      "team": "Làm việc với đồng đội, cần có đường ống CI/CD"
     }
   },
   "sql-editor": {
@@ -3176,6 +3282,7 @@
     "messages": {
       "2fa-disabled": "Xác thực hai yếu tố bị tắt.",
       "2fa-enabled": "Xác thực hai yếu tố được bật.",
+      "2fa-required": "Xác thực hai yếu tố là bắt buộc trong không gian làm việc của bạn. Vui lòng bật nó trước khi bạn có thể tiếp tục.",
       "cannot-disable": "Bạn không thể tắt xác thực hai yếu tố vì quản trị viên của bạn yêu cầu nó trong không gian làm việc.",
       "recovery-codes-regenerated": "Mã khôi phục được tạo lại."
     },

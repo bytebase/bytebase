@@ -89,11 +89,17 @@ function collectSourceKeys() {
   const keys = new Set();
   // Only match single/double quoted strings — template literals with ${} are dynamic keys
   const re = /\bt\(\s*["']([^"']+)["']/g;
+  // <Trans i18nKey="..."> — react-i18next component-interpolation pattern
+  const transRe = /\bi18nKey\s*=\s*["']([^"']+)["']/g;
   for (const file of files) {
     const src = readFileSync(file, "utf-8");
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(src))) {
+      keys.add(m[1]);
+    }
+    transRe.lastIndex = 0;
+    while ((m = transRe.exec(src))) {
       keys.add(m[1]);
     }
   }
