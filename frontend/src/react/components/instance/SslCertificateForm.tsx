@@ -3,7 +3,10 @@ import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Input } from "@/react/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
+import {
+  SegmentedControl,
+  type SegmentedControlOption,
+} from "@/react/components/ui/segmented-control";
 import { Switch } from "@/react/components/ui/switch";
 import {
   Tabs,
@@ -16,14 +19,19 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   getLocalTlsCaSource,
   getLocalTlsClientCertSource,
+  isLocalTlsClientIdentitySupported,
   LOCAL_TLS_CA_SOURCE_FILE_PATH,
   LOCAL_TLS_CA_SOURCE_INLINE_PEM,
   LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST,
   LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH,
   LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
   LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
+  LOCAL_TLS_POSTURE_DISABLED,
+  LOCAL_TLS_POSTURE_MUTUAL_TLS,
+  LOCAL_TLS_POSTURE_TLS,
   type LocalTlsCaSource,
   type LocalTlsClientCertSource,
+  type LocalTlsPosture,
 } from "./tls";
 
 interface SslCertificateFormProps {
@@ -33,6 +41,9 @@ interface SslCertificateFormProps {
   onCaSourceChange?: (val: LocalTlsCaSource) => void;
   clientCertSource?: LocalTlsClientCertSource;
   onClientCertSourceChange?: (val: LocalTlsClientCertSource) => void;
+  posture?: LocalTlsPosture;
+  onPostureChange?: (val: LocalTlsPosture) => void;
+  isSaaSMode?: boolean;
   ca?: string;
   hasCa?: boolean;
   onCaChange?: (val: string) => void;
@@ -112,13 +123,15 @@ function CaSourceSelector({
   value,
   onChange,
   disabled = false,
+  isSaaSMode = false,
 }: {
   value: LocalTlsCaSource;
   onChange: (value: LocalTlsCaSource) => void;
   disabled?: boolean;
+  isSaaSMode?: boolean;
 }) {
   const { t } = useTranslation();
-  const options: { value: LocalTlsCaSource; label: string }[] = [
+  const options: SegmentedControlOption<LocalTlsCaSource>[] = [
     {
       value: LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST,
       label: t("data-source.ssl.ca-source.system-trust"),
@@ -130,26 +143,22 @@ function CaSourceSelector({
     {
       value: LOCAL_TLS_CA_SOURCE_FILE_PATH,
       label: t("data-source.ssl.ca-source.file-path"),
+      disabled: isSaaSMode,
+      tooltip: isSaaSMode
+        ? t("data-source.ssl.ca-source.file-path-unavailable-saas")
+        : undefined,
     },
   ];
 
   return (
-    <RadioGroup
+    <SegmentedControl
       value={value}
-      onValueChange={(next) => onChange(next as LocalTlsCaSource)}
-      aria-label={t("data-source.ssl.ca-source.self")}
-      className="mt-2 gap-x-4"
-    >
-      {options.map((option) => (
-        <RadioGroupItem
-          key={option.value}
-          value={option.value}
-          disabled={disabled}
-        >
-          {option.label}
-        </RadioGroupItem>
-      ))}
-    </RadioGroup>
+      onValueChange={onChange}
+      ariaLabel={t("data-source.ssl.ca-source.self")}
+      options={options}
+      disabled={disabled}
+      className="mt-2"
+    />
   );
 }
 
@@ -157,17 +166,25 @@ function ClientCertSourceSelector({
   value,
   onChange,
   disabled = false,
+  isSaaSMode = false,
+  allowNone = false,
 }: {
   value: LocalTlsClientCertSource;
   onChange: (value: LocalTlsClientCertSource) => void;
   disabled?: boolean;
+  isSaaSMode?: boolean;
+  allowNone?: boolean;
 }) {
   const { t } = useTranslation();
-  const options: { value: LocalTlsClientCertSource; label: string }[] = [
-    {
-      value: LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
-      label: t("data-source.ssl.client-cert-source.none"),
-    },
+  const options: SegmentedControlOption<LocalTlsClientCertSource>[] = [
+    ...(allowNone
+      ? [
+          {
+            value: LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
+            label: t("data-source.ssl.client-cert-source.none"),
+          },
+        ]
+      : []),
     {
       value: LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
       label: t("data-source.ssl.client-cert-source.inline-pem"),
@@ -175,26 +192,22 @@ function ClientCertSourceSelector({
     {
       value: LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH,
       label: t("data-source.ssl.client-cert-source.file-path"),
+      disabled: isSaaSMode,
+      tooltip: isSaaSMode
+        ? t("data-source.ssl.client-cert-source.file-path-unavailable-saas")
+        : undefined,
     },
   ];
 
   return (
-    <RadioGroup
+    <SegmentedControl
       value={value}
-      onValueChange={(next) => onChange(next as LocalTlsClientCertSource)}
-      aria-label={t("data-source.ssl.client-cert-source.self")}
-      className="mt-2 gap-x-4"
-    >
-      {options.map((option) => (
-        <RadioGroupItem
-          key={option.value}
-          value={option.value}
-          disabled={disabled}
-        >
-          {option.label}
-        </RadioGroupItem>
-      ))}
-    </RadioGroup>
+      onValueChange={(next) => onChange(next)}
+      ariaLabel={t("data-source.ssl.client-cert-source.self")}
+      options={options}
+      disabled={disabled}
+      className="mt-2"
+    />
   );
 }
 
@@ -205,6 +218,9 @@ export function SslCertificateForm({
   onCaSourceChange,
   clientCertSource,
   onClientCertSourceChange,
+  posture,
+  onPostureChange,
+  isSaaSMode = false,
   ca = "",
   hasCa = false,
   onCaChange,
@@ -251,6 +267,7 @@ export function SslCertificateForm({
   const resolvedCertPlaceholder = t("data-source.ssl.client-cert-placeholder");
   const resolvedKeyPlaceholder = t("data-source.ssl.client-key-placeholder");
   const resolvedUseSsl = useSsl ?? true;
+  const showPostureUi = posture !== undefined && !!onPostureChange;
   const showUseSslSwitch = useSsl !== undefined && !!onUseSslChange;
   const showCaSourceUi = caSource !== undefined && !!onCaSourceChange;
   const showClientCertSourceUi =
@@ -300,6 +317,18 @@ export function SslCertificateForm({
     : inferredClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
       ? LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM
       : inferredClientCertSource;
+  const resolvedPosture =
+    posture ??
+    (resolvedUseSsl
+      ? resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+        ? LOCAL_TLS_POSTURE_TLS
+        : LOCAL_TLS_POSTURE_MUTUAL_TLS
+      : LOCAL_TLS_POSTURE_DISABLED);
+  const supportsClientIdentity =
+    showKeyAndCertFields && isLocalTlsClientIdentitySupported(engineType);
+  const savedClientIdentity =
+    resolvedClientCertSource !== LOCAL_TLS_CLIENT_CERT_SOURCE_NONE;
+  const canSelectMutualTls = supportsClientIdentity || savedClientIdentity;
   const showConfiguredBadge = (hasStoredValue: boolean, visibleValue: string) =>
     hasStoredValue && !visibleValue;
   const renderLabel = (
@@ -316,6 +345,41 @@ export function SslCertificateForm({
       )}
     </div>
   );
+  const renderPostureControl = () => {
+    const options: SegmentedControlOption<LocalTlsPosture>[] = [
+      {
+        value: LOCAL_TLS_POSTURE_DISABLED,
+        label: t("data-source.ssl.posture.disabled"),
+      },
+      {
+        value: LOCAL_TLS_POSTURE_TLS,
+        label: t("data-source.ssl.posture.tls"),
+      },
+      {
+        value: LOCAL_TLS_POSTURE_MUTUAL_TLS,
+        label: t("data-source.ssl.posture.mutual-tls"),
+        disabled: !canSelectMutualTls,
+        tooltip: !canSelectMutualTls
+          ? t("data-source.ssl.mutual-tls-unavailable-engine")
+          : undefined,
+      },
+    ];
+
+    return (
+      <div className="flex flex-col gap-y-1">
+        <label className="textlabel block">
+          {t("data-source.ssl.posture.self")}
+        </label>
+        <SegmentedControl
+          value={resolvedPosture}
+          onValueChange={(next) => onPostureChange?.(next)}
+          ariaLabel={t("data-source.ssl.posture.self")}
+          options={options}
+          disabled={disabled}
+        />
+      </div>
+    );
+  };
 
   const renderCaMaterial = () => {
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST) {
@@ -329,7 +393,7 @@ export function SslCertificateForm({
           <Input
             value={caPath}
             onChange={(e) => onCaPathChange?.(e.target.value)}
-            disabled={disabled}
+            disabled={disabled || isSaaSMode}
             placeholder={resolvedCaPathLabel}
           />
         </div>
@@ -350,15 +414,14 @@ export function SslCertificateForm({
     );
   };
 
-  const renderClientCertMaterial = () => {
-    if (
-      !showKeyAndCertFields ||
-      resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
-    ) {
+  const renderClientCertMaterial = (
+    source: LocalTlsClientCertSource = resolvedClientCertSource
+  ) => {
+    if (!showKeyAndCertFields || source === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE) {
       return null;
     }
 
-    if (resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH) {
+    if (source === LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH) {
       return (
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-col gap-y-1">
@@ -366,7 +429,7 @@ export function SslCertificateForm({
             <Input
               value={certPath}
               onChange={(e) => onCertPathChange?.(e.target.value)}
-              disabled={disabled}
+              disabled={disabled || isSaaSMode}
               placeholder={resolvedCertPathLabel}
             />
           </div>
@@ -375,7 +438,7 @@ export function SslCertificateForm({
             <Input
               value={keyPath}
               onChange={(e) => onKeyPathChange?.(e.target.value)}
-              disabled={disabled}
+              disabled={disabled || isSaaSMode}
               placeholder={resolvedKeyPathLabel}
             />
           </div>
@@ -416,7 +479,7 @@ export function SslCertificateForm({
             <Input
               value={caPath}
               onChange={(e) => onCaPathChange?.(e.target.value)}
-              disabled={disabled}
+              disabled={disabled || isSaaSMode}
               placeholder={resolvedCaPathLabel}
             />
           </div>
@@ -426,7 +489,7 @@ export function SslCertificateForm({
               <Input
                 value={certPath}
                 onChange={(e) => onCertPathChange?.(e.target.value)}
-                disabled={disabled}
+                disabled={disabled || isSaaSMode}
                 placeholder={resolvedCertPathLabel}
               />
             </div>
@@ -437,7 +500,7 @@ export function SslCertificateForm({
               <Input
                 value={keyPath}
                 onChange={(e) => onKeyPathChange?.(e.target.value)}
-                disabled={disabled}
+                disabled={disabled || isSaaSMode}
                 placeholder={resolvedKeyPathLabel}
               />
             </div>
@@ -517,9 +580,113 @@ export function SslCertificateForm({
     );
   };
 
+  const renderVerifyControl = () => {
+    if (!showVerify) {
+      return null;
+    }
+
+    return (
+      <div className="flex flex-row items-center gap-x-1">
+        <Switch
+          checked={verify}
+          onCheckedChange={(val) => onVerifyChange?.(val)}
+          disabled={disabled}
+        />
+        <label className="textlabel block">{resolvedVerifyLabel}</label>
+        {showTooltip && (
+          <Tooltip
+            content={t("data-source.ssl.verify-certificate-tooltip")}
+            side="right"
+          >
+            <Info className="size-4 text-warning" />
+          </Tooltip>
+        )}
+      </div>
+    );
+  };
+
+  const renderPostureMaterial = () => {
+    if (resolvedPosture === LOCAL_TLS_POSTURE_DISABLED) {
+      return null;
+    }
+
+    const clientIdentitySource =
+      resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+        ? LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM
+        : resolvedClientCertSource;
+
+    return (
+      <>
+        <fieldset className="flex flex-col gap-y-2 rounded-xs border border-control-border px-3 py-2">
+          <legend className="px-1 textlabel">
+            {t("data-source.ssl.server-identity")}
+          </legend>
+          {renderVerifyControl()}
+          {!verify && (
+            <p className="text-xs textinfolabel">
+              {t("data-source.ssl.verification-disabled-description")}
+            </p>
+          )}
+          <div className="flex flex-col gap-y-2">
+            {showCaSourceUi && (
+              <div className="flex flex-col gap-y-1">
+                <label className="textlabel block">
+                  {t("data-source.ssl.ca-source.self")}
+                </label>
+                <CaSourceSelector
+                  value={resolvedCaSource}
+                  onChange={onCaSourceChange!}
+                  disabled={disabled}
+                  isSaaSMode={isSaaSMode}
+                />
+              </div>
+            )}
+            {renderCaMaterial()}
+          </div>
+        </fieldset>
+
+        {resolvedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && (
+          <fieldset className="flex flex-col gap-y-2 rounded-xs border border-control-border px-3 py-2">
+            <legend className="px-1 textlabel">
+              {t("data-source.ssl.client-identity")}
+            </legend>
+            <div className="flex flex-col gap-y-2">
+              {showClientCertSourceUi && (
+                <div className="flex flex-col gap-y-1">
+                  <label className="textlabel block">
+                    {t("data-source.ssl.client-cert-source.self")}
+                  </label>
+                  <ClientCertSourceSelector
+                    value={clientIdentitySource}
+                    onChange={onClientCertSourceChange!}
+                    disabled={disabled}
+                    isSaaSMode={isSaaSMode}
+                  />
+                </div>
+              )}
+              {renderClientCertMaterial(clientIdentitySource)}
+            </div>
+          </fieldset>
+        )}
+      </>
+    );
+  };
+
   return (
-    <div className="mt-2 flex flex-col gap-y-2">
-      {showUseSslSwitch && (
+    <div className="mt-2 flex flex-col gap-y-3">
+      {showPostureUi && (
+        <>
+          <div className="flex flex-col gap-y-2">
+            <label className="textlabel block">
+              {t("data-source.ssl.connection-security")}
+            </label>
+            {renderPostureControl()}
+          </div>
+          {renderPostureMaterial()}
+        </>
+      )}
+
+      {!showPostureUi && showUseSslSwitch && (
         <div className="flex flex-row items-center gap-x-1">
           <Switch
             checked={resolvedUseSsl}
@@ -532,26 +699,9 @@ export function SslCertificateForm({
         </div>
       )}
 
-      {resolvedUseSsl && (
+      {!showPostureUi && resolvedUseSsl && (
         <>
-          {showVerify && (
-            <div className="flex flex-row items-center gap-x-1">
-              <Switch
-                checked={verify}
-                onCheckedChange={(val) => onVerifyChange?.(val)}
-                disabled={disabled}
-              />
-              <label className="textlabel block">{resolvedVerifyLabel}</label>
-              {showTooltip && (
-                <Tooltip
-                  content={t("data-source.ssl.verify-certificate-tooltip")}
-                  side="right"
-                >
-                  <Info className="size-4 text-warning" />
-                </Tooltip>
-              )}
-            </div>
-          )}
+          {renderVerifyControl()}
 
           {!showPerGroupSourceUi ? (
             renderLegacyMaterial()
@@ -565,8 +715,9 @@ export function SslCertificateForm({
                     </label>
                     <CaSourceSelector
                       value={resolvedCaSource}
-                      onChange={onCaSourceChange}
+                      onChange={onCaSourceChange!}
                       disabled={disabled}
+                      isSaaSMode={isSaaSMode}
                     />
                   </div>
                 )}
@@ -582,8 +733,10 @@ export function SslCertificateForm({
                       </label>
                       <ClientCertSourceSelector
                         value={resolvedClientCertSource}
-                        onChange={onClientCertSourceChange}
+                        onChange={onClientCertSourceChange!}
                         disabled={disabled}
+                        isSaaSMode={isSaaSMode}
+                        allowNone
                       />
                     </div>
                   )}
