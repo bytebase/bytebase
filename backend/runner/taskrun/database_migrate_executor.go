@@ -809,6 +809,9 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
+	if len(statements) == 0 {
+		return &storepb.PriorBackupDetail{}, nil
+	}
 
 	prependStatements, err := getPrependStatements(database.Engine, originStatement)
 	if err != nil {
