@@ -12,3 +12,4 @@ export * from "./sidebar";
 export * from "./usePlanCheckStatus";
 export * from "./usePlanLink";
 export * from "./rolloutPreview";
+export * from "./title";

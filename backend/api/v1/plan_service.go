@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -184,6 +185,11 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
+	trimmedTitle := strings.TrimSpace(req.Plan.Title)
+	if project.Setting.EnforceIssueTitle && trimmedTitle == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", req.Parent))
+	}
+
 	// Validate plan specs
 	databaseGroup, err := validateSpecs(ctx, s.store, projectID, req.Plan.Specs)
 	if err != nil {
@@ -192,7 +198,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
-		Name:        req.Plan.Title,
+		Name:        trimmedTitle,
 		Description: req.Plan.Description,
 		Config:      convertPlan(req.Plan),
 	}
@@ -299,7 +305,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "title":
-			planUpdate.Name = new(req.Plan.Title)
+			trimmed := strings.TrimSpace(req.Plan.Title)
+			if project.Setting.EnforceIssueTitle && trimmed == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q requires a manual plan title (enforce_issue_title is enabled)", common.FormatProject(project.ResourceID)))
+			}
+			planUpdate.Name = &trimmed
 		case "description":
 			planUpdate.Description = new(req.Plan.Description)
 		case "state":

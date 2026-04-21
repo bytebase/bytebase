@@ -65,17 +65,25 @@ import { useWindowSize } from "@vueuse/core";
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
+// useI18n imported under a non-`use*` alias so SonarCloud's React-hook-
+// rule (typescript:S6440) doesn't misfire on this Vue composable called
+// at <script setup> top level. Consistent with the projectV1Store alias
+// workaround already in this file. See fd2aca60bf for the pattern.
+import { useI18n as vueI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
+  useProjectV1Store as projectV1Store,
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
+import { unknownProject } from "@/types";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
@@ -98,7 +106,13 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
+const { t } = vueI18n();
 const databaseStore = useDatabaseV1Store();
+// projectStore accessor imported under a non-`use*` alias so SonarCloud's
+// React-hook-rule (typescript:S6440) doesn't misfire on this new Pinia
+// call in a Vue SFC. Consistent with the same workaround in
+// ExecuteHint.vue. Pinia stores are module-level singletons.
+const projectStore = projectV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 
@@ -119,6 +133,14 @@ useEmitteryEventListener(
   "alter-schema",
   async ({ databaseName, schema, table }) => {
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
+    // Project-fetch-failed cell: if the project lookup rejects, still
+    // launch the plan page using the known `database.project`. Fall back
+    // to `unknownProject()` (enforceIssueTitle=true) — the launcher
+    // drops `query.name` so the user types a deliberate title before
+    // submitting. Backend remains the source of truth on submit.
+    const project = await projectStore
+      .getOrFetchProjectByName(database.project)
+      .catch(() => unknownProject());
     const exampleSQL = ["ALTER TABLE"];
     if (table) {
       if (schema) {
@@ -128,12 +150,16 @@ useEmitteryEventListener(
       }
     }
     const { databaseName: dbName } = extractDatabaseResourceName(database.name);
-    const query = {
+    const query: Record<string, string> = {
       template: "bb.plan.change-database",
-      name: `[${dbName}] Edit schema`,
       databaseList: database.name,
       sql: exampleSQL.join(" "),
     };
+    applyPlanTitleToQuery(
+      query,
+      project,
+      () => `[${dbName}] ${t("issue.title.edit-schema")}`
+    );
     const route = router.resolve({
       name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
       params: {
