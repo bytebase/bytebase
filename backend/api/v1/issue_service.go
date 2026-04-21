@@ -398,6 +398,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
+	// enforceIssueTitle is enforced on CreatePlan (plan.Name is gated there). Issues
+	// with empty Title inherit plan.Name via buildIssueMessage; ROLE_GRANT issues
+	// have their own title-required check below. No gate needed here.
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -434,7 +438,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 	switch request.Issue.Type {
 	case v1pb.Issue_ROLE_GRANT:
 		// Title is required for role grant requests.
-		if request.Issue.Title == "" {
+		if strings.TrimSpace(request.Issue.Title) == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 		}
 
@@ -481,7 +485,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 			Expiration: request.Issue.RoleGrant.Expiration,
 		}
 
-		title = request.Issue.Title
+		title = strings.TrimSpace(request.Issue.Title)
 		description = request.Issue.Description
 
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_DATABASE_EXPORT:
@@ -505,7 +509,7 @@ func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.Pro
 		planUID = &plan.UID
 
 		// Use plan's title and description as defaults if not provided by request
-		title = request.Issue.Title
+		title = strings.TrimSpace(request.Issue.Title)
 		if title == "" {
 			title = plan.Name
 		}
@@ -895,11 +899,12 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		updateMasks[path] = true
 		switch path {
 		case "title":
-			if req.Msg.Issue.Title == "" {
+			trimmed := strings.TrimSpace(req.Msg.Issue.Title)
+			if trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
 
-			patch.Title = &req.Msg.Issue.Title
+			patch.Title = &trimmed
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 				IssueUID: issue.UID,
@@ -907,7 +912,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 					Event: &storepb.IssueCommentPayload_IssueUpdate_{
 						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
 							FromTitle: &issue.Title,
-							ToTitle:   &req.Msg.Issue.Title,
+							ToTitle:   &trimmed,
 						},
 					},
 				},

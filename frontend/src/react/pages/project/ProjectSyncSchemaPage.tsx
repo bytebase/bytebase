@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -393,10 +394,13 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
     useStorageStore().put(sqlMapStorageKey, sqlMap);
     query.sqlMapStorageKey = sqlMapStorageKey;
-    query.name = generatePlanTitle(
-      "bb.plan.change-database",
-      targetDatabases.map(
-        (db) => extractDatabaseResourceName(db.name).databaseName
+    if (!project) return; // defensive: should not happen if the page rendered
+    applyPlanTitleToQuery(query, project, () =>
+      generatePlanTitle(
+        "bb.plan.change-database",
+        targetDatabases.map(
+          (db) => extractDatabaseResourceName(db.name).databaseName
+        )
       )
     );
 

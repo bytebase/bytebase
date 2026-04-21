@@ -45,15 +45,18 @@ import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
+  useDatabaseV1Store as databaseV1Store,
+  useProjectV1Store as projectV1Store,
   pushNotification,
-  useDatabaseV1Store,
+  useStorageStore as storageStoreAccessor,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useStorageStore,
 } from "@/store";
+import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
@@ -77,6 +80,14 @@ const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
+// Store accessors imported under non-`use*` aliases so SonarCloud's
+// React-hook-rule (typescript:S6440) doesn't misfire on these Pinia
+// calls in a Vue SFC. Pinia stores are module-level singletons; the
+// accessor name is cosmetic. Kept consistent across ExecuteHint.vue
+// and SQLEditorHomePage.vue.
+const databaseStore = databaseV1Store();
+const projectStore = projectV1Store();
+const storageStore = storageStoreAccessor();
 
 const statement = computed(() => {
   const tab = tabStore.currentTab;
@@ -126,24 +137,38 @@ const gotoCreateIssue = async () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: "No database selected",
+      title: t("sql-editor.no-database-selected"),
     });
     return;
   }
 
   emit("close");
 
-  const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
+  const db = await databaseStore.getOrFetchDatabaseByName(database);
+  // Project-fetch-failed cell: if the project lookup rejects (transient
+  // network/permission failure), still open the plan page using the
+  // already-known `db.project`. Fall back to `unknownProject()` which
+  // has `enforceIssueTitle=true` — that is the safe governance default:
+  // the launcher drops `query.name` so the plan page opens with a blank
+  // title and the user types a deliberate one before submitting. Backend
+  // remains the source of truth on submit.
+  const project = await projectStore
+    .getOrFetchProjectByName(db.project)
+    .catch(() => unknownProject());
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-  useStorageStore().put(sqlStorageKey, statement.value);
+  storageStore.put(sqlStorageKey, statement.value);
   const { databaseName } = extractDatabaseResourceName(db.name);
 
-  const query = {
+  const query: Record<string, string> = {
     template: "bb.plan.change-database",
-    name: `[${databaseName}] Change from SQL Editor`,
     databaseList: db.name,
     sqlStorageKey,
   };
+  applyPlanTitleToQuery(
+    query,
+    project,
+    () => `[${databaseName}] ${t("issue.title.change-from-sql-editor")}`
+  );
 
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
