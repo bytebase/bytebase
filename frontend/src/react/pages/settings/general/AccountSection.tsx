@@ -18,6 +18,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
+import { NumberInput } from "@/react/components/ui/number-input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useActuatorV1Store,
@@ -43,11 +44,41 @@ interface ToggleState {
 }
 
 interface TokenState {
-  accessTokenDuration: number;
+  // `null` represents an empty input while the user is typing; coerced to
+  // sensible defaults (1 for durations, -1 for inactiveTimeout = "no limit")
+  // on save and dirty comparison.
+  accessTokenDuration: number | null;
   accessTokenTimeFormat: "MINUTES" | "HOURS";
-  refreshTokenDuration: number;
+  refreshTokenDuration: number | null;
   refreshTokenTimeFormat: "HOURS" | "DAYS";
-  inactiveTimeout: number;
+  inactiveTimeout: number | null;
+}
+
+// Defaults used when the user leaves a duration field empty.
+const EMPTY_TOKEN_DURATION_DEFAULT = 1;
+const EMPTY_INACTIVE_TIMEOUT_DEFAULT = -1;
+
+// Canonicalizes TokenState for both isDirty comparison and save: coerces
+// transient `null` inputs to defaults and floors any fractional values (paste
+// of "1.5" etc.) so the two paths always agree on what counts as a change.
+function normalizeTokenState(state: TokenState): TokenState {
+  const floorOr = (v: number | null, fallback: number): number =>
+    Math.floor(v ?? fallback);
+  return {
+    ...state,
+    accessTokenDuration: floorOr(
+      state.accessTokenDuration,
+      EMPTY_TOKEN_DURATION_DEFAULT
+    ),
+    refreshTokenDuration: floorOr(
+      state.refreshTokenDuration,
+      EMPTY_TOKEN_DURATION_DEFAULT
+    ),
+    inactiveTimeout: floorOr(
+      state.inactiveTimeout,
+      EMPTY_INACTIVE_TIMEOUT_DEFAULT
+    ),
+  };
 }
 
 interface AccountSectionProps {
@@ -189,6 +220,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       if (
         prevAccessFormat.current !== tokenState.accessTokenTimeFormat &&
         tokenState.accessTokenTimeFormat === "MINUTES" &&
+        tokenState.accessTokenDuration !== null &&
         tokenState.accessTokenDuration > 59
       ) {
         setTokenState((s) => ({ ...s, accessTokenDuration: 59 }));
@@ -202,6 +234,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       if (
         prevRefreshFormat.current !== tokenState.refreshTokenTimeFormat &&
         tokenState.refreshTokenTimeFormat === "HOURS" &&
+        tokenState.refreshTokenDuration !== null &&
         tokenState.refreshTokenDuration > 23
       ) {
         setTokenState((s) => ({ ...s, refreshTokenDuration: 23 }));
@@ -215,7 +248,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       passwordState,
       getInitialPasswordRestriction()
     );
-    const isTokenDirty = !isEqual(tokenState, getInitialTokenState());
+    // Normalize transient empty inputs (`null`) before comparing so a
+    // cleared-then-saved field doesn't leave the section permanently dirty.
+    const isTokenDirty = !isEqual(
+      normalizeTokenState(tokenState),
+      getInitialTokenState()
+    );
     const isDirty = isToggleDirty || isPasswordDirty || isTokenDirty;
 
     // --- Update ---
@@ -235,16 +273,23 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         });
       }
 
-      // Token durations
+      // Token durations — `normalizeTokenState` coerces transient `null`
+      // inputs to defaults and floors fractional values, so the resolved
+      // shape matches what isDirty compared against.
       const initToken = getInitialTokenState();
+      const resolvedToken = normalizeTokenState(tokenState);
+      const accessTokenDuration = resolvedToken.accessTokenDuration as number;
+      const refreshTokenDuration = resolvedToken.refreshTokenDuration as number;
+      const inactiveTimeout = resolvedToken.inactiveTimeout as number;
+
       if (
-        initToken.accessTokenDuration !== tokenState.accessTokenDuration ||
+        initToken.accessTokenDuration !== accessTokenDuration ||
         initToken.accessTokenTimeFormat !== tokenState.accessTokenTimeFormat
       ) {
         const seconds =
           tokenState.accessTokenTimeFormat === "MINUTES"
-            ? tokenState.accessTokenDuration * 60
-            : tokenState.accessTokenDuration * 60 * 60;
+            ? accessTokenDuration * 60
+            : accessTokenDuration * 60 * 60;
         await settingV1Store.updateWorkspaceProfile({
           payload: {
             accessTokenDuration: create(DurationSchema, {
@@ -259,13 +304,13 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       }
 
       if (
-        initToken.refreshTokenDuration !== tokenState.refreshTokenDuration ||
+        initToken.refreshTokenDuration !== refreshTokenDuration ||
         initToken.refreshTokenTimeFormat !== tokenState.refreshTokenTimeFormat
       ) {
         const seconds =
           tokenState.refreshTokenTimeFormat === "HOURS"
-            ? tokenState.refreshTokenDuration * 60 * 60
-            : tokenState.refreshTokenDuration * 24 * 60 * 60;
+            ? refreshTokenDuration * 60 * 60
+            : refreshTokenDuration * 24 * 60 * 60;
         await settingV1Store.updateWorkspaceProfile({
           payload: {
             refreshTokenDuration: create(DurationSchema, {
@@ -279,11 +324,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         });
       }
 
-      if (initToken.inactiveTimeout !== tokenState.inactiveTimeout) {
+      if (initToken.inactiveTimeout !== inactiveTimeout) {
         await settingV1Store.updateWorkspaceProfile({
           payload: {
             inactiveSessionTimeout: create(DurationSchema, {
-              seconds: BigInt(tokenState.inactiveTimeout * 60 * 60),
+              seconds: BigInt(inactiveTimeout * 60 * 60),
               nanos: 0,
             }),
           },
@@ -676,26 +721,16 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 )}
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <Input
-                  type="number"
+                <NumberInput
                   className="w-24"
                   value={tokenState.accessTokenDuration}
                   min={1}
                   max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(val)) {
-                      const max =
-                        tokenState.accessTokenTimeFormat === "MINUTES"
-                          ? 59
-                          : 23;
-                      setTokenState((s) => ({
-                        ...s,
-                        accessTokenDuration: Math.max(1, Math.min(val, max)),
-                      }));
-                    }
-                  }}
+                  onValueChange={(v) =>
+                    setTokenState((s) => ({ ...s, accessTokenDuration: v }))
+                  }
                 />
                 <label className="flex items-center gap-x-1">
                   <input
@@ -750,8 +785,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 )}
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <Input
-                  type="number"
+                <NumberInput
                   className="w-24"
                   value={tokenState.refreshTokenDuration}
                   min={1}
@@ -760,23 +794,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                       ? 23
                       : undefined
                   }
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(val)) {
-                      const max =
-                        tokenState.refreshTokenTimeFormat === "HOURS"
-                          ? 23
-                          : undefined;
-                      setTokenState((s) => ({
-                        ...s,
-                        refreshTokenDuration: Math.max(
-                          1,
-                          max ? Math.min(val, max) : val
-                        ),
-                      }));
-                    }
-                  }}
+                  onValueChange={(v) =>
+                    setTokenState((s) => ({ ...s, refreshTokenDuration: v }))
+                  }
                 />
                 <label className="flex items-center gap-x-1">
                   <input
@@ -834,21 +856,15 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 </span>
               </p>
               <div className="mt-3 flex flex-row justify-start items-center gap-x-4">
-                <Input
-                  type="number"
+                <NumberInput
                   className="w-24"
                   value={tokenState.inactiveTimeout}
                   min={-1}
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(val)) {
-                      setTokenState((s) => ({
-                        ...s,
-                        inactiveTimeout: Math.max(-1, val),
-                      }));
-                    }
-                  }}
+                  onValueChange={(v) =>
+                    setTokenState((s) => ({ ...s, inactiveTimeout: v }))
+                  }
                 />
                 <span className="text-sm text-gray-500">
                   {t(
