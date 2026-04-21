@@ -2,6 +2,8 @@ package mongodb
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -177,6 +179,48 @@ func TestIsMongoStatement(t *testing.T) {
 		got := isMongoStatement(tt.statement)
 		a.Equal(tt.want, got, tt.statement)
 	}
+}
+
+func TestBuildMongoshBaseArgsUsesTempDirForTLSFiles(t *testing.T) {
+	driver := &Driver{
+		connCfg: db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Host:                 "localhost",
+				Port:                 "27017",
+				UseSsl:               true,
+				VerifyTlsCertificate: false,
+				SslCa:                "ca-pem",
+				SslCert:              "cert-pem",
+				SslKey:               "key-pem",
+			},
+		},
+	}
+
+	args, cleanup, err := driver.buildMongoshBaseArgs()
+	require.NoError(t, err)
+	defer cleanup()
+
+	var caFile, clientCertFile string
+	for i := 0; i < len(args)-1; i++ {
+		switch args[i] {
+		case "--tlsCAFile":
+			caFile = args[i+1]
+		case "--tlsCertificateKeyFile":
+			clientCertFile = args[i+1]
+		default:
+		}
+	}
+
+	require.NotEmpty(t, caFile)
+	require.NotEmpty(t, clientCertFile)
+	require.Equal(t, filepath.Clean(os.TempDir()), filepath.Clean(filepath.Dir(caFile)))
+	require.Equal(t, filepath.Clean(os.TempDir()), filepath.Clean(filepath.Dir(clientCertFile)))
+	require.FileExists(t, caFile)
+	require.FileExists(t, clientCertFile)
+
+	cleanup()
+	require.NoFileExists(t, caFile)
+	require.NoFileExists(t, clientCertFile)
 }
 
 func TestGetSimpleStatementResult(t *testing.T) {

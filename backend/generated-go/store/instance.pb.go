@@ -561,13 +561,19 @@ type DataSource struct {
 	Password           string                 `protobuf:"bytes,37,opt,name=password,proto3" json:"password,omitempty"`
 	ObfuscatedPassword string                 `protobuf:"bytes,4,opt,name=obfuscated_password,json=obfuscatedPassword,proto3" json:"obfuscated_password,omitempty"`
 	// Use SSL to connect to the data source. By default, we use the system's SSL configuration.
-	UseSsl            bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
-	SslCa             string `protobuf:"bytes,38,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
-	ObfuscatedSslCa   string `protobuf:"bytes,5,opt,name=obfuscated_ssl_ca,json=obfuscatedSslCa,proto3" json:"obfuscated_ssl_ca,omitempty"`
-	SslCert           string `protobuf:"bytes,39,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
-	ObfuscatedSslCert string `protobuf:"bytes,6,opt,name=obfuscated_ssl_cert,json=obfuscatedSslCert,proto3" json:"obfuscated_ssl_cert,omitempty"`
-	SslKey            string `protobuf:"bytes,40,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
-	ObfuscatedSslKey  string `protobuf:"bytes,7,opt,name=obfuscated_ssl_key,json=obfuscatedSslKey,proto3" json:"obfuscated_ssl_key,omitempty"`
+	UseSsl                bool   `protobuf:"varint,30,opt,name=use_ssl,json=useSsl,proto3" json:"use_ssl,omitempty"`
+	SslCa                 string `protobuf:"bytes,38,opt,name=ssl_ca,json=sslCa,proto3" json:"ssl_ca,omitempty"`
+	ObfuscatedSslCa       string `protobuf:"bytes,5,opt,name=obfuscated_ssl_ca,json=obfuscatedSslCa,proto3" json:"obfuscated_ssl_ca,omitempty"`
+	SslCert               string `protobuf:"bytes,39,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
+	ObfuscatedSslCert     string `protobuf:"bytes,6,opt,name=obfuscated_ssl_cert,json=obfuscatedSslCert,proto3" json:"obfuscated_ssl_cert,omitempty"`
+	SslKey                string `protobuf:"bytes,40,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
+	ObfuscatedSslKey      string `protobuf:"bytes,7,opt,name=obfuscated_ssl_key,json=obfuscatedSslKey,proto3" json:"obfuscated_ssl_key,omitempty"`
+	SslCaPath             string `protobuf:"bytes,50,opt,name=ssl_ca_path,json=sslCaPath,proto3" json:"ssl_ca_path,omitempty"`
+	ObfuscatedSslCaPath   string `protobuf:"bytes,51,opt,name=obfuscated_ssl_ca_path,json=obfuscatedSslCaPath,proto3" json:"obfuscated_ssl_ca_path,omitempty"`
+	SslCertPath           string `protobuf:"bytes,52,opt,name=ssl_cert_path,json=sslCertPath,proto3" json:"ssl_cert_path,omitempty"`
+	ObfuscatedSslCertPath string `protobuf:"bytes,53,opt,name=obfuscated_ssl_cert_path,json=obfuscatedSslCertPath,proto3" json:"obfuscated_ssl_cert_path,omitempty"`
+	SslKeyPath            string `protobuf:"bytes,54,opt,name=ssl_key_path,json=sslKeyPath,proto3" json:"ssl_key_path,omitempty"`
+	ObfuscatedSslKeyPath  string `protobuf:"bytes,55,opt,name=obfuscated_ssl_key_path,json=obfuscatedSslKeyPath,proto3" json:"obfuscated_ssl_key_path,omitempty"`
 	// verify_tls_certificate enables TLS certificate verification for SSL connections.
 	// Default is false (no verification) for backward compatibility.
 	// Set to true for secure connections (recommended for production).
@@ -750,6 +756,48 @@ func (x *DataSource) GetSslKey() string {
 func (x *DataSource) GetObfuscatedSslKey() string {
 	if x != nil {
 		return x.ObfuscatedSslKey
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCaPath() string {
+	if x != nil {
+		return x.SslCaPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetObfuscatedSslCaPath() string {
+	if x != nil {
+		return x.ObfuscatedSslCaPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCertPath() string {
+	if x != nil {
+		return x.SslCertPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetObfuscatedSslCertPath() string {
+	if x != nil {
+		return x.ObfuscatedSslCertPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslKeyPath() string {
+	if x != nil {
+		return x.SslKeyPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetObfuscatedSslKeyPath() string {
+	if x != nil {
+		return x.ObfuscatedSslKeyPath
 	}
 	return ""
 }
@@ -1782,7 +1830,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xba\x1a\n" +
+	"_attribute\"\xc5\x1c\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1796,7 +1844,14 @@ const file_store_instance_proto_rawDesc = "" +
 	"\bssl_cert\x18' \x01(\tR\asslCert\x12.\n" +
 	"\x13obfuscated_ssl_cert\x18\x06 \x01(\tR\x11obfuscatedSslCert\x12\x17\n" +
 	"\assl_key\x18( \x01(\tR\x06sslKey\x12,\n" +
-	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x124\n" +
+	"\x12obfuscated_ssl_key\x18\a \x01(\tR\x10obfuscatedSslKey\x12\x1e\n" +
+	"\vssl_ca_path\x182 \x01(\tR\tsslCaPath\x123\n" +
+	"\x16obfuscated_ssl_ca_path\x183 \x01(\tR\x13obfuscatedSslCaPath\x12\"\n" +
+	"\rssl_cert_path\x184 \x01(\tR\vsslCertPath\x127\n" +
+	"\x18obfuscated_ssl_cert_path\x185 \x01(\tR\x15obfuscatedSslCertPath\x12 \n" +
+	"\fssl_key_path\x186 \x01(\tR\n" +
+	"sslKeyPath\x125\n" +
+	"\x17obfuscated_ssl_key_path\x187 \x01(\tR\x14obfuscatedSslKeyPath\x124\n" +
 	"\x16verify_tls_certificate\x18/ \x01(\bR\x14verifyTlsCertificate\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +

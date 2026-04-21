@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	secretcomp "github.com/bytebase/bytebase/backend/component/secret"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -204,6 +205,14 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 
 // NewMigrationContext is the context for gh-ost migration.
 func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
+	resolvedDataSource, err := util.ResolveTLSMaterial(dataSource)
+	if err != nil {
+		return nil, err
+	}
+	if resolvedDataSource != nil {
+		dataSource = resolvedDataSource
+	}
+
 	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
 		return nil, err
@@ -222,10 +231,14 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	}
 	if dataSource.GetUseSsl() {
 		migrationContext.UseTLS = true
-		migrationContext.TLSCACertificate = dataSource.GetSslCa()
-		migrationContext.TLSCertificate = dataSource.GetSslCert()
-		migrationContext.TLSKey = dataSource.GetSslKey()
-		migrationContext.TLSAllowInsecure = true
+		migrationContext.TLSAllowInsecure = !dataSource.GetVerifyTlsCertificate()
+
+		tlsCleanup, err := writeTLSMaterialTempFiles(dataSource, migrationContext)
+		if err != nil {
+			return nil, err
+		}
+		defer tlsCleanup()
+
 		if err := migrationContext.SetupTLS(); err != nil {
 			return nil, errors.Wrapf(err, "failed to set up tls")
 		}
@@ -375,6 +388,80 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 		return nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")
 	}
 	return migrationContext, nil
+}
+
+func writeTLSMaterialTempFiles(dataSource *storepb.DataSource, migrationContext *ghostbase.MigrationContext) (func(), error) {
+	var cleanupFiles []string
+	cleanup := func() {
+		for _, fileName := range cleanupFiles {
+			_ = os.Remove(fileName)
+		}
+	}
+
+	if dataSource.GetSslCa() != "" {
+		caFile, err := os.CreateTemp(os.TempDir(), "gh-ost-tls-ca-*")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create temporary CA file")
+		}
+		if _, err := caFile.WriteString(dataSource.GetSslCa()); err != nil {
+			_ = caFile.Close()
+			_ = os.Remove(caFile.Name())
+			return nil, errors.Wrap(err, "failed to write temporary CA file")
+		}
+		if err := caFile.Close(); err != nil {
+			_ = os.Remove(caFile.Name())
+			return nil, errors.Wrap(err, "failed to close temporary CA file")
+		}
+		cleanupFiles = append(cleanupFiles, caFile.Name())
+		migrationContext.TLSCACertificate = caFile.Name()
+	}
+
+	if dataSource.GetSslCert() != "" || dataSource.GetSslKey() != "" {
+		if dataSource.GetSslCert() == "" || dataSource.GetSslKey() == "" {
+			cleanup()
+			return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
+		}
+
+		certFile, err := os.CreateTemp(os.TempDir(), "gh-ost-tls-cert-*")
+		if err != nil {
+			cleanup()
+			return nil, errors.Wrap(err, "failed to create temporary client certificate file")
+		}
+		if _, err := certFile.WriteString(dataSource.GetSslCert()); err != nil {
+			_ = certFile.Close()
+			_ = os.Remove(certFile.Name())
+			cleanup()
+			return nil, errors.Wrap(err, "failed to write temporary client certificate file")
+		}
+		if err := certFile.Close(); err != nil {
+			_ = os.Remove(certFile.Name())
+			cleanup()
+			return nil, errors.Wrap(err, "failed to close temporary client certificate file")
+		}
+		cleanupFiles = append(cleanupFiles, certFile.Name())
+		migrationContext.TLSCertificate = certFile.Name()
+
+		keyFile, err := os.CreateTemp(os.TempDir(), "gh-ost-tls-key-*")
+		if err != nil {
+			cleanup()
+			return nil, errors.Wrap(err, "failed to create temporary client key file")
+		}
+		if _, err := keyFile.WriteString(dataSource.GetSslKey()); err != nil {
+			_ = keyFile.Close()
+			_ = os.Remove(keyFile.Name())
+			cleanup()
+			return nil, errors.Wrap(err, "failed to write temporary client key file")
+		}
+		if err := keyFile.Close(); err != nil {
+			_ = os.Remove(keyFile.Name())
+			cleanup()
+			return nil, errors.Wrap(err, "failed to close temporary client key file")
+		}
+		cleanupFiles = append(cleanupFiles, keyFile.Name())
+		migrationContext.TLSKey = keyFile.Name()
+	}
+
+	return cleanup, nil
 }
 
 // GetTableNameFromStatement gets the table name from statement for gh-ost.

@@ -357,10 +357,16 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 		ds.Password = ""
 		ds.ObfuscatedSslCa = common.Obfuscate(ds.GetSslCa(), secret)
 		ds.SslCa = ""
+		ds.ObfuscatedSslCaPath = common.Obfuscate(ds.GetSslCaPath(), secret)
+		ds.SslCaPath = ""
 		ds.ObfuscatedSslCert = common.Obfuscate(ds.GetSslCert(), secret)
 		ds.SslCert = ""
+		ds.ObfuscatedSslCertPath = common.Obfuscate(ds.GetSslCertPath(), secret)
+		ds.SslCertPath = ""
 		ds.ObfuscatedSslKey = common.Obfuscate(ds.GetSslKey(), secret)
 		ds.SslKey = ""
+		ds.ObfuscatedSslKeyPath = common.Obfuscate(ds.GetSslKeyPath(), secret)
+		ds.SslKeyPath = ""
 		ds.ObfuscatedSshPassword = common.Obfuscate(ds.GetSshPassword(), secret)
 		ds.SshPassword = ""
 		ds.ObfuscatedSshPrivateKey = common.Obfuscate(ds.GetSshPrivateKey(), secret)
@@ -422,18 +428,33 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 				return err
 			}
 			ds.SslCa = sslCa
+			sslCaPath, err := common.Unobfuscate(ds.GetObfuscatedSslCaPath(), secret)
+			if err != nil {
+				return err
+			}
+			ds.SslCaPath = sslCaPath
 
 			sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCert = sslCert
+			sslCertPath, err := common.Unobfuscate(ds.GetObfuscatedSslCertPath(), secret)
+			if err != nil {
+				return err
+			}
+			ds.SslCertPath = sslCertPath
 
 			sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslKey = sslKey
+			sslKeyPath, err := common.Unobfuscate(ds.GetObfuscatedSslKeyPath(), secret)
+			if err != nil {
+				return err
+			}
+			ds.SslKeyPath = sslKeyPath
 
 			sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
 			if err != nil {

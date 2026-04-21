@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { NumberInput } from "@/react/components/ui/number-input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -186,7 +187,11 @@ export function ProjectSettingsPage() {
     const rows = Number(queryDataPolicy?.maximumResultRows ?? 0);
     return rows < 0 ? 0 : rows;
   }, [queryDataPolicy]);
-  const [maxRows, setMaxRows] = useState(() => getInitialMaxRows());
+  // `null` represents a transiently empty input while the user is typing;
+  // coerced to 0 on save.
+  const [maxRows, setMaxRows] = useState<number | null>(() =>
+    getInitialMaxRows()
+  );
 
   const [allowRequestRole, setAllowRequestRole] = useState(
     project?.allowRequestRole ?? false
@@ -226,15 +231,15 @@ export function ProjectSettingsPage() {
   const [postgresDatabaseTenantMode, setPostgresDatabaseTenantMode] = useState(
     project?.postgresDatabaseTenantMode ?? false
   );
-  const [maxRetries, setMaxRetries] = useState(
+  const [maxRetries, setMaxRetries] = useState<number | null>(
     project?.executionRetryPolicy?.maximumRetries ?? 0
   );
-  const [ciSamplingSize, setCiSamplingSize] = useState(
+  const [ciSamplingSize, setCiSamplingSize] = useState<number | null>(
     project?.ciSamplingSize ?? 0
   );
-  const [parallelTasksPerRollout, setParallelTasksPerRollout] = useState(
-    project?.parallelTasksPerRollout ?? 1
-  );
+  const [parallelTasksPerRollout, setParallelTasksPerRollout] = useState<
+    number | null
+  >(project?.parallelTasksPerRollout ?? 1);
 
   // New issue label input
   const [newLabelValue, setNewLabelValue] = useState("");
@@ -291,7 +296,7 @@ export function ProjectSettingsPage() {
     )
       return true;
     // Max rows
-    if (maxRows !== getInitialMaxRows()) return true;
+    if ((maxRows ?? 0) !== getInitialMaxRows()) return true;
     // Project toggles
     if (allowRequestRole !== project.allowRequestRole) return true;
     if (allowJustInTimeAccess !== project.allowJustInTimeAccess) return true;
@@ -306,10 +311,14 @@ export function ProjectSettingsPage() {
       return true;
     if (postgresDatabaseTenantMode !== project.postgresDatabaseTenantMode)
       return true;
-    if (maxRetries !== (project.executionRetryPolicy?.maximumRetries ?? 0))
+    if (
+      (maxRetries ?? 0) !== (project.executionRetryPolicy?.maximumRetries ?? 0)
+    )
       return true;
-    if (ciSamplingSize !== (project.ciSamplingSize ?? 0)) return true;
-    if (parallelTasksPerRollout !== (project.parallelTasksPerRollout ?? 0))
+    if ((ciSamplingSize ?? 0) !== (project.ciSamplingSize ?? 0)) return true;
+    if (
+      (parallelTasksPerRollout ?? 0) !== (project.parallelTasksPerRollout ?? 0)
+    )
       return true;
     return false;
   }, [
@@ -419,7 +428,8 @@ export function ProjectSettingsPage() {
       }
 
       // 2. Max rows policy (separate API)
-      if (maxRows !== getInitialMaxRows()) {
+      const maxRowsValue = maxRows ?? 0;
+      if (maxRowsValue !== getInitialMaxRows()) {
         await policyStore.upsertPolicy({
           parentPath: projectName,
           policy: {
@@ -429,7 +439,7 @@ export function ProjectSettingsPage() {
               case: "queryDataPolicy",
               value: create(QueryDataPolicySchema, {
                 ...queryDataPolicy,
-                maximumResultRows: maxRows,
+                maximumResultRows: maxRowsValue,
               }),
             },
           },
@@ -488,19 +498,26 @@ export function ProjectSettingsPage() {
         projectPatch.postgresDatabaseTenantMode = postgresDatabaseTenantMode;
         updateMask.push("postgres_database_tenant_mode");
       }
-      if (maxRetries !== (project.executionRetryPolicy?.maximumRetries ?? 0)) {
+      const maxRetriesValue = maxRetries ?? 0;
+      if (
+        maxRetriesValue !== (project.executionRetryPolicy?.maximumRetries ?? 0)
+      ) {
         projectPatch.executionRetryPolicy = create(
           Project_ExecutionRetryPolicySchema,
-          { maximumRetries: maxRetries }
+          { maximumRetries: maxRetriesValue }
         );
         updateMask.push("execution_retry_policy");
       }
-      if (ciSamplingSize !== (project.ciSamplingSize ?? 0)) {
-        projectPatch.ciSamplingSize = ciSamplingSize;
+      const ciSamplingSizeValue = ciSamplingSize ?? 0;
+      if (ciSamplingSizeValue !== (project.ciSamplingSize ?? 0)) {
+        projectPatch.ciSamplingSize = ciSamplingSizeValue;
         updateMask.push("ci_sampling_size");
       }
-      if (parallelTasksPerRollout !== (project.parallelTasksPerRollout ?? 0)) {
-        projectPatch.parallelTasksPerRollout = parallelTasksPerRollout;
+      const parallelTasksPerRolloutValue = parallelTasksPerRollout ?? 0;
+      if (
+        parallelTasksPerRolloutValue !== (project.parallelTasksPerRollout ?? 0)
+      ) {
+        projectPatch.parallelTasksPerRollout = parallelTasksPerRolloutValue;
         updateMask.push("parallel_tasks_per_rollout");
       }
       if (updateMask.length > 0) {
@@ -786,15 +803,11 @@ export function ProjectSettingsPage() {
                       </span>
                     </p>
                     <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-                      <Input
-                        type="number"
+                      <NumberInput
                         className="w-60"
                         min={0}
-                        value={String(maxRows)}
-                        onChange={(e) => {
-                          const v = parseInt(e.target.value, 10);
-                          if (!Number.isNaN(v) && v >= 0) setMaxRows(v);
-                        }}
+                        value={maxRows}
+                        onValueChange={setMaxRows}
                         disabled={!hasQueryPolicyFeature || !canUpdatePolicies}
                       />
                       <span className="text-sm text-control-light">
@@ -1313,8 +1326,8 @@ function NumericRow({
 }: {
   label: string;
   description: string;
-  value: number;
-  onChange: (v: number) => void;
+  value: number | null;
+  onChange: (v: number | null) => void;
   disabled: boolean;
   suffix?: string;
 }) {
@@ -1323,15 +1336,11 @@ function NumericRow({
       <p className="text-sm font-medium">{label}</p>
       <p className="mb-3 text-sm text-control-placeholder">{description}</p>
       <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-        <Input
-          type="number"
+        <NumberInput
           className="w-60"
           min={0}
-          value={String(value)}
-          onChange={(e) => {
-            const v = parseInt(e.target.value, 10);
-            if (!Number.isNaN(v) && v >= 0) onChange(v);
-          }}
+          value={value}
+          onValueChange={onChange}
           disabled={disabled}
         />
         {suffix && <span className="text-sm text-control-light">{suffix}</span>}
