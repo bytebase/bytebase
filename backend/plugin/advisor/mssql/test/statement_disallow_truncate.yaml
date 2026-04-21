@@ -1,0 +1,120 @@
+# SQL review rule: STATEMENT_DISALLOW_TRUNCATE (MSSQL)
+#
+# Detection target: top-level TruncateStmt.
+# Carveout: tables whose Object name begins with "#" (MSSQL session-scoped
+# temp tables — local `#t` and global `##t`).
+#
+# MSSQL TRUNCATE is minimally logged, bypasses DELETE triggers, requires
+# ALTER TABLE permission (not DELETE), and prior-backup classifies it as DDL.
+
+# --- Positive cases ---
+
+# Test: bare TRUNCATE TABLE
+- statement: TRUNCATE TABLE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: bracket-quoted schema-qualified
+- statement: TRUNCATE TABLE [dbo].[techbook];
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "dbo.techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: schema-qualified without brackets
+- statement: TRUNCATE TABLE dbo.techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "dbo.techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: 3-part name — Server/Database parts are dropped from advice text;
+# only Schema.Object is surfaced
+- statement: TRUNCATE TABLE mydb.dbo.techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "dbo.techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: WITH (PARTITIONS (...)) does NOT exempt — partition truncate on a
+# regular table is still destructive
+- statement: TRUNCATE TABLE techbook WITH (PARTITIONS (1 TO 3));
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multi-statement, advice line points to the TRUNCATE (stmt 2)
+- statement: |-
+    CREATE TABLE techbook(id int);
+    TRUNCATE TABLE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# --- Carveout cases (no advice) ---
+
+# Test: local temp table
+- statement: TRUNCATE TABLE #tmp;
+  changeType: 1
+
+# Test: global temp table (still starts with "#")
+- statement: TRUNCATE TABLE ##global_tmp;
+  changeType: 1
+
+# Test: bracket-quoted temp table with schema prefix
+- statement: TRUNCATE TABLE [dbo].[#tmp];
+  changeType: 1
+
+# --- Negative cases (no advice) ---
+
+# Test: DELETE with WHERE
+- statement: DELETE FROM techbook WHERE id = 1;
+  changeType: 1
+
+# Test: TRUNCATE appearing in a string literal in SELECT
+- statement: SELECT 'TRUNCATE' AS x;
+  changeType: 1
+
+# Test: DROP TABLE is a different statement type
+- statement: DROP TABLE techbook;
+  changeType: 1

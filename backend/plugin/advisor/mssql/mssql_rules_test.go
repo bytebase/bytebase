@@ -29,6 +29,7 @@ func TestMSSQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_NOT_REDUNDANT, Level: storepb.SQLReviewRule_WARNING},
 	}

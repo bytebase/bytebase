@@ -419,6 +419,10 @@
       "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggested error level: Error",
       "title": "Prohibit using CASCADE when removing a table"
     },
+    "STATEMENT_DISALLOW_TRUNCATE": {
+      "description": "TRUNCATE is a destructive DDL statement that removes all rows from a table and bypasses triggers. Prior-backup does not produce row-level snapshots for TRUNCATE, so accidental data loss cannot be recovered through the built-in backup path. Suggested error level: Error",
+      "title": "Prohibit \"TRUNCATE\" statement"
+    },
     "STATEMENT_DISALLOW_USING_FILESORT": {
       "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggested error level: Warning",
       "title": "Prohibit using filesort"

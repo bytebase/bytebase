@@ -192,6 +192,7 @@ const (
 	SQLReviewRule_ADVICE_ONLINE_MIGRATION                             SQLReviewRule_Type = 108
 	SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK                          SQLReviewRule_Type = 109
 	SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK                          SQLReviewRule_Type = 110
+	SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE                         SQLReviewRule_Type = 111
 )
 
 // Enum value maps for SQLReviewRule_Type.
@@ -308,6 +309,7 @@ var (
 		108: "ADVICE_ONLINE_MIGRATION",
 		109: "BUILTIN_PRIOR_BACKUP_CHECK",
 		110: "BUILTIN_WALK_THROUGH_CHECK",
+		111: "STATEMENT_DISALLOW_TRUNCATE",
 	}
 	SQLReviewRule_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                                    0,
@@ -421,6 +423,7 @@ var (
 		"ADVICE_ONLINE_MIGRATION":                             108,
 		"BUILTIN_PRIOR_BACKUP_CHECK":                          109,
 		"BUILTIN_WALK_THROUGH_CHECK":                          110,
+		"STATEMENT_DISALLOW_TRUNCATE":                         111,
 	}
 )
 
@@ -1302,7 +1305,7 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\x04 \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\x05 \x03(\tR\tresources:<\xeaA9\n" +
-	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xe4%\n" +
+	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\x85&\n" +
 	"\rSQLReviewRule\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRule.TypeR\x04type\x126\n" +
 	"\x05level\x18\x02 \x01(\x0e2 .bytebase.v1.SQLReviewRule.LevelR\x05level\x12U\n" +
@@ -1332,7 +1335,7 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02\"\xd0\x1c\n" +
+	"\aWARNING\x10\x02\"\xf1\x1c\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17ENGINE_MYSQL_USE_INNODB\x10\x01\x12\x1a\n" +
@@ -1445,7 +1448,8 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x1fSYSTEM_FUNCTION_DISALLOWED_LIST\x10k\x12\x1b\n" +
 	"\x17ADVICE_ONLINE_MIGRATION\x10l\x12\x1e\n" +
 	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10m\x12\x1e\n" +
-	"\x1aBUILTIN_WALK_THROUGH_CHECK\x10nB\t\n" +
+	"\x1aBUILTIN_WALK_THROUGH_CHECK\x10n\x12\x1f\n" +
+	"\x1bSTATEMENT_DISALLOW_TRUNCATE\x10oB\t\n" +
 	"\apayload2\xed\x06\n" +
 	"\x13ReviewConfigService\x12\xa3\x01\n" +
 	"\x12CreateReviewConfig\x12&.bytebase.v1.CreateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"J\xdaA\x00\x8a\xea0\x17bb.reviewConfigs.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\":\rreview_config\"\x11/v1/reviewConfigs\x12\x9d\x01\n" +
