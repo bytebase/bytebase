@@ -72,7 +72,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	allSystems, mixed := isMixedQuery(accessTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -1514,7 +1514,7 @@ func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
 // It returns whether all tables are system tables and whether there is a mixture.
-func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
+func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
 	hasSystem, hasUser := false, false
 	for table := range m {
 		if isSystemResource(table) {
