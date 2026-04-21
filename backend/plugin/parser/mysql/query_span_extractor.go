@@ -72,7 +72,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables)
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
@@ -1514,10 +1514,10 @@ func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
 // It returns whether all tables are system tables and whether there is a mixture.
-func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
 	hasSystem, hasUser := false, false
 	for table := range m {
-		if isSystemResource(table) {
+		if isSystemResource(table, ignoreCaseSensitive) {
 			hasSystem = true
 		} else {
 			hasUser = true
@@ -1531,15 +1531,31 @@ func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
 	return !hasUser && hasSystem, false
 }
 
-var systemDatabases = map[string]bool{
+// reservedSystemDatabases are schema names MySQL itself reserves regardless of
+// lower_case_table_names. A user cannot create a schema whose lowercase name
+// collides with any of these, so matching is always case-insensitive.
+var reservedSystemDatabases = map[string]bool{
 	"information_schema": true,
 	"performance_schema": true,
-	"mysql":              true,
 }
 
-func isSystemResource(resource base.ColumnResource) bool {
+// onDiskSystemDatabases are system schemas stored on disk. On case-sensitive
+// instances (lower_case_table_names=0), users can legitimately create a distinct
+// schema whose name differs from these only by case, so we only match them
+// case-insensitively when the instance is case-insensitive.
+var onDiskSystemDatabases = map[string]bool{
+	"mysql": true,
+}
+
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
+	if reservedSystemDatabases[strings.ToLower(resource.Database)] {
+		return true
+	}
 	database := resource.Database
-	return systemDatabases[strings.ToLower(database)]
+	if ignoreCaseSensitive {
+		database = strings.ToLower(database)
+	}
+	return onDiskSystemDatabases[database]
 }
 
 func mysqlExtractColumnsClause(ctx parser.IColumnsClauseContext) []string {
