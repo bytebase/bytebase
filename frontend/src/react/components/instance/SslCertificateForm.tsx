@@ -330,9 +330,18 @@ export function SslCertificateForm({
     showPostureUi && posture !== undefined ? posture : inferredPosture;
   const supportsClientIdentity =
     showKeyAndCertFields && isLocalTlsClientIdentitySupported(engineType);
-  const savedClientIdentity =
-    resolvedClientCertSource !== LOCAL_TLS_CLIENT_CERT_SOURCE_NONE;
-  const canSelectMutualTls = supportsClientIdentity || savedClientIdentity;
+  const hasClientIdentityMaterial = !!(
+    cert ||
+    sslKey ||
+    certPath ||
+    keyPath ||
+    hasCert ||
+    hasKey ||
+    hasCertPath ||
+    hasKeyPath
+  );
+  const canSelectMutualTls =
+    supportsClientIdentity || hasClientIdentityMaterial;
   const resolvedPosture =
     requestedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canSelectMutualTls
       ? LOCAL_TLS_POSTURE_TLS

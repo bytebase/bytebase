@@ -336,6 +336,45 @@ describe("SslCertificateForm", () => {
     });
   });
 
+  test("does not treat non-none source as saved client identity for unsupported engines", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          posture="MUTUAL_TLS"
+          onPostureChange={() => {}}
+          caSource="SYSTEM_TRUST"
+          onCaSourceChange={() => {}}
+          clientCertSource="FILE_PATH"
+          onClientCertSourceChange={() => {}}
+          useSsl={true}
+          verify={true}
+          onVerifyChange={() => {}}
+          engineType={Engine.MSSQL}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain(
+      "data-source.ssl.mutual-tls-unavailable-engine"
+    );
+    expect(
+      container.querySelector(
+        '[aria-label="data-source.ssl.posture.self"] [aria-disabled="true"][aria-checked="true"]'
+      )
+    ).toBeNull();
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.client-identity"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("marks write-only TLS material as configured", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
