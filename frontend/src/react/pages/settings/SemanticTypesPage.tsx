@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { NumberInput } from "@/react/components/ui/number-input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -505,12 +506,14 @@ function MaskingAlgorithmDrawer({
       ? algorithm.mask.value.type
       : Algorithm_InnerOuterMask_MaskType.INNER
   );
-  const [innerOuterPrefix, setInnerOuterPrefix] = useState(
+  // `number | null`: `null` represents an empty input while the user is
+  // typing; coerced to `0` on save.
+  const [innerOuterPrefix, setInnerOuterPrefix] = useState<number | null>(
     algorithm?.mask?.case === "innerOuterMask"
       ? algorithm.mask.value.prefixLen
       : 0
   );
-  const [innerOuterSuffix, setInnerOuterSuffix] = useState(
+  const [innerOuterSuffix, setInnerOuterSuffix] = useState<number | null>(
     algorithm?.mask?.case === "innerOuterMask"
       ? algorithm.mask.value.suffixLen
       : 0
@@ -659,8 +662,8 @@ function MaskingAlgorithmDrawer({
             case: "innerOuterMask",
             value: create(Algorithm_InnerOuterMaskSchema, {
               type: innerOuterType,
-              prefixLen: innerOuterPrefix,
-              suffixLen: innerOuterSuffix,
+              prefixLen: innerOuterPrefix ?? 0,
+              suffixLen: innerOuterSuffix ?? 0,
               substitution: innerOuterSubstitution,
             }),
           },
@@ -924,15 +927,11 @@ function MaskingAlgorithmDrawer({
                       )}
                       <span className="text-error ml-0.5">*</span>
                     </label>
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={innerOuterPrefix}
                       className="w-24"
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (!Number.isNaN(val) && val >= 0)
-                          setInnerOuterPrefix(val);
-                      }}
+                      min={0}
+                      onValueChange={setInnerOuterPrefix}
                     />
                   </div>
                   <div className="flex flex-col gap-y-1">
@@ -942,15 +941,11 @@ function MaskingAlgorithmDrawer({
                       )}
                       <span className="text-error ml-0.5">*</span>
                     </label>
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={innerOuterSuffix}
                       className="w-24"
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (!Number.isNaN(val) && val >= 0)
-                          setInnerOuterSuffix(val);
-                      }}
+                      min={0}
+                      onValueChange={setInnerOuterSuffix}
                     />
                   </div>
                   <div className="flex-1 flex flex-col gap-y-1">
