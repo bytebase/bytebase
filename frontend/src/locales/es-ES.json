@@ -973,8 +973,6 @@
     "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
     "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
     "no-password": "Sin contraseña",
-    "no-read-only-data-source-warn-for-admin-dba": "La instancia no ha configurado una conexión de solo lectura, por favor considere agregar una.",
-    "no-read-only-data-source-warn-for-developer": "La instancia no ha configurado una conexión de solo lectura, solicite a su DBA que agregue una.",
     "parameter-name-placeholder": "Nombre de parámetro",
     "parameter-value-placeholder": "Valor de parámetro",
     "password-type": {
@@ -2571,7 +2569,6 @@
     "copy-name": "Copiar nombre",
     "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "copy-url": "Copiar URL",
-    "create-read-only-data-source": "Ir a crear",
     "current-connection": "Conexión actual",
     "download-as-file": "Descargar como {file}",
     "duration-day": "{days} day",

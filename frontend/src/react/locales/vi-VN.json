@@ -284,6 +284,10 @@
       "self": "Vai trò"
     },
     "rollback": "Hoàn tác",
+    "rows": {
+      "n-rows": "{{n}} dòng",
+      "self": "dòng"
+    },
     "rows-per-page": "Số dòng mỗi trang",
     "run": "Run",
     "save": "Lưu",
@@ -499,6 +503,7 @@
   "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "Địa chỉ nút bổ sung",
+    "automatic-query-data-source": "Tự động",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
     "connection-type": "Loại kết nối",
     "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
@@ -514,6 +519,7 @@
     "read-replica-host": "Máy chủ bản sao đọc",
     "read-replica-port": "Cổng bản sao đọc",
     "replica-set": "Bộ bản sao",
+    "select-query-data-source": "Chọn nguồn dữ liệu truy vấn",
     "snowflake-keypair-tip": "Xác thực cặp khóa",
     "ssh": {
       "host": "Máy chủ",
@@ -590,6 +596,10 @@
     "partitioned": "Đã phân vùng",
     "row-count-est": "Ước tính số hàng",
     "row-count-estimate": "Ước tính số hàng",
+    "schema": {
+      "select": "Chọn lược đồ",
+      "unspecified": "Không xác định"
+    },
     "select": "Chọn cơ sở dữ liệu",
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
@@ -619,6 +629,9 @@
     "sync-schema-button": "Đồng bộ lược đồ",
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
+    "table": {
+      "select": "Chọn bảng"
+    },
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
@@ -2166,13 +2179,32 @@
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "Thêm phiên bản mới",
+    "admin-mode": {
+      "self": "Chế độ quản trị"
+    },
+    "batch-query": {
+      "batch": "Hàng loạt"
+    },
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
+    },
+    "redis-command": {
+      "all-nodes": "Tất cả các nút",
+      "only-for-cluster": "Chỉ khả dụng cho kết nối cụm",
+      "self": "Chạy lệnh redis trên",
+      "single-node": "Nút đơn"
+    },
+    "result-limit": {
+      "self": "Giới hạn kết quả"
+    },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",

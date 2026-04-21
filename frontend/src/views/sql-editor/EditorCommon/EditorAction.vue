@@ -46,23 +46,13 @@
             {{ queryTip }}
           </span>
         </NTooltip>
-        <QueryContextSettingPopover
+        <ReactPageMount
+          page="QueryContextSettingPopover"
           :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
 
-      <NPopover placement="bottom">
-        <template #trigger>
-          <AdminModeButton
-            size="small"
-            :hide-text="true"
-            style="--n-padding: 0 5px"
-          />
-        </template>
-        <template #default>
-          <span>{{ $t("sql-editor.admin-mode.self") }}</span>
-        </template>
-      </NPopover>
+      <ReactPageMount page="AdminModeButton" size="sm" :hideText="true" />
 
       <template v-if="showSheetsFeature">
         <NPopover placement="bottom">
@@ -122,11 +112,7 @@
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <NButtonGroup>
-        <DatabaseChooser />
-        <SchemaChooser />
-        <ContainerChooser />
-      </NButtonGroup>
+      <ReactPageMount page="ChooserGroup" />
 
       <OpenAIButton
         size="small"
@@ -154,6 +140,7 @@ import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { FeatureModal } from "@/components/FeatureGuard";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
@@ -170,12 +157,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
-import AdminModeButton from "./AdminModeButton.vue";
-import ContainerChooser from "./ContainerChooser.vue";
-import DatabaseChooser from "./DatabaseChooser.vue";
 import OpenAIButton from "./OpenAIButton";
-import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
-import SchemaChooser from "./SchemaChooser.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {

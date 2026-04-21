@@ -284,6 +284,10 @@
       "self": "角色"
     },
     "rollback": "回滚",
+    "rows": {
+      "n-rows": "{{n}} 行",
+      "self": "行"
+    },
     "rows-per-page": "每页行数",
     "run": "Run",
     "save": "保存",
@@ -499,6 +503,7 @@
   "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "附加节点地址",
+    "automatic-query-data-source": "自动",
     "connection-string-schema": "连接串模式",
     "connection-type": "连接类型",
     "delete-read-only-data-source": "删除只读数据源",
@@ -514,6 +519,7 @@
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "replica-set": "副本集",
+    "select-query-data-source": "选择查询数据源",
     "snowflake-keypair-tip": "密钥对认证",
     "ssh": {
       "host": "服务器",
@@ -590,6 +596,10 @@
     "partitioned": "分区",
     "row-count-est": "估算行数",
     "row-count-estimate": "估计行数",
+    "schema": {
+      "select": "选择 schema",
+      "unspecified": "未指定"
+    },
     "select": "选择数据库",
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
@@ -619,6 +629,9 @@
     "sync-schema-button": "同步 Schema",
     "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
+    "table": {
+      "select": "选择表"
+    },
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
@@ -2166,13 +2179,32 @@
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
     "add-a-new-instance": "添加新实例",
+    "admin-mode": {
+      "self": "管理员模式"
+    },
+    "batch-query": {
+      "batch": "批量"
+    },
     "connect-to-a-database": "连接数据库",
     "expired": "已过期",
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
     "jit": "即时访问",
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
+    },
+    "redis-command": {
+      "all-nodes": "所有节点",
+      "only-for-cluster": "仅适用于集群连接",
+      "self": "运行 redis 命令",
+      "single-node": "单节点"
+    },
+    "result-limit": {
+      "self": "结果限制"
+    },
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
+    "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "查看工单",

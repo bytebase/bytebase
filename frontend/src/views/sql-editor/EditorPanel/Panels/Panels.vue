@@ -9,7 +9,7 @@
             class="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center"
           >
             <div class="flex items-center justify-start gap-2">
-              <DatabaseChooser :disabled="true" />
+              <ReactPageMount page="DatabaseChooser" :disabled="true" />
               <SchemaSelectToolbar simple />
             </div>
           </div>
@@ -57,6 +57,7 @@ import { watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useAIContext } from "@/plugins/ai/logic";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
@@ -71,7 +72,6 @@ import {
   nextAnimationFrame,
   type VueClass,
 } from "@/utils";
-import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
 import { SchemaSelectToolbar } from "./common";
 import DiagramPanel from "./DiagramPanel";

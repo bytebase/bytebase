@@ -284,6 +284,10 @@
       "self": "ロール"
     },
     "rollback": "ロールバック",
+    "rows": {
+      "n-rows": "{{n}} 行",
+      "self": "行"
+    },
     "rows-per-page": "ページあたりの行数",
     "run": "Run",
     "save": "保存",
@@ -499,6 +503,7 @@
   "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "追加のノードアドレス",
+    "automatic-query-data-source": "自動",
     "connection-string-schema": "接続文字列モード",
     "connection-type": "接続タイプ",
     "delete-read-only-data-source": "読み取り専用データソースを削除する",
@@ -514,6 +519,7 @@
     "read-replica-host": "リードレプリカホスト",
     "read-replica-port": "リードレプリカポート",
     "replica-set": "レプリカセット",
+    "select-query-data-source": "クエリデータソースの選択",
     "snowflake-keypair-tip": "キーペア認証",
     "ssh": {
       "host": "サーバ",
@@ -590,6 +596,10 @@
     "partitioned": "パーティション",
     "row-count-est": "推定行数",
     "row-count-estimate": "推定行数",
+    "schema": {
+      "select": "スキーマの選択",
+      "unspecified": "不特定"
+    },
     "select": "データベースの選択",
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
@@ -619,6 +629,9 @@
     "sync-schema-button": "スキーマを同期",
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
+    "table": {
+      "select": "テーブルを選択"
+    },
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
@@ -2166,13 +2179,32 @@
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "新しいインスタンスを追加",
+    "admin-mode": {
+      "self": "管理者モード"
+    },
+    "batch-query": {
+      "batch": "バッチ"
+    },
     "connect-to-a-database": "データベースに接続",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
+    },
+    "redis-command": {
+      "all-nodes": "すべてのノード",
+      "only-for-cluster": "クラスタ接続のみ使用可能",
+      "self": "redisコマンドを実行する",
+      "single-node": "単一ノード"
+    },
+    "result-limit": {
+      "self": "結果の制限"
+    },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",

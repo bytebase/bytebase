@@ -973,8 +973,6 @@
     "no-extra-params-configured": "No extra connection parameters configured",
     "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
     "no-password": "No password",
-    "no-read-only-data-source-warn-for-admin-dba": "The instance has not configured read-only connection, please consider adding one.",
-    "no-read-only-data-source-warn-for-developer": "The instance has not configured read-only connection, please ask your DBA to add one.",
     "parameter-name-placeholder": "Parameter name",
     "parameter-value-placeholder": "Parameter value",
     "password-type": {
@@ -2571,7 +2569,6 @@
     "copy-name": "Copy name",
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "copy-url": "Copy URL",
-    "create-read-only-data-source": "Go to create",
     "current-connection": "Current connection",
     "download-as-file": "Download as {file}",
     "duration-day": "{days} day",

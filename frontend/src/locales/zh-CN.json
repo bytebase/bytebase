@@ -973,8 +973,6 @@
     "no-extra-params-configured": "没有配置的额外连接参数",
     "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
     "no-password": "无密码",
-    "no-read-only-data-source-warn-for-admin-dba": "该实例没有配置只读连接，请考虑配置。",
-    "no-read-only-data-source-warn-for-developer": "该实例没有配置只读连接，请让您的 DBA 配置一个。",
     "parameter-name-placeholder": "参数名称",
     "parameter-value-placeholder": "参数值",
     "password-type": {
@@ -2571,7 +2569,6 @@
     "copy-name": "复制名称",
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
     "copy-url": "复制 URL",
-    "create-read-only-data-source": "前去创建",
     "current-connection": "当前连接",
     "download-as-file": "下载为 {file} 格式",
     "duration-day": "{days} 天",
