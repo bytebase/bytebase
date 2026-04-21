@@ -1537,12 +1537,9 @@ var systemDatabases = map[string]bool{
 	"mysql":              true,
 }
 
-func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
+func isSystemResource(resource base.ColumnResource) bool {
 	database := resource.Database
-	if ignoreCaseSensitive {
-		database = strings.ToLower(database)
-	}
-	return systemDatabases[database]
+	return systemDatabases[strings.ToLower(database)]
 }
 
 func mysqlExtractColumnsClause(ctx parser.IColumnsClauseContext) []string {
