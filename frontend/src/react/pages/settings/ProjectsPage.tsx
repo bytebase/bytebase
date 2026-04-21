@@ -470,16 +470,16 @@ function BatchOperationsBar({
   return (
     <>
       <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto">
-        <span className="whitespace-nowrap">
+        <span className="whitespace-nowrap text-sm">
           {t("project.batch.selected", {
             count: selectedProjects.length,
           })}
         </span>
-        <div className="flex items-center gap-x-2">
+        <div className="flex items-center">
           {hasActiveProjects && (
             <Button
               variant="ghost"
-              size="sm"
+              size="md"
               onClick={() => setShowArchiveConfirm(true)}
             >
               <Archive className="h-4 w-4 mr-1" />
@@ -489,7 +489,7 @@ function BatchOperationsBar({
           {hasArchivedProjects && (
             <Button
               variant="ghost"
-              size="sm"
+              size="md"
               onClick={() => setShowRestoreConfirm(true)}
             >
               {t("common.restore")}
@@ -497,7 +497,7 @@ function BatchOperationsBar({
           )}
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="h-4 w-4 mr-1" />

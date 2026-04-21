@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceSelect } from "@/react/components/InstanceSelect";
+import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import { Input } from "@/react/components/ui/input";
@@ -44,7 +45,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   enginesSupportCreateDatabase,
-  getDefaultPagination,
   getIssueRoute,
   instanceV1HasCollationAndCharacterSet,
   normalizeTitle,
@@ -205,9 +205,6 @@ export function CreateDatabaseSheet({
     { name: string; roleName: string }[]
   >([]);
 
-  const [projects, setProjects] = useState<{ name: string; title: string }[]>(
-    []
-  );
   const [selectedInstance, setSelectedInstance] = useState<
     Instance | undefined
   >();
@@ -325,20 +322,6 @@ export function CreateDatabaseSheet({
     projectHydrated &&
     !(enforceIssueTitle && !normalizeTitle(title));
 
-  const searchProjects = useCallback(
-    (query: string) => {
-      projectStore
-        .fetchProjectList({
-          filter: { query, excludeDefault: true },
-          pageSize: getDefaultPagination(),
-        })
-        .then(({ projects: result }) =>
-          setProjects(result.map((p) => ({ name: p.name, title: p.title })))
-        );
-    },
-    [projectStore]
-  );
-
   useEffect(() => {
     if (!open) return;
     setProjectName("");
@@ -356,8 +339,7 @@ export function CreateDatabaseSheet({
     setInstanceRoles([]);
     setTitle("");
     setTitleEdited(false);
-    if (!fixedProjectName) searchProjects("");
-  }, [open, searchProjects, fixedProjectName]);
+  }, [open]);
 
   const instanceFetchRef = useRef(0);
   const handleInstanceChange = async (
@@ -463,17 +445,9 @@ export function CreateDatabaseSheet({
               <label className="block text-sm font-medium mb-1">
                 {t("common.project")} <span className="text-error">*</span>
               </label>
-              <Combobox
+              <ProjectSelect
                 value={projectName}
-                onChange={setProjectName}
-                placeholder={t("common.project")}
-                noResultsText={t("common.no-data")}
-                onSearch={searchProjects}
-                options={projects.map((p) => ({
-                  value: p.name,
-                  label: p.title,
-                  description: p.name,
-                }))}
+                onChange={(name) => setProjectName(name)}
               />
             </div>
           )}
