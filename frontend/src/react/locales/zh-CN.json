@@ -108,15 +108,15 @@
       "title": "您的会话即将结束"
     },
     "oauth-callback": {
-      "invalid-state": "Authentication failed: Invalid callback state. Please try again.",
-      "opener-failed": "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.",
-      "opener-unavailable": "Authentication completed, but the parent window is no longer available. Please close this window and try again.",
-      "please-close": "Authentication completed. Please close this window.",
-      "processing": "Processing authentication...",
-      "security-failed": "Authentication failed: Security validation failed. Please try again.",
-      "session-expired": "Authentication failed: Session expired or invalid. Please try again.",
-      "success-close": "Authentication completed. You can close this window.",
-      "success-redirecting": "Successfully authorized. Redirecting back to Bytebase..."
+      "invalid-state": "认证失败：无效的回调状态。请重试。",
+      "opener-failed": "认证已完成,但与父窗口通信失败。请关闭此窗口并重试。",
+      "opener-unavailable": "认证已完成，但父窗口不再可用。请关闭此窗口并重试。",
+      "please-close": "认证已完成。请关闭此窗口。",
+      "processing": "正在处理认证……",
+      "security-failed": "认证失败：安全验证失败。请重试。",
+      "session-expired": "认证失败：会话已过期或无效。请重试。",
+      "success-close": "认证已完成。您可以关闭此窗口。",
+      "success-redirecting": "授权成功。正在跳转回 Bytebase……"
     },
     "password-forget": {
       "failed-to-send-code": "发送密码重置验证码失败，请重试。",

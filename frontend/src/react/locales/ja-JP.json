@@ -108,15 +108,15 @@
       "title": "セッションの有効期限が近づいています"
     },
     "oauth-callback": {
-      "invalid-state": "Authentication failed: Invalid callback state. Please try again.",
-      "opener-failed": "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.",
-      "opener-unavailable": "Authentication completed, but the parent window is no longer available. Please close this window and try again.",
-      "please-close": "Authentication completed. Please close this window.",
-      "processing": "Processing authentication...",
-      "security-failed": "Authentication failed: Security validation failed. Please try again.",
-      "session-expired": "Authentication failed: Session expired or invalid. Please try again.",
-      "success-close": "Authentication completed. You can close this window.",
-      "success-redirecting": "Successfully authorized. Redirecting back to Bytebase..."
+      "invalid-state": "認証に失敗しました：無効なコールバック状態です。もう一度お試しください。",
+      "opener-failed": "認証は完了しましたが、親ウィンドウとの通信に失敗しました。このウィンドウを閉じてもう一度お試しください。",
+      "opener-unavailable": "認証は完了しましたが、親ウィンドウを利用できなくなっています。このウィンドウを閉じてもう一度お試しください。",
+      "please-close": "認証が完了しました。このウィンドウを閉じてください。",
+      "processing": "認証を処理しています...",
+      "security-failed": "認証に失敗しました：セキュリティ検証に失敗しました。もう一度お試しください。",
+      "session-expired": "認証に失敗しました：セッションが期限切れまたは無効です。もう一度お試しください。",
+      "success-close": "認証が完了しました。このウィンドウを閉じることができます。",
+      "success-redirecting": "認証に成功しました。Bytebase にリダイレクトしています..."
     },
     "password-forget": {
       "failed-to-send-code": "パスワードリセットコードの送信に失敗しました。もう一度お試しください。",

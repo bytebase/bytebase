@@ -108,15 +108,15 @@
       "title": "Phiên của bạn sắp kết thúc"
     },
     "oauth-callback": {
-      "invalid-state": "Authentication failed: Invalid callback state. Please try again.",
-      "opener-failed": "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.",
-      "opener-unavailable": "Authentication completed, but the parent window is no longer available. Please close this window and try again.",
-      "please-close": "Authentication completed. Please close this window.",
-      "processing": "Processing authentication...",
-      "security-failed": "Authentication failed: Security validation failed. Please try again.",
-      "session-expired": "Authentication failed: Session expired or invalid. Please try again.",
-      "success-close": "Authentication completed. You can close this window.",
-      "success-redirecting": "Successfully authorized. Redirecting back to Bytebase..."
+      "invalid-state": "Xác thực thất bại: Trạng thái gọi lại không hợp lệ. Vui lòng thử lại.",
+      "opener-failed": "Xác thực đã hoàn tất, nhưng không thể giao tiếp với cửa sổ cha. Vui lòng đóng cửa sổ này và thử lại.",
+      "opener-unavailable": "Xác thực đã hoàn tất, nhưng cửa sổ cha không còn khả dụng. Vui lòng đóng cửa sổ này và thử lại.",
+      "please-close": "Xác thực đã hoàn tất. Vui lòng đóng cửa sổ này.",
+      "processing": "Đang xử lý xác thực...",
+      "security-failed": "Xác thực thất bại: Xác minh bảo mật không thành công. Vui lòng thử lại.",
+      "session-expired": "Xác thực thất bại: Phiên đã hết hạn hoặc không hợp lệ. Vui lòng thử lại.",
+      "success-close": "Xác thực đã hoàn tất. Bạn có thể đóng cửa sổ này.",
+      "success-redirecting": "Đã ủy quyền thành công. Đang chuyển hướng về Bytebase..."
     },
     "password-forget": {
       "failed-to-send-code": "Không gửi được mã đặt lại mật khẩu. Vui lòng thử lại.",
