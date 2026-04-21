@@ -145,6 +145,9 @@ export const calcDataSourceUpdateMask = (
     editing.password = "";
     updateMask.add("password");
   }
+  updateMask.delete("has_ssl_ca");
+  updateMask.delete("has_ssl_cert");
+  updateMask.delete("has_ssl_key");
   updateMask.delete("has_ssl_ca_path");
   updateMask.delete("has_ssl_cert_path");
   updateMask.delete("has_ssl_key_path");

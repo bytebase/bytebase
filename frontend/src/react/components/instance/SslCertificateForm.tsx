@@ -1,6 +1,7 @@
 import { Info } from "lucide-react";
 import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { Badge } from "@/react/components/ui/badge";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Switch } from "@/react/components/ui/switch";
@@ -33,16 +34,22 @@ interface SslCertificateFormProps {
   clientCertSource?: LocalTlsClientCertSource;
   onClientCertSourceChange?: (val: LocalTlsClientCertSource) => void;
   ca?: string;
+  hasCa?: boolean;
   onCaChange?: (val: string) => void;
   caPath?: string;
+  hasCaPath?: boolean;
   onCaPathChange?: (val: string) => void;
   cert?: string;
+  hasCert?: boolean;
   onCertChange?: (val: string) => void;
   certPath?: string;
+  hasCertPath?: boolean;
   onCertPathChange?: (val: string) => void;
   sslKey?: string;
+  hasKey?: boolean;
   onKeyChange?: (val: string) => void;
   keyPath?: string;
+  hasKeyPath?: boolean;
   onKeyPathChange?: (val: string) => void;
   disabled?: boolean;
   showVerify?: boolean;
@@ -199,16 +206,22 @@ export function SslCertificateForm({
   clientCertSource,
   onClientCertSourceChange,
   ca = "",
+  hasCa = false,
   onCaChange,
   caPath = "",
+  hasCaPath = false,
   onCaPathChange,
   cert = "",
+  hasCert = false,
   onCertChange,
   certPath = "",
+  hasCertPath = false,
   onCertPathChange,
   sslKey = "",
+  hasKey = false,
   onKeyChange,
   keyPath = "",
+  hasKeyPath = false,
   onKeyPathChange,
   disabled = false,
   showVerify = true,
@@ -232,6 +245,7 @@ export function SslCertificateForm({
   const resolvedCaPathLabel = t("data-source.ssl.ca-path");
   const resolvedCertPathLabel = t("data-source.ssl.client-cert-path");
   const resolvedKeyPathLabel = t("data-source.ssl.client-key-path");
+  const resolvedConfiguredLabel = t("data-source.ssl.configured");
   const resolvedCaHint = t("data-source.ssl.ca-empty-uses-system-trust");
   const resolvedCaPlaceholder = t("data-source.ssl.ca-placeholder");
   const resolvedCertPlaceholder = t("data-source.ssl.client-cert-placeholder");
@@ -254,6 +268,9 @@ export function SslCertificateForm({
     sslCaPath: caPath,
     sslCertPath: certPath,
     sslKeyPath: keyPath,
+    hasSslCa: false,
+    hasSslCert: false,
+    hasSslKey: false,
     hasSslCaPath: false,
     hasSslCertPath: false,
     hasSslKeyPath: false,
@@ -266,6 +283,9 @@ export function SslCertificateForm({
     sslCaPath: caPath,
     sslCertPath: certPath,
     sslKeyPath: keyPath,
+    hasSslCa: false,
+    hasSslCert: false,
+    hasSslKey: false,
     hasSslCaPath: false,
     hasSslCertPath: false,
     hasSslKeyPath: false,
@@ -280,6 +300,22 @@ export function SslCertificateForm({
     : inferredClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
       ? LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM
       : inferredClientCertSource;
+  const showConfiguredBadge = (hasStoredValue: boolean, visibleValue: string) =>
+    hasStoredValue && !visibleValue;
+  const renderLabel = (
+    label: string,
+    hasStoredValue: boolean,
+    visibleValue: string
+  ) => (
+    <div className="flex items-center gap-x-2">
+      <label className="textlabel block">{label}</label>
+      {showConfiguredBadge(hasStoredValue, visibleValue) && (
+        <Badge data-testid="tls-configured-badge" variant="success">
+          {resolvedConfiguredLabel}
+        </Badge>
+      )}
+    </div>
+  );
 
   const renderCaMaterial = () => {
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST) {
@@ -289,7 +325,7 @@ export function SslCertificateForm({
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_FILE_PATH) {
       return (
         <div className="flex flex-col gap-y-1">
-          <label className="textlabel block">{resolvedCaPathLabel}</label>
+          {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
           <Input
             value={caPath}
             onChange={(e) => onCaPathChange?.(e.target.value)}
@@ -302,7 +338,7 @@ export function SslCertificateForm({
 
     return (
       <div className="flex flex-col gap-y-1">
-        <label className="textlabel block">{resolvedCaLabel}</label>
+        {renderLabel(resolvedCaLabel, hasCa, ca)}
         <DroppableTextarea
           value={ca}
           onChange={(val) => onCaChange?.(val)}
@@ -326,7 +362,7 @@ export function SslCertificateForm({
       return (
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-col gap-y-1">
-            <label className="textlabel block">{resolvedCertPathLabel}</label>
+            {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
             <Input
               value={certPath}
               onChange={(e) => onCertPathChange?.(e.target.value)}
@@ -335,7 +371,7 @@ export function SslCertificateForm({
             />
           </div>
           <div className="flex flex-col gap-y-1">
-            <label className="textlabel block">{resolvedKeyPathLabel}</label>
+            {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
             <Input
               value={keyPath}
               onChange={(e) => onKeyPathChange?.(e.target.value)}
@@ -350,7 +386,7 @@ export function SslCertificateForm({
     return (
       <div className="flex flex-col gap-y-2">
         <div className="flex flex-col gap-y-1">
-          <label className="textlabel block">{resolvedKeyLabel}</label>
+          {renderLabel(resolvedKeyLabel, hasKey, sslKey)}
           <DroppableTextarea
             value={sslKey}
             onChange={(val) => onKeyChange?.(val)}
@@ -359,7 +395,7 @@ export function SslCertificateForm({
           />
         </div>
         <div className="flex flex-col gap-y-1">
-          <label className="textlabel block">{resolvedCertLabel}</label>
+          {renderLabel(resolvedCertLabel, hasCert, cert)}
           <DroppableTextarea
             value={cert}
             onChange={(val) => onCertChange?.(val)}
@@ -376,7 +412,7 @@ export function SslCertificateForm({
       return (
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-col gap-y-1">
-            <label className="textlabel block">{resolvedCaPathLabel}</label>
+            {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
             <Input
               value={caPath}
               onChange={(e) => onCaPathChange?.(e.target.value)}
@@ -386,7 +422,7 @@ export function SslCertificateForm({
           </div>
           {showKeyAndCertFields && (
             <div className="flex flex-col gap-y-1">
-              <label className="textlabel block">{resolvedCertPathLabel}</label>
+              {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
               <Input
                 value={certPath}
                 onChange={(e) => onCertPathChange?.(e.target.value)}
@@ -397,7 +433,7 @@ export function SslCertificateForm({
           )}
           {showKeyAndCertFields && (
             <div className="flex flex-col gap-y-1">
-              <label className="textlabel block">{resolvedKeyPathLabel}</label>
+              {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
               <Input
                 value={keyPath}
                 onChange={(e) => onKeyPathChange?.(e.target.value)}
@@ -413,12 +449,39 @@ export function SslCertificateForm({
     return (
       <Tabs defaultValue="CA">
         <TabsList>
-          <TabsTrigger value="CA">{resolvedCaLabel}</TabsTrigger>
+          <TabsTrigger value="CA">
+            <span className="inline-flex items-center gap-x-2">
+              {resolvedCaLabel}
+              {showConfiguredBadge(hasCa, ca) && (
+                <Badge data-testid="tls-configured-badge" variant="success">
+                  {resolvedConfiguredLabel}
+                </Badge>
+              )}
+            </span>
+          </TabsTrigger>
           {showKeyAndCertFields && (
-            <TabsTrigger value="KEY">{resolvedKeyLabel}</TabsTrigger>
+            <TabsTrigger value="KEY">
+              <span className="inline-flex items-center gap-x-2">
+                {resolvedKeyLabel}
+                {showConfiguredBadge(hasKey, sslKey) && (
+                  <Badge data-testid="tls-configured-badge" variant="success">
+                    {resolvedConfiguredLabel}
+                  </Badge>
+                )}
+              </span>
+            </TabsTrigger>
           )}
           {showKeyAndCertFields && (
-            <TabsTrigger value="CERT">{resolvedCertLabel}</TabsTrigger>
+            <TabsTrigger value="CERT">
+              <span className="inline-flex items-center gap-x-2">
+                {resolvedCertLabel}
+                {showConfiguredBadge(hasCert, cert) && (
+                  <Badge data-testid="tls-configured-badge" variant="success">
+                    {resolvedConfiguredLabel}
+                  </Badge>
+                )}
+              </span>
+            </TabsTrigger>
           )}
         </TabsList>
         <TabsPanel value="CA" className="pt-1">

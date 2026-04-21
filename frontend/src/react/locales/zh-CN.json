@@ -550,6 +550,7 @@
       "client-key": "客户端密钥",
       "client-key-path": "客户端密钥路径",
       "client-key-placeholder": "输入或拖放 YOUR_CLIENT_KEY",
+      "configured": "已配置",
       "verify-certificate": "验证 TLS 证书",
       "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
     },

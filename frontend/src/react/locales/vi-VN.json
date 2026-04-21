@@ -550,6 +550,7 @@
       "client-key": "Khóa máy khách",
       "client-key-path": "Đường dẫn khóa máy khách",
       "client-key-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_KEY",
+      "configured": "Đã cấu hình",
       "verify-certificate": "Xác minh chứng chỉ TLS",
       "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
     },

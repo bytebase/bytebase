@@ -550,6 +550,7 @@
       "client-key": "Client Key",
       "client-key-path": "Client Key Path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
+      "configured": "Configured",
       "verify-certificate": "Verify TLS certificate",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },

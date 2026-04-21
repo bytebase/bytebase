@@ -150,6 +150,9 @@ export function DataSourceForm({
     dataSource.sslCaPath,
     dataSource.sslCertPath,
     dataSource.sslKeyPath,
+    dataSource.hasSslCa,
+    dataSource.hasSslCert,
+    dataSource.hasSslKey,
     dataSource.hasSslCaPath,
     dataSource.hasSslCertPath,
     dataSource.hasSslKeyPath,
@@ -1703,6 +1706,8 @@ export function DataSourceForm({
                   })
                 }
                 caPath={dataSource.sslCaPath}
+                hasCa={dataSource.hasSslCa}
+                hasCaPath={dataSource.hasSslCaPath}
                 onCaPathChange={(val) =>
                   update({
                     sslCaPath: val,
@@ -1712,6 +1717,7 @@ export function DataSourceForm({
                   })
                 }
                 cert={dataSource.sslCert}
+                hasCert={dataSource.hasSslCert}
                 onCertChange={(val) =>
                   update({
                     sslCert: val,
@@ -1721,6 +1727,7 @@ export function DataSourceForm({
                   })
                 }
                 certPath={dataSource.sslCertPath}
+                hasCertPath={dataSource.hasSslCertPath}
                 onCertPathChange={(val) =>
                   update({
                     sslCertPath: val,
@@ -1730,6 +1737,7 @@ export function DataSourceForm({
                   })
                 }
                 sslKey={dataSource.sslKey}
+                hasKey={dataSource.hasSslKey}
                 onKeyChange={(val) =>
                   update({
                     sslKey: val,
@@ -1739,6 +1747,7 @@ export function DataSourceForm({
                   })
                 }
                 keyPath={dataSource.sslKeyPath}
+                hasKeyPath={dataSource.hasSslKeyPath}
                 onKeyPathChange={(val) =>
                   update({
                     sslKeyPath: val,

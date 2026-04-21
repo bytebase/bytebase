@@ -77,4 +77,35 @@ describe("SslCertificateForm", () => {
       root.unmount();
     });
   });
+
+  test("marks write-only TLS material as configured", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          useSsl={true}
+          caSource="INLINE_PEM"
+          onCaSourceChange={() => {}}
+          clientCertSource="FILE_PATH"
+          onClientCertSourceChange={() => {}}
+          hasCa={true}
+          hasCertPath={true}
+          hasKeyPath={true}
+          showKeyAndCert={true}
+        />
+      );
+    });
+
+    expect(
+      container.querySelectorAll('[data-testid="tls-configured-badge"]')
+    ).toHaveLength(3);
+    expect(container.textContent).toContain("data-source.ssl.configured");
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

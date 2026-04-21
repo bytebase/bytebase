@@ -594,6 +594,15 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.SslKeyPath != y.SslKeyPath {
 		return false
 	}
+	if x.HasSslCa != y.HasSslCa {
+		return false
+	}
+	if x.HasSslCert != y.HasSslCert {
+		return false
+	}
+	if x.HasSslKey != y.HasSslKey {
+		return false
+	}
 	if x.HasSslCaPath != y.HasSslCaPath {
 		return false
 	}

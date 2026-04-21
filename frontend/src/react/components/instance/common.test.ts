@@ -76,4 +76,22 @@ describe("TLS local source helpers", () => {
       } as never)
     ).toBe("FILE_PATH");
   });
+
+  test("infers client certificate source from inline presence flags", () => {
+    expect(
+      getLocalTlsClientCertSource({
+        useSsl: true,
+        hasSslCert: true,
+      } as never)
+    ).toBe("INLINE_PEM");
+  });
+
+  test("infers CA source from inline presence flag", () => {
+    expect(
+      getLocalTlsCaSource({
+        useSsl: true,
+        hasSslCa: true,
+      } as never)
+    ).toBe("INLINE_PEM");
+  });
 });

@@ -550,6 +550,7 @@
       "client-key": "Clave del cliente",
       "client-key-path": "Ruta de la clave del cliente",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
+      "configured": "Configurado",
       "verify-certificate": "Verificar certificado TLS",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },

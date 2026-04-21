@@ -987,23 +987,44 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   sslKeyPath: string;
 
   /**
+   * Whether an SSL certificate authority certificate has been configured.
+   *
+   * @generated from field: bool has_ssl_ca = 44;
+   */
+  hasSslCa: boolean;
+
+  /**
+   * Whether an SSL client certificate has been configured.
+   *
+   * @generated from field: bool has_ssl_cert = 45;
+   */
+  hasSslCert: boolean;
+
+  /**
+   * Whether an SSL client private key has been configured.
+   *
+   * @generated from field: bool has_ssl_key = 46;
+   */
+  hasSslKey: boolean;
+
+  /**
    * Whether an SSL certificate authority path has been configured.
    *
-   * @generated from field: bool has_ssl_ca_path = 44;
+   * @generated from field: bool has_ssl_ca_path = 47;
    */
   hasSslCaPath: boolean;
 
   /**
    * Whether an SSL client certificate path has been configured.
    *
-   * @generated from field: bool has_ssl_cert_path = 45;
+   * @generated from field: bool has_ssl_cert_path = 48;
    */
   hasSslCertPath: boolean;
 
   /**
    * Whether an SSL client private key path has been configured.
    *
-   * @generated from field: bool has_ssl_key_path = 46;
+   * @generated from field: bool has_ssl_key_path = 49;
    */
   hasSslKeyPath: boolean;
 

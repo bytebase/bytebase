@@ -9843,6 +9843,18 @@ components:
               type: string
               title: ssl_key_path
               description: The local filesystem path to the SSL client private key.
+            hasSslCa:
+              type: boolean
+              title: has_ssl_ca
+              description: Whether an SSL certificate authority certificate has been configured.
+            hasSslCert:
+              type: boolean
+              title: has_ssl_cert
+              description: Whether an SSL client certificate has been configured.
+            hasSslKey:
+              type: boolean
+              title: has_ssl_key
+              description: Whether an SSL client private key has been configured.
             hasSslCaPath:
               type: boolean
               title: has_ssl_ca_path

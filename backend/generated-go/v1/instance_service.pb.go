@@ -1769,12 +1769,18 @@ type DataSource struct {
 	SslCertPath string `protobuf:"bytes,42,opt,name=ssl_cert_path,json=sslCertPath,proto3" json:"ssl_cert_path,omitempty"`
 	// The local filesystem path to the SSL client private key.
 	SslKeyPath string `protobuf:"bytes,43,opt,name=ssl_key_path,json=sslKeyPath,proto3" json:"ssl_key_path,omitempty"`
+	// Whether an SSL certificate authority certificate has been configured.
+	HasSslCa bool `protobuf:"varint,44,opt,name=has_ssl_ca,json=hasSslCa,proto3" json:"has_ssl_ca,omitempty"`
+	// Whether an SSL client certificate has been configured.
+	HasSslCert bool `protobuf:"varint,45,opt,name=has_ssl_cert,json=hasSslCert,proto3" json:"has_ssl_cert,omitempty"`
+	// Whether an SSL client private key has been configured.
+	HasSslKey bool `protobuf:"varint,46,opt,name=has_ssl_key,json=hasSslKey,proto3" json:"has_ssl_key,omitempty"`
 	// Whether an SSL certificate authority path has been configured.
-	HasSslCaPath bool `protobuf:"varint,44,opt,name=has_ssl_ca_path,json=hasSslCaPath,proto3" json:"has_ssl_ca_path,omitempty"`
+	HasSslCaPath bool `protobuf:"varint,47,opt,name=has_ssl_ca_path,json=hasSslCaPath,proto3" json:"has_ssl_ca_path,omitempty"`
 	// Whether an SSL client certificate path has been configured.
-	HasSslCertPath bool `protobuf:"varint,45,opt,name=has_ssl_cert_path,json=hasSslCertPath,proto3" json:"has_ssl_cert_path,omitempty"`
+	HasSslCertPath bool `protobuf:"varint,48,opt,name=has_ssl_cert_path,json=hasSslCertPath,proto3" json:"has_ssl_cert_path,omitempty"`
 	// Whether an SSL client private key path has been configured.
-	HasSslKeyPath bool `protobuf:"varint,46,opt,name=has_ssl_key_path,json=hasSslKeyPath,proto3" json:"has_ssl_key_path,omitempty"`
+	HasSslKeyPath bool `protobuf:"varint,49,opt,name=has_ssl_key_path,json=hasSslKeyPath,proto3" json:"has_ssl_key_path,omitempty"`
 	// verify_tls_certificate enables TLS certificate verification for SSL connections.
 	// Default is false (no verification) for backward compatibility.
 	// Set to true for secure connections (recommended for production).
@@ -1953,6 +1959,27 @@ func (x *DataSource) GetSslKeyPath() string {
 		return x.SslKeyPath
 	}
 	return ""
+}
+
+func (x *DataSource) GetHasSslCa() bool {
+	if x != nil {
+		return x.HasSslCa
+	}
+	return false
+}
+
+func (x *DataSource) GetHasSslCert() bool {
+	if x != nil {
+		return x.HasSslCert
+	}
+	return false
+}
+
+func (x *DataSource) GetHasSslKey() bool {
+	if x != nil {
+		return x.HasSslKey
+	}
+	return false
 }
 
 func (x *DataSource) GetHasSslCaPath() bool {
@@ -2949,7 +2976,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\xa4\x16\n" +
+	"\vauth_option\"\x93\x17\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2963,10 +2990,15 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vssl_ca_path\x18) \x01(\tB\x03\xe0A\x04R\tsslCaPath\x12'\n" +
 	"\rssl_cert_path\x18* \x01(\tB\x03\xe0A\x04R\vsslCertPath\x12%\n" +
 	"\fssl_key_path\x18+ \x01(\tB\x03\xe0A\x04R\n" +
-	"sslKeyPath\x12*\n" +
-	"\x0fhas_ssl_ca_path\x18, \x01(\bB\x03\xe0A\x03R\fhasSslCaPath\x12.\n" +
-	"\x11has_ssl_cert_path\x18- \x01(\bB\x03\xe0A\x03R\x0ehasSslCertPath\x12,\n" +
-	"\x10has_ssl_key_path\x18. \x01(\bB\x03\xe0A\x03R\rhasSslKeyPath\x124\n" +
+	"sslKeyPath\x12!\n" +
+	"\n" +
+	"has_ssl_ca\x18, \x01(\bB\x03\xe0A\x03R\bhasSslCa\x12%\n" +
+	"\fhas_ssl_cert\x18- \x01(\bB\x03\xe0A\x03R\n" +
+	"hasSslCert\x12#\n" +
+	"\vhas_ssl_key\x18. \x01(\bB\x03\xe0A\x03R\thasSslKey\x12*\n" +
+	"\x0fhas_ssl_ca_path\x18/ \x01(\bB\x03\xe0A\x03R\fhasSslCaPath\x12.\n" +
+	"\x11has_ssl_cert_path\x180 \x01(\bB\x03\xe0A\x03R\x0ehasSslCertPath\x12,\n" +
+	"\x10has_ssl_key_path\x181 \x01(\bB\x03\xe0A\x03R\rhasSslKeyPath\x124\n" +
 	"\x16verify_tls_certificate\x18' \x01(\bR\x14verifyTlsCertificate\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +

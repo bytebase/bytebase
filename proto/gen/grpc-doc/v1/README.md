@@ -4464,6 +4464,9 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssl_ca_path | [string](#string) |  | The local filesystem path to the SSL certificate authority certificate. |
 | ssl_cert_path | [string](#string) |  | The local filesystem path to the SSL client certificate. |
 | ssl_key_path | [string](#string) |  | The local filesystem path to the SSL client private key. |
+| has_ssl_ca | [bool](#bool) |  | Whether an SSL certificate authority certificate has been configured. |
+| has_ssl_cert | [bool](#bool) |  | Whether an SSL client certificate has been configured. |
+| has_ssl_key | [bool](#bool) |  | Whether an SSL client private key has been configured. |
 | has_ssl_ca_path | [bool](#bool) |  | Whether an SSL certificate authority path has been configured. |
 | has_ssl_cert_path | [bool](#bool) |  | Whether an SSL client certificate path has been configured. |
 | has_ssl_key_path | [bool](#bool) |  | Whether an SSL client private key path has been configured. |
