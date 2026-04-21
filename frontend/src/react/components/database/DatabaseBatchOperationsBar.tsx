@@ -65,14 +65,14 @@ export function DatabaseBatchOperationsBar({
   if (databases.length === 0) return null;
   return (
     <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4">
-      <span className="whitespace-nowrap">
+      <span className="whitespace-nowrap text-sm">
         {t("database.selected-n-databases", { n: databases.length })}
       </span>
-      <div className="flex items-center gap-x-2 flex-wrap">
+      <div className="flex items-center flex-wrap">
         {onChangeDatabase && (
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             disabled={!canChangeDatabase}
             onClick={onChangeDatabase}
           >
@@ -83,7 +83,7 @@ export function DatabaseBatchOperationsBar({
         {onExportData && (
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             disabled={!canExportData}
             onClick={onExportData}
           >
@@ -93,7 +93,7 @@ export function DatabaseBatchOperationsBar({
         )}
         <Button
           variant="ghost"
-          size="sm"
+          size="md"
           disabled={!canSync}
           onClick={onSyncSchema}
         >
@@ -102,7 +102,7 @@ export function DatabaseBatchOperationsBar({
         </Button>
         <Button
           variant="ghost"
-          size="sm"
+          size="md"
           disabled={!canUpdate}
           onClick={onEditLabels}
         >
@@ -111,7 +111,7 @@ export function DatabaseBatchOperationsBar({
         </Button>
         <Button
           variant="ghost"
-          size="sm"
+          size="md"
           disabled={!canUpdate || !canGetEnvironment}
           onClick={onEditEnvironment}
         >
@@ -121,7 +121,7 @@ export function DatabaseBatchOperationsBar({
         {onTransferProject && (
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             disabled={!canUpdate}
             onClick={onTransferProject}
           >
@@ -132,7 +132,7 @@ export function DatabaseBatchOperationsBar({
         {onUnassign && (
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             disabled={!canUpdate}
             onClick={onUnassign}
           >

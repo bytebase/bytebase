@@ -597,7 +597,7 @@ function SyncDropdown({
     <div ref={dropdownRef} className="relative">
       <Button
         variant="ghost"
-        size="sm"
+        size="md"
         disabled={disabled}
         onClick={() => setOpen(!open)}
       >
@@ -653,16 +653,16 @@ function BatchOperationsBar({
 
   return (
     <div className="relative z-10 text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-visible">
-      <span className="whitespace-nowrap">
+      <span className="whitespace-nowrap text-sm">
         {t("instance.selected-n-instances", {
           count: selectedInstances.length,
         })}
       </span>
-      <div className="flex items-center gap-x-2">
+      <div className="flex items-center">
         <SyncDropdown disabled={!canSync || syncing} onSync={onSync} />
         <Button
           variant="ghost"
-          size="sm"
+          size="md"
           disabled={!canUpdate}
           onClick={onEditEnvironment}
         >
@@ -670,7 +670,7 @@ function BatchOperationsBar({
           {t("database.edit-environment")}
         </Button>
         {showAssignLicense && (
-          <Button variant="ghost" size="sm" disabled={!canUpdate}>
+          <Button variant="ghost" size="md" disabled={!canUpdate}>
             <GraduationCap className="h-4 w-4 mr-1" />
             {t("subscription.instance-assignment.assign-license")}
           </Button>
