@@ -284,6 +284,10 @@
       "self": "Role"
     },
     "rollback": "Rollback",
+    "rows": {
+      "n-rows": "{{n}} rows",
+      "self": "rows"
+    },
     "rows-per-page": "Rows per page",
     "run": "Run",
     "save": "Save",
@@ -499,6 +503,7 @@
   "custom-approval.issue-review.rejected-issue": "rejected issue",
   "data-source": {
     "additional-node-addresses": "Additional Node Addresses",
+    "automatic-query-data-source": "Automatic",
     "connection-string-schema": "Connection String Schema",
     "connection-type": "Connection Type",
     "delete-read-only-data-source": "Delete read-only data source",
@@ -514,6 +519,7 @@
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "replica-set": "Replica Set",
+    "select-query-data-source": "Select query data source",
     "snowflake-keypair-tip": "Key-pair authentication",
     "ssh": {
       "host": "Server",
@@ -614,6 +620,10 @@
     "partitioned": "Partitioned",
     "row-count-est": "Row count est.",
     "row-count-estimate": "Row count estimate",
+    "schema": {
+      "select": "Select schema",
+      "unspecified": "Unspecified"
+    },
     "select": "Select database",
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
@@ -643,6 +653,9 @@
     "sync-schema-button": "Sync Schema",
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
+    "table": {
+      "select": "Select table"
+    },
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
@@ -2190,13 +2203,32 @@
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "Add new instance",
+    "admin-mode": {
+      "self": "Admin mode"
+    },
+    "batch-query": {
+      "batch": "Batch"
+    },
     "connect-to-a-database": "Connect to database",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
+    },
+    "redis-command": {
+      "all-nodes": "All nodes",
+      "only-for-cluster": "Only available for cluster connection",
+      "self": "Run redis command on",
+      "single-node": "Single node"
+    },
+    "result-limit": {
+      "self": "Result limit"
+    },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "view-issue": "View Issue",

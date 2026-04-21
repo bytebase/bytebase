@@ -993,8 +993,6 @@
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
     "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
     "no-password": "パスワードがありません",
-    "no-read-only-data-source-warn-for-admin-dba": "このインスタンスは読み取り専用接続で設定されていません。設定を検討してください。",
-    "no-read-only-data-source-warn-for-developer": "このインスタンスには読み取り専用接続が設定されていません。設定するように DBA に依頼してください。",
     "parameter-name-placeholder": "パラメーター名",
     "parameter-value-placeholder": "パラメーター値",
     "password-type": {
@@ -2591,7 +2589,6 @@
     "copy-name": "名前をコピーする",
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "copy-url": "URLをコピー",
-    "create-read-only-data-source": "作成に行く",
     "current-connection": "現在の接続",
     "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{days} day",

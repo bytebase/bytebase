@@ -1,4 +1,3 @@
-import DisconnectedIcon from "./DisconnectedIcon.vue";
 import EditorAction from "./EditorAction.vue";
 import ExecutingHintModal from "./ExecutingHintModal.vue";
 import OpenAIButton from "./OpenAIButton/OpenAIButton.vue";
@@ -13,7 +12,6 @@ export {
   SaveSheetModal,
   SharePopover,
   ResultViewV1,
-  DisconnectedIcon,
   SheetConnectionIcon,
   OpenAIButton,
 };

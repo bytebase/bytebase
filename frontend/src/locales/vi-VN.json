@@ -993,8 +993,6 @@
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
     "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
     "no-password": "Không có mật khẩu",
-    "no-read-only-data-source-warn-for-admin-dba": "Phiên bản chưa định cấu hình kết nối chỉ đọc, vui lòng xem xét thêm một kết nối.",
-    "no-read-only-data-source-warn-for-developer": "Phiên bản chưa được định cấu hình kết nối chỉ đọc, vui lòng yêu cầu DBA của bạn thêm một kết nối.",
     "parameter-name-placeholder": "Tên tham số",
     "parameter-value-placeholder": "Giá trị tham số",
     "password-type": {
@@ -2591,7 +2589,6 @@
     "copy-name": "Sao chép tên",
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
-    "create-read-only-data-source": "Đi tới tạo",
     "current-connection": "Kết nối hiện tại",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",
