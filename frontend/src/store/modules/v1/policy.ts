@@ -42,6 +42,13 @@ export const replacePolicyTypeNameToLowerCase = (name: string) => {
   return replaced;
 };
 
+// Shared default returned when no DATA_QUERY policy exists for a parent.
+// Must be a stable singleton so subscribers (e.g. React useVueState) don't
+// see a new reference on every call and thrash their effects.
+const EMPTY_QUERY_DATA_POLICY: QueryDataPolicy = create(QueryDataPolicySchema, {
+  maximumResultRows: -1,
+});
+
 export const usePolicyV1Store = defineStore("policy_v1", () => {
   const state = reactive<PolicyState>({
     policyMapByName: new Map(),
@@ -54,9 +61,7 @@ export const usePolicyV1Store = defineStore("policy_v1", () => {
     });
     return policy?.policy?.case === "queryDataPolicy"
       ? policy.policy.value
-      : create(QueryDataPolicySchema, {
-          maximumResultRows: -1,
-        });
+      : EMPTY_QUERY_DATA_POLICY;
   };
 
   const getOrFetchPolicyByParentAndType = async ({
