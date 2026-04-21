@@ -291,7 +291,7 @@ export function SigninPage(props: SigninPageProps) {
         )}
       </div>
 
-      {!hideFooter && (footerOverride ?? <AuthFooter />)}
+      {footerOverride ?? (hideFooter ? null : <AuthFooter />)}
     </>
   );
 }
