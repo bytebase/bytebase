@@ -957,6 +957,11 @@ export enum SQLReviewRule_Type {
    * @generated from enum value: BUILTIN_WALK_THROUGH_CHECK = 110;
    */
   BUILTIN_WALK_THROUGH_CHECK = 110,
+
+  /**
+   * @generated from enum value: STATEMENT_DISALLOW_TRUNCATE = 111;
+   */
+  STATEMENT_DISALLOW_TRUNCATE = 111,
 }
 
 /**
