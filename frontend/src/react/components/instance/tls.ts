@@ -1,4 +1,5 @@
 import { cloneDeep } from "lodash-es";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 
 export const LOCAL_TLS_SOURCE_DISABLED = "DISABLED" as const;
@@ -27,6 +28,15 @@ export type LocalTlsClientCertSource =
   | typeof LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
   | typeof LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM
   | typeof LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH;
+
+export const LOCAL_TLS_POSTURE_DISABLED = "DISABLED" as const;
+export const LOCAL_TLS_POSTURE_TLS = "TLS" as const;
+export const LOCAL_TLS_POSTURE_MUTUAL_TLS = "MUTUAL_TLS" as const;
+
+export type LocalTlsPosture =
+  | typeof LOCAL_TLS_POSTURE_DISABLED
+  | typeof LOCAL_TLS_POSTURE_TLS
+  | typeof LOCAL_TLS_POSTURE_MUTUAL_TLS;
 
 export const SSL_UPDATE_MASK_FIELDS = [
   "use_ssl",
@@ -125,6 +135,21 @@ export const getLocalTlsClientCertSource = (
   return LOCAL_TLS_CLIENT_CERT_SOURCE_NONE;
 };
 
+export const getLocalTlsPosture = (
+  ds: LocalTlsDataSource | undefined
+): LocalTlsPosture => {
+  if (!ds?.useSsl) {
+    return LOCAL_TLS_POSTURE_DISABLED;
+  }
+  return getLocalTlsClientCertSource(ds) === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+    ? LOCAL_TLS_POSTURE_TLS
+    : LOCAL_TLS_POSTURE_MUTUAL_TLS;
+};
+
+export const isLocalTlsClientIdentitySupported = (engine: Engine): boolean => {
+  return engine !== Engine.MSSQL;
+};
+
 export const applyLocalTlsCaSource = (
   ds: DataSource,
   source: LocalTlsCaSource
@@ -175,6 +200,24 @@ export const applyLocalTlsClientCertSource = (
       break;
   }
   return next;
+};
+
+export const applyLocalTlsPosture = (
+  ds: DataSource,
+  posture: LocalTlsPosture
+): DataSource => {
+  const next = cloneDeep(ds);
+  switch (posture) {
+    case LOCAL_TLS_POSTURE_DISABLED:
+      return disableLocalTls(next);
+    case LOCAL_TLS_POSTURE_TLS:
+      next.useSsl = true;
+      clearLocalTlsClientCertFields(next);
+      return next;
+    case LOCAL_TLS_POSTURE_MUTUAL_TLS:
+      next.useSsl = true;
+      return next;
+  }
 };
 
 export const disableLocalTls = (ds: DataSource): DataSource => {
