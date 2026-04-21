@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual } from "lodash-es";
 import {
-  type ChangeEvent,
   forwardRef,
   useCallback,
   useEffect,
@@ -13,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import { Input } from "@/react/components/ui/input";
+import { NumberInput } from "@/react/components/ui/number-input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
@@ -40,9 +39,11 @@ interface LocalState {
   disableExport: boolean;
   disableCopyData: boolean;
   allowAdminDataSource: boolean;
-  maximumResultSize: number;
-  maximumResultRows: number;
-  maxQueryTimeInSeconds: number;
+  // `null` represents an empty input while the user is typing; coerced to a
+  // number on save.
+  maximumResultSize: number | null;
+  maximumResultRows: number | null;
+  maxQueryTimeInSeconds: number | null;
 }
 
 export const SQLEditorSection = forwardRef<
@@ -134,12 +135,17 @@ export const SQLEditorSection = forwardRef<
   const update = useCallback(async () => {
     const init = getInitialState();
 
+    const maxQueryTimeInSeconds = state.maxQueryTimeInSeconds ?? 0;
+    const maximumResultSize =
+      state.maximumResultSize ?? DEFAULT_MAX_RESULT_SIZE_IN_MB;
+    const maximumResultRows = state.maximumResultRows ?? 0;
+
     // Update query timeout if changed
-    if (init.maxQueryTimeInSeconds !== state.maxQueryTimeInSeconds) {
+    if (init.maxQueryTimeInSeconds !== maxQueryTimeInSeconds) {
       await settingV1Store.updateWorkspaceProfile({
         payload: {
           queryTimeout: create(DurationSchema, {
-            seconds: BigInt(state.maxQueryTimeInSeconds),
+            seconds: BigInt(maxQueryTimeInSeconds),
           }),
         },
         updateMask: create(FieldMaskSchema, {
@@ -149,10 +155,10 @@ export const SQLEditorSection = forwardRef<
     }
 
     // Update result size if changed
-    if (init.maximumResultSize !== state.maximumResultSize) {
+    if (init.maximumResultSize !== maximumResultSize) {
       await settingV1Store.updateWorkspaceProfile({
         payload: {
-          sqlResultSize: BigInt(state.maximumResultSize * 1024 * 1024),
+          sqlResultSize: BigInt(maximumResultSize * 1024 * 1024),
         },
         updateMask: create(FieldMaskSchema, {
           paths: ["value.workspace_profile.sql_result_size"],
@@ -173,7 +179,7 @@ export const SQLEditorSection = forwardRef<
             disableExport: state.disableExport,
             disableCopyData: state.disableCopyData,
             allowAdminDataSource: state.allowAdminDataSource,
-            maximumResultRows: state.maximumResultRows,
+            maximumResultRows,
           }),
         },
       },
@@ -203,11 +209,9 @@ export const SQLEditorSection = forwardRef<
 
   const handleNumberInput = (
     field: "maximumResultSize" | "maximumResultRows" | "maxQueryTimeInSeconds",
-    e: ChangeEvent<HTMLInputElement>
+    value: number | null
   ) => {
-    const val = parseInt(e.target.value, 10);
-    if (Number.isNaN(val)) return;
-    setState((prev) => ({ ...prev, [field]: val }));
+    setState((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -303,19 +307,16 @@ export const SQLEditorSection = forwardRef<
                 </span>
               </p>
               <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-                <div className="relative w-60">
-                  <Input
-                    type="number"
-                    value={state.maximumResultSize}
-                    min={1}
-                    disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
-                    onChange={(e) => handleNumberInput("maximumResultSize", e)}
-                    className="pr-12"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                    MB
-                  </span>
-                </div>
+                <NumberInput
+                  className="w-60"
+                  value={state.maximumResultSize}
+                  min={1}
+                  disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
+                  onValueChange={(v) =>
+                    handleNumberInput("maximumResultSize", v)
+                  }
+                  suffix="MB"
+                />
               </div>
             </div>
           </PermissionGuard>
@@ -339,19 +340,17 @@ export const SQLEditorSection = forwardRef<
               </span>
             </p>
             <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-              <div className="relative w-60">
-                <Input
-                  type="number"
-                  value={state.maximumResultRows}
-                  min={0}
-                  disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
-                  onChange={(e) => handleNumberInput("maximumResultRows", e)}
-                  className="pr-16"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                  {t("settings.general.workspace.maximum-sql-result.rows.rows")}
-                </span>
-              </div>
+              <NumberInput
+                className="w-60"
+                value={state.maximumResultRows}
+                min={0}
+                disabled={!hasQueryPolicyFeature || !canUpdatePolicy}
+                onValueChange={(v) => handleNumberInput("maximumResultRows", v)}
+                inputClassName="pr-16"
+                suffix={t(
+                  "settings.general.workspace.maximum-sql-result.rows.rows"
+                )}
+              />
             </div>
           </div>
         </PermissionGuard>
@@ -377,21 +376,19 @@ export const SQLEditorSection = forwardRef<
               </span>
             </p>
             <div className="mt-3 w-full flex flex-row justify-start items-center gap-4">
-              <div className="relative w-60">
-                <Input
-                  type="number"
-                  value={state.maxQueryTimeInSeconds}
-                  min={0}
-                  disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
-                  onChange={(e) =>
-                    handleNumberInput("maxQueryTimeInSeconds", e)
-                  }
-                  className="pr-20"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                  {t("settings.general.workspace.query-data-policy.seconds")}
-                </span>
-              </div>
+              <NumberInput
+                className="w-60"
+                value={state.maxQueryTimeInSeconds}
+                min={0}
+                disabled={!hasQueryPolicyFeature || !canSetWorkspaceProfile}
+                onValueChange={(v) =>
+                  handleNumberInput("maxQueryTimeInSeconds", v)
+                }
+                inputClassName="pr-20"
+                suffix={t(
+                  "settings.general.workspace.query-data-policy.seconds"
+                )}
+              />
             </div>
           </div>
         </PermissionGuard>
