@@ -123,9 +123,22 @@ export const SQLEditorSection = forwardRef<
     }
   }, [getInitialState]);
 
+  // Normalize `null` (transiently empty inputs) to the same defaults used by
+  // `update()` so that a cleared-then-saved field doesn't leave the section
+  // permanently dirty.
+  const normalizeForCompare = useCallback(
+    (s: LocalState): LocalState => ({
+      ...s,
+      maximumResultSize: s.maximumResultSize ?? DEFAULT_MAX_RESULT_SIZE_IN_MB,
+      maximumResultRows: s.maximumResultRows ?? 0,
+      maxQueryTimeInSeconds: s.maxQueryTimeInSeconds ?? 0,
+    }),
+    []
+  );
+
   const isDirty = useCallback(
-    () => !isEqual(state, getInitialState()),
-    [state, getInitialState]
+    () => !isEqual(normalizeForCompare(state), getInitialState()),
+    [state, getInitialState, normalizeForCompare]
   );
 
   const revert = useCallback(() => {
