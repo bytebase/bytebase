@@ -137,9 +137,7 @@
       "verification-code": "验证码"
     },
     "sign-up": {
-      "accept-terms-and-policy": "我接受 Bytebase 的{terms}和{policy}",
       "admin-account": "管理员账号",
-      "admin-title": "设置 {account}",
       "create-admin-account": "注册管理员",
       "existing-user": "已有账号?",
       "privacy-policy": "隐私政策",

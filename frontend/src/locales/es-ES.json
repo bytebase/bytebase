@@ -137,9 +137,7 @@
       "verification-code": "Código de verificación"
     },
     "sign-up": {
-      "accept-terms-and-policy": "Acepto los {terms} y {policy} de Bytebase",
       "admin-account": "cuenta de administrador",
-      "admin-title": "Configure su {account}",
       "create-admin-account": "Crear cuenta de administrador",
       "existing-user": "¿Ya tienes una cuenta?",
       "privacy-policy": "Política de privacidad",

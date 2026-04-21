@@ -6,9 +6,11 @@ const pluginComponentLoaders = import.meta.glob(
   "./plugins/agent/components/AgentWindow.tsx"
 );
 const workspacePageLoaders = import.meta.glob("./pages/workspace/*.tsx");
-const authComponentLoaders = import.meta.glob(
-  "./components/auth/SessionExpiredSurface.tsx"
-);
+const authPageLoaders = import.meta.glob("./pages/auth/*.tsx");
+const authComponentLoaders = import.meta.glob([
+  "./components/auth/SessionExpiredSurface.tsx",
+  "./components/auth/InactiveRemindModal.tsx",
+]);
 const sqlEditorComponentLoaders = import.meta.glob(
   "./components/sql-editor/*.tsx"
 );
@@ -17,6 +19,7 @@ const pageLoaders = {
   ...projectPageLoaders,
   ...pluginComponentLoaders,
   ...workspacePageLoaders,
+  ...authPageLoaders,
   ...authComponentLoaders,
   ...sqlEditorComponentLoaders,
 };
@@ -58,6 +61,7 @@ const pageDirs = [
   "./pages/project",
   "./plugins/agent/components",
   "./pages/workspace",
+  "./pages/auth",
   "./components/auth",
   "./components/sql-editor",
 ];
