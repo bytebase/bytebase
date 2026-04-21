@@ -301,6 +301,7 @@
     "sensitive-placeholder": "Sensitive - write only",
     "setting": "Setting",
     "settings": "Settings",
+    "share": "Share",
     "skipped": "Skipped",
     "snapshot": "Snapshot",
     "sql": "SQL",
@@ -2214,6 +2215,13 @@
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "Link access",
+    "private": "Private",
+    "private-desc": "Only you can access this sheet",
+    "project-read": "Project read",
+    "project-read-desc": "Both sheet owner and users with \"bb.worksheets.manage\" permission can read/write, other project users with \"bb.worksheets.get\" permission can read",
+    "project-write": "Project write",
+    "project-write-desc": "Both sheet owner and project users with \"bb.worksheets.get\" permission can read/write",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
@@ -2231,6 +2239,7 @@
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {

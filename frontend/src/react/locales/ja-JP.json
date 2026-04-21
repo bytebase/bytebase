@@ -301,6 +301,7 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "setting": "設定",
     "settings": "設定",
+    "share": "共有",
     "skipped": "スキップ",
     "snapshot": "スナップショット",
     "sql": "SQL",
@@ -2214,6 +2215,13 @@
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "リンクアクセス",
+    "private": "プライベート",
+    "private-desc": "このシートにアクセスできるのはあなただけです",
+    "project-read": "プロジェクト内で読み取り可能",
+    "project-read-desc": "シートの所有者と「bb.worksheets.manage」権限を持つユーザーは読み取り/書き込みが可能で、「bb.worksheets.get」権限を持つ他のプロジェクトユーザーは読み取りが可能です。",
+    "project-write": "プロジェクト内での読み取りと書き込み",
+    "project-write-desc": "シート所有者と「bb.worksheets.get」権限を持つプロジェクトユーザーの両方が読み取り/書き込みできます。",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
@@ -2231,6 +2239,7 @@
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {

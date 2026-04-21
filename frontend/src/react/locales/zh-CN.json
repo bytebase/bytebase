@@ -301,6 +301,7 @@
     "sensitive-placeholder": "敏感数据 - 仅写入",
     "setting": "设置",
     "settings": "设置",
+    "share": "分享",
     "skipped": "已跳过",
     "snapshot": "快照",
     "sql": "SQL",
@@ -2214,6 +2215,13 @@
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
     "jit": "即时访问",
+    "link-access": "链接访问权限",
+    "private": "私有",
+    "private-desc": "只有您自己可以访问此工作表",
+    "project-read": "项目内可读",
+    "project-read-desc": "工作表所有者和具有\"bb.worksheets.manage\"权限的用户都可以读/写，具有\"bb.worksheets.get\"权限的其他项目用户可以读取",
+    "project-write": "项目内读写",
+    "project-write-desc": "工作表所有者和具有\"bb.worksheets.get\"权限的项目用户都可以读/写",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
@@ -2231,6 +2239,7 @@
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "view-issue": "查看工单",
     "web-socket": {
       "errors": {

@@ -104,7 +104,8 @@
             </NPopover>
           </template>
           <template #default>
-            <SharePopover :worksheet="sheetAndTabStore.currentSheet" />
+            <ReactPageMount page="SharePopoverBody"
+              :worksheet="sheetAndTabStore.currentSheet" />
           </template>
         </NPopover>
       </template>
@@ -158,7 +159,6 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import OpenAIButton from "./OpenAIButton";
-import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
   requiredFeatureName?: PlanFeature;

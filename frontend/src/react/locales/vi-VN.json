@@ -301,6 +301,7 @@
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "setting": "Cài đặt",
     "settings": "Cài đặt",
+    "share": "Chia sẻ",
     "skipped": "Đã bỏ qua",
     "snapshot": "Ảnh chụp nhanh",
     "sql": "SQL",
@@ -2214,6 +2215,13 @@
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "Truy cập liên kết",
+    "private": "Riêng tư",
+    "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
+    "project-read": "Đọc dự án",
+    "project-read-desc": "Cả chủ sở hữu trang tính và người dùng có quyền \"bb.worksheets.manage\" đều có thể đọc/ghi, những người dùng dự án khác có quyền \"bb.worksheets.get\" có thể đọc",
+    "project-write": "Ghi dự án",
+    "project-write-desc": "Cả chủ sở hữu trang tính và người dùng dự án có quyền \"bb.worksheets.get\" đều có thể đọc/ghi",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
@@ -2231,6 +2239,7 @@
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {

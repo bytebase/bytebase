@@ -7,10 +7,14 @@ export const LAYER_ROOT_ID = {
 } as const;
 
 export const LAYER_Z_INDEX = {
-  overlay: 50,
-  agent: 60,
-  // Legacy Naive overlays start at 2000 and notifications/messages go higher,
-  // so forced re-auth must sit above that during the Vue->React migration.
+  // Legacy naive-ui popovers sit at ~2000 during the Vue->React migration.
+  // React overlays mounted inside Vue popovers (e.g. a nested React Popover
+  // inside a naive-ui share popover) must sit above their Vue ancestor.
+  // 2500 keeps React overlays above naive-ui popovers but below naive-ui
+  // modals (3000) and notifications (5000).
+  overlay: 2500,
+  agent: 2600,
+  // Forced re-auth must sit above naive-ui notifications/messages.
   critical: 7000,
 } as const;
 
