@@ -276,6 +276,24 @@ ruleList:
   - type: STATEMENT_DISALLOW_RM_TBL_CASCADE
     level: ERROR
     engine: POSTGRES
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: MYSQL
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: MARIADB
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: OCEANBASE
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: POSTGRES
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: ORACLE
+  - type: STATEMENT_DISALLOW_TRUNCATE
+    level: ERROR
+    engine: MSSQL
   - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: MYSQL

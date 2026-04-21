@@ -43,3 +43,30 @@ func TestExtractChangedResources(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
+
+func TestExtractChangedResources_DropIndex(t *testing.T) {
+	statement := `DROP INDEX idx1 ON t1;`
+
+	want := model.NewChangedResources(nil)
+	want.AddTable("DB", "dbo", &storepb.ChangedResourceTable{Name: "t1"}, false)
+
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "dbo", nil, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, want, got.ChangedResources)
+}
+
+func TestExtractChangedResources_InsertDefaultValues(t *testing.T) {
+	statement := `INSERT INTO t1 DEFAULT VALUES;`
+
+	stmts, err := base.ParseStatements(storepb.Engine_MSSQL, statement)
+	require.NoError(t, err)
+	asts := base.ExtractASTs(stmts)
+	got, err := extractChangedResources("DB", "dbo", nil, asts, statement)
+	require.NoError(t, err)
+	require.Equal(t, 1, got.InsertCount)
+	require.Equal(t, 0, got.DMLCount)
+	require.Empty(t, got.SampleDMLS)
+}
