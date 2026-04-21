@@ -4,10 +4,7 @@
     :title="$t('common.tips')"
     @close="handleClose"
   >
-    <ExecuteHint
-      :database="sqlEditorStore.executingHintDatabase"
-      @close="handleClose"
-    />
+    <ExecuteHint @close="handleClose" />
   </BBModal>
 </template>
 

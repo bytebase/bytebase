@@ -2589,7 +2589,6 @@
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
-    "enable-ddl-for-environment": "Puede habilitar la declaración DDL/DML para el entorno {environment}.",
     "execute-query": "Ejecutar consulta",
     "executing-query": "Ejecutando consulta",
     "expire-at": "Expire at {time}",
@@ -2674,6 +2673,7 @@
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "show-in-editor": "Mostrar en el editor",
+    "submit-change-to-run-ddl-dml": "Envíe un cambio de base de datos para ejecutar DDL/DML.",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {

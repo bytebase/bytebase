@@ -2589,7 +2589,6 @@
     "duration-day": "{days} 天",
     "duration-days": "{days} 天",
     "duration-hours": "{hours} 小时",
-    "enable-ddl-for-environment": "您可以为环境 {environment} 启用 DDL/DML 语句。",
     "execute-query": "执行查询",
     "executing-query": "执行查询",
     "expire-at": "{time} 过期",
@@ -2674,6 +2673,7 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
+    "submit-change-to-run-ddl-dml": "提交数据库变更以执行 DDL/DML。",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {
