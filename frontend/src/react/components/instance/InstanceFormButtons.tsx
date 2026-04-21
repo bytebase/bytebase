@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -21,6 +21,13 @@ import {
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { convertKVListToLabels, isValidSpannerHost } from "@/utils";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import type { EditDataSource } from "./common";
 import {
@@ -36,6 +43,11 @@ interface InstanceFormButtonsProps {
   onUpdated?: (instance: Instance) => void;
   className?: string;
 }
+
+type ConnectionFailureDialogState = {
+  open: boolean;
+  message: string;
+};
 
 export function InstanceFormButtons({
   allowCancel = true,
@@ -79,6 +91,14 @@ export function InstanceFormButtons({
       subscriptionStore.hasFeature(PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER),
     [subscriptionStore]
   );
+  const [connectionFailureDialogState, setConnectionFailureDialogState] =
+    useState<ConnectionFailureDialogState>({
+      open: false,
+      message: "",
+    });
+  const [connectionFailureResolver, setConnectionFailureResolver] = useState<
+    ((confirmed: boolean) => void) | undefined
+  >();
 
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
     if (hasExternalSecretFeature) return true;
@@ -149,10 +169,25 @@ export function InstanceFormButtons({
     emitShowConnectionOptions();
   };
 
-  const confirmContinueWithConnectionFailure = (message: string): boolean => {
-    return window.confirm(
-      `${t("common.warning")}\n\n${t("instance.unable-to-connect", { 0: message })}\n\n${t("common.continue-anyway")}?`
-    );
+  const closeConnectionFailureDialog = (confirmed: boolean) => {
+    setConnectionFailureDialogState({
+      open: false,
+      message: "",
+    });
+    connectionFailureResolver?.(confirmed);
+    setConnectionFailureResolver(undefined);
+  };
+
+  const confirmContinueWithConnectionFailure = async (
+    message: string
+  ): Promise<boolean> => {
+    return await new Promise<boolean>((resolve) => {
+      setConnectionFailureDialogState({
+        open: true,
+        message,
+      });
+      setConnectionFailureResolver(() => resolve);
+    });
   };
 
   const getOriginalEditState = () => ({
@@ -226,7 +261,7 @@ export function InstanceFormButtons({
       doCreate();
     } else {
       maybeOpenConnectionOptions(editingDS);
-      const confirmed = confirmContinueWithConnectionFailure(
+      const confirmed = await confirmContinueWithConnectionFailure(
         testResult.message
       );
       if (confirmed) {
@@ -328,7 +363,7 @@ export function InstanceFormButtons({
       const testResult = await testConnection(editState, true);
       if (!testResult.success) {
         maybeOpenConnectionOptions(editState);
-        const continueAnyway = confirmContinueWithConnectionFailure(
+        const continueAnyway = await confirmContinueWithConnectionFailure(
           testResult.message
         );
         if (!continueAnyway) return true;
@@ -368,7 +403,7 @@ export function InstanceFormButtons({
           const testResult = await testConnection(editingDS, true);
           if (!testResult.success) {
             maybeOpenConnectionOptions(editingDS);
-            const continueAnyway = confirmContinueWithConnectionFailure(
+            const continueAnyway = await confirmContinueWithConnectionFailure(
               testResult.message
             );
             if (!continueAnyway) return true;
@@ -436,34 +471,68 @@ export function InstanceFormButtons({
     onDismiss?.();
   };
 
-  if (isCreating) {
-    return (
-      <div
-        className={cn(
-          "w-full py-4 border-t border-block-border flex justify-between bg-background",
-          className
-        )}
-      >
-        {allowCancel && (
+  const connectionFailureDialog = (
+    <AlertDialog
+      open={connectionFailureDialogState.open}
+      onOpenChange={(next) => {
+        if (!next) {
+          closeConnectionFailureDialog(false);
+        }
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogTitle>{t("common.warning")}</AlertDialogTitle>
+        <AlertDialogDescription className="whitespace-pre-wrap break-all">
+          {t("instance.unable-to-connect", {
+            0: connectionFailureDialogState.message,
+          })}
+        </AlertDialogDescription>
+        <AlertDialogFooter>
           <Button
             variant="outline"
-            disabled={state.isRequesting || state.isTestingConnection}
-            onClick={cancel}
+            onClick={() => closeConnectionFailureDialog(false)}
           >
             {t("common.cancel")}
           </Button>
-        )}
-        <div className="flex items-center gap-x-2">
-          <Button
-            disabled={
-              !allowCreate || state.isRequesting || state.isTestingConnection
-            }
-            onClick={tryCreate}
-          >
-            {state.isRequesting ? t("common.creating") : t("common.create")}
+          <Button onClick={() => closeConnectionFailureDialog(true)}>
+            {t("common.continue-anyway")}
           </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  if (isCreating) {
+    return (
+      <>
+        {connectionFailureDialog}
+        <div
+          className={cn(
+            "w-full py-4 border-t border-block-border flex justify-between bg-background",
+            className
+          )}
+        >
+          {allowCancel && (
+            <Button
+              variant="outline"
+              disabled={state.isRequesting || state.isTestingConnection}
+              onClick={cancel}
+            >
+              {t("common.cancel")}
+            </Button>
+          )}
+          <div className="flex items-center gap-x-2">
+            <Button
+              disabled={
+                !allowCreate || state.isRequesting || state.isTestingConnection
+              }
+              onClick={tryCreate}
+            >
+              {state.isRequesting ? t("common.creating") : t("common.create")}
+            </Button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -471,38 +540,41 @@ export function InstanceFormButtons({
   if (!valueChanged || !allowEdit) return null;
 
   return (
-    <div
-      className={cn(
-        "w-full mt-4 py-4 border-t border-block-border flex justify-between bg-background",
-        className
-      )}
-    >
-      <Button
-        variant="outline"
-        disabled={state.isTestingConnection}
-        onClick={resetChanges}
+    <>
+      {connectionFailureDialog}
+      <div
+        className={cn(
+          "w-full mt-4 py-4 border-t border-block-border flex justify-between bg-background",
+          className
+        )}
       >
-        {t("common.cancel")}
-      </Button>
-      <div className="flex items-center gap-x-2">
         <Button
-          variant="ghost"
-          disabled={!allowUpdate || state.isRequesting || !allowEdit}
-          onClick={testConnectionForCurrentEditingDS}
+          variant="outline"
+          disabled={state.isTestingConnection}
+          onClick={resetChanges}
         >
-          {state.isTestingConnection
-            ? t("instance.testing-connection")
-            : t("instance.test-connection")}
+          {t("common.cancel")}
         </Button>
-        <Button
-          disabled={
-            !allowUpdate || state.isRequesting || state.isTestingConnection
-          }
-          onClick={doUpdate}
-        >
-          {state.isRequesting ? t("common.updating") : t("common.update")}
-        </Button>
+        <div className="flex items-center gap-x-2">
+          <Button
+            variant="ghost"
+            disabled={!allowUpdate || state.isRequesting || !allowEdit}
+            onClick={testConnectionForCurrentEditingDS}
+          >
+            {state.isTestingConnection
+              ? t("instance.testing-connection")
+              : t("instance.test-connection")}
+          </Button>
+          <Button
+            disabled={
+              !allowUpdate || state.isRequesting || state.isTestingConnection
+            }
+            onClick={doUpdate}
+          >
+            {state.isRequesting ? t("common.updating") : t("common.update")}
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
