@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -20,10 +21,12 @@ func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughOmni)
 }
 
-// WalkThroughOmni performs DDL simulation using omni catalog.Exec().
+// WalkThroughOmni performs DDL simulation using the omni MySQL catalog.
 // Flow:
-//  1. GetDatabaseDefinition(metadata) → schemaDDL
-//  2. catalog.Exec(schemaDDL) → load existing schema state
+//  1. Create the catalog and select the target database.
+//  2. loadWalkThroughCatalog: install each object individually with per-object
+//     pseudo fallback, so one broken CREATE TABLE can't disable the whole
+//     simulation.
 //  3. catalog.Exec(userSQL) → execute user DDL
 //  4. Map errors → *storepb.Advice
 //  5. Convert updated catalog → DatabaseMetadata (for downstream rules)
@@ -34,35 +37,27 @@ func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _
 
 	dbName := d.GetProto().GetName()
 
-	// Step 1: Generate DDL from current schema state.
-	schemaDDL, err := schema.GetDatabaseDefinition(
-		storepb.Engine_MYSQL,
-		schema.GetDefinitionContext{},
-		d.GetProto(),
-	)
-	if err != nil {
+	// Step 1: Create the catalog and the target database.
+	c := catalog.New()
+	initSQL := fmt.Sprintf("SET foreign_key_checks = 0;\nCREATE DATABASE IF NOT EXISTS `%s`;\nUSE `%s`;", dbName, dbName)
+	if _, err := c.Exec(initSQL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),
-			Title:         "Failed to generate schema DDL",
+			Title:         "Failed to initialize catalog",
 			Content:       err.Error(),
 			StartPosition: &storepb.Position{Line: 0},
 		}
 	}
 
-	// Step 2: Create catalog, create database, and load existing schema.
-	c := catalog.New()
-	// Disable FK checks so that tables can reference not-yet-loaded tables,
-	// matching standard MySQL behavior for schema loading.
-	initSQL := fmt.Sprintf("SET foreign_key_checks = 0;\nCREATE DATABASE IF NOT EXISTS `%s`;\nUSE `%s`;", dbName, dbName)
-	if schemaDDL != "" {
-		initSQL += "\n" + schemaDDL
-	}
-	if _, err := c.Exec(initSQL, &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+	// Step 2: Install every schema object individually with pseudo fallback.
+	// TODO: thread a real context.Context through WalkThroughContext; for now the
+	// loader only uses it for early cancellation during catalog bulk-load.
+	if err := loadWalkThroughCatalog(context.Background(), c, dbName, d.GetProto()); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),
-			Title:         "Failed to load schema DDL",
+			Title:         "Failed to load schema",
 			Content:       err.Error(),
 			StartPosition: &storepb.Position{Line: 0},
 		}
