@@ -1,0 +1,283 @@
+# SQL review rule: STATEMENT_DISALLOW_TRUNCATE (PostgreSQL)
+#
+# Detection target: top-level TruncateStmt.
+# Advice fires one-per-relation; CASCADE / RESTART IDENTITY modifiers append a
+# suffix to the message. PG TRUNCATE is transactional, so the advice wording
+# names only trigger-bypass as the hazard (unlike Oracle/MySQL/MSSQL).
+
+# --- Positive cases ---
+
+# Test: bare TRUNCATE TABLE with single relation
+- statement: TRUNCATE TABLE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: TABLE keyword elided (PG-legal shorthand)
+- statement: TRUNCATE techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: schema-qualified relation name
+- statement: TRUNCATE TABLE public.techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "public.techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multi-relation — one advice per relation in source order
+- statement: TRUNCATE TABLE a, b, c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "c" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multi-line multi-relation — each advice points to its relation's line
+- statement: |-
+    TRUNCATE TABLE a,
+                   b,
+                   c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "c" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+
+# Test: ONLY qualifier — same TruncateStmt AST, still fires
+- statement: TRUNCATE ONLY techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CASCADE suffix appended when Behavior == DROP_CASCADE
+- statement: TRUNCATE TABLE techbook CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: RESTART IDENTITY suffix when RestartSeqs == true
+- statement: TRUNCATE TABLE techbook RESTART IDENTITY;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. RESTART IDENTITY will reset owned sequences.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CASCADE + RESTART IDENTITY — both suffixes concatenate in fixed order
+- statement: TRUNCATE TABLE techbook RESTART IDENTITY CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables. RESTART IDENTITY will reset owned sequences.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: CONTINUE IDENTITY — RestartSeqs == false, no RESTART suffix
+- statement: TRUNCATE TABLE techbook CONTINUE IDENTITY;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: ONLY + CASCADE together
+- statement: TRUNCATE ONLY techbook CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# Test: multi-statement — TRUNCATE is statement 2, advice must point to line 2
+- statement: |-
+    CREATE TABLE tech_book(id int);
+    TRUNCATE TABLE tech_book;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "tech_book" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Test: multi-statement with blank lines and trailing DML — positions still correct
+- statement: |-
+    CREATE TABLE tech_book(id int);
+
+    INSERT INTO tech_book VALUES (1);
+    TRUNCATE TABLE tech_book;
+    DELETE FROM tech_book WHERE id = 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "tech_book" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+
+# Test: two TRUNCATEs in one script — two separate advices
+- statement: |-
+    TRUNCATE TABLE a;
+    TRUNCATE TABLE b CASCADE;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "a" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "b" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+
+# Test: case-insensitive keyword parsing still yields the same AST
+- statement: truncate table techbook;
+  changeType: 1
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "techbook" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+
+# --- Negative cases (no advice expected) ---
+
+# Test: DELETE is not TRUNCATE
+- statement: DELETE FROM techbook WHERE id = 1;
+  changeType: 1
+
+# Test: TRUNCATE appearing as a string literal in SELECT must not fire
+- statement: SELECT 'TRUNCATE TABLE foo' AS x;
+  changeType: 1
+
+# Test: DROP TABLE is a different statement type
+- statement: DROP TABLE techbook;
+  changeType: 1
+
+# Test: plain INSERT/UPDATE are untouched
+- statement: |-
+    INSERT INTO techbook(id) VALUES (1);
+    UPDATE techbook SET id = 2 WHERE id = 1;
+  changeType: 1
+
+# Test: CREATE TABLE with "truncate" in a column comment must not fire
+- statement: |-
+    CREATE TABLE logs(
+      id int,
+      msg text
+    );
+  changeType: 1
