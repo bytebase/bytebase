@@ -10,6 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -54,11 +55,16 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
 
+	resolvedDataSource, err := dbutil.ResolveTLSMaterial(dataSource)
+	if err != nil {
+		return nil, err
+	}
+
 	driver, err := db.Open(
 		ctx,
 		instance.Metadata.GetEngine(),
 		db.ConnectionConfig{
-			DataSource:        dataSource,
+			DataSource:        resolvedDataSource,
 			ConnectionContext: connectionContext,
 			Password:          password,
 		},

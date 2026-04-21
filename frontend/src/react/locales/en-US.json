@@ -530,8 +530,28 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
+      "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
+      "ca-path": "CA Certificate Path",
+      "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
+      "ca-source": {
+        "file-path": "File Path",
+        "inline-pem": "Inline PEM",
+        "self": "CA Certificate Source",
+        "system-trust": "System Trust"
+      },
       "client-cert": "Client Certificate",
+      "client-cert-path": "Client Certificate Path",
+      "client-cert-placeholder": "Input or drag and drop YOUR_CLIENT_CERT",
+      "client-cert-source": {
+        "file-path": "File Path",
+        "inline-pem": "Inline PEM",
+        "none": "None",
+        "self": "Client Certificate Source"
+      },
       "client-key": "Client Key",
+      "client-key-path": "Client Key Path",
+      "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
+      "configured": "Configured",
       "verify-certificate": "Verify TLS certificate",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
@@ -563,8 +583,12 @@
   "data-source.ssh.user": "User",
   "data-source.ssl-connection": "SSL Connection",
   "data-source.ssl.ca-cert": "CA Certificate",
+  "data-source.ssl.ca-empty-uses-system-trust": "Leave empty to use the system trust store",
+  "data-source.ssl.ca-path": "CA Certificate Path",
   "data-source.ssl.client-cert": "Client Certificate",
+  "data-source.ssl.client-cert-path": "Client Certificate Path",
   "data-source.ssl.client-key": "Client Key",
+  "data-source.ssl.client-key-path": "Client Key Path",
   "data-source.ssl.verify-certificate": "Verify TLS certificate",
   "data-source.ssl.verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure",
   "database": {

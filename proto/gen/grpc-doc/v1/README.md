@@ -4461,6 +4461,15 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssl_ca | [string](#string) |  | The SSL certificate authority certificate. |
 | ssl_cert | [string](#string) |  | The SSL client certificate. |
 | ssl_key | [string](#string) |  | The SSL client private key. |
+| ssl_ca_path | [string](#string) |  | The local filesystem path to the SSL certificate authority certificate. |
+| ssl_cert_path | [string](#string) |  | The local filesystem path to the SSL client certificate. |
+| ssl_key_path | [string](#string) |  | The local filesystem path to the SSL client private key. |
+| ssl_ca_set | [bool](#bool) |  | Whether an SSL certificate authority certificate has been configured. |
+| ssl_cert_set | [bool](#bool) |  | Whether an SSL client certificate has been configured. |
+| ssl_key_set | [bool](#bool) |  | Whether an SSL client private key has been configured. |
+| ssl_ca_path_set | [bool](#bool) |  | Whether an SSL certificate authority path has been configured. |
+| ssl_cert_path_set | [bool](#bool) |  | Whether an SSL client certificate path has been configured. |
+| ssl_key_path_set | [bool](#bool) |  | Whether an SSL client private key path has been configured. |
 | verify_tls_certificate | [bool](#bool) |  | verify_tls_certificate enables TLS certificate verification for SSL connections. Default is false (no verification) for backward compatibility. Set to true for secure connections (recommended for production). Only set to false for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). |
 | host | [string](#string) |  | The hostname or IP address of the database server. |
 | port | [string](#string) |  | The port number of the database server. |

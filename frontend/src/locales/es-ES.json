@@ -610,8 +610,28 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
+      "ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
+      "ca-path": "Ruta del certificado de CA",
+      "ca-placeholder": "Ingrese o arrastre y suelte YOUR_CA_CERTIFICATE",
+      "ca-source": {
+        "file-path": "Ruta de archivo",
+        "inline-pem": "PEM en línea",
+        "self": "Origen del certificado de CA",
+        "system-trust": "Confianza del sistema"
+      },
       "client-cert": "Certificado del cliente",
+      "client-cert-path": "Ruta del certificado del cliente",
+      "client-cert-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_CERT",
+      "client-cert-source": {
+        "file-path": "Ruta de archivo",
+        "inline-pem": "PEM en línea",
+        "none": "Ninguno",
+        "self": "Origen del certificado del cliente"
+      },
       "client-key": "Clave del cliente",
+      "client-key-path": "Ruta de la clave del cliente",
+      "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
+      "configured": "Configurado",
       "verify-certificate": "Verificar certificado TLS",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },

@@ -2,7 +2,14 @@ package v1
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -170,6 +177,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	// connection below, before the instance is persisted.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
+	for _, ds := range instanceMessage.Metadata.GetDataSources() {
+		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	}
 	if err := s.checkInstanceDataSources(ctx, instanceMessage, instanceMessage.Metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
@@ -250,6 +262,132 @@ func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return nil
+}
+
+func validateAndSanitizeDataSourceTLS(ds *storepb.DataSource) error {
+	if !ds.GetUseSsl() {
+		ds.SslCa = ""
+		ds.SslCert = ""
+		ds.SslKey = ""
+		ds.SslCaPath = ""
+		ds.SslCertPath = ""
+		ds.SslKeyPath = ""
+		return nil
+	}
+	for _, conflict := range []struct {
+		inlineField string
+		pathField   string
+		inlineValue string
+		pathValue   string
+	}{
+		{"ssl_ca", "ssl_ca_path", ds.GetSslCa(), ds.GetSslCaPath()},
+		{"ssl_cert", "ssl_cert_path", ds.GetSslCert(), ds.GetSslCertPath()},
+		{"ssl_key", "ssl_key_path", ds.GetSslKey(), ds.GetSslKeyPath()},
+	} {
+		if conflict.inlineValue != "" && conflict.pathValue != "" {
+			return errors.Errorf("cannot set both %s and %s; clear one of them by including the field in the update_mask with an empty value when switching TLS material source", conflict.inlineField, conflict.pathField)
+		}
+	}
+	for _, pathField := range []struct {
+		field string
+		path  string
+	}{
+		{"ssl_ca_path", ds.GetSslCaPath()},
+		{"ssl_cert_path", ds.GetSslCertPath()},
+		{"ssl_key_path", ds.GetSslKeyPath()},
+	} {
+		if pathField.path != "" && !filepath.IsAbs(pathField.path) {
+			return errors.Errorf("%s must be an absolute path", pathField.field)
+		}
+	}
+	if ds.GetSslCa() != "" {
+		if err := validateInlineCAPEM([]byte(ds.GetSslCa())); err != nil {
+			return errors.Wrap(err, "invalid ssl_ca PEM")
+		}
+	}
+	certSet := ds.GetSslCert() != "" || ds.GetSslCertPath() != ""
+	keySet := ds.GetSslKey() != "" || ds.GetSslKeyPath() != ""
+	if certSet != keySet {
+		return errors.New("ssl_cert and ssl_key must be both set or unset")
+	}
+	if ds.GetSslCert() != "" && ds.GetSslKey() != "" {
+		if _, err := tls.X509KeyPair([]byte(ds.GetSslCert()), []byte(ds.GetSslKey())); err != nil {
+			return errors.Wrap(err, "invalid ssl_cert or ssl_key PEM")
+		}
+	}
+	if ds.GetSslCert() != "" && ds.GetSslKey() == "" {
+		if err := validateInlineCertPEM([]byte(ds.GetSslCert())); err != nil {
+			return errors.Wrap(err, "invalid ssl_cert PEM")
+		}
+	}
+	if ds.GetSslKey() != "" && ds.GetSslCert() == "" {
+		if err := validateInlineKeyPEM([]byte(ds.GetSslKey())); err != nil {
+			return errors.Wrap(err, "invalid ssl_key PEM")
+		}
+	}
+	return nil
+}
+
+func validateInlineCAPEM(data []byte) error {
+	pool := x509.NewCertPool()
+	if ok := pool.AppendCertsFromPEM(data); !ok {
+		return errors.New("no valid CERTIFICATE PEM block found")
+	}
+	return nil
+}
+
+func validateInlineCertPEM(data []byte) error {
+	var certs [][]byte
+	for {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		if block.Type == "CERTIFICATE" {
+			certs = append(certs, block.Bytes)
+		}
+	}
+	if len(certs) == 0 {
+		return errors.New("no CERTIFICATE PEM block found")
+	}
+	if _, err := x509.ParseCertificate(certs[0]); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateInlineKeyPEM(data []byte) error {
+	var block *pem.Block
+	for {
+		block, data = pem.Decode(data)
+		if block == nil {
+			return errors.New("no PRIVATE KEY PEM block found")
+		}
+		if block.Type == "PRIVATE KEY" || strings.HasSuffix(block.Type, " PRIVATE KEY") {
+			break
+		}
+	}
+	_, err := parseInlinePrivateKey(block.Bytes)
+	return err
+}
+
+func parseInlinePrivateKey(der []byte) (any, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(der); err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
+			return key, nil
+		default:
+			return nil, errors.Errorf("unsupported private key type %T", key)
+		}
+	}
+	if key, err := x509.ParseECPrivateKey(der); err == nil {
+		return key, nil
+	}
+	return nil, errors.New("failed to parse private key")
 }
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
@@ -372,6 +510,11 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 			dataSources, err := convertV1DataSources(req.Msg.Instance.DataSources)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			for _, ds := range dataSources {
+				if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, err)
+				}
 			}
 			if err := s.checkInstanceDataSources(ctx, instance, dataSources); err != nil {
 				return nil, err
@@ -634,6 +777,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	if err := s.checkDataSource(ctx, instance, dataSource); err != nil {
 		return nil, err
 	}
+	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
@@ -733,10 +879,16 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.Password = req.Msg.DataSource.Password
 		case "ssl_ca":
 			dataSource.SslCa = req.Msg.DataSource.SslCa
+		case "ssl_ca_path":
+			dataSource.SslCaPath = req.Msg.DataSource.SslCaPath
 		case "ssl_cert":
 			dataSource.SslCert = req.Msg.DataSource.SslCert
+		case "ssl_cert_path":
+			dataSource.SslCertPath = req.Msg.DataSource.SslCertPath
 		case "ssl_key":
 			dataSource.SslKey = req.Msg.DataSource.SslKey
+		case "ssl_key_path":
+			dataSource.SslKeyPath = req.Msg.DataSource.SslKeyPath
 		case "host":
 			dataSource.Host = req.Msg.DataSource.Host
 		case "port":
@@ -848,6 +1000,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 
 	clearDataSourceAuthentication(dataSource)
+	if err := validateAndSanitizeDataSourceTLS(dataSource); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err

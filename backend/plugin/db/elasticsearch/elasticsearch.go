@@ -155,27 +155,12 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		tlsConfig.MinVersion = tls.VersionTLS12
 	}
 
-	esConfig := elasticsearch.Config{
-		Username:  config.DataSource.Username,
-		Password:  config.Password,
-		Addresses: []string{address},
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost:   10,
-			ResponseHeaderTimeout: 5 * time.Second,
-			TLSClientConfig:       tlsConfig,
-		},
-	}
+	esConfig := newElasticsearchConfig(config, address, tlsConfig)
 	// default http client.
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
 		},
-	}
-
-	// If CA cert is provided, update the config
-	// Note: util.GetTLSConfig already handles CA cert configuration
-	if config.DataSource.GetSslCert() != "" {
-		esConfig.CACert = []byte(config.DataSource.GetSslCert())
 	}
 
 	// typed elasticsearch client.
@@ -200,6 +185,23 @@ func openWithBasicAuth(_ context.Context, config db.ConnectionConfig, address st
 		},
 		config: config,
 	}, nil
+}
+
+func newElasticsearchConfig(config db.ConnectionConfig, address string, tlsConfig *tls.Config) elasticsearch.Config {
+	esConfig := elasticsearch.Config{
+		Username:  config.DataSource.Username,
+		Password:  config.Password,
+		Addresses: []string{address},
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost:   10,
+			ResponseHeaderTimeout: 5 * time.Second,
+			TLSClientConfig:       tlsConfig,
+		},
+	}
+	if config.DataSource.GetSslCa() != "" {
+		esConfig.CACert = []byte(config.DataSource.GetSslCa())
+	}
+	return esConfig
 }
 
 func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, address string) (db.Driver, error) {

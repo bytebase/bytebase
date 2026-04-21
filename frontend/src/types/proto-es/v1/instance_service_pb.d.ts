@@ -966,6 +966,69 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   sslKey: string;
 
   /**
+   * The local filesystem path to the SSL certificate authority certificate.
+   *
+   * @generated from field: string ssl_ca_path = 41;
+   */
+  sslCaPath: string;
+
+  /**
+   * The local filesystem path to the SSL client certificate.
+   *
+   * @generated from field: string ssl_cert_path = 42;
+   */
+  sslCertPath: string;
+
+  /**
+   * The local filesystem path to the SSL client private key.
+   *
+   * @generated from field: string ssl_key_path = 43;
+   */
+  sslKeyPath: string;
+
+  /**
+   * Whether an SSL certificate authority certificate has been configured.
+   *
+   * @generated from field: bool ssl_ca_set = 44;
+   */
+  sslCaSet: boolean;
+
+  /**
+   * Whether an SSL client certificate has been configured.
+   *
+   * @generated from field: bool ssl_cert_set = 45;
+   */
+  sslCertSet: boolean;
+
+  /**
+   * Whether an SSL client private key has been configured.
+   *
+   * @generated from field: bool ssl_key_set = 46;
+   */
+  sslKeySet: boolean;
+
+  /**
+   * Whether an SSL certificate authority path has been configured.
+   *
+   * @generated from field: bool ssl_ca_path_set = 47;
+   */
+  sslCaPathSet: boolean;
+
+  /**
+   * Whether an SSL client certificate path has been configured.
+   *
+   * @generated from field: bool ssl_cert_path_set = 48;
+   */
+  sslCertPathSet: boolean;
+
+  /**
+   * Whether an SSL client private key path has been configured.
+   *
+   * @generated from field: bool ssl_key_path_set = 49;
+   */
+  sslKeyPathSet: boolean;
+
+  /**
    * verify_tls_certificate enables TLS certificate verification for SSL connections.
    * Default is false (no verification) for backward compatibility.
    * Set to true for secure connections (recommended for production).
