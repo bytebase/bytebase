@@ -69,6 +69,12 @@ message DataSource {
   string obfuscated_ssl_cert = 6;
   string ssl_key = 40;
   string obfuscated_ssl_key = 7;
+  string ssl_ca_path = 50;
+  string obfuscated_ssl_ca_path = 51;
+  string ssl_cert_path = 52;
+  string obfuscated_ssl_cert_path = 53;
+  string ssl_key_path = 54;
+  string obfuscated_ssl_key_path = 55;
   // verify_tls_certificate enables TLS certificate verification for SSL connections.
   // Default is false (no verification) for backward compatibility.
   // Set to true for secure connections (recommended for production).

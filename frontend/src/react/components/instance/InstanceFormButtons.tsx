@@ -27,6 +27,7 @@ import {
   calcDataSourceUpdateMask,
   extractBasicInfo,
   extractDataSourceEditState,
+  hasSslConfig,
 } from "./common";
 import { useInstanceFormContext } from "./InstanceFormContext";
 
@@ -133,7 +134,7 @@ export function InstanceFormButtons({
   const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
     const hasExtraParameters =
       Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
-    const hasSslConfig = !!(ds.useSsl || ds.sslCa || ds.sslCert || ds.sslKey);
+    const hasSslConfigValue = hasSslConfig(ds);
     const hasSshConfig = !!(
       ds.sshHost ||
       ds.sshPort ||
@@ -141,7 +142,7 @@ export function InstanceFormButtons({
       ds.sshPassword ||
       ds.sshPrivateKey
     );
-    return hasExtraParameters || hasSslConfig || hasSshConfig;
+    return hasExtraParameters || hasSslConfigValue || hasSshConfig;
   };
 
   const maybeOpenConnectionOptions = (ds: EditDataSource) => {

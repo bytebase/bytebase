@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestOpenWithAWSAuth(t *testing.T) {
@@ -59,6 +61,48 @@ func TestOpenWithAWSAuth(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewElasticsearchConfigUsesCACert(t *testing.T) {
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     "localhost",
+			Port:     "9200",
+			SslCa:    "ca-pem",
+			SslCert:  "cert-pem",
+			SslKey:   "key-pem",
+			UseSsl:   false,
+			Username: "elastic",
+		},
+		Password: "password123",
+	}
+
+	esConfig := newElasticsearchConfig(config, "https://localhost:9200", nil)
+	require.Equal(t, []byte("ca-pem"), esConfig.CACert)
+	require.NotEqual(t, []byte("cert-pem"), esConfig.CACert)
+}
+
+func TestNewElasticsearchConfigUsesPathCACert(t *testing.T) {
+	caPath := t.TempDir() + "/ca.pem"
+	require.NoError(t, os.WriteFile(caPath, []byte("path-ca-pem"), 0o600))
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:      "localhost",
+			Port:      "9200",
+			UseSsl:    true,
+			SslCaPath: caPath,
+			Username:  "elastic",
+		},
+		Password: "password123",
+	}
+
+	resolvedDataSource, err := dbutil.ResolveTLSMaterial(config.DataSource)
+	require.NoError(t, err)
+	resolvedConfig := config
+	resolvedConfig.DataSource = resolvedDataSource
+	esConfig := newElasticsearchConfig(resolvedConfig, "https://localhost:9200", nil)
+	require.Equal(t, []byte("path-ca-pem"), esConfig.CACert)
+	require.Empty(t, resolvedConfig.DataSource.GetSslCaPath())
 }
 
 func TestURLConstructionWithQueryParams(t *testing.T) {

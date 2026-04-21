@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Info } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
@@ -27,11 +27,18 @@ import {
 import { onlyAllowNumber } from "@/utils";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
-import type { EditDataSource } from "./common";
+import type { EditDataSource, TlsUpdateState } from "./common";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
 import { SslCertificateForm } from "./SslCertificateForm";
+import {
+  applyLocalTlsCaSource,
+  applyLocalTlsClientCertSource,
+  disableLocalTls,
+  getLocalTlsCaSource,
+  getLocalTlsClientCertSource,
+} from "./tls";
 
 interface DataSourceFormProps {
   dataSource: EditDataSource;
@@ -40,6 +47,29 @@ interface DataSourceFormProps {
   onDataSourceChange: (ds: EditDataSource) => void;
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
+
+const mergeTlsUpdateState = (
+  current: TlsUpdateState | undefined,
+  next: TlsUpdateState
+): TlsUpdateState => {
+  if (current === true || next === true) {
+    return true;
+  }
+  if (!current) {
+    return next;
+  }
+  if (typeof current === "boolean") {
+    return next;
+  }
+  if (typeof next === "boolean") {
+    return current;
+  }
+  return {
+    useSsl: current.useSsl || next.useSsl,
+    ca: current.ca || next.ca,
+    clientCert: current.clientCert || next.clientCert,
+  };
+};
 
 export function DataSourceForm({
   dataSource,
@@ -81,6 +111,13 @@ export function DataSourceForm({
   );
   const [newParamKey, setNewParamKey] = useState("");
   const [newParamValue, setNewParamValue] = useState("");
+  const [localTlsCaSource, setLocalTlsCaSource] = useState(
+    getLocalTlsCaSource(dataSource)
+  );
+  const [localTlsClientCertSource, setLocalTlsClientCertSource] = useState(
+    getLocalTlsClientCertSource(dataSource)
+  );
+  const previousDataSourceIdRef = useRef(dataSource.id);
 
   // Sync passwordType when externalSecret changes
   useEffect(() => {
@@ -92,6 +129,35 @@ export function DataSourceForm({
       );
     }
   }, [dataSource.externalSecret]);
+
+  useEffect(() => {
+    if (previousDataSourceIdRef.current !== dataSource.id) {
+      previousDataSourceIdRef.current = dataSource.id;
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+      return;
+    }
+    if (!dataSource.updateSsl) {
+      setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
+      setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+    }
+  }, [
+    dataSource.id,
+    dataSource.useSsl,
+    dataSource.sslCa,
+    dataSource.sslCert,
+    dataSource.sslKey,
+    dataSource.sslCaPath,
+    dataSource.sslCertPath,
+    dataSource.sslKeyPath,
+    dataSource.sslCaSet,
+    dataSource.sslCertSet,
+    dataSource.sslKeySet,
+    dataSource.sslCaPathSet,
+    dataSource.sslCertPathSet,
+    dataSource.sslKeyPathSet,
+    dataSource.updateSsl,
+  ]);
 
   const update = useCallback(
     (partial: Partial<EditDataSource>) => {
@@ -304,14 +370,6 @@ export function DataSourceForm({
       }
     }
     update({ port: value.trim() });
-  };
-
-  const handleUseSslChanged = (useSSL: boolean) => {
-    update({ useSsl: useSSL, updateSsl: true });
-  };
-
-  const handleEditSSL = () => {
-    update({ sslCa: "", sslCert: "", sslKey: "", updateSsl: true });
   };
 
   const handleSSHChange = (
@@ -1590,19 +1648,6 @@ export function DataSourceForm({
             <div className="sm:col-span-3 sm:col-start-1">
               <div className="flex items-center justify-start gap-x-2 textlabel">
                 {t("data-source.ssl-connection")}
-                <button
-                  type="button"
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    dataSource.useSsl ? "bg-accent" : "bg-control-bg-hover"
-                  }`}
-                  onClick={() => handleUseSslChanged(!dataSource.useSsl)}
-                >
-                  <span
-                    className={`inline-block size-3.5 transform rounded-full bg-background transition-transform ${
-                      dataSource.useSsl ? "translate-x-4.5" : "translate-x-0.5"
-                    }`}
-                  />
-                </button>
                 {isCreating && onOpenInfoPanel && hasSslInfo && (
                   <button
                     type="button"
@@ -1613,41 +1658,107 @@ export function DataSourceForm({
                   </button>
                 )}
               </div>
-              {dataSource.useSsl && (
-                <>
-                  {dataSource.pendingCreate || dataSource.updateSsl ? (
-                    <SslCertificateForm
-                      verify={dataSource.verifyTlsCertificate}
-                      onVerifyChange={(val) =>
-                        update({ verifyTlsCertificate: val })
-                      }
-                      ca={dataSource.sslCa}
-                      onCaChange={(val) =>
-                        update({ sslCa: val, updateSsl: true })
-                      }
-                      cert={dataSource.sslCert}
-                      onCertChange={(val) =>
-                        update({ sslCert: val, updateSsl: true })
-                      }
-                      sslKey={dataSource.sslKey}
-                      onKeyChange={(val) =>
-                        update({ sslKey: val, updateSsl: true })
-                      }
-                      engineType={basicInfo.engine}
-                      disabled={!allowEdit}
-                    />
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="mt-2"
-                      disabled={!allowEdit}
-                      onClick={handleEditSSL}
-                    >
-                      {t("common.edit")} - {t("common.write-only")}
-                    </Button>
-                  )}
-                </>
-              )}
+              <SslCertificateForm
+                useSsl={dataSource.useSsl}
+                onUseSslChange={(useSsl) => {
+                  if (useSsl) {
+                    update({
+                      useSsl: true,
+                      updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                        useSsl: true,
+                      }),
+                    });
+                    return;
+                  }
+                  setLocalTlsCaSource("SYSTEM_TRUST");
+                  setLocalTlsClientCertSource("NONE");
+                  update({ ...disableLocalTls(dataSource), updateSsl: true });
+                }}
+                caSource={localTlsCaSource}
+                onCaSourceChange={(source) => {
+                  setLocalTlsCaSource(source);
+                  update({
+                    ...applyLocalTlsCaSource(dataSource, source),
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
+                  });
+                }}
+                clientCertSource={localTlsClientCertSource}
+                onClientCertSourceChange={(source) => {
+                  setLocalTlsClientCertSource(source);
+                  update({
+                    ...applyLocalTlsClientCertSource(dataSource, source),
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  });
+                }}
+                verify={dataSource.verifyTlsCertificate}
+                onVerifyChange={(val) => update({ verifyTlsCertificate: val })}
+                ca={dataSource.sslCa}
+                onCaChange={(val) =>
+                  update({
+                    sslCa: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
+                  })
+                }
+                caPath={dataSource.sslCaPath}
+                hasCa={dataSource.sslCaSet}
+                hasCaPath={dataSource.sslCaPathSet}
+                onCaPathChange={(val) =>
+                  update({
+                    sslCaPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      ca: true,
+                    }),
+                  })
+                }
+                cert={dataSource.sslCert}
+                hasCert={dataSource.sslCertSet}
+                onCertChange={(val) =>
+                  update({
+                    sslCert: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
+                }
+                certPath={dataSource.sslCertPath}
+                hasCertPath={dataSource.sslCertPathSet}
+                onCertPathChange={(val) =>
+                  update({
+                    sslCertPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
+                }
+                sslKey={dataSource.sslKey}
+                hasKey={dataSource.sslKeySet}
+                onKeyChange={(val) =>
+                  update({
+                    sslKey: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
+                }
+                keyPath={dataSource.sslKeyPath}
+                hasKeyPath={dataSource.sslKeyPathSet}
+                onKeyPathChange={(val) =>
+                  update({
+                    sslKeyPath: val,
+                    updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+                      clientCert: true,
+                    }),
+                  })
+                }
+                engineType={basicInfo.engine}
+                disabled={!allowEdit}
+              />
             </div>
           )}
 
