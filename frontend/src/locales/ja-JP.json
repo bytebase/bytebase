@@ -137,11 +137,8 @@
       "verification-code": "認証コード"
     },
     "sign-up": {
-      "admin-account": "管理者アカウント",
       "create-admin-account": "管理者アカウントを作成",
       "existing-user": "すでにアカウントをお持ちですか？",
-      "privacy-policy": "プライバシーポリシー",
-      "terms-of-service": "利用規約",
       "title": "アカウントを登録してください"
     },
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",

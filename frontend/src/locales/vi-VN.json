@@ -137,11 +137,8 @@
       "verification-code": "Mã xác minh"
     },
     "sign-up": {
-      "admin-account": "tài khoản quản trị",
       "create-admin-account": "Tạo tài khoản quản trị",
       "existing-user": "Đã có tài khoản?",
-      "privacy-policy": "Chính sách bảo mật",
-      "terms-of-service": "Điều khoản dịch vụ",
       "title": "Đăng ký tài khoản của bạn"
     },
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",

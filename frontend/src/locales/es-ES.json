@@ -137,11 +137,8 @@
       "verification-code": "Código de verificación"
     },
     "sign-up": {
-      "admin-account": "cuenta de administrador",
       "create-admin-account": "Crear cuenta de administrador",
       "existing-user": "¿Ya tienes una cuenta?",
-      "privacy-policy": "Política de privacidad",
-      "terms-of-service": "Términos del servicio",
       "title": "Registre su cuenta"
     },
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",

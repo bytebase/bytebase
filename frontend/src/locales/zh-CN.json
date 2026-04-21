@@ -137,11 +137,8 @@
       "verification-code": "验证码"
     },
     "sign-up": {
-      "admin-account": "管理员账号",
       "create-admin-account": "注册管理员",
       "existing-user": "已有账号?",
-      "privacy-policy": "隐私政策",
-      "terms-of-service": "服务条款",
       "title": "注册您的账号"
     },
     "token-expired-description": "Token 已过期，请重新登录",
