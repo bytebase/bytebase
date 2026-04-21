@@ -1,13 +1,42 @@
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
 
 let useSQLEditorUIStore: typeof import("./uiState").useSQLEditorUIStore;
+const originalLocalStorage = globalThis.localStorage;
+const storage = new Map<string, string>();
+const localStorageMock = {
+  getItem: (key: string) => storage.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    storage.set(key, value);
+  },
+  removeItem: (key: string) => {
+    storage.delete(key);
+  },
+  clear: () => {
+    storage.clear();
+  },
+  key: (index: number) => Array.from(storage.keys())[index] ?? null,
+  get length() {
+    return storage.size;
+  },
+};
 
 beforeEach(async () => {
-  localStorage.clear();
+  storage.clear();
+  Object.defineProperty(globalThis, "localStorage", {
+    value: localStorageMock,
+    configurable: true,
+  });
   setActivePinia(createPinia());
   ({ useSQLEditorUIStore } = await import("./uiState"));
+});
+
+afterEach(() => {
+  Object.defineProperty(globalThis, "localStorage", {
+    value: originalLocalStorage,
+    configurable: true,
+  });
 });
 
 describe("useSQLEditorUIStore", () => {
