@@ -636,6 +636,17 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, duration, err
 		}
+		if d == nil {
+			// The referenced database is not tracked by Bytebase (e.g. it was
+			// dropped, excluded by sync filters, or never discovered yet).
+			// Skip the sync attempt and leave the span's NotFoundError in place
+			// so the masking policy below can reject the query cleanly instead
+			// of panicking on a nil *DatabaseMessage.
+			slog.Debug("skip metadata sync: database not tracked",
+				slog.String("instance", instance.ResourceID),
+				slog.String("database", accessDatabaseName))
+			continue
+		}
 		if err := schemaSyncer.SyncDatabaseSchema(ctx, d); err != nil {
 			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
 		}

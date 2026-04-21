@@ -371,6 +371,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
 func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryResourceID string, retErr error) {
+	if database == nil {
+		return "", errors.New("cannot sync nil database")
+	}
 	instance, err := s.store.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
