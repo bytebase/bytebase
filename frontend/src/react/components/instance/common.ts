@@ -145,12 +145,12 @@ export const calcDataSourceUpdateMask = (
     editing.password = "";
     updateMask.add("password");
   }
-  updateMask.delete("has_ssl_ca");
-  updateMask.delete("has_ssl_cert");
-  updateMask.delete("has_ssl_key");
-  updateMask.delete("has_ssl_ca_path");
-  updateMask.delete("has_ssl_cert_path");
-  updateMask.delete("has_ssl_key_path");
+  updateMask.delete("ssl_ca_set");
+  updateMask.delete("ssl_cert_set");
+  updateMask.delete("ssl_key_set");
+  updateMask.delete("ssl_ca_path_set");
+  updateMask.delete("ssl_cert_path_set");
+  updateMask.delete("ssl_key_path_set");
   if (updateSsl === true) {
     SSL_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
   } else if (updateSsl) {

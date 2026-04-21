@@ -216,12 +216,12 @@ func convertDataSources(dataSources []*storepb.DataSource) []*v1pb.DataSource {
 			MasterName:                ds.GetMasterName(),
 			MasterUsername:            ds.GetMasterUsername(),
 			ExtraConnectionParameters: ds.GetExtraConnectionParameters(),
-			HasSslCa:                  ds.GetSslCa() != "",
-			HasSslCert:                ds.GetSslCert() != "",
-			HasSslKey:                 ds.GetSslKey() != "",
-			HasSslCaPath:              ds.GetSslCaPath() != "",
-			HasSslCertPath:            ds.GetSslCertPath() != "",
-			HasSslKeyPath:             ds.GetSslKeyPath() != "",
+			SslCaSet:                  ds.GetSslCa() != "",
+			SslCertSet:                ds.GetSslCert() != "",
+			SslKeySet:                 ds.GetSslKey() != "",
+			SslCaPathSet:              ds.GetSslCaPath() != "",
+			SslCertPathSet:            ds.GetSslCertPath() != "",
+			SslKeyPathSet:             ds.GetSslKeyPath() != "",
 		}
 
 		switch dataSource.AuthenticationType {

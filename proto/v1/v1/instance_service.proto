@@ -565,17 +565,17 @@ message DataSource {
   // The local filesystem path to the SSL client private key.
   string ssl_key_path = 43 [(google.api.field_behavior) = INPUT_ONLY];
   // Whether an SSL certificate authority certificate has been configured.
-  bool has_ssl_ca = 44 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_ca_set = 44 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL client certificate has been configured.
-  bool has_ssl_cert = 45 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_cert_set = 45 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL client private key has been configured.
-  bool has_ssl_key = 46 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_key_set = 46 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL certificate authority path has been configured.
-  bool has_ssl_ca_path = 47 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_ca_path_set = 47 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL client certificate path has been configured.
-  bool has_ssl_cert_path = 48 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_cert_path_set = 48 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL client private key path has been configured.
-  bool has_ssl_key_path = 49 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool ssl_key_path_set = 49 [(google.api.field_behavior) = OUTPUT_ONLY];
   // verify_tls_certificate enables TLS certificate verification for SSL connections.
   // Default is false (no verification) for backward compatibility.
   // Set to true for secure connections (recommended for production).

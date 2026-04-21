@@ -48,20 +48,20 @@ type LocalTlsDataSource = Partial<
     | "sslCaPath"
     | "sslCertPath"
     | "sslKeyPath"
-    | "hasSslCa"
-    | "hasSslCert"
-    | "hasSslKey"
-    | "hasSslCaPath"
-    | "hasSslCertPath"
-    | "hasSslKeyPath"
+    | "sslCaSet"
+    | "sslCertSet"
+    | "sslKeySet"
+    | "sslCaPathSet"
+    | "sslCertPathSet"
+    | "sslKeyPathSet"
   >
 >;
 
 const clearLocalTlsCaFields = (ds: DataSource): void => {
   ds.sslCa = "";
   ds.sslCaPath = "";
-  ds.hasSslCa = false;
-  ds.hasSslCaPath = false;
+  ds.sslCaSet = false;
+  ds.sslCaPathSet = false;
 };
 
 const clearLocalTlsClientCertFields = (ds: DataSource): void => {
@@ -69,10 +69,10 @@ const clearLocalTlsClientCertFields = (ds: DataSource): void => {
   ds.sslKey = "";
   ds.sslCertPath = "";
   ds.sslKeyPath = "";
-  ds.hasSslCert = false;
-  ds.hasSslKey = false;
-  ds.hasSslCertPath = false;
-  ds.hasSslKeyPath = false;
+  ds.sslCertSet = false;
+  ds.sslKeySet = false;
+  ds.sslCertPathSet = false;
+  ds.sslKeyPathSet = false;
 };
 
 export const hasSslConfig = (ds: LocalTlsDataSource | undefined): boolean => {
@@ -85,12 +85,12 @@ export const hasSslConfig = (ds: LocalTlsDataSource | undefined): boolean => {
     ds.sslCaPath ||
     ds.sslCertPath ||
     ds.sslKeyPath ||
-    ds.hasSslCa ||
-    ds.hasSslCert ||
-    ds.hasSslKey ||
-    ds.hasSslCaPath ||
-    ds.hasSslCertPath ||
-    ds.hasSslKeyPath
+    ds.sslCaSet ||
+    ds.sslCertSet ||
+    ds.sslKeySet ||
+    ds.sslCaPathSet ||
+    ds.sslCertPathSet ||
+    ds.sslKeyPathSet
   );
 };
 
@@ -98,10 +98,10 @@ export const getLocalTlsCaSource = (
   ds: LocalTlsDataSource | undefined
 ): LocalTlsCaSource => {
   if (!ds?.useSsl) return LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST;
-  if (ds.sslCaPath || ds.hasSslCaPath) {
+  if (ds.sslCaPath || ds.sslCaPathSet) {
     return LOCAL_TLS_CA_SOURCE_FILE_PATH;
   }
-  if (ds.sslCa || ds.hasSslCa) {
+  if (ds.sslCa || ds.sslCaSet) {
     return LOCAL_TLS_CA_SOURCE_INLINE_PEM;
   }
   return LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST;
@@ -114,12 +114,12 @@ export const getLocalTlsClientCertSource = (
   if (
     ds.sslCertPath ||
     ds.sslKeyPath ||
-    ds.hasSslCertPath ||
-    ds.hasSslKeyPath
+    ds.sslCertPathSet ||
+    ds.sslKeyPathSet
   ) {
     return LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH;
   }
-  if (ds.sslCert || ds.sslKey || ds.hasSslCert || ds.hasSslKey) {
+  if (ds.sslCert || ds.sslKey || ds.sslCertSet || ds.sslKeySet) {
     return LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM;
   }
   return LOCAL_TLS_CLIENT_CERT_SOURCE_NONE;
@@ -138,12 +138,12 @@ export const applyLocalTlsCaSource = (
     case LOCAL_TLS_CA_SOURCE_INLINE_PEM:
       next.useSsl = true;
       next.sslCaPath = "";
-      next.hasSslCaPath = false;
+      next.sslCaPathSet = false;
       break;
     case LOCAL_TLS_CA_SOURCE_FILE_PATH:
       next.useSsl = true;
       next.sslCa = "";
-      next.hasSslCa = false;
+      next.sslCaSet = false;
       break;
   }
   return next;
@@ -163,15 +163,15 @@ export const applyLocalTlsClientCertSource = (
       next.useSsl = true;
       next.sslCertPath = "";
       next.sslKeyPath = "";
-      next.hasSslCertPath = false;
-      next.hasSslKeyPath = false;
+      next.sslCertPathSet = false;
+      next.sslKeyPathSet = false;
       break;
     case LOCAL_TLS_CLIENT_CERT_SOURCE_FILE_PATH:
       next.useSsl = true;
       next.sslCert = "";
       next.sslKey = "";
-      next.hasSslCert = false;
-      next.hasSslKey = false;
+      next.sslCertSet = false;
+      next.sslKeySet = false;
       break;
   }
   return next;
@@ -186,12 +186,12 @@ export const disableLocalTls = (ds: DataSource): DataSource => {
   next.sslCaPath = "";
   next.sslCertPath = "";
   next.sslKeyPath = "";
-  next.hasSslCa = false;
-  next.hasSslCert = false;
-  next.hasSslKey = false;
-  next.hasSslCaPath = false;
-  next.hasSslCertPath = false;
-  next.hasSslKeyPath = false;
+  next.sslCaSet = false;
+  next.sslCertSet = false;
+  next.sslKeySet = false;
+  next.sslCaPathSet = false;
+  next.sslCertPathSet = false;
+  next.sslKeyPathSet = false;
   return next;
 };
 
@@ -203,9 +203,9 @@ export const getLocalTlsSource = (
     ds.sslCaPath ||
     ds.sslCertPath ||
     ds.sslKeyPath ||
-    ds.hasSslCaPath ||
-    ds.hasSslCertPath ||
-    ds.hasSslKeyPath
+    ds.sslCaPathSet ||
+    ds.sslCertPathSet ||
+    ds.sslKeyPathSet
   ) {
     return LOCAL_TLS_SOURCE_FILE_PATH;
   }
@@ -225,18 +225,18 @@ export const applyLocalTlsSource = (
       next.sslCaPath = "";
       next.sslCertPath = "";
       next.sslKeyPath = "";
-      next.hasSslCaPath = false;
-      next.hasSslCertPath = false;
-      next.hasSslKeyPath = false;
+      next.sslCaPathSet = false;
+      next.sslCertPathSet = false;
+      next.sslKeyPathSet = false;
       break;
     case LOCAL_TLS_SOURCE_FILE_PATH:
       next.useSsl = true;
       next.sslCa = "";
       next.sslCert = "";
       next.sslKey = "";
-      next.hasSslCa = false;
-      next.hasSslCert = false;
-      next.hasSslKey = false;
+      next.sslCaSet = false;
+      next.sslCertSet = false;
+      next.sslKeySet = false;
       break;
   }
   return next;

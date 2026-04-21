@@ -268,12 +268,12 @@ export function SslCertificateForm({
     sslCaPath: caPath,
     sslCertPath: certPath,
     sslKeyPath: keyPath,
-    hasSslCa: false,
-    hasSslCert: false,
-    hasSslKey: false,
-    hasSslCaPath: false,
-    hasSslCertPath: false,
-    hasSslKeyPath: false,
+    sslCaSet: false,
+    sslCertSet: false,
+    sslKeySet: false,
+    sslCaPathSet: false,
+    sslCertPathSet: false,
+    sslKeyPathSet: false,
   });
   const inferredClientCertSource = getLocalTlsClientCertSource({
     useSsl: true,
@@ -283,12 +283,12 @@ export function SslCertificateForm({
     sslCaPath: caPath,
     sslCertPath: certPath,
     sslKeyPath: keyPath,
-    hasSslCa: false,
-    hasSslCert: false,
-    hasSslKey: false,
-    hasSslCaPath: false,
-    hasSslCertPath: false,
-    hasSslKeyPath: false,
+    sslCaSet: false,
+    sslCertSet: false,
+    sslKeySet: false,
+    sslCaPathSet: false,
+    sslCertPathSet: false,
+    sslKeyPathSet: false,
   });
   const resolvedCaSource = showCaSourceUi
     ? caSource!

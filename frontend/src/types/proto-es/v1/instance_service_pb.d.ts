@@ -989,44 +989,44 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   /**
    * Whether an SSL certificate authority certificate has been configured.
    *
-   * @generated from field: bool has_ssl_ca = 44;
+   * @generated from field: bool ssl_ca_set = 44;
    */
-  hasSslCa: boolean;
+  sslCaSet: boolean;
 
   /**
    * Whether an SSL client certificate has been configured.
    *
-   * @generated from field: bool has_ssl_cert = 45;
+   * @generated from field: bool ssl_cert_set = 45;
    */
-  hasSslCert: boolean;
+  sslCertSet: boolean;
 
   /**
    * Whether an SSL client private key has been configured.
    *
-   * @generated from field: bool has_ssl_key = 46;
+   * @generated from field: bool ssl_key_set = 46;
    */
-  hasSslKey: boolean;
+  sslKeySet: boolean;
 
   /**
    * Whether an SSL certificate authority path has been configured.
    *
-   * @generated from field: bool has_ssl_ca_path = 47;
+   * @generated from field: bool ssl_ca_path_set = 47;
    */
-  hasSslCaPath: boolean;
+  sslCaPathSet: boolean;
 
   /**
    * Whether an SSL client certificate path has been configured.
    *
-   * @generated from field: bool has_ssl_cert_path = 48;
+   * @generated from field: bool ssl_cert_path_set = 48;
    */
-  hasSslCertPath: boolean;
+  sslCertPathSet: boolean;
 
   /**
    * Whether an SSL client private key path has been configured.
    *
-   * @generated from field: bool has_ssl_key_path = 49;
+   * @generated from field: bool ssl_key_path_set = 49;
    */
-  hasSslKeyPath: boolean;
+  sslKeyPathSet: boolean;
 
   /**
    * verify_tls_certificate enables TLS certificate verification for SSL connections.

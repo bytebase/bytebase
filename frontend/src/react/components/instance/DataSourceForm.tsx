@@ -150,12 +150,12 @@ export function DataSourceForm({
     dataSource.sslCaPath,
     dataSource.sslCertPath,
     dataSource.sslKeyPath,
-    dataSource.hasSslCa,
-    dataSource.hasSslCert,
-    dataSource.hasSslKey,
-    dataSource.hasSslCaPath,
-    dataSource.hasSslCertPath,
-    dataSource.hasSslKeyPath,
+    dataSource.sslCaSet,
+    dataSource.sslCertSet,
+    dataSource.sslKeySet,
+    dataSource.sslCaPathSet,
+    dataSource.sslCertPathSet,
+    dataSource.sslKeyPathSet,
     dataSource.updateSsl,
   ]);
 
@@ -1706,8 +1706,8 @@ export function DataSourceForm({
                   })
                 }
                 caPath={dataSource.sslCaPath}
-                hasCa={dataSource.hasSslCa}
-                hasCaPath={dataSource.hasSslCaPath}
+                hasCa={dataSource.sslCaSet}
+                hasCaPath={dataSource.sslCaPathSet}
                 onCaPathChange={(val) =>
                   update({
                     sslCaPath: val,
@@ -1717,7 +1717,7 @@ export function DataSourceForm({
                   })
                 }
                 cert={dataSource.sslCert}
-                hasCert={dataSource.hasSslCert}
+                hasCert={dataSource.sslCertSet}
                 onCertChange={(val) =>
                   update({
                     sslCert: val,
@@ -1727,7 +1727,7 @@ export function DataSourceForm({
                   })
                 }
                 certPath={dataSource.sslCertPath}
-                hasCertPath={dataSource.hasSslCertPath}
+                hasCertPath={dataSource.sslCertPathSet}
                 onCertPathChange={(val) =>
                   update({
                     sslCertPath: val,
@@ -1737,7 +1737,7 @@ export function DataSourceForm({
                   })
                 }
                 sslKey={dataSource.sslKey}
-                hasKey={dataSource.hasSslKey}
+                hasKey={dataSource.sslKeySet}
                 onKeyChange={(val) =>
                   update({
                     sslKey: val,
@@ -1747,7 +1747,7 @@ export function DataSourceForm({
                   })
                 }
                 keyPath={dataSource.sslKeyPath}
-                hasKeyPath={dataSource.hasSslKeyPath}
+                hasKeyPath={dataSource.sslKeyPathSet}
                 onKeyPathChange={(val) =>
                   update({
                     sslKeyPath: val,
