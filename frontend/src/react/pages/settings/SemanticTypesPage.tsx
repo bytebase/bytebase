@@ -662,8 +662,9 @@ function MaskingAlgorithmDrawer({
             case: "innerOuterMask",
             value: create(Algorithm_InnerOuterMaskSchema, {
               type: innerOuterType,
-              prefixLen: innerOuterPrefix ?? 0,
-              suffixLen: innerOuterSuffix ?? 0,
+              // Proto field is int32 — floor any fractional input defensively.
+              prefixLen: Math.floor(innerOuterPrefix ?? 0),
+              suffixLen: Math.floor(innerOuterSuffix ?? 0),
               substitution: innerOuterSubstitution,
             }),
           },
@@ -931,6 +932,7 @@ function MaskingAlgorithmDrawer({
                       value={innerOuterPrefix}
                       className="w-24"
                       min={0}
+                      step={1}
                       onValueChange={setInnerOuterPrefix}
                     />
                   </div>
@@ -945,6 +947,7 @@ function MaskingAlgorithmDrawer({
                       value={innerOuterSuffix}
                       className="w-24"
                       min={0}
+                      step={1}
                       onValueChange={setInnerOuterSuffix}
                     />
                   </div>

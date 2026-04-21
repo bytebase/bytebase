@@ -277,12 +277,20 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         updateMaskPaths.push("value.workspace_profile.password_restriction");
       }
 
-      // Token durations (coerce transient `null` inputs to defaults before save).
+      // Token durations (coerce transient `null` inputs to defaults before
+      // save, then floor to integers — the proto fields convert to BigInt
+      // seconds, which rejects fractional values).
       const initToken = getInitialTokenState();
       const resolvedToken = normalizeTokenState(tokenState);
-      const accessTokenDuration = resolvedToken.accessTokenDuration as number;
-      const refreshTokenDuration = resolvedToken.refreshTokenDuration as number;
-      const inactiveTimeout = resolvedToken.inactiveTimeout as number;
+      const accessTokenDuration = Math.floor(
+        resolvedToken.accessTokenDuration as number
+      );
+      const refreshTokenDuration = Math.floor(
+        resolvedToken.refreshTokenDuration as number
+      );
+      const inactiveTimeout = Math.floor(
+        resolvedToken.inactiveTimeout as number
+      );
 
       if (
         initToken.accessTokenDuration !== accessTokenDuration ||
@@ -766,6 +774,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   value={tokenState.accessTokenDuration}
                   min={1}
                   max={tokenState.accessTokenTimeFormat === "MINUTES" ? 59 : 23}
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
                   onValueChange={(v) =>
                     setTokenState((s) => ({ ...s, accessTokenDuration: v }))
@@ -833,6 +842,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                       ? 23
                       : undefined
                   }
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
                   onValueChange={(v) =>
                     setTokenState((s) => ({ ...s, refreshTokenDuration: v }))
@@ -898,6 +908,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   className="w-24"
                   value={tokenState.inactiveTimeout}
                   min={-1}
+                  step={1}
                   disabled={disabled || !hasSecureTokenFeature}
                   onValueChange={(v) =>
                     setTokenState((s) => ({ ...s, inactiveTimeout: v }))
