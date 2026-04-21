@@ -530,29 +530,42 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
-      "ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
+      "ca-empty-uses-system-trust": "Usa el almacén de confianza del sistema para verificar el certificado del servidor.",
       "ca-path": "Ruta del certificado de CA",
       "ca-placeholder": "Ingrese o arrastre y suelte YOUR_CA_CERTIFICATE",
       "ca-source": {
         "file-path": "Ruta de archivo",
-        "inline-pem": "PEM en línea",
+        "file-path-unavailable-saas": "Las rutas de archivo no están disponibles en Bytebase Cloud.",
+        "inline-pem": "Pegar PEM",
         "self": "Origen del certificado de CA",
         "system-trust": "Confianza del sistema"
       },
-      "client-cert": "Certificado del cliente",
-      "client-cert-path": "Ruta del certificado del cliente",
+      "client-cert": "Certificado",
+      "client-cert-path": "Ruta del certificado",
       "client-cert-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_CERT",
       "client-cert-source": {
         "file-path": "Ruta de archivo",
-        "inline-pem": "PEM en línea",
+        "file-path-unavailable-saas": "Las rutas de archivo no están disponibles en Bytebase Cloud.",
+        "inline-pem": "Pegar PEM",
         "none": "Ninguno",
-        "self": "Origen del certificado del cliente"
+        "self": "Origen de la identidad del cliente"
       },
-      "client-key": "Clave del cliente",
-      "client-key-path": "Ruta de la clave del cliente",
+      "client-identity": "Identidad del cliente",
+      "client-key": "Clave privada",
+      "client-key-path": "Ruta de la clave privada",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
       "configured": "Configurado",
+      "connection-security": "Seguridad de la conexión",
+      "mutual-tls-unavailable-engine": "El TLS mutuo no está disponible para este motor.",
+      "posture": {
+        "disabled": "Deshabilitado",
+        "mutual-tls": "TLS mutuo",
+        "self": "Postura de seguridad",
+        "tls": "TLS"
+      },
+      "server-identity": "Identidad del servidor",
       "verify-certificate": "Verificar certificado TLS",
+      "verification-disabled-description": "La verificación está deshabilitada. La conexión está cifrada, pero la identidad del servidor no se verifica; la configuración de CA se ignora.",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },
     "ssl-connection": "Conexión SSL"

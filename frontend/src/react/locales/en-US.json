@@ -530,29 +530,42 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
-      "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
+      "ca-empty-uses-system-trust": "Uses the system trust store to verify the server certificate.",
       "ca-path": "CA Certificate Path",
       "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
       "ca-source": {
-        "file-path": "File Path",
-        "inline-pem": "Inline PEM",
-        "self": "CA Certificate Source",
-        "system-trust": "System Trust"
+        "file-path": "File path",
+        "file-path-unavailable-saas": "File paths are unavailable in Bytebase Cloud.",
+        "inline-pem": "Paste PEM",
+        "self": "CA certificate source",
+        "system-trust": "System trust"
       },
-      "client-cert": "Client Certificate",
-      "client-cert-path": "Client Certificate Path",
+      "client-cert": "Certificate",
+      "client-cert-path": "Certificate path",
       "client-cert-placeholder": "Input or drag and drop YOUR_CLIENT_CERT",
       "client-cert-source": {
-        "file-path": "File Path",
-        "inline-pem": "Inline PEM",
+        "file-path": "File path",
+        "file-path-unavailable-saas": "File paths are unavailable in Bytebase Cloud.",
+        "inline-pem": "Paste PEM",
         "none": "None",
-        "self": "Client Certificate Source"
+        "self": "Client identity source"
       },
-      "client-key": "Client Key",
-      "client-key-path": "Client Key Path",
+      "client-identity": "Client identity",
+      "client-key": "Private key",
+      "client-key-path": "Private key path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
       "configured": "Configured",
+      "connection-security": "Connection security",
+      "mutual-tls-unavailable-engine": "Mutual TLS is not available for this engine.",
+      "posture": {
+        "disabled": "Disabled",
+        "mutual-tls": "Mutual TLS",
+        "self": "Security posture",
+        "tls": "TLS"
+      },
+      "server-identity": "Server identity",
       "verify-certificate": "Verify TLS certificate",
+      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored.",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
     "ssl-connection": "SSL Connection"
