@@ -56,13 +56,21 @@ export function ContainerChooser() {
       next === OptionValueUnspecified ? undefined : next;
   };
 
+  // Seed from URL query parameter on mount and whenever the query param OR
+  // the active tab changes. Mirrors Vue's watchEffect, which implicitly
+  // tracked both `route.query.table` and `tab.value` (the latter via the
+  // setter's reactive reads) so that switching to a new tab with the URL
+  // query still present re-seeded the new tab's connection.table.
   const queryParam = useVueState(
     () => router.currentRoute.value.query.table as string | undefined
   );
+  const currentTabId = useVueState(() => tabStore.currentTab?.id);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleChange is
+  // defined inline and reads the live tabStore; omitting it is intentional
+  // so the effect re-runs only on queryParam or tab switch.
   useEffect(() => {
     if (queryParam) handleChange(queryParam);
-    // handleChange is defined inline and stable for this effect
-  }, [queryParam]);
+  }, [queryParam, currentTabId]);
 
   if (!show) return null;
 

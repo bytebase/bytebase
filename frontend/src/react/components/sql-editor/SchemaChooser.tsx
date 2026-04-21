@@ -56,14 +56,21 @@ export function SchemaChooser() {
       next === SchemaOptionValueUnspecified ? undefined : next;
   };
 
-  // Seed from URL query parameter (mirrors Vue watchEffect)
+  // Seed from URL query parameter on mount and whenever the query param OR
+  // the active tab changes. Mirrors Vue's watchEffect, which implicitly
+  // tracked both `route.query.schema` and `tab.value` (the latter via the
+  // setter's reactive reads) so that switching to a new tab with the URL
+  // query still present re-seeded the new tab's connection.schema.
   const queryParam = useVueState(
     () => router.currentRoute.value.query.schema as string | undefined
   );
+  const currentTabId = useVueState(() => tabStore.currentTab?.id);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleChange is
+  // defined inline and reads the live tabStore; omitting it is intentional
+  // so the effect re-runs only on queryParam or tab switch.
   useEffect(() => {
     if (queryParam) handleChange(queryParam);
-    // handleChange is defined inline and stable for this effect
-  }, [queryParam]);
+  }, [queryParam, currentTabId]);
 
   if (!show) return null;
 
