@@ -174,6 +174,38 @@ describe("SslCertificateForm", () => {
     });
   });
 
+  test("falls back to legacy UI when posture source props are incomplete", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          posture="TLS"
+          onPostureChange={() => {}}
+          useSsl={true}
+          onUseSslChange={() => {}}
+          verify={true}
+          onVerifyChange={() => {}}
+          engineType={Engine.POSTGRES}
+        />
+      );
+    });
+
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.connection-security"
+    );
+    expect(container.textContent).toContain("data-source.ssl-connection");
+    expect(container.textContent).toContain(
+      "data-source.ssl.ca-empty-uses-system-trust"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("disables file path source options in SaaS mode", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -203,6 +235,26 @@ describe("SslCertificateForm", () => {
         '[aria-label="data-source.ssl.ca-source.self"] [aria-disabled="true"][aria-checked="true"]'
       )
     ).not.toBeNull();
+    expect(
+      container.querySelector(
+        '[aria-label="data-source.ssl.client-cert-source.self"] [aria-disabled="true"][aria-checked="true"]'
+      )
+    ).not.toBeNull();
+    expect(
+      container.querySelector<HTMLInputElement>(
+        '[data-testid="tls-ca-path-input"]'
+      )?.disabled
+    ).toBe(true);
+    expect(
+      container.querySelector<HTMLInputElement>(
+        '[data-testid="tls-cert-path-input"]'
+      )?.disabled
+    ).toBe(true);
+    expect(
+      container.querySelector<HTMLInputElement>(
+        '[data-testid="tls-key-path-input"]'
+      )?.disabled
+    ).toBe(true);
     expect(container.textContent).toContain(
       "data-source.ssl.ca-source.file-path-unavailable-saas"
     );
@@ -238,6 +290,46 @@ describe("SslCertificateForm", () => {
       "data-source.ssl.mutual-tls-unavailable-engine"
     );
     expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("falls back from mutual TLS for unsupported engines without saved client identity", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          posture="MUTUAL_TLS"
+          onPostureChange={() => {}}
+          caSource="SYSTEM_TRUST"
+          onCaSourceChange={() => {}}
+          clientCertSource="NONE"
+          onClientCertSourceChange={() => {}}
+          useSsl={true}
+          verify={true}
+          onVerifyChange={() => {}}
+          engineType={Engine.MSSQL}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain(
+      "data-source.ssl.mutual-tls-unavailable-engine"
+    );
+    expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
+    expect(
+      container.querySelector(
+        '[aria-label="data-source.ssl.posture.self"] [aria-disabled="true"][aria-checked="true"]'
+      )
+    ).toBeNull();
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.client-identity"
+    );
 
     act(() => {
       root.unmount();

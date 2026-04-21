@@ -267,11 +267,15 @@ export function SslCertificateForm({
   const resolvedCertPlaceholder = t("data-source.ssl.client-cert-placeholder");
   const resolvedKeyPlaceholder = t("data-source.ssl.client-key-placeholder");
   const resolvedUseSsl = useSsl ?? true;
-  const showPostureUi = posture !== undefined && !!onPostureChange;
   const showUseSslSwitch = useSsl !== undefined && !!onUseSslChange;
   const showCaSourceUi = caSource !== undefined && !!onCaSourceChange;
   const showClientCertSourceUi =
     clientCertSource !== undefined && !!onClientCertSourceChange;
+  const showPostureUi =
+    posture !== undefined &&
+    !!onPostureChange &&
+    showCaSourceUi &&
+    showClientCertSourceUi;
   const showPerGroupSourceUi = showCaSourceUi || showClientCertSourceUi;
 
   const showKeyAndCertFields =
@@ -317,18 +321,22 @@ export function SslCertificateForm({
     : inferredClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
       ? LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM
       : inferredClientCertSource;
-  const resolvedPosture =
-    posture ??
-    (resolvedUseSsl
-      ? resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
-        ? LOCAL_TLS_POSTURE_TLS
-        : LOCAL_TLS_POSTURE_MUTUAL_TLS
-      : LOCAL_TLS_POSTURE_DISABLED);
+  const inferredPosture = resolvedUseSsl
+    ? resolvedClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+      ? LOCAL_TLS_POSTURE_TLS
+      : LOCAL_TLS_POSTURE_MUTUAL_TLS
+    : LOCAL_TLS_POSTURE_DISABLED;
+  const requestedPosture =
+    showPostureUi && posture !== undefined ? posture : inferredPosture;
   const supportsClientIdentity =
     showKeyAndCertFields && isLocalTlsClientIdentitySupported(engineType);
   const savedClientIdentity =
     resolvedClientCertSource !== LOCAL_TLS_CLIENT_CERT_SOURCE_NONE;
   const canSelectMutualTls = supportsClientIdentity || savedClientIdentity;
+  const resolvedPosture =
+    requestedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canSelectMutualTls
+      ? LOCAL_TLS_POSTURE_TLS
+      : requestedPosture;
   const showConfiguredBadge = (hasStoredValue: boolean, visibleValue: string) =>
     hasStoredValue && !visibleValue;
   const renderLabel = (
@@ -391,6 +399,7 @@ export function SslCertificateForm({
         <div className="flex flex-col gap-y-1">
           {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
           <Input
+            data-testid="tls-ca-path-input"
             value={caPath}
             onChange={(e) => onCaPathChange?.(e.target.value)}
             disabled={disabled || isSaaSMode}
@@ -427,6 +436,7 @@ export function SslCertificateForm({
           <div className="flex flex-col gap-y-1">
             {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
             <Input
+              data-testid="tls-cert-path-input"
               value={certPath}
               onChange={(e) => onCertPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -436,6 +446,7 @@ export function SslCertificateForm({
           <div className="flex flex-col gap-y-1">
             {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
             <Input
+              data-testid="tls-key-path-input"
               value={keyPath}
               onChange={(e) => onKeyPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -477,6 +488,7 @@ export function SslCertificateForm({
           <div className="flex flex-col gap-y-1">
             {renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
             <Input
+              data-testid="tls-ca-path-input"
               value={caPath}
               onChange={(e) => onCaPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -487,6 +499,7 @@ export function SslCertificateForm({
             <div className="flex flex-col gap-y-1">
               {renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
               <Input
+                data-testid="tls-cert-path-input"
                 value={certPath}
                 onChange={(e) => onCertPathChange?.(e.target.value)}
                 disabled={disabled || isSaaSMode}
@@ -498,6 +511,7 @@ export function SslCertificateForm({
             <div className="flex flex-col gap-y-1">
               {renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
               <Input
+                data-testid="tls-key-path-input"
                 value={keyPath}
                 onChange={(e) => onKeyPathChange?.(e.target.value)}
                 disabled={disabled || isSaaSMode}
