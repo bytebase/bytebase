@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/bytebase/gomongo"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -157,6 +156,11 @@ func (d *Driver) buildMongoshBaseArgs() (args []string, cleanup func(), err erro
 	}
 
 	var cleanups []string
+	cleanup = func() {
+		for _, f := range cleanups {
+			_ = os.Remove(f)
+		}
+	}
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		args = append(args, "--tls")
@@ -164,34 +168,49 @@ func (d *Driver) buildMongoshBaseArgs() (args []string, cleanup func(), err erro
 			args = append(args, "--tlsAllowInvalidHostnames", "--tlsAllowInvalidCertificates")
 		}
 
-		id := uuid.New().String()
 		if d.connCfg.DataSource.GetSslCa() == "" {
 			args = append(args, "--tlsUseSystemCA")
 		} else {
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", d.connCfg.ConnectionContext.DatabaseName, id)
-			if err := os.WriteFile(caFileName, []byte(d.connCfg.DataSource.GetSslCa()), 0400); err != nil {
+			caFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-ca-%s-*", d.connCfg.ConnectionContext.DatabaseName))
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "failed to create tlsCAFile temporary file")
+			}
+			if _, err := caFile.WriteString(d.connCfg.DataSource.GetSslCa()); err != nil {
+				_ = caFile.Close()
+				_ = os.Remove(caFile.Name())
 				return nil, nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
-			cleanups = append(cleanups, caFileName)
-			args = append(args, "--tlsCAFile", caFileName)
+			if err := caFile.Close(); err != nil {
+				_ = os.Remove(caFile.Name())
+				return nil, nil, errors.Wrap(err, "failed to close tlsCAFile temporary file")
+			}
+			cleanups = append(cleanups, caFile.Name())
+			args = append(args, "--tlsCAFile", caFile.Name())
 		}
 
 		if d.connCfg.DataSource.GetSslKey() != "" && d.connCfg.DataSource.GetSslCert() != "" {
-			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", d.connCfg.ConnectionContext.DatabaseName, id)
+			clientCertFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-client-cert-%s-*", d.connCfg.ConnectionContext.DatabaseName))
+			if err != nil {
+				cleanup()
+				return nil, nil, errors.Wrap(err, "failed to create client certificate temporary file")
+			}
 			certContent := d.connCfg.DataSource.GetSslKey() + "\n" + d.connCfg.DataSource.GetSslCert()
-			if err := os.WriteFile(clientCertName, []byte(certContent), 0400); err != nil {
+			if _, err := clientCertFile.WriteString(certContent); err != nil {
+				_ = clientCertFile.Close()
+				_ = os.Remove(clientCertFile.Name())
+				cleanup()
 				return nil, nil, errors.Wrap(err, "failed to write client certificate to temporary file")
 			}
-			cleanups = append(cleanups, clientCertName)
-			args = append(args, "--tlsCertificateKeyFile", clientCertName)
+			if err := clientCertFile.Close(); err != nil {
+				_ = os.Remove(clientCertFile.Name())
+				cleanup()
+				return nil, nil, errors.Wrap(err, "failed to close client certificate temporary file")
+			}
+			cleanups = append(cleanups, clientCertFile.Name())
+			args = append(args, "--tlsCertificateKeyFile", clientCertFile.Name())
 		}
 	}
 
-	cleanup = func() {
-		for _, f := range cleanups {
-			_ = os.Remove(f)
-		}
-	}
 	return args, cleanup, nil
 }
 
@@ -400,6 +419,12 @@ func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, que
 		"--retryWrites",
 		"false",
 	}
+	var tlsTempFiles []string
+	defer func() {
+		for _, fileName := range tlsTempFiles {
+			_ = os.Remove(fileName)
+		}
+	}()
 
 	if d.connCfg.DataSource.GetUseSsl() {
 		mongoshArgs = append(mongoshArgs, "--tls")
@@ -410,52 +435,74 @@ func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, que
 			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidCertificates")
 		}
 
-		uuid := uuid.New().String()
 		if d.connCfg.DataSource.GetSslCa() == "" {
 			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
 		} else {
-			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
-			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", d.connCfg.ConnectionContext.DatabaseName, uuid)
-			defer func() {
-				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-				_ = os.Remove(caFileName)
-			}()
-			if err := os.WriteFile(caFileName, []byte(d.connCfg.DataSource.GetSslCa()), 0400); err != nil {
+			caFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-ca-%s-*", d.connCfg.ConnectionContext.DatabaseName))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create tlsCAFile temporary file")
+			}
+			if _, err := caFile.WriteString(d.connCfg.DataSource.GetSslCa()); err != nil {
+				_ = caFile.Close()
+				_ = os.Remove(caFile.Name())
 				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
-			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+			if err := caFile.Close(); err != nil {
+				_ = os.Remove(caFile.Name())
+				return nil, errors.Wrap(err, "failed to close tlsCAFile temporary file")
+			}
+			tlsTempFiles = append(tlsTempFiles, caFile.Name())
+			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFile.Name())
 		}
 
 		if d.connCfg.DataSource.GetSslKey() != "" && d.connCfg.DataSource.GetSslCert() != "" {
-			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", d.connCfg.ConnectionContext.DatabaseName, uuid)
-			defer func() {
-				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-				_ = os.Remove(clientCertName)
-			}()
+			clientCertFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-client-cert-%s-*", d.connCfg.ConnectionContext.DatabaseName))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create client certificate temporary file")
+			}
 			var sb strings.Builder
 			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslKey()); err != nil {
+				_ = clientCertFile.Close()
+				_ = os.Remove(clientCertFile.Name())
 				return nil, errors.Wrapf(err, "failed to write ssl key into string builder")
 			}
 			if _, err := sb.WriteString("\n"); err != nil {
+				_ = clientCertFile.Close()
+				_ = os.Remove(clientCertFile.Name())
 				return nil, errors.Wrapf(err, "failed to write new line into string builder")
 			}
 			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslCert()); err != nil {
+				_ = clientCertFile.Close()
+				_ = os.Remove(clientCertFile.Name())
 				return nil, errors.Wrapf(err, "failed to write ssl cert into string builder")
 			}
-			if err := os.WriteFile(clientCertName, []byte(sb.String()), 0400); err != nil {
+			if _, err := clientCertFile.WriteString(sb.String()); err != nil {
+				_ = clientCertFile.Close()
+				_ = os.Remove(clientCertFile.Name())
 				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
-			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertName)
+			if err := clientCertFile.Close(); err != nil {
+				_ = os.Remove(clientCertFile.Name())
+				return nil, errors.Wrap(err, "failed to close client certificate temporary file")
+			}
+			tlsTempFiles = append(tlsTempFiles, clientCertFile.Name())
+			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertFile.Name())
 		}
 	}
 
-	queryResultFileName := fmt.Sprintf("mongodb-query-%s-%s", d.connCfg.ConnectionContext.DatabaseName, uuid.New().String())
+	queryResultFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-query-%s-*", d.connCfg.ConnectionContext.DatabaseName))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create query result temporary file")
+	}
+	if err := queryResultFile.Close(); err != nil {
+		_ = os.Remove(queryResultFile.Name())
+		return nil, errors.Wrap(err, "failed to close query result temporary file")
+	}
 	defer func() {
 		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-		_ = os.Remove(queryResultFileName)
+		_ = os.Remove(queryResultFile.Name())
 	}()
-	mongoshArgs = append(mongoshArgs, ">", queryResultFileName)
+	mongoshArgs = append(mongoshArgs, ">", queryResultFile.Name())
 
 	shellArgs := []string{
 		"-c",
@@ -467,7 +514,7 @@ func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, que
 	shCmd.Stderr = &errContent
 	shCmd.Stdout = &outContent
 	if err := shCmd.Run(); err != nil {
-		f, ferr := os.OpenFile(queryResultFileName, os.O_RDONLY, 0644)
+		f, ferr := os.OpenFile(queryResultFile.Name(), os.O_RDONLY, 0644)
 		if ferr == nil {
 			defer f.Close()
 			if content, ferr := io.ReadAll(f); ferr == nil {
@@ -481,9 +528,9 @@ func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, que
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
 
-	f, err := os.OpenFile(queryResultFileName, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(queryResultFile.Name(), os.O_RDONLY, 0644)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFileName)
+		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFile.Name())
 	}
 	defer f.Close()
 
@@ -501,7 +548,7 @@ func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, que
 
 	content, err := io.ReadAll(f)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file: %s", queryResultFileName)
+		return nil, errors.Wrapf(err, "failed to read file: %s", queryResultFile.Name())
 	}
 
 	if simpleStatement {

@@ -1763,6 +1763,24 @@ type DataSource struct {
 	SslCert string `protobuf:"bytes,6,opt,name=ssl_cert,json=sslCert,proto3" json:"ssl_cert,omitempty"`
 	// The SSL client private key.
 	SslKey string `protobuf:"bytes,7,opt,name=ssl_key,json=sslKey,proto3" json:"ssl_key,omitempty"`
+	// The local filesystem path to the SSL certificate authority certificate.
+	SslCaPath string `protobuf:"bytes,41,opt,name=ssl_ca_path,json=sslCaPath,proto3" json:"ssl_ca_path,omitempty"`
+	// The local filesystem path to the SSL client certificate.
+	SslCertPath string `protobuf:"bytes,42,opt,name=ssl_cert_path,json=sslCertPath,proto3" json:"ssl_cert_path,omitempty"`
+	// The local filesystem path to the SSL client private key.
+	SslKeyPath string `protobuf:"bytes,43,opt,name=ssl_key_path,json=sslKeyPath,proto3" json:"ssl_key_path,omitempty"`
+	// Whether an SSL certificate authority certificate has been configured.
+	SslCaSet bool `protobuf:"varint,44,opt,name=ssl_ca_set,json=sslCaSet,proto3" json:"ssl_ca_set,omitempty"`
+	// Whether an SSL client certificate has been configured.
+	SslCertSet bool `protobuf:"varint,45,opt,name=ssl_cert_set,json=sslCertSet,proto3" json:"ssl_cert_set,omitempty"`
+	// Whether an SSL client private key has been configured.
+	SslKeySet bool `protobuf:"varint,46,opt,name=ssl_key_set,json=sslKeySet,proto3" json:"ssl_key_set,omitempty"`
+	// Whether an SSL certificate authority path has been configured.
+	SslCaPathSet bool `protobuf:"varint,47,opt,name=ssl_ca_path_set,json=sslCaPathSet,proto3" json:"ssl_ca_path_set,omitempty"`
+	// Whether an SSL client certificate path has been configured.
+	SslCertPathSet bool `protobuf:"varint,48,opt,name=ssl_cert_path_set,json=sslCertPathSet,proto3" json:"ssl_cert_path_set,omitempty"`
+	// Whether an SSL client private key path has been configured.
+	SslKeyPathSet bool `protobuf:"varint,49,opt,name=ssl_key_path_set,json=sslKeyPathSet,proto3" json:"ssl_key_path_set,omitempty"`
 	// verify_tls_certificate enables TLS certificate verification for SSL connections.
 	// Default is false (no verification) for backward compatibility.
 	// Set to true for secure connections (recommended for production).
@@ -1920,6 +1938,69 @@ func (x *DataSource) GetSslKey() string {
 		return x.SslKey
 	}
 	return ""
+}
+
+func (x *DataSource) GetSslCaPath() string {
+	if x != nil {
+		return x.SslCaPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCertPath() string {
+	if x != nil {
+		return x.SslCertPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslKeyPath() string {
+	if x != nil {
+		return x.SslKeyPath
+	}
+	return ""
+}
+
+func (x *DataSource) GetSslCaSet() bool {
+	if x != nil {
+		return x.SslCaSet
+	}
+	return false
+}
+
+func (x *DataSource) GetSslCertSet() bool {
+	if x != nil {
+		return x.SslCertSet
+	}
+	return false
+}
+
+func (x *DataSource) GetSslKeySet() bool {
+	if x != nil {
+		return x.SslKeySet
+	}
+	return false
+}
+
+func (x *DataSource) GetSslCaPathSet() bool {
+	if x != nil {
+		return x.SslCaPathSet
+	}
+	return false
+}
+
+func (x *DataSource) GetSslCertPathSet() bool {
+	if x != nil {
+		return x.SslCertPathSet
+	}
+	return false
+}
+
+func (x *DataSource) GetSslKeyPathSet() bool {
+	if x != nil {
+		return x.SslKeyPathSet
+	}
+	return false
 }
 
 func (x *DataSource) GetVerifyTlsCertificate() bool {
@@ -2895,7 +2976,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +
 	"\x0eVAULT_APP_ROLE\x10\x02B\r\n" +
-	"\vauth_option\"\xa5\x14\n" +
+	"\vauth_option\"\x93\x17\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
@@ -2905,7 +2986,19 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1a\n" +
 	"\x06ssl_ca\x18\x05 \x01(\tB\x03\xe0A\x04R\x05sslCa\x12\x1e\n" +
 	"\bssl_cert\x18\x06 \x01(\tB\x03\xe0A\x04R\asslCert\x12\x1c\n" +
-	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x124\n" +
+	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x12#\n" +
+	"\vssl_ca_path\x18) \x01(\tB\x03\xe0A\x04R\tsslCaPath\x12'\n" +
+	"\rssl_cert_path\x18* \x01(\tB\x03\xe0A\x04R\vsslCertPath\x12%\n" +
+	"\fssl_key_path\x18+ \x01(\tB\x03\xe0A\x04R\n" +
+	"sslKeyPath\x12!\n" +
+	"\n" +
+	"ssl_ca_set\x18, \x01(\bB\x03\xe0A\x03R\bsslCaSet\x12%\n" +
+	"\fssl_cert_set\x18- \x01(\bB\x03\xe0A\x03R\n" +
+	"sslCertSet\x12#\n" +
+	"\vssl_key_set\x18. \x01(\bB\x03\xe0A\x03R\tsslKeySet\x12*\n" +
+	"\x0fssl_ca_path_set\x18/ \x01(\bB\x03\xe0A\x03R\fsslCaPathSet\x12.\n" +
+	"\x11ssl_cert_path_set\x180 \x01(\bB\x03\xe0A\x03R\x0esslCertPathSet\x12,\n" +
+	"\x10ssl_key_path_set\x181 \x01(\bB\x03\xe0A\x03R\rsslKeyPathSet\x124\n" +
 	"\x16verify_tls_certificate\x18' \x01(\bR\x14verifyTlsCertificate\x12\x12\n" +
 	"\x04host\x18\b \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\t \x01(\tR\x04port\x12\x1a\n" +

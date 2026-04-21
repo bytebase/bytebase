@@ -13,6 +13,25 @@ import {
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
+import { hasSslConfig, SSL_UPDATE_MASK_FIELDS } from "./tls";
+
+export type TlsUpdateState =
+  | boolean
+  | {
+      useSsl?: boolean;
+      ca?: boolean;
+      clientCert?: boolean;
+    };
+
+const SSL_CA_UPDATE_MASK_FIELDS = ["use_ssl", "ssl_ca", "ssl_ca_path"] as const;
+
+const SSL_CLIENT_CERT_UPDATE_MASK_FIELDS = [
+  "use_ssl",
+  "ssl_cert",
+  "ssl_key",
+  "ssl_cert_path",
+  "ssl_key_path",
+] as const;
 
 export type BasicInfo = Omit<
   Instance,
@@ -25,7 +44,7 @@ export type EditDataSource = DataSource & {
   updatedMasterPassword: string;
   useEmptyPassword?: boolean;
   useEmptyMasterPassword?: boolean;
-  updateSsl?: boolean;
+  updateSsl?: TlsUpdateState;
   extraConnectionParameters?: Record<string, string>;
 };
 
@@ -126,11 +145,26 @@ export const calcDataSourceUpdateMask = (
     editing.password = "";
     updateMask.add("password");
   }
-  if (updateSsl) {
-    updateMask.add("use_ssl");
-    updateMask.add("ssl_ca");
-    updateMask.add("ssl_key");
-    updateMask.add("ssl_cert");
+  updateMask.delete("ssl_ca_set");
+  updateMask.delete("ssl_cert_set");
+  updateMask.delete("ssl_key_set");
+  updateMask.delete("ssl_ca_path_set");
+  updateMask.delete("ssl_cert_path_set");
+  updateMask.delete("ssl_key_path_set");
+  if (updateSsl === true) {
+    SSL_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+  } else if (updateSsl) {
+    if (updateSsl.useSsl) {
+      updateMask.add("use_ssl");
+    }
+    if (updateSsl.ca) {
+      SSL_CA_UPDATE_MASK_FIELDS.forEach((field) => updateMask.add(field));
+    }
+    if (updateSsl.clientCert) {
+      SSL_CLIENT_CERT_UPDATE_MASK_FIELDS.forEach((field) =>
+        updateMask.add(field)
+      );
+    }
   }
 
   if (updateMask.has("iam_extension")) {
@@ -150,3 +184,5 @@ export const calcDataSourceUpdateMask = (
 
   return Array.from(updateMask);
 };
+
+export { hasSslConfig };

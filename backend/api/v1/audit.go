@@ -659,11 +659,20 @@ func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
 	if cloned.SslCa != "" {
 		cloned.SslCa = maskedString
 	}
+	if cloned.SslCaPath != "" {
+		cloned.SslCaPath = maskedString
+	}
 	if cloned.SslCert != "" {
 		cloned.SslCert = maskedString
 	}
+	if cloned.SslCertPath != "" {
+		cloned.SslCertPath = maskedString
+	}
 	if cloned.SslKey != "" {
 		cloned.SslKey = maskedString
+	}
+	if cloned.SslKeyPath != "" {
+		cloned.SslKeyPath = maskedString
 	}
 	if cloned.SshPassword != "" {
 		cloned.SshPassword = maskedString
