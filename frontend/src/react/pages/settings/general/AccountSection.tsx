@@ -66,14 +66,26 @@ interface TokenState {
 const EMPTY_TOKEN_DURATION_DEFAULT = 1;
 const EMPTY_INACTIVE_TIMEOUT_DEFAULT = -1;
 
+// Canonicalizes TokenState for both isDirty comparison and save: coerces
+// transient `null` inputs to defaults and floors any fractional values (paste
+// of "1.5" etc.) so the two paths always agree on what counts as a change.
 function normalizeTokenState(state: TokenState): TokenState {
+  const floorOr = (v: number | null, fallback: number): number =>
+    Math.floor(v ?? fallback);
   return {
     ...state,
-    accessTokenDuration:
-      state.accessTokenDuration ?? EMPTY_TOKEN_DURATION_DEFAULT,
-    refreshTokenDuration:
-      state.refreshTokenDuration ?? EMPTY_TOKEN_DURATION_DEFAULT,
-    inactiveTimeout: state.inactiveTimeout ?? EMPTY_INACTIVE_TIMEOUT_DEFAULT,
+    accessTokenDuration: floorOr(
+      state.accessTokenDuration,
+      EMPTY_TOKEN_DURATION_DEFAULT
+    ),
+    refreshTokenDuration: floorOr(
+      state.refreshTokenDuration,
+      EMPTY_TOKEN_DURATION_DEFAULT
+    ),
+    inactiveTimeout: floorOr(
+      state.inactiveTimeout,
+      EMPTY_INACTIVE_TIMEOUT_DEFAULT
+    ),
   };
 }
 
@@ -277,20 +289,14 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         updateMaskPaths.push("value.workspace_profile.password_restriction");
       }
 
-      // Token durations (coerce transient `null` inputs to defaults before
-      // save, then floor to integers — the proto fields convert to BigInt
-      // seconds, which rejects fractional values).
+      // Token durations — `normalizeTokenState` coerces transient `null`
+      // inputs to defaults and floors fractional values, so the resolved
+      // shape matches what isDirty compared against.
       const initToken = getInitialTokenState();
       const resolvedToken = normalizeTokenState(tokenState);
-      const accessTokenDuration = Math.floor(
-        resolvedToken.accessTokenDuration as number
-      );
-      const refreshTokenDuration = Math.floor(
-        resolvedToken.refreshTokenDuration as number
-      );
-      const inactiveTimeout = Math.floor(
-        resolvedToken.inactiveTimeout as number
-      );
+      const accessTokenDuration = resolvedToken.accessTokenDuration as number;
+      const refreshTokenDuration = resolvedToken.refreshTokenDuration as number;
+      const inactiveTimeout = resolvedToken.inactiveTimeout as number;
 
       if (
         initToken.accessTokenDuration !== accessTokenDuration ||
