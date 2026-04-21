@@ -72,7 +72,9 @@
         </div>
       </div>
     </div>
-    <ConnectionHolder v-else />
+    <div v-else class="flex-1 flex flex-col min-h-0">
+      <ReactPageMount page="ConnectionHolder" />
+    </div>
   </div>
 </template>
 
@@ -88,17 +90,14 @@ import {
 } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useWebTerminalStore,
 } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
-import {
-  ConnectionHolder,
-  EditorAction,
-  ResultViewV1,
-} from "../../EditorCommon";
+import { EditorAction, ResultViewV1 } from "../../EditorCommon";
 import { useHistory } from "./useHistory";
 
 const CompactSQLEditor = defineAsyncComponent(

@@ -223,6 +223,7 @@
     "general": "Chung",
     "group": "Nhóm",
     "groups": "Nhóm",
+    "history": "Lịch sử",
     "home": "Trang chủ",
     "id": "ID",
     "import": "Nhập",
@@ -2169,6 +2170,7 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "jit": "Just-In-Time Access",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Trình soạn thảo SQL",
@@ -3155,5 +3157,8 @@
       "description": "Sao chép mã và nhập nó vào ứng dụng TOTP của bạn theo cách thủ công.",
       "self": "Bí mật hai yếu tố của bạn"
     }
+  },
+  "worksheet": {
+    "self": "Bảng tính"
   }
 }

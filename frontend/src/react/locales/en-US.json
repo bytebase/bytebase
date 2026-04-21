@@ -223,6 +223,7 @@
     "general": "General",
     "group": "Group",
     "groups": "Groups",
+    "history": "History",
     "home": "Home",
     "id": "ID",
     "import": "Import",
@@ -2169,6 +2170,7 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "jit": "Just-In-Time Access",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQL Editor",
@@ -3155,5 +3157,8 @@
       "description": "Copy the code and enter it in your TOTP app manually.",
       "self": "Your two-factor secret"
     }
+  },
+  "worksheet": {
+    "self": "Worksheet"
   }
 }

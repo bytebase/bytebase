@@ -223,6 +223,7 @@
     "general": "通用",
     "group": "组",
     "groups": "分组",
+    "history": "历史记录",
     "home": "主页",
     "id": "ID",
     "import": "导入",
@@ -2169,6 +2170,7 @@
     "expired": "已过期",
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
+    "jit": "即时访问",
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "self": "SQL 编辑器",
@@ -3155,5 +3157,8 @@
       "description": "复制密钥并在您的应用程序中手动输入。",
       "self": "双重认证密钥"
     }
+  },
+  "worksheet": {
+    "self": "工作表"
   }
 }

@@ -223,6 +223,7 @@
     "general": "General",
     "group": "Grupo",
     "groups": "Grupos",
+    "history": "Historial",
     "home": "Inicio",
     "id": "ID",
     "import": "Importar",
@@ -2169,6 +2170,7 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "jit": "Just-In-Time Access",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "Editor de SQL",
@@ -3155,5 +3157,8 @@
       "description": "Copie el código e ingréselo manualmente en su aplicación TOTP.",
       "self": "Su secreto de dos factores"
     }
+  },
+  "worksheet": {
+    "self": "Hoja de trabajo"
   }
 }
