@@ -38,9 +38,10 @@ then
 fi
 
 NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
-if [ "$(version ${NODE_VERSION})" -lt "$(version 23.11.0)" ];
+TARGET_NODE_VERSION=24.14.0
+if [ "$(version ${NODE_VERSION})" -lt "$(version $TARGET_NODE_VERSION)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require node.js version >= 23.11.0. Current version ${NODE_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require node.js version >= $TARGET_NODE_VERSION. Current version ${NODE_VERSION}."; exit 1;
 fi
 
 if ! command -v npm > /dev/null

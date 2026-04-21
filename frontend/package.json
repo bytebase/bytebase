@@ -1,6 +1,7 @@
 {
   "name": "bytebase",
   "license": "SEE LICENSE IN LICENSE",
+  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "copy:config-files": "sh ./scripts/copy_config_files.sh",
     "prepare:artifacts": "pnpm run copy:config-files && pnpm run generate:openapi-index",
@@ -121,7 +122,7 @@
     "@types/lodash-es": "4.17.12",
     "@types/markdown-it": "^14.1.2",
     "@types/mdast": "^4.0.4",
-    "@types/node": "25.3.3",
+    "@types/node": "24.12.2",
     "@types/normalize-wheel": "^1.0.4",
     "@types/pouchdb": "^6.4.2",
     "@types/pouchdb-find": "^7.3.3",
