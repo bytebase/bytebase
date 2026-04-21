@@ -146,13 +146,10 @@
       "verification-code": "認証コード"
     },
     "sign-up": {
-      "accept-terms-and-policy": "Bytebase の {{terms}} と {{policy}} に同意します",
-      "admin-account": "管理者アカウント",
-      "admin-title": "{{account}} の登録",
+      "accept-terms-and-policy": "Bytebase の <terms>利用規約</terms> と <policy>プライバシーポリシー</policy> に同意します",
+      "admin-title": "<account>管理者アカウント</account> の登録",
       "create-admin-account": "管理者アカウントを作成",
       "existing-user": "すでにアカウントをお持ちですか？",
-      "privacy-policy": "プライバシーポリシー",
-      "terms-of-service": "利用規約",
       "title": "アカウントを登録してください"
     }
   },

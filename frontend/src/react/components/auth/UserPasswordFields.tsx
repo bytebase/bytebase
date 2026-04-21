@@ -52,9 +52,9 @@ export function UserPasswordFields(props: Props) {
       {validation.checks.map((check) => (
         <li key={check.key} className="flex gap-x-1 items-center">
           {check.matched ? (
-            <CircleCheck className="w-4 text-green-400" />
+            <CircleCheck className="w-4 text-success" />
           ) : (
-            <CircleAlert className="w-4 text-red-400" />
+            <CircleAlert className="w-4 text-error" />
           )}
           <span>
             {t(CHECK_KEY_TO_I18N[check.key], {

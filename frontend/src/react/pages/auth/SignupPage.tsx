@@ -107,11 +107,7 @@ export function SignupPage() {
                 <Trans
                   i18nKey="auth.sign-up.admin-title"
                   components={{
-                    account: (
-                      <span className="text-accent font-semibold">
-                        {t("auth.sign-up.admin-account")}
-                      </span>
-                    ),
+                    account: <span className="text-accent font-semibold" />,
                   }}
                 />
               </p>
@@ -189,17 +185,13 @@ export function SignupPage() {
                         <a
                           href="https://www.bytebase.com/terms?source=console"
                           className="text-accent"
-                        >
-                          {t("auth.sign-up.terms-of-service")}
-                        </a>
+                        />
                       ),
                       policy: (
                         <a
                           href="https://www.bytebase.com/privacy?source=console"
                           className="text-accent"
-                        >
-                          {t("auth.sign-up.privacy-policy")}
-                        </a>
+                        />
                       ),
                     }}
                   />

@@ -111,20 +111,20 @@ export function OAuth2ConsentPage() {
         ) : (
           <div className="space-y-6">
             <div className="text-center">
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">
+              <h1 className="text-xl font-semibold text-main mb-2">
                 {t("oauth2.consent.title")}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-control">
                 {t("oauth2.consent.description", { clientName })}
               </p>
             </div>
-            <div className="bg-gray-50 rounded-sm p-4">
-              <p className="text-sm text-gray-500 mb-2">
+            <div className="bg-control-bg rounded-sm p-4">
+              <p className="text-sm text-control-light mb-2">
                 {t("oauth2.consent.permissions")}
               </p>
-              <ul className="text-sm text-gray-700 space-y-1">
+              <ul className="text-sm text-main space-y-1">
                 <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4 text-success" />
                   {t("oauth2.consent.permission-access")}
                 </li>
               </ul>

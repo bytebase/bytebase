@@ -42,13 +42,13 @@ export function AuthFooter() {
 
   return (
     <div className="absolute left-0 bottom-0 mb-8 text-center w-full">
-      <p className="block text-sm text-gray-400 flex justify-center gap-x-2">
+      <p className="block text-sm text-control-light flex justify-center gap-x-2">
         {LANGUAGE_LIST.map((item) => (
           <a
             key={item.label}
             href="#"
-            className={`hover:text-gray-600 ${
-              item.label === activeLabel ? "text-gray-800" : ""
+            className={`hover:text-control ${
+              item.label === activeLabel ? "text-main" : ""
             }`}
             onClick={(e) => {
               e.preventDefault();
@@ -59,7 +59,7 @@ export function AuthFooter() {
           </a>
         ))}
       </p>
-      <p className="text-sm text-gray-400 mt-1">
+      <p className="text-sm text-control-light mt-1">
         &copy; {year} Bytebase. All rights reserved.
       </p>
     </div>

@@ -120,15 +120,15 @@ describe("AuthFooter", () => {
     unmount();
   });
 
-  test("highlights the current locale with text-gray-800", () => {
+  test("highlights the current locale with text-main", () => {
     mocks.useVueState.mockReturnValue("zh-CN");
     const { container, render, unmount } = renderIntoContainer(<AuthFooter />);
     render();
     const anchors = Array.from(container.querySelectorAll("a"));
     const zhAnchor = anchors.find((a) => a.textContent === "简体中文");
     const enAnchor = anchors.find((a) => a.textContent === "English");
-    expect(zhAnchor?.className).toContain("text-gray-800");
-    expect(enAnchor?.className).not.toContain("text-gray-800");
+    expect(zhAnchor?.className).toContain("text-main");
+    expect(enAnchor?.className).not.toContain("text-main");
     unmount();
   });
 
