@@ -1517,7 +1517,7 @@ func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
 func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
 	hasSystem, hasUser := false, false
 	for table := range m {
-		if isSystemResource(table, ignoreCaseSensitive) {
+		if isSystemResource(table) {
 			hasSystem = true
 		} else {
 			hasUser = true
