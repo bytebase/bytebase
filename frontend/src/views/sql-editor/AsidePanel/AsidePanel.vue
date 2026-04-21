@@ -5,7 +5,7 @@
     :data-width="containerWidth"
   >
     <div class="h-full border-r shrink-0">
-      <GutterBar size="medium" />
+      <ReactPageMount page="GutterBar" />
     </div>
     <div
       v-if="asidePanelTab === 'SCHEMA' && !isDisconnected"
@@ -67,6 +67,7 @@ import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { ProjectSelect } from "@/components/v2";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useActuatorV1Store,
@@ -78,7 +79,6 @@ import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AccessPane from "./AccessPane";
 import ActionBar from "./ActionBar";
-import GutterBar from "./GutterBar";
 import HistoryPane from "./HistoryPane";
 import SchemaPane from "./SchemaPane";
 import WorksheetPane from "./WorksheetPane";

@@ -1,17 +1,18 @@
 import { create } from "@bufbuild/protobuf";
-import { useLocalStorage, watchDebounced } from "@vueuse/core";
+import { watchDebounced } from "@vueuse/core";
 import Emittery from "emittery";
 import { isUndefined } from "lodash-es";
 import { type IRange } from "monaco-editor";
 import { storeToRefs } from "pinia";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
-import { computed, inject, nextTick, provide, ref } from "vue";
+import { inject, nextTick, provide } from "vue";
 import {
   pushNotification,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
+  useSQLEditorUIStore,
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
@@ -26,7 +27,6 @@ import {
   isSimilarDefaultSQLEditorTabTitle,
   isWorksheetWritableV1,
   NEW_WORKSHEET_TITLE,
-  STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
@@ -38,8 +38,6 @@ export const ASIDE_PANEL_TABS = [
   "ACCESS",
 ] as const;
 export type AsidePanelTab = (typeof ASIDE_PANEL_TABS)[number];
-
-const minimumEditorPanelSize = 0.5;
 
 export type SQLEditorEvents = Emittery<{
   "save-sheet": {
@@ -125,27 +123,16 @@ export const provideSQLEditorContext = () => {
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const worksheetStore = useWorkSheetStore();
-  const showConnectionPanel = ref(false);
-
-  const aiPanelSize = useLocalStorage(
-    STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
-    0.3 /* panel size should in [0.1, 1-minimumEditorPanelSize]*/
-  );
-  const showAIPanel = ref(false);
-  const editorPanelSize = computed(() => {
-    if (!showAIPanel.value) {
-      return {
-        size: 1,
-        max: 1,
-        min: 1,
-      };
-    }
-    return {
-      size: Math.max(1 - aiPanelSize.value, minimumEditorPanelSize),
-      max: 0.9,
-      min: minimumEditorPanelSize,
-    };
-  });
+  const uiStore = useSQLEditorUIStore();
+  const {
+    asidePanelTab,
+    showConnectionPanel,
+    showAIPanel,
+    schemaViewer,
+    pendingInsertAtCaret,
+    highlightAccessGrantName,
+    editorPanelSize,
+  } = storeToRefs(uiStore);
 
   const maybeUpdateWorksheet = async ({
     tabId,
@@ -302,22 +289,17 @@ export const provideSQLEditorContext = () => {
   };
 
   const context: SQLEditorContext = {
-    asidePanelTab: ref("WORKSHEET"),
+    asidePanelTab,
     showConnectionPanel,
     showAIPanel,
     editorPanelSize,
-    schemaViewer: ref(undefined),
-    pendingInsertAtCaret: ref(),
-    highlightAccessGrantName: ref<string | undefined>(),
+    schemaViewer,
+    pendingInsertAtCaret,
+    highlightAccessGrantName,
     events: new Emittery(),
 
     maybeSwitchProject,
-    handleEditorPanelResize: (size: number) => {
-      if (size >= 1) {
-        return;
-      }
-      aiPanelSize.value = 1 - size;
-    },
+    handleEditorPanelResize: uiStore.handleEditorPanelResize,
     createWorksheet,
     maybeUpdateWorksheet,
     abortAutoSave,

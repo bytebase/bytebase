@@ -1,4 +1,3 @@
-import ConnectionHolder from "./ConnectionHolder.vue";
 import DisconnectedIcon from "./DisconnectedIcon.vue";
 import EditorAction from "./EditorAction.vue";
 import ExecutingHintModal from "./ExecutingHintModal.vue";
@@ -9,7 +8,6 @@ import SharePopover from "./SharePopover.vue";
 import SheetConnectionIcon from "./SheetConnectionIcon.vue";
 
 export {
-  ConnectionHolder,
   EditorAction,
   ExecutingHintModal,
   SaveSheetModal,

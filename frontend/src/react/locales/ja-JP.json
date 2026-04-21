@@ -223,6 +223,7 @@
     "general": "全般",
     "group": "グループ",
     "groups": "グループ",
+    "history": "履歴",
     "home": "ホームページ",
     "id": "ID",
     "import": "インポート",
@@ -2169,6 +2170,7 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "jit": "Just-In-Time Access",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "self": "SQLエディタ",
@@ -3155,5 +3157,8 @@
       "description": "キーをコピーし、アプリケーションに手動で入力します。",
       "self": "二要素認証キー"
     }
+  },
+  "worksheet": {
+    "self": "ワークシート"
   }
 }
