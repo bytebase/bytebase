@@ -78,7 +78,6 @@ import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
   getInstanceResource,
-  hasPermissionToCreateChangeDatabaseIssueInProject,
   setDocumentTitle,
 } from "@/utils";
 
@@ -131,11 +130,6 @@ export function ProjectReleaseDetailPage({
     return parts[parts.length - 1] || release.name;
   }, [release.name]);
 
-  const allowApply = useMemo(
-    () => hasPermissionToCreateChangeDatabaseIssueInProject(project),
-    [project]
-  );
-
   const isActive = release.state === State.ACTIVE;
   const isDeleted = release.state === State.DELETED;
 
@@ -181,7 +175,7 @@ export function ProjectReleaseDetailPage({
         </div>
         <div className="flex items-center justify-end gap-x-2">
           {isActive && (
-            <Button disabled={!allowApply} onClick={() => setApplyOpen(true)}>
+            <Button onClick={() => setApplyOpen(true)}>
               {t("common.apply-to-database")}
             </Button>
           )}
