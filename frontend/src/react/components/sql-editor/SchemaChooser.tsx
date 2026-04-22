@@ -65,9 +65,6 @@ export function SchemaChooser() {
     () => router.currentRoute.value.query.schema as string | undefined
   );
   const currentTabId = useVueState(() => tabStore.currentTab?.id);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: handleChange is
-  // defined inline and reads the live tabStore; omitting it is intentional
-  // so the effect re-runs only on queryParam or tab switch.
   useEffect(() => {
     if (queryParam) handleChange(queryParam);
   }, [queryParam, currentTabId]);

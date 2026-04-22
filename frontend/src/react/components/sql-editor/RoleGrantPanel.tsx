@@ -83,7 +83,8 @@ function RoleGrantPanelInner({
   const settingStore = useSettingV1Store();
   const maximumRoleExpirationDays = useVueState(() => {
     if (role === PresetRoleType.PROJECT_OWNER) return undefined;
-    const seconds = settingStore.workspaceProfile.maximumRoleExpiration?.seconds;
+    const seconds =
+      settingStore.workspaceProfile.maximumRoleExpiration?.seconds;
     if (!seconds) return undefined;
     return Math.floor(Number(seconds) / (60 * 60 * 24));
   });

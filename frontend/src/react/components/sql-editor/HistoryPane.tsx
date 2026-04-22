@@ -68,8 +68,6 @@ export function HistoryPane() {
     return () => {
       if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     };
-    // Intentionally only historyQuery in deps — fetchHistory is stable for the current query
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional subset dep list
   }, [historyQuery]);
 
   const onSearchUpdate = useCallback(
@@ -159,7 +157,6 @@ export function HistoryPane() {
             </div>
             <p
               className="max-w-full text-xs wrap-break-word font-mono line-clamp-3"
-              // biome-ignore lint/security/noDangerouslySetInnerHtml: utility returns pre-escaped HTML with highlight markup
               dangerouslySetInnerHTML={{
                 __html: getHighlightHTMLByKeyWords(
                   history.statement,

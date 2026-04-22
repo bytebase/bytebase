@@ -85,11 +85,7 @@ export function AccessPane() {
     return projectStore.getProjectByName(projectName as string);
   }, [projectStore, projectName]);
 
-  const hasJITFeature = useMemo(
-    () => hasFeature(PlanFeature.FEATURE_JIT),
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional subset dep list
-    []
-  );
+  const hasJITFeature = useMemo(() => hasFeature(PlanFeature.FEATURE_JIT), []);
 
   // Build scope options for AdvancedSearch (React-compatible, no Vue renderers)
   const scopeOptions = useMemo((): ScopeOption[] => {
@@ -218,14 +214,12 @@ export function AccessPane() {
         setLoading(false);
       }
     },
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional subset dep list
     [projectName, filter, accessGrantStore, fetchIssuesForPendingGrants]
   );
 
   // Re-fetch when project or filter changes
   useEffect(() => {
     void fetchAccessGrants(true);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional subset dep list
   }, [projectName, filter]);
 
   // Re-fetch + clear highlight when highlightAccessGrantName changes
@@ -239,7 +233,6 @@ export function AccessPane() {
       }
     }, 3000);
     return () => clearTimeout(timer);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional subset dep list
   }, [highlightAccessGrantName]);
 
   // Responsive small layout detection
