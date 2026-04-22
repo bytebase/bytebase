@@ -207,6 +207,7 @@
     "abandon": "废弃",
     "access-denied": "拒绝访问",
     "access-expires": "访问到期",
+    "action-required": "需要操作",
     "activated": "已激活",
     "active": "开启",
     "activity": "活动",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "没有匹配筛选条件的结果",
       "self": "检查"
     },
+    "create-plan": "创建计划",
     "description": {
       "placeholder": "添加描述"
     },
@@ -2585,6 +2587,7 @@
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
     "copy-url": "复制 URL",
     "current-connection": "当前连接",
+    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请提交数据变更计划以获得审批。",
     "download-as-file": "下载为 {file} 格式",
     "duration-day": "{days} 天",
     "duration-days": "{days} 天",
@@ -2673,7 +2676,6 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
-    "submit-change-to-run-ddl-dml": "提交数据库变更以执行 DDL/DML。",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {

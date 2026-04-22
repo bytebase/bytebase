@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { computed, ref, watchEffect } from "vue";
 import { useProjectV1Store } from "@/store";
 import { useQueryDataPolicy } from "@/store/modules/v1/policy";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { QueryOption_RedisRunCommandsOn } from "@/types/proto-es/v1/sql_service_pb";
 import {
   hasProjectPermissionV2,
@@ -73,6 +74,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   };
 
   const isShowExecutingHint = ref(false);
+  const executingHintDatabase = ref<Database | undefined>();
 
   const allowAdmin = computed(() => {
     const project = projectStore.getProjectByName(
@@ -90,6 +92,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     storedLastViewedProject,
     allowViewALLProjects,
     isShowExecutingHint,
+    executingHintDatabase,
     redisCommandOption,
     allowAdmin,
   };

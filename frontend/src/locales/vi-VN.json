@@ -207,6 +207,7 @@
     "abandon": "Hủy bỏ",
     "access-denied": "Truy cập bị từ chối",
     "access-expires": "Truy cập hết hạn",
+    "action-required": "Cần thực hiện hành động",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
     "activity": "Hoạt động",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "Không có kết quả nào phù hợp với bộ lọc của bạn",
       "self": "Kiểm tra"
     },
+    "create-plan": "Tạo kế hoạch",
     "description": {
       "placeholder": "Thêm mô tả"
     },
@@ -2585,6 +2587,7 @@
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
     "current-connection": "Kết nối hiện tại",
+    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong {environment}, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2673,7 +2676,6 @@
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "show-in-editor": "Hiển thị trong trình soạn thảo",
-    "submit-change-to-run-ddl-dml": "Gửi thay đổi cơ sở dữ liệu để chạy DDL/DML.",
     "sync-in-progress": "Đang đồng bộ",
     "tab": {
       "context-menu": {

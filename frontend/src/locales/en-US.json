@@ -207,6 +207,7 @@
     "abandon": "Abandon",
     "access-denied": "Access denied",
     "access-expires": "Access Expires",
+    "action-required": "Action Required",
     "activated": "Activated",
     "active": "Active",
     "activity": "Activity",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "No results match your filters",
       "self": "Checks"
     },
+    "create-plan": "Create Plan",
     "description": {
       "placeholder": "Add a description"
     },
@@ -2585,6 +2587,7 @@
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "copy-url": "Copy URL",
     "current-connection": "Current connection",
+    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in {environment}, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2673,7 +2676,6 @@
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "show-in-editor": "Show in Editor",
-    "submit-change-to-run-ddl-dml": "Submit a database change to run DDL/DML.",
     "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {

@@ -5,8 +5,14 @@
         <p>
           {{ $t("sql-editor.only-select-allowed") }}
         </p>
-        <p>
-          {{ $t("sql-editor.submit-change-to-run-ddl-dml") }}
+        <p v-if="database">
+          <i18n-t keypath="sql-editor.ddl-dml-requires-data-change-plan">
+            <template #environment>
+              <EnvironmentV1Name
+                :environment="getDatabaseEnvironment(database)"
+              />
+            </template>
+          </i18n-t>
         </p>
       </section>
     </NAlert>
@@ -40,6 +46,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
+import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store as databaseV1Store,
@@ -50,11 +57,20 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { unknownProject } from "@/types";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
+  getDatabaseEnvironment,
 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
+
+withDefaults(
+  defineProps<{
+    database?: Database | undefined;
+  }>(),
+  { database: undefined }
+);
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -96,13 +112,13 @@ const actions = computed(() => {
 
 const descriptions = computed(() => {
   const descriptions = {
-    want: t("database.change-database").toLowerCase(),
+    want: t("plan.create-plan").toLowerCase(),
     action: "",
     reaction: "",
   };
   const { admin, issue } = actions.value;
   if (issue) {
-    descriptions.action = t("database.change-database");
+    descriptions.action = t("plan.create-plan");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");

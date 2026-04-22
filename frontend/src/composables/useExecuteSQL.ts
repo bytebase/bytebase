@@ -318,6 +318,7 @@ const useExecuteSQL = () => {
         )
       ) {
         sqlEditorStore.isShowExecutingHint = true;
+        sqlEditorStore.executingHintDatabase = database;
       }
       return finish(resultSet);
     }
