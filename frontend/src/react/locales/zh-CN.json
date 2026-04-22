@@ -210,7 +210,7 @@
     "environment-name": "环境名",
     "environments": "环境",
     "error": "错误",
-    "expiration": "Expiration",
+    "expiration": "过期时间",
     "export": "导出",
     "failed": "失败",
     "file-selector": {
@@ -263,7 +263,7 @@
     "project": "项目",
     "projects": "项目",
     "read-only": "只读",
-    "reason": "Reason",
+    "reason": "理由",
     "regenerate": "重新生成",
     "reject": "驳回",
     "rejected": "已拒绝",
@@ -2200,6 +2200,16 @@
   },
   "sql-editor": {
     "access-grants": "访问授权",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "按数据库筛选"
+        },
+        "status": {
+          "description": "按访问授权状态搜索"
+        }
+      }
+    },
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "激活",
     "activate-confirm": "确定要激活此访问授权吗？",
@@ -2207,15 +2217,24 @@
     "admin-mode": {
       "self": "管理员模式"
     },
+    "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-query": {
       "batch": "批量"
     },
     "connect-to-a-database": "连接数据库",
+    "duration-day": "{{days}} 天",
+    "duration-days": "{{days}} 天",
+    "duration-hours": "{{hours}} 小时",
+    "expire-at": "{{time}} 过期",
+    "expire-in": "{{time}} 后过期",
     "expired": "已过期",
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
     "jit": "即时访问",
     "link-access": "链接访问权限",
+    "no-access-requests": "暂无访问请求",
+    "no-history-found": "暂无历史记录",
+    "only-select-allowed": "只允许执行只读语句",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
     "project-read": "项目内可读",
@@ -2225,17 +2244,21 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
+    "re-request": "重新申请",
     "redis-command": {
       "all-nodes": "所有节点",
       "only-for-cluster": "仅适用于集群连接",
       "self": "运行 redis 命令",
       "single-node": "单节点"
     },
+    "request-access": "申请访问",
+    "request-data-access": "申请数据访问",
     "result-limit": {
       "self": "结果限制"
     },
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
+    "search-history-by-statement": "搜索 SQL 语句",
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
     "unmask-warning": "The query result may include unmasked sensitive data.",

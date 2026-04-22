@@ -54,8 +54,14 @@
         <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
           <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
           <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
-          <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
-          <AccessPane v-if="asidePanelTab === 'ACCESS'" />
+          <ReactPageMount
+            v-if="asidePanelTab === 'HISTORY'"
+            page="HistoryPane"
+          />
+          <ReactPageMount
+            v-if="asidePanelTab === 'ACCESS'"
+            page="AccessPane"
+          />
         </div>
       </div>
     </div>
@@ -77,9 +83,7 @@ import {
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
-import AccessPane from "./AccessPane";
 import ActionBar from "./ActionBar";
-import HistoryPane from "./HistoryPane";
 import SchemaPane from "./SchemaPane";
 import WorksheetPane from "./WorksheetPane";
 

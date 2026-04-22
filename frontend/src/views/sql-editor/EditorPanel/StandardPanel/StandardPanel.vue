@@ -84,21 +84,24 @@ import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, defineAsyncComponent, nextTick, ref } from "vue";
 import { BBSpin } from "@/bbkit";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
+  useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
-import { instanceV1HasReadonlyMode } from "@/utils";
+import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   EditorAction,
   ExecutingHintModal,
   SaveSheetModal,
 } from "../../EditorCommon";
+import { sqlEditorEvents } from "../../events";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
 
@@ -128,6 +131,29 @@ const allowReadonlyMode = computed(() => {
 });
 
 const { execute } = useExecuteSQL();
+
+useEmitteryEventListener(
+  sqlEditorEvents,
+  "execute-sql",
+  async ({ connection, statement, batchQueryContext }) => {
+    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+      connection.database
+    );
+    const newTab = tabStore.addTab(
+      { connection, statement, batchQueryContext },
+      /* beside */ true
+    );
+    nextTick(() => {
+      execute({
+        connection: { ...newTab.connection },
+        statement,
+        engine: getInstanceResource(database).engine,
+        explain: false,
+        selection: null,
+      });
+    });
+  }
+);
 
 const handleExecuteFromActionBar = (params: SQLEditorQueryParams) => {
   if (!tab.value || !sqlEditorRef.value) {

@@ -1,35 +1,24 @@
-import { create } from "@bufbuild/protobuf";
 import { watchDebounced } from "@vueuse/core";
 import Emittery from "emittery";
-import { isUndefined } from "lodash-es";
-import { type IRange } from "monaco-editor";
 import { storeToRefs } from "pinia";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
-import { inject, nextTick, provide } from "vue";
+import { inject, provide } from "vue";
 import {
   pushNotification,
-  useProjectIamPolicyStore,
-  useProjectV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLEditorUIStore,
+  useSQLEditorWorksheetStore,
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
-import {
-  Worksheet_Visibility,
-  WorksheetSchema,
-} from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  extractWorksheetConnection,
-  isSimilarDefaultSQLEditorTabTitle,
-  isWorksheetWritableV1,
-  NEW_WORKSHEET_TITLE,
-  suggestedTabTitleForSQLEditorConnection,
-} from "@/utils";
-import { openWorksheetByName } from "@/views/sql-editor/Sheet";
+import { isWorksheetWritableV1 } from "@/utils";
+import type { SQLEditorEvents as SQLEditorEventsMap } from "./events";
+import { sqlEditorEvents } from "./events";
+
+// Backward-compat alias: consumers typed the events field as Emittery<{...}>.
+// Re-export Emittery<SQLEditorEventsMap> under the old name so that no callers need changing.
+export type SQLEditorEvents = Emittery<SQLEditorEventsMap>;
 
 export const ASIDE_PANEL_TABS = [
   "SCHEMA",
@@ -38,29 +27,6 @@ export const ASIDE_PANEL_TABS = [
   "ACCESS",
 ] as const;
 export type AsidePanelTab = (typeof ASIDE_PANEL_TABS)[number];
-
-export type SQLEditorEvents = Emittery<{
-  "save-sheet": {
-    tab: SQLEditorTab;
-    editTitle?: boolean;
-  };
-  "alter-schema": {
-    // Format: instances/{instance}/databases/{database}
-    databaseName: string;
-    schema: string;
-    table: string;
-  };
-  "format-content": undefined;
-  "tree-ready": undefined;
-  "project-context-ready": {
-    project: string;
-  };
-  "set-editor-selection": IRange;
-  "append-editor-content": { content: string; select: boolean };
-  "insert-at-caret": {
-    content: string;
-  };
-}>;
 
 export type SQLEditorContext = {
   asidePanelTab: Ref<AsidePanelTab>;
@@ -118,12 +84,10 @@ export const useSQLEditorContext = () => {
 };
 
 export const provideSQLEditorContext = () => {
-  const editorStore = useSQLEditorStore();
   const tabStore = useSQLEditorTabStore();
-  const projectStore = useProjectV1Store();
-  const projectIamPolicyStore = useProjectIamPolicyStore();
   const worksheetStore = useWorkSheetStore();
   const uiStore = useSQLEditorUIStore();
+  const sqlEditorWorksheetStore = useSQLEditorWorksheetStore();
   const {
     asidePanelTab,
     showConnectionPanel,
@@ -134,160 +98,6 @@ export const provideSQLEditorContext = () => {
     editorPanelSize,
   } = storeToRefs(uiStore);
 
-  const maybeUpdateWorksheet = async ({
-    tabId,
-    worksheet,
-    title,
-    database,
-    statement,
-    folders,
-    signal,
-  }: {
-    tabId: string;
-    worksheet?: string;
-    title?: string;
-    database: string;
-    statement: string;
-    folders?: string[];
-    signal?: AbortSignal;
-  }) => {
-    const connection = await extractWorksheetConnection({ database });
-    let worksheetTitle = title ?? "";
-    if (isSimilarDefaultSQLEditorTabTitle(worksheetTitle)) {
-      worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
-    }
-
-    if (worksheet) {
-      const currentSheet = worksheetStore.getWorksheetByName(worksheet);
-      if (!currentSheet) {
-        return;
-      }
-      if (!isSimilarDefaultSQLEditorTabTitle(currentSheet.title)) {
-        worksheetTitle = currentSheet.title;
-      }
-
-      const updated = await worksheetStore.patchWorksheet(
-        {
-          ...currentSheet,
-          title: worksheetTitle,
-          database,
-          content: new TextEncoder().encode(statement),
-        },
-        ["title", "database", "content"],
-        signal
-      );
-      if (!updated) {
-        return;
-      }
-      if (!isUndefined(folders)) {
-        await worksheetStore.upsertWorksheetOrganizer(
-          {
-            worksheet: updated.name,
-            folders: folders,
-          },
-          ["folders"]
-        );
-      }
-    }
-
-    return tabStore.updateTab(tabId, {
-      status: "CLEAN",
-      connection,
-      title: worksheetTitle,
-      worksheet,
-    });
-  };
-
-  const createWorksheet = async ({
-    tabId,
-    title,
-    statement = "",
-    folders = [],
-    database = "",
-  }: {
-    tabId?: string;
-    title?: string;
-    statement?: string;
-    folders?: string[];
-    database?: string;
-  }) => {
-    let worksheetTitle = title || NEW_WORKSHEET_TITLE;
-    const connection = await extractWorksheetConnection({ database });
-    if (!title && isValidDatabaseName(database)) {
-      worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
-    }
-
-    const newWorksheet = await worksheetStore.createWorksheet(
-      create(WorksheetSchema, {
-        title: worksheetTitle,
-        database,
-        content: new TextEncoder().encode(statement),
-        project: editorStore.project,
-        visibility: Worksheet_Visibility.PRIVATE,
-      })
-    );
-
-    if (folders.length > 0) {
-      await worksheetStore.upsertWorksheetOrganizer(
-        {
-          worksheet: newWorksheet.name,
-          folders: folders,
-        },
-        ["folders"]
-      );
-    }
-
-    if (tabId) {
-      return tabStore.updateTab(tabId, {
-        status: "CLEAN",
-        title: worksheetTitle,
-        statement,
-        connection,
-        worksheet: newWorksheet.name,
-      });
-    } else {
-      const tab = await openWorksheetByName({
-        worksheet: newWorksheet.name,
-        forceNewTab: true,
-      });
-      nextTick(() => {
-        if (tab && !tab.connection?.database) {
-          showConnectionPanel.value = true;
-        }
-      });
-      return tab;
-    }
-  };
-
-  const maybeSwitchProject = async (projectName: string) => {
-    editorStore.projectContextReady = false;
-    try {
-      if (!isValidProjectName(projectName)) {
-        return;
-      }
-      const project = await projectStore.getOrFetchProjectByName(projectName);
-      // Fetch IAM policy to ensure permission checks work correctly
-      await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
-      editorStore.setProject(project.name);
-      context.events.emit("project-context-ready", { project: project.name });
-      return project.name;
-    } catch {
-      // Nothing
-    } finally {
-      editorStore.projectContextReady = true;
-    }
-  };
-
-  // Auto-save abort controller - allows manual save to cancel in-progress auto-save
-  let autoSaveController: AbortController | null = null;
-
-  const abortAutoSave = () => {
-    if (autoSaveController) {
-      autoSaveController.abort();
-      autoSaveController = null;
-    }
-  };
-
   const context: SQLEditorContext = {
     asidePanelTab,
     showConnectionPanel,
@@ -296,13 +106,13 @@ export const provideSQLEditorContext = () => {
     schemaViewer,
     pendingInsertAtCaret,
     highlightAccessGrantName,
-    events: new Emittery(),
+    events: sqlEditorEvents,
 
-    maybeSwitchProject,
+    maybeSwitchProject: sqlEditorWorksheetStore.maybeSwitchProject,
     handleEditorPanelResize: uiStore.handleEditorPanelResize,
-    createWorksheet,
-    maybeUpdateWorksheet,
-    abortAutoSave,
+    createWorksheet: sqlEditorWorksheetStore.createWorksheet,
+    maybeUpdateWorksheet: sqlEditorWorksheetStore.maybeUpdateWorksheet,
+    abortAutoSave: sqlEditorWorksheetStore.abortAutoSave,
   };
 
   // Auto-saving for current tab.
@@ -374,14 +184,15 @@ export const provideSQLEditorContext = () => {
       }
 
       // Abort any in-progress auto-save before starting a new one
-      abortAutoSave();
+      sqlEditorWorksheetStore.abortAutoSave();
 
       // Capture the statement and tab id before async operation
       const statementToSave = tab.statement;
       const tabId = tab.id;
 
       // Create new abort controller for this auto-save
-      autoSaveController = new AbortController();
+      const controller = new AbortController();
+      sqlEditorWorksheetStore.autoSaveController = controller;
       // Set status to SAVING
       tabStore.updateTab(tabId, { status: "SAVING" });
 
@@ -390,12 +201,12 @@ export const provideSQLEditorContext = () => {
 
       try {
         // the maybeUpdateWorksheet will set status to CLEAN
-        await maybeUpdateWorksheet({
+        await sqlEditorWorksheetStore.maybeUpdateWorksheet({
           tabId,
           worksheet: tab.worksheet,
           database: tab.connection.database,
           statement: statementToSave,
-          signal: autoSaveController.signal,
+          signal: controller.signal,
         });
       } catch (error) {
         // Don't handle aborted requests - a newer save or manual save took priority
@@ -415,7 +226,7 @@ export const provideSQLEditorContext = () => {
           description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
-        autoSaveController = null;
+        sqlEditorWorksheetStore.autoSaveController = null;
 
         // Skip for aborted requests - manual save or newer auto-save took priority
         if (wasAborted) {

@@ -2200,6 +2200,16 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "Filter by database"
+        },
+        "status": {
+          "description": "Search by the access grant status"
+        }
+      }
+    },
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -2207,15 +2217,24 @@
     "admin-mode": {
       "self": "Admin mode"
     },
+    "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Batch"
     },
     "connect-to-a-database": "Connect to database",
+    "duration-day": "{{days}} day",
+    "duration-days": "{{days}} days",
+    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "expire-at": "Expire at {{time}}",
+    "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
     "link-access": "Link access",
+    "no-access-requests": "No access requests",
+    "no-history-found": "No history found",
+    "only-select-allowed": "Only read-only statements are allowed to execute.",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
     "project-read": "Project read",
@@ -2225,17 +2244,21 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
+    "re-request": "Re-request",
     "redis-command": {
       "all-nodes": "All nodes",
       "only-for-cluster": "Only available for cluster connection",
       "self": "Run redis command on",
       "single-node": "Single node"
     },
+    "request-access": "Request Access",
+    "request-data-access": "Request Data Access",
     "result-limit": {
       "self": "Result limit"
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
     "unmask-warning": "The query result may include unmasked sensitive data.",
