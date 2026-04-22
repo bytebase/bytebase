@@ -1419,6 +1419,15 @@
       "visit-prjects": "Truy cập Dự án"
     }
   },
+  "masking": {
+    "reason": {
+      "algorithm": "Phương pháp che dữ liệu",
+      "classification": "Mức phân loại",
+      "context": "Quy tắc",
+      "semantic-type": "Loại ngữ nghĩa",
+      "title": "Tại sao dữ liệu này bị che?"
+    }
+  },
   "multi-factor": {
     "auth-code": "Mã xác thực",
     "other-methods": {
@@ -2461,6 +2470,8 @@
     },
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
+    "request-jit": "Request just-in-time access",
+    "request-query": "Yêu cầu truy vấn",
     "result-limit": {
       "self": "Giới hạn kết quả"
     },

@@ -1419,6 +1419,15 @@
       "visit-prjects": "プロジェクトを開く"
     }
   },
+  "masking": {
+    "reason": {
+      "algorithm": "マスキング方法",
+      "classification": "分類レベル",
+      "context": "ルール",
+      "semantic-type": "セマンティックタイプ",
+      "title": "なぜこのデータはマスクされていますか？"
+    }
+  },
   "multi-factor": {
     "auth-code": "認証コード",
     "other-methods": {
@@ -2461,6 +2470,8 @@
     },
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
+    "request-jit": "Request just-in-time access",
+    "request-query": "リクエストクエリ",
     "result-limit": {
       "self": "結果の制限"
     },

@@ -1419,6 +1419,15 @@
       "visit-prjects": "Visit Projects"
     }
   },
+  "masking": {
+    "reason": {
+      "algorithm": "Masking method",
+      "classification": "Classification level",
+      "context": "Rule",
+      "semantic-type": "Semantic type",
+      "title": "Why is this data masked?"
+    }
+  },
   "multi-factor": {
     "auth-code": "Authentication code",
     "other-methods": {
@@ -2461,6 +2470,8 @@
     },
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
+    "request-jit": "Request just-in-time access",
+    "request-query": "Request query",
     "result-limit": {
       "self": "Result limit"
     },

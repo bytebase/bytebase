@@ -15,11 +15,12 @@
           @execute="$emit('execute', $event)"
         >
           <template #suffix>
-            <RequestQueryButton
+            <ReactPageMount
               v-if="!!permissionDeniedError"
+              page="RequestQueryButton"
               :text="false"
               :statement="executeParams.statement"
-              :permission-denied-detail="permissionDeniedError"
+              :permissionDeniedDetail="permissionDeniedError"
             />
           </template>
         </ErrorView>
@@ -71,11 +72,12 @@
               @execute="$emit('execute', $event)"
             >
               <template #suffix>
-                <RequestQueryButton
+                <ReactPageMount
                   v-if="!!permissionDeniedError"
+                  page="RequestQueryButton"
                   :text="false"
                   :statement="result.statement"
-                  :permission-denied-detail="permissionDeniedError"
+                  :permissionDeniedDetail="permissionDeniedError"
                 />
               </template>
             </ErrorView>
@@ -135,11 +137,12 @@
           @execute="$emit('execute', $event)"
         >
           <template #suffix>
-            <RequestQueryButton
+            <ReactPageMount
               v-if="!!permissionDeniedError"
+              page="RequestQueryButton"
               :text="false"
               :statement="resultSet.results[0]?.statement"
-              :permission-denied-detail="permissionDeniedError"
+              :permissionDeniedDetail="permissionDeniedError"
             />
             <SyncDatabaseButton
               v-else-if="resultSet.error.includes('resource not found')"
@@ -193,6 +196,7 @@ import type {
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useSQLEditorStore, useSQLEditorTabStore, useSQLStore } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
@@ -205,7 +209,6 @@ import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
-import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";

@@ -118,14 +118,6 @@ export function SemanticTypesPage() {
     algorithm?: Algorithm;
   } | null>(null);
 
-  // Deferred side-effect queue: state updaters push actions here,
-  // and a useEffect flushes them after React commits.
-  const pendingActionRef = useRef<(() => void)[]>([]);
-  useEffect(() => {
-    const actions = pendingActionRef.current.splice(0);
-    for (const action of actions) action();
-  });
-
   const semanticTypeSettingValue = useVueState(() => {
     const setting = settingStore.getSettingByName(
       Setting_SettingName.SEMANTIC_TYPES
@@ -195,39 +187,35 @@ export function SemanticTypesPage() {
 
   const onRemove = useCallback(
     (index: number) => {
-      setItems((prev) => {
-        const next = [...prev];
-        const removed = next.splice(index, 1)[0];
-        if (removed.mode !== "CREATE") {
-          const types = next
-            .filter((d) => d.mode === "NORMAL")
-            .map((d) => d.item);
-          pendingActionRef.current.push(() =>
-            upsertSetting(types, t("common.deleted"))
-          );
-        }
-        return next;
-      });
+      const current = items[index];
+      if (!current) return;
+      const next = [...items];
+      next.splice(index, 1);
+      setItems(next);
+      if (current.mode !== "CREATE") {
+        const types = next
+          .filter((d) => d.mode === "NORMAL")
+          .map((d) => d.item);
+        void upsertSetting(types, t("common.deleted"));
+      }
     },
-    [upsertSetting, t]
+    [upsertSetting, t, items]
   );
 
   const onConfirm = useCallback(
     (index: number) => {
-      setItems((prev) => {
-        const next = [...prev];
-        const item = next[index];
-        const wasCreate = item.mode === "CREATE";
-        next[index] = { ...item, dirty: false, mode: "NORMAL" };
-        const types = next
-          .filter((d) => d.mode === "NORMAL")
-          .map((d) => d.item);
-        const msg = t(wasCreate ? "common.created" : "common.updated");
-        pendingActionRef.current.push(() => upsertSetting(types, msg));
-        return next;
-      });
+      const current = items[index];
+      if (!current) return;
+      const msg = t(
+        current.mode === "CREATE" ? "common.created" : "common.updated"
+      );
+      const next = [...items];
+      next[index] = { ...current, dirty: false, mode: "NORMAL" };
+      setItems(next);
+      const types = next.filter((d) => d.mode === "NORMAL").map((d) => d.item);
+      void upsertSetting(types, msg);
     },
-    [upsertSetting, t]
+    [upsertSetting, t, items]
   );
 
   const onCancel = useCallback(
@@ -281,34 +269,34 @@ export function SemanticTypesPage() {
       const drawer = algorithmDrawerRef.current;
       if (drawer === null) return;
       const { index } = drawer;
-      setItems((prev) => {
-        const next = [...prev];
-        const current = next[index];
-        if (!current) return prev;
-        const updated: SemanticItem = {
-          ...current,
-          dirty: true,
-          item: { ...current.item, algorithm },
-        };
-        if (updated.item.title) {
-          updated.dirty = false;
-          updated.mode = "NORMAL";
-          next[index] = updated;
-          const types = next
-            .filter((d) => d.mode === "NORMAL")
-            .map((d) => d.item);
-          const msg = t(
-            current.mode === "CREATE" ? "common.created" : "common.updated"
-          );
-          pendingActionRef.current.push(() => upsertSetting(types, msg));
-        } else {
-          next[index] = updated;
-        }
-        return next;
-      });
+      const current = items[index];
+      if (!current) return;
+      const updated: SemanticItem = {
+        ...current,
+        dirty: true,
+        item: { ...current.item, algorithm },
+      };
+      if (updated.item.title) {
+        updated.dirty = false;
+        updated.mode = "NORMAL";
+        const next = [...items];
+        next[index] = updated;
+        setItems(next);
+        const types = next
+          .filter((d) => d.mode === "NORMAL")
+          .map((d) => d.item);
+        const msg = t(
+          current.mode === "CREATE" ? "common.created" : "common.updated"
+        );
+        void upsertSetting(types, msg);
+      } else {
+        const next = [...items];
+        next[index] = updated;
+        setItems(next);
+      }
       setAlgorithmDrawer(null);
     },
-    [upsertSetting, t]
+    [upsertSetting, t, items]
   );
 
   const onOpenAlgorithmDrawer = useCallback(
@@ -320,39 +308,32 @@ export function SemanticTypesPage() {
 
   const onTemplateApply = useCallback(
     (template: SemanticTypeSetting_SemanticType) => {
-      setItems((prev) => {
-        if (prev.find((item) => item.item.id === template.id)) {
-          pendingActionRef.current.push(() =>
-            pushNotification({
-              module: "bytebase",
-              style: "INFO",
-              title: t(
-                "settings.sensitive-data.semantic-types.template.duplicate-warning",
-                { title: template.title }
-              ),
-            })
-          );
-          return prev;
-        }
-        const newItem: SemanticItem = {
-          dirty: false,
-          mode: "NORMAL",
-          item: create(SemanticTypeSetting_SemanticTypeSchema, {
-            ...template,
-          }),
-        };
-        const next = [...prev, newItem];
-        const types = next
-          .filter((d) => d.mode === "NORMAL")
-          .map((d) => d.item);
-        pendingActionRef.current.push(() =>
-          upsertSetting(types, t("common.created"))
-        );
-        return next;
-      });
+      if (items.find((item) => item.item.id === template.id)) {
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t(
+            "settings.sensitive-data.semantic-types.template.duplicate-warning",
+            { title: template.title }
+          ),
+        });
+        setShowTemplateDrawer(false);
+        return;
+      }
+      const newItem: SemanticItem = {
+        dirty: false,
+        mode: "NORMAL",
+        item: create(SemanticTypeSetting_SemanticTypeSchema, {
+          ...template,
+        }),
+      };
+      const next = [...items, newItem];
+      setItems(next);
+      const types = next.filter((d) => d.mode === "NORMAL").map((d) => d.item);
+      void upsertSetting(types, t("common.created"));
       setShowTemplateDrawer(false);
     },
-    [upsertSetting, t]
+    [upsertSetting, t, items]
   );
 
   const isConfirmDisabled = (data: SemanticItem): boolean => {

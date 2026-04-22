@@ -39,8 +39,9 @@
             <div class="min-w-28 text-left flex items-center font-medium pt-1">
               <div class="flex items-center gap-x-1">
                 {{ column.name }}
-                <MaskingReasonPopover
+                <ReactPageMount
                   v-if="getMaskingReason && getMaskingReason(columnIndex)"
+                  page="MaskingReasonPopover"
                   :reason="getMaskingReason(columnIndex)!"
                   :statement="statement"
                   :database="database.name"
@@ -72,6 +73,7 @@
 import { NVirtualList } from "naive-ui";
 import { computed, ref } from "vue";
 import { CopyButton } from "@/components/v2";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type {
   MaskingReason,
@@ -79,7 +81,6 @@ import type {
 } from "@/types/proto-es/v1/sql_service_pb";
 import { type SearchParams } from "@/utils";
 import { useBinaryFormatContext } from "./DataTable/common/binary-format-store";
-import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
 import type {
   ResultTableColumn,
   ResultTableRow,
