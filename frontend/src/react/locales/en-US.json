@@ -564,8 +564,8 @@
         "tls": "TLS"
       },
       "server-identity": "Server identity",
-      "verify-certificate": "Verify TLS certificate",
       "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored.",
+      "verify-certificate": "Verify TLS certificate",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
     "ssl-connection": "SSL Connection"

@@ -564,8 +564,8 @@
         "tls": "TLS"
       },
       "server-identity": "Danh tính máy chủ",
-      "verify-certificate": "Xác minh chứng chỉ TLS",
       "verification-disabled-description": "Đã tắt xác minh. Kết nối được mã hóa, nhưng danh tính máy chủ không được xác minh; cài đặt CA sẽ bị bỏ qua.",
+      "verify-certificate": "Xác minh chứng chỉ TLS",
       "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
     },
     "ssl-connection": "Kết nối SSL"
