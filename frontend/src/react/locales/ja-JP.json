@@ -266,7 +266,7 @@
     "environment-name": "環境名",
     "environments": "環境",
     "error": "間違い",
-    "expiration": "Expiration",
+    "expiration": "有効期限",
     "export": "エクスポート",
     "failed": "失敗",
     "file-selector": {
@@ -322,7 +322,7 @@
     "project": "プロジェクト",
     "projects": "プロジェクト",
     "read-only": "読み取り専用",
-    "reason": "Reason",
+    "reason": "理由",
     "regenerate": "再生する",
     "reject": "Reject",
     "rejected": "却下",
@@ -360,6 +360,7 @@
     "sensitive-placeholder": "機密データ - 書き込みのみ",
     "setting": "設定",
     "settings": "設定",
+    "share": "共有",
     "sign-in": "ログイン",
     "sign-in-as-admin": "管理者としてサインイン",
     "sign-up": "登録する",
@@ -2305,6 +2306,16 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "データベースでフィルター"
+        },
+        "status": {
+          "description": "アクセス許可のステータスで検索"
+        }
+      }
+    },
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -2312,31 +2323,52 @@
     "admin-mode": {
       "self": "管理者モード"
     },
+    "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "バッチ"
     },
     "connect-to-a-database": "データベースに接続",
+    "duration-day": "{{days}} day",
+    "duration-days": "{{days}} days",
+    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "expire-at": "Expire at {{time}}",
+    "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "リンクアクセス",
+    "no-access-requests": "No access requests",
+    "no-history-found": "まだ履歴がありません",
+    "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
+    "private": "プライベート",
+    "private-desc": "このシートにアクセスできるのはあなただけです",
+    "project-read": "プロジェクト内で読み取り可能",
+    "project-read-desc": "シートの所有者と「bb.worksheets.manage」権限を持つユーザーは読み取り/書き込みが可能で、「bb.worksheets.get」権限を持つ他のプロジェクトユーザーは読み取りが可能です。",
+    "project-write": "プロジェクト内での読み取りと書き込み",
+    "project-write-desc": "シート所有者と「bb.worksheets.get」権限を持つプロジェクトユーザーの両方が読み取り/書き込みできます。",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
+    "re-request": "再申請",
     "redis-command": {
       "all-nodes": "すべてのノード",
       "only-for-cluster": "クラスタ接続のみ使用可能",
       "self": "redisコマンドを実行する",
       "single-node": "単一ノード"
     },
+    "request-access": "Request Access",
+    "request-data-access": "Request Data Access",
     "result-limit": {
       "self": "結果の制限"
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {

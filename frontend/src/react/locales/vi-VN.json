@@ -266,7 +266,7 @@
     "environment-name": "Tên môi trường",
     "environments": "Môi trường",
     "error": "Lỗi",
-    "expiration": "Expiration",
+    "expiration": "Hết hạn",
     "export": "Xuất",
     "failed": "Thất bại",
     "file-selector": {
@@ -322,7 +322,7 @@
     "project": "Dự án",
     "projects": "Dự án",
     "read-only": "Chỉ đọc",
-    "reason": "Reason",
+    "reason": "Lý do",
     "regenerate": "Tạo lại",
     "reject": "Reject",
     "rejected": "Đã từ chối",
@@ -360,6 +360,7 @@
     "sensitive-placeholder": "Nhạy cảm - Chỉ ghi",
     "setting": "Cài đặt",
     "settings": "Cài đặt",
+    "share": "Chia sẻ",
     "sign-in": "Đăng nhập",
     "sign-in-as-admin": "Đăng nhập với tư cách quản trị viên",
     "sign-up": "Đăng ký",
@@ -2305,6 +2306,16 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "Lọc theo cơ sở dữ liệu"
+        },
+        "status": {
+          "description": "Tìm kiếm theo trạng thái cấp quyền truy cập"
+        }
+      }
+    },
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -2312,31 +2323,52 @@
     "admin-mode": {
       "self": "Chế độ quản trị"
     },
+    "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Hàng loạt"
     },
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
+    "duration-day": "{{days}} day",
+    "duration-days": "{{days}} days",
+    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "expire-at": "Expire at {{time}}",
+    "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "Truy cập liên kết",
+    "no-access-requests": "No access requests",
+    "no-history-found": "Không tìm thấy lịch sử",
+    "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
+    "private": "Riêng tư",
+    "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
+    "project-read": "Đọc dự án",
+    "project-read-desc": "Cả chủ sở hữu trang tính và người dùng có quyền \"bb.worksheets.manage\" đều có thể đọc/ghi, những người dùng dự án khác có quyền \"bb.worksheets.get\" có thể đọc",
+    "project-write": "Ghi dự án",
+    "project-write-desc": "Cả chủ sở hữu trang tính và người dùng dự án có quyền \"bb.worksheets.get\" đều có thể đọc/ghi",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
+    "re-request": "Yêu cầu lại",
     "redis-command": {
       "all-nodes": "Tất cả các nút",
       "only-for-cluster": "Chỉ khả dụng cho kết nối cụm",
       "self": "Chạy lệnh redis trên",
       "single-node": "Nút đơn"
     },
+    "request-access": "Request Access",
+    "request-data-access": "Request Data Access",
     "result-limit": {
       "self": "Giới hạn kết quả"
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {

@@ -53,10 +53,9 @@
       :y="contextMenuContext.position.y"
       @clickoutside="handleContextMenuClickOutside"
     >
-      <SharePopover
+      <ReactPageMount page="SharePopoverBody"
         :worksheet="worksheetEntity"
-        @on-updated="handleContextMenuClickOutside"
-      />
+        :onUpdated="handleContextMenuClickOutside" />
     </NPopover>
   </div>
 </template>
@@ -78,6 +77,7 @@ import { BBSpin } from "@/bbkit";
 import { HighlightLabelText } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { t } from "@/plugins/i18n";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   pushNotification,
   useSQLEditorStore,
@@ -87,7 +87,6 @@ import {
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { defer, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
-import SharePopover from "@/views/sql-editor/EditorCommon/SharePopover.vue";
 import {
   openWorksheetByName,
   revealNodes,

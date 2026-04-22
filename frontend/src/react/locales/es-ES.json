@@ -266,7 +266,7 @@
     "environment-name": "Nombre del entorno",
     "environments": "Entornos",
     "error": "Error",
-    "expiration": "Expiration",
+    "expiration": "Expiración",
     "export": "Exportar",
     "failed": "Error",
     "file-selector": {
@@ -322,7 +322,7 @@
     "project": "Proyecto",
     "projects": "Proyectos",
     "read-only": "Solo lectura",
-    "reason": "Reason",
+    "reason": "Razón",
     "regenerate": "Regenerar",
     "reject": "Reject",
     "rejected": "Rechazado",
@@ -360,6 +360,7 @@
     "sensitive-placeholder": "Sensible - solo escritura",
     "setting": "Configuración",
     "settings": "Configuraciones",
+    "share": "Compartir",
     "sign-in": "Iniciar sesión",
     "sign-in-as-admin": "Iniciar sesión como administrador",
     "sign-up": "Registrarse",
@@ -2305,6 +2306,16 @@
   },
   "sql-editor": {
     "access-grants": "Access Grants",
+    "access-search": {
+      "scope": {
+        "database": {
+          "description": "Filtrar por base de datos"
+        },
+        "status": {
+          "description": "Buscar por el estado de la concesión de acceso"
+        }
+      }
+    },
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
     "activate-confirm": "Are you sure you want to activate this access grant?",
@@ -2312,31 +2323,52 @@
     "admin-mode": {
       "self": "Modo administrador"
     },
+    "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Lote"
     },
     "connect-to-a-database": "Conectar a base de datos",
+    "duration-day": "{{days}} day",
+    "duration-days": "{{days}} days",
+    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "expire-at": "Expire at {{time}}",
+    "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
     "jit": "Just-In-Time Access",
+    "link-access": "Acceso al enlace",
+    "no-access-requests": "No access requests",
+    "no-history-found": "No se encontró historial",
+    "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
+    "private": "Privado",
+    "private-desc": "Solo tú puedes acceder a esta hoja",
+    "project-read": "Lectura del proyecto",
+    "project-read-desc": "Tanto el propietario de la hoja como los usuarios con permiso \"bb.worksheets.manage\" pueden leer/escribir, otros usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer",
+    "project-write": "Escritura del proyecto",
+    "project-write-desc": "Tanto el propietario de la hoja como los usuarios del proyecto con permiso \"bb.worksheets.get\" pueden leer/escribir",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
+    "re-request": "Volver a solicitar",
     "redis-command": {
       "all-nodes": "Todos los nodos",
       "only-for-cluster": "Sólo disponible para conexión de clúster",
       "self": "Ejecute el comando redis en",
       "single-node": "Nodo único"
     },
+    "request-access": "Request Access",
+    "request-data-access": "Request Data Access",
     "result-limit": {
       "self": "Límite de resultados"
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "search-history-by-statement": "Búsqueda por enunciado",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "self": "Editor de SQL",
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
