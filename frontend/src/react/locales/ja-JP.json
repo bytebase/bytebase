@@ -159,8 +159,6 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "この操作は後で元に戻すことができます。",
-      "sure-to-abandon": "本当に破棄しますか?",
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },
@@ -196,7 +194,6 @@
     "show-diff": "違いを表示"
   },
   "common": {
-    "abandon": "破棄",
     "activated": "有効化しました",
     "active": "アクティブ",
     "add": "追加",

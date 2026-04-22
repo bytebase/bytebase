@@ -159,8 +159,6 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "Podrás deshacer esta acción más tarde.",
-      "sure-to-abandon": "¿Estás seguro de abandonar?",
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?"
     }
   },
@@ -196,7 +194,6 @@
     "show-diff": "Mostrar diferencias"
   },
   "common": {
-    "abandon": "Abandonar",
     "activated": "Activado",
     "active": "Activo",
     "add": "Agregar",

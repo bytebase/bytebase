@@ -159,8 +159,6 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "Bạn có thể hoàn tác hành động này sau.",
-      "sure-to-abandon": "Bạn có chắc chắn muốn hủy bỏ?",
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?"
     }
   },
@@ -196,7 +194,6 @@
     "show-diff": "Hiển thị khác biệt"
   },
   "common": {
-    "abandon": "Hủy bỏ",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
     "add": "Thêm",

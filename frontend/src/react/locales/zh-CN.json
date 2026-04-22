@@ -159,8 +159,6 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "此操作可以撤销。",
-      "sure-to-abandon": "确定要废弃吗？",
       "sure-to-delete": "确定要删除吗？"
     }
   },
@@ -196,7 +194,6 @@
     "show-diff": "显示差异"
   },
   "common": {
-    "abandon": "废弃",
     "activated": "已激活",
     "active": "开启",
     "add": "添加",

@@ -159,8 +159,6 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "You can undo this action later.",
-      "sure-to-abandon": "Are you sure to abandon?",
       "sure-to-delete": "Are you sure to delete?"
     }
   },
@@ -196,7 +194,6 @@
     "show-diff": "Show diff"
   },
   "common": {
-    "abandon": "Abandon",
     "activated": "Activated",
     "active": "Active",
     "add": "Add",

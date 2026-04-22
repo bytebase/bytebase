@@ -74,7 +74,7 @@ export function ProjectReleaseDetailPage({
   const [selectedReleaseFile, setSelectedReleaseFile] = useState<
     Release_File | undefined
   >();
-  const [abandonOpen, setAbandonOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const releaseDisplayName = useMemo(() => {
     const parts = release.name.split("/");
@@ -84,7 +84,7 @@ export function ProjectReleaseDetailPage({
   const isActive = release.state === State.ACTIVE;
   const isDeleted = release.state === State.DELETED;
 
-  const handleAbandon = async () => {
+  const handleArchive = async () => {
     try {
       await releaseStore.deleteRelease(release.name);
     } catch (error) {
@@ -95,7 +95,7 @@ export function ProjectReleaseDetailPage({
         description: error instanceof Error ? error.message : String(error),
       });
     } finally {
-      setAbandonOpen(false);
+      setArchiveOpen(false);
     }
   };
 
@@ -135,8 +135,8 @@ export function ProjectReleaseDetailPage({
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {isActive && (
-                  <DropdownMenuItem onClick={() => setAbandonOpen(true)}>
-                    {t("common.abandon")}
+                  <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                    {t("common.archive")}
                   </DropdownMenuItem>
                 )}
                 {isDeleted && (
@@ -184,21 +184,19 @@ export function ProjectReleaseDetailPage({
       </Sheet>
 
       <AlertDialog
-        open={abandonOpen}
-        onOpenChange={(next) => setAbandonOpen(next)}
+        open={archiveOpen}
+        onOpenChange={(next) => setArchiveOpen(next)}
       >
         <AlertDialogContent>
-          <AlertDialogTitle>
-            {t("bbkit.confirm-button.sure-to-abandon")}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{t("common.confirm-archive")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("bbkit.confirm-button.can-undo")}
+            {t("common.archive-description", { name: releaseDisplayName })}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setAbandonOpen(false)}>
+            <Button variant="outline" onClick={() => setArchiveOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleAbandon}>{t("common.confirm")}</Button>
+            <Button onClick={handleArchive}>{t("common.confirm")}</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
