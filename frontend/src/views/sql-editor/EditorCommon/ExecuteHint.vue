@@ -6,7 +6,7 @@
           {{ $t("sql-editor.only-select-allowed") }}
         </p>
         <p v-if="database">
-          <i18n-t keypath="sql-editor.enable-ddl-for-environment">
+          <i18n-t keypath="sql-editor.ddl-dml-requires-data-change-plan">
             <template #environment>
               <EnvironmentV1Name
                 :environment="getDatabaseEnvironment(database)"
@@ -112,13 +112,13 @@ const actions = computed(() => {
 
 const descriptions = computed(() => {
   const descriptions = {
-    want: t("database.change-database").toLowerCase(),
+    want: t("plan.create-plan").toLowerCase(),
     action: "",
     reaction: "",
   };
   const { admin, issue } = actions.value;
   if (issue) {
-    descriptions.action = t("database.change-database");
+    descriptions.action = t("plan.create-plan");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");

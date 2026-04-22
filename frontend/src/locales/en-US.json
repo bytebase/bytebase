@@ -207,6 +207,7 @@
     "abandon": "Abandon",
     "access-denied": "Access denied",
     "access-expires": "Access Expires",
+    "action-required": "Action Required",
     "activated": "Activated",
     "active": "Active",
     "activity": "Activity",
@@ -605,7 +606,6 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
-      "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
       "ca-path": "CA Certificate Path",
       "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
       "ca-source": {
@@ -1379,6 +1379,7 @@
       "no-results-match-filters": "No results match your filters",
       "self": "Checks"
     },
+    "create-plan": "Create Plan",
     "description": {
       "placeholder": "Add a description"
     },
@@ -2585,11 +2586,11 @@
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "copy-url": "Copy URL",
     "current-connection": "Current connection",
+    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in {environment}, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
-    "enable-ddl-for-environment": "You can enable the DDL/DML statement for the environment {environment}.",
     "execute-query": "Execute query",
     "executing-query": "Executing query",
     "expire-at": "Expire at {time}",
