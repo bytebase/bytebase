@@ -38,8 +38,7 @@ export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLL
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 
-const planDetailComponent = () =>
-  import("@/components/Plan/components/PlanDetailPage/PlanDetailLayout.vue");
+const planDetailComponent = () => import("@/react/ReactPageMount.vue");
 
 const planDetailMeta: RouteRecordRaw["meta"] = {
   requiredPermissionList: () => [
@@ -58,21 +57,36 @@ const planRoutes: RouteRecordRaw[] = [
     name: PROJECT_V1_ROUTE_PLAN_DETAIL,
     component: planDetailComponent,
     meta: planDetailMeta,
-    props: true,
+    props: (route: RouteLocationNormalized) => ({
+      page: "ProjectPlanDetailPage",
+      routeName: route.name?.toString(),
+      routeQuery: route.query,
+      ...route.params,
+    }),
   },
   {
     path: "plans/:planId/specs",
     name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
     component: planDetailComponent,
     meta: planDetailMeta,
-    props: true,
+    props: (route: RouteLocationNormalized) => ({
+      page: "ProjectPlanDetailPage",
+      routeName: route.name?.toString(),
+      routeQuery: route.query,
+      ...route.params,
+    }),
   },
   {
     path: "plans/:planId/specs/:specId",
     name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
     component: planDetailComponent,
     meta: planDetailMeta,
-    props: true,
+    props: (route: RouteLocationNormalized) => ({
+      page: "ProjectPlanDetailPage",
+      routeName: route.name?.toString(),
+      routeQuery: route.query,
+      ...route.params,
+    }),
   },
 ];
 
