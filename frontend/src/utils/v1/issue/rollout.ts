@@ -1,5 +1,5 @@
-import { useI18n } from "vue-i18n";
 import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
+import { t as translate } from "@/plugins/i18n";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
@@ -120,9 +120,9 @@ export const releaseNameOfTaskV1 = (task: Task): string => {
 };
 
 export const stringifyTaskStatus = (
-  status: Task_Status | TaskRun_Status
+  status: Task_Status | TaskRun_Status,
+  t: (key: string, named?: Record<string, unknown>) => string = translate
 ): string => {
-  const { t } = useI18n();
   switch (status) {
     case Task_Status.NOT_STARTED:
       return t("task.status.not-started");
