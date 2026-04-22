@@ -957,10 +957,10 @@
         }
       },
       "host": {
-        "none-snowflake": "例如 host.docker.internal {{'|'}} ip {{'|'}} local socket"
+        "none-snowflake": "例如 host.docker.internal | ip | local socket"
       },
       "proxy": {
-        "snowflake": "对于代理服务器，加上 {{'@'}}PROXY_HOST，并在端口里指定 PROXY_PORT"
+        "snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT"
       }
     },
     "show-how-to-create": "如何创建",
@@ -1089,8 +1089,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "实例连接名称应为 {{instance}}。",
   "instance.sentence.google-cloud-sql.mysql.template": "创建一个名为 {{user}} 的服务帐户，然后将其作为 IAM 用户 {{user}}@'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。",
   "instance.sentence.google-cloud-sql.postgresql.template": "创建一个名为 {{user}} 的服务帐户，然后将其作为 IAM 用户 {{user}}@project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。",
-  "instance.sentence.host.none-snowflake": "例如 host.docker.internal {'|'} ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT",
+  "instance.sentence.host.none-snowflake": "例如 host.docker.internal | ip | local socket",
+  "instance.sentence.proxy.snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT",
   "instance.show-how-to-create": "如何创建",
   "instance.snowflake-web-console": "Snowflake Web 控制台",
   "instance.successfully-archived-instance": "成功归档实例'{{0}}'。",

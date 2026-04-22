@@ -957,10 +957,10 @@
         }
       },
       "host": {
-        "none-snowflake": "たとえば、host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+        "none-snowflake": "たとえば、host.docker.internal | host ip | local socket"
       },
       "proxy": {
-        "snowflake": "プロキシ サーバーの場合は、{{'@'}}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
+        "snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
       }
     },
     "show-how-to-create": "作成方法",
@@ -1089,8 +1089,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",
   "instance.sentence.google-cloud-sql.mysql.template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。",
   "instance.sentence.google-cloud-sql.postgresql.template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@project-id.iam として Google Cloud SQL に追加します。ユーザーに必要な権限を付与します。",
-  "instance.sentence.host.none-snowflake": "たとえば、host.docker.internal {'|'} host ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "プロキシ サーバーの場合は、{'@'}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。",
+  "instance.sentence.host.none-snowflake": "たとえば、host.docker.internal | host ip | local socket",
+  "instance.sentence.proxy.snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。",
   "instance.show-how-to-create": "作成方法",
   "instance.snowflake-web-console": "スノーフレークウェブコンソール",
   "instance.successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",

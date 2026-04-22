@@ -957,10 +957,10 @@
         }
       },
       "host": {
-        "none-snowflake": "por ejemplo, host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+        "none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket"
       },
       "proxy": {
-        "snowflake": "Para el servidor proxy, agregue {{'@'}}PROXY_HOST y especifique PROXY_PORT en el puerto"
+        "snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto"
       }
     },
     "show-how-to-create": "Mostrar cómo crear",
@@ -1089,8 +1089,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
   "instance.sentence.google-cloud-sql.mysql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@'%'. Otorgue a este usuario los privilegios necesarios.",
   "instance.sentence.google-cloud-sql.postgresql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@project-id.iam. Otorgue al usuario los privilegios necesarios.",
-  "instance.sentence.host.none-snowflake": "por ejemplo, host.docker.internal {'|'} host ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto",
+  "instance.sentence.host.none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket",
+  "instance.sentence.proxy.snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto",
   "instance.show-how-to-create": "Mostrar cómo crear",
   "instance.snowflake-web-console": "Consola web de Snowflake",
   "instance.successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
