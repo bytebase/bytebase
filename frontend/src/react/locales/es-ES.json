@@ -99,6 +99,60 @@
       "status": "Estado"
     }
   },
+  "auth": {
+    "back-to-signin": "Volver a Iniciar sesión",
+    "close-window": "Cerrar esta ventana",
+    "inactive-modal": {
+      "description": "Has estado inactivo un tiempo. Por tu seguridad, cerraremos tu sesión automáticamente en {{minutes}} minutos.",
+      "stay-signed-in": "Permanecer conectado",
+      "title": "Tu sesión está a punto de terminar"
+    },
+    "oauth-callback": {
+      "invalid-state": "La autenticación falló: estado de devolución de llamada no válido. Inténtalo de nuevo.",
+      "opener-failed": "La autenticación se completó, pero no se pudo comunicar con la ventana principal. Cierra esta ventana e inténtalo de nuevo.",
+      "opener-unavailable": "La autenticación se completó, pero la ventana principal ya no está disponible. Cierra esta ventana e inténtalo de nuevo.",
+      "please-close": "La autenticación se completó. Cierra esta ventana.",
+      "processing": "Procesando autenticación...",
+      "security-failed": "La autenticación falló: la validación de seguridad falló. Inténtalo de nuevo.",
+      "session-expired": "La autenticación falló: la sesión ha expirado o no es válida. Inténtalo de nuevo.",
+      "success-close": "La autenticación se completó. Puedes cerrar esta ventana.",
+      "success-redirecting": "Autorizado correctamente. Redirigiendo de nuevo a Bytebase..."
+    },
+    "password-forget": {
+      "failed-to-send-code": "No se pudo enviar el código de restablecimiento de contraseña. Inténtalo de nuevo.",
+      "return-to-sign-in": "Volver a iniciar sesión",
+      "selfhost": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "send-reset-code": "Enviar código de restablecimiento",
+      "title": "¿Olvidaste tu contraseña?"
+    },
+    "password-reset": {
+      "code-label": "Código de verificación",
+      "content": "Debe restablecer su contraseña de acuerdo con la política de restricción de contraseña.",
+      "invalid-or-expired-code": "Código inválido o caducado. Por favor solicita uno nuevo.",
+      "title": "Restablecer su contraseña"
+    },
+    "sign-in": {
+      "code-sent-hint": "Se ha enviado un código de verificación a {{email}}.",
+      "demo-account": "Demo Account",
+      "email-code-tab": "Código por email",
+      "failed-to-send-code": "No se pudo enviar el código de verificación. Inténtalo de nuevo.",
+      "forget-password": "¿Olvidaste tu contraseña?",
+      "invited-email": "Has sido invitado. Inicia sesión con {{email}}",
+      "new-user": "¿Nuevo en Bytebase?",
+      "resend-code": "Reenviar código",
+      "resend-in": "Reenviar en {{seconds}}s",
+      "send-code": "Enviar código",
+      "sign-in-with-idp": "Iniciar sesión con {{idp}}",
+      "verification-code": "Código de verificación"
+    },
+    "sign-up": {
+      "accept-terms-and-policy": "Acepto los <terms>Términos del servicio</terms> y <policy>Política de privacidad</policy> de Bytebase",
+      "admin-title": "Configure su <account>cuenta de administrador</account>",
+      "create-admin-account": "Crear cuenta de administrador",
+      "existing-user": "¿Ya tienes una cuenta?",
+      "title": "Registre su cuenta"
+    }
+  },
   "auth.token-expired-title": "Token expirado",
   "banner": {
     "external-url": "Bytebase no ha configurado --external-url"
@@ -148,6 +202,7 @@
     "address": "Dirección",
     "admin": "Admin",
     "all": "Todos",
+    "allow": "Permitir",
     "approve": "Approve",
     "approved": "Aprobado",
     "archive": "Archivo",
@@ -191,6 +246,7 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Eliminado",
+    "deny": "Denegar",
     "description": "Descripción",
     "deselect-all": "Deselect all",
     "detailed-guide": "guía detallada",
@@ -221,6 +277,7 @@
     "filter-by-name": "Filtrar por nombre",
     "from": "Desde",
     "general": "General",
+    "go-back": "Volver",
     "group": "Grupo",
     "groups": "Grupos",
     "history": "Historial",
@@ -238,6 +295,7 @@
     "leave-without-saving": "¿Salir sin guardar?",
     "load-more": "Cargar más",
     "loading": "Cargando",
+    "logout": "Cerrar sesión",
     "manage": "Administrar",
     "manually-select": "Manually select",
     "members_one": "Miembro",
@@ -254,6 +312,7 @@
     "ok": "OK",
     "operations": "Operaciones",
     "optional": "Optional",
+    "or": "o",
     "overview": "Resumen",
     "password": "Contraseña",
     "pending": "Pendiente",
@@ -302,6 +361,9 @@
     "setting": "Configuración",
     "settings": "Configuraciones",
     "share": "Compartir",
+    "sign-in": "Iniciar sesión",
+    "sign-in-as-admin": "Iniciar sesión como administrador",
+    "sign-up": "Registrarse",
     "skipped": "Omitido",
     "snapshot": "Instantánea",
     "sql": "SQL",
@@ -331,6 +393,7 @@
     "username": "Nombre de usuario",
     "users": "Usuarios",
     "value": "Valor",
+    "verify": "Verificar",
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
@@ -1311,6 +1374,29 @@
       "visit-prjects": "Visitar Proyectos"
     }
   },
+  "multi-factor": {
+    "auth-code": "Código de autenticación",
+    "other-methods": {
+      "self": "Otros métodos",
+      "use-auth-app": {
+        "description": "Abre la aplicación de autenticación de dos factores (TOTP) en tu dispositivo móvil para ver tu código de autenticación.",
+        "self": "Usa tu aplicación de autenticación"
+      },
+      "use-recovery-code": {
+        "description": "Si no puedes acceder a tu dispositivo móvil, ingresa uno de tus códigos de recuperación para verificar tu identidad.",
+        "self": "Usa un código de recuperación"
+      }
+    },
+    "recovery-code": "Código de recuperación"
+  },
+  "oauth2": {
+    "consent": {
+      "description": "{{clientName}} está solicitando acceso a tu cuenta",
+      "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos",
+      "permissions": "Esta aplicación podrá:",
+      "title": "Solicitud de autorización"
+    }
+  },
   "plan": {
     "checks": {
       "self": "Verificaciones"
@@ -2196,6 +2282,26 @@
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase."
       }
+    }
+  },
+  "setup": {
+    "basic-info": "Información básica",
+    "data": {
+      "built-in": "Utilice la muestra incorporada",
+      "built-in-desc": "Generar proyecto de muestra e instancias",
+      "self-setup": "Configurar el proyecto"
+    },
+    "purposes": {
+      "alter-schema": "Alterar esquema",
+      "query-data": "Consultar datos",
+      "self": "¿Cuál es su propósito principal con Bytebase?"
+    },
+    "self": "Configuración",
+    "skip-setup": "Saltar configuración",
+    "workflow": {
+      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
+      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario",
+      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD"
     }
   },
   "sql-editor": {
@@ -3208,6 +3314,7 @@
     "messages": {
       "2fa-disabled": "La autenticación de dos factores está desactivada.",
       "2fa-enabled": "La autenticación de dos factores está activada.",
+      "2fa-required": "Se requiere autenticación de dos factores en su espacio de trabajo. Actívelo antes de poder continuar.",
       "cannot-disable": "No puede desactivar la autenticación de dos factores porque su administrador la requiere en el espacio de trabajo.",
       "recovery-codes-regenerated": "Los códigos de recuperación se han regenerado."
     },

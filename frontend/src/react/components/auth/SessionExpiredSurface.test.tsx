@@ -4,8 +4,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
 
-vi.mock("./SigninBridge", () => ({
-  SigninBridge: () => <button data-testid="signin-bridge">Sign in</button>,
+vi.mock("@/react/pages/auth/SigninPage", () => ({
+  SigninPage: () => <button data-testid="signin-bridge">Sign in</button>,
 }));
 
 vi.mock("@/store", () => ({

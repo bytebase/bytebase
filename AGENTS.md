@@ -155,6 +155,26 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Use American English
 - Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
 
+## Composite Primary Keys
+
+Several tables use composite primary keys (e.g., `(project, id)`). Check
+`backend/migrator/migration/LATEST.sql` for the full list — any table with a
+multi-column PRIMARY KEY.
+
+When writing or modifying queries on these tables:
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include ALL primary key
+  columns — never filter by `id` alone
+- When adding a new store method touching a composite-PK table, add a corresponding
+  `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
+  fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
+  and `plan_check_run`. For tables not in that set (e.g., `plan_webhook_delivery`,
+  `task_run_log`, `db_group`, `release`), write table-specific seed and assertion
+  helpers — or extend the shared helper first
+- Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
+  and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
+  the public gRPC API, no store access. Run with:
+  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
+
 ### Imports
 
 - Use organized imports (sorted by the import path)
@@ -169,29 +189,12 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 
 ## Pull Request Guidelines
 
+**Before running `gh pr create`, walk through [`docs/pre-pr-checklist.md`](docs/pre-pr-checklist.md).** It covers the breaking-change review, composite-PK query safety, lint/test gates, and SonarCloud properties — the checks that lint and CI can't catch on their own.
+
 - **Code Review** — Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
 - **Author Responsibility** — Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests
 - **Description** — Clearly describe what the PR changes and why
 - **Testing** — Include information about how the changes were tested
-- **SonarCloud** — When creating or updating a PR, update `.sonarcloud.properties` to reflect the latest file structure. Use `sonar.exclusions` for generated code, build artifacts, and dependencies (directory paths only). Use `sonar.test.inclusions` for test file patterns (wildcards like `**/*_test.go`). Use `sonar.cpd.exclusions` to skip copy-paste detection on test files
-
-### Breaking Change Check (MANDATORY before `gh pr create`)
-
-**This is a required step in the PR creation workflow. Run `git diff main...HEAD` and check every item below BEFORE writing the `gh pr create` command. This step comes after pushing the branch and before creating the PR.**
-
-1. **API breaking changes** — removed/renamed endpoints, changed request/response formats, removed/renamed query parameters
-2. **Database schema breaking changes** — dropped columns/tables, non-backward-compatible migrations
-3. **Proto breaking changes** — removed/renamed fields, changed field numbers/types, removed RPCs
-4. **Configuration breaking changes** — removed flags, changed default behavior, renamed environment variables
-5. **Behavior changes** — changed default values, altered existing workflows, modified permission/access control logic
-6. **Webhook/event changes** — renamed/removed events, changed payload formats
-7. **UI workflow changes** — redesigned user-facing flows that change how users perform existing tasks (e.g., merging steps, splitting pages, changing navigation)
-
-**If ANY of the above apply:**
-1. Add `--label breaking` to the `gh pr create` command
-2. Include a `## Breaking Changes` section in the PR description summarizing what changed and what users need to be aware of
-
-Do NOT skip this check. Do NOT assume changes are non-breaking without reviewing the diff.
 
 ## Common Go Lint Rules
 
