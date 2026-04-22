@@ -43,13 +43,17 @@ export function SegmentedControl<T extends string>({
     >
       {options.map((option, index) => {
         const selected = option.value === value;
+        const previousSelected =
+          index > 0 && options[index - 1]?.value === value;
         const optionDisabled = disabled || option.disabled;
         const segment = (
           <label
             key={option.value}
             className={cn(
-              "inline-flex min-h-8 items-center justify-center px-3 text-sm transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2",
-              index > 0 && "border-l border-control-border",
+              "relative inline-flex min-h-8 items-center justify-center px-3 text-sm transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
+              index > 0 &&
+                !previousSelected &&
+                "border-l border-control-border",
               selected
                 ? "bg-accent text-accent-text"
                 : "bg-background text-control hover:bg-control-bg",

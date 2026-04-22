@@ -99,6 +99,21 @@ describe("SslCertificateForm", () => {
         .querySelector('[aria-label="data-source.ssl.posture.self"]')
         ?.classList.contains("self-start")
     ).toBe(true);
+    const selectedPostureInput = container.querySelector(
+      '[aria-label="data-source.ssl.posture.self"] [aria-checked="true"]'
+    );
+    const selectedPostureLabel = selectedPostureInput?.closest("label");
+    expect(
+      Array.from(selectedPostureLabel?.classList ?? []).some((className) =>
+        /^z-\d+$/.test(className)
+      )
+    ).toBe(false);
+    expect(
+      selectedPostureLabel?.classList.contains("focus-within:ring-inset")
+    ).toBe(true);
+    expect(
+      selectedPostureLabel?.nextElementSibling?.classList.contains("border-l")
+    ).toBe(false);
     expect(container.textContent).toContain("data-source.ssl.server-identity");
     expect(container.textContent).toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
