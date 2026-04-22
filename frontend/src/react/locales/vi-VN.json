@@ -614,29 +614,41 @@
     },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
-      "ca-empty-uses-system-trust": "Để trống để dùng kho tin cậy của hệ thống",
       "ca-path": "Đường dẫn chứng chỉ CA",
       "ca-placeholder": "Nhập hoặc kéo thả YOUR_CA_CERTIFICATE",
       "ca-source": {
         "file-path": "Đường dẫn tệp",
-        "inline-pem": "PEM nội tuyến",
+        "file-path-unavailable-saas": "Bytebase Cloud không hỗ trợ đường dẫn tệp.",
+        "inline-pem": "Dán PEM",
         "self": "Nguồn chứng chỉ CA",
         "system-trust": "Tin cậy hệ thống"
       },
-      "client-cert": "Chứng chỉ máy khách",
-      "client-cert-path": "Đường dẫn chứng chỉ máy khách",
+      "client-cert": "Chứng chỉ",
+      "client-cert-path": "Đường dẫn chứng chỉ",
       "client-cert-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_CERT",
       "client-cert-source": {
         "file-path": "Đường dẫn tệp",
-        "inline-pem": "PEM nội tuyến",
+        "file-path-unavailable-saas": "Bytebase Cloud không hỗ trợ đường dẫn tệp.",
+        "inline-pem": "Dán PEM",
         "none": "Không có",
-        "self": "Nguồn chứng chỉ máy khách"
+        "self": "Nguồn danh tính máy khách"
       },
-      "client-key": "Khóa máy khách",
-      "client-key-path": "Đường dẫn khóa máy khách",
+      "client-identity": "Danh tính máy khách",
+      "client-key": "Khóa riêng",
+      "client-key-path": "Đường dẫn khóa riêng",
       "client-key-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_KEY",
       "configured": "Đã cấu hình",
-      "verify-certificate": "Xác minh chứng chỉ TLS",
+      "connection-security": "Bảo mật kết nối",
+      "mutual-tls-unavailable-engine": "TLS lẫn nhau không khả dụng cho engine này.",
+      "posture": {
+        "disabled": "Đã tắt",
+        "mutual-tls": "TLS lẫn nhau",
+        "self": "Chế độ TLS",
+        "tls": "TLS"
+      },
+      "server-identity": "Danh tính máy chủ",
+      "verification-disabled-description": "Đã tắt xác minh. Kết nối được mã hóa, nhưng danh tính máy chủ không được xác minh; cài đặt CA sẽ bị bỏ qua.",
+      "verify-certificate": "Xác minh chứng chỉ máy chủ",
       "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
     },
     "ssl-connection": "Kết nối SSL"
@@ -667,7 +679,6 @@
   "data-source.ssh.user": "Người dùng",
   "data-source.ssl-connection": "Kết nối SSL",
   "data-source.ssl.ca-cert": "Chứng chỉ CA",
-  "data-source.ssl.ca-empty-uses-system-trust": "Để trống để dùng kho tin cậy của hệ thống",
   "data-source.ssl.ca-path": "Đường dẫn chứng chỉ CA",
   "data-source.ssl.client-cert": "Chứng chỉ máy khách",
   "data-source.ssl.client-cert-path": "Đường dẫn chứng chỉ máy khách",
@@ -1035,10 +1046,10 @@
         }
       },
       "host": {
-        "none-snowflake": "ví dụ: host.docker.internal {{'|'}} địa chỉ IP máy chủ {{'|'}} local socket"
+        "none-snowflake": "ví dụ: host.docker.internal | địa chỉ IP máy chủ | local socket"
       },
       "proxy": {
-        "snowflake": "Đối với máy chủ proxy, thêm {{'@'}}PROXY_HOST và chỉ định PROXY_PORT trong cổng"
+        "snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng"
       }
     },
     "show-how-to-create": "Hiển thị cách tạo",
@@ -1167,8 +1178,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",
   "instance.sentence.google-cloud-sql.mysql.template": "Tạo một tài khoản dịch vụ có tên {{user}}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {{user}}@'%'. Cấp cho người dùng này các đặc quyền cần thiết.",
   "instance.sentence.google-cloud-sql.postgresql.template": "Tạo một tài khoản dịch vụ có tên {{user}}, sau đó thêm nó vào Google Cloud SQL của bạn với tư cách là người dùng IAM {{user}}@project-id.iam. Cấp cho người dùng các đặc quyền cần thiết.",
-  "instance.sentence.host.none-snowflake": "ví dụ: host.docker.internal {'|'} địa chỉ IP máy chủ {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "Đối với máy chủ proxy, thêm {'@'}PROXY_HOST và chỉ định PROXY_PORT trong cổng",
+  "instance.sentence.host.none-snowflake": "ví dụ: host.docker.internal | địa chỉ IP máy chủ | local socket",
+  "instance.sentence.proxy.snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng",
   "instance.show-how-to-create": "Hiển thị cách tạo",
   "instance.snowflake-web-console": "Bảng điều khiển web Snowflake",
   "instance.successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",

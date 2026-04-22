@@ -614,29 +614,41 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
-      "ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
       "ca-path": "Ruta del certificado de CA",
       "ca-placeholder": "Ingrese o arrastre y suelte YOUR_CA_CERTIFICATE",
       "ca-source": {
         "file-path": "Ruta de archivo",
-        "inline-pem": "PEM en línea",
+        "file-path-unavailable-saas": "Las rutas de archivo no están disponibles en Bytebase Cloud.",
+        "inline-pem": "Pegar PEM",
         "self": "Origen del certificado de CA",
         "system-trust": "Confianza del sistema"
       },
-      "client-cert": "Certificado del cliente",
-      "client-cert-path": "Ruta del certificado del cliente",
+      "client-cert": "Certificado",
+      "client-cert-path": "Ruta del certificado",
       "client-cert-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_CERT",
       "client-cert-source": {
         "file-path": "Ruta de archivo",
-        "inline-pem": "PEM en línea",
+        "file-path-unavailable-saas": "Las rutas de archivo no están disponibles en Bytebase Cloud.",
+        "inline-pem": "Pegar PEM",
         "none": "Ninguno",
-        "self": "Origen del certificado del cliente"
+        "self": "Origen de la identidad del cliente"
       },
-      "client-key": "Clave del cliente",
-      "client-key-path": "Ruta de la clave del cliente",
+      "client-identity": "Identidad del cliente",
+      "client-key": "Clave privada",
+      "client-key-path": "Ruta de la clave privada",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
       "configured": "Configurado",
-      "verify-certificate": "Verificar certificado TLS",
+      "connection-security": "Seguridad de la conexión",
+      "mutual-tls-unavailable-engine": "El TLS mutuo no está disponible para este motor.",
+      "posture": {
+        "disabled": "Deshabilitado",
+        "mutual-tls": "TLS mutuo",
+        "self": "Modo TLS",
+        "tls": "TLS"
+      },
+      "server-identity": "Identidad del servidor",
+      "verification-disabled-description": "La verificación está deshabilitada. La conexión está cifrada, pero la identidad del servidor no se verifica; la configuración de CA se ignora.",
+      "verify-certificate": "Verificar certificado del servidor",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },
     "ssl-connection": "Conexión SSL"
@@ -667,7 +679,6 @@
   "data-source.ssh.user": "Nombre de usuario",
   "data-source.ssl-connection": "Conexión SSL",
   "data-source.ssl.ca-cert": "Certificado de CA",
-  "data-source.ssl.ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
   "data-source.ssl.ca-path": "Ruta del certificado de CA",
   "data-source.ssl.client-cert": "Certificado del cliente",
   "data-source.ssl.client-cert-path": "Ruta del certificado del cliente",
@@ -1035,10 +1046,10 @@
         }
       },
       "host": {
-        "none-snowflake": "por ejemplo, host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+        "none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket"
       },
       "proxy": {
-        "snowflake": "Para el servidor proxy, agregue {{'@'}}PROXY_HOST y especifique PROXY_PORT en el puerto"
+        "snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto"
       }
     },
     "show-how-to-create": "Mostrar cómo crear",
@@ -1167,8 +1178,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
   "instance.sentence.google-cloud-sql.mysql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@'%'. Otorgue a este usuario los privilegios necesarios.",
   "instance.sentence.google-cloud-sql.postgresql.template": "Cree una cuenta de servicio llamada {{user}} y luego agréguela en su Google Cloud SQL como usuario de IAM {{user}}@project-id.iam. Otorgue al usuario los privilegios necesarios.",
-  "instance.sentence.host.none-snowflake": "por ejemplo, host.docker.internal {'|'} host ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "Para el servidor proxy, agregue {'@'}PROXY_HOST y especifique PROXY_PORT en el puerto",
+  "instance.sentence.host.none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket",
+  "instance.sentence.proxy.snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto",
   "instance.show-how-to-create": "Mostrar cómo crear",
   "instance.snowflake-web-console": "Consola web de Snowflake",
   "instance.successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",

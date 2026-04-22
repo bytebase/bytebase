@@ -606,7 +606,6 @@
     },
     "ssl": {
       "ca-cert": "CA証明書",
-      "ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
       "ca-path": "CA証明書のパス",
       "ca-placeholder": "YOUR_CA_CERTIFICATEを入力またはドラッグ＆ドロップ",
       "ca-source": {

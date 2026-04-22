@@ -606,7 +606,6 @@
     },
     "ssl": {
       "ca-cert": "CA 证书",
-      "ca-empty-uses-system-trust": "留空以使用系统信任存储",
       "ca-path": "CA 证书路径",
       "ca-placeholder": "输入或拖放 YOUR_CA_CERTIFICATE",
       "ca-source": {

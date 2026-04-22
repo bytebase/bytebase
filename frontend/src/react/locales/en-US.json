@@ -614,29 +614,41 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
-      "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
       "ca-path": "CA Certificate Path",
       "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
       "ca-source": {
-        "file-path": "File Path",
-        "inline-pem": "Inline PEM",
-        "self": "CA Certificate Source",
-        "system-trust": "System Trust"
+        "file-path": "File path",
+        "file-path-unavailable-saas": "File paths are unavailable in Bytebase Cloud.",
+        "inline-pem": "Paste PEM",
+        "self": "CA certificate source",
+        "system-trust": "System trust"
       },
-      "client-cert": "Client Certificate",
-      "client-cert-path": "Client Certificate Path",
+      "client-cert": "Certificate",
+      "client-cert-path": "Certificate path",
       "client-cert-placeholder": "Input or drag and drop YOUR_CLIENT_CERT",
       "client-cert-source": {
-        "file-path": "File Path",
-        "inline-pem": "Inline PEM",
+        "file-path": "File path",
+        "file-path-unavailable-saas": "File paths are unavailable in Bytebase Cloud.",
+        "inline-pem": "Paste PEM",
         "none": "None",
-        "self": "Client Certificate Source"
+        "self": "Client identity source"
       },
-      "client-key": "Client Key",
-      "client-key-path": "Client Key Path",
+      "client-identity": "Client identity",
+      "client-key": "Private key",
+      "client-key-path": "Private key path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
       "configured": "Configured",
-      "verify-certificate": "Verify TLS certificate",
+      "connection-security": "Connection security",
+      "mutual-tls-unavailable-engine": "Mutual TLS is not available for this engine.",
+      "posture": {
+        "disabled": "Disabled",
+        "mutual-tls": "Mutual TLS",
+        "self": "TLS mode",
+        "tls": "TLS"
+      },
+      "server-identity": "Server identity",
+      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored.",
+      "verify-certificate": "Verify server certificate",
       "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
     },
     "ssl-connection": "SSL Connection"
@@ -667,7 +679,6 @@
   "data-source.ssh.user": "User",
   "data-source.ssl-connection": "SSL Connection",
   "data-source.ssl.ca-cert": "CA Certificate",
-  "data-source.ssl.ca-empty-uses-system-trust": "Leave empty to use the system trust store",
   "data-source.ssl.ca-path": "CA Certificate Path",
   "data-source.ssl.client-cert": "Client Certificate",
   "data-source.ssl.client-cert-path": "Client Certificate Path",
@@ -1035,10 +1046,10 @@
         }
       },
       "host": {
-        "none-snowflake": "e.g. host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+        "none-snowflake": "e.g. host.docker.internal | host ip | local socket"
       },
       "proxy": {
-        "snowflake": "For proxy server, append {{'@'}}PROXY_HOST and specify PROXY_PORT in the port"
+        "snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port"
       }
     },
     "show-how-to-create": "Show how to create",
@@ -1167,8 +1178,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "The instance connection name should like {{instance}}.",
   "instance.sentence.google-cloud-sql.mysql.template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user with the needed privileges.",
   "instance.sentence.google-cloud-sql.postgresql.template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@project-id.iam. Grant the user with the needed privileges.",
-  "instance.sentence.host.none-snowflake": "e.g. host.docker.internal {'|'} host ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "For proxy server, append {'@'}PROXY_HOST and specify PROXY_PORT in the port",
+  "instance.sentence.host.none-snowflake": "e.g. host.docker.internal | host ip | local socket",
+  "instance.sentence.proxy.snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port",
   "instance.show-how-to-create": "Show how to create",
   "instance.snowflake-web-console": "Snowflake Web Console",
   "instance.successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
