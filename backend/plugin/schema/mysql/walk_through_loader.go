@@ -69,18 +69,26 @@ const (
 	kindWTView
 	kindWTFunction
 	kindWTProcedure
+	kindWTTrigger
+	kindWTEvent
 )
 
 // wtObjectEntry is one unit of work for the walk-through loader.
 type wtObjectEntry struct {
 	kind wtObjectKind
 	name string
+	// parentTable is set for kindWTTrigger — triggers must attach to an
+	// existing table in the catalog, so we carry the owning table name
+	// separately from the trigger name.
+	parentTable string
 
 	// Exactly one of the following is set based on kind.
-	tableMeta *storepb.TableMetadata
-	viewMeta  *storepb.ViewMetadata
-	funcMeta  *storepb.FunctionMetadata
-	procMeta  *storepb.ProcedureMetadata
+	tableMeta   *storepb.TableMetadata
+	viewMeta    *storepb.ViewMetadata
+	funcMeta    *storepb.FunctionMetadata
+	procMeta    *storepb.ProcedureMetadata
+	triggerMeta *storepb.TriggerMetadata
+	eventMeta   *storepb.EventMetadata
 }
 
 func (e *wtObjectEntry) key() string {
@@ -93,12 +101,22 @@ func (e *wtObjectEntry) key() string {
 		return "func:" + e.name
 	case kindWTProcedure:
 		return "proc:" + e.name
+	case kindWTTrigger:
+		return "trigger:" + e.parentTable + "." + e.name
+	case kindWTEvent:
+		return "event:" + e.name
 	}
 	return "unknown:" + e.name
 }
 
 func (e *wtObjectEntry) sortKey() string {
-	return wtKindLabel(e.kind) + "\x00" + e.name
+	base := wtKindLabel(e.kind) + "\x00" + e.name
+	if e.kind == kindWTTrigger {
+		// Keep triggers grouped by their parent table so stable ordering
+		// within a file doesn't depend on trigger name alone.
+		base += "\x00" + e.parentTable
+	}
+	return base
 }
 
 func wtKindLabel(k wtObjectKind) string {
@@ -111,6 +129,12 @@ func wtKindLabel(k wtObjectKind) string {
 		return "3function"
 	case kindWTProcedure:
 		return "4procedure"
+	case kindWTTrigger:
+		// Triggers must install after their target table. The ordering here
+		// alone does the trick because kindWTTable sorts before kindWTTrigger.
+		return "5trigger"
+	case kindWTEvent:
+		return "6event"
 	}
 	return "9unknown"
 }
@@ -129,6 +153,17 @@ func wtCollectObjects(_ string, meta *storepb.DatabaseSchemaMetadata) []*wtObjec
 				name:      tbl.Name,
 				tableMeta: tbl,
 			})
+			for _, trg := range tbl.Triggers {
+				if trg == nil || trg.Name == "" {
+					continue
+				}
+				out = append(out, &wtObjectEntry{
+					kind:        kindWTTrigger,
+					name:        trg.Name,
+					parentTable: tbl.Name,
+					triggerMeta: trg,
+				})
+			}
 		}
 		for _, view := range sm.Views {
 			if view == nil || view.Name == "" {
@@ -158,6 +193,16 @@ func wtCollectObjects(_ string, meta *storepb.DatabaseSchemaMetadata) []*wtObjec
 				kind:     kindWTProcedure,
 				name:     proc.Name,
 				procMeta: proc,
+			})
+		}
+		for _, ev := range sm.Events {
+			if ev == nil || ev.Name == "" {
+				continue
+			}
+			out = append(out, &wtObjectEntry{
+				kind:      kindWTEvent,
+				name:      ev.Name,
+				eventMeta: ev,
 			})
 		}
 	}
@@ -351,7 +396,9 @@ func wtMinSortKey(scc []*wtObjectEntry) string {
 	return best
 }
 
-// wtInstallOne attempts a real install and falls back to pseudo for tables/views.
+// wtInstallOne attempts a real install and falls back to pseudo for objects
+// that have a pseudo form. For objects without one (functions, procedures)
+// failure silently drops the object from the catalog.
 func wtInstallOne(cat *catalog.Catalog, dbName string, obj *wtObjectEntry) {
 	if err := wtInstallReal(cat, obj); err == nil {
 		return
@@ -361,6 +408,10 @@ func wtInstallOne(cat *catalog.Catalog, dbName string, obj *wtObjectEntry) {
 		_ = wtInstallPseudoTable(cat, dbName, obj.tableMeta)
 	case kindWTView:
 		_ = wtInstallPseudoView(cat, dbName, obj.viewMeta)
+	case kindWTTrigger:
+		_ = wtInstallPseudoTrigger(cat, obj.triggerMeta, obj.parentTable)
+	case kindWTEvent:
+		_ = wtInstallPseudoEvent(cat, obj.eventMeta)
 	default:
 		// Functions, procedures: no pseudo form. Leave uninstalled.
 	}
@@ -402,6 +453,20 @@ func wtInstallReal(cat *catalog.Catalog, obj *wtObjectEntry) error {
 			return err
 		}
 		return cat.DefineProcedure(stmt)
+	case kindWTTrigger:
+		tm := obj.triggerMeta
+		if tm == nil || tm.Timing == "" || tm.Event == "" {
+			// Missing routing metadata — let pseudo fallback synthesize
+			// defaults rather than storing a semantically broken trigger.
+			return errors.New("trigger: missing Timing or Event")
+		}
+		return cat.DefineTrigger(wtBuildCreateTriggerStmt(tm, obj.parentTable))
+	case kindWTEvent:
+		stmt, err := wtParseCreateEventStmt(obj.eventMeta.Definition)
+		if err != nil {
+			return err
+		}
+		return cat.DefineEvent(stmt)
 	}
 	return errors.Errorf("wtInstallReal: unknown kind %d", obj.kind)
 }
@@ -843,4 +908,115 @@ func wtInstallPseudoView(cat *catalog.Catalog, _ string, view *storepb.ViewMetad
 
 func wtPseudoTextType() *ast.DataType {
 	return &ast.DataType{Name: "TEXT"}
+}
+
+// wtBuildCreateTriggerStmt hand-constructs *ast.CreateTriggerStmt from
+// TriggerMetadata. Sync fills only the body (information_schema
+// TRIGGERS.ACTION_STATEMENT) without the CREATE TRIGGER header, so we wire
+// Name/Timing/Event/Table/BodyText directly. Body is a parsed sp_proc_stmt —
+// best-effort only; on parse failure we still hand DefineTrigger a usable
+// stmt with BodyText populated.
+func wtBuildCreateTriggerStmt(tm *storepb.TriggerMetadata, tableName string) *ast.CreateTriggerStmt {
+	stmt := &ast.CreateTriggerStmt{
+		Name:     tm.Name,
+		Timing:   tm.Timing,
+		Event:    tm.Event,
+		Table:    &ast.TableRef{Name: tableName},
+		BodyText: tm.Body,
+	}
+	if body := wtParseTriggerBody(tableName, tm.Timing, tm.Event, tm.Body); body != nil {
+		stmt.Body = body
+	}
+	return stmt
+}
+
+// wtParseTriggerBody wraps the raw trigger body in a known-good CREATE TRIGGER
+// template so the omni parser can produce a Body node. Source is MySQL's
+// information_schema output, not our own deparse.
+func wtParseTriggerBody(tableName, timing, event, body string) ast.Node {
+	if strings.TrimSpace(body) == "" {
+		return nil
+	}
+	if tableName == "" {
+		tableName = "__bb_probe_table"
+	}
+	if timing == "" {
+		timing = "BEFORE"
+	}
+	if event == "" {
+		event = "INSERT"
+	}
+	sql := "CREATE TRIGGER `__bb_probe_trigger` " + timing + " " + event +
+		" ON `" + tableName + "` FOR EACH ROW " + body
+	list, err := mysqlparser.Parse(sql)
+	if err != nil || list == nil {
+		return nil
+	}
+	for _, n := range list.Items {
+		if ct, ok := n.(*ast.CreateTriggerStmt); ok {
+			return ct.Body
+		}
+	}
+	return nil
+}
+
+// wtInstallPseudoTrigger installs a trigger stub when the real install path
+// fails (e.g. body node construction tripped up DefineTrigger, or the parent
+// table name was empty in metadata). The stub preserves Name and routing
+// (Timing/Event/Table) so references still resolve; Body collapses to the
+// trivial no-op "BEGIN END".
+func wtInstallPseudoTrigger(cat *catalog.Catalog, tm *storepb.TriggerMetadata, tableName string) error {
+	if tm == nil || tm.Name == "" {
+		return errors.New("pseudo trigger: missing name")
+	}
+	timing := tm.Timing
+	if timing == "" {
+		timing = "BEFORE"
+	}
+	event := tm.Event
+	if event == "" {
+		event = "INSERT"
+	}
+	if tableName == "" {
+		tableName = "__bb_placeholder"
+	}
+	return cat.DefineTrigger(&ast.CreateTriggerStmt{
+		Name:     tm.Name,
+		Timing:   timing,
+		Event:    event,
+		Table:    &ast.TableRef{Name: tableName},
+		BodyText: "BEGIN END",
+	})
+}
+
+// wtParseCreateEventStmt parses the full SHOW CREATE EVENT text that sync
+// stored in EventMetadata.Definition into *ast.CreateEventStmt.
+func wtParseCreateEventStmt(definition string) (*ast.CreateEventStmt, error) {
+	if strings.TrimSpace(definition) == "" {
+		return nil, errors.New("empty event definition")
+	}
+	list, err := mysqlparser.Parse(definition)
+	if err != nil {
+		return nil, err
+	}
+	if list == nil {
+		return nil, errors.New("nil parse result")
+	}
+	for _, n := range list.Items {
+		if ev, ok := n.(*ast.CreateEventStmt); ok {
+			return ev, nil
+		}
+	}
+	return nil, errors.New("no CreateEventStmt in parse result")
+}
+
+// wtInstallPseudoEvent installs a bare name-only event when the real install
+// path fails (Definition was empty, malformed, or rejected by DefineEvent).
+func wtInstallPseudoEvent(cat *catalog.Catalog, em *storepb.EventMetadata) error {
+	if em == nil || em.Name == "" {
+		return errors.New("pseudo event: missing name")
+	}
+	return cat.DefineEvent(&ast.CreateEventStmt{
+		Name: em.Name,
+	})
 }

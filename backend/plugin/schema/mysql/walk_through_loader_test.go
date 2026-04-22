@@ -63,6 +63,32 @@ func mustGetView(t *testing.T, c *catalog.Catalog, name string) *catalog.View {
 	return v
 }
 
+func mustGetTrigger(t *testing.T, c *catalog.Catalog, name string) *catalog.Trigger {
+	t.Helper()
+	db := c.GetDatabase(testDBName)
+	if db == nil {
+		t.Fatalf("database %q not in catalog", testDBName)
+	}
+	trg := db.Triggers[strings.ToLower(name)]
+	if trg == nil {
+		t.Fatalf("trigger %q not in catalog", name)
+	}
+	return trg
+}
+
+func mustGetEvent(t *testing.T, c *catalog.Catalog, name string) *catalog.Event {
+	t.Helper()
+	db := c.GetDatabase(testDBName)
+	if db == nil {
+		t.Fatalf("database %q not in catalog", testDBName)
+	}
+	ev := db.Events[strings.ToLower(name)]
+	if ev == nil {
+		t.Fatalf("event %q not in catalog", name)
+	}
+	return ev
+}
+
 // ----------------------------------------------------------------------
 // wtParseTypeName — covers a representative cross-section of MySQL types.
 // ----------------------------------------------------------------------
@@ -609,4 +635,334 @@ func schemaWithTables(tables ...*storepb.TableMetadata) *storepb.DatabaseSchemaM
 			},
 		},
 	}
+}
+
+// schemaWithEvents wraps events into a DatabaseSchemaMetadata.
+func schemaWithEvents(events ...*storepb.EventMetadata) *storepb.DatabaseSchemaMetadata {
+	return &storepb.DatabaseSchemaMetadata{
+		Name: testDBName,
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "", Events: events},
+		},
+	}
+}
+
+// ----------------------------------------------------------------------
+// Trigger — happy paths.
+//
+// Examples match MySQL 8.0 documentation §25.3.1 (Trigger Syntax and
+// Examples). Each trigger is attached to a real table so the loader exercises
+// the actual kindWTTable → kindWTTrigger ordering.
+// ----------------------------------------------------------------------
+
+// accountTableForTriggers builds the `account` table used by the canonical
+// trigger examples in the MySQL docs.
+func accountTableForTriggers() *storepb.TableMetadata {
+	return &storepb.TableMetadata{
+		Name:   "account",
+		Engine: "InnoDB",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "acct_num", Type: "int", Nullable: true},
+			{Name: "amount", Type: "decimal(10,2)", Nullable: true},
+		},
+	}
+}
+
+func TestLoader_Trigger_SimpleSetSum(t *testing.T) {
+	// MySQL docs §25.3.1 Example 1:
+	//
+	//   CREATE TRIGGER ins_sum BEFORE INSERT ON account
+	//     FOR EACH ROW SET @sum = @sum + NEW.amount;
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+		Name:   "ins_sum",
+		Timing: "BEFORE",
+		Event:  "INSERT",
+		Body:   "SET @sum = @sum + NEW.amount",
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	trg := mustGetTrigger(t, c, "ins_sum")
+	if !strings.EqualFold(trg.Timing, "BEFORE") {
+		t.Errorf("Timing=%q, want BEFORE", trg.Timing)
+	}
+	if !strings.EqualFold(trg.Event, "INSERT") {
+		t.Errorf("Event=%q, want INSERT", trg.Event)
+	}
+	if !strings.EqualFold(trg.Table, "account") {
+		t.Errorf("Table=%q, want account", trg.Table)
+	}
+	if !strings.Contains(trg.Body, "@sum") {
+		t.Errorf("Body lost raw text: %q", trg.Body)
+	}
+}
+
+func TestLoader_Trigger_BeginEndWithIfElse(t *testing.T) {
+	// MySQL docs §25.3.1 Example 2 (BEGIN … END with IF/ELSEIF/END IF):
+	//
+	//   CREATE TRIGGER upd_check BEFORE UPDATE ON account
+	//     FOR EACH ROW
+	//     BEGIN
+	//       IF NEW.amount < 0 THEN
+	//         SET NEW.amount = 0;
+	//       ELSEIF NEW.amount > 100 THEN
+	//         SET NEW.amount = 100;
+	//       END IF;
+	//     END;
+	body := `BEGIN
+        IF NEW.amount < 0 THEN
+            SET NEW.amount = 0;
+        ELSEIF NEW.amount > 100 THEN
+            SET NEW.amount = 100;
+        END IF;
+    END`
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+		Name:   "upd_check",
+		Timing: "BEFORE",
+		Event:  "UPDATE",
+		Body:   body,
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	trg := mustGetTrigger(t, c, "upd_check")
+	if !strings.Contains(strings.ToUpper(trg.Body), "IF NEW.AMOUNT") {
+		t.Errorf("Body lost IF/THEN content: %q", trg.Body)
+	}
+}
+
+func TestLoader_Trigger_AfterUpdateWithSignal(t *testing.T) {
+	// MySQL docs §15.6.7.1 (SIGNAL inside a trigger):
+	//
+	//   CREATE TRIGGER validate_amount AFTER UPDATE ON account
+	//     FOR EACH ROW
+	//     BEGIN
+	//       IF NEW.amount < 0 THEN
+	//         SIGNAL SQLSTATE '45000'
+	//           SET MESSAGE_TEXT = 'Negative amount not allowed';
+	//       END IF;
+	//     END;
+	body := `BEGIN
+        IF NEW.amount < 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Negative amount not allowed';
+        END IF;
+    END`
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+		Name:   "validate_amount",
+		Timing: "AFTER",
+		Event:  "UPDATE",
+		Body:   body,
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	trg := mustGetTrigger(t, c, "validate_amount")
+	if !strings.EqualFold(trg.Timing, "AFTER") {
+		t.Errorf("Timing=%q", trg.Timing)
+	}
+	if !strings.Contains(strings.ToUpper(trg.Body), "SIGNAL") {
+		t.Errorf("Body lost SIGNAL: %q", trg.Body)
+	}
+}
+
+// ----------------------------------------------------------------------
+// Trigger — pseudo fallback.
+// ----------------------------------------------------------------------
+
+func TestLoader_Trigger_PseudoOnMissingFields(t *testing.T) {
+	// metadata has only Name (+ Body) — Timing and Event empty. Real install
+	// should fail (DefineTrigger rejects empty Timing/Event / empty Body
+	// couldn't parse). Pseudo fills defaults.
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+		Name: "trg_needs_defaults",
+		// Timing / Event / Body intentionally empty.
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	trg := mustGetTrigger(t, c, "trg_needs_defaults")
+	if trg.Timing == "" {
+		t.Error("pseudo trigger Timing should be filled")
+	}
+	if trg.Event == "" {
+		t.Error("pseudo trigger Event should be filled")
+	}
+	if !strings.EqualFold(trg.Table, "account") {
+		t.Errorf("pseudo trigger Table=%q, want account", trg.Table)
+	}
+}
+
+func TestLoader_Trigger_PseudoOnUnparseableBody(t *testing.T) {
+	// A body the parser can't chew up — real install still succeeds with
+	// Body=nil + BodyText populated (DefineTrigger tolerates nil Body), or
+	// falls back to pseudo with body "BEGIN END". Either way the trigger
+	// must exist in the catalog.
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+		Name:   "trg_bad_body",
+		Timing: "BEFORE",
+		Event:  "INSERT",
+		Body:   "this is not sql $$$",
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	trg := mustGetTrigger(t, c, "trg_bad_body")
+	if !strings.EqualFold(trg.Timing, "BEFORE") {
+		t.Errorf("Timing=%q", trg.Timing)
+	}
+}
+
+func TestLoader_Trigger_OnPseudoParentTable(t *testing.T) {
+	// Parent table has a bad column type → real install fails, pseudo
+	// installs TEXT-column table. The trigger must still attach.
+	parent := &storepb.TableMetadata{
+		Name: "account",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "int"},
+			{Name: "bad", Type: "varchar((("}, // forces real install to fail
+		},
+	}
+	meta := schemaWithTables(withTriggers(parent, &storepb.TriggerMetadata{
+		Name:   "ins_stub",
+		Timing: "BEFORE",
+		Event:  "INSERT",
+		Body:   "SET @x = NEW.id",
+	}))
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	// Parent was pseudo-installed.
+	tbl := mustGetTable(t, c, "account")
+	if !strings.EqualFold(tbl.Columns[0].DataType, "text") {
+		t.Fatalf("expected pseudo parent table; columns=%+v", tbl.Columns)
+	}
+	// Trigger attached anyway.
+	mustGetTrigger(t, c, "ins_stub")
+}
+
+// ----------------------------------------------------------------------
+// Event — happy paths.
+//
+// Examples match MySQL 8.0 documentation §15.1.12 (CREATE EVENT). The
+// Definition string is exactly what SHOW CREATE EVENT would produce — our
+// loader parses it to AST via wtParseCreateEventStmt.
+// ----------------------------------------------------------------------
+
+func TestLoader_Event_OneShotAT(t *testing.T) {
+	// MySQL docs §15.1.12 Example 1 (one-shot):
+	//
+	//   CREATE EVENT myevent
+	//     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+	//     DO UPDATE mytable SET mycol = mycol + 1;
+	def := "CREATE EVENT `myevent` " +
+		"ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR " +
+		"DO UPDATE mytable SET mycol = mycol + 1"
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+		Name:       "myevent",
+		Definition: def,
+	}))
+
+	ev := mustGetEvent(t, c, "myevent")
+	if !strings.Contains(strings.ToUpper(ev.Schedule), "CURRENT_TIMESTAMP") &&
+		!strings.Contains(strings.ToUpper(ev.Schedule), "INTERVAL") {
+		t.Errorf("schedule lost: %q", ev.Schedule)
+	}
+}
+
+func TestLoader_Event_RecurringEveryWithComment(t *testing.T) {
+	// MySQL docs §15.1.12 Example 2 (recurring + comment):
+	//
+	//   CREATE EVENT e_hourly
+	//     ON SCHEDULE EVERY 1 HOUR
+	//     COMMENT 'Clears out sessions table each hour.'
+	//     DO DELETE FROM site_activity.sessions;
+	def := "CREATE EVENT `e_hourly` " +
+		"ON SCHEDULE EVERY 1 HOUR " +
+		"COMMENT 'Clears out sessions table each hour.' " +
+		"DO DELETE FROM site_activity.sessions"
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+		Name:       "e_hourly",
+		Definition: def,
+	}))
+
+	ev := mustGetEvent(t, c, "e_hourly")
+	if !strings.Contains(strings.ToUpper(ev.Schedule), "EVERY") ||
+		!strings.Contains(strings.ToUpper(ev.Schedule), "HOUR") {
+		t.Errorf("schedule lost: %q", ev.Schedule)
+	}
+	if !strings.Contains(ev.Comment, "sessions") {
+		t.Errorf("comment lost: %q", ev.Comment)
+	}
+}
+
+func TestLoader_Event_DailyBeginEndBody(t *testing.T) {
+	// MySQL docs §15.1.12 Example 3 (EVERY + STARTS + compound body):
+	//
+	//   CREATE EVENT e_daily
+	//     ON SCHEDULE
+	//       EVERY 1 DAY
+	//       STARTS CURRENT_TIMESTAMP + INTERVAL 5 HOUR
+	//     COMMENT '...'
+	//     DO
+	//     BEGIN
+	//       INSERT INTO totals (time, total) SELECT NOW(), COUNT(*) FROM sessions;
+	//       DELETE FROM sessions;
+	//     END;
+	def := "CREATE EVENT `e_daily` " +
+		"ON SCHEDULE EVERY 1 DAY STARTS CURRENT_TIMESTAMP + INTERVAL 5 HOUR " +
+		"COMMENT 'Saves total then clears each day' " +
+		"DO BEGIN " +
+		"  INSERT INTO totals (time, total) SELECT NOW(), COUNT(*) FROM sessions; " +
+		"  DELETE FROM sessions; " +
+		"END"
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+		Name:       "e_daily",
+		Definition: def,
+	}))
+
+	ev := mustGetEvent(t, c, "e_daily")
+	if !strings.Contains(strings.ToUpper(ev.Schedule), "STARTS") {
+		t.Errorf("schedule lost STARTS: %q", ev.Schedule)
+	}
+}
+
+// ----------------------------------------------------------------------
+// Event — pseudo fallback.
+// ----------------------------------------------------------------------
+
+func TestLoader_Event_PseudoOnEmptyDefinition(t *testing.T) {
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+		Name: "e_empty",
+		// Definition intentionally empty — real install fails, pseudo kicks in.
+	}))
+	mustGetEvent(t, c, "e_empty")
+}
+
+func TestLoader_Event_PseudoOnGarbageDefinition(t *testing.T) {
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+		Name:       "e_broken",
+		Definition: "this is definitely not a CREATE EVENT statement $$",
+	}))
+	mustGetEvent(t, c, "e_broken")
+}
+
+// withTriggers is a tiny builder that attaches triggers to a given table.
+func withTriggers(tbl *storepb.TableMetadata, triggers ...*storepb.TriggerMetadata) *storepb.TableMetadata {
+	tbl.Triggers = append(tbl.Triggers, triggers...)
+	return tbl
 }
