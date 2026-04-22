@@ -24,15 +24,16 @@
       @click.stop.prevent="$emit('click')"
     />
 
-    <RequestQueryButton
+    <ReactPageMount
       v-if="!canQuery"
+      page="RequestQueryButton"
       class="ml-auto"
       :text="true"
-      :permission-denied-detail="create(PermissionDeniedDetailSchema, {
+      :permissionDeniedDetail="create(PermissionDeniedDetailSchema, {
         resources: [database.name],
         requiredPermissions: ['bb.sql.select']
       })"
-      :size="'tiny'"
+      size="sm"
     />
   </div>
 </template>
@@ -42,11 +43,11 @@ import { create } from "@bufbuild/protobuf";
 import { NCheckbox, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTreeNode as TreeNode } from "@/types";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { isDatabaseV1Queryable } from "@/utils";
-import RequestQueryButton from "../../../EditorCommon/ResultView/RequestQueryButton.vue";
 
 const props = defineProps<{
   node: TreeNode;

@@ -1374,6 +1374,15 @@
       "visit-prjects": "Visitar Proyectos"
     }
   },
+  "masking": {
+    "reason": {
+      "algorithm": "Método de enmascaramiento",
+      "classification": "Nivel de clasificación",
+      "context": "Regla",
+      "semantic-type": "Tipo semántico",
+      "title": "¿Por qué están enmascarados estos datos?"
+    }
+  },
   "multi-factor": {
     "auth-code": "Código de autenticación",
     "other-methods": {
@@ -2359,6 +2368,8 @@
     },
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
+    "request-jit": "Request just-in-time access",
+    "request-query": "Solicitar consulta",
     "result-limit": {
       "self": "Límite de resultados"
     },

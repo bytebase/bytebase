@@ -60,8 +60,9 @@
                 <br v-else class="min-h-4 inline-flex" />
               </span>
 
-              <MaskingReasonPopover
+              <ReactPageMount
                 v-if="getMaskingReason && getMaskingReason(columnIndex)"
+                page="MaskingReasonPopover"
                 :reason="getMaskingReason(columnIndex)!"
                 :statement="statement"
                 :database="database.name"
@@ -207,6 +208,7 @@ import { useWindowSize, watchDebounced } from "@vueuse/core";
 import { head, last } from "lodash-es";
 import { NPerformantEllipsis, NVirtualList } from "naive-ui";
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
@@ -219,7 +221,6 @@ import {
   useBinaryFormatContext,
 } from "./common/binary-format-store";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
-import MaskingReasonPopover from "./common/MaskingReasonPopover.vue";
 import { useSelectionContext } from "./common/selection-logic";
 import type {
   ResultTableColumn,

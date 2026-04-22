@@ -1374,6 +1374,15 @@
       "visit-prjects": "访问项目"
     }
   },
+  "masking": {
+    "reason": {
+      "algorithm": "遮盖方法",
+      "classification": "分类级别",
+      "context": "规则",
+      "semantic-type": "语义类型",
+      "title": "为什么这些数据被遮盖？"
+    }
+  },
   "multi-factor": {
     "auth-code": "认证码",
     "other-methods": {
@@ -2359,6 +2368,8 @@
     },
     "request-access": "申请访问",
     "request-data-access": "申请数据访问",
+    "request-jit": "申请即时访问",
+    "request-query": "请求查询",
     "result-limit": {
       "self": "结果限制"
     },

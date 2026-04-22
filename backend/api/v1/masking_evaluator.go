@@ -157,11 +157,16 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 		if pass {
 			semanticTypeID := maskingRule.GetSemanticType()
 			semanticType, ok := m.semanticTypesMap[semanticTypeID]
+
+			ruleTitle := ""
+			if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
+				ruleTitle = maskingRule.Condition.Title
+			}
+			if ruleTitle == "" {
+				ruleTitle = maskingRule.Id
+			}
+
 			if !ok {
-				ruleTitle := ""
-				if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
-					ruleTitle = maskingRule.Condition.Title
-				}
 				return &MaskingEvaluation{
 					SemanticTypeID:      semanticTypeID,
 					MaskingRuleID:       maskingRule.Id,
@@ -169,10 +174,7 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 					ClassificationLevel: classificationLevel,
 				}, nil
 			}
-			ruleTitle := ""
-			if maskingRule.Condition != nil && maskingRule.Condition.Title != "" {
-				ruleTitle = maskingRule.Condition.Title
-			}
+
 			// Get algorithm name from semantic type
 			algorithmName := getAlgorithmNameFromSemanticType(semanticType)
 			return &MaskingEvaluation{
