@@ -572,11 +572,19 @@ func wtBuildColumnDef(col *storepb.ColumnMetadata) (*ast.ColumnDef, error) {
 	}
 
 	if !isAutoInc && col.Default != "" && col.Generation == nil {
-		if expr, err := wtParseExpr(col.Default); err == nil {
-			def.DefaultValue = expr
+		// MySQL sync fills "NULL" as the default for all nullable columns,
+		// including TEXT/BLOB/JSON/GEOMETRY — types that MySQL's grammar
+		// does NOT accept a DEFAULT clause on. Emitting `DEFAULT NULL` for
+		// these would cause DefineTable to reject the whole table and force
+		// pseudo fallback. Mirror the filter in
+		// get_database_definition.go:typeSupportsDefaultValue.
+		if !strings.EqualFold(col.Default, "NULL") || wtTypeSupportsDefault(col.Type) {
+			if expr, err := wtParseExpr(col.Default); err == nil {
+				def.DefaultValue = expr
+			}
+			// Silent drop on parse failure — a missing DEFAULT is a closer
+			// approximation of reality than a whole-column failure.
 		}
-		// Silent drop on parse failure — a missing DEFAULT is a closer
-		// approximation of reality than a whole-column failure.
 	}
 	if col.OnUpdate != "" {
 		if expr, err := wtParseExpr(col.OnUpdate); err == nil {
@@ -618,13 +626,15 @@ func wtBuildIndexConstraint(idx *storepb.IndexMetadata) *ast.Constraint {
 		c.Type = ast.ConstrIndex
 		c.IndexType = idxTypeUpper
 	}
-	// Use IndexColumns when per-part length or DESC matters; otherwise the
-	// simpler Columns field is enough. Functional indexes (expressions) are
-	// left as plain identifiers — rare in practice and omni can't validate
-	// them against the catalog anyway.
+	// Functional key parts (MySQL 8.0+) arrive as expressions in
+	// idx.Expressions — either parenthesized `(lower(name))` or
+	// function-call `lower(name)` form. Those MUST live in
+	// IndexColumns[*].Expr, not in the bare-identifier Columns slice.
+	// Per-part length or DESC also force IndexColumns.
 	needIC := false
-	for i := range idx.Expressions {
-		if (i < len(idx.KeyLength) && idx.KeyLength[i] > 0) ||
+	for i, expr := range idx.Expressions {
+		if wtIsExpressionIndexKey(expr) ||
+			(i < len(idx.KeyLength) && idx.KeyLength[i] > 0) ||
 			(i < len(idx.Descending) && idx.Descending[i]) {
 			needIC = true
 			break
@@ -632,9 +642,7 @@ func wtBuildIndexConstraint(idx *storepb.IndexMetadata) *ast.Constraint {
 	}
 	if needIC {
 		for i, expr := range idx.Expressions {
-			ic := &ast.IndexColumn{
-				Expr: &ast.ColumnRef{Column: wtUnquoteIdent(expr)},
-			}
+			ic := &ast.IndexColumn{Expr: wtIndexKeyExpr(expr)}
 			if i < len(idx.KeyLength) && idx.KeyLength[i] > 0 {
 				ic.Length = int(idx.KeyLength[i])
 			}
@@ -649,6 +657,47 @@ func wtBuildIndexConstraint(idx *storepb.IndexMetadata) *ast.Constraint {
 		}
 	}
 	return c
+}
+
+// wtIsExpressionIndexKey returns true if the key-part string looks like a
+// functional index expression rather than a bare identifier. Heuristic:
+// presence of a paren implies either a function call or a parenthesized
+// expression. Backticked identifiers don't normally contain parens.
+func wtIsExpressionIndexKey(s string) bool {
+	return strings.Contains(s, "(")
+}
+
+// wtIndexKeyExpr converts one idx.Expressions entry into an ExprNode. For
+// functional keys we parse the expression text (source is MySQL's own
+// information_schema output, not our deparse); bare identifiers become a
+// plain ColumnRef.
+func wtIndexKeyExpr(s string) ast.ExprNode {
+	if wtIsExpressionIndexKey(s) {
+		if parsed, err := wtParseExpr(s); err == nil {
+			return parsed
+		}
+		// Parse failed — best-effort: fall through to ColumnRef so at least
+		// the constraint installs with some key part instead of an empty
+		// IndexColumn.
+	}
+	return &ast.ColumnRef{Column: wtUnquoteIdent(s)}
+}
+
+// wtTypeSupportsDefault returns false for MySQL column types that disallow a
+// literal DEFAULT clause (BLOB family, JSON, GEOMETRY). Mirrors the filter
+// used by the bytebase writer — see get_database_definition.go:
+// typeSupportsDefaultValue — so the loader refuses defaults for the same
+// types the writer refuses to emit them for.
+func wtTypeSupportsDefault(typeStr string) bool {
+	head := strings.ToLower(strings.TrimSpace(typeStr))
+	if i := strings.IndexAny(head, " ("); i >= 0 {
+		head = head[:i]
+	}
+	switch head {
+	case "blob", "tinyblob", "mediumblob", "longblob", "json", "geometry":
+		return false
+	}
+	return true
 }
 
 func wtBuildFKConstraint(fk *storepb.ForeignKeyMetadata) *ast.Constraint {

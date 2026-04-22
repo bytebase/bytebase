@@ -966,3 +966,174 @@ func withTriggers(tbl *storepb.TableMetadata, triggers ...*storepb.TriggerMetada
 	tbl.Triggers = append(tbl.Triggers, triggers...)
 	return tbl
 }
+
+// ----------------------------------------------------------------------
+// Regression: MySQL sync populates `Default="NULL"` for every nullable
+// column — including BLOB / JSON / GEOMETRY types whose grammar rejects a
+// DEFAULT clause. The loader must skip DefaultValue for those types so
+// DefineTable doesn't reject the whole table and force pseudo fallback.
+// ----------------------------------------------------------------------
+
+func TestLoader_DefaultNull_OnBlobJsonGeometry_StaysReal(t *testing.T) {
+	meta := schemaWithTables(&storepb.TableMetadata{
+		Name: "t",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
+			// All three of these are nullable — sync fills Default="NULL"
+			// for them. MySQL grammar does NOT accept DEFAULT on these
+			// types, so the loader must drop the default silently.
+			{Name: "payload_json", Type: "json", Nullable: true, Default: "NULL"},
+			{Name: "blob_body", Type: "blob", Nullable: true, Default: "NULL"},
+			{Name: "location", Type: "geometry", Nullable: true, Default: "NULL"},
+			// For a type that DOES support DEFAULT, Default="NULL" should
+			// still be applied.
+			{Name: "name", Type: "varchar(255)", Nullable: true, Default: "NULL"},
+		},
+	})
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	tbl := mustGetTable(t, c, "t")
+	// Real install path keeps real column types — verify by checking a
+	// non-TEXT DataType on the JSON / BLOB / GEOMETRY columns.
+	for _, want := range []struct{ name, dt string }{
+		{"payload_json", "json"},
+		{"blob_body", "blob"},
+		{"location", "geometry"},
+	} {
+		got := tbl.GetColumn(want.name)
+		if got == nil {
+			t.Errorf("column %q missing", want.name)
+			continue
+		}
+		if !strings.EqualFold(got.DataType, want.dt) {
+			t.Errorf("column %q: DataType=%q, want %q (pseudo fallback leaked?)", want.name, got.DataType, want.dt)
+		}
+		// The DEFAULT must have been suppressed — BLOB/JSON/GEOMETRY must
+		// NOT carry a stored default.
+		if got.Default != nil {
+			t.Errorf("column %q: Default=%v, want nil for unsupported-default type", want.name, *got.Default)
+		}
+	}
+	// Regular varchar still carries DEFAULT NULL.
+	if name := tbl.GetColumn("name"); name == nil || name.Default == nil {
+		t.Error("varchar column lost its DEFAULT NULL")
+	}
+}
+
+// ----------------------------------------------------------------------
+// Regression: MySQL 8.0 functional indexes store key parts as expressions
+// like `(lower(name))` or `lower(name)`. Dumping them into Constraint.Columns
+// (bare identifier slice) makes DefineTable reject the table. Expression
+// keys must land in IndexColumns[*].Expr instead.
+// ----------------------------------------------------------------------
+
+func TestLoader_FunctionalIndex_ParenthesizedExpression(t *testing.T) {
+	// MySQL docs §10.3.10 Functional Key Parts:
+	//
+	//   CREATE TABLE t1 (
+	//     col1 INT, col2 INT,
+	//     INDEX func_index ((ABS(col1)))
+	//   );
+	meta := schemaWithTables(&storepb.TableMetadata{
+		Name: "t1",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "col1", Type: "int", Nullable: true},
+			{Name: "col2", Type: "int", Nullable: true},
+		},
+		Indexes: []*storepb.IndexMetadata{
+			{
+				Name:        "func_index",
+				Type:        "BTREE",
+				Expressions: []string{"(abs(col1))"},
+			},
+		},
+	})
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	tbl := mustGetTable(t, c, "t1")
+	if strings.EqualFold(tbl.Columns[0].DataType, "text") {
+		t.Fatal("table degraded to pseudo (all columns TEXT) — functional index broke real install")
+	}
+	// Index must exist.
+	var found bool
+	for _, idx := range tbl.Indexes {
+		if idx.Name == "func_index" {
+			found = true
+			// Catalog stores the key-part expression in IndexColumn.Expr.
+			if len(idx.Columns) != 1 {
+				t.Fatalf("func_index: expected 1 key part, got %d", len(idx.Columns))
+			}
+		}
+	}
+	if !found {
+		t.Error("func_index not installed on table")
+	}
+}
+
+func TestLoader_FunctionalIndex_FunctionCallForm(t *testing.T) {
+	// Same thing but key part is stored as bare function-call text
+	// (lower(name) without outer parens) — another shape the proto comment
+	// explicitly calls out.
+	meta := schemaWithTables(&storepb.TableMetadata{
+		Name: "t",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
+			{Name: "name", Type: "varchar(255)", Nullable: true},
+		},
+		Indexes: []*storepb.IndexMetadata{
+			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
+			{Name: "idx_lower_name", Type: "BTREE", Expressions: []string{"lower(`name`)"}},
+		},
+	})
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	tbl := mustGetTable(t, c, "t")
+	if strings.EqualFold(tbl.Columns[0].DataType, "text") {
+		t.Fatal("table degraded to pseudo — function-call index broke real install")
+	}
+	var found bool
+	for _, idx := range tbl.Indexes {
+		if idx.Name == "idx_lower_name" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("idx_lower_name not installed")
+	}
+}
+
+// TestLoader_FunctionalIndex_MixedWithBareColumns is a negative-regression
+// test: when one key part is an expression and another is a bare column, the
+// whole index must still install — all parts route through IndexColumns.
+func TestLoader_FunctionalIndex_MixedWithBareColumns(t *testing.T) {
+	meta := schemaWithTables(&storepb.TableMetadata{
+		Name: "t",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
+			{Name: "tag", Type: "varchar(64)", Nullable: true},
+			{Name: "name", Type: "varchar(255)", Nullable: true},
+		},
+		Indexes: []*storepb.IndexMetadata{
+			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
+			{
+				Name:        "idx_mixed",
+				Type:        "BTREE",
+				Expressions: []string{"tag", "(lower(`name`))"},
+			},
+		},
+	})
+
+	c := newLoaderTestCatalog(t)
+	runLoader(t, c, meta)
+
+	tbl := mustGetTable(t, c, "t")
+	if strings.EqualFold(tbl.Columns[0].DataType, "text") {
+		t.Fatal("table degraded to pseudo — mixed index broke real install")
+	}
+}
