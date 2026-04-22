@@ -37,7 +37,7 @@ export function SegmentedControl<T extends string>({
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex max-w-full flex-wrap rounded-xs border border-control-border bg-background",
+        "inline-flex max-w-full flex-wrap self-start rounded-xs border border-control-border bg-background",
         className
       )}
     >
