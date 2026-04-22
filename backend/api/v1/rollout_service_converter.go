@@ -475,16 +475,16 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 			})
 
 		case storepb.TaskRunLog_PRIOR_BACKUP_END:
-			if len(entries) == 0 {
-				continue
+			for i := len(entries) - 1; i >= 0; i-- {
+				prev := entries[i]
+				if prev == nil || prev.Type != v1pb.TaskRunLogEntry_PRIOR_BACKUP || prev.PriorBackup.GetEndTime() != nil {
+					continue
+				}
+				prev.PriorBackup.EndTime = timestamppb.New(l.T)
+				prev.PriorBackup.Error = l.Payload.PriorBackupEnd.Error
+				prev.PriorBackup.PriorBackupDetail = convertToTaskRunLogPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
+				break
 			}
-			prev := entries[len(entries)-1]
-			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_PRIOR_BACKUP {
-				continue
-			}
-			prev.PriorBackup.EndTime = timestamppb.New(l.T)
-			prev.PriorBackup.Error = l.Payload.PriorBackupEnd.Error
-			prev.PriorBackup.PriorBackupDetail = convertToTaskRunLogPriorBackupDetail(l.Payload.PriorBackupEnd.PriorBackupDetail)
 
 		case storepb.TaskRunLog_COMPUTE_DIFF_START:
 			entries = append(entries, &v1pb.TaskRunLogEntry{

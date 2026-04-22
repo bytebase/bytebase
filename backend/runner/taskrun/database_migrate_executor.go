@@ -887,28 +887,21 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		priorBackupDetail.Items = append(priorBackupDetail.Items, item)
 	}
 
+	syncDatabase := database
+	syncDatabaseName := fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)
 	if database.Engine != storepb.Engine_POSTGRES {
-		opts.LogDatabaseSyncStart()
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			slog.Error("failed to sync backup database schema",
-				slog.String("database", targetDatabaseName),
-				log.BBError(err),
-			)
-		} else {
-			opts.LogDatabaseSyncEnd("")
-		}
+		syncDatabase = backupDatabase
+		syncDatabaseName = targetDatabaseName
+	}
+	opts.LogDatabaseSyncStart()
+	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, syncDatabase); err != nil {
+		opts.LogDatabaseSyncEnd(err.Error())
+		slog.Error("failed to sync backup database schema",
+			slog.String("database", syncDatabaseName),
+			log.BBError(err),
+		)
 	} else {
-		opts.LogDatabaseSyncStart()
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-			opts.LogDatabaseSyncEnd(err.Error())
-			slog.Error("failed to sync backup database schema",
-				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
-				log.BBError(err),
-			)
-		} else {
-			opts.LogDatabaseSyncEnd("")
-		}
+		opts.LogDatabaseSyncEnd("")
 	}
 
 	return priorBackupDetail, nil
