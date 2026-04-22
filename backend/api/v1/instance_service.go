@@ -252,6 +252,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(result), nil
 }
 
+func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Instance) *store.InstanceMessage {
+	candidate := *instance
+	candidate.Metadata = metadata
+	return &candidate
+}
+
 func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
 	for _, ds := range dataSources {
 		if err := s.checkDataSource(ctx, instance, ds); err != nil {
@@ -786,6 +792,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
+	if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
+	}
+
 	// Test connection.
 	if req.Msg.ValidateOnly {
 		err := func() error {
@@ -807,15 +817,12 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instance)
+		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
 	if dataSource.GetType() != storepb.DataSourceType_READ_ONLY {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only read-only data source can be added"))
-	}
-	if err := s.licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_INSTANCE_READ_ONLY_CONNECTION, instance); err != nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
 	instance, err = s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
@@ -858,8 +865,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if dataSource == nil {
 		if req.Msg.AllowMissing {
 			return s.AddDataSource(ctx, connect.NewRequest(&v1pb.AddDataSourceRequest{
-				Name:       req.Msg.Name,
-				DataSource: req.Msg.DataSource,
+				Name:         req.Msg.Name,
+				DataSource:   req.Msg.DataSource,
+				ValidateOnly: req.Msg.ValidateOnly,
 			}))
 		}
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf(`cannot found data source "%s"`, req.Msg.DataSource.Id))
@@ -1027,7 +1035,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instance)
+		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
