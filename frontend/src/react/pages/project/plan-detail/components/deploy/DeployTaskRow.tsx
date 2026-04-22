@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
-import { type Task, Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { type Task } from "@/types/proto-es/v1/rollout_service_pb";
+import { stringifyTaskStatus } from "@/utils";
 import { DeployTaskStatus } from "./DeployTaskStatus";
 
 export function DeployTaskRow({
@@ -44,7 +45,7 @@ export function DeployTaskRow({
         <div className="min-w-0">
           <div className="truncate text-main">{task.name}</div>
           <div className="text-xs text-control-light">
-            {Task_Status[task.status]}
+            {stringifyTaskStatus(task.status, t)}
           </div>
         </div>
       </div>

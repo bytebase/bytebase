@@ -147,6 +147,8 @@ export function PlanDetailHeader() {
           title,
         },
       });
+      setEditingTitle(false);
+      setEditing("title", false);
       return;
     }
 
