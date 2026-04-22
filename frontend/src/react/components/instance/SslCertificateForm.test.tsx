@@ -35,7 +35,7 @@ describe("SslCertificateForm", () => {
     document.body.innerHTML = "";
   });
 
-  test("renders the CA trust hint for inline PEM input", () => {
+  test("does not render the CA trust hint", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -51,7 +51,7 @@ describe("SslCertificateForm", () => {
       );
     });
 
-    expect(container.textContent).toContain(
+    expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
 
@@ -115,7 +115,7 @@ describe("SslCertificateForm", () => {
       selectedPostureLabel?.nextElementSibling?.classList.contains("border-l")
     ).toBe(false);
     expect(container.textContent).toContain("data-source.ssl.server-identity");
-    expect(container.textContent).toContain(
+    expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
     expect(container.textContent).not.toContain(
@@ -232,7 +232,7 @@ describe("SslCertificateForm", () => {
       "data-source.ssl.connection-security"
     );
     expect(container.textContent).toContain("data-source.ssl-connection");
-    expect(container.textContent).toContain(
+    expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
 

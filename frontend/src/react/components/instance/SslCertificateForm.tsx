@@ -262,7 +262,6 @@ export function SslCertificateForm({
   const resolvedCertPathLabel = t("data-source.ssl.client-cert-path");
   const resolvedKeyPathLabel = t("data-source.ssl.client-key-path");
   const resolvedConfiguredLabel = t("data-source.ssl.configured");
-  const resolvedCaHint = t("data-source.ssl.ca-empty-uses-system-trust");
   const resolvedCaPlaceholder = t("data-source.ssl.ca-placeholder");
   const resolvedCertPlaceholder = t("data-source.ssl.client-cert-placeholder");
   const resolvedKeyPlaceholder = t("data-source.ssl.client-key-placeholder");
@@ -399,7 +398,7 @@ export function SslCertificateForm({
 
   const renderCaMaterial = () => {
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST) {
-      return <p className="mt-1 text-xs textinfolabel">{resolvedCaHint}</p>;
+      return null;
     }
 
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_FILE_PATH) {
@@ -575,7 +574,6 @@ export function SslCertificateForm({
             disabled={disabled}
             placeholder={resolvedCaPlaceholder}
           />
-          <p className="mt-1 text-xs textinfolabel">{resolvedCaHint}</p>
         </TabsPanel>
         {showKeyAndCertFields && (
           <TabsPanel value="KEY" className="pt-1">

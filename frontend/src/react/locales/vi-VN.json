@@ -530,7 +530,6 @@
     },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
-      "ca-empty-uses-system-trust": "Dùng kho tin cậy của hệ thống để xác minh chứng chỉ máy chủ.",
       "ca-path": "Đường dẫn chứng chỉ CA",
       "ca-placeholder": "Nhập hoặc kéo thả YOUR_CA_CERTIFICATE",
       "ca-source": {
@@ -596,7 +595,6 @@
   "data-source.ssh.user": "Người dùng",
   "data-source.ssl-connection": "Kết nối SSL",
   "data-source.ssl.ca-cert": "Chứng chỉ CA",
-  "data-source.ssl.ca-empty-uses-system-trust": "Để trống để dùng kho tin cậy của hệ thống",
   "data-source.ssl.ca-path": "Đường dẫn chứng chỉ CA",
   "data-source.ssl.client-cert": "Chứng chỉ máy khách",
   "data-source.ssl.client-cert-path": "Đường dẫn chứng chỉ máy khách",

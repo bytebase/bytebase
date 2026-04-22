@@ -610,7 +610,6 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
-      "ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
       "ca-path": "Ruta del certificado de CA",
       "ca-placeholder": "Ingrese o arrastre y suelte YOUR_CA_CERTIFICATE",
       "ca-source": {

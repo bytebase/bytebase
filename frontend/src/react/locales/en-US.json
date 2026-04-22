@@ -530,7 +530,6 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
-      "ca-empty-uses-system-trust": "Uses the system trust store to verify the server certificate.",
       "ca-path": "CA Certificate Path",
       "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
       "ca-source": {
@@ -596,7 +595,6 @@
   "data-source.ssh.user": "User",
   "data-source.ssl-connection": "SSL Connection",
   "data-source.ssl.ca-cert": "CA Certificate",
-  "data-source.ssl.ca-empty-uses-system-trust": "Leave empty to use the system trust store",
   "data-source.ssl.ca-path": "CA Certificate Path",
   "data-source.ssl.client-cert": "Client Certificate",
   "data-source.ssl.client-cert-path": "Client Certificate Path",

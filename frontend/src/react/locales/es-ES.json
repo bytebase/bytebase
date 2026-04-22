@@ -530,7 +530,6 @@
     },
     "ssl": {
       "ca-cert": "Certificado de CA",
-      "ca-empty-uses-system-trust": "Usa el almacén de confianza del sistema para verificar el certificado del servidor.",
       "ca-path": "Ruta del certificado de CA",
       "ca-placeholder": "Ingrese o arrastre y suelte YOUR_CA_CERTIFICATE",
       "ca-source": {
@@ -596,7 +595,6 @@
   "data-source.ssh.user": "Nombre de usuario",
   "data-source.ssl-connection": "Conexión SSL",
   "data-source.ssl.ca-cert": "Certificado de CA",
-  "data-source.ssl.ca-empty-uses-system-trust": "Dejar vacío para usar la tienda de confianza del sistema",
   "data-source.ssl.ca-path": "Ruta del certificado de CA",
   "data-source.ssl.client-cert": "Certificado del cliente",
   "data-source.ssl.client-cert-path": "Ruta del certificado del cliente",

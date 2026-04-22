@@ -530,7 +530,6 @@
     },
     "ssl": {
       "ca-cert": "CA証明書",
-      "ca-empty-uses-system-trust": "システムの信頼ストアを使用してサーバー証明書を検証します。",
       "ca-path": "CA証明書のパス",
       "ca-placeholder": "YOUR_CA_CERTIFICATEを入力またはドラッグ＆ドロップ",
       "ca-source": {
@@ -596,7 +595,6 @@
   "data-source.ssh.user": "ユーザー名",
   "data-source.ssl-connection": "SSL接続",
   "data-source.ssl.ca-cert": "CA証明書",
-  "data-source.ssl.ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
   "data-source.ssl.ca-path": "CA証明書のパス",
   "data-source.ssl.client-cert": "クライアント証明書",
   "data-source.ssl.client-cert-path": "クライアント証明書のパス",

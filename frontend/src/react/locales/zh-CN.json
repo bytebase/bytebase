@@ -530,7 +530,6 @@
     },
     "ssl": {
       "ca-cert": "CA 证书",
-      "ca-empty-uses-system-trust": "使用系统信任存储来验证服务器证书。",
       "ca-path": "CA 证书路径",
       "ca-placeholder": "输入或拖放 YOUR_CA_CERTIFICATE",
       "ca-source": {
@@ -596,7 +595,6 @@
   "data-source.ssh.user": "用户名",
   "data-source.ssl-connection": "SSL 连接",
   "data-source.ssl.ca-cert": "CA 证书",
-  "data-source.ssl.ca-empty-uses-system-trust": "留空以使用系统信任存储",
   "data-source.ssl.ca-path": "CA 证书路径",
   "data-source.ssl.client-cert": "客户端证书",
   "data-source.ssl.client-cert-path": "客户端证书路径",
