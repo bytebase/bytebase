@@ -82,7 +82,7 @@ describe("SslCertificateForm", () => {
       );
     });
 
-    expect(container.textContent).toContain(
+    expect(container.textContent).not.toContain(
       "data-source.ssl.connection-security"
     );
     expect(container.textContent).toContain("data-source.ssl.posture.disabled");

@@ -697,12 +697,7 @@ export function SslCertificateForm({
     <div className="mt-2 flex flex-col gap-y-3">
       {showPostureUi && (
         <>
-          <div className="flex flex-col gap-y-2">
-            <label className="textlabel block">
-              {t("data-source.ssl.connection-security")}
-            </label>
-            {renderPostureControl()}
-          </div>
+          {renderPostureControl()}
           {renderPostureMaterial()}
         </>
       )}
