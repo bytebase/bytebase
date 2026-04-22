@@ -162,6 +162,15 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 }
 
 func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
+	// Set up execute options
+	opts := db.ExecuteOptions{}
+	if project != nil && project.Setting != nil {
+		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
+	}
+	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
+		return exec.store.CreateTaskRunLog(ctx, database.ProjectID, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
+	}
+
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
 	// so this works correctly for mixed DDL+DML statements.
@@ -189,7 +198,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 			// Check if we should skip backup or not.
 			if common.EngineSupportPriorBackup(database.Engine) {
 				var backupErr error
-				priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database)
+				priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, sheet.Statement, task.Payload, task, instance, database, &opts)
 				if backupErr != nil {
 					exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
 						Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
@@ -229,15 +238,6 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		slog.String("type", task.Type.String()),
 		slog.String("sheetSha256", sheet.Sha256),
 	)
-
-	// Set up execute options
-	opts := db.ExecuteOptions{}
-	if project != nil && project.Setting != nil {
-		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
-	}
-	opts.CreateTaskRunLog = func(t time.Time, e *storepb.TaskRunLog) error {
-		return exec.store.CreateTaskRunLog(ctx, database.ProjectID, taskRunUID, t.UTC(), exec.profile.ReplicaID, e)
-	}
 
 	// Begin migration - create pending changelog
 	changelogID, err := exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
@@ -740,6 +740,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	task *store.TaskMessage,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
+	opts *db.ExecuteOptions,
 ) (*storepb.PriorBackupDetail, error) {
 	if !payload.GetEnablePriorBackup() {
 		return nil, nil
@@ -887,18 +888,26 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	if database.Engine != storepb.Engine_POSTGRES {
+		opts.LogDatabaseSyncStart()
 		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", targetDatabaseName),
 				log.BBError(err),
 			)
+		} else {
+			opts.LogDatabaseSyncEnd("")
 		}
 	} else {
+		opts.LogDatabaseSyncStart()
 		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
+			opts.LogDatabaseSyncEnd(err.Error())
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
 				log.BBError(err),
 			)
+		} else {
+			opts.LogDatabaseSyncEnd("")
 		}
 	}
 
