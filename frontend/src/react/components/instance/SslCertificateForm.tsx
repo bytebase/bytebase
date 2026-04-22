@@ -386,9 +386,6 @@ export function SslCertificateForm({
 
     return (
       <div className="flex flex-col gap-y-1">
-        <label className="textlabel block">
-          {t("data-source.ssl.posture.self")}
-        </label>
         <SegmentedControl
           value={resolvedPosture}
           onValueChange={(next) => onPostureChange?.(next)}

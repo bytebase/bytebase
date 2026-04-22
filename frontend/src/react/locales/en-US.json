@@ -560,7 +560,7 @@
       "posture": {
         "disabled": "Disabled",
         "mutual-tls": "Mutual TLS",
-        "self": "Security posture",
+        "self": "TLS mode",
         "tls": "TLS"
       },
       "server-identity": "Server identity",

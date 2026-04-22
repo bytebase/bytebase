@@ -560,7 +560,7 @@
       "posture": {
         "disabled": "已禁用",
         "mutual-tls": "双向 TLS",
-        "self": "安全态势",
+        "self": "TLS 模式",
         "tls": "TLS"
       },
       "server-identity": "服务器身份",

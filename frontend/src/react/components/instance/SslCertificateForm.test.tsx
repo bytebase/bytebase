@@ -90,6 +90,10 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain(
       "data-source.ssl.posture.mutual-tls"
     );
+    expect(container.textContent).not.toContain("data-source.ssl.posture.self");
+    expect(
+      container.querySelector('[aria-label="data-source.ssl.posture.self"]')
+    ).not.toBeNull();
     expect(container.textContent).toContain("data-source.ssl.server-identity");
     expect(container.textContent).toContain(
       "data-source.ssl.ca-empty-uses-system-trust"

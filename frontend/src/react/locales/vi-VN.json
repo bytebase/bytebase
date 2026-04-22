@@ -560,7 +560,7 @@
       "posture": {
         "disabled": "Đã tắt",
         "mutual-tls": "TLS lẫn nhau",
-        "self": "Tư thế bảo mật",
+        "self": "Chế độ TLS",
         "tls": "TLS"
       },
       "server-identity": "Danh tính máy chủ",

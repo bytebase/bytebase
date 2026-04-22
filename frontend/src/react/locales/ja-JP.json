@@ -560,7 +560,7 @@
       "posture": {
         "disabled": "無効",
         "mutual-tls": "相互 TLS",
-        "self": "セキュリティ態勢",
+        "self": "TLS モード",
         "tls": "TLS"
       },
       "server-identity": "サーバー ID",
