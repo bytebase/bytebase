@@ -565,7 +565,7 @@
       },
       "server-identity": "Identidad del servidor",
       "verification-disabled-description": "La verificación está deshabilitada. La conexión está cifrada, pero la identidad del servidor no se verifica; la configuración de CA se ignora.",
-      "verify-certificate": "Verificar certificado TLS",
+      "verify-certificate": "Verificar certificado del servidor",
       "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
     },
     "ssl-connection": "Conexión SSL"

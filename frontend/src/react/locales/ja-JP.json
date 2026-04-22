@@ -565,7 +565,7 @@
       },
       "server-identity": "サーバー ID",
       "verification-disabled-description": "検証は無効です。接続は暗号化されていますが、サーバーの ID は検証されず、CA 設定は無視されます。",
-      "verify-certificate": "TLS証明書を検証",
+      "verify-certificate": "サーバー証明書を検証",
       "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
     },
     "ssl-connection": "SSL接続"

@@ -278,8 +278,20 @@ export function SslCertificateForm({
     showClientCertSourceUi;
   const showPerGroupSourceUi = showCaSourceUi || showClientCertSourceUi;
 
+  const hasClientIdentityMaterial = !!(
+    cert ||
+    sslKey ||
+    certPath ||
+    keyPath ||
+    hasCert ||
+    hasKey ||
+    hasCertPath ||
+    hasKeyPath
+  );
   const showKeyAndCertFields =
-    showKeyAndCert || ![Engine.MSSQL].includes(engineType);
+    showKeyAndCert ||
+    ![Engine.MSSQL].includes(engineType) ||
+    hasClientIdentityMaterial;
 
   const inferredCaSource = getLocalTlsCaSource({
     useSsl: true,
@@ -330,20 +342,10 @@ export function SslCertificateForm({
     showPostureUi && posture !== undefined ? posture : inferredPosture;
   const supportsClientIdentity =
     showKeyAndCertFields && isLocalTlsClientIdentitySupported(engineType);
-  const hasClientIdentityMaterial = !!(
-    cert ||
-    sslKey ||
-    certPath ||
-    keyPath ||
-    hasCert ||
-    hasKey ||
-    hasCertPath ||
-    hasKeyPath
-  );
-  const canSelectMutualTls =
-    supportsClientIdentity || hasClientIdentityMaterial;
+  const canShowMutualTls = supportsClientIdentity || hasClientIdentityMaterial;
+  const canSelectMutualTls = supportsClientIdentity;
   const resolvedPosture =
-    requestedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canSelectMutualTls
+    requestedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canShowMutualTls
       ? LOCAL_TLS_POSTURE_TLS
       : requestedPosture;
   const showConfiguredBadge = (hasStoredValue: boolean, visibleValue: string) =>
@@ -427,7 +429,6 @@ export function SslCertificateForm({
           disabled={disabled}
           placeholder={resolvedCaPlaceholder}
         />
-        <p className="text-xs textinfolabel">{resolvedCaHint}</p>
       </div>
     );
   };

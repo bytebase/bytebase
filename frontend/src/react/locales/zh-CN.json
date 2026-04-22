@@ -565,7 +565,7 @@
       },
       "server-identity": "服务器身份",
       "verification-disabled-description": "已禁用验证。连接已加密，但未验证服务器身份；CA 设置将被忽略。",
-      "verify-certificate": "验证 TLS 证书",
+      "verify-certificate": "验证服务器证书",
       "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
     },
     "ssl-connection": "SSL 连接"

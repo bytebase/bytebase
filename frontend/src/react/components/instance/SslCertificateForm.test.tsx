@@ -168,6 +168,9 @@ describe("SslCertificateForm", () => {
       "data-source.ssl.verification-disabled-description"
     );
     expect(container.textContent).toContain("data-source.ssl.ca-source.self");
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.ca-empty-uses-system-trust"
+    );
 
     act(() => {
       root.unmount();
@@ -369,6 +372,44 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).not.toContain(
       "data-source.ssl.client-identity"
     );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("renders saved mutual TLS identity for unsupported engines", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          posture="MUTUAL_TLS"
+          onPostureChange={() => {}}
+          caSource="SYSTEM_TRUST"
+          onCaSourceChange={() => {}}
+          clientCertSource="INLINE_PEM"
+          onClientCertSourceChange={() => {}}
+          useSsl={true}
+          verify={true}
+          onVerifyChange={() => {}}
+          hasCert={true}
+          hasKey={true}
+          engineType={Engine.MSSQL}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain("data-source.ssl.client-identity");
+    expect(container.textContent).toContain("data-source.ssl.client-cert");
+    expect(container.textContent).toContain("data-source.ssl.client-key");
+    expect(
+      container.querySelector(
+        '[aria-label="data-source.ssl.posture.self"] [aria-checked="true"][aria-disabled="true"]'
+      )
+    ).not.toBeNull();
 
     act(() => {
       root.unmount();
