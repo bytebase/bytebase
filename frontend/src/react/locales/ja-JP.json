@@ -529,29 +529,41 @@
     },
     "ssl": {
       "ca-cert": "CA証明書",
-      "ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
       "ca-path": "CA証明書のパス",
       "ca-placeholder": "YOUR_CA_CERTIFICATEを入力またはドラッグ＆ドロップ",
       "ca-source": {
         "file-path": "ファイルパス",
-        "inline-pem": "インラインPEM",
-        "self": "CA証明書のソース",
+        "file-path-unavailable-saas": "Bytebase Cloud ではファイルパスは利用できません。",
+        "inline-pem": "PEM を貼り付け",
+        "self": "CA 証明書のソース",
         "system-trust": "システム信頼"
       },
-      "client-cert": "クライアント証明書",
-      "client-cert-path": "クライアント証明書のパス",
+      "client-cert": "証明書",
+      "client-cert-path": "証明書のパス",
       "client-cert-placeholder": "YOUR_CLIENT_CERTを入力またはドラッグ＆ドロップ",
       "client-cert-source": {
         "file-path": "ファイルパス",
-        "inline-pem": "インラインPEM",
+        "file-path-unavailable-saas": "Bytebase Cloud ではファイルパスは利用できません。",
+        "inline-pem": "PEM を貼り付け",
         "none": "なし",
-        "self": "クライアント証明書のソース"
+        "self": "クライアント ID のソース"
       },
-      "client-key": "クライアントキー",
-      "client-key-path": "クライアントキーのパス",
+      "client-identity": "クライアント ID",
+      "client-key": "秘密鍵",
+      "client-key-path": "秘密鍵のパス",
       "client-key-placeholder": "YOUR_CLIENT_KEYを入力またはドラッグ＆ドロップ",
       "configured": "設定済み",
-      "verify-certificate": "TLS証明書を検証",
+      "connection-security": "接続セキュリティ",
+      "mutual-tls-unavailable-engine": "このエンジンでは相互 TLS は利用できません。",
+      "posture": {
+        "disabled": "無効",
+        "mutual-tls": "相互 TLS",
+        "self": "TLS モード",
+        "tls": "TLS"
+      },
+      "server-identity": "サーバー ID",
+      "verification-disabled-description": "検証は無効です。接続は暗号化されていますが、サーバーの ID は検証されず、CA 設定は無視されます。",
+      "verify-certificate": "サーバー証明書を検証",
       "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
     },
     "ssl-connection": "SSL接続"
@@ -582,7 +594,6 @@
   "data-source.ssh.user": "ユーザー名",
   "data-source.ssl-connection": "SSL接続",
   "data-source.ssl.ca-cert": "CA証明書",
-  "data-source.ssl.ca-empty-uses-system-trust": "空欄のままにすると、システムの信頼ストアを使用します",
   "data-source.ssl.ca-path": "CA証明書のパス",
   "data-source.ssl.client-cert": "クライアント証明書",
   "data-source.ssl.client-cert-path": "クライアント証明書のパス",
@@ -943,10 +954,10 @@
         }
       },
       "host": {
-        "none-snowflake": "たとえば、host.docker.internal {{'|'}} host ip {{'|'}} local socket"
+        "none-snowflake": "たとえば、host.docker.internal | host ip | local socket"
       },
       "proxy": {
-        "snowflake": "プロキシ サーバーの場合は、{{'@'}}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
+        "snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
       }
     },
     "show-how-to-create": "作成方法",
@@ -1075,8 +1086,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",
   "instance.sentence.google-cloud-sql.mysql.template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@'%' として Google Cloud SQL に追加します。このユーザーに必要な権限を付与します。",
   "instance.sentence.google-cloud-sql.postgresql.template": "{{user}} という名前のサービス アカウントを作成し、IAM ユーザー {{user}}@project-id.iam として Google Cloud SQL に追加します。ユーザーに必要な権限を付与します。",
-  "instance.sentence.host.none-snowflake": "たとえば、host.docker.internal {'|'} host ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "プロキシ サーバーの場合は、{'@'}PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。",
+  "instance.sentence.host.none-snowflake": "たとえば、host.docker.internal | host ip | local socket",
+  "instance.sentence.proxy.snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。",
   "instance.show-how-to-create": "作成方法",
   "instance.snowflake-web-console": "スノーフレークウェブコンソール",
   "instance.successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",

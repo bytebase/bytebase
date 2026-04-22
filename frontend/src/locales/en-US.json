@@ -600,7 +600,6 @@
     },
     "ssl": {
       "ca-cert": "CA Certificate",
-      "ca-empty-uses-system-trust": "Leave empty to use the system trust store",
       "ca-path": "CA Certificate Path",
       "ca-placeholder": "Input or drag and drop YOUR_CA_CERTIFICATE",
       "ca-source": {

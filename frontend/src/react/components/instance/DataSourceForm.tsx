@@ -6,7 +6,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSubscriptionV1Store } from "@/store";
+import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
@@ -35,9 +35,17 @@ import { SslCertificateForm } from "./SslCertificateForm";
 import {
   applyLocalTlsCaSource,
   applyLocalTlsClientCertSource,
+  applyLocalTlsPosture,
   disableLocalTls,
   getLocalTlsCaSource,
   getLocalTlsClientCertSource,
+  getLocalTlsPosture,
+  LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM,
+  LOCAL_TLS_CLIENT_CERT_SOURCE_NONE,
+  LOCAL_TLS_POSTURE_DISABLED,
+  LOCAL_TLS_POSTURE_MUTUAL_TLS,
+  LOCAL_TLS_POSTURE_TLS,
+  type LocalTlsPosture,
 } from "./tls";
 
 interface DataSourceFormProps {
@@ -81,6 +89,8 @@ export function DataSourceForm({
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
   const currentPlan = useVueState(() => subscriptionStore.currentPlan);
+  const actuatorStore = useActuatorV1Store();
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const ctx = useInstanceFormContext();
   const {
     instance,
@@ -117,6 +127,9 @@ export function DataSourceForm({
   const [localTlsClientCertSource, setLocalTlsClientCertSource] = useState(
     getLocalTlsClientCertSource(dataSource)
   );
+  const [localTlsPosture, setLocalTlsPosture] = useState(
+    getLocalTlsPosture(dataSource)
+  );
   const previousDataSourceIdRef = useRef(dataSource.id);
 
   // Sync passwordType when externalSecret changes
@@ -135,11 +148,13 @@ export function DataSourceForm({
       previousDataSourceIdRef.current = dataSource.id;
       setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
       setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+      setLocalTlsPosture(getLocalTlsPosture(dataSource));
       return;
     }
     if (!dataSource.updateSsl) {
       setLocalTlsCaSource(getLocalTlsCaSource(dataSource));
       setLocalTlsClientCertSource(getLocalTlsClientCertSource(dataSource));
+      setLocalTlsPosture(getLocalTlsPosture(dataSource));
     }
   }, [
     dataSource.id,
@@ -489,6 +504,42 @@ export function DataSourceForm({
     };
     reader.readAsArrayBuffer(file);
   };
+
+  const onLocalTlsPostureChange = useCallback(
+    (posture: LocalTlsPosture) => {
+      setLocalTlsPosture(posture);
+      if (posture === LOCAL_TLS_POSTURE_DISABLED) {
+        setLocalTlsCaSource("SYSTEM_TRUST");
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
+        update({ ...disableLocalTls(dataSource), updateSsl: true });
+        return;
+      }
+
+      const next = applyLocalTlsPosture(dataSource, posture);
+      const enablingTls = !dataSource.useSsl;
+      if (posture === LOCAL_TLS_POSTURE_TLS) {
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
+      }
+      if (
+        posture === LOCAL_TLS_POSTURE_MUTUAL_TLS &&
+        localTlsClientCertSource === LOCAL_TLS_CLIENT_CERT_SOURCE_NONE
+      ) {
+        setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_INLINE_PEM);
+      }
+
+      update({
+        ...next,
+        verifyTlsCertificate: enablingTls
+          ? true
+          : dataSource.verifyTlsCertificate,
+        updateSsl: mergeTlsUpdateState(dataSource.updateSsl, {
+          useSsl: true,
+          clientCert: posture === LOCAL_TLS_POSTURE_TLS,
+        }),
+      });
+    },
+    [dataSource, localTlsClientCertSource, update]
+  );
 
   return (
     <div className="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3">
@@ -1647,7 +1698,7 @@ export function DataSourceForm({
           {showSSL && isPasswordAuth && (
             <div className="sm:col-span-3 sm:col-start-1">
               <div className="flex items-center justify-start gap-x-2 textlabel">
-                {t("data-source.ssl-connection")}
+                {t("data-source.ssl.connection-security")}
                 {isCreating && onOpenInfoPanel && hasSslInfo && (
                   <button
                     type="button"
@@ -1674,6 +1725,9 @@ export function DataSourceForm({
                   setLocalTlsClientCertSource("NONE");
                   update({ ...disableLocalTls(dataSource), updateSsl: true });
                 }}
+                posture={localTlsPosture}
+                onPostureChange={onLocalTlsPostureChange}
+                isSaaSMode={isSaaSMode}
                 caSource={localTlsCaSource}
                 onCaSourceChange={(source) => {
                   setLocalTlsCaSource(source);
