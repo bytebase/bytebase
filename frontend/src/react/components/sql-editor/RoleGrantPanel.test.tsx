@@ -13,6 +13,9 @@ const mocks = vi.hoisted(() => ({
   useCurrentUserV1: vi.fn(),
   useProjectV1Store: vi.fn(),
   useRoleStore: vi.fn(),
+  useSettingV1Store: vi.fn(() => ({
+    workspaceProfile: { maximumRoleExpiration: undefined },
+  })),
   pushNotification: vi.fn(),
   issueServiceClientConnect: {
     createIssue: vi.fn().mockResolvedValue({ name: "projects/proj1/issues/1" }),
@@ -32,7 +35,14 @@ vi.mock("@/store", () => ({
   useCurrentUserV1: mocks.useCurrentUserV1,
   useProjectV1Store: mocks.useProjectV1Store,
   useRoleStore: mocks.useRoleStore,
+  useSettingV1Store: mocks.useSettingV1Store,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/types", () => ({
+  PresetRoleType: {
+    PROJECT_OWNER: "roles/projectOwner",
+  },
 }));
 
 vi.mock("@/connect", () => ({

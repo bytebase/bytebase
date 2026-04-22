@@ -27,8 +27,9 @@ import {
   useCurrentUserV1,
   useProjectV1Store,
   useRoleStore,
+  useSettingV1Store,
 } from "@/store";
-import type { DatabaseResource } from "@/types";
+import { type DatabaseResource, PresetRoleType } from "@/types";
 import {
   CreateIssueRequestSchema,
   Issue_Type,
@@ -79,6 +80,14 @@ function RoleGrantPanelInner({
   const roleStore = useRoleStore();
   const selectedRole = useVueState(() => roleStore.getRoleByName(role));
 
+  const settingStore = useSettingV1Store();
+  const maximumRoleExpirationDays = useVueState(() => {
+    if (role === PresetRoleType.PROJECT_OWNER) return undefined;
+    const seconds = settingStore.workspaceProfile.maximumRoleExpiration?.seconds;
+    if (!seconds) return undefined;
+    return Math.floor(Number(seconds) / (60 * 60 * 24));
+  });
+
   const showDatabaseSelector = roleHasDatabaseLimitation(role);
 
   const [dbResources, setDbResources] =
@@ -91,6 +100,9 @@ function RoleGrantPanelInner({
   const [submitting, setSubmitting] = useState(false);
 
   const minDatetime = dayjs().format("YYYY-MM-DDTHH:mm");
+  const maxDatetime = maximumRoleExpirationDays
+    ? dayjs().add(maximumRoleExpirationDays, "days").format("YYYY-MM-DDTHH:mm")
+    : undefined;
 
   const reasonRequired = useMemo(
     () => project?.enforceIssueTitle ?? false,
@@ -102,10 +114,29 @@ function RoleGrantPanelInner({
     [project]
   );
 
+  const expirationIsInPast =
+    !!expirationTimestamp &&
+    dayjs(expirationTimestamp).unix() <= dayjs().unix();
+
+  const expirationExceedsMax =
+    !!expirationTimestamp &&
+    !!maximumRoleExpirationDays &&
+    dayjs(expirationTimestamp).isAfter(
+      dayjs().add(maximumRoleExpirationDays, "days")
+    );
+
+  // When the workspace has a maximumRoleExpiration policy, the user must
+  // pick an expiration — otherwise the backend treats missing expiration as
+  // effectively unbounded (math.MaxInt32 days) and bypasses the cap.
+  const expirationRequired = maximumRoleExpirationDays !== undefined;
+
   const canSubmit = useMemo(() => {
     if (submitting) return false;
     if (reasonRequired && !reason.trim()) return false;
     if (showDatabaseSelector && dbResources.length === 0) return false;
+    if (expirationRequired && !expirationTimestamp) return false;
+    if (expirationIsInPast) return false;
+    if (expirationExceedsMax) return false;
     if (project?.forceIssueLabels && labels.length === 0) return false;
     if (labelsMisconfigured) return false;
     return true;
@@ -115,6 +146,10 @@ function RoleGrantPanelInner({
     reason,
     showDatabaseSelector,
     dbResources,
+    expirationRequired,
+    expirationTimestamp,
+    expirationIsInPast,
+    expirationExceedsMax,
     project,
     labels,
     labelsMisconfigured,
@@ -286,11 +321,15 @@ function RoleGrantPanelInner({
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium text-control">
               {t("common.expiration")}
+              {expirationRequired && (
+                <span className="text-error ml-0.5">*</span>
+              )}
             </label>
             <ExpirationPicker
               value={expirationTimestamp}
               onChange={setExpirationTimestamp}
               minDate={minDatetime}
+              maxDate={maxDatetime}
             />
           </div>
 
