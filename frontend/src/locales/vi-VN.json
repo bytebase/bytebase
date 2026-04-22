@@ -207,6 +207,7 @@
     "abandon": "Hủy bỏ",
     "access-denied": "Truy cập bị từ chối",
     "access-expires": "Truy cập hết hạn",
+    "action-required": "Cần thực hiện hành động",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
     "activity": "Hoạt động",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "Không có kết quả nào phù hợp với bộ lọc của bạn",
       "self": "Kiểm tra"
     },
+    "create-plan": "Tạo kế hoạch",
     "description": {
       "placeholder": "Thêm mô tả"
     },
@@ -2585,11 +2587,11 @@
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
     "current-connection": "Kết nối hiện tại",
+    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong {environment}, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
-    "enable-ddl-for-environment": "Bạn có thể bật câu lệnh DDL/DML cho môi trường {environment}.",
     "execute-query": "Thực hiện truy vấn",
     "executing-query": "Đang thực hiện truy vấn",
     "expire-at": "Expire at {time}",

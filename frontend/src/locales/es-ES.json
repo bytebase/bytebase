@@ -207,6 +207,7 @@
     "abandon": "Abandonar",
     "access-denied": "Acceso denegado",
     "access-expires": "El acceso expira",
+    "action-required": "Acción requerida",
     "activated": "Activado",
     "active": "Activo",
     "activity": "Actividad",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "No hay resultados que coincidan con sus filtros",
       "self": "Verificaciones"
     },
+    "create-plan": "Crear plan",
     "description": {
       "placeholder": "Añadir descripción"
     },
@@ -2585,11 +2587,11 @@
     "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "copy-url": "Copiar URL",
     "current-connection": "Conexión actual",
+    "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en {environment}, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
-    "enable-ddl-for-environment": "Puede habilitar la declaración DDL/DML para el entorno {environment}.",
     "execute-query": "Ejecutar consulta",
     "executing-query": "Ejecutando consulta",
     "expire-at": "Expire at {time}",

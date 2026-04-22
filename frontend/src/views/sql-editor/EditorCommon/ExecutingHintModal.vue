@@ -1,7 +1,7 @@
 <template>
   <BBModal
     v-if="sqlEditorStore.isShowExecutingHint"
-    :title="$t('common.tips')"
+    :title="$t('common.action-required')"
     @close="handleClose"
   >
     <ExecuteHint

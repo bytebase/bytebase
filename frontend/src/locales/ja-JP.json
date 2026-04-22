@@ -207,6 +207,7 @@
     "abandon": "破棄",
     "access-denied": "アクセスが拒否されました",
     "access-expires": "アクセスは期限切れです",
+    "action-required": "対応が必要",
     "activated": "有効化しました",
     "active": "アクティブ",
     "activity": "活動",
@@ -1379,6 +1380,7 @@
       "no-results-match-filters": "フィルターに一致する結果がありません",
       "self": "チェック"
     },
+    "create-plan": "プランを作成",
     "description": {
       "placeholder": "説明を追加"
     },
@@ -2585,11 +2587,11 @@
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "copy-url": "URLをコピー",
     "current-connection": "現在の接続",
+    "ddl-dml-requires-data-change-plan": "{environment} で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
-    "enable-ddl-for-environment": "環境 {environment} に対して DDL/DML ステートメントを有効にすることができます。",
     "execute-query": "クエリを実行する",
     "executing-query": "クエリの実行",
     "expire-at": "Expire at {time}",
