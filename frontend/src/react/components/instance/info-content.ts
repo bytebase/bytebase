@@ -9,34 +9,54 @@ export type InfoSection =
   | "ssh"
   | "database";
 
-export interface InfoSnippet {
-  title: string;
-  content: string;
+export type InfoSnippetContentKey =
+  | "instance.info.mongodb.authentication.content"
+  | "instance.info.mongodb.host.content"
+  | "instance.info.mongodb.ssh.content"
+  | "instance.info.mongodb.ssl.content"
+  | "instance.info.mysql.authentication.content"
+  | "instance.info.mysql.host.content"
+  | "instance.info.mysql.ssh.content"
+  | "instance.info.mysql.ssl.content"
+  | "instance.info.postgresql.authentication.content"
+  | "instance.info.postgresql.host.content"
+  | "instance.info.postgresql.ssh.content"
+  | "instance.info.postgresql.ssl.content";
+
+export type InfoSnippetLinkTitleKey =
+  | "instance.info.configure-database-user.link"
+  | "instance.info.connect-instance.link"
+  | "instance.info.ssh-tunnel.link"
+  | "instance.info.ssl-tls-connection.link";
+
+export type InfoSnippet = {
+  contentKey: InfoSnippetContentKey;
+  contentInterpolation?: Record<string, string>;
   codeBlock?: {
     language: string;
     code: string;
   };
   learnMoreLinks?: {
-    title: string;
+    titleKey: InfoSnippetLinkTitleKey;
     url: string;
   }[];
-}
+};
 
 const postgresqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
   host: {
-    title: "PostgreSQL Host",
-    content:
-      "Enter the hostname or IP address of your PostgreSQL server. For cloud-hosted databases, use the endpoint provided by your cloud provider.",
+    contentKey: "instance.info.postgresql.host.content",
     learnMoreLinks: [
       {
-        title: "Connect Your Instance",
+        titleKey: "instance.info.connect-instance.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
   authentication: {
-    title: "PostgreSQL Authentication",
-    content: `Create a dedicated user "${DATASOURCE_ADMIN_USER_NAME}" for Bytebase to manage your database. Run the following SQL as a superuser:`,
+    contentKey: "instance.info.postgresql.authentication.content",
+    contentInterpolation: {
+      user: DATASOURCE_ADMIN_USER_NAME,
+    },
     codeBlock: {
       language: "sql",
       code: `CREATE USER ${DATASOURCE_ADMIN_USER_NAME} WITH ENCRYPTED PASSWORD 'YOUR_DB_PWD';
@@ -45,29 +65,25 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
     },
     learnMoreLinks: [
       {
-        title: "Configure Database User",
+        titleKey: "instance.info.configure-database-user.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
   ssl: {
-    title: "SSL Connection",
-    content:
-      "Cloud-hosted PostgreSQL databases (AWS RDS, Google Cloud SQL, Azure Database) typically require SSL connections. Enable SSL and upload the CA certificate provided by your cloud provider.",
+    contentKey: "instance.info.postgresql.ssl.content",
     learnMoreLinks: [
       {
-        title: "SSL/TLS Connection",
+        titleKey: "instance.info.ssl-tls-connection.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
   ssh: {
-    title: "SSH Tunnel",
-    content:
-      "Use an SSH tunnel to connect to databases in private networks that are not directly accessible from Bytebase. This routes the connection through a bastion/jump host.",
+    contentKey: "instance.info.postgresql.ssh.content",
     learnMoreLinks: [
       {
-        title: "SSH Tunnel",
+        titleKey: "instance.info.ssh-tunnel.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
@@ -76,19 +92,19 @@ ALTER USER ${DATASOURCE_ADMIN_USER_NAME} WITH SUPERUSER;`,
 
 const mysqlContent: Partial<Record<InfoSection, InfoSnippet>> = {
   host: {
-    title: "MySQL Host",
-    content:
-      "Enter the hostname or IP address of your MySQL server. For cloud-hosted databases (AWS RDS, Google Cloud SQL), use the endpoint provided by your cloud provider.",
+    contentKey: "instance.info.mysql.host.content",
     learnMoreLinks: [
       {
-        title: "Connect Your Instance",
+        titleKey: "instance.info.connect-instance.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
   authentication: {
-    title: "MySQL Authentication",
-    content: `Create a dedicated user "${DATASOURCE_ADMIN_USER_NAME}" for Bytebase to manage your database. Run the following SQL:`,
+    contentKey: "instance.info.mysql.authentication.content",
+    contentInterpolation: {
+      user: DATASOURCE_ADMIN_USER_NAME,
+    },
     codeBlock: {
       language: "sql",
       code: `CREATE USER ${DATASOURCE_ADMIN_USER_NAME}@'%' IDENTIFIED BY 'YOUR_DB_PWD';
@@ -102,29 +118,25 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
     },
     learnMoreLinks: [
       {
-        title: "Configure Database User",
+        titleKey: "instance.info.configure-database-user.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
   ssl: {
-    title: "SSL Connection",
-    content:
-      "Cloud-hosted MySQL databases (AWS RDS, Google Cloud SQL, Azure Database) typically require SSL connections. Enable SSL and upload the CA certificate provided by your cloud provider.",
+    contentKey: "instance.info.mysql.ssl.content",
     learnMoreLinks: [
       {
-        title: "SSL/TLS Connection",
+        titleKey: "instance.info.ssl-tls-connection.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
   ssh: {
-    title: "SSH Tunnel",
-    content:
-      "Use an SSH tunnel to connect to databases in private networks that are not directly accessible from Bytebase. This routes the connection through a bastion/jump host.",
+    contentKey: "instance.info.mysql.ssh.content",
     learnMoreLinks: [
       {
-        title: "SSH Tunnel",
+        titleKey: "instance.info.ssh-tunnel.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],
@@ -133,19 +145,19 @@ ON *.* to ${DATASOURCE_ADMIN_USER_NAME}@'%';`,
 
 const mongodbContent: Partial<Record<InfoSection, InfoSnippet>> = {
   host: {
-    title: "MongoDB Host",
-    content:
-      "Enter the hostname or IP address of your MongoDB server. For MongoDB Atlas, use the connection string host from your cluster's connect dialog.",
+    contentKey: "instance.info.mongodb.host.content",
     learnMoreLinks: [
       {
-        title: "Connect Your Instance",
+        titleKey: "instance.info.connect-instance.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console",
       },
     ],
   },
   authentication: {
-    title: "MongoDB Authentication",
-    content: `Create a dedicated user "${DATASOURCE_ADMIN_USER_NAME}" for Bytebase in the admin database:`,
+    contentKey: "instance.info.mongodb.authentication.content",
+    contentInterpolation: {
+      user: DATASOURCE_ADMIN_USER_NAME,
+    },
     codeBlock: {
       language: "javascript",
       code: `use admin;
@@ -161,29 +173,25 @@ db.createUser({
     },
     learnMoreLinks: [
       {
-        title: "Configure Database User",
+        titleKey: "instance.info.configure-database-user.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#configure-a-database-user",
       },
     ],
   },
   ssl: {
-    title: "SSL Connection",
-    content:
-      "MongoDB Atlas and other cloud-hosted MongoDB services require SSL connections by default. Enable SSL and provide the CA certificate if needed.",
+    contentKey: "instance.info.mongodb.ssl.content",
     learnMoreLinks: [
       {
-        title: "SSL/TLS Connection",
+        titleKey: "instance.info.ssl-tls-connection.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssltls-connection",
       },
     ],
   },
   ssh: {
-    title: "SSH Tunnel",
-    content:
-      "Use an SSH tunnel to connect to MongoDB instances in private networks. This is useful when the database is behind a firewall or in a VPC.",
+    contentKey: "instance.info.mongodb.ssh.content",
     learnMoreLinks: [
       {
-        title: "SSH Tunnel",
+        titleKey: "instance.info.ssh-tunnel.link",
         url: "https://docs.bytebase.com/get-started/instance?source=console#ssh-tunnel",
       },
     ],

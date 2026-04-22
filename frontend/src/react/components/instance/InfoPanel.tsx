@@ -1,9 +1,16 @@
+import type { TFunction } from "i18next";
 import { Check, Copy, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
-import { getInfoContent, type InfoSection } from "./info-content";
+import {
+  getInfoContent,
+  type InfoSection,
+  type InfoSnippet,
+  type InfoSnippetContentKey,
+  type InfoSnippetLinkTitleKey,
+} from "./info-content";
 
 interface InfoPanelProps {
   visible: boolean;
@@ -128,7 +135,9 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
 
   return (
     <div className="flex flex-col gap-y-3">
-      <p className="text-sm text-main leading-relaxed">{snippet.content}</p>
+      <p className="text-sm text-main leading-relaxed">
+        {getSnippetContent(t, snippet)}
+      </p>
       {snippet.codeBlock && (
         <div className="flex flex-col gap-y-1">
           <div className="flex flex-row">
@@ -151,13 +160,74 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
               rel="noopener noreferrer"
               className="text-xs accent-link"
             >
-              {link.title}
+              {getSnippetLinkTitle(t, link.titleKey)}
             </a>
           ))}
         </div>
       )}
     </div>
   );
+}
+
+function getSnippetContent(t: TFunction, snippet: InfoSnippet) {
+  return getSnippetContentTranslation(
+    t,
+    snippet.contentKey,
+    snippet.contentInterpolation
+  );
+}
+
+function getSnippetContentTranslation(
+  t: TFunction,
+  key: InfoSnippetContentKey,
+  interpolation?: Record<string, string>
+) {
+  switch (key) {
+    case "instance.info.mongodb.authentication.content":
+      return t("instance.info.mongodb.authentication.content", interpolation);
+    case "instance.info.mongodb.host.content":
+      return t("instance.info.mongodb.host.content");
+    case "instance.info.mongodb.ssh.content":
+      return t("instance.info.mongodb.ssh.content");
+    case "instance.info.mongodb.ssl.content":
+      return t("instance.info.mongodb.ssl.content");
+    case "instance.info.mysql.authentication.content":
+      return t("instance.info.mysql.authentication.content", interpolation);
+    case "instance.info.mysql.host.content":
+      return t("instance.info.mysql.host.content");
+    case "instance.info.mysql.ssh.content":
+      return t("instance.info.mysql.ssh.content");
+    case "instance.info.mysql.ssl.content":
+      return t("instance.info.mysql.ssl.content");
+    case "instance.info.postgresql.authentication.content":
+      return t(
+        "instance.info.postgresql.authentication.content",
+        interpolation
+      );
+    case "instance.info.postgresql.host.content":
+      return t("instance.info.postgresql.host.content");
+    case "instance.info.postgresql.ssh.content":
+      return t("instance.info.postgresql.ssh.content");
+    case "instance.info.postgresql.ssl.content":
+      return t("instance.info.postgresql.ssl.content");
+  }
+  const exhaustive: never = key;
+  return exhaustive;
+}
+
+function getSnippetLinkTitle(t: TFunction, key: InfoSnippetLinkTitleKey) {
+  switch (key) {
+    case "instance.info.configure-database-user.link":
+      return t("instance.info.configure-database-user.link");
+    case "instance.info.connect-instance.link":
+      return t("instance.info.connect-instance.link");
+    case "instance.info.ssh-tunnel.link":
+      return t("instance.info.ssh-tunnel.link");
+    case "instance.info.ssl-tls-connection.link":
+      return t("instance.info.ssl-tls-connection.link");
+  }
+  const exhaustive: never = key;
+  return exhaustive;
 }
 
 function CopyButton({ content }: { content: string }) {
