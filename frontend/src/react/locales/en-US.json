@@ -159,6 +159,8 @@
   },
   "bbkit": {
     "confirm-button": {
+      "can-undo": "You can undo this action later.",
+      "sure-to-abandon": "Are you sure to abandon?",
       "sure-to-delete": "Are you sure to delete?"
     }
   },
@@ -194,6 +196,7 @@
     "show-diff": "Show diff"
   },
   "common": {
+    "abandon": "Abandon",
     "activated": "Activated",
     "active": "Active",
     "add": "Add",
@@ -203,6 +206,7 @@
     "admin": "Admin",
     "all": "All",
     "allow": "Allow",
+    "apply-to-database": "Apply to database",
     "approve": "Approve",
     "approved": "Approved",
     "archive": "Archive",
@@ -401,6 +405,7 @@
     "users": "Users",
     "value": "Value",
     "verify": "Verify",
+    "version": "Version",
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
@@ -707,6 +712,9 @@
     "nullable": "Nullable",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "revision": {
+      "filename": "Filename"
+    },
     "row-count-est": "Row count est.",
     "row-count-estimate": "Row count estimate",
     "schema": {
@@ -1363,6 +1371,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "Change database",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1729,6 +1738,7 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "Release File",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",
