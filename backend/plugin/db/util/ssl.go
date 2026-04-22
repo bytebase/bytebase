@@ -4,6 +4,7 @@ package util
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -12,6 +13,8 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+const maxTLSMaterialFileSize int64 = 10 << 20
 
 func HasTLSPath(ds *storepb.DataSource) bool {
 	if ds == nil {
@@ -61,12 +64,35 @@ func readTLSPathFile(label, path string) (string, error) {
 	if !filepath.IsAbs(path) {
 		return "", errors.Errorf("%s path must be absolute", label)
 	}
-	content, err := os.ReadFile(path)
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", errors.Errorf("failed to read %s file", label)
+	}
+	if !info.Mode().IsRegular() {
+		return "", errors.Errorf("%s path must point to a regular file", label)
+	}
+	if info.Size() == 0 {
+		return "", errors.Errorf("%s file is empty", label)
+	}
+	if info.Size() > maxTLSMaterialFileSize {
+		return "", errors.Errorf("%s file is too large", label)
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return "", errors.Errorf("failed to read %s file", label)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(io.LimitReader(file, maxTLSMaterialFileSize+1))
 	if err != nil {
 		return "", errors.Errorf("failed to read %s file", label)
 	}
 	if len(content) == 0 {
 		return "", errors.Errorf("%s file is empty", label)
+	}
+	if int64(len(content)) > maxTLSMaterialFileSize {
+		return "", errors.Errorf("%s file is too large", label)
 	}
 	return string(content), nil
 }
