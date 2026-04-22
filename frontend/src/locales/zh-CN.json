@@ -2587,7 +2587,7 @@
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
     "copy-url": "复制 URL",
     "current-connection": "当前连接",
-    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请提交数据变更计划以获得审批。",
+    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {file} 格式",
     "duration-day": "{days} 天",
     "duration-days": "{days} 天",
