@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "Podrás deshacer esta acción más tarde.",
       "cannot-undo": "Esta acción no se puede deshacer.",
-      "sure-to-abandon": "¿Estás seguro de abandonar?",
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "Predeterminado",
-    "abandon": "Abandonar",
     "access-denied": "Acceso denegado",
     "access-expires": "El acceso expira",
     "action-required": "Acción requerida",
@@ -219,7 +216,6 @@
     "all": "Todos",
     "allow": "Permitir",
     "and": "y",
-    "apply-to-database": "Aplicar a la base de datos",
     "approve": "Aprobar",
     "approved": "Aprobado",
     "archive": "Archivo",
