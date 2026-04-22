@@ -61,6 +61,8 @@ export function AccessPane() {
   );
   const [accessGrantList, setAccessGrantList] = useState<AccessGrant[]>([]);
   const [nextPageToken, setNextPageToken] = useState("");
+  const nextPageTokenRef = useRef(nextPageToken);
+  nextPageTokenRef.current = nextPageToken;
   const [issueByGrantName, setIssueByGrantName] = useState<Map<string, Issue>>(
     new Map()
   );
@@ -202,7 +204,7 @@ export function AccessPane() {
           parent,
           filter,
           pageSize: PAGE_SIZE,
-          pageToken: resetList ? undefined : nextPageToken,
+          pageToken: resetList ? undefined : nextPageTokenRef.current,
         });
         if (resetList) {
           setAccessGrantList(response.accessGrants);

@@ -82,10 +82,7 @@ export const useSQLEditorQueryHistoryStore = defineStore(
 
     const resetPageToken = (filter: QueryHistoryFilter) => {
       const key = getCacheKey(filter);
-      if (!queryHistoryMap.has(key)) {
-        queryHistoryMap.set(key, { queryHistories: [] });
-      }
-      queryHistoryMap.get(key)!.nextPageToken = "";
+      queryHistoryMap.set(key, { queryHistories: [] });
     };
 
     return {
