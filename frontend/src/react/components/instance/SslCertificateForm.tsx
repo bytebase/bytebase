@@ -467,21 +467,21 @@ export function SslCertificateForm({
     return (
       <div className="flex flex-col gap-y-2">
         <div className="flex flex-col gap-y-1">
-          {renderLabel(resolvedKeyLabel, hasKey, sslKey)}
-          <DroppableTextarea
-            value={sslKey}
-            onChange={(val) => onKeyChange?.(val)}
-            disabled={disabled}
-            placeholder={resolvedKeyPlaceholder}
-          />
-        </div>
-        <div className="flex flex-col gap-y-1">
           {renderLabel(resolvedCertLabel, hasCert, cert)}
           <DroppableTextarea
             value={cert}
             onChange={(val) => onCertChange?.(val)}
             disabled={disabled}
             placeholder={resolvedCertPlaceholder}
+          />
+        </div>
+        <div className="flex flex-col gap-y-1">
+          {renderLabel(resolvedKeyLabel, hasKey, sslKey)}
+          <DroppableTextarea
+            value={sslKey}
+            onChange={(val) => onKeyChange?.(val)}
+            disabled={disabled}
+            placeholder={resolvedKeyPlaceholder}
           />
         </div>
       </div>

@@ -160,6 +160,14 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).not.toContain(
       "data-source.ssl.client-cert-source.none"
     );
+    expect(
+      Array.from(container.querySelectorAll("textarea")).map((textarea) =>
+        textarea.getAttribute("placeholder")
+      )
+    ).toEqual([
+      "data-source.ssl.client-cert-placeholder",
+      "data-source.ssl.client-key-placeholder",
+    ]);
 
     act(() => {
       root.unmount();
