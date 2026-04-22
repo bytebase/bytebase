@@ -600,29 +600,41 @@
     },
     "ssl": {
       "ca-cert": "CA 证书",
-      "ca-empty-uses-system-trust": "留空以使用系统信任存储",
       "ca-path": "CA 证书路径",
       "ca-placeholder": "输入或拖放 YOUR_CA_CERTIFICATE",
       "ca-source": {
         "file-path": "文件路径",
-        "inline-pem": "内联 PEM",
+        "file-path-unavailable-saas": "Bytebase Cloud 中不可使用文件路径。",
+        "inline-pem": "粘贴 PEM",
         "self": "CA 证书来源",
         "system-trust": "系统信任"
       },
-      "client-cert": "客户端证书",
-      "client-cert-path": "客户端证书路径",
+      "client-cert": "证书",
+      "client-cert-path": "证书路径",
       "client-cert-placeholder": "输入或拖放 YOUR_CLIENT_CERT",
       "client-cert-source": {
         "file-path": "文件路径",
-        "inline-pem": "内联 PEM",
+        "file-path-unavailable-saas": "Bytebase Cloud 中不可使用文件路径。",
+        "inline-pem": "粘贴 PEM",
         "none": "无",
-        "self": "客户端证书来源"
+        "self": "客户端身份来源"
       },
-      "client-key": "客户端密钥",
-      "client-key-path": "客户端密钥路径",
+      "client-identity": "客户端身份",
+      "client-key": "私钥",
+      "client-key-path": "私钥路径",
       "client-key-placeholder": "输入或拖放 YOUR_CLIENT_KEY",
       "configured": "已配置",
-      "verify-certificate": "验证 TLS 证书",
+      "connection-security": "连接安全性",
+      "mutual-tls-unavailable-engine": "此引擎不支持双向 TLS。",
+      "posture": {
+        "disabled": "已禁用",
+        "mutual-tls": "双向 TLS",
+        "self": "TLS 模式",
+        "tls": "TLS"
+      },
+      "server-identity": "服务器身份",
+      "verification-disabled-description": "已禁用验证。连接已加密，但未验证服务器身份；CA 设置将被忽略。",
+      "verify-certificate": "验证服务器证书",
       "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
     },
     "ssl-connection": "SSL 连接"
@@ -653,7 +665,6 @@
   "data-source.ssh.user": "用户名",
   "data-source.ssl-connection": "SSL 连接",
   "data-source.ssl.ca-cert": "CA 证书",
-  "data-source.ssl.ca-empty-uses-system-trust": "留空以使用系统信任存储",
   "data-source.ssl.ca-path": "CA 证书路径",
   "data-source.ssl.client-cert": "客户端证书",
   "data-source.ssl.client-cert-path": "客户端证书路径",
@@ -1021,10 +1032,10 @@
         }
       },
       "host": {
-        "none-snowflake": "例如 host.docker.internal {{'|'}} ip {{'|'}} local socket"
+        "none-snowflake": "例如 host.docker.internal | ip | local socket"
       },
       "proxy": {
-        "snowflake": "对于代理服务器，加上 {{'@'}}PROXY_HOST，并在端口里指定 PROXY_PORT"
+        "snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT"
       }
     },
     "show-how-to-create": "如何创建",
@@ -1153,8 +1164,8 @@
   "instance.sentence.google-cloud-sql.instance-name-tips": "实例连接名称应为 {{instance}}。",
   "instance.sentence.google-cloud-sql.mysql.template": "创建一个名为 {{user}} 的服务帐户，然后将其作为 IAM 用户 {{user}}@'%' 添加到您的 Google Cloud SQL 中。授予此用户所需的权限。",
   "instance.sentence.google-cloud-sql.postgresql.template": "创建一个名为 {{user}} 的服务帐户，然后将其作为 IAM 用户 {{user}}@project-id.iam 添加到您的 Google Cloud SQL 中。授予用户所需的权限。",
-  "instance.sentence.host.none-snowflake": "例如 host.docker.internal {'|'} ip {'|'} local socket",
-  "instance.sentence.proxy.snowflake": "对于代理服务器，加上 {'@'}PROXY_HOST，并在端口里指定 PROXY_PORT",
+  "instance.sentence.host.none-snowflake": "例如 host.docker.internal | ip | local socket",
+  "instance.sentence.proxy.snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT",
   "instance.show-how-to-create": "如何创建",
   "instance.snowflake-web-console": "Snowflake Web 控制台",
   "instance.successfully-archived-instance": "成功归档实例'{{0}}'。",
