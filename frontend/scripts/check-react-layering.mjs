@@ -23,21 +23,6 @@ const APPROVED_FILES = new Set([
   "src/react/components/auth/SessionExpiredSurface.tsx",
 ]);
 
-const LOCAL_PAINT_ORDER_EXCEPTIONS = new Map([
-  [
-    "src/react/components/monaco/MonacoEditor.tsx",
-    "Monaco action buttons are local to the editor surface.",
-  ],
-  [
-    "src/react/plugins/agent/components/AgentInput.tsx",
-    "Approved agent-owned layer family.",
-  ],
-  [
-    "src/react/plugins/agent/components/AgentWindow.tsx",
-    "Approved agent-owned layer family.",
-  ],
-]);
-
 const CLASS_ATTR_PATTERN = /\bclass(Name)?\s*=\s*/g;
 
 const findFiles = (dir) => {
@@ -215,9 +200,6 @@ const scanClassExpressions = (source, rel, lines) => {
 const scanFile = (file) => {
   const rel = relative(ROOT, file);
   if (isApprovedPath(rel)) {
-    return [];
-  }
-  if (LOCAL_PAINT_ORDER_EXCEPTIONS.has(rel)) {
     return [];
   }
 
