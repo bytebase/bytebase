@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Google Chat">
+  <path fill="#34A853" d="M8 10a6 6 0 0 1 6-6h20a6 6 0 0 1 6 6v15a6 6 0 0 1-6 6H21L11 41v-10a6 6 0 0 1-3-5V10Z"/>
+  <path fill="#FBBC04" d="M14 13h20v5H14z"/>
+  <path fill="#4285F4" d="M14 22h15v5H14z"/>
+  <path fill="#EA4335" d="M34 4a6 6 0 0 1 6 6v15a6 6 0 0 1-6 6h-3V4h3Z" opacity=".9"/>
+</svg>

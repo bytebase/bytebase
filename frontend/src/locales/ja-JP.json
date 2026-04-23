@@ -312,6 +312,7 @@
     "from": "開始",
     "general": "全般",
     "go-back": "戻る",
+    "google-chat": "Google Chat",
     "groups": "グループ",
     "hard-delete": {
       "description": "このリソースとその他の関連リソースは物理的に削除されます。この操作は元に戻せません",

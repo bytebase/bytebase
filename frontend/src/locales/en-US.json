@@ -312,6 +312,7 @@
     "from": "From",
     "general": "General",
     "go-back": "Go back",
+    "google-chat": "Google Chat",
     "groups": "Groups",
     "hard-delete": {
       "description": "This resource and other related resources will be hard-deleted. You cannot undo this action",
