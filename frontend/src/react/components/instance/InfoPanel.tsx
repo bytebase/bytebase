@@ -60,7 +60,7 @@ export function InfoPanel({
     return (
       <Sheet open={visible} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
         <SheetContent
-          width="standard"
+          width="panel"
           className="border-l border-block-border"
           onTransitionEnd={handleTransitionEnd}
         >

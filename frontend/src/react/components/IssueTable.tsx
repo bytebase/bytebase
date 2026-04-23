@@ -1042,7 +1042,7 @@ export function BatchIssueStatusActionDrawer({
 
   return (
     <Sheet open={!!action} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent width="large">
+      <SheetContent width="medium">
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>

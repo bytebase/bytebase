@@ -61,6 +61,8 @@ const sheetContentVariants = cva(
     variants: {
       width: {
         narrow: "w-[24rem]",
+        panel: "w-[31.25rem]",
+        medium: "w-[40rem]",
         standard: "w-[44rem]",
         wide: "w-[52rem]",
         large: "w-[64rem]",
