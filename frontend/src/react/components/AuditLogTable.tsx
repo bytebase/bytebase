@@ -3,7 +3,13 @@ import { create, createRegistry, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { ChevronDown, Download, ExternalLink, Maximize2 } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  ExternalLink,
+  Maximize2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { auditLogServiceClientConnect } from "@/connect";
@@ -205,6 +211,14 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
               <DialogTitle className="text-base font-medium">
                 {t("common.view-details")}
               </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("common.close")}
+                onClick={() => setShowModal(false)}
+              >
+                <X className="size-4" />
+              </Button>
             </div>
             <div className="flex-1 overflow-auto p-4">
               <pre className="text-sm font-mono whitespace-pre-wrap break-all">
