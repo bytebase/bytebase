@@ -26,6 +26,7 @@ var (
 	getSDLDiffs                     = make(map[storepb.Engine]getSDLDiff)
 	sdlDropAdvicesFns               = make(map[storepb.Engine]sdlDropAdvices)
 	diffSDLMigrations               = make(map[storepb.Engine]diffSDLMigration)
+	diffMetadataMigrations          = make(map[storepb.Engine]diffMetadataMigration)
 	getMultiFileDatabaseDefinitions = make(map[storepb.Engine]getMultiFileDatabaseDefinition)
 	walkThroughs                    = make(map[storepb.Engine]walkThrough)
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
@@ -45,6 +46,7 @@ type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata) ([]*storepb.Advice, error)
 type diffSDLMigration func(sourceSDL, targetSDL string) (string, error)
+type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
 type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
@@ -296,9 +298,14 @@ func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *mo
 }
 
 // DiffMigration computes the migration SQL between two database metadata states.
-// For engines with DiffSDLMigration registered, converts both sides to SDL and diffs.
-// Falls back to the legacy GetDatabaseSchemaDiff + GenerateMigration path otherwise.
+// Engines may register a metadata migration to avoid round-tripping synced
+// metadata through SDL text. Otherwise, engines with DiffSDLMigration registered
+// convert both sides to SDL and diff. The legacy MetadataDiff + GenerateMigration
+// path remains the fallback for engines that haven't migrated yet.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	if f, ok := diffMetadataMigrations[engine]; ok {
+		return f(oldSchema, newSchema)
+	}
 	if _, ok := diffSDLMigrations[engine]; ok {
 		sourceSDL, err := MetadataToSDL(engine, oldSchema)
 		if err != nil {
@@ -316,6 +323,15 @@ func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMe
 		return "", err
 	}
 	return GenerateMigration(engine, diff)
+}
+
+func RegisterDiffMetadataMigration(engine storepb.Engine, f diffMetadataMigration) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := diffMetadataMigrations[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	diffMetadataMigrations[engine] = f
 }
 
 // MetadataToSDL converts database metadata to SDL text using the registered GetDatabaseDefinition.
