@@ -169,9 +169,6 @@ const scanClassExpressions = (source, rel, lines) => {
     }
 
     const isAbsoluteGlobal = zMatches.some((zMatch) => {
-      if (zMatch[0] === "z-auto") {
-        return true;
-      }
       if (zMatch[2] !== undefined) {
         return true;
       }
