@@ -8,9 +8,66 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestShouldDiffSchemaViaSDL(t *testing.T) {
+	tests := []struct {
+		name   string
+		engine storepb.Engine
+		req    *v1pb.DiffSchemaRequest
+		want   bool
+	}{
+		{
+			name:   "postgres raw schema text uses SDL",
+			engine: storepb.Engine_POSTGRES,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: true,
+		},
+		{
+			name:   "postgres empty raw schema text uses SDL",
+			engine: storepb.Engine_POSTGRES,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: ""},
+			},
+			want: true,
+		},
+		{
+			name:   "postgres changelog target uses metadata diff",
+			engine: storepb.Engine_POSTGRES,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Changelog{Changelog: "instances/prod/databases/app/changelogs/123"},
+			},
+			want: false,
+		},
+		{
+			name:   "cockroach raw schema text uses SDL",
+			engine: storepb.Engine_COCKROACHDB,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: true,
+		},
+		{
+			name:   "mysql raw schema text uses metadata parser",
+			engine: storepb.Engine_MYSQL,
+			req: &v1pb.DiffSchemaRequest{
+				Target: &v1pb.DiffSchemaRequest_Schema{Schema: "CREATE TABLE t(id int);"},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, shouldDiffSchemaViaSDL(tt.engine, tt.req))
+		})
+	}
+}
 
 func TestListDatabaseFilter(t *testing.T) {
 	testCases := []struct {
