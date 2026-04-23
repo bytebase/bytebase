@@ -652,6 +652,60 @@ func TestPGMetadataDiffDropAlteredViewBeforeDependentTableAlter(t *testing.T) {
 	require.Less(t, createViewIdx, commentIdx)
 }
 
+func TestPGMetadataDiffDropUnchangedDependentViewBeforeTableAlter(t *testing.T) {
+	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+				{Name: "name", Type: "text", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id FROM public.users",
+			Comment:    "user ids",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	})
+	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "bigint", Nullable: false},
+				{Name: "name", Type: "text", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id FROM public.users",
+			Comment:    "user ids",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	dropViewIdx := strings.Index(sql, `DROP VIEW "public"."v"`)
+	alterTableIdx := strings.Index(sql, `ALTER TABLE "public"."users" ALTER COLUMN "id" TYPE bigint`)
+	createViewIdx := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."v"`)
+	commentIdx := strings.Index(sql, `COMMENT ON VIEW "public"."v" IS 'user ids'`)
+	require.NotEqual(t, -1, dropViewIdx)
+	require.NotEqual(t, -1, alterTableIdx)
+	require.NotEqual(t, -1, createViewIdx)
+	require.NotEqual(t, -1, commentIdx)
+	require.Less(t, dropViewIdx, alterTableIdx)
+	require.Less(t, alterTableIdx, createViewIdx)
+	require.Less(t, createViewIdx, commentIdx)
+}
+
 func TestPGMetadataDiffAlterTablePartitionChangesFromMetadata(t *testing.T) {
 	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
 		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
@@ -703,6 +757,45 @@ func TestPGMetadataDiffCreateViewsInDependencyOrder(t *testing.T) {
 	require.NotEqual(t, -1, viewAIdx)
 	require.NotEqual(t, -1, viewBIdx)
 	require.Less(t, viewAIdx, viewBIdx)
+}
+
+func TestPGMetadataDiffCreateFunctionAfterNewDependencyView(t *testing.T) {
+	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	}, nil, nil, storepb.Engine_POSTGRES, true)
+	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_users",
+						Definition: "SELECT 1 AS id",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:      "get_active_users",
+						Signature: "get_active_users()",
+						Definition: "CREATE FUNCTION public.get_active_users() RETURNS SETOF public.active_users LANGUAGE sql AS $$ " +
+							"SELECT * FROM public.active_users $$",
+						DependencyTables: []*storepb.DependencyTable{
+							{Schema: "public", Table: "active_users"},
+						},
+					},
+				},
+			},
+		},
+	}, nil, nil, storepb.Engine_POSTGRES, true)
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	viewIdx := strings.Index(sql, `CREATE VIEW "public"."active_users"`)
+	functionIdx := strings.Index(sql, "CREATE FUNCTION public.get_active_users()")
+	require.NotEqual(t, -1, viewIdx)
+	require.NotEqual(t, -1, functionIdx)
+	require.Less(t, viewIdx, functionIdx)
 }
 
 func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {

@@ -34,6 +34,7 @@ func pgDiffMetadataMigrationForEngine(engine storepb.Engine, oldSchema, newSchem
 	if err != nil {
 		return "", err
 	}
+	augmentMetadataDiffForMigration(diff, oldSchema, newSchema)
 	if metadataDiffEmpty(diff) {
 		return "", nil
 	}
@@ -54,6 +55,140 @@ func metadataDiffEmpty(diff *schema.MetadataDiff) bool {
 			len(diff.EventTriggerChanges) == 0 &&
 			len(diff.EventChanges) == 0 &&
 			len(diff.CommentChanges) == 0
+}
+
+type affectedTableColumns struct {
+	columns map[string]bool
+}
+
+func augmentMetadataDiffForMigration(diff *schema.MetadataDiff, oldSchema, newSchema *model.DatabaseMetadata) {
+	if diff == nil || oldSchema == nil || newSchema == nil {
+		return
+	}
+	affectedTables := collectDependencySensitiveTableColumns(diff)
+	if len(affectedTables) == 0 {
+		return
+	}
+	addUnchangedDependentViews(diff, oldSchema, newSchema, affectedTables)
+	addUnchangedDependentMaterializedViews(diff, oldSchema, newSchema, affectedTables)
+}
+
+func collectDependencySensitiveTableColumns(diff *schema.MetadataDiff) map[string]affectedTableColumns {
+	affectedTables := make(map[string]affectedTableColumns)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		for _, columnDiff := range tableDiff.ColumnChanges {
+			columnName := dependentObjectBlockingColumnName(columnDiff)
+			if columnName == "" {
+				continue
+			}
+			tableID := getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)
+			affected := affectedTables[tableID]
+			if affected.columns == nil {
+				affected.columns = make(map[string]bool)
+			}
+			affected.columns[columnName] = true
+			affectedTables[tableID] = affected
+		}
+	}
+	return affectedTables
+}
+
+func dependentObjectBlockingColumnName(columnDiff *schema.ColumnDiff) string {
+	switch columnDiff.Action {
+	case schema.MetadataDiffActionDrop:
+		return columnDiff.OldColumn.GetName()
+	case schema.MetadataDiffActionAlter:
+		if columnDiff.OldColumn.GetType() != columnDiff.NewColumn.GetType() {
+			return columnDiff.OldColumn.GetName()
+		}
+		return ""
+	default:
+		return ""
+	}
+}
+
+func addUnchangedDependentViews(diff *schema.MetadataDiff, oldSchema, newSchema *model.DatabaseMetadata, affectedTables map[string]affectedTableColumns) {
+	changedViews := make(map[string]bool)
+	for _, viewDiff := range diff.ViewChanges {
+		changedViews[getMigrationObjectID(viewDiff.SchemaName, viewDiff.ViewName)] = true
+	}
+	for _, schemaMeta := range newSchema.GetProto().GetSchemas() {
+		oldSchemaMeta := oldSchema.GetSchemaMetadata(schemaMeta.GetName())
+		if oldSchemaMeta == nil {
+			continue
+		}
+		for _, newView := range schemaMeta.GetViews() {
+			viewID := getMigrationObjectID(schemaMeta.GetName(), newView.GetName())
+			if changedViews[viewID] || newView.GetSkipDump() {
+				continue
+			}
+			oldView := oldSchemaMeta.GetView(newView.GetName())
+			if oldView == nil || oldView.GetSkipDump() {
+				continue
+			}
+			if !dependencyColumnsReferenceAffectedTable(oldView.GetDependencyColumns(), affectedTables) && !dependencyColumnsReferenceAffectedTable(newView.GetDependencyColumns(), affectedTables) {
+				continue
+			}
+			diff.ViewChanges = append(diff.ViewChanges, &schema.ViewDiff{
+				Action:     schema.MetadataDiffActionAlter,
+				SchemaName: schemaMeta.GetName(),
+				ViewName:   newView.GetName(),
+				OldView:    oldView,
+				NewView:    newView,
+			})
+			changedViews[viewID] = true
+		}
+	}
+}
+
+func addUnchangedDependentMaterializedViews(diff *schema.MetadataDiff, oldSchema, newSchema *model.DatabaseMetadata, affectedTables map[string]affectedTableColumns) {
+	changedViews := make(map[string]bool)
+	for _, viewDiff := range diff.MaterializedViewChanges {
+		changedViews[getMigrationObjectID(viewDiff.SchemaName, viewDiff.MaterializedViewName)] = true
+	}
+	for _, schemaMeta := range newSchema.GetProto().GetSchemas() {
+		oldSchemaMeta := oldSchema.GetSchemaMetadata(schemaMeta.GetName())
+		if oldSchemaMeta == nil {
+			continue
+		}
+		for _, newView := range schemaMeta.GetMaterializedViews() {
+			viewID := getMigrationObjectID(schemaMeta.GetName(), newView.GetName())
+			if changedViews[viewID] || newView.GetSkipDump() {
+				continue
+			}
+			oldView := oldSchemaMeta.GetMaterializedView(newView.GetName())
+			if oldView == nil || oldView.GetSkipDump() {
+				continue
+			}
+			if !dependencyColumnsReferenceAffectedTable(oldView.GetDependencyColumns(), affectedTables) && !dependencyColumnsReferenceAffectedTable(newView.GetDependencyColumns(), affectedTables) {
+				continue
+			}
+			diff.MaterializedViewChanges = append(diff.MaterializedViewChanges, &schema.MaterializedViewDiff{
+				Action:               schema.MetadataDiffActionAlter,
+				SchemaName:           schemaMeta.GetName(),
+				MaterializedViewName: newView.GetName(),
+				OldMaterializedView:  oldView,
+				NewMaterializedView:  newView,
+			})
+			changedViews[viewID] = true
+		}
+	}
+}
+
+func dependencyColumnsReferenceAffectedTable(dependencies []*storepb.DependencyColumn, affectedTables map[string]affectedTableColumns) bool {
+	for _, dep := range dependencies {
+		affected, ok := affectedTables[getMigrationObjectID(dep.GetSchema(), dep.GetTable())]
+		if !ok {
+			continue
+		}
+		if dep.GetColumn() == "" || affected.columns[dep.GetColumn()] {
+			return true
+		}
+	}
+	return false
 }
 
 func pgGenerateMetadataMigration(diff *schema.MetadataDiff) (string, error) {
@@ -589,7 +724,11 @@ func writeCreateSequenceOwnership(out *strings.Builder, diff *schema.MetadataDif
 
 func writeCreateRoutinesViewsAndMaterializedViews(out *strings.Builder, diff *schema.MetadataDiff) error {
 	maps := buildCreateObjectMaps(diff)
+	dependentFunctions := functionsDependingOnCreatedViewsOrMaterializedViews(maps)
 	for _, id := range sortedMapKeys(maps.functions) {
+		if dependentFunctions[id] {
+			continue
+		}
 		if err := writeFunctionDiff(out, maps.functions[id]); err != nil {
 			return err
 		}
@@ -605,6 +744,9 @@ func writeCreateRoutinesViewsAndMaterializedViews(out *strings.Builder, diff *sc
 		graph.AddNode(id)
 	}
 	for _, id := range sortedMapKeys(maps.materializedViews) {
+		graph.AddNode(id)
+	}
+	for _, id := range sortedMapKeys(dependentFunctions) {
 		graph.AddNode(id)
 	}
 	hasNode := func(id string) bool {
@@ -627,10 +769,19 @@ func writeCreateRoutinesViewsAndMaterializedViews(out *strings.Builder, diff *sc
 			}
 		}
 	}
+	for functionID := range dependentFunctions {
+		for _, dep := range maps.functions[functionID].NewFunction.GetDependencyTables() {
+			depID := getMigrationObjectID(dep.GetSchema(), dep.GetTable())
+			if hasNode(depID) {
+				graph.AddEdge(depID, functionID)
+			}
+		}
+	}
 	orderedIDs, err := graph.TopologicalSort()
 	if err != nil {
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.views)...)
 		orderedIDs = append(orderedIDs, sortedMapKeys(maps.materializedViews)...)
+		orderedIDs = append(orderedIDs, sortedMapKeys(dependentFunctions)...)
 	}
 	for _, id := range orderedIDs {
 		switch {
@@ -642,10 +793,34 @@ func writeCreateRoutinesViewsAndMaterializedViews(out *strings.Builder, diff *sc
 			if err := writeCreateMaterializedViewDiff(out, maps.materializedViews[id]); err != nil {
 				return err
 			}
+		case maps.functions[id] != nil:
+			if err := writeFunctionDiff(out, maps.functions[id]); err != nil {
+				return err
+			}
 		default:
 		}
 	}
 	return nil
+}
+
+func functionsDependingOnCreatedViewsOrMaterializedViews(maps *metadataObjectMaps) map[string]bool {
+	viewIDs := make(map[string]bool)
+	for id := range maps.views {
+		viewIDs[id] = true
+	}
+	for id := range maps.materializedViews {
+		viewIDs[id] = true
+	}
+	dependentFunctions := make(map[string]bool)
+	for functionID, functionDiff := range maps.functions {
+		for _, dep := range functionDiff.NewFunction.GetDependencyTables() {
+			if viewIDs[getMigrationObjectID(dep.GetSchema(), dep.GetTable())] {
+				dependentFunctions[functionID] = true
+				break
+			}
+		}
+	}
+	return dependentFunctions
 }
 
 func writeCreateTableForeignKeys(out *strings.Builder, diff *schema.MetadataDiff) error {
