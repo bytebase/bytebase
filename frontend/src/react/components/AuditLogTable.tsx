@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -279,7 +280,12 @@ function ExportDropdown({
         {t("common.export")}
       </Button>
       {open && !disabled && (
-        <div className="absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg z-50 py-1 min-w-[100px]">
+        <div
+          className={cn(
+            "absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg py-1 min-w-[100px]",
+            LAYER_SURFACE_CLASS
+          )}
+        >
           {formats.map(({ format, label }) => (
             <button
               key={label}

@@ -1,6 +1,7 @@
 import { Check, ChevronDown, KeyRound, Shield, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -323,7 +324,12 @@ export function AccountMultiSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col">
+        <div
+          className={cn(
+            "absolute mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-72 overflow-auto flex flex-col",
+            LAYER_SURFACE_CLASS
+          )}
+        >
           {/* Search input */}
           <SearchInput
             ref={inputRef}

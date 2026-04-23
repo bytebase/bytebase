@@ -12,6 +12,7 @@ import {
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
   SheetBody,
@@ -152,7 +153,12 @@ function IssueSortDropdown({
         <span className="hidden md:inline ml-1">{t("issue.sort.sort")}</span>
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1">
+        <div
+          className={cn(
+            "absolute right-0 top-full mt-1 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1",
+            LAYER_SURFACE_CLASS
+          )}
+        >
           {sortOptions.map((group) => (
             <div key={group.label}>
               <div className="px-3 py-1.5 text-xs text-control-light font-medium">

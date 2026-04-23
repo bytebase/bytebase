@@ -1,6 +1,7 @@
 import { ChevronDown, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { cn } from "@/react/lib/utils";
 
@@ -97,7 +98,12 @@ export function IssueLabelSelect({
           />
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
+          <div
+            className={cn(
+              "absolute mt-1 w-full bg-background border border-block-border rounded-sm shadow-lg overflow-hidden",
+              LAYER_SURFACE_CLASS
+            )}
+          >
             <div className="max-h-60 overflow-y-auto">
               {labels.length === 0 ? (
                 <div className="px-3 py-6 text-sm text-control-placeholder text-center">
