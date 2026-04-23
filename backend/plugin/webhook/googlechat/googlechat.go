@@ -19,7 +19,7 @@ import (
 
 // MessagePayload is the API message for Google Chat webhook.
 type MessagePayload struct {
-	Text    string   `json:"text"`
+	Text    string   `json:"text,omitempty"`
 	CardsV2 []CardV2 `json:"cardsV2,omitempty"`
 }
 
@@ -132,7 +132,6 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 	}
 
 	return MessagePayload{
-		Text: ctx.Title,
 		CardsV2: []CardV2{
 			{
 				Card: Card{

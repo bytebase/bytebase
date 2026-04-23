@@ -31,7 +31,7 @@ func TestBuildMessageIssueApproved(t *testing.T) {
 
 	msg := BuildMessage(ctx)
 
-	a.Equal("Issue approved", msg.Text)
+	a.Empty(msg.Text)
 	a.Len(msg.CardsV2, 1)
 	card := msg.CardsV2[0].Card
 	a.NotNil(card.Header)
@@ -42,6 +42,9 @@ func TestBuildMessageIssueApproved(t *testing.T) {
 	body, err := json.Marshal(msg)
 	a.NoError(err)
 	bodyText := string(body)
+	var payload map[string]any
+	a.NoError(json.Unmarshal(body, &payload))
+	a.NotContains(payload, "text")
 	a.Contains(bodyText, "Grant read access to prod")
 	a.Contains(bodyText, "Need access for release verification")
 	a.Contains(bodyText, "Alice")
@@ -144,7 +147,7 @@ func TestPostMessage(t *testing.T) {
 	})
 
 	a.NoError(err)
-	a.Equal("Issue created", received.Text)
+	a.Empty(received.Text)
 }
 
 func TestPostMessageNon2xx(t *testing.T) {
