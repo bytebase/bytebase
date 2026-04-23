@@ -15,6 +15,12 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+const (
+	pgTypeCharacterVarying  = "character varying"
+	pgTypeDoublePrecision   = "double precision"
+	viewCommentObjectFormat = "VIEW \"%s\".\"%s\""
+)
+
 func pgDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	return pgDiffMetadataMigrationForEngine(storepb.Engine_POSTGRES, oldSchema, newSchema)
 }
@@ -92,6 +98,9 @@ func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
 
 	for _, sequenceDiff := range diff.SequenceChanges {
 		if sequenceDiff.Action == schema.MetadataDiffActionDrop {
+			if isSequenceOwnedByDroppedTable(diff, sequenceDiff.SchemaName, sequenceDiff.OldSequence) {
+				continue
+			}
 			if err := writeSequenceDiff(out, sequenceDiff); err != nil {
 				return err
 			}
@@ -207,7 +216,7 @@ func newMetadataObjectMaps() *metadataObjectMaps {
 	}
 }
 
-func getMigrationObjectID(schemaName string, objectName string) string {
+func getMigrationObjectID(schemaName, objectName string) string {
 	return fmt.Sprintf("%s.%s", schemaName, objectName)
 }
 
@@ -219,7 +228,7 @@ func buildDropObjectMaps(diff *schema.MetadataDiff) *metadataObjectMaps {
 		}
 	}
 	for _, viewDiff := range diff.ViewChanges {
-		if viewDiff.Action == schema.MetadataDiffActionDrop {
+		if viewDiff.Action == schema.MetadataDiffActionDrop || alteredViewDependsOnAlteredTable(viewDiff, diff) {
 			maps.views[getMigrationObjectID(viewDiff.SchemaName, viewDiff.ViewName)] = viewDiff
 		}
 	}
@@ -239,6 +248,24 @@ func buildDropObjectMaps(diff *schema.MetadataDiff) *metadataObjectMaps {
 		}
 	}
 	return maps
+}
+
+func alteredViewDependsOnAlteredTable(viewDiff *schema.ViewDiff, diff *schema.MetadataDiff) bool {
+	if viewDiff.Action != schema.MetadataDiffActionAlter {
+		return false
+	}
+	alteredTables := make(map[string]bool)
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionAlter {
+			alteredTables[getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)] = true
+		}
+	}
+	for _, dep := range viewDiff.OldView.GetDependencyColumns() {
+		if alteredTables[getMigrationObjectID(dep.GetSchema(), dep.GetTable())] {
+			return true
+		}
+	}
+	return false
 }
 
 func buildCreateObjectMaps(diff *schema.MetadataDiff) *metadataObjectMaps {
@@ -333,6 +360,20 @@ func writeDropTableForeignKeysForTableDrops(out *strings.Builder, diff *schema.M
 	return nil
 }
 
+func isSequenceOwnedByDroppedTable(diff *schema.MetadataDiff, schemaName string, sequence *storepb.SequenceMetadata) bool {
+	if sequence.GetOwnerTable() == "" || sequence.GetOwnerColumn() == "" {
+		return false
+	}
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop &&
+			tableDiff.SchemaName == schemaName &&
+			tableDiff.TableName == sequence.GetOwnerTable() {
+			return true
+		}
+	}
+	return false
+}
+
 func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) error {
 	maps := buildDropObjectMaps(diff)
 	graph := base.NewGraph()
@@ -414,7 +455,7 @@ func writeDropDependentObjects(out *strings.Builder, diff *schema.MetadataDiff) 
 	for _, id := range orderedIDs {
 		switch {
 		case maps.views[id] != nil:
-			if err := writeViewDiff(out, maps.views[id]); err != nil {
+			if err := writeDropView(out, maps.views[id].SchemaName, maps.views[id].ViewName); err != nil {
 				return err
 			}
 		case maps.materializedViews[id] != nil:
@@ -443,6 +484,13 @@ func writeDropAlterTableObjects(out *strings.Builder, diff *schema.MetadataDiff)
 	for _, tableDiff := range diff.TableChanges {
 		if tableDiff.Action != schema.MetadataDiffActionAlter {
 			continue
+		}
+		for _, partitionDiff := range tableDiff.PartitionChanges {
+			if partitionDiff.Action == schema.MetadataDiffActionDrop {
+				if err := writeDropPartition(out, tableDiff.SchemaName, partitionDiff.OldPartition); err != nil {
+					return err
+				}
+			}
 		}
 		for _, primaryKeyDiff := range tableDiff.PrimaryKeyChanges {
 			if primaryKeyDiff.Action == schema.MetadataDiffActionDrop || primaryKeyDiff.Action == schema.MetadataDiffActionAlter {
@@ -735,7 +783,7 @@ func writeTableForMetadataMigration(out *strings.Builder, schemaName string, tab
 		}
 	}
 	for _, partition := range table.GetPartitions() {
-		if err := writePartitionIndex(out, schemaName, partition); err != nil {
+		if err := writePartitionIndexForMetadataMigration(out, schemaName, partition); err != nil {
 			return err
 		}
 	}
@@ -784,6 +832,57 @@ func writeCreateTableForMetadataMigration(out *strings.Builder, schemaName strin
 	return err
 }
 
+func writeDropPartition(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
+	if partition == nil {
+		return nil
+	}
+	for _, subpartition := range partition.GetSubpartitions() {
+		if err := writeDropPartition(out, schemaName, subpartition); err != nil {
+			return err
+		}
+	}
+	_, err := fmt.Fprintf(out, "DROP TABLE \"%s\".\"%s\";\n\n", schemaName, partition.GetName())
+	return err
+}
+
+func writeCreatePartitionDiff(out *strings.Builder, schemaName, tableName string, columns []*storepb.ColumnMetadata, partition *storepb.TablePartitionMetadata) error {
+	if partition == nil {
+		return nil
+	}
+	if err := writePartitionTable(out, schemaName, columns, partition); err != nil {
+		return err
+	}
+	if err := writeAttachPartition(out, schemaName, tableName, partition); err != nil {
+		return err
+	}
+	if err := writePartitionPrimaryKey(out, schemaName, partition); err != nil {
+		return err
+	}
+	if err := writePartitionUniqueKey(out, schemaName, partition); err != nil {
+		return err
+	}
+	if err := writePartitionIndexForMetadataMigration(out, schemaName, partition); err != nil {
+		return err
+	}
+	return writeAttachPartitionIndex(out, schemaName, partition)
+}
+
+func writePartitionIndexForMetadataMigration(out *strings.Builder, schemaName string, partition *storepb.TablePartitionMetadata) error {
+	for _, index := range partition.GetIndexes() {
+		if !index.GetIsConstraint() && !index.GetPrimary() {
+			if err := writeCreateRegularIndex(out, schemaName, partition.GetName(), index, len(partition.GetSubpartitions()) > 0); err != nil {
+				return err
+			}
+		}
+	}
+	for _, subpartition := range partition.GetSubpartitions() {
+		if err := writePartitionIndexForMetadataMigration(out, schemaName, subpartition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func writeAlterTableDiff(out *strings.Builder, tableDiff *schema.TableDiff) error {
 	for _, columnDiff := range tableDiff.ColumnChanges {
 		if columnDiff.Action == schema.MetadataDiffActionDrop {
@@ -791,6 +890,13 @@ func writeAlterTableDiff(out *strings.Builder, tableDiff *schema.TableDiff) erro
 		}
 		if err := writeColumnDiff(out, tableDiff.SchemaName, tableDiff.TableName, columnDiff); err != nil {
 			return err
+		}
+	}
+	for _, partitionDiff := range tableDiff.PartitionChanges {
+		if partitionDiff.Action == schema.MetadataDiffActionCreate {
+			if err := writeCreatePartitionDiff(out, tableDiff.SchemaName, tableDiff.TableName, tableDiff.NewTable.GetColumns(), partitionDiff.NewPartition); err != nil {
+				return err
+			}
 		}
 	}
 	for _, primaryKeyDiff := range tableDiff.PrimaryKeyChanges {
@@ -831,7 +937,7 @@ func writeAlterTableDiff(out *strings.Builder, tableDiff *schema.TableDiff) erro
 	return writeTableCommentDiff(out, tableDiff.SchemaName, tableDiff.TableName, tableDiff.OldTable.GetComment(), tableDiff.NewTable.GetComment())
 }
 
-func writeColumnDiff(out *strings.Builder, schemaName string, tableName string, columnDiff *schema.ColumnDiff) error {
+func writeColumnDiff(out *strings.Builder, schemaName, tableName string, columnDiff *schema.ColumnDiff) error {
 	switch columnDiff.Action {
 	case schema.MetadataDiffActionCreate:
 		if _, err := fmt.Fprintf(out, "ALTER TABLE \"%s\".\"%s\" ADD COLUMN ", schemaName, tableName); err != nil {
@@ -857,7 +963,7 @@ func writeColumnDiff(out *strings.Builder, schemaName string, tableName string, 
 	}
 }
 
-func writeAlterColumnDiff(out *strings.Builder, schemaName string, tableName string, columnDiff *schema.ColumnDiff) error {
+func writeAlterColumnDiff(out *strings.Builder, schemaName, tableName string, columnDiff *schema.ColumnDiff) error {
 	oldColumn := columnDiff.OldColumn
 	newColumn := columnDiff.NewColumn
 	if oldColumn.Type != newColumn.Type {
@@ -899,25 +1005,25 @@ func writeAlterColumnDiff(out *strings.Builder, schemaName string, tableName str
 	return nil
 }
 
-func requiresExplicitCasting(oldType string, newType string) bool {
+func requiresExplicitCasting(oldType, newType string) bool {
 	oldBaseType := extractBaseType(oldType)
 	newBaseType := extractBaseType(newType)
 	if oldBaseType == newBaseType {
 		return requiresUsingForSameType(oldType, newType)
 	}
 	incompatibleConversions := map[string][]string{
-		"text":                        {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
-		"character varying":           {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
-		"character":                   {"integer", "numeric", "real", "double precision", "smallint", "bigint", "boolean"},
-		"jsonb":                       {"text", "character varying", "character"},
-		"json":                        {"text", "character varying", "character"},
-		"integer[]":                   {"text", "character varying", "character"},
-		"text[]":                      {"text", "character varying", "character"},
+		"text":                        {"integer", "numeric", "real", pgTypeDoublePrecision, "smallint", "bigint", "boolean"},
+		pgTypeCharacterVarying:        {"integer", "numeric", "real", pgTypeDoublePrecision, "smallint", "bigint", "boolean"},
+		"character":                   {"integer", "numeric", "real", pgTypeDoublePrecision, "smallint", "bigint", "boolean"},
+		"jsonb":                       {"text", pgTypeCharacterVarying, "character"},
+		"json":                        {"text", pgTypeCharacterVarying, "character"},
+		"integer[]":                   {"text", pgTypeCharacterVarying, "character"},
+		"text[]":                      {"text", pgTypeCharacterVarying, "character"},
 		"bigint":                      {"smallint", "integer"},
-		"double precision":            {"real"},
+		pgTypeDoublePrecision:         {"real"},
 		"timestamp with time zone":    {"date"},
 		"timestamp without time zone": {"date"},
-		"numeric":                     {"integer", "smallint", "bigint", "real", "double precision"},
+		"numeric":                     {"integer", "smallint", "bigint", "real", pgTypeDoublePrecision},
 	}
 	for _, target := range incompatibleConversions[oldBaseType] {
 		if target == newBaseType {
@@ -934,13 +1040,13 @@ func extractBaseType(typeName string) string {
 	return typeName
 }
 
-func requiresUsingForSameType(oldType string, newType string) bool {
+func requiresUsingForSameType(oldType, newType string) bool {
 	oldBaseType := extractBaseType(oldType)
 	newBaseType := extractBaseType(newType)
 	if oldBaseType != newBaseType {
 		return false
 	}
-	if strings.Contains(oldType, "character varying") {
+	if strings.Contains(oldType, pgTypeCharacterVarying) {
 		oldLen := extractLength(oldType)
 		newLen := extractLength(newType)
 		return oldLen > 0 && newLen > 0 && oldLen > newLen*2
@@ -998,16 +1104,16 @@ func writeColumnDefinition(out *strings.Builder, column *storepb.ColumnMetadata)
 	return nil
 }
 
-func writeDropTrigger(out *strings.Builder, schemaName string, tableName string, triggerName string) error {
+func writeDropTrigger(out *strings.Builder, schemaName, tableName, triggerName string) error {
 	_, err := fmt.Fprintf(out, "DROP TRIGGER \"%s\" ON \"%s\".\"%s\";\n\n", triggerName, schemaName, tableName)
 	return err
 }
 
-func writeDropForeignKey(out *strings.Builder, schemaName string, tableName string, fkName string) error {
+func writeDropForeignKey(out *strings.Builder, schemaName, tableName, fkName string) error {
 	return writeDropTableConstraint(out, schemaName, tableName, fkName)
 }
 
-func writeDropTableConstraint(out *strings.Builder, schemaName string, tableName string, constraintName string) error {
+func writeDropTableConstraint(out *strings.Builder, schemaName, tableName, constraintName string) error {
 	if constraintName == "" {
 		return nil
 	}
@@ -1015,7 +1121,7 @@ func writeDropTableConstraint(out *strings.Builder, schemaName string, tableName
 	return err
 }
 
-func writeDropIndexDiff(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) error {
+func writeDropIndexDiff(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata) error {
 	if index.GetIsConstraint() {
 		return writeDropTableConstraint(out, schemaName, tableName, index.GetName())
 	}
@@ -1026,7 +1132,7 @@ func writeDropIndexDiff(out *strings.Builder, schemaName string, tableName strin
 	return err
 }
 
-func writeAddCheckConstraint(out *strings.Builder, schemaName string, tableName string, check *storepb.CheckConstraintMetadata) error {
+func writeAddCheckConstraint(out *strings.Builder, schemaName, tableName string, check *storepb.CheckConstraintMetadata) error {
 	if check == nil {
 		return nil
 	}
@@ -1036,7 +1142,7 @@ func writeAddCheckConstraint(out *strings.Builder, schemaName string, tableName 
 	return nil
 }
 
-func writeAddExcludeConstraint(out *strings.Builder, schemaName string, tableName string, exclude *storepb.ExcludeConstraintMetadata) error {
+func writeAddExcludeConstraint(out *strings.Builder, schemaName, tableName string, exclude *storepb.ExcludeConstraintMetadata) error {
 	if exclude == nil {
 		return nil
 	}
@@ -1046,7 +1152,7 @@ func writeAddExcludeConstraint(out *strings.Builder, schemaName string, tableNam
 	return nil
 }
 
-func writeCreateIndexDiff(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) error {
+func writeCreateIndexDiff(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata) error {
 	if index == nil {
 		return nil
 	}
@@ -1060,7 +1166,7 @@ func writeCreateIndexDiff(out *strings.Builder, schemaName string, tableName str
 	}
 }
 
-func writeCreateRegularIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
+func writeCreateRegularIndex(out *strings.Builder, schemaName, tableName string, index *storepb.IndexMetadata, useOnlyClause bool) error {
 	if index.GetDefinition() != "" {
 		if err := writeDefinitionStatement(out, index.GetDefinition()); err != nil {
 			return err
@@ -1073,14 +1179,14 @@ func writeCreateRegularIndex(out *strings.Builder, schemaName string, tableName 
 	return writeIndex(out, schemaName, tableName, index, useOnlyClause)
 }
 
-func writeTableCommentDiff(out *strings.Builder, schemaName string, tableName string, oldComment string, newComment string) error {
+func writeTableCommentDiff(out *strings.Builder, schemaName, tableName, oldComment, newComment string) error {
 	if oldComment == newComment {
 		return nil
 	}
 	return writeComment(out, fmt.Sprintf("TABLE \"%s\".\"%s\"", schemaName, tableName), newComment)
 }
 
-func writeColumnCommentDiff(out *strings.Builder, schemaName string, tableName string, columnName string, comment string) error {
+func writeColumnCommentDiff(out *strings.Builder, schemaName, tableName, columnName, comment string) error {
 	return writeComment(out, fmt.Sprintf("COLUMN \"%s\".\"%s\".\"%s\"", schemaName, tableName, columnName), comment)
 }
 
@@ -1093,7 +1199,7 @@ func writeCommentDiff(out *strings.Builder, commentDiff *schema.CommentDiff) err
 	case schema.CommentObjectTypeColumn:
 		return writeComment(out, fmt.Sprintf("COLUMN \"%s\".\"%s\".\"%s\"", commentDiff.SchemaName, commentDiff.ObjectName, commentDiff.ColumnName), commentDiff.NewComment)
 	case schema.CommentObjectTypeView:
-		return writeComment(out, fmt.Sprintf("VIEW \"%s\".\"%s\"", commentDiff.SchemaName, commentDiff.ObjectName), commentDiff.NewComment)
+		return writeComment(out, fmt.Sprintf(viewCommentObjectFormat, commentDiff.SchemaName, commentDiff.ObjectName), commentDiff.NewComment)
 	case schema.CommentObjectTypeMaterializedView:
 		return writeComment(out, fmt.Sprintf("MATERIALIZED VIEW \"%s\".\"%s\"", commentDiff.SchemaName, commentDiff.ObjectName), commentDiff.NewComment)
 	case schema.CommentObjectTypeFunction:
@@ -1119,7 +1225,7 @@ func writeCommentDiff(out *strings.Builder, commentDiff *schema.CommentDiff) err
 	}
 }
 
-func writeComment(out io.Writer, object string, comment string) error {
+func writeComment(out io.Writer, object, comment string) error {
 	if comment == "" {
 		_, err := fmt.Fprintf(out, "COMMENT ON %s IS NULL;\n\n", object)
 		return err
@@ -1168,6 +1274,9 @@ func writeDropSchemaObjects(out *strings.Builder, schemaName string, schemaMeta 
 		return err
 	}
 	for _, sequenceDiff := range diff.SequenceChanges {
+		if isSequenceOwnedByDroppedTable(diff, sequenceDiff.SchemaName, sequenceDiff.OldSequence) {
+			continue
+		}
 		if err := writeSequenceDiff(out, sequenceDiff); err != nil {
 			return err
 		}
@@ -1459,12 +1568,12 @@ func writeDefinitionStatement(out *strings.Builder, definition string) error {
 	return err
 }
 
-func writeDropRoutine(out *strings.Builder, routineType string, schemaName string, signature string) error {
+func writeDropRoutine(out *strings.Builder, routineType, schemaName, signature string) error {
 	_, err := fmt.Fprintf(out, "DROP %s %s;\n\n", routineType, formatQualifiedRoutineSignature(schemaName, signature))
 	return err
 }
 
-func formatQualifiedRoutineSignature(schemaName string, signature string) string {
+func formatQualifiedRoutineSignature(schemaName, signature string) string {
 	signature = strings.TrimSpace(signature)
 	openParen := strings.Index(signature, "(")
 	if openParen < 0 {
@@ -1478,7 +1587,7 @@ func formatQualifiedRoutineSignature(schemaName string, signature string) string
 	return fmt.Sprintf("\"%s\".\"%s\"%s", schemaName, name, signature[openParen:])
 }
 
-func writeRoutineComment(out *strings.Builder, routineType string, schemaName string, signature string, name string, comment string) error {
+func writeRoutineComment(out *strings.Builder, routineType, schemaName, signature, name, comment string) error {
 	if signature == "" {
 		signature = name + "()"
 	}
@@ -1582,7 +1691,7 @@ func writeViewDiff(out *strings.Builder, viewDiff *schema.ViewDiff) error {
 			return err
 		}
 		if viewDiff.NewView.GetComment() != "" {
-			return writeComment(out, fmt.Sprintf("VIEW \"%s\".\"%s\"", viewDiff.SchemaName, viewDiff.ViewName), viewDiff.NewView.GetComment())
+			return writeComment(out, fmt.Sprintf(viewCommentObjectFormat, viewDiff.SchemaName, viewDiff.ViewName), viewDiff.NewView.GetComment())
 		}
 		return nil
 	case schema.MetadataDiffActionAlter:
@@ -1593,23 +1702,27 @@ func writeViewDiff(out *strings.Builder, viewDiff *schema.ViewDiff) error {
 		if _, err := out.WriteString(";\n\n"); err != nil {
 			return err
 		}
-		if viewDiff.OldView.GetComment() != viewDiff.NewView.GetComment() {
-			return writeComment(out, fmt.Sprintf("VIEW \"%s\".\"%s\"", viewDiff.SchemaName, viewDiff.ViewName), viewDiff.NewView.GetComment())
+		if viewDiff.NewView.GetComment() != "" {
+			return writeComment(out, fmt.Sprintf(viewCommentObjectFormat, viewDiff.SchemaName, viewDiff.ViewName), viewDiff.NewView.GetComment())
 		}
 		return nil
 	case schema.MetadataDiffActionDrop:
-		_, err := fmt.Fprintf(out, "DROP VIEW \"%s\".\"%s\";\n\n", viewDiff.SchemaName, viewDiff.ViewName)
-		return err
+		return writeDropView(out, viewDiff.SchemaName, viewDiff.ViewName)
 	default:
 		return nil
 	}
+}
+
+func writeDropView(out *strings.Builder, schemaName, viewName string) error {
+	_, err := fmt.Fprintf(out, "DROP VIEW \"%s\".\"%s\";\n\n", schemaName, viewName)
+	return err
 }
 
 func writeCreateMaterializedViewDiff(out *strings.Builder, viewDiff *schema.MaterializedViewDiff) error {
 	return writeMaterializedView(out, viewDiff.SchemaName, viewDiff.NewMaterializedView)
 }
 
-func writeDropMaterializedView(out *strings.Builder, schemaName string, viewName string) error {
+func writeDropMaterializedView(out *strings.Builder, schemaName, viewName string) error {
 	_, err := fmt.Fprintf(out, "DROP MATERIALIZED VIEW \"%s\".\"%s\";\n\n", schemaName, viewName)
 	return err
 }

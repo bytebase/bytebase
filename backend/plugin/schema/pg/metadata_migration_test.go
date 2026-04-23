@@ -497,6 +497,36 @@ func TestPGMetadataDiffDropTablesInForeignKeyDependencyOrder(t *testing.T) {
 	require.Less(t, childIdx, parentIdx)
 }
 
+func TestPGMetadataDiffDropTableSkipsOwnedSequenceDrop(t *testing.T) {
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+		{
+			Name: "orders",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+			},
+		},
+	}, []*storepb.SequenceMetadata{
+		{
+			Name:        "orders_id_seq",
+			DataType:    "bigint",
+			Start:       "1",
+			Increment:   "1",
+			MinValue:    "1",
+			MaxValue:    "9223372036854775807",
+			CacheSize:   "1",
+			OwnerTable:  "orders",
+			OwnerColumn: "id",
+		},
+	})
+	target := newPGDatabaseMetadataWithTablesAndSequences(nil, nil)
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	require.Contains(t, sql, `DROP TABLE "public"."orders"`)
+	require.NotContains(t, sql, `DROP SEQUENCE "public"."orders_id_seq"`)
+}
+
 func TestPGMetadataDiffDropCyclicForeignKeyTablesDropsForeignKeysFirst(t *testing.T) {
 	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
 		{
@@ -568,6 +598,85 @@ func TestPGMetadataDiffDropSchemaDropsViewsBeforeTablesWithoutDependencyMetadata
 	require.NotEqual(t, -1, viewIdx)
 	require.NotEqual(t, -1, tableIdx)
 	require.Less(t, viewIdx, tableIdx)
+}
+
+func TestPGMetadataDiffDropAlteredViewBeforeDependentTableAlter(t *testing.T) {
+	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id FROM public.users",
+			Comment:    "user ids",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "users"},
+			},
+		},
+	})
+	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "bigint", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id::bigint AS id FROM public.users",
+			Comment:    "user ids",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "users"},
+			},
+		},
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	dropViewIdx := strings.Index(sql, `DROP VIEW "public"."v"`)
+	alterTableIdx := strings.Index(sql, `ALTER TABLE "public"."users" ALTER COLUMN "id" TYPE bigint`)
+	createViewIdx := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."v"`)
+	commentIdx := strings.Index(sql, `COMMENT ON VIEW "public"."v" IS 'user ids'`)
+	require.NotEqual(t, -1, dropViewIdx)
+	require.NotEqual(t, -1, alterTableIdx)
+	require.NotEqual(t, -1, createViewIdx)
+	require.NotEqual(t, -1, commentIdx)
+	require.Less(t, dropViewIdx, alterTableIdx)
+	require.Less(t, alterTableIdx, createViewIdx)
+	require.Less(t, createViewIdx, commentIdx)
+}
+
+func TestPGMetadataDiffAlterTablePartitionChangesFromMetadata(t *testing.T) {
+	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
+			newPGOrdersPartition("orders_2023", "FOR VALUES FROM ('2023-01-01') TO ('2024-01-01')"),
+			newPGOrdersPartition("orders_2024", "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')"),
+		}),
+	}, nil)
+	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
+			newPGOrdersPartition("orders_2024", "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')"),
+			newPGOrdersPartition("orders_2025", "FOR VALUES FROM ('2025-01-01') TO ('2026-01-01')"),
+		}),
+	}, nil)
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	dropPartitionIdx := strings.Index(sql, `DROP TABLE "public"."orders_2023"`)
+	createPartitionIdx := strings.Index(sql, `CREATE TABLE "public"."orders_2025"`)
+	attachPartitionIdx := strings.Index(sql, `ATTACH PARTITION "public"."orders_2025" FOR VALUES FROM ('2025-01-01') TO ('2026-01-01')`)
+	require.NotEqual(t, -1, dropPartitionIdx)
+	require.NotEqual(t, -1, createPartitionIdx)
+	require.NotEqual(t, -1, attachPartitionIdx)
+	require.Less(t, dropPartitionIdx, createPartitionIdx)
+	require.Less(t, createPartitionIdx, attachPartitionIdx)
 }
 
 func TestPGMetadataDiffCreateViewsInDependencyOrder(t *testing.T) {
@@ -1183,10 +1292,15 @@ func newPGDatabaseMetadataWithMaterializedViews(views []*storepb.MaterializedVie
 }
 
 func newPGDatabaseMetadataWithSequences(sequences []*storepb.SequenceMetadata) *model.DatabaseMetadata {
+	return newPGDatabaseMetadataWithTablesAndSequences(nil, sequences)
+}
+
+func newPGDatabaseMetadataWithTablesAndSequences(tables []*storepb.TableMetadata, sequences []*storepb.SequenceMetadata) *model.DatabaseMetadata {
 	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{
 			{
 				Name:      "public",
+				Tables:    tables,
 				Sequences: sequences,
 			},
 		},
@@ -1202,6 +1316,26 @@ func newPGSequenceMetadata() *storepb.SequenceMetadata {
 		MinValue:  "1",
 		MaxValue:  "9223372036854775807",
 		CacheSize: "1",
+	}
+}
+
+func newPGPartitionedOrdersTable(partitions []*storepb.TablePartitionMetadata) *storepb.TableMetadata {
+	return &storepb.TableMetadata{
+		Name: "orders",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "integer", Nullable: false},
+			{Name: "created_at", Type: "date", Nullable: false},
+		},
+		Partitions: partitions,
+	}
+}
+
+func newPGOrdersPartition(name string, value string) *storepb.TablePartitionMetadata {
+	return &storepb.TablePartitionMetadata{
+		Name:       name,
+		Type:       storepb.TablePartitionMetadata_RANGE,
+		Expression: "RANGE (created_at)",
+		Value:      value,
 	}
 }
 
