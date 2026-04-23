@@ -173,15 +173,33 @@ const scanClassExpressions = (source, rel, lines) => {
     const block = source.slice(expr.start, expr.end);
     const fixedMatch = block.match(/\bfixed\b/);
     const absoluteMatch = block.match(/\babsolute\b/);
-    const zMatch = block.match(/\bz-\d+\b|\bz-\[[^\]]+\]/);
-    if (!zMatch || (!fixedMatch && !absoluteMatch)) {
+    const zMatches = [...block.matchAll(/\bz-(\d+)\b|\bz-\[([^\]]+)\]/g)];
+    if (zMatches.length === 0 || (!fixedMatch && !absoluteMatch)) {
+      continue;
+    }
+
+    const isAbsoluteGlobal = zMatches.some((zMatch) => {
+      if (zMatch[2] !== undefined) {
+        return true;
+      }
+      const value = Number(zMatch[1]);
+      return Number.isFinite(value) && value >= 40;
+    });
+    if (!fixedMatch && !isAbsoluteGlobal) {
       continue;
     }
 
     const reason = fixedMatch
       ? "feature-owned fixed overlay uses raw z-index"
       : "feature-owned absolute overlay uses high raw z-index";
-    const tokenIndex = expr.start + (fixedMatch?.index ?? absoluteMatch?.index ?? zMatch.index ?? 0);
+    const tokenMatch = fixedMatch ?? absoluteMatch ?? zMatches.find((zMatch) => {
+      if (zMatch[2] !== undefined) {
+        return true;
+      }
+      const value = Number(zMatch[1]);
+      return Number.isFinite(value) && value >= 40;
+    });
+    const tokenIndex = expr.start + (tokenMatch?.index ?? 0);
     const lineNumber = getLineNumber(lineStarts, tokenIndex);
     violations.push({
       rel,
