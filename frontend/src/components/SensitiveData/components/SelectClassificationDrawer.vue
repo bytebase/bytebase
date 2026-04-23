@@ -2,9 +2,10 @@
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('schema-template.classification.select')">
       <div class="w-[25rem] h-full">
-        <ClassificationTree
-          :classification-config="classificationConfig"
-          @apply="onApply"
+        <ReactPageMount
+          page="ClassificationTree"
+          :config="classificationConfig"
+          :onApply="onApply"
         />
       </div>
 
@@ -24,8 +25,8 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { Drawer, DrawerContent } from "@/components/v2";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
-import ClassificationTree from "./ClassificationTree.vue";
 
 defineProps<{
   show: boolean;

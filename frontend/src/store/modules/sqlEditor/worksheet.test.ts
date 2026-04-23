@@ -6,6 +6,9 @@ vi.mock("@/store", async () => {
   const { ref } = await import("vue");
   return {
     pushNotification: vi.fn(),
+    useCurrentUserV1: vi.fn(() => ({
+      value: { email: "test@example.com" },
+    })),
     useProjectIamPolicyStore: vi.fn(() => ({
       getOrFetchProjectIamPolicy: vi.fn(),
     })),
@@ -13,13 +16,15 @@ vi.mock("@/store", async () => {
       getOrFetchProjectByName: vi.fn(),
     })),
     useSQLEditorStore: vi.fn(() => ({
-      project: "projects/default",
+      project: ref("projects/default"),
       projectContextReady: true,
       setProject: vi.fn(),
     })),
     useSQLEditorTabStore: vi.fn(() => ({
       updateTab: vi.fn(),
       getTabById: vi.fn(),
+      currentTab: undefined,
+      openTabList: [],
     })),
     useSQLEditorUIStore: vi.fn(() => ({
       showConnectionPanel: ref(false),
@@ -28,31 +33,45 @@ vi.mock("@/store", async () => {
       getWorksheetByName: vi.fn(),
       patchWorksheet: vi.fn(),
       upsertWorksheetOrganizer: vi.fn(),
+      batchUpsertWorksheetOrganizers: vi.fn(),
       createWorksheet: vi.fn(),
+      fetchWorksheetList: vi.fn(),
+      myWorksheetList: [],
+      sharedWorksheetList: [],
     })),
   };
 });
 
 // Mock @/utils completely to avoid native binary dependencies
-vi.mock("@/utils", () => ({
-  extractWorksheetConnection: vi.fn(
-    async ({ database }: { database: string }) => ({
-      database,
-      instance: "",
-    })
-  ),
-  isSimilarDefaultSQLEditorTabTitle: vi.fn(() => false),
-  isWorksheetWritableV1: vi.fn(() => true),
-  NEW_WORKSHEET_TITLE: "Untitled",
-  suggestedTabTitleForSQLEditorConnection: vi.fn(() => "Untitled"),
-  isValidDatabaseName: vi.fn(() => false),
-  isValidProjectName: vi.fn((name: string) => name.startsWith("projects/")),
-}));
+vi.mock("@/utils", async () => {
+  const { ref } = await import("vue");
+  return {
+    extractWorksheetConnection: vi.fn(
+      async ({ database }: { database: string }) => ({
+        database,
+        instance: "",
+      })
+    ),
+    isSimilarDefaultSQLEditorTabTitle: vi.fn(() => false),
+    isWorksheetWritableV1: vi.fn(() => true),
+    NEW_WORKSHEET_TITLE: "Untitled",
+    suggestedTabTitleForSQLEditorConnection: vi.fn(() => "Untitled"),
+    isValidDatabaseName: vi.fn(() => false),
+    isValidProjectName: vi.fn((name: string) => name.startsWith("projects/")),
+    storageKeySqlEditorWorksheetFilter: vi.fn(() => "filter-key"),
+    storageKeySqlEditorWorksheetTree: vi.fn(() => "tree-key"),
+    storageKeySqlEditorWorksheetFolder: vi.fn(() => "folder-key"),
+    useDynamicLocalStorage: vi.fn((_: unknown, defaultValue: unknown) =>
+      ref(defaultValue)
+    ),
+  };
+});
 
 // Mock @/types to avoid importing native modules transitively
 vi.mock("@/types", () => ({
   isValidDatabaseName: vi.fn(() => false),
   isValidProjectName: vi.fn((name: string) => name.startsWith("projects/")),
+  DEBOUNCE_SEARCH_DELAY: 300,
 }));
 
 // Mock @/views/sql-editor/Sheet

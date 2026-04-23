@@ -2422,6 +2422,8 @@
     "batch-query": {
       "batch": "Batch"
     },
+    "choose-folder": "Choose or create folder",
+    "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
     "connect-to-a-database": "Connect to database",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2461,6 +2463,8 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "save-sheet": "Save Sheet",
+    "save-sheet-input-placeholder": "Please input a sheet name",
     "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",

@@ -2422,6 +2422,8 @@
     "batch-query": {
       "batch": "Lote"
     },
+    "choose-folder": "Seleccionar o crear una carpeta",
+    "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "connect-to-a-database": "Conectar a base de datos",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2461,6 +2463,8 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "save-sheet": "Guardar hoja",
+    "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "search-history-by-statement": "Búsqueda por enunciado",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "self": "Editor de SQL",

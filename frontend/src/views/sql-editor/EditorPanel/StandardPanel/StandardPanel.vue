@@ -61,7 +61,7 @@
 
           <ExecutingHintModal />
 
-          <SaveSheetModal />
+          <ReactPageMount page="SaveSheetModal" />
         </template>
 
         <ReadonlyModeNotSupported v-else />
@@ -96,11 +96,7 @@ import {
 import type { SQLEditorQueryParams } from "@/types";
 import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import {
-  EditorAction,
-  ExecutingHintModal,
-  SaveSheetModal,
-} from "../../EditorCommon";
+import { EditorAction, ExecutingHintModal } from "../../EditorCommon";
 import { sqlEditorEvents } from "../../events";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
