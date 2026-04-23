@@ -706,6 +706,59 @@ func TestPGMetadataDiffDropUnchangedDependentViewBeforeTableAlter(t *testing.T) 
 	require.Less(t, createViewIdx, commentIdx)
 }
 
+func TestPGMetadataDiffDropAlteredViewBeforeDroppedReferencedTable(t *testing.T) {
+	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "legacy_users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+			},
+		},
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id FROM public.legacy_users",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "legacy_users", Column: "id"},
+			},
+		},
+	})
+	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+		{
+			Name: "users",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "integer", Nullable: false},
+			},
+		},
+	}, []*storepb.ViewMetadata{
+		{
+			Name:       "v",
+			Definition: "SELECT id FROM public.users",
+			DependencyColumns: []*storepb.DependencyColumn{
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	dropViewIdx := strings.Index(sql, `DROP VIEW "public"."v"`)
+	dropTableIdx := strings.Index(sql, `DROP TABLE "public"."legacy_users"`)
+	createViewIdx := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."v"`)
+	require.NotEqual(t, -1, dropViewIdx)
+	require.NotEqual(t, -1, dropTableIdx)
+	require.NotEqual(t, -1, createViewIdx)
+	require.Less(t, dropViewIdx, dropTableIdx)
+	require.Less(t, dropTableIdx, createViewIdx)
+}
+
 func TestPGMetadataDiffAlterTablePartitionChangesFromMetadata(t *testing.T) {
 	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
 		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
@@ -972,6 +1025,119 @@ func TestPGMetadataDiffAlterSequenceDropsOwnershipFromMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Contains(t, sql, `ALTER SEQUENCE "public"."order_seq" OWNED BY NONE`)
+}
+
+func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterCreateTable(t *testing.T) {
+	source := newPGDatabaseMetadataWithTablesAndSequences(nil, []*storepb.SequenceMetadata{
+		newPGSequenceMetadata(),
+	})
+	target := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+		{
+			Name: "orders",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "bigint", Nullable: false},
+			},
+		},
+	}, []*storepb.SequenceMetadata{
+		{
+			Name:        "order_seq",
+			DataType:    "bigint",
+			Start:       "1",
+			Increment:   "1",
+			MinValue:    "1",
+			MaxValue:    "9223372036854775807",
+			CacheSize:   "1",
+			OwnerTable:  "orders",
+			OwnerColumn: "id",
+		},
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	createTableIdx := strings.Index(sql, `CREATE TABLE "public"."orders"`)
+	ownedByIdx := strings.Index(sql, `ALTER SEQUENCE "public"."order_seq" OWNED BY "public"."orders"."id"`)
+	require.NotEqual(t, -1, createTableIdx)
+	require.NotEqual(t, -1, ownedByIdx)
+	require.Less(t, createTableIdx, ownedByIdx)
+}
+
+func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterAddColumn(t *testing.T) {
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+		{
+			Name: "orders",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "name", Type: "text", Nullable: false},
+			},
+		},
+	}, []*storepb.SequenceMetadata{
+		newPGSequenceMetadata(),
+	})
+	target := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+		{
+			Name: "orders",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "name", Type: "text", Nullable: false},
+				{Name: "id", Type: "bigint", Nullable: false},
+			},
+		},
+	}, []*storepb.SequenceMetadata{
+		{
+			Name:        "order_seq",
+			DataType:    "bigint",
+			Start:       "1",
+			Increment:   "1",
+			MinValue:    "1",
+			MaxValue:    "9223372036854775807",
+			CacheSize:   "1",
+			OwnerTable:  "orders",
+			OwnerColumn: "id",
+		},
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	addColumnIdx := strings.Index(sql, `ALTER TABLE "public"."orders" ADD COLUMN "id" bigint NOT NULL`)
+	ownedByIdx := strings.Index(sql, `ALTER SEQUENCE "public"."order_seq" OWNED BY "public"."orders"."id"`)
+	require.NotEqual(t, -1, addColumnIdx)
+	require.NotEqual(t, -1, ownedByIdx)
+	require.Less(t, addColumnIdx, ownedByIdx)
+}
+
+func TestPGMetadataDiffAlterSequenceDetachesOwnershipBeforeOwnerTableDrop(t *testing.T) {
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+		{
+			Name: "orders",
+			Columns: []*storepb.ColumnMetadata{
+				{Name: "id", Type: "bigint", Nullable: false},
+			},
+		},
+	}, []*storepb.SequenceMetadata{
+		{
+			Name:        "order_seq",
+			DataType:    "bigint",
+			Start:       "1",
+			Increment:   "1",
+			MinValue:    "1",
+			MaxValue:    "9223372036854775807",
+			CacheSize:   "1",
+			OwnerTable:  "orders",
+			OwnerColumn: "id",
+		},
+	})
+	target := newPGDatabaseMetadataWithTablesAndSequences(nil, []*storepb.SequenceMetadata{
+		newPGSequenceMetadata(),
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
+
+	require.NoError(t, err)
+	detachIdx := strings.Index(sql, `ALTER SEQUENCE "public"."order_seq" OWNED BY NONE`)
+	dropTableIdx := strings.Index(sql, `DROP TABLE "public"."orders"`)
+	require.NotEqual(t, -1, detachIdx)
+	require.NotEqual(t, -1, dropTableIdx)
+	require.Less(t, detachIdx, dropTableIdx)
 }
 
 func TestPGMetadataDiffMaterializedViewObjectChanges(t *testing.T) {

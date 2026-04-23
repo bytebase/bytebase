@@ -224,6 +224,9 @@ func writeDropPhase(out *strings.Builder, diff *schema.MetadataDiff) error {
 	if err := writeDropTableForeignKeysForTableDrops(out, diff); err != nil {
 		return err
 	}
+	if err := writeDropSequenceOwnershipBeforeTableDrops(out, diff); err != nil {
+		return err
+	}
 	if err := writeDropDependentObjects(out, diff); err != nil {
 		return err
 	}
@@ -301,7 +304,7 @@ func writeCreateOrAlterPhase(out *strings.Builder, diff *schema.MetadataDiff) er
 	if err := writeAlterTables(out, diff); err != nil {
 		return err
 	}
-	if err := writeCreateSequenceOwnership(out, diff); err != nil {
+	if err := writeSequenceOwnershipAfterTables(out, diff); err != nil {
 		return err
 	}
 	if err := writeCreateRoutinesViewsAndMaterializedViews(out, diff); err != nil {
@@ -363,7 +366,7 @@ func buildDropObjectMaps(diff *schema.MetadataDiff) *metadataObjectMaps {
 		}
 	}
 	for _, viewDiff := range diff.ViewChanges {
-		if viewDiff.Action == schema.MetadataDiffActionDrop || alteredViewDependsOnAlteredTable(viewDiff, diff) {
+		if viewDiff.Action == schema.MetadataDiffActionDrop || alteredViewDependsOnTableDDL(viewDiff, diff) {
 			maps.views[getMigrationObjectID(viewDiff.SchemaName, viewDiff.ViewName)] = viewDiff
 		}
 	}
@@ -385,18 +388,18 @@ func buildDropObjectMaps(diff *schema.MetadataDiff) *metadataObjectMaps {
 	return maps
 }
 
-func alteredViewDependsOnAlteredTable(viewDiff *schema.ViewDiff, diff *schema.MetadataDiff) bool {
+func alteredViewDependsOnTableDDL(viewDiff *schema.ViewDiff, diff *schema.MetadataDiff) bool {
 	if viewDiff.Action != schema.MetadataDiffActionAlter {
 		return false
 	}
-	alteredTables := make(map[string]bool)
+	tableDDLTargets := make(map[string]bool)
 	for _, tableDiff := range diff.TableChanges {
-		if tableDiff.Action == schema.MetadataDiffActionAlter {
-			alteredTables[getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)] = true
+		if tableDiff.Action == schema.MetadataDiffActionDrop || tableDiff.Action == schema.MetadataDiffActionAlter {
+			tableDDLTargets[getMigrationObjectID(tableDiff.SchemaName, tableDiff.TableName)] = true
 		}
 	}
 	for _, dep := range viewDiff.OldView.GetDependencyColumns() {
-		if alteredTables[getMigrationObjectID(dep.GetSchema(), dep.GetTable())] {
+		if tableDDLTargets[getMigrationObjectID(dep.GetSchema(), dep.GetTable())] {
 			return true
 		}
 	}
@@ -711,15 +714,63 @@ func writeAlterTables(out *strings.Builder, diff *schema.MetadataDiff) error {
 	return nil
 }
 
-func writeCreateSequenceOwnership(out *strings.Builder, diff *schema.MetadataDiff) error {
+func writeDropSequenceOwnershipBeforeTableDrops(out *strings.Builder, diff *schema.MetadataDiff) error {
 	for _, sequenceDiff := range diff.SequenceChanges {
-		if sequenceDiff.Action == schema.MetadataDiffActionCreate && sequenceDiff.NewSequence.GetOwnerTable() != "" && sequenceDiff.NewSequence.GetOwnerColumn() != "" {
-			if err := writeAlterSequenceOwnedBy(out, sequenceDiff.SchemaName, sequenceDiff.NewSequence); err != nil {
-				return err
-			}
+		if sequenceDiff.Action != schema.MetadataDiffActionAlter || !sequenceOwnershipChanged(sequenceDiff.OldSequence, sequenceDiff.NewSequence) {
+			continue
+		}
+		if sequenceDiff.OldSequence.GetOwnerTable() == "" || sequenceDiff.OldSequence.GetOwnerColumn() == "" {
+			continue
+		}
+		if !tableIsDropped(diff, sequenceDiff.SchemaName, sequenceDiff.OldSequence.GetOwnerTable()) {
+			continue
+		}
+		if err := writeAlterSequenceOwnedByNone(out, sequenceDiff.SchemaName, sequenceDiff.SequenceName); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func writeSequenceOwnershipAfterTables(out *strings.Builder, diff *schema.MetadataDiff) error {
+	for _, sequenceDiff := range diff.SequenceChanges {
+		switch sequenceDiff.Action {
+		case schema.MetadataDiffActionCreate:
+			if sequenceDiff.NewSequence.GetOwnerTable() != "" && sequenceDiff.NewSequence.GetOwnerColumn() != "" {
+				if err := writeAlterSequenceOwnedBy(out, sequenceDiff.SchemaName, sequenceDiff.NewSequence); err != nil {
+					return err
+				}
+			}
+		case schema.MetadataDiffActionAlter:
+			if !sequenceOwnershipChanged(sequenceDiff.OldSequence, sequenceDiff.NewSequence) {
+				continue
+			}
+			if sequenceDiff.NewSequence.GetOwnerTable() != "" && sequenceDiff.NewSequence.GetOwnerColumn() != "" {
+				if err := writeAlterSequenceOwnedBy(out, sequenceDiff.SchemaName, sequenceDiff.NewSequence); err != nil {
+					return err
+				}
+			} else if !tableIsDropped(diff, sequenceDiff.SchemaName, sequenceDiff.OldSequence.GetOwnerTable()) {
+				if err := writeAlterSequenceOwnedByNone(out, sequenceDiff.SchemaName, sequenceDiff.SequenceName); err != nil {
+					return err
+				}
+			}
+		default:
+		}
+	}
+	return nil
+}
+
+func sequenceOwnershipChanged(oldSequence, newSequence *storepb.SequenceMetadata) bool {
+	return oldSequence.GetOwnerTable() != newSequence.GetOwnerTable() || oldSequence.GetOwnerColumn() != newSequence.GetOwnerColumn()
+}
+
+func tableIsDropped(diff *schema.MetadataDiff, schemaName, tableName string) bool {
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action == schema.MetadataDiffActionDrop && tableDiff.SchemaName == schemaName && tableDiff.TableName == tableName {
+			return true
+		}
+	}
+	return false
 }
 
 func writeCreateRoutinesViewsAndMaterializedViews(out *strings.Builder, diff *schema.MetadataDiff) error {
@@ -1636,19 +1687,15 @@ func writeAlterSequence(out *strings.Builder, schemaName string, oldSequence *st
 	if _, err := out.WriteString(";\n\n"); err != nil {
 		return err
 	}
-	if oldSequence.GetOwnerTable() != sequence.GetOwnerTable() || oldSequence.GetOwnerColumn() != sequence.GetOwnerColumn() {
-		if sequence.GetOwnerColumn() != "" && sequence.GetOwnerTable() != "" {
-			if err := writeAlterSequenceOwnedBy(out, schemaName, sequence); err != nil {
-				return err
-			}
-		} else if _, err := fmt.Fprintf(out, "ALTER SEQUENCE \"%s\".\"%s\" OWNED BY NONE;\n\n", schemaName, sequence.Name); err != nil {
-			return err
-		}
-	}
 	if oldSequence.GetComment() != sequence.GetComment() {
 		return writeComment(out, fmt.Sprintf("SEQUENCE \"%s\".\"%s\"", schemaName, sequence.Name), sequence.GetComment())
 	}
 	return nil
+}
+
+func writeAlterSequenceOwnedByNone(out *strings.Builder, schemaName, sequenceName string) error {
+	_, err := fmt.Fprintf(out, "ALTER SEQUENCE \"%s\".\"%s\" OWNED BY NONE;\n\n", schemaName, sequenceName)
+	return err
 }
 
 func writeFunctionDiff(out *strings.Builder, functionDiff *schema.FunctionDiff) error {
