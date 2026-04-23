@@ -189,15 +189,14 @@ func levelEmoji(level webhook.Level) string {
 }
 
 func postMessage(context webhook.Context) error {
-	redactedURL := redactWebhookURL(context.URL)
 	post := BuildMessage(context)
 	body, err := marshal(post)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", redactedURL)
+		return errors.Wrap(err, "failed to marshal Google Chat webhook POST request")
 	}
 	req, err := http.NewRequest(http.MethodPost, context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return errors.Errorf("failed to construct webhook POST request to %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
+		return errors.Errorf("failed to construct Google Chat webhook POST request: %s", redactWebhookErrorMessage(err, context.URL))
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -206,24 +205,24 @@ func postMessage(context webhook.Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Errorf("failed to POST webhook to %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
+		return errors.Errorf("failed to POST Google Chat webhook: %s", redactWebhookErrorMessage(err, context.URL))
 	}
 	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Errorf("failed to read POST webhook response from %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
+		return errors.Errorf("failed to read Google Chat webhook response: %s", redactWebhookErrorMessage(err, context.URL))
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", redactedURL, resp.StatusCode, b)
+		return errors.Errorf("failed to POST Google Chat webhook, status code: %d, response body: %s", resp.StatusCode, b)
 	}
 
 	return nil
 }
 
-func redactWebhookErrorMessage(err error, rawURL, redactedURL string) string {
+func redactWebhookErrorMessage(err error, rawURL string) string {
 	message := err.Error()
-	message = strings.ReplaceAll(message, rawURL, redactedURL)
+	message = strings.ReplaceAll(message, rawURL, "Google Chat webhook URL")
 	u, parseErr := url.Parse(rawURL)
 	if parseErr != nil {
 		return message
@@ -237,21 +236,6 @@ func redactWebhookErrorMessage(err error, rawURL, redactedURL string) string {
 		}
 	}
 	return message
-}
-
-func redactWebhookURL(rawURL string) string {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return rawURL
-	}
-	query := u.Query()
-	for _, key := range []string{"key", "token"} {
-		if _, ok := query[key]; ok {
-			query.Set(key, "REDACTED")
-		}
-	}
-	u.RawQuery = query.Encode()
-	return u.String()
 }
 
 func marshal(post MessagePayload) ([]byte, error) {

@@ -198,9 +198,12 @@ func TestPostMessageNon2xxRedactsGoogleChatCredentials(t *testing.T) {
 	a.Error(err)
 	a.NotContains(err.Error(), "chat-key")
 	a.NotContains(err.Error(), "chat-token")
-	a.Contains(err.Error(), "key=REDACTED")
-	a.Contains(err.Error(), "token=REDACTED")
-	a.Contains(err.Error(), "threadKey=thread-key")
+	a.NotContains(err.Error(), "key=")
+	a.NotContains(err.Error(), "token=")
+	a.NotContains(err.Error(), "threadKey")
+	a.NotContains(err.Error(), "spaces/AAAA")
+	a.Contains(err.Error(), "status code: 400")
+	a.Contains(err.Error(), "invalid payload")
 }
 
 func TestPostMessageNetworkErrorRedactsGoogleChatCredentials(t *testing.T) {
@@ -213,6 +216,8 @@ func TestPostMessageNetworkErrorRedactsGoogleChatCredentials(t *testing.T) {
 	a.Error(err)
 	a.NotContains(err.Error(), "chat-key")
 	a.NotContains(err.Error(), "chat-token")
-	a.Contains(err.Error(), "key=REDACTED")
-	a.Contains(err.Error(), "token=REDACTED")
+	a.NotContains(err.Error(), "key=")
+	a.NotContains(err.Error(), "token=")
+	a.NotContains(err.Error(), "spaces/AAAA")
+	a.Contains(err.Error(), "failed to POST Google Chat webhook")
 }
