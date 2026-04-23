@@ -337,14 +337,20 @@ function IssueLabelsSection({
     };
 
     updateDropdownPosition();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(updateDropdownPosition);
+    resizeObserver?.observe(triggerRef.current);
     window.addEventListener("resize", updateDropdownPosition);
     window.addEventListener("scroll", handleScroll, true);
 
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", updateDropdownPosition);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [open, options]);
+  }, [open, options, labels]);
 
   useEffect(() => {
     if (!open) return;

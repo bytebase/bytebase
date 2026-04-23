@@ -63,14 +63,20 @@ export function EnvironmentMultiSelect({
     };
 
     updateDropdownPosition();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(updateDropdownPosition);
+    resizeObserver?.observe(containerRef.current);
     window.addEventListener("resize", updateDropdownPosition);
     window.addEventListener("scroll", handleScroll, true);
 
     return () => {
+      resizeObserver?.disconnect();
       window.removeEventListener("resize", updateDropdownPosition);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [open, environmentList]);
+  }, [open, environmentList, value]);
 
   useEffect(() => {
     if (!open) return;
