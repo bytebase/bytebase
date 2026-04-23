@@ -11,7 +11,6 @@ import {
   Key,
   Plus,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,6 +30,14 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -1644,19 +1651,14 @@ function CreateWizardDrawer({
   const mappingStep = isOAuth2 ? 5 : 4;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-[64rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("identity-provider.self")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="large" className="bg-white">
+        <SheetHeader>
+          <SheetTitle>{t("identity-provider.self")}</SheetTitle>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody className="px-6 py-6">
           <div className="flex flex-col gap-y-6">
             {/* Step indicators */}
             <div className="flex items-center gap-x-2">
@@ -1929,10 +1931,10 @@ function CreateWizardDrawer({
               )}
             </div>
           </div>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           {currentStep === 1 ? (
             <Button variant="outline" onClick={onClose}>
               {t("common.cancel")}
@@ -1951,15 +1953,15 @@ function CreateWizardDrawer({
               {t("common.create")}
             </Button>
           )}
-        </div>
+        </SheetFooter>
 
         {isCreating && (
           <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center">
             <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         )}
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
 

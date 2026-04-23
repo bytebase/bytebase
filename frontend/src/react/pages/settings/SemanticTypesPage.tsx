@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { Check, Info, Pencil, Plus, Trash2, Undo2, X } from "lucide-react";
+import { Check, Info, Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
@@ -7,6 +7,14 @@ import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -662,24 +670,17 @@ function MaskingAlgorithmDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-overlay/40" onClick={onDismiss} />
-      <div className="relative w-[40rem] max-w-[calc(100vw-5rem)] bg-background shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-medium">
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onDismiss()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>
             {t(
               "settings.sensitive-data.semantic-types.table.masking-algorithm"
             )}
-          </h2>
-          <button
-            className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
-            onClick={onDismiss}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <SheetBody className="p-6">
           {/* Masking type selector */}
           <div className="mb-6">
             <label className="text-sm font-medium">
@@ -950,9 +951,9 @@ function MaskingAlgorithmDrawer({
               </>
             )}
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end gap-x-2 px-6 py-4 border-t border-control-border">
+        <SheetFooter>
           <Button variant="outline" onClick={onDismiss}>
             {t("common.cancel")}
           </Button>
@@ -963,9 +964,9 @@ function MaskingAlgorithmDrawer({
           >
             {algorithm ? t("common.update") : t("common.create")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -985,21 +986,14 @@ function SemanticTemplateDrawer({
   const templates = useMemo(() => getSemanticTemplateList(), []);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-overlay/40" onClick={onDismiss} />
-      <div className="relative w-2xl max-w-[100vw] bg-background shadow-xl flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-medium">
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onDismiss()}>
+      <SheetContent width="standard">
+        <SheetHeader>
+          <SheetTitle>
             {t("settings.sensitive-data.semantic-types.table.semantic-type")}
-          </h2>
-          <button
-            className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
-            onClick={onDismiss}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6">
+          </SheetTitle>
+        </SheetHeader>
+        <SheetBody className="p-6">
           <p className="text-sm text-control-placeholder mb-4">
             {t("settings.sensitive-data.semantic-types.template.description")}
           </p>
@@ -1060,14 +1054,14 @@ function SemanticTemplateDrawer({
               </tbody>
             </table>
           </div>
-        </div>
-        <div className="flex justify-end px-6 py-4 border-t border-control-border">
+        </SheetBody>
+        <SheetFooter>
           <Button variant="outline" onClick={onDismiss}>
             {t("common.cancel")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

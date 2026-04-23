@@ -63,6 +63,9 @@ const sheetContentVariants = cva(
         narrow: "w-[24rem]",
         standard: "w-[44rem]",
         wide: "w-[52rem]",
+        large: "w-[64rem]",
+        xlarge: "w-[70rem]",
+        workspace: "w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]",
       },
     },
     defaultVariants: {

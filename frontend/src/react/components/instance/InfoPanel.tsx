@@ -3,6 +3,13 @@ import { Check, Copy, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   getInfoContent,
@@ -51,24 +58,18 @@ export function InfoPanel({
   if (mode === "overlay") {
     if (!mounted) return null;
     return (
-      <div
-        className={`fixed inset-0 z-50 flex justify-end transition-opacity duration-200 ${
-          visible ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-        onTransitionEnd={handleTransitionEnd}
-      >
-        <div
-          className={`w-[500px] bg-background border-l border-block-border shadow-lg flex flex-col h-full transition-transform duration-200 ${
-            visible ? "translate-x-0" : "translate-x-full"
-          }`}
+      <Sheet open={visible} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+        <SheetContent
+          width="standard"
+          className="border-l border-block-border"
+          onTransitionEnd={handleTransitionEnd}
         >
-          <PanelHeader title={title} onClose={onClose} className="px-4 py-3" />
-          <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
-        </div>
-      </div>
+          <SheetHeader className="px-4 py-3">
+            <SheetTitle className="truncate text-sm">{title}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="px-4 py-4">{children}</SheetBody>
+        </SheetContent>
+      </Sheet>
     );
   }
 
