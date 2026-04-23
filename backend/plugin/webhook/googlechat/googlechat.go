@@ -92,7 +92,7 @@ func (*Receiver) Post(context webhook.Context) error {
 // BuildMessage constructs the Google Chat message payload.
 func BuildMessage(ctx webhook.Context) MessagePayload {
 	header := &CardHeader{
-		Title: levelPrefix(ctx.Level) + escapeText(ctx.Title),
+		Title: levelEmoji(ctx.Level) + escapeText(ctx.Title),
 	}
 	if ctx.Project != nil {
 		header.Subtitle = escapeText(ctx.Project.Title)
@@ -175,14 +175,14 @@ func escapeText(text string) string {
 	return strings.ReplaceAll(html.EscapeString(text), "&#34;", "&quot;")
 }
 
-func levelPrefix(level webhook.Level) string {
+func levelEmoji(level webhook.Level) string {
 	switch level {
 	case webhook.WebhookSuccess:
-		return "[SUCCESS] "
+		return "✅ "
 	case webhook.WebhookWarn:
-		return "[WARN] "
+		return "⚠️ "
 	case webhook.WebhookError:
-		return "[ERROR] "
+		return "❗ "
 	default:
 		return ""
 	}

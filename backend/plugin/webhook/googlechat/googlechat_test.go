@@ -35,7 +35,7 @@ func TestBuildMessageIssueApproved(t *testing.T) {
 	a.Len(msg.CardsV2, 1)
 	card := msg.CardsV2[0].Card
 	a.NotNil(card.Header)
-	a.Contains(card.Header.Title, "Issue approved")
+	a.Equal("✅ Issue approved", card.Header.Title)
 	a.Contains(card.Header.Subtitle, "My Project")
 	a.NotEmpty(card.Sections)
 
@@ -67,6 +67,10 @@ func TestBuildMessageRolloutFailed(t *testing.T) {
 	}
 
 	msg := BuildMessage(ctx)
+
+	card := msg.CardsV2[0].Card
+	a.NotNil(card.Header)
+	a.Equal("❗ Rollout failed", card.Header.Title)
 
 	body, err := json.Marshal(msg)
 	a.NoError(err)
@@ -100,6 +104,10 @@ func TestBuildMessageEscapesUserContent(t *testing.T) {
 	}
 
 	msg := BuildMessage(ctx)
+	card := msg.CardsV2[0].Card
+	a.NotNil(card.Header)
+	a.Equal("⚠️ Issue &lt;sent&gt; back", card.Header.Title)
+
 	body, err := marshal(msg)
 	a.NoError(err)
 	bodyText := string(body)
@@ -108,6 +116,14 @@ func TestBuildMessageEscapesUserContent(t *testing.T) {
 	a.Contains(bodyText, "Project &lt;A&gt;")
 	a.Contains(bodyText, "O&#39;Brien &amp; Sons")
 	a.Contains(bodyText, "Admin &lt;root&gt;")
+}
+
+func TestLevelEmoji(t *testing.T) {
+	a := require.New(t)
+	a.Equal("", levelEmoji(webhook.WebhookInfo))
+	a.Equal("✅ ", levelEmoji(webhook.WebhookSuccess))
+	a.Equal("⚠️ ", levelEmoji(webhook.WebhookWarn))
+	a.Equal("❗ ", levelEmoji(webhook.WebhookError))
 }
 
 func TestPostMessage(t *testing.T) {
