@@ -671,7 +671,7 @@ function MaskingAlgorithmDrawer({
 
   return (
     <Sheet open onOpenChange={(nextOpen) => !nextOpen && onDismiss()}>
-      <SheetContent width="standard">
+      <SheetContent width="medium">
         <SheetHeader>
           <SheetTitle>
             {t(

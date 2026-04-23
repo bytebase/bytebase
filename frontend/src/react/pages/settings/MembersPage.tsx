@@ -1274,7 +1274,7 @@ function EditMemberRoleDrawer({
     return (
       <>
         <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-          <SheetContent width="standard">
+          <SheetContent width="medium">
             <SheetHeader>
               <div className="flex min-w-0 items-center justify-between gap-x-2">
                 <SheetTitle className="truncate">
@@ -1462,7 +1462,7 @@ function EditMemberRoleDrawer({
   // Workspace edit mode, workspace/project create mode — original UI
   return (
     <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent width="standard">
+      <SheetContent width="medium">
         <SheetHeader>
           <SheetTitle>{t("common.members", { count: 1 })}</SheetTitle>
         </SheetHeader>

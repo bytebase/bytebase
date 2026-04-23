@@ -254,7 +254,7 @@ export function AttachResourcesPanel({
 
   return (
     <Sheet open={show} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent width="standard">
+      <SheetContent width="medium">
         <SheetHeader className="px-4 py-3">
           <SheetTitle>{t("sql-review.attach-resource.self")}</SheetTitle>
         </SheetHeader>
