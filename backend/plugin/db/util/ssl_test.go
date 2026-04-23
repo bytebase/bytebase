@@ -92,6 +92,31 @@ func TestResolveTLSMaterialRedactsReadErrors(t *testing.T) {
 	require.NotContains(t, err.Error(), "no such file")
 }
 
+func TestResolveTLSMaterialRejectsNonRegularPath(t *testing.T) {
+	dir := t.TempDir()
+
+	_, err := ResolveTLSMaterial(&storepb.DataSource{
+		UseSsl:    true,
+		SslCaPath: dir,
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "CA certificate path must point to a regular file")
+	require.NotContains(t, err.Error(), dir)
+}
+
+func TestResolveTLSMaterialRejectsOversizedFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ca.pem")
+	require.NoError(t, os.WriteFile(path, make([]byte, maxTLSMaterialFileSize+1), 0o600))
+
+	_, err := ResolveTLSMaterial(&storepb.DataSource{
+		UseSsl:    true,
+		SslCaPath: path,
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "CA certificate file is too large")
+	require.NotContains(t, err.Error(), path)
+}
+
 func TestGetTLSConfigRequiresResolvedTLSMaterial(t *testing.T) {
 	_, err := GetTLSConfig(&storepb.DataSource{
 		UseSsl:    true,
