@@ -1,8 +1,20 @@
 import { Check, ChevronDown, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
+import {
+  getPortalDropdownStyle,
+  isPortalDropdownStyleEqual,
+  shouldIgnorePortalDropdownScroll,
+} from "@/react/components/ui/combobox-position";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useEnvironmentV1Store } from "@/store";
@@ -21,9 +33,58 @@ export function EnvironmentMultiSelect({
   );
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
 
-  const handleClickOutside = useCallback(() => setOpen(false), []);
-  useClickOutside(containerRef, open, handleClickOutside);
+  useLayoutEffect(() => {
+    if (!open || !containerRef.current) return;
+
+    const updateDropdownPosition = () => {
+      if (!containerRef.current) return;
+      const triggerRect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
+      const nextStyle = getPortalDropdownStyle(
+        triggerRect,
+        dropdownHeight,
+        window.innerHeight
+      );
+      setDropdownStyle((previousStyle) =>
+        isPortalDropdownStyleEqual(previousStyle, nextStyle)
+          ? previousStyle
+          : nextStyle
+      );
+    };
+
+    const handleScroll = (event: Event) => {
+      if (shouldIgnorePortalDropdownScroll(event.target, dropdownRef.current)) {
+        return;
+      }
+      updateDropdownPosition();
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open, environmentList]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handler = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   const toggle = (name: string) => {
     onChange(
@@ -81,39 +142,45 @@ export function EnvironmentMultiSelect({
         </button>
       </div>
 
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-background border border-control-border rounded-sm shadow-lg max-h-60 overflow-auto">
-          {environmentList.length === 0 && (
-            <div className="px-3 py-2 text-sm text-control-light">
-              {t("common.no-data")}
-            </div>
-          )}
-          {environmentList.map((env) => {
-            const selected = value.includes(env.name);
-            return (
-              <button
-                key={env.name}
-                type="button"
-                className="flex items-center gap-x-2 px-3 py-1.5 text-sm hover:bg-control-bg cursor-pointer w-full text-left"
-                onClick={() => toggle(env.name)}
-                aria-pressed={selected}
-              >
-                <div
-                  className={cn(
-                    "size-4 rounded-xs border flex items-center justify-center shrink-0",
-                    selected
-                      ? "bg-accent border-accent text-accent-text"
-                      : "border-control-border"
-                  )}
+      {open &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className={`fixed max-h-60 overflow-auto rounded-sm border border-control-border bg-background shadow-lg ${LAYER_SURFACE_CLASS}`}
+            style={dropdownStyle}
+          >
+            {environmentList.length === 0 && (
+              <div className="px-3 py-2 text-sm text-control-light">
+                {t("common.no-data")}
+              </div>
+            )}
+            {environmentList.map((env) => {
+              const selected = value.includes(env.name);
+              return (
+                <button
+                  key={env.name}
+                  type="button"
+                  className="flex w-full cursor-pointer items-center gap-x-2 px-3 py-1.5 text-left text-sm hover:bg-control-bg"
+                  onClick={() => toggle(env.name)}
+                  aria-pressed={selected}
                 >
-                  {selected && <Check className="h-3 w-3" />}
-                </div>
-                <EnvironmentLabel environment={env} />
-              </button>
-            );
-          })}
-        </div>
-      )}
+                  <div
+                    className={cn(
+                      "flex size-4 shrink-0 items-center justify-center rounded-xs border",
+                      selected
+                        ? "border-accent bg-accent text-accent-text"
+                        : "border-control-border"
+                    )}
+                  >
+                    {selected && <Check className="h-3 w-3" />}
+                  </div>
+                  <EnvironmentLabel environment={env} />
+                </button>
+              );
+            })}
+          </div>,
+          getLayerRoot("overlay")
+        )}
     </div>
   );
 }

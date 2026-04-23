@@ -14,6 +14,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
 import { createPortal } from "react-dom";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
 import type {
@@ -378,7 +379,7 @@ export function AsideTree() {
         menuOptions.length > 0 &&
         createPortal(
           <div
-            className="fixed inset-0 z-50"
+            className="fixed inset-0"
             onClick={hideMenu}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -386,7 +387,7 @@ export function AsideTree() {
             }}
           >
             <div
-              className="absolute rounded-sm border border-control-border bg-white py-1 shadow-md"
+              className={`absolute rounded-sm border border-control-border bg-white py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
               style={{ left: menuState.x, top: menuState.y }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -402,7 +403,7 @@ export function AsideTree() {
               ))}
             </div>
           </div>,
-          document.body
+          getLayerRoot("overlay")
         )}
 
       {/* Modals */}

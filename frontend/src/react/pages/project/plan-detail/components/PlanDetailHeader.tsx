@@ -1,6 +1,6 @@
 import { clone, create } from "@bufbuild/protobuf";
 import { Ban, ChevronUp, Loader2, Menu, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
@@ -9,7 +9,11 @@ import {
 } from "@/react/components/IssueLabelSelect";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/react/components/ui/popover";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
@@ -65,7 +69,6 @@ export function PlanDetailHeader() {
   const [checksWarningAcknowledged, setChecksWarningAcknowledged] =
     useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
-  const reviewPopoverRef = useRef<HTMLDivElement>(null);
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
 
   useEffect(() => {
@@ -357,10 +360,6 @@ export function PlanDetailHeader() {
     }
   };
 
-  useClickOutside(reviewPopoverRef, showReviewPopover, () =>
-    handleReviewPopoverOpenChange(false)
-  );
-
   const isDescriptionLong =
     (description?.length ?? 0) > 150 ||
     (description?.split("\n").length ?? 0) > 3;
@@ -474,34 +473,41 @@ export function PlanDetailHeader() {
           ) : (
             <>
               {showSubmitForReview && (
-                <div className="relative" ref={reviewPopoverRef}>
-                  <Button
-                    disabled={submitDisabled}
-                    onClick={() => handleReviewPopoverOpenChange(true)}
-                    title={submitDisabledReason}
+                <Popover
+                  open={showReviewPopover}
+                  onOpenChange={handleReviewPopoverOpenChange}
+                >
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        disabled={submitDisabled}
+                        title={submitDisabledReason}
+                      />
+                    }
                   >
                     {t("plan.ready-for-review")}
-                  </Button>
-                  {showReviewPopover && (
-                    <div className="absolute right-0 top-full z-40 mt-2 w-[min(28rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-white px-4 py-4 shadow-lg">
-                      <ReadyForReviewPopoverContent
-                        checksWarningAcknowledged={checksWarningAcknowledged}
-                        confirmErrors={createIssueConfirmErrors}
-                        forceIssueLabels={project.forceIssueLabels}
-                        issueLabels={project.issueLabels ?? []}
-                        onCancel={() => handleReviewPopoverOpenChange(false)}
-                        onChecksWarningAcknowledgedChange={
-                          setChecksWarningAcknowledged
-                        }
-                        onConfirm={() => void handleCreateIssue()}
-                        onSelectedLabelsChange={setSelectedLabels}
-                        selectedLabels={selectedLabels}
-                        showChecksWarning={showChecksWarning}
-                        submitting={submittingReview}
-                      />
-                    </div>
-                  )}
-                </div>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="w-[min(28rem,calc(100vw-2rem))] px-4 py-4"
+                  >
+                    <ReadyForReviewPopoverContent
+                      checksWarningAcknowledged={checksWarningAcknowledged}
+                      confirmErrors={createIssueConfirmErrors}
+                      forceIssueLabels={project.forceIssueLabels}
+                      issueLabels={project.issueLabels ?? []}
+                      onCancel={() => handleReviewPopoverOpenChange(false)}
+                      onChecksWarningAcknowledgedChange={
+                        setChecksWarningAcknowledged
+                      }
+                      onConfirm={() => void handleCreateIssue()}
+                      onSelectedLabelsChange={setSelectedLabels}
+                      selectedLabels={selectedLabels}
+                      showChecksWarning={showChecksWarning}
+                      submitting={submittingReview}
+                    />
+                  </PopoverContent>
+                </Popover>
               )}
               {showClosePlan && (
                 <Button

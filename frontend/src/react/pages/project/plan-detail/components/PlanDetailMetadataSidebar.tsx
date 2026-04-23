@@ -6,10 +6,24 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
+import {
+  getPortalDropdownStyle,
+  isPortalDropdownStyleEqual,
+  shouldIgnorePortalDropdownScroll,
+} from "@/react/components/ui/combobox-position";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import {
@@ -271,6 +285,9 @@ function IssueLabelsSection({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
 
   const options = useMemo(
     () =>
@@ -293,6 +310,56 @@ function IssueLabelsSection({
     }
   };
 
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+
+    const updateDropdownPosition = () => {
+      if (!triggerRef.current) return;
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
+      const nextStyle = getPortalDropdownStyle(
+        triggerRect,
+        dropdownHeight,
+        window.innerHeight
+      );
+      setDropdownStyle((previousStyle) =>
+        isPortalDropdownStyleEqual(previousStyle, nextStyle)
+          ? previousStyle
+          : nextStyle
+      );
+    };
+
+    const handleScroll = (event: Event) => {
+      if (shouldIgnorePortalDropdownScroll(event.target, dropdownRef.current)) {
+        return;
+      }
+      updateDropdownPosition();
+    };
+
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open, options]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handler = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
     <div className="flex flex-col gap-y-1">
       <div className="flex items-center gap-x-1 textinfolabel">
@@ -300,6 +367,7 @@ function IssueLabelsSection({
       </div>
       <div className="relative">
         <button
+          ref={triggerRef}
           className={cn(
             "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-white px-3 py-1.5 text-left text-sm transition-colors",
             allowChange && !isUpdating && "hover:bg-control-bg",
@@ -335,42 +403,48 @@ function IssueLabelsSection({
           </div>
         </button>
 
-        {open && (
-          <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-white shadow-lg">
-            <div className="max-h-60 overflow-y-auto">
-              {options.length === 0 ? (
-                <div className="px-3 py-6 text-sm text-control-placeholder">
-                  {t("common.no-data")}
-                </div>
-              ) : (
-                options.map((option) => {
-                  const isSelected = labels.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
-                      disabled={isUpdating}
-                      onClick={() => void toggleLabel(option.value)}
-                      type="button"
-                    >
-                      <input
-                        checked={isSelected}
-                        className="accent-accent"
-                        readOnly
-                        type="checkbox"
-                      />
-                      <span
-                        className="size-4 shrink-0 rounded-sm"
-                        style={{ backgroundColor: option.color }}
-                      />
-                      <span>{option.value}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
+        {open &&
+          createPortal(
+            <div
+              ref={dropdownRef}
+              className={`fixed overflow-hidden rounded-sm border border-control-border bg-white shadow-lg ${LAYER_SURFACE_CLASS}`}
+              style={dropdownStyle}
+            >
+              <div className="max-h-60 overflow-y-auto">
+                {options.length === 0 ? (
+                  <div className="px-3 py-6 text-sm text-control-placeholder">
+                    {t("common.no-data")}
+                  </div>
+                ) : (
+                  options.map((option) => {
+                    const isSelected = labels.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                        disabled={isUpdating}
+                        onClick={() => void toggleLabel(option.value)}
+                        type="button"
+                      >
+                        <input
+                          checked={isSelected}
+                          className="accent-accent"
+                          readOnly
+                          type="checkbox"
+                        />
+                        <span
+                          className="size-4 shrink-0 rounded-sm"
+                          style={{ backgroundColor: option.color }}
+                        />
+                        <span>{option.value}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>,
+            getLayerRoot("overlay")
+          )}
       </div>
     </div>
   );
