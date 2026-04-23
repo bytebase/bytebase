@@ -1873,17 +1873,38 @@ func compareSequences(diff *MetadataDiff, schemaName string, oldSchema, newSchem
 		}
 	}
 
-	// Check for new sequences
+	// Check for new and modified sequences
 	for seqName, newSeq := range newSeqMap {
-		if _, exists := oldSeqMap[seqName]; !exists {
+		if oldSeq, exists := oldSeqMap[seqName]; !exists {
 			diff.SequenceChanges = append(diff.SequenceChanges, &SequenceDiff{
 				Action:       MetadataDiffActionCreate,
 				SchemaName:   schemaName,
 				SequenceName: seqName,
 				NewSequence:  newSeq,
 			})
+		} else if !sequencesEqual(oldSeq, newSeq) {
+			diff.SequenceChanges = append(diff.SequenceChanges, &SequenceDiff{
+				Action:       MetadataDiffActionAlter,
+				SchemaName:   schemaName,
+				SequenceName: seqName,
+				OldSequence:  oldSeq,
+				NewSequence:  newSeq,
+			})
 		}
 	}
+}
+
+func sequencesEqual(oldSeq, newSeq *storepb.SequenceMetadata) bool {
+	return oldSeq.DataType == newSeq.DataType &&
+		oldSeq.Start == newSeq.Start &&
+		oldSeq.MinValue == newSeq.MinValue &&
+		oldSeq.MaxValue == newSeq.MaxValue &&
+		oldSeq.Increment == newSeq.Increment &&
+		oldSeq.Cycle == newSeq.Cycle &&
+		oldSeq.CacheSize == newSeq.CacheSize &&
+		oldSeq.OwnerTable == newSeq.OwnerTable &&
+		oldSeq.OwnerColumn == newSeq.OwnerColumn &&
+		oldSeq.Comment == newSeq.Comment
 }
 
 // compareEnumTypes compares enum types between two schemas.
