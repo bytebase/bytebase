@@ -320,7 +320,9 @@ export function DataClassificationPage() {
                   {t("common.cancel")}
                 </Button>
                 <Button
-                  disabled={(!editorDirty && !emptyConfig) || !hasClassificationFeature}
+                  disabled={
+                    (!editorDirty && !emptyConfig) || !hasClassificationFeature
+                  }
                   onClick={onSave}
                 >
                   {t("common.save")}

@@ -28,22 +28,28 @@ export function SaveSheetModal() {
 
   const needShowModal = (tab: SQLEditorTab) => !tab.worksheet;
 
-  const doSaveSheet = async (tab?: SQLEditorTab, tabTitle?: string) => {
+  const doSaveSheet = async (
+    tab?: SQLEditorTab,
+    tabTitle?: string,
+    tabFolder?: string
+  ) => {
     const effectiveTab = tab ?? rawTab;
     if (!effectiveTab) {
       setOpen(false);
       return;
     }
-    // Use the passed title (silent path) or the current state title (modal path)
+    // Silent path passes title + folder explicitly because React state setters
+    // are async — reading state here would observe the prior modal's values.
     const effectiveTitle = tabTitle ?? title;
     if (effectiveTitle === "") {
       return;
     }
+    const effectiveFolder = tabFolder ?? folder;
 
     editorWorksheetStore.abortAutoSave();
 
     const { worksheet, connection, statement, id: tabId } = effectiveTab;
-    const folders = sheetContext.getFoldersForWorksheet(folder);
+    const folders = sheetContext.getFoldersForWorksheet(effectiveFolder);
 
     const sheetId = extractWorksheetID(worksheet ?? "");
     if (sheetId !== String(UNKNOWN_ID)) {
@@ -70,19 +76,25 @@ export function SaveSheetModal() {
 
   useSQLEditorEvent("save-sheet", ({ tab, editTitle }) => {
     setTitle(tab.title);
-    setFolder("");
     setRawTab(tab);
 
-    if (needShowModal(tab) || editTitle) {
-      if (tab.worksheet) {
-        const worksheet = worksheetStore.getWorksheetByName(tab.worksheet);
-        if (worksheet) {
-          setFolder(sheetContext.getPwdForWorksheet(worksheet));
-        }
+    // Compute the folder synchronously: for an already-saved worksheet, use
+    // its current pwd; otherwise reset. We then both reflect this in state
+    // (for the modal-open path) AND pass it explicitly into doSaveSheet
+    // (for the silent path) — bypassing React's async setState batching.
+    let nextFolder = "";
+    if (tab.worksheet) {
+      const worksheet = worksheetStore.getWorksheetByName(tab.worksheet);
+      if (worksheet) {
+        nextFolder = sheetContext.getPwdForWorksheet(worksheet);
       }
+    }
+    setFolder(nextFolder);
+
+    if (needShowModal(tab) || editTitle) {
       setOpen(true);
     } else {
-      void doSaveSheet(tab, tab.title);
+      void doSaveSheet(tab, tab.title, nextFolder);
     }
   });
 
