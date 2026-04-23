@@ -143,6 +143,11 @@ const extractClassExpression = (source, startIndex) => {
   return { start, end: source.length };
 };
 
+const isRawZToken = (zMatch) =>
+  zMatch[0] === "z-auto" ||
+  zMatch[2] !== undefined ||
+  (zMatch[1] !== undefined && Number.isFinite(Number(zMatch[1])));
+
 const scanClassExpressions = (source, rel, lines) => {
   const violations = [];
   const lineStarts = buildLineStarts(source);
@@ -158,12 +163,15 @@ const scanClassExpressions = (source, rel, lines) => {
     const block = source.slice(expr.start, expr.end);
     const fixedMatch = block.match(/\bfixed\b/);
     const absoluteMatch = block.match(/\babsolute\b/);
-    const zMatches = [...block.matchAll(/\bz-(\d+)\b|\bz-\[([^\]]+)\]/g)];
+    const zMatches = [...block.matchAll(/\bz-auto\b|\bz-(\d+)\b|\bz-\[([^\]]+)\]/g)];
     if (zMatches.length === 0 || (!fixedMatch && !absoluteMatch)) {
       continue;
     }
 
     const isAbsoluteGlobal = zMatches.some((zMatch) => {
+      if (zMatch[0] === "z-auto") {
+        return true;
+      }
       if (zMatch[2] !== undefined) {
         return true;
       }
@@ -178,7 +186,7 @@ const scanClassExpressions = (source, rel, lines) => {
       ? "feature-owned fixed overlay uses raw z-index"
       : "feature-owned absolute overlay uses high raw z-index";
     const tokenMatch = fixedMatch ?? absoluteMatch ?? zMatches.find((zMatch) => {
-      if (zMatch[2] !== undefined) {
+      if (isRawZToken(zMatch)) {
         return true;
       }
       const value = Number(zMatch[1]);
