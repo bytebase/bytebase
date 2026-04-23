@@ -1,5 +1,10 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { WebhookType } from "../proto-es/v1/common_pb";
+
+vi.mock("@/plugins/i18n", () => ({
+  t: (key: string) => (key === "common.google-chat" ? "Google Chat" : key),
+}));
+
 import { projectWebhookV1TypeItemList } from "./projectWebhook";
 
 describe("projectWebhookV1TypeItemList", () => {
