@@ -25,6 +25,11 @@ import {
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import {
   Table,
@@ -197,29 +202,18 @@ function TestConnectionResultDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-white rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-x-2">
-            <div className="w-6 h-6 text-green-500">&#10003;</div>
-            <h3 className="text-lg font-medium">
-              {t("identity-provider.test-connection-success")}
-            </h3>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
+        <div className="flex items-center gap-x-2">
+          <div className="size-6 text-success">&#10003;</div>
+          <DialogTitle>
+            {t("identity-provider.test-connection-success")}
+          </DialogTitle>
         </div>
 
-        <div className="flex flex-col gap-y-4">
+        <div className="mt-4 flex flex-col gap-y-4">
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
@@ -284,8 +278,8 @@ function TestConnectionResultDialog({
         <div className="flex justify-end mt-4">
           <Button onClick={onClose}>{t("common.close")}</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

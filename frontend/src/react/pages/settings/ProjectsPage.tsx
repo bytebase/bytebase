@@ -17,6 +17,12 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { ProjectCreateDialog } from "@/react/components/header/ProjectCreateDialog";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -46,38 +52,6 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
-
-// ============================================================
-// Escape key stack for overlays
-// ============================================================
-
-// Track the topmost overlay's escape handler. Only active (enabled) overlays
-// participate. The ref ensures the latest callback is always invoked.
-const escapeStack: React.RefObject<(() => void) | null>[] = [];
-
-function useEscapeKey(onEscape: () => void, enabled = true) {
-  const callbackRef = useRef(onEscape);
-  callbackRef.current = onEscape;
-
-  useEffect(() => {
-    if (!enabled) return;
-    escapeStack.push(callbackRef);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === callbackRef
-      ) {
-        callbackRef.current?.();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.indexOf(callbackRef);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [enabled]);
-}
 
 // ============================================================
 // Pagination helpers
@@ -153,8 +127,6 @@ function ConfirmDialog({
   children?: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  const onClose = useCallback(() => onCancel(), [onCancel]);
-  useEscapeKey(onClose, open);
 
   if (!open) return null;
 
@@ -165,20 +137,14 @@ function ConfirmDialog({
       : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
-      <div
-        className={cn(
-          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
-          borderColor
-        )}
-      >
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-control-light mb-4">{description}</p>
-          {children}
-        </div>
-        <div className="flex justify-end gap-x-2 px-6 pb-6">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent className={cn("max-w-lg border-t-4", borderColor)}>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription className="mt-2">
+          {description}
+        </AlertDialogDescription>
+        {children && <div className="mt-4">{children}</div>}
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -192,8 +158,8 @@ function ConfirmDialog({
             {okText}
           </button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

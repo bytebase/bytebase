@@ -3,13 +3,7 @@ import { create, createRegistry, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import {
-  ChevronDown,
-  Download,
-  ExternalLink,
-  Maximize2,
-  X,
-} from "lucide-react";
+import { ChevronDown, Download, ExternalLink, Maximize2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { auditLogServiceClientConnect } from "@/connect";
@@ -23,6 +17,11 @@ import {
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -181,15 +180,6 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
     }
   }, [jsonString]);
 
-  useEffect(() => {
-    if (!showModal) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowModal(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [showModal]);
-
   return (
     <>
       <div className="group grow-0 w-full flex flex-row justify-start items-center gap-2">
@@ -206,36 +196,23 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
         </div>
       </div>
       {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50"
-          onClick={() => setShowModal(false)}
+        <Dialog
+          open
+          onOpenChange={(nextOpen) => !nextOpen && setShowModal(false)}
         >
-          <div
-            className="bg-background rounded-sm shadow-lg flex flex-col"
-            style={{
-              width: "calc(100vw - 12rem)",
-              height: "calc(100vh - 12rem)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <DialogContent className="flex h-[calc(100vh-12rem)] w-[calc(100vw-12rem)] max-w-none flex-col p-0">
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <h3 className="text-base font-medium">
+              <DialogTitle className="text-base font-medium">
                 {t("common.view-details")}
-              </h3>
-              <button
-                className="p-1 hover:bg-control-bg rounded-full"
-                onClick={() => setShowModal(false)}
-              >
-                <X className="size-4" />
-              </button>
+              </DialogTitle>
             </div>
             <div className="flex-1 overflow-auto p-4">
               <pre className="text-sm font-mono whitespace-pre-wrap break-all">
                 {formatted}
               </pre>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

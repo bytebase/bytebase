@@ -27,6 +27,12 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/react/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import {
   DropdownMenu,
@@ -154,17 +160,6 @@ function useClickOutside(
   }, [ref, active, onClose]);
 }
 
-function useEscapeKey(active: boolean, onClose: () => void) {
-  useEffect(() => {
-    if (!active) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [active, onClose]);
-}
-
 // ============================================================
 // ConfirmDialog
 // ============================================================
@@ -189,7 +184,6 @@ function ConfirmDialog({
   children?: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(open, onCancel);
 
   if (!open) return null;
 
@@ -200,20 +194,14 @@ function ConfirmDialog({
       : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
-      <div
-        className={cn(
-          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
-          borderColor
-        )}
-      >
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-control-light mb-4">{description}</p>
-          {children}
-        </div>
-        <div className="flex justify-end gap-x-2 px-6 pb-6">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent className={cn("max-w-lg border-t-4", borderColor)}>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription className="mt-2">
+          {description}
+        </AlertDialogDescription>
+        {children && <div className="mt-4">{children}</div>}
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -227,8 +215,8 @@ function ConfirmDialog({
             {okText}
           </button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
