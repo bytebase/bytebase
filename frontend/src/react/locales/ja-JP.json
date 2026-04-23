@@ -401,6 +401,7 @@
     "users": "ユーザー",
     "value": "値",
     "verify": "確認する",
+    "version": "バージョン",
     "view": "表示",
     "view-details": "詳細を表示",
     "warning": "警告する",
@@ -707,6 +708,9 @@
     "nullable": "null も可能",
     "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
+    "revision": {
+      "filename": "ファイル名"
+    },
     "row-count-est": "推定行数",
     "row-count-estimate": "推定行数",
     "schema": {
@@ -1363,6 +1367,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "データベースの変更",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -1729,6 +1734,7 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "リリースファイル",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",

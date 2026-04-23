@@ -401,6 +401,7 @@
     "users": "Users",
     "value": "Value",
     "verify": "Verify",
+    "version": "Version",
     "view": "View",
     "view-details": "View Details",
     "warning": "Warning",
@@ -707,6 +708,9 @@
     "nullable": "Nullable",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "revision": {
+      "filename": "Filename"
+    },
     "row-count-est": "Row count est.",
     "row-count-estimate": "Row count estimate",
     "schema": {
@@ -1363,6 +1367,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "Change database",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1729,6 +1734,7 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "Release File",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",

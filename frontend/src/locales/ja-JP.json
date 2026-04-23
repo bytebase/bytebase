@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "この操作は後で元に戻すことができます。",
       "cannot-undo": "この操作は元に戻すことができません。",
-      "sure-to-abandon": "本当に破棄しますか?",
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "デフォルト",
-    "abandon": "破棄",
     "access-denied": "アクセスが拒否されました",
     "access-expires": "アクセスは期限切れです",
     "action-required": "対応が必要",
@@ -219,7 +216,6 @@
     "all": "全て",
     "allow": "許可",
     "and": "と",
-    "apply-to-database": "データベースに適用",
     "approve": "承認する",
     "approved": "承認済み",
     "archive": "アーカイブ",

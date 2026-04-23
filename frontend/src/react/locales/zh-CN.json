@@ -401,6 +401,7 @@
     "users": "用户",
     "value": "值",
     "verify": "验证",
+    "version": "版本",
     "view": "查看",
     "view-details": "查看详情",
     "warning": "警告",
@@ -707,6 +708,9 @@
     "nullable": "可为空",
     "partition-tables": "分区表",
     "partitioned": "分区",
+    "revision": {
+      "filename": "文件名"
+    },
     "row-count-est": "估算行数",
     "row-count-estimate": "估计行数",
     "schema": {
@@ -1363,6 +1367,7 @@
       "waiting-role": "等待: {{role}}"
     },
     "title": {
+      "change-database": "变更数据库",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -1729,6 +1734,7 @@
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
+    "file": "发布包文件",
     "file-type": {
       "declarative": "声明式",
       "unspecified": "未指定",

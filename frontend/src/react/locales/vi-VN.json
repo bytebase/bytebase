@@ -401,6 +401,7 @@
     "users": "Người dùng",
     "value": "Giá trị",
     "verify": "Xác minh",
+    "version": "Phiên bản",
     "view": "Xem",
     "view-details": "Xem Chi tiết",
     "warning": "Cảnh báo",
@@ -707,6 +708,9 @@
     "nullable": "Có thể null",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
+    "revision": {
+      "filename": "Tên tệp"
+    },
     "row-count-est": "Ước tính số hàng",
     "row-count-estimate": "Ước tính số hàng",
     "schema": {
@@ -1363,6 +1367,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "Thay đổi cơ sở dữ liệu",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
     },
@@ -1729,6 +1734,7 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "Tệp phát hành",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",

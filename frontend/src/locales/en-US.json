@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "You can undo this action later.",
       "cannot-undo": "You cannot undo this action.",
-      "sure-to-abandon": "Are you sure to abandon?",
       "sure-to-delete": "Are you sure to delete?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "Default",
-    "abandon": "Abandon",
     "access-denied": "Access denied",
     "access-expires": "Access Expires",
     "action-required": "Action Required",
@@ -219,7 +216,6 @@
     "all": "All",
     "allow": "Allow",
     "and": "and",
-    "apply-to-database": "Apply to database",
     "approve": "Approve",
     "approved": "Approved",
     "archive": "Archive",

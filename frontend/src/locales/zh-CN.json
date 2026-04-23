@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "此操作可以撤销。",
       "cannot-undo": "此操作无法撤销。",
-      "sure-to-abandon": "确定要废弃吗？",
       "sure-to-delete": "确定要删除吗？"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "默认",
-    "abandon": "废弃",
     "access-denied": "拒绝访问",
     "access-expires": "访问到期",
     "action-required": "需要操作",
@@ -219,7 +216,6 @@
     "all": "全部",
     "allow": "允许",
     "and": "和",
-    "apply-to-database": "应用到数据库",
     "approve": "批准",
     "approved": "已批准",
     "archive": "归档",

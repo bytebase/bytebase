@@ -401,6 +401,7 @@
     "users": "Usuarios",
     "value": "Valor",
     "verify": "Verificar",
+    "version": "Versión",
     "view": "Ver",
     "view-details": "Ver Detalles",
     "warning": "Advertencia",
@@ -707,6 +708,9 @@
     "nullable": "Anulable",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
+    "revision": {
+      "filename": "Nombre del archivo"
+    },
     "row-count-est": "Conteo estimado de filas",
     "row-count-estimate": "Estimación de la cantidad de filas",
     "schema": {
@@ -1363,6 +1367,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "Modificar base de datos",
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
@@ -1729,6 +1734,7 @@
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "Archivo de lanzamiento",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",
