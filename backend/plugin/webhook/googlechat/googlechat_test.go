@@ -84,6 +84,22 @@ func TestBuildMessageRolloutFailed(t *testing.T) {
 	a.Contains(bodyText, "My Project")
 }
 
+func TestBuildMessageTitleOnlyOmitsEmptySection(t *testing.T) {
+	a := require.New(t)
+	msg := BuildMessage(webhook.Context{
+		Title: "Issue created",
+	})
+
+	card := msg.CardsV2[0].Card
+	a.NotNil(card.Header)
+	a.Equal("Issue created", card.Header.Title)
+	a.Empty(card.Sections)
+
+	body, err := marshal(msg)
+	a.NoError(err)
+	a.NotContains(string(body), `"sections"`)
+}
+
 func TestEscapeText(t *testing.T) {
 	a := require.New(t)
 	a.Equal("hello &amp; world", escapeText("hello & world"))
@@ -165,4 +181,38 @@ func TestPostMessageNon2xx(t *testing.T) {
 	a.Error(err)
 	a.Contains(err.Error(), "status code: 400")
 	a.Contains(err.Error(), "invalid payload")
+}
+
+func TestPostMessageNon2xxRedactsGoogleChatCredentials(t *testing.T) {
+	a := require.New(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "invalid payload", http.StatusBadRequest)
+	}))
+	defer server.Close()
+
+	err := postMessage(webhook.Context{
+		URL:   server.URL + "/v1/spaces/AAAA/messages?key=chat-key&token=chat-token&threadKey=thread-key",
+		Title: "Issue created",
+	})
+
+	a.Error(err)
+	a.NotContains(err.Error(), "chat-key")
+	a.NotContains(err.Error(), "chat-token")
+	a.Contains(err.Error(), "key=REDACTED")
+	a.Contains(err.Error(), "token=REDACTED")
+	a.Contains(err.Error(), "threadKey=thread-key")
+}
+
+func TestPostMessageNetworkErrorRedactsGoogleChatCredentials(t *testing.T) {
+	a := require.New(t)
+	err := postMessage(webhook.Context{
+		URL:   "http://127.0.0.1:1/v1/spaces/AAAA/messages?key=chat-key&token=chat-token",
+		Title: "Issue created",
+	})
+
+	a.Error(err)
+	a.NotContains(err.Error(), "chat-key")
+	a.NotContains(err.Error(), "chat-token")
+	a.Contains(err.Error(), "key=REDACTED")
+	a.Contains(err.Error(), "token=REDACTED")
 }

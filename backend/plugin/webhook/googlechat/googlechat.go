@@ -8,6 +8,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -131,15 +132,15 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 		})
 	}
 
+	card := Card{Header: header}
+	if len(widgets) > 0 {
+		card.Sections = []Section{{Widgets: widgets}}
+	}
+
 	return MessagePayload{
 		CardsV2: []CardV2{
 			{
-				Card: Card{
-					Header: header,
-					Sections: []Section{
-						{Widgets: widgets},
-					},
-				},
+				Card: card,
 			},
 		},
 	}
@@ -188,14 +189,15 @@ func levelEmoji(level webhook.Level) string {
 }
 
 func postMessage(context webhook.Context) error {
+	redactedURL := redactWebhookURL(context.URL)
 	post := BuildMessage(context)
 	body, err := marshal(post)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", context.URL)
+		return errors.Wrapf(err, "failed to marshal webhook POST request to %s", redactedURL)
 	}
 	req, err := http.NewRequest(http.MethodPost, context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct webhook POST request to %s", context.URL)
+		return errors.Errorf("failed to construct webhook POST request to %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -204,19 +206,52 @@ func postMessage(context webhook.Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to POST webhook to %s", context.URL)
+		return errors.Errorf("failed to POST webhook to %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
 	}
 	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read POST webhook response from %s", context.URL)
+		return errors.Errorf("failed to read POST webhook response from %s: %s", redactedURL, redactWebhookErrorMessage(err, context.URL, redactedURL))
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
+		return errors.Errorf("failed to POST webhook to %s, status code: %d, response body: %s", redactedURL, resp.StatusCode, b)
 	}
 
 	return nil
+}
+
+func redactWebhookErrorMessage(err error, rawURL, redactedURL string) string {
+	message := err.Error()
+	message = strings.ReplaceAll(message, rawURL, redactedURL)
+	u, parseErr := url.Parse(rawURL)
+	if parseErr != nil {
+		return message
+	}
+	query := u.Query()
+	for _, key := range []string{"key", "token"} {
+		for _, value := range query[key] {
+			if value != "" {
+				message = strings.ReplaceAll(message, value, "REDACTED")
+			}
+		}
+	}
+	return message
+}
+
+func redactWebhookURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	query := u.Query()
+	for _, key := range []string{"key", "token"} {
+		if _, ok := query[key]; ok {
+			query.Set(key, "REDACTED")
+		}
+	}
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 func marshal(post MessagePayload) ([]byte, error) {
