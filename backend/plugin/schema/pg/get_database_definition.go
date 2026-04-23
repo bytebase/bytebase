@@ -1214,12 +1214,16 @@ func writeRules(out io.Writer, _ string, _ string, rules []*storepb.RuleMetadata
 	return nil
 }
 
+// objectIDSeparator joins schema + object into a map/graph key. NUL cannot
+// legally appear in a PostgreSQL identifier, so this avoids ambiguity when
+// either half itself contains a dot (e.g. a table literally named "a.b").
+const objectIDSeparator = "\x00"
+
 func getSchemaNameFromID(id string) string {
-	parts := strings.Split(id, ".")
-	if len(parts) != 2 {
-		return ""
+	if schema, _, ok := strings.Cut(id, objectIDSeparator); ok {
+		return schema
 	}
-	return parts[0]
+	return ""
 }
 
 func writeColumnIdentityGeneration(out io.Writer, schema string, generationTypes storepb.ColumnMetadata_IdentityGeneration, sequence *storepb.SequenceMetadata) error {
@@ -1453,7 +1457,7 @@ func funcIdentity(f *storepb.FunctionMetadata) string {
 func getObjectID(schema string, object string) string {
 	var buf strings.Builder
 	_, _ = buf.WriteString(schema)
-	_, _ = buf.WriteString(".")
+	_, _ = buf.WriteString(objectIDSeparator)
 	_, _ = buf.WriteString(object)
 	return buf.String()
 }
@@ -1541,14 +1545,22 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 		return err
 	}
 
-	for i, column := range columns {
-		if i > 0 {
-			if _, err := io.WriteString(out, ","); err != nil {
-				return err
-			}
+	// first tracks whether we've written any element inside the parens yet so
+	// the leading comma on constraints is suppressed when there are no columns
+	// (e.g. tables that only carry CHECK constraints).
+	first := true
+	writeItemSep := func() error {
+		if first {
+			first = false
+			_, err := io.WriteString(out, "\n    ")
+			return err
 		}
+		_, err := io.WriteString(out, ",\n    ")
+		return err
+	}
 
-		if _, err := io.WriteString(out, "\n    "); err != nil {
+	for _, column := range columns {
+		if err := writeItemSep(); err != nil {
 			return err
 		}
 
@@ -1586,7 +1598,9 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	}
 
 	for _, check := range checks {
-		_, _ = io.WriteString(out, ",\n    ")
+		if err := writeItemSep(); err != nil {
+			return err
+		}
 		_, _ = io.WriteString(out, `CONSTRAINT "`)
 		_, _ = io.WriteString(out, check.Name)
 		_, _ = io.WriteString(out, `" CHECK `)
@@ -1594,7 +1608,9 @@ func writeCreateTable(out io.Writer, schema string, tableName string, columns []
 	}
 
 	for _, exclude := range excludes {
-		_, _ = io.WriteString(out, ",\n    ")
+		if err := writeItemSep(); err != nil {
+			return err
+		}
 		_, _ = io.WriteString(out, `CONSTRAINT "`)
 		_, _ = io.WriteString(out, exclude.Name)
 		_, _ = io.WriteString(out, `" `)
@@ -2017,7 +2033,7 @@ func writeIndexComment(out io.Writer, schema string, index *storepb.IndexMetadat
 		return err
 	}
 
-	_, err := io.WriteString(out, `';\n\n`)
+	_, err := io.WriteString(out, "';\n\n")
 	return err
 }
 
@@ -3138,26 +3154,31 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 		return err
 	}
 
-	// Write columns
-	for i, column := range table.Columns {
-		if i > 0 {
-			if _, err := io.WriteString(out, ","); err != nil {
-				return err
-			}
-		}
-
-		if _, err := io.WriteString(out, "\n    "); err != nil {
+	// first tracks whether any element has been written inside the parens so
+	// the separator on constraints is suppressed when there are no columns.
+	first := true
+	writeItemSep := func() error {
+		if first {
+			first = false
+			_, err := io.WriteString(out, "\n    ")
 			return err
 		}
+		_, err := io.WriteString(out, ",\n    ")
+		return err
+	}
 
-		// Use the extracted writeColumnSDL function
+	// Write columns
+	for _, column := range table.Columns {
+		if err := writeItemSep(); err != nil {
+			return err
+		}
 		if err := writeColumnSDL(out, column, table.Name, sequences); err != nil {
 			return err
 		}
 	}
 
 	// Write table constraints
-	if err := writeTableConstraintsSDL(out, table); err != nil {
+	if err := writeTableConstraintsSDL(out, table, writeItemSep); err != nil {
 		return err
 	}
 
@@ -3165,11 +3186,11 @@ func writeCreateTableSDL(out io.Writer, schemaName string, table *storepb.TableM
 	return err
 }
 
-func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error {
+func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata, writeSep func() error) error {
 	// Write primary key constraint
 	for _, index := range table.Indexes {
 		if index.Primary {
-			if _, err := io.WriteString(out, ",\n    "); err != nil {
+			if err := writeSep(); err != nil {
 				return err
 			}
 			if err := writePrimaryKeyConstraintSDL(out, index); err != nil {
@@ -3181,7 +3202,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 	// Write unique constraints
 	for _, index := range table.Indexes {
 		if index.Unique && !index.Primary && index.IsConstraint {
-			if _, err := io.WriteString(out, ",\n    "); err != nil {
+			if err := writeSep(); err != nil {
 				return err
 			}
 			if err := writeUniqueKeyConstraintSDL(out, index); err != nil {
@@ -3192,7 +3213,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 
 	// Write check constraints
 	for _, check := range table.CheckConstraints {
-		if _, err := io.WriteString(out, ",\n    "); err != nil {
+		if err := writeSep(); err != nil {
 			return err
 		}
 		if err := writeCheckConstraintSDL(out, check); err != nil {
@@ -3202,7 +3223,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 
 	// Write EXCLUDE constraints
 	for _, exclude := range table.ExcludeConstraints {
-		if _, err := io.WriteString(out, ",\n    "); err != nil {
+		if err := writeSep(); err != nil {
 			return err
 		}
 		if err := writeExcludeConstraintSDL(out, exclude); err != nil {
@@ -3212,7 +3233,7 @@ func writeTableConstraintsSDL(out io.Writer, table *storepb.TableMetadata) error
 
 	// Write foreign key constraints
 	for _, fk := range table.ForeignKeys {
-		if _, err := io.WriteString(out, ",\n    "); err != nil {
+		if err := writeSep(); err != nil {
 			return err
 		}
 		if err := writeForeignKeyConstraintSDL(out, fk); err != nil {
