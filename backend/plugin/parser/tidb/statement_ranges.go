@@ -77,6 +77,11 @@ func buildBytePositionMap(sql string) []lsp.Position {
 	return positions
 }
 
+// positionAt returns the LSP Position at a rune-aligned byte offset. Offsets
+// that land inside a multi-byte UTF-8 sequence silently return the zero
+// Position (because buildBytePositionMap only populates entries at rune
+// boundaries), so callers must pass boundaries produced by Split or other
+// rune-aware tokenizers. Out-of-bounds offsets return ok=false.
 func positionAt(positions []lsp.Position, byteOffset int) (lsp.Position, bool) {
 	if byteOffset < 0 || byteOffset >= len(positions) {
 		return lsp.Position{}, false
@@ -110,7 +115,11 @@ func leadingWhitespaceBytes(sql string, start, end int) int {
 // the last segment without a trailing delimiter it is 0. Custom DELIMITER
 // directives are not fully tracked here — the range will simply stop at the
 // start of the custom delimiter in that case, which is sufficient for cursor-
-// contained-in-range checks used by BYT-9157.
+// contained-in-range checks used by BYT-9157. UX consequence: a cursor placed
+// directly on the bytes of a custom delimiter (e.g. between the two '$' of
+// '$$') won't match any range, and the editor falls back to its out-of-range
+// behavior for Ctrl+Enter. Cursors inside the statement body — the common
+// case — are unaffected.
 func delimLenAt(sql string, byteEnd int) int {
 	if byteEnd < 0 || byteEnd >= len(sql) {
 		return 0
