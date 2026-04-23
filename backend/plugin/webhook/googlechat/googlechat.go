@@ -8,7 +8,6 @@ import (
 	"html"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -196,7 +195,7 @@ func postMessage(context webhook.Context) error {
 	}
 	req, err := http.NewRequest(http.MethodPost, context.URL, bytes.NewBuffer(body))
 	if err != nil {
-		return errors.Errorf("failed to construct Google Chat webhook POST request: %s", redactWebhookErrorMessage(err, context.URL))
+		return errors.New("failed to construct Google Chat webhook POST request")
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -205,37 +204,19 @@ func postMessage(context webhook.Context) error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Errorf("failed to POST Google Chat webhook: %s", redactWebhookErrorMessage(err, context.URL))
+		return errors.New("failed to POST Google Chat webhook")
 	}
 	defer resp.Body.Close()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Errorf("failed to read Google Chat webhook response: %s", redactWebhookErrorMessage(err, context.URL))
+		return errors.New("failed to read Google Chat webhook response")
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return errors.Errorf("failed to POST Google Chat webhook, status code: %d, response body: %s", resp.StatusCode, b)
 	}
 
 	return nil
-}
-
-func redactWebhookErrorMessage(err error, rawURL string) string {
-	message := err.Error()
-	message = strings.ReplaceAll(message, rawURL, "Google Chat webhook URL")
-	u, parseErr := url.Parse(rawURL)
-	if parseErr != nil {
-		return message
-	}
-	query := u.Query()
-	for _, key := range []string{"key", "token"} {
-		for _, value := range query[key] {
-			if value != "" {
-				message = strings.ReplaceAll(message, value, "REDACTED")
-			}
-		}
-	}
-	return message
 }
 
 func marshal(post MessagePayload) ([]byte, error) {
