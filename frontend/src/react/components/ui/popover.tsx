@@ -16,12 +16,14 @@ function PopoverContent({
   side = "bottom",
   align = "end",
   sideOffset = 4,
+  anchor,
   ref,
   ...props
 }: ComponentProps<typeof BasePopover.Popup> & {
   side?: ComponentProps<typeof BasePopover.Positioner>["side"];
   align?: ComponentProps<typeof BasePopover.Positioner>["align"];
   sideOffset?: ComponentProps<typeof BasePopover.Positioner>["sideOffset"];
+  anchor?: ComponentProps<typeof BasePopover.Positioner>["anchor"];
 }) {
   return (
     <BasePopover.Portal container={getLayerRoot("overlay")}>
@@ -29,6 +31,7 @@ function PopoverContent({
         side={side}
         align={align}
         sideOffset={sideOffset}
+        anchor={anchor}
         className={LAYER_SURFACE_CLASS}
       >
         <BasePopover.Popup

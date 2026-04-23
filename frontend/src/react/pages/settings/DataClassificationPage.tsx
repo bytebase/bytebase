@@ -1,21 +1,14 @@
 import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
-import { ChevronRight, Pencil, Trash2, Undo2, X } from "lucide-react";
-import {
-  type JSX,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Pencil, Trash2, Undo2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import classificationExample from "@/components/SensitiveData/classification-example.json";
+import { ClassificationTree } from "@/react/components/ClassificationTree";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
-import { SearchInput } from "@/react/components/ui/search-input";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -132,225 +125,6 @@ function MonacoJSONEditor({
   }, [readonly]);
 
   return <div ref={containerRef} className="w-full h-full" />;
-}
-
-// --- Classification tree ---
-
-interface TreeNode {
-  key: string;
-  label: string;
-  level?: number;
-  children: TreeNode[];
-}
-
-function sortClassification(a: { id: string }, b: { id: string }): number {
-  const id1s = a.id.split("-");
-  const id2s = b.id.split("-");
-  if (id1s.length !== id2s.length) return id1s.length - id2s.length;
-  for (let i = 0; i < id1s.length; i++) {
-    if (id1s[i] === id2s[i]) continue;
-    if (Number.isNaN(Number(id1s[i])) || Number.isNaN(Number(id2s[i]))) {
-      return id1s[i].localeCompare(id2s[i]);
-    }
-    return Number(id1s[i]) - Number(id2s[i]);
-  }
-  return 0;
-}
-
-interface ClassificationMap {
-  [key: string]: {
-    id: string;
-    label: string;
-    level?: number;
-    children: ClassificationMap;
-  };
-}
-
-function buildTreeData(
-  config: DataClassificationSetting_DataClassificationConfig
-): TreeNode[] {
-  const classifications = Object.values(config.classification).sort(
-    sortClassification
-  );
-  const map: ClassificationMap = {};
-  for (const c of classifications) {
-    const ids = c.id.split("-");
-    let tmp = map;
-    for (let i = 0; i < ids.length - 1; i++) {
-      const parentKey = ids.slice(0, i + 1).join("-");
-      if (!tmp[parentKey]) break;
-      tmp = tmp[parentKey].children;
-    }
-    tmp[c.id] = {
-      id: c.id,
-      label: c.title,
-      level: c.level,
-      children: {},
-    };
-  }
-
-  function toNodes(m: ClassificationMap): TreeNode[] {
-    return Object.values(m)
-      .sort(sortClassification)
-      .map((item) => ({
-        key: item.id,
-        label: `${item.id} ${item.label}`,
-        level: item.level,
-        children: toNodes(item.children),
-      }));
-  }
-  return toNodes(map);
-}
-
-const bgColorList = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
-
-function LevelBadge({
-  level,
-  config,
-}: {
-  level: number;
-  config: DataClassificationSetting_DataClassificationConfig;
-}) {
-  const levelObj = config.levels.find((l) => l.level === level);
-  if (!levelObj) return null;
-  const color = bgColorList[level - 1] ?? "bg-control-bg-hover";
-  return (
-    <span className={`ml-1 px-1 py-0.5 rounded-xs text-xs ${color}`}>
-      {levelObj.title}
-    </span>
-  );
-}
-
-function highlightText(text: string, keyword: string) {
-  if (!keyword) return text;
-  const lower = text.toLowerCase();
-  const kw = keyword.toLowerCase();
-  const parts: (string | JSX.Element)[] = [];
-  let cursor = 0;
-  let idx = lower.indexOf(kw, cursor);
-  while (idx !== -1) {
-    if (idx > cursor) parts.push(text.slice(cursor, idx));
-    parts.push(
-      <b key={idx} className="text-accent">
-        {text.slice(idx, idx + keyword.length)}
-      </b>
-    );
-    cursor = idx + keyword.length;
-    idx = lower.indexOf(kw, cursor);
-  }
-  if (cursor < text.length) parts.push(text.slice(cursor));
-  return <>{parts}</>;
-}
-
-function matchesSearch(node: TreeNode, keyword: string): boolean {
-  if (!keyword) return true;
-  const lower = keyword.toLowerCase();
-  if (node.label.toLowerCase().includes(lower)) return true;
-  return node.children.some((c) => matchesSearch(c, lower));
-}
-
-function ClassificationTreeNode({
-  node,
-  config,
-  searchText,
-  defaultExpanded,
-}: {
-  node: TreeNode;
-  config: DataClassificationSetting_DataClassificationConfig;
-  searchText: string;
-  defaultExpanded: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const hasChildren = node.children.length > 0;
-
-  // Auto-expand when searching
-  useEffect(() => {
-    if (searchText) setExpanded(true);
-    else setExpanded(defaultExpanded);
-  }, [searchText, defaultExpanded]);
-
-  const filteredChildren = useMemo(
-    () => node.children.filter((c) => matchesSearch(c, searchText)),
-    [node.children, searchText]
-  );
-
-  return (
-    <div>
-      <div
-        className="flex items-center gap-1 py-1 px-1 rounded-xs hover:bg-control-bg cursor-pointer select-none"
-        onClick={() => hasChildren && setExpanded(!expanded)}
-      >
-        {hasChildren ? (
-          <ChevronRight
-            className={`size-4 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`}
-          />
-        ) : (
-          <span className="w-4 shrink-0" />
-        )}
-        <span>{highlightText(node.label, searchText)}</span>
-        {node.level != null && node.level !== 0 && (
-          <LevelBadge level={node.level} config={config} />
-        )}
-      </div>
-      {expanded && hasChildren && (
-        <div className="ml-4">
-          {filteredChildren.map((child) => (
-            <ClassificationTreeNode
-              key={child.key}
-              node={child}
-              config={config}
-              searchText={searchText}
-              defaultExpanded={defaultExpanded}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ClassificationTree({
-  config,
-}: {
-  config: DataClassificationSetting_DataClassificationConfig;
-}) {
-  const { t } = useTranslation();
-  const [searchText, setSearchText] = useState("");
-  const treeData = useMemo(() => buildTreeData(config), [config]);
-
-  const filteredTree = useMemo(
-    () => treeData.filter((n) => matchesSearch(n, searchText)),
-    [treeData, searchText]
-  );
-
-  return (
-    <div className="flex flex-col gap-4 h-full">
-      <div>
-        <SearchInput
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder={t("schema-template.classification.search")}
-        />
-      </div>
-      <div>
-        {filteredTree.map((node) => (
-          <ClassificationTreeNode
-            key={node.key}
-            node={node}
-            config={config}
-            searchText={searchText}
-            defaultExpanded={true}
-          />
-        ))}
-      </div>
-    </div>
-  );
 }
 
 // --- Main page ---
@@ -546,7 +320,9 @@ export function DataClassificationPage() {
                   {t("common.cancel")}
                 </Button>
                 <Button
-                  disabled={!editorDirty || !hasClassificationFeature}
+                  disabled={
+                    (!editorDirty && !emptyConfig) || !hasClassificationFeature
+                  }
                   onClick={onSave}
                 >
                   {t("common.save")}

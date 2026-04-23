@@ -2444,6 +2444,8 @@
     "batch-query": {
       "batch": "Hàng loạt"
     },
+    "choose-folder": "Chọn hoặc tạo thư mục",
+    "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2483,6 +2485,8 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "save-sheet": "Lưu trang tính",
+    "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",

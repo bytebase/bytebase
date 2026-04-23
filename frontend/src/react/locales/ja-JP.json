@@ -2444,6 +2444,8 @@
     "batch-query": {
       "batch": "バッチ"
     },
+    "choose-folder": "フォルダを選択または作成",
+    "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "connect-to-a-database": "データベースに接続",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2483,6 +2485,8 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "save-sheet": "ワークシートの保存",
+    "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",

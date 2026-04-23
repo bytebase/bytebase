@@ -4,4 +4,5 @@ export * from "./tree";
 export * from "./queryHistory";
 export * from "./uiState";
 export * from "./webTerminal";
+export * from "./folder";
 export * from "./worksheet";

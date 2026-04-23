@@ -43,7 +43,7 @@
           quaternary
           size="tiny"
           :disabled="checkedWorksheets.length === 0 || loading"
-          @click="showReorgModal = true"
+          @click="() => { pendingMoveFolder = ''; showReorgModal = true; }"
         >
           <template #icon>
             <FolderInputIcon />
@@ -78,10 +78,14 @@
   <BBModal
     :show="showReorgModal"
     :title="$t('sheet.move-worksheets')"
-    @close="() => showReorgModal = false"
+    @close="() => { showReorgModal = false; pendingMoveFolder = ''; }"
   >
     <div class="flex flex-col gap-y-3 w-lg max-w-[calc(100vw-8rem)]">
-      <FolderForm ref="folderFormRef" :folder="''" />
+      <ReactPageMount
+        page="FolderForm"
+        :folder="pendingMoveFolder"
+        :onFolderChange="(val: string) => (pendingMoveFolder = val)"
+      />
       <div class="flex justify-end gap-x-2 mt-4">
         <NButton @click="showReorgModal = false">{{ $t("common.close") }}</NButton>
         <NButton
@@ -102,17 +106,18 @@ import { computed, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import type {
   SheetViewMode,
   WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
-import { useSheetContext } from "../../Sheet";
+import { useSheetContext, useSheetContextByView } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
 import { SheetTree } from "./SheetList";
-import FolderForm from "./SheetList/FolderForm.vue";
 
 const { filter, filterChanged, batchUpdateWorksheetFolders } =
   useSheetContext();
+const { getFoldersForWorksheet } = useSheetContextByView("my");
 const showDropdown = ref<boolean>(false);
 const mineSheetTreeRef = ref<InstanceType<typeof SheetTree>>();
 
@@ -121,6 +126,7 @@ const checkedNodes = ref<WorksheetFolderNode[]>([]);
 const multiSelectMode = ref(false);
 const showReorgModal = ref(false);
 const loading = ref(false);
+const pendingMoveFolder = ref<string>("");
 const checkedWorksheets = computed(() => {
   const worksheets: string[] = [];
   for (const node of checkedNodes.value) {
@@ -130,7 +136,6 @@ const checkedWorksheets = computed(() => {
   }
   return worksheets;
 });
-const folderFormRef = ref<InstanceType<typeof FolderForm>>();
 
 watch(
   [() => multiSelectMode.value, () => filter.value.showMine],
@@ -207,7 +212,7 @@ const views = computed((): SheetViewMode[] => {
 const handleMoveWorksheets = async () => {
   loading.value = true;
   try {
-    const folders = folderFormRef.value?.folders ?? [];
+    const folders = getFoldersForWorksheet(pendingMoveFolder.value);
     await batchUpdateWorksheetFolders(
       checkedWorksheets.value.map((worksheet) => ({
         name: worksheet,
@@ -216,6 +221,7 @@ const handleMoveWorksheets = async () => {
     );
     showReorgModal.value = false;
     multiSelectMode.value = false;
+    pendingMoveFolder.value = "";
   } finally {
     loading.value = false;
   }

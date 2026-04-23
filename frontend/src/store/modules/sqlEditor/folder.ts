@@ -1,17 +1,16 @@
 import { sortBy } from "lodash-es";
-import { type ComputedRef, computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+import { useCurrentUserV1, useSQLEditorStore } from "@/store";
 import {
   storageKeySqlEditorWorksheetFolder,
   useDynamicLocalStorage,
 } from "@/utils";
-import type { SheetViewMode } from "./types";
+import type { SheetViewMode } from "@/views/sql-editor/Sheet/types";
 
-export const useFolderByView = (
-  viewMode: SheetViewMode,
-  project: ComputedRef<string>
-) => {
+export const buildFolderContext = (viewMode: SheetViewMode) => {
   const me = useCurrentUserV1();
+  const { project } = storeToRefs(useSQLEditorStore());
 
   const rootPath = computed(() => `/${viewMode}`);
   const localCacheKey = computed(() =>
@@ -25,9 +24,6 @@ export const useFolderByView = (
 
   const folders = computed(() => sortBy([...localCache.value]));
 
-  // A valid folder path should be like "/{root}/xx"
-  // It must not end with "/", for example, "xxx/" is not valid
-  // It must starts with "/{root}", like "/mine/xxx"
   const ensureFolderPath = (path: string) => {
     let p = path
       .split("/")
@@ -62,15 +58,9 @@ export const useFolderByView = (
     dig: boolean;
   }) => {
     const parentPrefix = `${parent}/`;
-    return (
-      // ensure not self
-      path !== parentPrefix &&
-        // ensure is subfolder
-        path.startsWith(parentPrefix) &&
-        dig
-        ? true
-        : !path.replace(parentPrefix, "").includes("/")
-    );
+    return path !== parentPrefix && path.startsWith(parentPrefix) && dig
+      ? true
+      : !path.replace(parentPrefix, "").includes("/");
   };
 
   const removeFolder = (path: string) => {
@@ -88,7 +78,6 @@ export const useFolderByView = (
   const moveFolder = (from: string, to: string) => {
     const fromPath = ensureFolderPath(from);
     const toPath = ensureFolderPath(to);
-
     const newSet = new Set<string>();
     for (const path of localCache.value.values()) {
       if (
@@ -130,3 +119,5 @@ export const useFolderByView = (
     isSubFolder,
   };
 };
+
+export type FolderContext = ReturnType<typeof buildFolderContext>;

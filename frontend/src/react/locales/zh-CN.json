@@ -2444,6 +2444,8 @@
     "batch-query": {
       "batch": "批量"
     },
+    "choose-folder": "选择或创建文件夹",
+    "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
     "connect-to-a-database": "连接数据库",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
@@ -2483,6 +2485,8 @@
     },
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
+    "save-sheet": "保存工作表",
+    "save-sheet-input-placeholder": "请输入工作表名称",
     "search-history-by-statement": "搜索 SQL 语句",
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
