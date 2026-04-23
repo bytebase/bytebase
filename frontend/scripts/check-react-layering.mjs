@@ -38,6 +38,8 @@ const LOCAL_PAINT_ORDER_EXCEPTIONS = new Map([
   ],
 ]);
 
+const CLASS_ATTR_PATTERN = /\bclass(Name)?\s*=\s*/g;
+
 const findFiles = (dir) => {
   const files = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -55,15 +57,142 @@ const isApprovedPath = (path) =>
   APPROVED_FILES.has(path) ||
   APPROVED_PREFIXES.some((prefix) => path.startsWith(prefix));
 
-const hasRawZClass = (line) =>
-  /\bz-\d+\b/.test(line) || /\bz-\[[^\]]+\]/.test(line);
-
-const hasGlobalFixedZ = (line) => /\bfixed\b/.test(line) && hasRawZClass(line);
-
-const hasHighAbsoluteZ = (line) =>
-  /\babsolute\b/.test(line) && /\b(?:z-4\d|z-5\d|z-\[[^\]]+\])\b/.test(line);
-
 const hasInlineZIndex = (line) => /\bzIndex\s*:/.test(line);
+
+const buildLineStarts = (source) => {
+  const lineStarts = [0];
+  for (let index = source.indexOf("\n"); index !== -1; index = source.indexOf("\n", index + 1)) {
+    lineStarts.push(index + 1);
+  }
+  return lineStarts;
+};
+
+const getLineNumber = (lineStarts, index) => {
+  let low = 0;
+  let high = lineStarts.length - 1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (lineStarts[mid] <= index) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return high + 1;
+};
+
+const extractClassExpression = (source, startIndex) => {
+  let index = startIndex;
+  while (index < source.length && /\s/.test(source[index])) {
+    index++;
+  }
+  if (index >= source.length) {
+    return null;
+  }
+
+  const start = index;
+  const startChar = source[index];
+
+  const scanQuoted = (quote) => {
+    let current = index + 1;
+    let escaped = false;
+    while (current < source.length) {
+      const ch = source[current];
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === quote) {
+        return { start, end: current + 1 };
+      }
+      current++;
+    }
+    return { start, end: source.length };
+  };
+
+  if (startChar === "\"" || startChar === "'" || startChar === "`") {
+    return scanQuoted(startChar);
+  }
+
+  if (startChar !== "{") {
+    let current = index;
+    while (current < source.length && !/[\s>]/.test(source[current])) {
+      current++;
+    }
+    return { start, end: current };
+  }
+
+  let current = index + 1;
+  let depth = 1;
+  let stringQuote = null;
+  let escaped = false;
+  while (current < source.length) {
+    const ch = source[current];
+    if (stringQuote !== null) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === stringQuote) {
+        stringQuote = null;
+      }
+      current++;
+      continue;
+    }
+
+    if (ch === "\"" || ch === "'" || ch === "`") {
+      stringQuote = ch;
+      current++;
+      continue;
+    }
+    if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        return { start, end: current + 1 };
+      }
+    }
+    current++;
+  }
+  return { start, end: source.length };
+};
+
+const scanClassExpressions = (source, rel, lines) => {
+  const violations = [];
+  const lineStarts = buildLineStarts(source);
+
+  CLASS_ATTR_PATTERN.lastIndex = 0;
+  let match;
+  while ((match = CLASS_ATTR_PATTERN.exec(source))) {
+    const expr = extractClassExpression(source, match.index + match[0].length);
+    if (!expr) {
+      continue;
+    }
+
+    const block = source.slice(expr.start, expr.end);
+    const fixedMatch = block.match(/\bfixed\b/);
+    const absoluteMatch = block.match(/\babsolute\b/);
+    const zMatch = block.match(/\bz-\d+\b|\bz-\[[^\]]+\]/);
+    if (!zMatch || (!fixedMatch && !absoluteMatch)) {
+      continue;
+    }
+
+    const reason = fixedMatch
+      ? "feature-owned fixed overlay uses raw z-index"
+      : "feature-owned absolute overlay uses high raw z-index";
+    const tokenIndex = expr.start + (fixedMatch?.index ?? absoluteMatch?.index ?? zMatch.index ?? 0);
+    const lineNumber = getLineNumber(lineStarts, tokenIndex);
+    violations.push({
+      rel,
+      lineNumber,
+      reason,
+      line: lines[lineNumber - 1] ?? "",
+    });
+  }
+
+  return violations;
+};
 
 const scanFile = (file) => {
   const rel = relative(ROOT, file);
@@ -77,25 +206,9 @@ const scanFile = (file) => {
   const source = readFileSync(file, "utf-8");
   const violations = [];
   const lines = source.split("\n");
-
+  violations.push(...scanClassExpressions(source, rel, lines));
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
-    if (hasGlobalFixedZ(line)) {
-      violations.push({
-        rel,
-        lineNumber,
-        reason: "feature-owned fixed overlay uses raw z-index",
-        line,
-      });
-    }
-    if (hasHighAbsoluteZ(line)) {
-      violations.push({
-        rel,
-        lineNumber,
-        reason: "feature-owned absolute overlay uses high raw z-index",
-        line,
-      });
-    }
     if (hasInlineZIndex(line)) {
       violations.push({
         rel,
