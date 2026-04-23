@@ -417,6 +417,8 @@ const (
 	WebhookType_WECOM WebhookType = 6
 	// Lark integration.
 	WebhookType_LARK WebhookType = 7
+	// Google Chat integration.
+	WebhookType_GOOGLE_CHAT WebhookType = 8
 )
 
 // Enum value maps for WebhookType.
@@ -430,6 +432,7 @@ var (
 		5: "FEISHU",
 		6: "WECOM",
 		7: "LARK",
+		8: "GOOGLE_CHAT",
 	}
 	WebhookType_value = map[string]int32{
 		"WEBHOOK_TYPE_UNSPECIFIED": 0,
@@ -440,6 +443,7 @@ var (
 		"FEISHU":                   5,
 		"WECOM":                    6,
 		"LARK":                     7,
+		"GOOGLE_CHAT":              8,
 	}
 )
 
@@ -908,7 +912,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
 	"\bMODERATE\x10\x02\x12\b\n" +
-	"\x04HIGH\x10\x03*}\n" +
+	"\x04HIGH\x10\x03*\x8e\x01\n" +
 	"\vWebhookType\x12\x1c\n" +
 	"\x18WEBHOOK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05SLACK\x10\x01\x12\v\n" +
@@ -918,7 +922,8 @@ const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\a*\xeb\x05\n" +
+	"\x04LARK\x10\a\x12\x0f\n" +
+	"\vGOOGLE_CHAT\x10\b*\xeb\x05\n" +
 	"\rStatementType\x12\x1e\n" +
 	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +

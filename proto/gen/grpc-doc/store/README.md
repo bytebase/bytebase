@@ -645,6 +645,7 @@ VCSType represents the type of version control system.
 | FEISHU | 5 | Feishu integration. |
 | WECOM | 6 | WeCom (WeChat Work) integration. |
 | LARK | 7 | Lark integration. |
+| GOOGLE_CHAT | 8 | Google Chat integration. |
 
 
  

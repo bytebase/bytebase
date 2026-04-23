@@ -134,6 +134,8 @@ enum WebhookType {
   WECOM = 6;
   // Lark integration.
   LARK = 7;
+  // Google Chat integration.
+  GOOGLE_CHAT = 8;
 }
 
 // StatementType represents the type of SQL statement.
