@@ -29481,6 +29481,7 @@ components:
         - FEISHU
         - WECOM
         - LARK
+        - GOOGLE_CHAT
       description: Webhook integration type.
     bytebase.v1.WorkloadIdentity:
       type: object
