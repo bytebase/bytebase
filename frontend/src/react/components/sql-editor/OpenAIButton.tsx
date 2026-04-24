@@ -112,8 +112,8 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
             <Button
               variant="outline"
               size={size}
-              disabled
-              className={buttonClass}
+              aria-disabled
+              className={cn(buttonClass, "opacity-50 cursor-default")}
               aria-label={t("plugin.ai.ai-assistant")}
             >
               {icon}
