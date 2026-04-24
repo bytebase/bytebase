@@ -202,7 +202,8 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 
 	// Use omni parser to collect grammar candidates instead of C3.
-	candidates := pgparser.Collect(c.sql, c.cursorByteOffset)
+	completionOffset := c.cursorByteOffset
+	candidates := pgparser.Collect(c.sql, completionOffset)
 
 	// If Collect returned no rule candidates and the cursor is at the end of a
 	// partial identifier token (prefix), retry Collect at the start of that
@@ -211,16 +212,19 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	// rule to suggest.
 	if len(candidates.Rules) == 0 {
 		if prefixTok, ok := c.prefixToken(); ok {
-			candidates = pgparser.Collect(c.sql, prefixTok.Loc)
+			completionOffset = prefixTok.Loc
+			candidates = pgparser.Collect(c.sql, completionOffset)
 		}
 	}
 
 	for _, rc := range candidates.Rules {
 		if rc.Rule == "columnref" {
+			completionContext := pgparser.CollectCompletion(c.sql, completionOffset)
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
 			c.takeReferencesSnapshot()
+			c.collectCompletionScopeReferences(completionContext)
 			break
 		}
 	}
@@ -1067,6 +1071,155 @@ func (c *Completer) takeReferencesSnapshot() {
 	for _, references := range c.referencesStack {
 		c.references = append(c.references, references...)
 	}
+}
+
+func (c *Completer) collectCompletionScopeReferences(completionContext *pgparser.CompletionContext) {
+	if completionContext == nil || completionContext.Scope == nil {
+		return
+	}
+	for _, reference := range completionContext.Scope.References {
+		tableReference := c.convertCompletionScopeReference(reference)
+		if tableReference != nil {
+			c.appendReferenceIfMissing(tableReference)
+		}
+	}
+}
+
+func (c *Completer) appendReferenceIfMissing(reference base.TableReference) {
+	key := tableReferenceKey(reference)
+	for _, existing := range c.references {
+		if tableReferenceKey(existing) == key {
+			return
+		}
+	}
+	c.references = append(c.references, reference)
+}
+
+func tableReferenceKey(reference base.TableReference) string {
+	switch reference := reference.(type) {
+	case *base.PhysicalTableReference:
+		return strings.Join([]string{"physical", reference.Database, reference.Schema, reference.Table, reference.Alias}, "\x00")
+	case *base.VirtualTableReference:
+		return strings.Join([]string{"virtual", reference.Table}, "\x00")
+	default:
+		return fmt.Sprintf("%T", reference)
+	}
+}
+
+func (c *Completer) convertCompletionScopeReference(reference pgparser.RangeReference) base.TableReference {
+	switch reference.Kind {
+	case pgparser.RangeReferenceRelation:
+		if len(reference.AliasColumns) > 0 {
+			return &base.VirtualTableReference{
+				Table:   completionReferenceName(reference),
+				Columns: reference.AliasColumns,
+			}
+		}
+		return &base.PhysicalTableReference{
+			Database: reference.Catalog,
+			Schema:   reference.Schema,
+			Table:    reference.Name,
+			Alias:    reference.Alias,
+		}
+	case pgparser.RangeReferenceCTE:
+		return c.convertCompletionCTEReference(reference)
+	case pgparser.RangeReferenceSubquery:
+		return c.convertCompletionSubqueryReference(reference)
+	case pgparser.RangeReferenceFunction:
+		if reference.Alias == "" || len(reference.AliasColumns) == 0 {
+			return nil
+		}
+		return &base.VirtualTableReference{
+			Table:   reference.Alias,
+			Columns: reference.AliasColumns,
+		}
+	case pgparser.RangeReferenceJoinAlias:
+		if reference.Alias == "" {
+			return nil
+		}
+		return &base.VirtualTableReference{
+			Table:   reference.Alias,
+			Columns: reference.AliasColumns,
+		}
+	default:
+		return nil
+	}
+}
+
+func completionReferenceName(reference pgparser.RangeReference) string {
+	if reference.Alias != "" {
+		return reference.Alias
+	}
+	return reference.Name
+}
+
+func (c *Completer) convertCompletionCTEReference(reference pgparser.RangeReference) base.TableReference {
+	virtualReference := &base.VirtualTableReference{
+		Table:   completionReferenceName(reference),
+		Columns: reference.AliasColumns,
+	}
+	if len(virtualReference.Columns) > 0 {
+		return virtualReference
+	}
+	if reference.BodyLoc.Start < 0 || reference.BodyLoc.End <= reference.BodyLoc.Start || reference.BodyLoc.End > len(c.sql) {
+		return virtualReference
+	}
+	queryText := c.sql[reference.BodyLoc.Start:reference.BodyLoc.End]
+	span, err := GetQuerySpan(
+		c.ctx,
+		base.GetQuerySpanContext{
+			InstanceID:              c.instanceID,
+			GetDatabaseMetadataFunc: c.getMetadata,
+			ListDatabaseNamesFunc:   c.listDatabaseNames,
+		},
+		base.Statement{Text: queryText},
+		c.defaultDatabase,
+		"",
+		false,
+	)
+	if err != nil || span.NotFoundError != nil {
+		return virtualReference
+	}
+	for _, column := range span.Results {
+		virtualReference.Columns = append(virtualReference.Columns, column.Name)
+	}
+	return virtualReference
+}
+
+func (c *Completer) convertCompletionSubqueryReference(reference pgparser.RangeReference) base.TableReference {
+	if reference.Alias == "" {
+		return nil
+	}
+	virtualReference := &base.VirtualTableReference{
+		Table:   reference.Alias,
+		Columns: reference.AliasColumns,
+	}
+	if len(virtualReference.Columns) > 0 {
+		return virtualReference
+	}
+	if reference.BodyLoc.Start < 0 || reference.BodyLoc.End <= reference.BodyLoc.Start || reference.BodyLoc.End > len(c.sql) {
+		return virtualReference
+	}
+	subqueryText := c.sql[reference.BodyLoc.Start:reference.BodyLoc.End]
+	span, err := GetQuerySpan(
+		c.ctx,
+		base.GetQuerySpanContext{
+			InstanceID:              c.instanceID,
+			GetDatabaseMetadataFunc: c.getMetadata,
+			ListDatabaseNamesFunc:   c.listDatabaseNames,
+		},
+		base.Statement{Text: fmt.Sprintf("SELECT * FROM (%s) AS %s;", subqueryText, reference.Alias)},
+		c.defaultDatabase,
+		"",
+		false,
+	)
+	if err != nil || span.NotFoundError != nil {
+		return virtualReference
+	}
+	for _, column := range span.Results {
+		virtualReference.Columns = append(virtualReference.Columns, column.Name)
+	}
+	return virtualReference
 }
 
 func (c *Completer) collectRemainingTableReferences() {
