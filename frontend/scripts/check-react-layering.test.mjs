@@ -172,6 +172,54 @@ export function FeatureOverlay() {
     );
   });
 
+  test("flags aliased createPortal calls", () => {
+    const violations = scanSource(
+      [
+        'import { createPortal as portal } from "react-dom";',
+        "",
+        "export function FeatureOverlay() {",
+        "  return portal(<div />, document.body);",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 4,
+          reason: "feature-owned portal targets document.body directly",
+        }),
+      ])
+    );
+  });
+
+  test("flags createPortal targets from destructured body aliases", () => {
+    const violations = scanSource(
+      [
+        'import { createPortal } from "react-dom";',
+        "",
+        "const { body } = document;",
+        "",
+        "export function FeatureOverlay() {",
+        "  return createPortal(<div />, body);",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 6,
+          reason: "feature-owned portal targets document.body directly",
+        }),
+      ])
+    );
+  });
+
   test("allows semantic layer owners to manage raw layers", () => {
     const violations = scanSource(
       `

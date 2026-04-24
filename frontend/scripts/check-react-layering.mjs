@@ -6,9 +6,10 @@
 //
 // This is a conservative policy scanner, not a complete TypeScript evaluator.
 // It resolves direct string literals, unique static identifiers, simple static
-// string concatenations, and simple document/document.body aliases. Complex,
-// dynamic, imported, or shadowed values may be unresolved; passing this check
-// does not permit bypassing the policy.
+// string concatenations, named createPortal imports, and simple
+// document/document.body aliases. Complex, dynamic, imported, or shadowed
+// values may be unresolved; passing this check does not permit bypassing the
+// policy.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
@@ -481,43 +482,102 @@ const isDocumentBodyExpression = (
   );
 };
 
-const isCreatePortalCall = (node) => {
+const collectCreatePortalAliases = (sourceFile) => {
+  const aliases = new Set(["createPortal"]);
+
+  const visit = (node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text === "react-dom" &&
+      node.importClause?.namedBindings &&
+      ts.isNamedImports(node.importClause.namedBindings)
+    ) {
+      node.importClause.namedBindings.elements.forEach((element) => {
+        const importedName = element.propertyName?.text ?? element.name.text;
+        if (importedName === "createPortal") {
+          aliases.add(element.name.text);
+        }
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return aliases;
+};
+
+const isCreatePortalCall = (node, createPortalAliases) => {
   const expression = skipExpressionWrappers(node.expression);
   return (
-    (ts.isIdentifier(expression) && expression.text === "createPortal") ||
+    (ts.isIdentifier(expression) && createPortalAliases.has(expression.text)) ||
     (ts.isPropertyAccessExpression(expression) &&
       expression.name.text === "createPortal")
   );
 };
 
+const recordDocumentAliases = (
+  declaration,
+  documentAliases,
+  documentBodyAliases
+) => {
+  if (!declaration.initializer) {
+    return;
+  }
+
+  if (ts.isIdentifier(declaration.name)) {
+    if (isDocumentExpression(declaration.initializer, documentAliases)) {
+      documentAliases.add(declaration.name.text);
+    }
+    if (
+      isDocumentBodyExpression(
+        declaration.initializer,
+        documentAliases,
+        documentBodyAliases
+      )
+    ) {
+      documentBodyAliases.add(declaration.name.text);
+    }
+    return;
+  }
+
+  if (
+    !ts.isObjectBindingPattern(declaration.name) ||
+    !isDocumentExpression(declaration.initializer, documentAliases)
+  ) {
+    return;
+  }
+
+  declaration.name.elements.forEach((element) => {
+    if (!ts.isIdentifier(element.name)) {
+      return;
+    }
+    const propertyName = element.propertyName;
+    const sourceName =
+      propertyName && ts.isIdentifier(propertyName)
+        ? propertyName.text
+        : element.name.text;
+    if (sourceName === "body") {
+      documentBodyAliases.add(element.name.text);
+    }
+  });
+};
+
 const scanPortalTargets = (sourceFile, rel, lines) => {
   const violations = [];
+  const createPortalAliases = collectCreatePortalAliases(sourceFile);
   const documentAliases = new Set();
   const documentBodyAliases = new Set();
 
   const visit = (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer
-    ) {
-      if (isDocumentExpression(node.initializer, documentAliases)) {
-        documentAliases.add(node.name.text);
-      }
-      if (
-        isDocumentBodyExpression(
-          node.initializer,
-          documentAliases,
-          documentBodyAliases
-        )
-      ) {
-        documentBodyAliases.add(node.name.text);
-      }
+    if (ts.isVariableDeclaration(node)) {
+      recordDocumentAliases(node, documentAliases, documentBodyAliases);
     }
 
     if (
       ts.isCallExpression(node) &&
-      isCreatePortalCall(node) &&
+      isCreatePortalCall(node, createPortalAliases) &&
       node.arguments[1] &&
       isDocumentBodyExpression(
         node.arguments[1],
