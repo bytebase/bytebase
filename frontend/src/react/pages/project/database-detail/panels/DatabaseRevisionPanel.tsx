@@ -1,14 +1,7 @@
 import { create } from "@bufbuild/protobuf";
-import { NConfigProvider } from "naive-ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createApp, h, reactive } from "vue";
-import { themeOverrides } from "@/../naive-ui.config";
-import BBOverlayStack from "@/components/misc/OverlayStackManager.vue";
-import CreateRevisionDrawer from "@/components/Revision/CreateRevisionDrawer.vue";
 import { revisionServiceClientConnect } from "@/connect";
-import i18n from "@/plugins/i18n";
-import NaiveUI from "@/plugins/naive-ui";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -18,90 +11,18 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { router } from "@/router";
-import { pinia, useRevisionStore } from "@/store";
+import { useRevisionStore } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { DatabaseRevisionTable } from "../revision/DatabaseRevisionTable";
-
-function VueCreateRevisionDrawerMount({
-  databaseName,
-  open,
-  onCreated,
-  onOpenChange,
-}: {
-  databaseName: string;
-  open: boolean;
-  onCreated: (revisions: Revision[]) => void;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const bridgeStateRef = useRef(
-    reactive({
-      databaseName,
-      onCreated,
-      onOpenChange,
-      open,
-    })
-  );
-
-  useEffect(() => {
-    const bridgeState = bridgeStateRef.current;
-    bridgeState.databaseName = databaseName;
-    bridgeState.onCreated = onCreated;
-    bridgeState.onOpenChange = onOpenChange;
-    bridgeState.open = open;
-  }, [databaseName, onCreated, onOpenChange, open]);
-
-  useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const bridgeState = bridgeStateRef.current;
-
-    const app = createApp({
-      render() {
-        return h(
-          NConfigProvider as never,
-          { themeOverrides: themeOverrides.value },
-          {
-            default: () =>
-              h(
-                BBOverlayStack as never,
-                {},
-                {
-                  default: () =>
-                    h(CreateRevisionDrawer as never, {
-                      database: bridgeState.databaseName,
-                      show: bridgeState.open,
-                      "onUpdate:show": bridgeState.onOpenChange,
-                      onCreated: bridgeState.onCreated,
-                    }),
-                }
-              ),
-          }
-        );
-      },
-    });
-    app.use(router).use(pinia).use(i18n).use(NaiveUI);
-    app.mount(containerRef.current);
-
-    return () => {
-      app.unmount();
-    };
-  }, []);
-
-  return <div ref={containerRef} />;
-}
+import { ImportRevisionSheet } from "../revision/ImportRevisionSheet";
 
 export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
   const revisionStore = useRevisionStore();
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
-  const [drawerEverOpened, setDrawerEverOpened] = useState(false);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
   const fetchRevisionList = useCallback(
     async ({
@@ -168,7 +89,6 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
           <div />
           <Button
             onClick={() => {
-              setDrawerEverOpened(true);
               setShowCreateRevisionDrawer(true);
             }}
           >
@@ -230,14 +150,13 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {drawerEverOpened && (
-        <VueCreateRevisionDrawerMount
-          databaseName={database.name}
-          open={showCreateRevisionDrawer}
-          onCreated={handleRevisionCreated}
-          onOpenChange={setShowCreateRevisionDrawer}
-        />
-      )}
+      <ImportRevisionSheet
+        databaseName={database.name}
+        projectName={database.project}
+        open={showCreateRevisionDrawer}
+        onCreated={handleRevisionCreated}
+        onOpenChange={setShowCreateRevisionDrawer}
+      />
     </>
   );
 }

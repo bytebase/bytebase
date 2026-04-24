@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { ArrowUpDown, Check, Loader2, X } from "lucide-react";
+import { ArrowUpDown, Check, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
@@ -12,6 +12,15 @@ import {
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
@@ -144,7 +153,12 @@ function IssueSortDropdown({
         <span className="hidden md:inline ml-1">{t("issue.sort.sort")}</span>
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1">
+        <div
+          className={cn(
+            "absolute right-0 top-full mt-1 bg-background border border-block-border rounded-sm shadow-lg min-w-[180px] py-1",
+            LAYER_SURFACE_CLASS
+          )}
+        >
           {sortOptions.map((group) => (
             <div key={group.label}>
               <div className="px-3 py-1.5 text-xs text-control-light font-medium">
@@ -1033,20 +1047,13 @@ export function BatchIssueStatusActionDrawer({
       : t("issue.batch-transition.reopen");
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-160 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
-        <div className="px-6 py-4 border-b border-control-border flex items-center justify-between">
-          <span className="text-lg font-semibold">{title}</span>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+    <Sheet open={!!action} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="medium">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-y-4">
+        <SheetBody className="p-6 gap-y-4">
           <div className="flex flex-col gap-y-1">
             <div className="font-medium text-control">{t("common.issues")}</div>
             <ul
@@ -1072,9 +1079,9 @@ export function BatchIssueStatusActionDrawer({
               onChange={(e) => setComment(e.target.value)}
             />
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="px-6 py-4 border-t border-control-border flex items-center justify-end gap-x-2">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -1082,8 +1089,8 @@ export function BatchIssueStatusActionDrawer({
             {loading && <Loader2 className="size-4 mr-1 animate-spin" />}
             {t("common.confirm")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

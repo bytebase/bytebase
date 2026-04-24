@@ -18,8 +18,19 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/react/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -64,29 +75,6 @@ import {
   isCustomRole,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/connect";
-
-// Escape key stack: only the topmost overlay handles Escape.
-const escapeStack: (() => void)[] = [];
-
-function useEscapeKey(onEscape: () => void) {
-  useEffect(() => {
-    escapeStack.push(onEscape);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === onEscape
-      ) {
-        onEscape();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.lastIndexOf(onEscape);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [onEscape]);
-}
 
 // ============================================================
 // PermissionTransfer
@@ -230,7 +218,6 @@ function ImportPermissionModal({
   const roleStore = useRoleStore();
   const roleList = useVueState(() => [...roleStore.roleList]);
   const [selectedRoleName, setSelectedRoleName] = useState<string>("");
-  useEscapeKey(onCancel);
 
   const selectedRole = useMemo(
     () => roleList.find((r) => r.name === selectedRoleName),
@@ -240,21 +227,11 @@ function ImportPermissionModal({
   const permissions = selectedRole?.permissions ?? [];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div className="bg-white rounded-sm shadow-lg w-[28rem] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">{t("role.import-from-role")}</h3>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <DialogContent className="w-[28rem] max-w-[calc(100vw-2rem)] p-6">
+        <DialogTitle>{t("role.import-from-role")}</DialogTitle>
 
-        <div className="flex flex-col gap-y-3">
+        <div className="mt-4 flex flex-col gap-y-3">
           <div>
             <label className="textlabel mb-1 block">
               {t("role.select-role")}
@@ -298,8 +275,8 @@ function ImportPermissionModal({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -320,22 +297,16 @@ function DeleteConfirmModal({
 }) {
   const { t } = useTranslation();
   const canDelete = occupiedResources.length === 0;
-  useEscapeKey(onCancel);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div className="bg-white rounded-sm shadow-lg w-[28rem] p-6">
-        <h3 className="text-lg font-medium mb-4">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogTitle>
           {t("common.delete")} - {displayRoleTitle(roleName)}
-        </h3>
+        </AlertDialogTitle>
 
         {occupiedResources.length > 0 ? (
-          <div className="mb-4">
+          <div className="mt-4">
             <Alert variant="warning">
               <AlertDescription>
                 <p className="mb-2">
@@ -353,14 +324,14 @@ function DeleteConfirmModal({
             </Alert>
           </div>
         ) : (
-          <p className="mb-4 text-sm text-control-light">
+          <AlertDialogDescription className="mt-2">
             {t("resource.delete-warning", {
               name: displayRoleTitle(roleName),
             })}
-          </p>
+          </AlertDialogDescription>
         )}
 
-        <div className="flex justify-end gap-x-2">
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -370,8 +341,8 @@ function DeleteConfirmModal({
             </Button>
           )}
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

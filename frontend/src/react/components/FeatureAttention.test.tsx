@@ -34,8 +34,8 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
-vi.mock("@/react/components/InstanceAssignmentBridge", () => ({
-  InstanceAssignmentBridge: () => null,
+vi.mock("@/react/components/InstanceAssignmentSheet", () => ({
+  InstanceAssignmentSheet: () => null,
 }));
 
 vi.mock("@/router", () => ({

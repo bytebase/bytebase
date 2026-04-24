@@ -33,7 +33,13 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
   SheetBody,
@@ -341,7 +347,12 @@ function RolloutPolicyConfig({
                   {t("common.add")}
                 </Button>
                 {showRoleDropdown && (
-                  <div className="absolute z-50 mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
+                  <div
+                    className={cn(
+                      "absolute mt-1 w-64 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
+                      LAYER_SURFACE_CLASS
+                    )}
+                  >
                     {availableRoles.map((group) => (
                       <div key={group.label}>
                         <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
@@ -557,7 +568,12 @@ function SQLReviewSectionInner(
               {t("sql-review.configure-policy")}
             </Button>
             {showSelectPanel && (
-              <div className="absolute z-50 mt-1 w-80 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md">
+              <div
+                className={cn(
+                  "absolute mt-1 w-80 max-h-60 overflow-auto rounded-sm border border-control-border bg-white py-1 shadow-md",
+                  LAYER_SURFACE_CLASS
+                )}
+              >
                 {reviewPolicyList.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-400">
                     {t("common.no-data")}
@@ -956,61 +972,63 @@ function EnvironmentDetail({
 
       {/* Delete confirmation dialog */}
       {showDeleteConfirm && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/30"
-            onClick={() => setShowDeleteConfirm(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-sm shadow-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-medium mb-2">
-                {t("common.delete")} '{editTitle}'?
-              </h3>
-              <div className="mt-3">
-                {existRelatedResource && (
-                  <label className="flex items-start gap-x-2 mb-2">
-                    <input
-                      type="checkbox"
-                      checked={confirmDelete}
-                      onChange={(e) => setConfirmDelete(e.target.checked)}
-                      className="mt-0.5 rounded-xs border-gray-300"
-                    />
-                    <span className="text-sm text-gray-600">
-                      {t("environment.delete-description")}
-                    </span>
-                  </label>
-                )}
-                {!existRelatedResource && (
+        <Dialog
+          open={showDeleteConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowDeleteConfirm(false);
+              setConfirmDelete(false);
+            }
+          }}
+        >
+          <DialogContent className="max-w-md p-6">
+            <DialogTitle className="mb-2 text-lg font-medium">
+              {t("common.delete")} '{editTitle}'?
+            </DialogTitle>
+            <div className="mt-3">
+              {existRelatedResource && (
+                <label className="flex items-start gap-x-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={confirmDelete}
+                    onChange={(e) => setConfirmDelete(e.target.checked)}
+                    className="mt-0.5 rounded-xs border-gray-300"
+                  />
                   <span className="text-sm text-gray-600">
-                    {t("common.cannot-undo-this-action")}
+                    {t("environment.delete-description")}
                   </span>
-                )}
-              </div>
-              <div className="flex justify-end gap-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setConfirmDelete(false);
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  variant="destructive"
-                  disabled={existRelatedResource && !confirmDelete}
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setConfirmDelete(false);
-                    onDelete(environment);
-                  }}
-                >
-                  {t("common.delete")}
-                </Button>
-              </div>
+                </label>
+              )}
+              {!existRelatedResource && (
+                <span className="text-sm text-gray-600">
+                  {t("common.cannot-undo-this-action")}
+                </span>
+              )}
             </div>
-          </div>
-        </>
+            <div className="flex justify-end gap-x-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setConfirmDelete(false);
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={existRelatedResource && !confirmDelete}
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setConfirmDelete(false);
+                  onDelete(environment);
+                }}
+              >
+                {t("common.delete")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

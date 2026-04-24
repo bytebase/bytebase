@@ -61,12 +61,15 @@
                   >
                   <DatabaseV1Name :database="database" />
                 </dd>
-                <SQLEditorButtonV1
+                <button
                   v-if="allowQuery"
-                  class="text-sm md:mr-4"
-                  :database="database"
-                  :label="true"
-                />
+                  type="button"
+                  class="flex items-center text-sm textlabel cursor-pointer hover:text-accent md:mr-4 border-0 bg-transparent p-0"
+                  @click.stop.prevent="gotoSQLEditor"
+                >
+                  <span class="mr-1">{{ $t("sql-editor.self") }}</span>
+                  <heroicons-solid:terminal class="w-5 h-5" />
+                </button>
               </dl>
             </div>
           </div>
@@ -129,6 +132,7 @@
 import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { computed, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import {
   DatabaseV1Name,
   Drawer,
@@ -150,7 +154,7 @@ import {
   isDatabaseV1Queryable,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
-import { SQLEditorButtonV1 } from "./DatabaseDetail";
+import { openSQLEditorForDatabase } from "./DatabaseDetail/sqlEditor";
 
 interface LocalState {
   columnNameSearchKeyword: string;
@@ -169,6 +173,7 @@ defineEmits(["dismiss"]);
 
 const dbSchemaStore = useDBSchemaV1Store();
 const databaseV1Store = useDatabaseV1Store();
+const router = useRouter();
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
@@ -222,6 +227,13 @@ const allowQuery = computed(() => {
   }
   return isDatabaseV1Queryable(database.value);
 });
+
+const gotoSQLEditor = () => {
+  openSQLEditorForDatabase({
+    router,
+    database: database.value,
+  });
+};
 
 const getTableName = (tableName: string) => {
   if (hasSchemaProperty(instanceEngine.value)) {

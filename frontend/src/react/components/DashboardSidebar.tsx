@@ -15,15 +15,23 @@ import {
 import type { ElementType } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
+import {
+  useAppFeature,
+  useIsSaaSMode,
+  useRecentVisit,
+  useWorkspace,
+} from "@/react/hooks/useAppState";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+  SQL_EDITOR_HOME_MODULE,
+  useCurrentRoute,
+  useNavigate,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
@@ -42,18 +50,7 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
-} from "@/router/dashboard/workspaceRoutes";
-import {
-  SETTING_ROUTE_WORKSPACE_GENERAL,
-  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-} from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useRecentVisit } from "@/router/useRecentVisit";
-import {
-  useActuatorV1Store,
-  useAppFeature,
-  useWorkspaceV1Store,
-} from "@/store";
+} from "@/react/router";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
@@ -98,7 +95,7 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
 
 function useSidebarItems(): SidebarItem[] {
   const { t } = useTranslation();
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const isSaaSMode = useIsSaaSMode();
 
   return useMemo(
     (): SidebarItem[] => [
@@ -300,28 +297,12 @@ const childRouteClass =
 export function DashboardSidebar() {
   const rawItems = useSidebarItems();
   const filteredItems = useMemo(() => filterSidebarList(rawItems), [rawItems]);
-
-  const currentRouteName = useVueState(
-    () => router.currentRoute.value.name?.toString() ?? ""
-  );
-  const databaseChangeMode = useVueState(
-    () => useAppFeature("bb.feature.database-change-mode").value
-  );
-  const customLogo = useVueState(
-    () => useWorkspaceV1Store().currentWorkspace?.logo ?? ""
-  );
-  const recordVisitRef = useRef<((path: string) => void) | null>(null);
-
-  useEffect(() => {
-    // TODO(steven): Replace this Vue composable bridge with a shared framework-agnostic
-    // recent-visit helper so React components don't need a Vue effect scope.
-    const scope = effectScope();
-    scope.run(() => {
-      const { record } = useRecentVisit();
-      recordVisitRef.current = record;
-    });
-    return () => scope.stop();
-  }, []);
+  const navigate = useNavigate();
+  const currentRoute = useCurrentRoute();
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+  const workspace = useWorkspace();
+  const { record } = useRecentVisit();
+  const currentRouteName = currentRoute.name ?? "";
 
   // -- Expand / collapse state -----------------------------------------------
   const [expandedSet, setExpandedSet] = useState<Set<string>>(new Set());
@@ -387,8 +368,11 @@ export function DashboardSidebar() {
       databaseChangeMode === DatabaseChangeMode.EDITOR
         ? SQL_EDITOR_HOME_MODULE
         : WORKSPACE_ROUTE_LANDING;
-    return router.resolve({ name: target });
-  }, [databaseChangeMode]);
+    return {
+      name: target,
+      route: navigate.resolve({ name: target }),
+    };
+  }, [databaseChangeMode, navigate]);
 
   const onGroupClick = useCallback((item: SidebarItem, key: string) => {
     if (item.children && item.children.length > 0) {
@@ -407,34 +391,37 @@ export function DashboardSidebar() {
   }, []);
 
   const resolveHref = useCallback(
-    (name: string) => router.resolve({ name }).fullPath,
-    []
+    (name: string) => navigate.resolve({ name }).fullPath,
+    [navigate]
   );
 
-  const handleRouteClick = useCallback((e: React.MouseEvent, name: string) => {
-    // Allow Ctrl/Meta+click to open in new tab naturally
-    if (e.ctrlKey || e.metaKey) return;
-    e.preventDefault();
-    router.push({ name });
-  }, []);
+  const handleRouteClick = useCallback(
+    (e: React.MouseEvent, name: string) => {
+      // Allow Ctrl/Meta+click to open in new tab naturally.
+      if (e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      void navigate.push({ name });
+    },
+    [navigate]
+  );
 
   const handleHomeClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
-      const route = resolveHomeRoute();
-      recordVisitRef.current?.(route.fullPath);
+      const { name, route } = resolveHomeRoute();
+      record(route.fullPath);
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
         return;
       }
       e.preventDefault();
-      router.push(route);
+      void navigate.push({ name });
     },
-    [resolveHomeRoute]
+    [navigate, record, resolveHomeRoute]
   );
 
   // -- Logo ------------------------------------------------------------------
 
-  const logoSrc = customLogo || logoFull;
-  const homeHref = resolveHomeRoute().fullPath;
+  const logoSrc = workspace?.logo || logoFull;
+  const homeHref = resolveHomeRoute().route.fullPath;
 
   // -- Render ----------------------------------------------------------------
 

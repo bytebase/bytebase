@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   },
   resetQuickstart: vi.fn(),
   hideQuickStart: false,
+  isDev: false,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -133,7 +134,7 @@ vi.mock("@/react/stores/app", () => ({
 }));
 
 vi.mock("@/utils/util", () => ({
-  isDev: () => false,
+  isDev: () => mocks.isDev,
 }));
 
 let ProfileMenuTrigger: typeof import("./ProfileMenuTrigger").ProfileMenuTrigger;
@@ -160,6 +161,7 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hideQuickStart = false;
+  mocks.isDev = false;
   window.open = vi.fn();
   ({ ProfileMenuTrigger } = await import("./ProfileMenuTrigger"));
 });
@@ -212,6 +214,26 @@ describe("ProfileMenuTrigger", () => {
     render();
 
     expect(container.textContent).not.toContain("Quick Start");
+    unmount();
+  });
+
+  test("uploads a development license from the dev license menu", () => {
+    mocks.isDev = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const teamButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Team")
+    );
+    expect(teamButton).not.toBeUndefined();
+    act(() => {
+      teamButton?.click();
+    });
+
+    expect(mocks.uploadLicense).toHaveBeenCalledTimes(1);
     unmount();
   });
 });

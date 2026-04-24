@@ -8,12 +8,11 @@ import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { type Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import type {
-  IssueReviewAction,
-  IssueStatusAction,
-} from "../components/HeaderSection/Actions/registry";
 
 export type RefreshMode = "normal" | "fast-follow";
+
+type IssueReviewAction = string;
+type IssueStatusAction = string;
 
 export type PlanEvents = Emittery<{
   "status-changed": {

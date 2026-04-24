@@ -2,6 +2,12 @@ import { ChevronDown } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -120,37 +126,29 @@ export function InstanceSyncButton({
   );
 
   return (
-    <div className="relative">
-      <Button
-        variant="outline"
-        disabled={!hasPermission || disabled || syncing}
-        onClick={() => setOpen(!open)}
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            disabled={!hasPermission || disabled || syncing}
+          />
+        }
       >
         {syncing ? t("instance.syncing") : t("instance.sync.self")}
         <ChevronDown className="ml-1 size-4" />
-      </Button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 min-w-[140px] rounded-sm border bg-background shadow-md py-1">
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
-              title={t("instance.sync.sync-all-tip")}
-              onClick={() => syncSchema("sync-all")}
-            >
-              {t("instance.sync.sync-all")}
-            </button>
-            <button
-              type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
-              onClick={() => syncSchema("sync-new")}
-            >
-              {t("instance.sync.sync-new")}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[140px]">
+        <DropdownMenuItem
+          title={t("instance.sync.sync-all-tip")}
+          onClick={() => syncSchema("sync-all")}
+        >
+          {t("instance.sync.sync-all")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => syncSchema("sync-new")}>
+          {t("instance.sync.sync-new")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

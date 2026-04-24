@@ -9,7 +9,7 @@
       (e: MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        state.showInstanceAssignmentDrawer = true;
+        gotoInstanceAssignment();
       }
     "
   >
@@ -49,17 +49,14 @@
       </span>
     </NTooltip>
   </div>
-  <InstanceAssignment
-    v-if="instanceMissingLicense && canManageSubscription"
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { SparklesIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useSubscriptionV1Store } from "@/store";
 import type {
   Instance,
@@ -70,11 +67,6 @@ import {
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import InstanceAssignment from "../InstanceAssignment.vue";
-
-interface LocalState {
-  showInstanceAssignmentDrawer: boolean;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -90,10 +82,7 @@ const props = withDefaults(
   }
 );
 
-const state = reactive<LocalState>({
-  showInstanceAssignmentDrawer: false,
-});
-
+const router = useRouter();
 const subscriptionStore = useSubscriptionV1Store();
 
 const hasFeature = computed(() => {
@@ -110,4 +99,17 @@ const instanceMissingLicense = computed(() => {
 const canManageSubscription = computed((): boolean => {
   return hasWorkspacePermissionV2("bb.instances.update");
 });
+
+const gotoInstanceAssignment = () => {
+  if (!canManageSubscription.value) {
+    return;
+  }
+  router.push({
+    name: INSTANCE_ROUTE_DASHBOARD,
+    query: {
+      assignLicense: "1",
+      instances: props.instance?.name,
+    },
+  });
+};
 </script>

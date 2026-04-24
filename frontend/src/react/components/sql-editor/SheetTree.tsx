@@ -392,7 +392,6 @@ export function SheetTree({
   // Row height must match the <Tree rowHeight={...}> prop below.
   const ROW_HEIGHT = 26;
 
-  // Natural-height sizing so stacked SheetTrees don't each reserve the Tree
   // primitive's 300px default viewport. Must account for both expand state
   // AND the search filter — when the keyword is active, arborist hides
   // non-matching rows, so the viewport should shrink accordingly.

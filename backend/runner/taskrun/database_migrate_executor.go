@@ -887,19 +887,9 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	if database.Engine != storepb.Engine_POSTGRES {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
-			slog.Error("failed to sync backup database schema",
-				slog.String("database", targetDatabaseName),
-				log.BBError(err),
-			)
-		}
+		exec.schemaSyncer.SyncDatabaseAsync(backupDatabase)
 	} else {
-		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-			slog.Error("failed to sync backup database schema",
-				slog.String("database", fmt.Sprintf("/instances/%s/databases/%s", instance.ResourceID, database.DatabaseName)),
-				log.BBError(err),
-			)
-		}
+		exec.schemaSyncer.SyncDatabaseAsync(database)
 	}
 
 	return priorBackupDetail, nil

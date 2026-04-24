@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardHeader } from "@/react/components/header/DashboardHeader";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import type {
   DashboardBodyShellProps,
   DashboardShellTargets,
@@ -74,7 +75,8 @@ export function DashboardBodyShell({
           <>
             <div
               className={cn(
-                "fixed inset-0 z-40 md:hidden",
+                "fixed inset-0 md:hidden",
+                LAYER_SURFACE_CLASS,
                 isMobileSidebarOpen ? "" : "pointer-events-none"
               )}
             >

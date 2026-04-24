@@ -9,17 +9,14 @@
     @click="onClick"
   />
 
-  <InstanceAssignment
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
@@ -31,11 +28,6 @@ import {
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import InstanceAssignment from "../InstanceAssignment.vue";
-
-interface LocalState {
-  showInstanceAssignmentDrawer: boolean;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -55,10 +47,6 @@ const router = useRouter();
 const { t } = useI18n();
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-
-const state = reactive<LocalState>({
-  showInstanceAssignmentDrawer: false,
-});
 
 const hasPermission = computed(() =>
   hasWorkspacePermissionV2("bb.settings.set")
@@ -165,7 +153,13 @@ const onClick = () => {
     return;
   }
   if (instanceMissingLicense.value || existInstanceWithoutLicense.value) {
-    state.showInstanceAssignmentDrawer = true;
+    router.push({
+      name: INSTANCE_ROUTE_DASHBOARD,
+      query: {
+        assignLicense: "1",
+        instances: props.instance?.name,
+      },
+    });
     return;
   }
   router.push(autoSubscriptionRoute());

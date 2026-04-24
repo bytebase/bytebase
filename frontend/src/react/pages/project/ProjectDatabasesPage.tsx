@@ -19,6 +19,12 @@ import {
 } from "@/react/components/database";
 import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -456,19 +462,20 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
       {/* Unassign confirmation dialog */}
       {showUnassignConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="fixed inset-0 bg-overlay/50"
-            onClick={() => setShowUnassignConfirm(false)}
-          />
-          <div className="relative bg-background rounded-sm shadow-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-2">
+        <AlertDialog
+          open
+          onOpenChange={(nextOpen) =>
+            !nextOpen && setShowUnassignConfirm(false)
+          }
+        >
+          <AlertDialogContent>
+            <AlertDialogTitle>
               {t("database.unassign-alert-title")}
-            </h3>
-            <p className="text-sm text-control-light mb-6">
+            </AlertDialogTitle>
+            <AlertDialogDescription className="mt-2">
               {t("database.unassign-alert-description")}
-            </p>
-            <div className="flex justify-end items-center gap-x-2">
+            </AlertDialogDescription>
+            <div className="mt-6 flex items-center justify-end gap-x-2">
               <Button
                 variant="ghost"
                 onClick={() => setShowUnassignConfirm(false)}
@@ -484,8 +491,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                 {t("common.confirm")}
               </Button>
             </div>
-          </div>
-        </div>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

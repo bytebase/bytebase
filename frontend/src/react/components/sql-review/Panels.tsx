@@ -1,9 +1,16 @@
-import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -100,18 +107,12 @@ export function RulesSelectPanel({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[70rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="text-lg font-medium">
-            {t("sql-review.select-review-rules")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
+    <Sheet open={show} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="xlarge">
+        <SheetHeader className="px-4 py-3">
+          <SheetTitle>{t("sql-review.select-review-rules")}</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="p-4">
           <TabsByEngine ruleMapByEngine={ruleTemplateMapV2}>
             {(ruleList, engine) => (
               <RuleTableWithFilter
@@ -128,14 +129,14 @@ export function RulesSelectPanel({
               />
             )}
           </TabsByEngine>
-        </div>
-        <div className="px-4 py-3 border-t flex justify-end gap-x-3">
+        </SheetBody>
+        <SheetFooter className="px-4 py-3">
           <Button variant="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -252,19 +253,13 @@ export function AttachResourcesPanel({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[40rem] max-w-[100vw] h-full shadow-lg flex flex-col">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="text-lg font-medium">
-            {t("sql-review.attach-resource.self")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
-        </div>
+    <Sheet open={show} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="medium">
+        <SheetHeader className="px-4 py-3">
+          <SheetTitle>{t("sql-review.attach-resource.self")}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <SheetBody className="p-4">
           <div className="flex flex-col gap-y-6">
             <p className="textinfolabel">
               {t("sql-review.attach-resource.label")}
@@ -344,7 +339,7 @@ export function AttachResourcesPanel({
               </div>
             </div>
           </div>
-        </div>
+        </SheetBody>
 
         {showOverrideConfirm && conflictingResources.length > 0 && (
           <div className="px-4 py-3 border-t">
@@ -365,7 +360,7 @@ export function AttachResourcesPanel({
           </div>
         )}
 
-        <div className="px-4 py-3 border-t flex justify-end gap-x-2">
+        <SheetFooter className="px-4 py-3">
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
@@ -378,8 +373,8 @@ export function AttachResourcesPanel({
               {t("common.confirm")}
             </Button>
           )}
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

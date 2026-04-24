@@ -34,12 +34,6 @@
       </PermissionGuardWrapper>
     </div>
   </div>
-  <InstanceAssignment
-    :show="state.showAssignLicenseDrawer"
-    :selected-instance-list="instanceList.map((ins) => ins.name)"
-    @dismiss="state.showAssignLicenseDrawer = false"
-  />
-
   <EditEnvironmentDrawer
     :show="state.showEditEnvironmentDrawer"
     @dismiss="state.showEditEnvironmentDrawer = false"
@@ -55,10 +49,11 @@ import { NButton } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
-import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import PermissionGuardWrapper from "@/components/Permission/PermissionGuardWrapper.vue";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useInstanceV1Store,
@@ -80,7 +75,6 @@ interface Action {
 
 interface LocalState {
   loading: boolean;
-  showAssignLicenseDrawer: boolean;
   showEditEnvironmentDrawer: boolean;
 }
 
@@ -93,11 +87,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const instanceStore = useInstanceV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   loading: false,
-  showAssignLicenseDrawer: false,
   showEditEnvironmentDrawer: false,
 });
 
@@ -135,7 +129,16 @@ const actions = computed((): Action[] => {
     list.push({
       icon: h(GraduationCapIcon),
       text: t("subscription.instance-assignment.assign-license"),
-      click: () => (state.showAssignLicenseDrawer = true),
+      click: () =>
+        router.push({
+          name: INSTANCE_ROUTE_DASHBOARD,
+          query: {
+            assignLicense: "1",
+            instances: props.instanceList
+              .map((instance) => instance.name)
+              .join(","),
+          },
+        }),
       requiredPermissions: ["bb.instances.update", "bb.settings.get"],
     });
   }

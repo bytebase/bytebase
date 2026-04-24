@@ -335,7 +335,6 @@
     "labels": "标签",
     "language": "语言",
     "lark": "Lark",
-    "latest": "最新",
     "learn-more": "了解更多",
     "leave": "离开",
     "leave-without-saving": "不保存变动？",
@@ -357,11 +356,9 @@
     "no-data": "无数据",
     "no-license": "无证书",
     "not-started": "未开始",
-    "notices": "注意事项",
     "off": "关",
     "ok": "OK",
     "on": "开",
-    "only-creator-allowed-action": "只有创建者才能执行此操作",
     "only-creator-allowed-export": "只有创建者才能执行导出",
     "operation": "操作",
     "operations": "操作",
@@ -460,7 +457,6 @@
     "untitled": "未命名",
     "update": "更新",
     "updated": "已更新",
-    "updated-at": "更新于",
     "upload": "上传",
     "user": "用户",
     "username": "用户名",
@@ -521,8 +517,7 @@
       "approved-issue": "批准工单",
       "disallow-approve-reason": {
         "some-task-checks-are-still-running": "尚有运行中的任务检查项。",
-        "some-task-checks-didnt-pass": "尚有未通过的任务检查项。",
-        "x-field-is-required": "{field}为必填项"
+        "some-task-checks-didnt-pass": "尚有未通过的任务检查项。"
       },
       "generating-approval-flow": "正在生成审批流",
       "re-request-review": "请求再次审批",
@@ -646,7 +641,6 @@
     "edit-labels": "编辑标签",
     "edit-schema": "变更 Schema",
     "engine": "引擎",
-    "engine-not-supported-for-backup": "引擎不支持预备份：{databases}",
     "export-schema": "导出 Schema",
     "export-schema-multi-file": "多文件 (ZIP)",
     "export-schema-single-file": "单文件",
@@ -1172,9 +1166,6 @@
       "search": "输入名称或 ID 来搜索",
       "self": "高级搜索"
     },
-    "approval": {
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
-    },
     "approval-flow": {
       "self": "审批流"
     },
@@ -1207,17 +1198,9 @@
       "limits": "限制",
       "options": "配置项"
     },
-    "error": {
-      "statement-cannot-be-modified": "工单创建后，语句将无法修改"
-    },
     "issue-name": "工单名称",
     "labels": "工单标签",
     "leave-a-comment": "发表一条评论…",
-    "migration-mode": {
-      "online": {
-        "description": "基于 gh-ost。对于大表，可以把锁表的时间从小时级降低到秒级 {link}。"
-      }
-    },
     "my-issues": "我的工单",
     "no-description-provided": "未提供描述",
     "options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
@@ -1255,8 +1238,6 @@
     },
     "sql-check": {
       "back-to-edit": "返回编辑",
-      "not-executed-yet": "尚未执行",
-      "sql-checks": "SQL 检查项",
       "sql-review-violations": "违反的 SQL 审核规则",
       "statement-is-required": "SQL 语句不能为空",
       "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。"
@@ -1281,18 +1262,7 @@
     },
     "task-run": {
       "logs": "日志",
-      "session": "会话",
-      "task-run-session": {
-        "blocked-sessions": {
-          "description": "当前会话阻塞了以下会话",
-          "self": "被阻塞会话"
-        },
-        "blocking-sessions": {
-          "description": "当前会话被以下会话阻塞",
-          "self": "阻塞会话"
-        },
-        "no-session-found": "未找到会话。"
-      }
+      "session": "会话"
     },
     "title": {
       "change-database": "变更数据库",
@@ -1303,10 +1273,7 @@
       "request-specific-role": "请求“{role}”角色"
     },
     "transaction-mode": {
-      "execution-order-note": "非事务性语句将最后执行。",
-      "label": "事务模式",
-      "off-tooltip": "以自动提交模式单独执行语句。语句立即提交，如果后续语句失败则无法回滚。",
-      "on-tooltip": "将所有语句包装在单个事务中（BEGIN/COMMIT）。"
+      "label": "事务模式"
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "upload-sql": "上传 SQL",
@@ -1385,16 +1352,8 @@
       "unsaved-changes": "未保存的更改",
       "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
     },
-    "ghost": {
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-database": "请在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求"
-    },
     "go-to-plan-page": "前往变更计划页",
     "isolation-level": {
-      "description": "控制事务如何处理并发更改。仅在事务模式开启时适用。",
       "self": "隔离级别"
     },
     "labels-required-for-review": "提交审批前需要选择标签",
@@ -1432,19 +1391,7 @@
       "show-details": "展开详情 ↓"
     },
     "plans": "变更计划",
-    "pre-backup": {
-      "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题",
-      "missing-backup-database": "在实例 '{instance}' 上创建数据库 'bbdataarchive'，然后同步实例和数据库",
-      "missing-backup-database-oracle": "在实例 '{instance}' 上创建数据库 'BBDATAARCHIVE'，然后同步实例和数据库",
-      "missing-backup-schema-postgres": "在数据库 '{database}' 中创建 schema 'bbdataarchive'。如果使用了 SET ROLE，请将该 schema 的 USAGE 和 CREATE 权限授予对应角色。然后同步数据库",
-      "only-some-databases-checked": "仅检查部分数据库",
-      "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
-      "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求"
-    },
     "ready-for-review": "提交审批",
-    "refresh-indicator": {
-      "last-refresh": "上次刷新：{time}"
-    },
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
     "select-targets": "选择目标库",
@@ -1454,15 +1401,6 @@
     },
     "spec": {
       "change": "变更项",
-      "delete-change": {
-        "content": "您确定要删除该变更项吗？",
-        "title": "删除变更项"
-      },
-      "role-selection": {
-        "description": "选择以哪个 PostgreSQL 角色来执行此语句。",
-        "technical-note": "将“SET ROLE {role};”添加到您的 SQL 语句中。",
-        "title": "数据库角色选择"
-      },
       "type": {
         "create-database": "创建数据库",
         "database-change": "数据库变更",
@@ -1759,7 +1697,6 @@
     "files": "文件",
     "not-found": "未找到",
     "releases": "发布包",
-    "title": "发布包",
     "total-files": "共 {count} 个文件",
     "usage-description": "发布包是版本化的应用制品。GitOps 工作流将发布包部署到环境。",
     "vcs-source": "VCS 源",
@@ -1876,7 +1813,6 @@
       "self": "阶段 | 阶段"
     },
     "task": {
-      "no-statement": "没有 SQL 语句",
       "no-tasks": "此阶段没有任务",
       "selected-count": "已选择 {count} 个任务",
       "statement-truncated-hint": "由于语句过长，已被截断。"
@@ -1937,7 +1873,6 @@
       "indexes": "索引",
       "unique": "唯一"
     },
-    "insert-sql": "插入 SQL",
     "message": {
       "cannot-drop-the-last-column": "不能删除最后一列",
       "duplicated-function-name": "重复的函数名称",
@@ -1960,7 +1895,6 @@
       "select": "选择 schema"
     },
     "search-database-and-table": "搜索数据库和表",
-    "self": "Schema 编辑器",
     "table": {
       "name": "表名",
       "select": "选择表"
@@ -1974,7 +1908,6 @@
       "value": "值"
     },
     "tables": "表",
-    "template-database": "模板数据库",
     "views": "视图"
   },
   "schema-template": {
@@ -2764,8 +2697,7 @@
     "rule-detail": "规则详情",
     "select-all": "选择全部",
     "select-review-rules": "选择 SQL 审核规则",
-    "title": "SQL 审核策略",
-    "view-definition": "查看定义"
+    "title": "SQL 审核策略"
   },
   "subscription": {
     "button": {
@@ -2891,7 +2823,6 @@
       "summary-report": "概要报告"
     },
     "checking": "检查中…",
-    "comment": "评论",
     "created": "创建于",
     "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "error": {
@@ -2899,7 +2830,6 @@
     },
     "executed-by": "执行者",
     "execution-time": "执行时间",
-    "no-cancellable-tasks": "没有可取消的任务",
     "no-permission": "无权限执行该操作",
     "no-runnable-tasks": "没有可运行的任务",
     "no-selectable-tasks": "没有可选择的任务",
@@ -2907,20 +2837,10 @@
     "no-tasks-selected": "未选择任何任务",
     "online-migration": {
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。",
-      "configure": "配置",
-      "configure-ghost-parameters": "配置 gh-ost 参数",
-      "error": {
-        "not-applicable": {
-          "database-doesnt-meet-ghost-requirement": "数据库 {database} 不符合 gh-ost 的要求"
-        },
-        "nothing-changed": "无任何改变"
-      },
-      "ghost-parameters": "gh-ost 参数",
       "self": "在线大表变更"
     },
     "only-showing-latest-n-runs": "仅显示最近 {n} 条记录",
     "prior-backup": "预备份受影响数据",
-    "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
     "run-checks": "运行检查",
     "run-history": "执行历史",
     "run-immediately": {
@@ -2932,7 +2852,6 @@
       "description": "设置任务自动开始运行的特定时间。",
       "self": "定时运行"
     },
-    "scheduled-at": "计划于",
     "scheduled-time": "计划时间",
     "select-scheduled-time": "选择计划时间",
     "select-task": "选择任务 | 选择任务",
@@ -2949,17 +2868,9 @@
       "pending": "待执行",
       "running": "运行中",
       "skipped": "已跳过"
-    },
-    "task-checks": "任务检查项",
-    "type": {
-      "database-create": "创建数据库",
-      "database-export": "导出数据",
-      "general": "通用",
-      "migrate": "变更"
     }
   },
   "task-run": {
-    "failed-runs": "失败的任务 - 最新的执行日志",
     "history": "执行记录",
     "latest": "最新执行",
     "latest-logs": "执行日志",
@@ -2992,8 +2903,7 @@
       "available": "可回滚 {n} 个任务",
       "no-statement-generated": "生成的回滚语句为空",
       "preview-statement": {
-        "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。",
-        "self": "预览语句"
+        "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
       }
     },
     "status": {

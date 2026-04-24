@@ -1,14 +1,25 @@
 import { create } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
-import { ArrowRight, Database, Info, Key, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Database, Info, Key, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { identityProviderServiceClientConnect } from "@/connect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -69,35 +80,17 @@ function TestConnectionResultDialog({
 }) {
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-overlay/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-background rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-x-2">
-            <div className="size-6 text-success">&#10003;</div>
-            <h3 className="text-lg font-medium">
-              {t("identity-provider.test-connection-success")}
-            </h3>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
+        <div className="flex items-center gap-x-2">
+          <div className="size-6 text-success">&#10003;</div>
+          <DialogTitle>
+            {t("identity-provider.test-connection-success")}
+          </DialogTitle>
         </div>
 
-        <div className="flex flex-col gap-y-4">
+        <div className="mt-4 flex flex-col gap-y-4">
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
@@ -162,8 +155,8 @@ function TestConnectionResultDialog({
         <div className="flex justify-end mt-4">
           <Button onClick={onClose}>{t("common.close")}</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -332,27 +325,14 @@ function DeleteConfirmDialog({
 }) {
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onCancel]);
-
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-overlay/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
-    >
-      <div className="bg-background rounded-sm shadow-lg w-96 p-6">
-        <h3 className="text-lg font-medium mb-2">{t("settings.sso.delete")}</h3>
-        <p className="text-sm text-control-light mb-6">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogTitle>{t("settings.sso.delete")}</AlertDialogTitle>
+        <AlertDialogDescription className="mt-2">
           {t("identity-provider.delete-warning")}
-        </p>
-        <div className="flex justify-end gap-x-2">
+        </AlertDialogDescription>
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -360,8 +340,8 @@ function DeleteConfirmDialog({
             {t("common.delete")}
           </Button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

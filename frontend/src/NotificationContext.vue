@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { useNotification } from "naive-ui";
 import { h, onMounted, onUnmounted, watchEffect } from "vue";
+import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { useNotificationStore } from "@/store";
 import type { BBNotificationStyle, NotificationCreate } from "@/types";
 
@@ -96,9 +97,15 @@ const handleReactNotification = (event: Event) => {
 
 watchEffect(watchNotification);
 onMounted(() => {
-  window.addEventListener("bb.react-notification", handleReactNotification);
+  window.addEventListener(
+    ReactShellBridgeEvent.notification,
+    handleReactNotification
+  );
 });
 onUnmounted(() => {
-  window.removeEventListener("bb.react-notification", handleReactNotification);
+  window.removeEventListener(
+    ReactShellBridgeEvent.notification,
+    handleReactNotification
+  );
 });
 </script>

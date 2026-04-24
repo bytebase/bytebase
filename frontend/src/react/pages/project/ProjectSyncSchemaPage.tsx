@@ -31,8 +31,17 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -860,7 +869,12 @@ function ChangelogSelector({
         />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 min-w-full w-max bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
+        <div
+          className={cn(
+            "absolute mt-1 min-w-full w-max bg-background border border-block-border rounded-sm shadow-lg overflow-hidden",
+            LAYER_SURFACE_CLASS
+          )}
+        >
           <div className="max-h-60 overflow-y-auto">
             {entries.map((entry) => (
               <button
@@ -1830,14 +1844,11 @@ function SchemaDiffViewerModal({
   modified: string;
   onClose: () => void;
 }) {
-  useEscapeKey(true, onClose);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="relative bg-background w-full h-screen flex flex-col p-4">
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex h-screen max-h-screen w-full max-w-none flex-col rounded-none p-4 2xl:max-w-none">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <DialogTitle>{title}</DialogTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             &times;
           </Button>
@@ -1845,8 +1856,8 @@ function SchemaDiffViewerModal({
         <div className="flex-1 overflow-hidden">
           <SchemaDiffViewer title="" original={original} modified={modified} />
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -2078,21 +2089,12 @@ function TargetDatabasesSelectPanel({
   }, [selected, onUpdate]);
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[64rem] max-w-[100vw] h-full shadow-lg flex flex-col">
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="large">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-control-border">
-          <h2 className="text-lg font-semibold">
-            {t("database.sync-schema.target-databases")}
-          </h2>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            &times;
-          </button>
-        </div>
+        <SheetHeader>
+          <SheetTitle>{t("database.sync-schema.target-databases")}</SheetTitle>
+        </SheetHeader>
 
         {/* Search */}
         <div className="px-6 pt-4">
@@ -2104,7 +2106,7 @@ function TargetDatabasesSelectPanel({
         </div>
 
         {/* Database list */}
-        <div className="flex-1 overflow-y-auto px-6 py-2">
+        <SheetBody className="px-6 py-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full size-6 border-b-2 border-control-placeholder" />
@@ -2192,10 +2194,10 @@ function TargetDatabasesSelectPanel({
               )}
             </>
           )}
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-control-border">
+        <SheetFooter className="justify-between">
           <div className="textinfolabel">
             {t("database.selected-n-databases", { n: selected.size })}
           </div>
@@ -2207,8 +2209,8 @@ function TargetDatabasesSelectPanel({
               {t("common.select")}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

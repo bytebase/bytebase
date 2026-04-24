@@ -46,10 +46,8 @@ vi.mock("@/utils/sso", () => ({
   clearOAuthState: mocks.clearOAuthState,
 }));
 
-vi.mock("@/utils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/utils")>();
+vi.mock("@/utils", () => {
   return {
-    ...actual,
     resolveWorkspaceName: mocks.resolveWorkspaceName,
   };
 });
