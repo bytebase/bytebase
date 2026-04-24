@@ -4,9 +4,9 @@
 
 <script setup lang="ts">
 import { useNotification } from "naive-ui";
-import { h, watchEffect } from "vue";
+import { h, onMounted, onUnmounted, watchEffect } from "vue";
 import { useNotificationStore } from "@/store";
-import type { BBNotificationStyle } from "@/types";
+import type { BBNotificationStyle, NotificationCreate } from "@/types";
 
 const NOTIFICATION_DURATION = 6000;
 const CRITICAL_NOTIFICATION_DURATION = 10000;
@@ -27,10 +27,7 @@ const getNotificationType = (style: BBNotificationStyle) => {
   }
 };
 
-const watchNotification = () => {
-  const item = notificationStore.tryPopNotification({
-    module: "bytebase",
-  });
+const showNotification = (item: NotificationCreate) => {
   if (!item) {
     return;
   }
@@ -81,5 +78,27 @@ const watchNotification = () => {
   });
 };
 
+const watchNotification = () => {
+  const item = notificationStore.tryPopNotification({
+    module: "bytebase",
+  });
+  if (item) {
+    showNotification(item);
+  }
+};
+
+const handleReactNotification = (event: Event) => {
+  const item = (event as CustomEvent<NotificationCreate>).detail;
+  if (item?.module === "bytebase") {
+    showNotification(item);
+  }
+};
+
 watchEffect(watchNotification);
+onMounted(() => {
+  window.addEventListener("bb.react-notification", handleReactNotification);
+});
+onUnmounted(() => {
+  window.removeEventListener("bb.react-notification", handleReactNotification);
+});
 </script>

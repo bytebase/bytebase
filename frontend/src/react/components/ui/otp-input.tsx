@@ -19,16 +19,25 @@ export function OtpInput({
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = useCallback(
-    (index: number, digit: string) => {
-      if (digit && !/^\d$/.test(digit)) return;
+    (index: number, raw: string) => {
+      const digits = raw.replace(/\D/g, "");
       const next = [...value];
       while (next.length < length) next.push("");
-      next[index] = digit;
-      onChange(next);
-      if (digit && index < length - 1) {
-        inputRefs.current[index + 1]?.focus();
+      if (!digits) {
+        next[index] = "";
+        onChange(next);
+        return;
       }
-      if (digit && next.filter((v) => v).length === length) {
+      // Accept multi-digit input here so 2FA autofill extensions that set
+      // `input.value = "123456"` on the first cell get distributed across
+      // cells instead of rejected.
+      for (let i = 0; i < digits.length && index + i < length; i++) {
+        next[index + i] = digits[i];
+      }
+      onChange(next);
+      const focusIndex = Math.min(index + digits.length, length - 1);
+      inputRefs.current[focusIndex]?.focus();
+      if (next.filter((v) => v).length === length) {
         onFinish?.(next);
       }
     },
@@ -77,7 +86,8 @@ export function OtpInput({
           }}
           type="text"
           inputMode="numeric"
-          maxLength={1}
+          name={i === 0 ? "otp" : undefined}
+          maxLength={i === 0 ? length : 1}
           value={value[i] || ""}
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}

@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "この操作は後で元に戻すことができます。",
       "cannot-undo": "この操作は元に戻すことができません。",
-      "sure-to-abandon": "本当に破棄しますか?",
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "デフォルト",
-    "abandon": "破棄",
     "access-denied": "アクセスが拒否されました",
     "access-expires": "アクセスは期限切れです",
     "action-required": "対応が必要",
@@ -219,7 +216,6 @@
     "all": "全て",
     "allow": "許可",
     "and": "と",
-    "apply-to-database": "データベースに適用",
     "approve": "承認する",
     "approved": "承認済み",
     "archive": "アーカイブ",
@@ -316,6 +312,7 @@
     "from": "開始",
     "general": "全般",
     "go-back": "戻る",
+    "google-chat": "Google Chat",
     "groups": "グループ",
     "hard-delete": {
       "description": "このリソースとその他の関連リソースは物理的に削除されます。この操作は元に戻せません",
@@ -1728,7 +1725,6 @@
     "create-project": "作成するプロジェクト",
     "from-projects": "他のプロジェクトから",
     "from-unassigned-databases": "割り当てられていないデータベース",
-    "new-project": "作成するプロジェクト",
     "request-export-data": "データ出力を申請する",
     "transfer-in-db-title": "データベースへの転送",
     "unassigned-db-hint": "新しく同期されたデータベースは最初は割り当てられていないため、使用するにはプロジェクトに移動する必要があります。"

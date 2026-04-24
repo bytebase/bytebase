@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "此操作可以撤销。",
       "cannot-undo": "此操作无法撤销。",
-      "sure-to-abandon": "确定要废弃吗？",
       "sure-to-delete": "确定要删除吗？"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "默认",
-    "abandon": "废弃",
     "access-denied": "拒绝访问",
     "access-expires": "访问到期",
     "action-required": "需要操作",
@@ -219,7 +216,6 @@
     "all": "全部",
     "allow": "允许",
     "and": "和",
-    "apply-to-database": "应用到数据库",
     "approve": "批准",
     "approved": "已批准",
     "archive": "归档",
@@ -316,6 +312,7 @@
     "from": "从",
     "general": "通用",
     "go-back": "返回",
+    "google-chat": "Google Chat",
     "groups": "分组",
     "hard-delete": {
       "description": "此资源和其他相关资源将被硬删除。这个操作无法撤销",
@@ -1728,7 +1725,6 @@
     "create-project": "创建项目",
     "from-projects": "从其他项目",
     "from-unassigned-databases": "未分配的数据库",
-    "new-project": "创建项目",
     "request-export-data": "申请导出数据",
     "transfer-in-db-title": "转进数据库",
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。"

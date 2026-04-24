@@ -45,6 +45,9 @@ var (
 		storepb.WebhookType_WECOM: {
 			"qyapi.weixin.qq.com",
 		},
+		storepb.WebhookType_GOOGLE_CHAT: {
+			"chat.googleapis.com",
+		},
 	}
 
 	// TestOnlyAllowedDomains contains additional domains allowed for testing purposes only.
@@ -90,6 +93,9 @@ func ValidateWebhookURL(webhookType storepb.WebhookType, webhookURL string) erro
 		} else {
 			// Exact match
 			if hostname == domain {
+				if webhookType == storepb.WebhookType_GOOGLE_CHAT {
+					return validateGoogleChatURL(u)
+				}
 				return nil
 			}
 		}
@@ -97,4 +103,25 @@ func ValidateWebhookURL(webhookType storepb.WebhookType, webhookURL string) erro
 
 	return errors.Errorf("webhook URL domain %q is not allowed for webhook type %s (allowed domains: %v)",
 		hostname, webhookType, allowedDomainsForType)
+}
+
+func validateGoogleChatURL(u *url.URL) error {
+	if u.Scheme != "https" {
+		return errors.Errorf("invalid Google Chat URL scheme: %s (only https is allowed)", u.Scheme)
+	}
+
+	parts := strings.Split(u.Path, "/")
+	if len(parts) != 5 || parts[1] != "v1" || parts[2] != "spaces" || parts[3] == "" || parts[4] != "messages" {
+		return errors.Errorf("invalid Google Chat webhook path: %s", u.Path)
+	}
+
+	query := u.Query()
+	if query.Get("key") == "" {
+		return errors.Errorf("missing Google Chat webhook key")
+	}
+	if query.Get("token") == "" {
+		return errors.Errorf("missing Google Chat webhook token")
+	}
+
+	return nil
 }

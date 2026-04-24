@@ -159,6 +159,67 @@ func TestValidateWebhookURL(t *testing.T) {
 			webhookURL:  "https://evil.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
 			wantErr:     true,
 		},
+		// Google Chat tests
+		{
+			name:        "valid google chat URL",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces/AAAA123/messages?key=chat-key&token=chat-token",
+			wantErr:     false,
+		},
+		{
+			name:        "invalid google chat domain",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://evil.googleapis.com/v1/spaces/AAAA123/messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat subdomain host",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://evil.chat.googleapis.com/v1/spaces/AAAA123/messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat scheme",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "http://chat.googleapis.com/v1/spaces/AAAA123/messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat double slash path",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com//v1/spaces/AAAA123/messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat encoded slash in space id",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces/a%2Fb/messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat empty space id",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces//messages?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid google chat path",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces/AAAA123?key=chat-key&token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "google chat missing key",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces/AAAA123/messages?token=chat-token",
+			wantErr:     true,
+		},
+		{
+			name:        "google chat missing token",
+			webhookType: storepb.WebhookType_GOOGLE_CHAT,
+			webhookURL:  "https://chat.googleapis.com/v1/spaces/AAAA123/messages?key=chat-key",
+			wantErr:     true,
+		},
 		// URL format tests
 		{
 			name:        "invalid URL format",

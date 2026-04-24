@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "Bạn có thể hoàn tác hành động này sau.",
       "cannot-undo": "Bạn không thể hoàn tác hành động này.",
-      "sure-to-abandon": "Bạn có chắc chắn muốn hủy bỏ?",
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "Mặc định",
-    "abandon": "Hủy bỏ",
     "access-denied": "Truy cập bị từ chối",
     "access-expires": "Truy cập hết hạn",
     "action-required": "Cần thực hiện hành động",
@@ -219,7 +216,6 @@
     "all": "Tất cả",
     "allow": "Cho phép",
     "and": "và",
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
     "approve": "Phê duyệt",
     "approved": "Đã phê duyệt",
     "archive": "Lưu trữ",
@@ -316,6 +312,7 @@
     "from": "Từ",
     "general": "Chung",
     "go-back": "Quay lại",
+    "google-chat": "Google Chat",
     "groups": "Nhóm",
     "hard-delete": {
       "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. Bạn không thể hoàn tác hành động này.",
@@ -1728,7 +1725,6 @@
     "create-project": "Tạo Dự án",
     "from-projects": "Từ các dự án khác",
     "from-unassigned-databases": "Cơ sở dữ liệu chưa được gán",
-    "new-project": "Mới Dự án",
     "request-export-data": "Yêu cầu Xuất",
     "transfer-in-db-title": "Chuyển vào cơ sở dữ liệu",
     "unassigned-db-hint": "Các cơ sở dữ liệu mới được đồng bộ hóa bắt đầu chưa được gán và phải được chuyển đến một dự án để sử dụng."

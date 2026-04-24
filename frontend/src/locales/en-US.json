@@ -155,9 +155,7 @@
   },
   "bbkit": {
     "confirm-button": {
-      "can-undo": "You can undo this action later.",
       "cannot-undo": "You cannot undo this action.",
-      "sure-to-abandon": "Are you sure to abandon?",
       "sure-to-delete": "Are you sure to delete?"
     }
   },
@@ -204,7 +202,6 @@
   },
   "common": {
     "Default": "Default",
-    "abandon": "Abandon",
     "access-denied": "Access denied",
     "access-expires": "Access Expires",
     "action-required": "Action Required",
@@ -219,7 +216,6 @@
     "all": "All",
     "allow": "Allow",
     "and": "and",
-    "apply-to-database": "Apply to database",
     "approve": "Approve",
     "approved": "Approved",
     "archive": "Archive",
@@ -316,6 +312,7 @@
     "from": "From",
     "general": "General",
     "go-back": "Go back",
+    "google-chat": "Google Chat",
     "groups": "Groups",
     "hard-delete": {
       "description": "This resource and other related resources will be hard-deleted. You cannot undo this action",
@@ -1728,7 +1725,6 @@
     "create-project": "Create Project",
     "from-projects": "From other projects",
     "from-unassigned-databases": "Unassigned databases",
-    "new-project": "New Project",
     "request-export-data": "Request Export",
     "transfer-in-db-title": "Transfer in database",
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use."

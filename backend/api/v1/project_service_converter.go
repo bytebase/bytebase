@@ -116,6 +116,8 @@ func convertToStoreWebhookType(tp v1pb.WebhookType) (storepb.WebhookType, error)
 		return storepb.WebhookType_WECOM, nil
 	case v1pb.WebhookType_LARK:
 		return storepb.WebhookType_LARK, nil
+	case v1pb.WebhookType_GOOGLE_CHAT:
+		return storepb.WebhookType_GOOGLE_CHAT, nil
 	default:
 		return storepb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
 	}
@@ -137,6 +139,8 @@ func convertToV1WebhookType(tp storepb.WebhookType) v1pb.WebhookType {
 		return v1pb.WebhookType_WECOM
 	case storepb.WebhookType_LARK:
 		return v1pb.WebhookType_LARK
+	case storepb.WebhookType_GOOGLE_CHAT:
+		return v1pb.WebhookType_GOOGLE_CHAT
 	default:
 		return v1pb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED
 	}

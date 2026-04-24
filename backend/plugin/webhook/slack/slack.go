@@ -68,7 +68,7 @@ type Attachment struct {
 
 // MessagePayload is the API message for Slack webhook.
 type MessagePayload struct {
-	Text        string       `json:"text"`
+	Text        string       `json:"text,omitempty"`
 	BlockList   []Block      `json:"blocks,omitempty"`
 	Attachments []Attachment `json:"attachments,omitempty"`
 }
@@ -195,7 +195,6 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 	}
 
 	return MessagePayload{
-		Text: ctx.Title,
 		Attachments: []Attachment{{
 			Color:     levelColor(ctx.Level),
 			BlockList: blocks,

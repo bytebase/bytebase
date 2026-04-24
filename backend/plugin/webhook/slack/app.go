@@ -206,7 +206,9 @@ func (p *provider) chatPostMessage(ctx context.Context, channelID string, webhoo
 
 	data := url.Values{}
 	data.Set("channel", channelID)
-	data.Set("text", msg.Text)
+	if msg.Text != "" {
+		data.Set("text", msg.Text)
+	}
 	data.Set("attachments", string(attachmentsJSON))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://slack.com/api/chat.postMessage", strings.NewReader(data.Encode()))

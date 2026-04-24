@@ -1,6 +1,7 @@
 import dingtalkIcon from "@/assets/im/dingtalk.png";
 import discordIcon from "@/assets/im/discord.svg";
 import feishuIcon from "@/assets/im/feishu.webp";
+import googleChatIcon from "@/assets/im/google-chat.svg";
 import slackIcon from "@/assets/im/slack.png";
 import teamsIcon from "@/assets/im/teams.svg";
 import wecomIcon from "@/assets/im/wecom.png";
@@ -10,6 +11,7 @@ const iconMap: Record<number, string> = {
   [WebhookType.SLACK]: slackIcon,
   [WebhookType.DISCORD]: discordIcon,
   [WebhookType.TEAMS]: teamsIcon,
+  [WebhookType.GOOGLE_CHAT]: googleChatIcon,
   [WebhookType.DINGTALK]: dingtalkIcon,
   [WebhookType.FEISHU]: feishuIcon,
   [WebhookType.LARK]: feishuIcon,

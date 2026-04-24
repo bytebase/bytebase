@@ -10,6 +10,7 @@ import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   page: string;
+  pageProps?: Record<string, unknown>;
 }>();
 
 const attrs = useAttrs();
@@ -20,7 +21,13 @@ let root: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 const pageProps = computed(() => {
   const a = attrs as Record<string, unknown>;
-  return Object.keys(a).length > 0 ? { ...a } : undefined;
+  if (props.pageProps || Object.keys(a).length > 0) {
+    return {
+      ...props.pageProps,
+      ...a,
+    };
+  }
+  return undefined;
 });
 
 let currentPage = "";

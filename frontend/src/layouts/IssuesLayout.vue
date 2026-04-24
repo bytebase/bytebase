@@ -1,43 +1,47 @@
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
-    <div class="flex-1 flex overflow-hidden">
-      <div
-        class="flex flex-col min-w-0 flex-1 border-x border-block-border"
-        data-label="bb-main-body-wrapper"
-      >
-        <nav
-          class="bg-white border-b border-block-border"
-          data-label="bb-dashboard-header"
-        >
-          <div class="max-w-full mx-auto">
-            <DashboardHeader :show-logo="true" />
-          </div>
-        </nav>
+  <ReactPageMount
+    page="DashboardBodyShell"
+    :page-props="{
+      variant: 'issues',
+      routeKey: route.fullPath,
+      onReady: handleReady,
+    }"
+  />
 
-        <!-- This area may scroll -->
-        <div
-          id="bb-layout-main"
-          ref="mainContainerRef"
-          class="min-w-0 flex-1 overflow-y-auto"
-        >
-          <!-- Start main area-->
-          <router-view name="content" />
-          <!-- End main area -->
-        </div>
-      </div>
-    </div>
+  <teleport v-if="contentTarget" :to="contentTarget">
+    <router-view name="content" />
+  </teleport>
 
+  <teleport v-if="quickstartTarget" :to="quickstartTarget">
     <Quickstart />
-  </div>
+  </teleport>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import DashboardHeader from "@/views/DashboardHeader.vue";
-import Quickstart from "../components/Quickstart.vue";
+import { computed, ref, shallowRef } from "vue";
+import { useRoute } from "vue-router";
+import Quickstart from "@/components/Quickstart.vue";
+import type { DashboardShellTargets } from "@/react/dashboard-shell";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { provideBodyLayoutContext } from "./common";
 
+const route = useRoute();
+const shellTargets = shallowRef<DashboardShellTargets>({
+  desktopSidebar: null,
+  mobileSidebar: null,
+  content: null,
+  quickstart: null,
+  mainContainer: null,
+});
 const mainContainerRef = ref<HTMLDivElement>();
+
+const contentTarget = computed(() => shellTargets.value.content);
+const quickstartTarget = computed(() => shellTargets.value.quickstart);
+
+const handleReady = (targets: DashboardShellTargets) => {
+  shellTargets.value = targets;
+  mainContainerRef.value = targets.mainContainer ?? undefined;
+};
 
 provideBodyLayoutContext({
   mainContainerRef,

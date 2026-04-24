@@ -1,0 +1,45 @@
+import { authServiceClientConnect, userServiceClientConnect } from "@/connect";
+import type { AppSliceCreator, AuthSlice } from "./types";
+import { getCurrentUserEmail } from "./utils";
+
+export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
+  loadCurrentUser: async () => {
+    const existing = get().currentUser;
+    if (existing) return existing;
+    const pending = get().currentUserRequest;
+    if (pending) return pending;
+    const request = userServiceClientConnect
+      .getCurrentUser({})
+      .then((user) => {
+        set({ currentUser: user, currentUserRequest: undefined });
+        return user;
+      })
+      .catch(() => {
+        set({ currentUserRequest: undefined });
+        return undefined;
+      });
+    set({ currentUserRequest: request });
+    return request;
+  },
+
+  logout: async (signinUrl) => {
+    const email = getCurrentUserEmail(get);
+    try {
+      await authServiceClientConnect.logout({});
+    } catch {
+      // Ignore logout errors and clear the local session by redirecting anyway.
+    } finally {
+      if (email) {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.endsWith(`.${email}`)) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+      }
+      window.location.href = signinUrl;
+    }
+  },
+});

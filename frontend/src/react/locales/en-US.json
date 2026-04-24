@@ -52,6 +52,7 @@
     "reply": "Reply",
     "result": "Result",
     "retry-last-chat-turn": "Retry",
+    "self": "Agent",
     "send": "Send",
     "stop": "Stop",
     "tool-answer": "Answer",
@@ -69,6 +70,7 @@
     "unarchive-all-chats": "Unarchive all chats",
     "unarchive-chat": "Unarchive chat"
   },
+  "agent.self": "Agent",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -210,6 +212,7 @@
     "archive-resource": "Archive {{type}}",
     "archived": "Archived",
     "back": "Back",
+    "back-to-workspace": "Back to workspace",
     "bypassed": "Bypassed",
     "cancel": "Cancel",
     "cannot-undo-this-action": "You cannot undo this action",
@@ -247,6 +250,7 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
+    "demo-mode": "Demo",
     "deny": "Deny",
     "description": "Description",
     "deselect-all": "Deselect all",
@@ -296,8 +300,10 @@
     "items": "items",
     "key": "Key",
     "labels": "Labels",
+    "language": "Language",
     "learn-more": "Learn more",
     "leave-without-saving": "Leave without saving?",
+    "license": "License",
     "load-more": "Load more",
     "loading": "Loading",
     "logout": "Logout",
@@ -329,6 +335,7 @@
     "projects": "Projects",
     "read-only": "Read-only",
     "reason": "Reason",
+    "recent": "Recent",
     "refresh": "Refresh",
     "regenerate": "Regenerate",
     "reject": "Reject",
@@ -403,9 +410,11 @@
     "users": "Users",
     "value": "Value",
     "verify": "Verify",
+    "version": "Version",
     "view": "View",
     "view-details": "View Details",
     "visibility": "Visibility",
+    "want-help": "Want help",
     "warning": "Warning",
     "webhooks": "Webhooks",
     "write-only": "write only",
@@ -418,11 +427,13 @@
   "common.and": "and",
   "common.archive": "Archive",
   "common.archived": "Archived",
+  "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Cancel",
   "common.canceled": "Canceled",
   "common.cannot-undo-this-action": "You cannot undo this action",
   "common.catalog": "Catalog",
   "common.close": "Close",
+  "common.close-mobile-sidebar": "Close mobile sidebar",
   "common.collapse": "Collapse",
   "common.column": "Column",
   "common.comment": "Comment",
@@ -439,6 +450,7 @@
   "common.delete": "Delete",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Deleted",
+  "common.demo-mode": "Demo",
   "common.deploying": "Deploying",
   "common.detail": "Detail",
   "common.detailed-guide": "detailed guide",
@@ -451,7 +463,9 @@
   "common.issue": "Issue",
   "common.key": "Key",
   "common.labels": "Labels",
+  "common.language": "Language",
   "common.learn-more": "Learn more",
+  "common.license": "License",
   "common.line": "Line",
   "common.load-more": "Load more",
   "common.loading": "Loading",
@@ -469,6 +483,7 @@
   "common.password": "Password",
   "common.project": "Project",
   "common.read-only": "Read-only",
+  "common.recent": "Recent",
   "common.remaining": "remaining",
   "common.remove": "Remove",
   "common.removed": "Removed",
@@ -494,6 +509,7 @@
   "common.value": "Value",
   "common.version": "Version",
   "common.view-doc": "View doc",
+  "common.want-help": "Want help",
   "common.warning": "Warning",
   "common.write-only": "write only",
   "create-db": {
@@ -710,6 +726,9 @@
     "nullable": "Nullable",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "revision": {
+      "filename": "Filename"
+    },
     "row-count-est": "Row count est.",
     "row-count-estimate": "Row count estimate",
     "schema": {
@@ -1319,6 +1338,7 @@
     },
     "labels": "Issue Labels",
     "leave-a-comment": "Leave a comment...",
+    "my-issues": "My Issues",
     "review": {
       "approve-description": "Submit feedback and approve this issue",
       "comment-description": "Submit general feedback without approval",
@@ -1366,6 +1386,7 @@
       "waiting-role": "Waiting: {{role}}"
     },
     "title": {
+      "change-database": "Change database",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1387,6 +1408,7 @@
   "issue.data-export.limits": "Limits",
   "issue.data-export.options": "Options",
   "issue.issue-name": "Issue name",
+  "issue.my-issues": "My Issues",
   "issue.no-description-provided": "No description provided",
   "issue.options-disabled-due-to-oversize": "Options are disabled because the SQL is oversized.",
   "issue.overwrite-current-statement": "Overwrite current SQL statement",
@@ -1620,6 +1642,7 @@
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
+    "select": "Select project",
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
@@ -1725,13 +1748,23 @@
       "webhook-url": "Webhook URL"
     }
   },
+  "project.select": "Select project",
   "quick-action": {
     "create-db": "Create database",
+    "create-project": "Create project",
+    "new-project": "New Project",
     "request-export-data": "Request Export"
   },
+  "quick-action.create-project": "Create project",
+  "quick-action.new-project": "New Project",
+  "quick-start": {
+    "self": "Quick Start"
+  },
+  "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
+    "file": "Release File",
     "file-type": {
       "declarative": "Declarative",
       "unspecified": "Unspecified",
@@ -1970,6 +2003,7 @@
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
           "go-to-sql-editor": "Go to SQL Editor",
+          "go-to-workspace": "Go to workspace",
           "self": "Default landing page",
           "sql-editor": {
             "description": "Use SQL Editor to execute database changes directly, suitable for single-person use or environments that do not require supervision.",
@@ -2398,6 +2432,7 @@
       }
     }
   },
+  "settings.general.workspace.default-landing-page.go-to-workspace": "Go to workspace",
   "setup": {
     "basic-info": "Basic info",
     "data": {

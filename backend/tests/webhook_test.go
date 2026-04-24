@@ -239,29 +239,25 @@ func TestWebhookIntegration(t *testing.T) {
 		requests := collector.getRequests()
 		require.GreaterOrEqual(t, len(requests), 1, "Expected at least 1 webhook")
 
-		// Find and verify the issue creation webhook
+		// Find and verify the issue creation webhook. Slack incoming webhook
+		// payloads intentionally omit top-level text to avoid rendering a
+		// duplicate message above the attachment card.
 		var foundCorrectWebhook bool
 		for _, req := range requests {
 			require.Equal(t, "POST", req.Method)
 			require.Contains(t, req.Headers.Get("Content-Type"), "application/json")
 
-			var payload map[string]any
-			require.NoError(t, json.Unmarshal(req.Body, &payload))
+			title, desc, err := parseSlackWebhook(req.Body)
+			require.NoError(t, err)
 
-			// Check if this is an issue creation webhook
-			if text, ok := payload["text"].(string); ok && text == "Issue created" {
-				title, desc, err := parseSlackWebhook(req.Body)
-				require.NoError(t, err)
-
-				// The webhook should use plan's description (title support is incomplete)
-				if desc == planDesc {
-					foundCorrectWebhook = true
-					t.Logf("✓ Webhook uses plan's description: %q", desc)
-					if title == "" {
-						t.Logf("⚠️  Issue title is empty (expected: %q)", planTitle)
-					}
-					break
+			// The webhook should use plan's description (title support is incomplete)
+			if desc == planDesc {
+				foundCorrectWebhook = true
+				t.Logf("✓ Webhook uses plan's description: %q", desc)
+				if title == "" {
+					t.Logf("⚠️  Issue title is empty (expected: %q)", planTitle)
 				}
+				break
 			}
 		}
 

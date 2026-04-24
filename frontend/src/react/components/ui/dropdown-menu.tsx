@@ -18,6 +18,7 @@ function DropdownMenu({
 // Re-exported as-is so callers pass their own className/children. Base UI
 // renders it as a <button> element by default.
 const DropdownMenuTrigger = BaseMenu.Trigger;
+const DropdownMenuSubmenu = BaseMenu.SubmenuRoot;
 
 // ---- Portal + Positioner + Popup ----
 function DropdownMenuContent({
@@ -60,6 +61,41 @@ function DropdownMenuContent({
   );
 }
 
+function DropdownMenuSubmenuContent({
+  className,
+  children,
+  sideOffset = 4,
+  align = "start",
+  ref,
+  ...props
+}: ComponentProps<typeof BaseMenu.Popup> & {
+  sideOffset?: ComponentProps<typeof BaseMenu.Positioner>["sideOffset"];
+  align?: ComponentProps<typeof BaseMenu.Positioner>["align"];
+}) {
+  return (
+    <BaseMenu.Portal container={getLayerRoot("overlay")}>
+      <BaseMenu.Positioner
+        side="right"
+        sideOffset={sideOffset}
+        align={align}
+        className={LAYER_SURFACE_CLASS}
+      >
+        <BaseMenu.Popup
+          ref={ref}
+          className={cn(
+            "min-w-[10rem] overflow-hidden rounded-sm border border-control-border bg-background py-1 shadow-md",
+            "focus:outline-hidden",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </BaseMenu.Popup>
+      </BaseMenu.Positioner>
+    </BaseMenu.Portal>
+  );
+}
+
 // ---- Item ----
 function DropdownMenuItem({
   className,
@@ -84,6 +120,29 @@ function DropdownMenuItem({
   );
 }
 
+function DropdownMenuSubmenuTrigger({
+  className,
+  children,
+  ref,
+  ...props
+}: ComponentProps<typeof BaseMenu.SubmenuTrigger>) {
+  return (
+    <BaseMenu.SubmenuTrigger
+      ref={ref}
+      className={cn(
+        "relative flex items-center gap-x-2 px-3 py-2 text-sm cursor-pointer select-none",
+        "hover:bg-control-bg focus:bg-control-bg outline-hidden",
+        "data-highlighted:bg-control-bg",
+        "data-disabled:pointer-events-none data-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </BaseMenu.SubmenuTrigger>
+  );
+}
+
 // ---- Separator ----
 function DropdownMenuSeparator({
   className,
@@ -102,6 +161,9 @@ function DropdownMenuSeparator({
 export {
   DropdownMenu,
   DropdownMenuTrigger,
+  DropdownMenuSubmenu,
+  DropdownMenuSubmenuContent,
+  DropdownMenuSubmenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,

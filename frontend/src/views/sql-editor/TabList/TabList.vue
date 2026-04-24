@@ -49,12 +49,10 @@
       </div>
     </NScrollbar>
 
-    <ProfileBrandingLogo
-      size="small"
-      :logo-url="workspaceStore.currentWorkspace?.logo"
-    >
-      <ProfileDropdown :link="true" />
-    </ProfileBrandingLogo>
+    <ReactPageMount
+      page="HeaderProfileMenuMount"
+      :page-props="{ size: 'small' }"
+    />
 
     <ContextMenu ref="contextMenuRef" />
   </div>
@@ -68,10 +66,9 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { useI18n } from "vue-i18n";
-import ProfileBrandingLogo from "@/components/ProfileBrandingLogo.vue";
-import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorTabStore, useWorkspaceV1Store } from "@/store";
+import ReactPageMount from "@/react/ReactPageMount.vue";
+import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { defer, usePreventBackAndForward } from "@/utils";
 import { useSQLEditorContext } from "../context";
@@ -87,7 +84,6 @@ type LocalState = {
 const tabStore = useSQLEditorTabStore();
 const editorContext = useSQLEditorContext();
 const context = useTabListContext();
-const workspaceStore = useWorkspaceV1Store();
 
 const { t } = useI18n();
 const dialog = useDialog();

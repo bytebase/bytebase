@@ -8,15 +8,35 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  workspaceLogo: "",
+  record: vi.fn(),
+  push: vi.fn(),
+  resolve: vi.fn(() => ({ fullPath: "/landing" })),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      ({
+        "settings.general.workspace.logo": "Logo",
+      })[key] ?? key,
+  }),
 }));
 
-vi.mock("@/store", () => ({
-  useWorkspaceV1Store: vi.fn(),
+vi.mock("@/react/hooks/useAppState", () => ({
+  useWorkspace: () => ({
+    logo: mocks.workspaceLogo,
+  }),
+  useRecentVisit: () => ({
+    record: mocks.record,
+  }),
+}));
+
+vi.mock("@/react/router", () => ({
+  useNavigate: () => ({
+    push: mocks.push,
+    resolve: mocks.resolve,
+  }),
 }));
 
 vi.mock("@/assets/logo-full.svg", () => ({
@@ -49,7 +69,7 @@ beforeEach(async () => {
 
 describe("BytebaseLogo", () => {
   test("renders custom workspace logo when present", () => {
-    mocks.useVueState.mockReturnValue("https://example.com/logo.png");
+    mocks.workspaceLogo = "https://example.com/logo.png";
     const { container, render, unmount } = renderIntoContainer(
       <BytebaseLogo />
     );
@@ -57,12 +77,12 @@ describe("BytebaseLogo", () => {
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("https://example.com/logo.png");
-    expect(img?.getAttribute("alt")).toBe("branding logo");
+    expect(img?.getAttribute("alt")).toBe("Logo");
     unmount();
   });
 
   test("renders fallback Bytebase SVG when workspace has no custom logo", () => {
-    mocks.useVueState.mockReturnValue("");
+    mocks.workspaceLogo = "";
     const { container, render, unmount } = renderIntoContainer(
       <BytebaseLogo />
     );
@@ -71,6 +91,25 @@ describe("BytebaseLogo", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("/assets/logo-full.svg");
     expect(img?.getAttribute("alt")).toBe("Bytebase");
+    unmount();
+  });
+
+  test("records and navigates when a redirect is provided", () => {
+    mocks.workspaceLogo = "";
+    const { container, render, unmount } = renderIntoContainer(
+      <BytebaseLogo redirect="workspace.landing" />
+    );
+    render();
+
+    const button = container.querySelector("button");
+    expect(button).not.toBeNull();
+    act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mocks.resolve).toHaveBeenCalledWith({ name: "workspace.landing" });
+    expect(mocks.record).toHaveBeenCalledWith("/landing");
+    expect(mocks.push).toHaveBeenCalled();
     unmount();
   });
 });

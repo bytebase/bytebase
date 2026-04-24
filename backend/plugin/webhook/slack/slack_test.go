@@ -29,7 +29,7 @@ func TestBuildMessage_IssueApproved(t *testing.T) {
 
 	msg := BuildMessage(ctx)
 
-	a.Equal("Issue approved", msg.Text)
+	a.Empty(msg.Text)
 	a.Len(msg.Attachments, 1)
 	a.Equal("#2EB67D", msg.Attachments[0].Color)
 
@@ -156,7 +156,7 @@ func TestBuildMessage_JSONStructure(t *testing.T) {
 	// Verify the JSON is valid and has expected top-level structure
 	var parsed map[string]any
 	a.NoError(json.Unmarshal(b, &parsed))
-	a.Equal("Issue approved", parsed["text"])
+	a.NotContains(parsed, "text")
 	a.NotNil(parsed["attachments"])
 
 	attachments, ok := parsed["attachments"].([]any)
@@ -167,6 +167,25 @@ func TestBuildMessage_JSONStructure(t *testing.T) {
 	a.True(ok)
 	a.Equal("#2EB67D", att["color"])
 	a.NotNil(att["blocks"])
+}
+
+func TestBuildMessage_OmitsTopLevelText(t *testing.T) {
+	a := require.New(t)
+
+	ctx := webhook.Context{
+		Level: webhook.WebhookWarn,
+		Title: "Approval required",
+		Link:  "https://bb.example.com/projects/proj-1/issues/42",
+	}
+
+	msg := BuildMessage(ctx)
+	b, err := json.Marshal(msg)
+	a.NoError(err)
+
+	var parsed map[string]any
+	a.NoError(json.Unmarshal(b, &parsed))
+	a.NotContains(parsed, "text")
+	a.Contains(msg.Attachments[0].BlockList[0].Text.Text, "Approval required")
 }
 
 func TestEscapeMrkdwn(t *testing.T) {

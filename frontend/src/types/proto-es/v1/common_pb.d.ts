@@ -543,6 +543,13 @@ export enum WebhookType {
    * @generated from enum value: LARK = 7;
    */
   LARK = 7,
+
+  /**
+   * Google Chat integration.
+   *
+   * @generated from enum value: GOOGLE_CHAT = 8;
+   */
+  GOOGLE_CHAT = 8,
 }
 
 /**

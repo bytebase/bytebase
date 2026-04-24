@@ -44,7 +44,7 @@ function moveKey(oldKey: string, newKey: string) {
 
 function migrateLanguage() {
   // Old format: key "bytebase_options", value {"appearance":{"language":"zh-CN"}}
-  // New format: key "bb.language", value "zh-CN" (plain string, JSON-serialized)
+  // New format: key "bb.language", value zh-CN (plain string)
   const old = localStorage.getItem("bytebase_options");
   if (!old) return;
 
@@ -55,8 +55,7 @@ function migrateLanguage() {
       };
       const lang = parsed?.appearance?.language;
       if (lang) {
-        // useLocalStorage with string type stores as JSON-serialized string
-        localStorage.setItem(STORAGE_KEY_LANGUAGE, JSON.stringify(lang));
+        localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
       }
     } catch {
       // ignore malformed

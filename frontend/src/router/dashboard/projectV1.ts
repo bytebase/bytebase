@@ -515,8 +515,11 @@ const projectV1Routes: RouteRecordRaw[] = [
             meta: {
               requiredPermissionList: () => ["bb.releases.get"],
             },
-            component: () => import("@/components/Release/ReleaseDetail/"),
-            props: true,
+            component: () => import("@/react/ReactPageMount.vue"),
+            props: (route: RouteLocationNormalized) => ({
+              page: "ProjectReleaseDetailPage",
+              ...route.params,
+            }),
           },
         ],
       },
