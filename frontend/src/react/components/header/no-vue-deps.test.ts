@@ -1,10 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-const sources = import.meta.glob(["./*.{ts,tsx}", "../BytebaseLogo.tsx"], {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
+const sources = import.meta.glob(
+  ["./*.{ts,tsx}", "../BytebaseLogo.tsx", "../DashboardSidebar.tsx"],
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }
+) as Record<string, string>;
 
 const appStateSources = import.meta.glob(
   ["../../hooks/useAppState.ts", "../../stores/app/**/*.ts"],
@@ -24,7 +27,7 @@ const forbidden = [
   "@/router",
 ];
 
-describe("React dashboard header dependencies", () => {
+describe("React dashboard chrome dependencies", () => {
   test("does not directly depend on Vue, Pinia, or Vue Router", () => {
     const violations = [];
     for (const [file, source] of Object.entries(sources)) {

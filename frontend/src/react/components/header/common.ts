@@ -1,4 +1,5 @@
 import i18n from "@/react/i18n";
+import { emitReactLocaleChange } from "@/react/shell-bridge";
 import { STORAGE_KEY_LANGUAGE } from "@/utils/storage-keys";
 import { emitStorageChangedEvent } from "@/utils/util";
 
@@ -19,7 +20,5 @@ export function setAppLocale(lang: string) {
   void i18n.changeLanguage(lang);
   localStorage.setItem(STORAGE_KEY_LANGUAGE, lang);
   emitStorageChangedEvent();
-  window.dispatchEvent(
-    new CustomEvent("bb.react-locale-change", { detail: lang })
-  );
+  emitReactLocaleChange(lang);
 }

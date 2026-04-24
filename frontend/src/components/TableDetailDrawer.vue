@@ -63,14 +63,15 @@
                   >
                   <DatabaseV1Name :database="database" />
                 </dd>
-                <SQLEditorButtonV1
+                <button
                   v-if="allowQuery"
-                  class="text-sm md:mr-4"
-                  :database="database"
-                  :schema="schemaName"
-                  :table="tableName"
-                  :label="true"
-                />
+                  type="button"
+                  class="flex items-center text-sm textlabel cursor-pointer hover:text-accent md:mr-4 border-0 bg-transparent p-0"
+                  @click.stop.prevent="gotoSQLEditor"
+                >
+                  <span class="mr-1">{{ $t("sql-editor.self") }}</span>
+                  <heroicons-solid:terminal class="w-5 h-5" />
+                </button>
                 <NPopover
                   trigger="click"
                   placement="bottom"
@@ -310,6 +311,7 @@ import { CodeIcon } from "lucide-vue-next";
 import { NButton, NInput, NPopover } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
@@ -355,7 +357,7 @@ import {
   supportGetStringSchema,
 } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
-import { SQLEditorButtonV1 } from "./DatabaseDetail";
+import { openSQLEditorForDatabase } from "./DatabaseDetail/sqlEditor";
 import IndexTable from "./IndexTable.vue";
 import MaskSpinner from "./misc/MaskSpinner.vue";
 import PartitionTablesDataTable from "./PartitionTablesDataTable.vue";
@@ -386,6 +388,7 @@ const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const catalogStore = useDatabaseCatalogV1Store();
+const router = useRouter();
 
 const databaseCatalog = useDatabaseCatalog(props.databaseName, false);
 const tableCatalog = computed(() =>
@@ -530,6 +533,15 @@ const allowQuery = computed(() => {
   }
   return isDatabaseV1Queryable(database.value);
 });
+
+const gotoSQLEditor = () => {
+  openSQLEditorForDatabase({
+    router,
+    database: database.value,
+    schema: props.schemaName,
+    table: props.tableName,
+  });
+};
 
 const hasPartitionTables = computed(() => {
   return (

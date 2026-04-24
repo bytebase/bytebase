@@ -335,7 +335,6 @@
     "labels": "Etiquetas",
     "language": "Idioma",
     "lark": "Lark",
-    "latest": "Último",
     "learn-more": "Aprender más",
     "leave": "Dejar",
     "leave-without-saving": "¿Salir sin guardar?",
@@ -357,11 +356,9 @@
     "no-data": "Sin datos",
     "no-license": "Sin licencia",
     "not-started": "No iniciado",
-    "notices": "Avisos",
     "off": "Apagado",
     "ok": "OK",
     "on": "Encendido",
-    "only-creator-allowed-action": "Solo el creador puede realizar esta acción",
     "only-creator-allowed-export": "Solo el creador puede exportar",
     "operation": "Operación",
     "operations": "Operaciones",
@@ -460,7 +457,6 @@
     "untitled": "Sin título",
     "update": "Actualizar",
     "updated": "Actualizado",
-    "updated-at": "Actualizado",
     "upload": "Subir",
     "user": "Usuario",
     "username": "Nombre de usuario",
@@ -521,8 +517,7 @@
       "approved-issue": "incidencia aprobada",
       "disallow-approve-reason": {
         "some-task-checks-are-still-running": "Algunas comprobaciones de tareas aún se están ejecutando",
-        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron",
-        "x-field-is-required": "{field} se requiere"
+        "some-task-checks-didnt-pass": "Algunas comprobaciones de tareas no pasaron"
       },
       "generating-approval-flow": "Generando flujo de aprobación",
       "re-request-review": "Volver a solicitar revisión",
@@ -646,7 +641,6 @@
     "edit-labels": "Editar etiquetas",
     "edit-schema": "Modificar esquema",
     "engine": "Motor",
-    "engine-not-supported-for-backup": "No se admite la copia de seguridad previa para: {databases}",
     "export-schema": "Exportar esquema",
     "export-schema-multi-file": "Multi-archivo (ZIP)",
     "export-schema-single-file": "Archivo único",
@@ -1172,9 +1166,6 @@
       "search": "Ingrese título o id para buscar",
       "self": "Búsqueda Avanzada"
     },
-    "approval": {
-      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
-    },
     "approval-flow": {
       "self": "Flujo de aprobación"
     },
@@ -1207,17 +1198,9 @@
       "limits": "Límites",
       "options": "Opciones de exportación"
     },
-    "error": {
-      "statement-cannot-be-modified": "La declaración no se puede modificar una vez creado el problema"
-    },
     "issue-name": "Nombre de la incidencia",
     "labels": "Etiquetas de problema",
     "leave-a-comment": "Dejar un comentario...",
-    "migration-mode": {
-      "online": {
-        "description": "Basado en gh-ost. Para tablas grandes, puede reducir la duración del bloqueo de la tabla de horas a segundos {link}."
-      }
-    },
     "my-issues": "Mis Incidencias",
     "no-description-provided": "No se proporcionó ninguna descripción",
     "options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
@@ -1255,8 +1238,6 @@
     },
     "sql-check": {
       "back-to-edit": "Volver a editar",
-      "not-executed-yet": "Aún no ejecutado",
-      "sql-checks": "Comprobaciones SQL",
       "sql-review-violations": "Infracciones de revisión de SQL",
       "statement-is-required": "Se requiere una declaración SQL",
       "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL."
@@ -1281,18 +1262,7 @@
     },
     "task-run": {
       "logs": "Registros",
-      "session": "Sesión",
-      "task-run-session": {
-        "blocked-sessions": {
-          "description": "Las sesiones que están bloqueadas por la sesión actual.",
-          "self": "Sesiones bloqueadas"
-        },
-        "blocking-sessions": {
-          "description": "Las sesiones que están bloqueando la sesión actual.",
-          "self": "Sesiones de bloqueo"
-        },
-        "no-session-found": "No se encontró ninguna sesión."
-      }
+      "session": "Sesión"
     },
     "title": {
       "change-database": "Modificar base de datos",
@@ -1303,10 +1273,7 @@
       "request-specific-role": "Solicitar rol \"{role}\""
     },
     "transaction-mode": {
-      "execution-order-note": "Las declaraciones no transaccionales se ejecutarán en último lugar.",
-      "label": "Modo de transacción",
-      "off-tooltip": "Ejecuta declaraciones individualmente en modo de confirmación automática. Las declaraciones se confirman inmediatamente y no se pueden revertir si una declaración posterior falla.",
-      "on-tooltip": "Envuelve todas las declaraciones en una sola transacción (BEGIN/COMMIT)."
+      "label": "Modo de transacción"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Aprobado\", pero algunas de sus tareas no se ejecutan correctamente.",
     "upload-sql": "Cargar SQL",
@@ -1385,16 +1352,8 @@
       "unsaved-changes": "Cambios no guardados",
       "unsaved-changes-message": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
     },
-    "ghost": {
-      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas",
-      "missing-backup-database": "Cree la base de datos 'bbdataarchive' en la instancia '{instance}', luego sincronice la instancia y la base de datos",
-      "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
-      "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
-      "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos"
-    },
     "go-to-plan-page": "Ir a la página del plan",
     "isolation-level": {
-      "description": "Controla cómo las transacciones interactúan con cambios concurrentes. Solo aplica cuando el Modo de Transacción está activado.",
       "self": "Nivel de Aislamiento"
     },
     "labels-required-for-review": "Se requieren etiquetas antes de solicitar revisión",
@@ -1432,19 +1391,7 @@
       "show-details": "Mostrar detalles ↓"
     },
     "plans": "Planes",
-    "pre-backup": {
-      "configuration-has-issues": "La configuración tiene {count} problemas | La configuración tiene {count} problemas",
-      "missing-backup-database": "Cree la base de datos 'bbdataarchive' en la instancia '{instance}', luego sincronice la instancia y la base de datos",
-      "missing-backup-database-oracle": "Cree la base de datos 'BBDATAARCHIVE' en la instancia '{instance}', luego sincronice la instancia y la base de datos",
-      "missing-backup-schema-postgres": "Cree el esquema 'bbdataarchive' en la base de datos '{database}'. Si usa SET ROLE, otorgue USAGE y CREATE en el esquema a ese rol. Luego sincronice la base de datos",
-      "only-some-databases-checked": "Sólo se comprueban algunas bases de datos",
-      "some-databases-have-issues": "{count} la base de datos tiene problemas | {count} las bases de datos tienen problemas",
-      "some-databases-not-meeting-requirements": "Algunas bases de datos ({databases}) no cumplen los requisitos"
-    },
     "ready-for-review": "Listo para revisión",
-    "refresh-indicator": {
-      "last-refresh": "Última actualización: {time}"
-    },
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "select-targets": "Seleccionar objetivos",
@@ -1454,15 +1401,6 @@
     },
     "spec": {
       "change": "Cambiar",
-      "delete-change": {
-        "content": "¿Está seguro de que desea eliminar este cambio?",
-        "title": "Eliminar cambio"
-      },
-      "role-selection": {
-        "description": "Elija qué rol de PostgreSQL desea ejecutar como esta declaración.",
-        "technical-note": "Agrega \"SET ROLE {role};\" a su declaración SQL.",
-        "title": "Selección de roles de base de datos"
-      },
       "type": {
         "create-database": "Crear base de datos",
         "database-change": "Cambio de base de datos",
@@ -1759,7 +1697,6 @@
     "files": "Archivos",
     "not-found": "Extraviado",
     "releases": "Lanzamientos",
-    "title": "Liberar",
     "total-files": "Total de {count} archivos",
     "usage-description": "Un lanzamiento es un artefacto de aplicación versionado cuyo despliegue a un entorno es activado por un flujo de trabajo GitOps.",
     "vcs-source": "Fuente VCS",
@@ -1876,7 +1813,6 @@
       "self": "Etapa | Etapas"
     },
     "task": {
-      "no-statement": "Declaración sin SQL",
       "no-tasks": "No hay tareas en esta etapa",
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
       "statement-truncated-hint": "Declaración truncada debido al gran tamaño."
@@ -1937,7 +1873,6 @@
       "indexes": "Índices",
       "unique": "Único"
     },
-    "insert-sql": "Insert SQL",
     "message": {
       "cannot-drop-the-last-column": "No se puede eliminar la última columna",
       "duplicated-function-name": "Nombre de función duplicado",
@@ -1960,7 +1895,6 @@
       "select": "Seleccionar esquema"
     },
     "search-database-and-table": "Buscar base de datos y tabla",
-    "self": "Editor de esquema",
     "table": {
       "name": "Nombre de la tabla",
       "select": "Seleccionar tabla"
@@ -1974,7 +1908,6 @@
       "value": "Valor"
     },
     "tables": "Tablas",
-    "template-database": "Template database",
     "views": "Vistas"
   },
   "schema-template": {
@@ -2764,8 +2697,7 @@
     "rule-detail": "Detalle de la regla",
     "select-all": "Seleccionar todo",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
-    "title": "Revisión de SQL",
-    "view-definition": "Ver definición"
+    "title": "Revisión de SQL"
   },
   "subscription": {
     "button": {
@@ -2891,7 +2823,6 @@
       "summary-report": "Informe resumido"
     },
     "checking": "Comprobando...",
-    "comment": "Comentario",
     "created": "Creado",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "error": {
@@ -2899,7 +2830,6 @@
     },
     "executed-by": "Ejecutado por",
     "execution-time": "Tiempo de ejecución",
-    "no-cancellable-tasks": "No hay tareas cancelables",
     "no-permission": "No hay permiso para realizar esta acción",
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-selectable-tasks": "No se puede seleccionar ninguna tarea.",
@@ -2907,20 +2837,10 @@
     "no-tasks-selected": "No hay tareas seleccionadas",
     "online-migration": {
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea.",
-      "configure": "Configurar",
-      "configure-ghost-parameters": "Configurar los parámetros de gh-ost",
-      "error": {
-        "not-applicable": {
-          "database-doesnt-meet-ghost-requirement": "La base de datos {database} no cumple con el requisito de gh-ost"
-        },
-        "nothing-changed": "nada ha cambiado"
-      },
-      "ghost-parameters": "parámetros de gh-ost",
       "self": "Migración en línea"
     },
     "only-showing-latest-n-runs": "Solo se muestran las últimas {n} ejecuciones",
     "prior-backup": "Respaldo previo",
-    "prior-backup-tips": "Copia de seguridad de los datos afectados con anticipación. Solo aplica a cambios de datos (UPDATE, DELETE), no a cambios de esquema.",
     "run-checks": "Ejecutar comprobaciones",
     "run-history": "Historial de ejecución",
     "run-immediately": {
@@ -2932,7 +2852,6 @@
       "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda.",
       "self": "Programar para más tarde"
     },
-    "scheduled-at": "Programado en",
     "scheduled-time": "Hora programada",
     "select-scheduled-time": "Seleccionar hora programada",
     "select-task": "Seleccionar tarea | Seleccionar tareas",
@@ -2949,17 +2868,9 @@
       "pending": "Pendiente",
       "running": "Ejecutándose",
       "skipped": "Omitido"
-    },
-    "task-checks": "Comprobaciones de tarea",
-    "type": {
-      "database-create": "Crear base de datos",
-      "database-export": "Exportar datos",
-      "general": "General",
-      "migrate": "Migrar"
     }
   },
   "task-run": {
-    "failed-runs": "Tareas fallidas: últimos registros de ejecución",
     "history": "Historial de ejecución de tareas",
     "latest": "Última ejecución",
     "latest-logs": "Últimos registros",
@@ -2992,8 +2903,7 @@
       "available": "Reversión disponible para {n} tarea | Reversión disponible para {n} tareas",
       "no-statement-generated": "No se generó ninguna declaración de reversión",
       "preview-statement": {
-        "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión.",
-        "self": "Declaración de vista previa"
+        "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión."
       }
     },
     "status": {

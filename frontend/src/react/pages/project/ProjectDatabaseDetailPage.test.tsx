@@ -7,6 +7,7 @@ import {
   PROJECT_DATABASE_DETAIL_TAB_REVISION,
   PROJECT_DATABASE_DETAIL_TAB_SETTING,
 } from "./database-detail/tabs";
+import { ProjectDatabaseDetailPage } from "./ProjectDatabaseDetailPage";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -185,10 +186,6 @@ const mocks = vi.hoisted(() => {
 let latestTabsOnValueChange:
   | ((tab: string | number | null) => void)
   | undefined;
-
-type ProjectDatabaseDetailPageComponent =
-  typeof import("./ProjectDatabaseDetailPage").ProjectDatabaseDetailPage;
-let ProjectDatabaseDetailPage: ProjectDatabaseDetailPageComponent;
 
 vi.mock("lucide-react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("lucide-react")>();
@@ -522,11 +519,6 @@ beforeEach(() => {
   });
   mocks.windowOpen.mockReset();
   latestTabsOnValueChange = undefined;
-});
-
-beforeEach(async () => {
-  vi.resetModules();
-  ({ ProjectDatabaseDetailPage } = await import("./ProjectDatabaseDetailPage"));
 });
 
 describe("ProjectDatabaseDetailPage", () => {

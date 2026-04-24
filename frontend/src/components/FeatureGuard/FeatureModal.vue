@@ -85,19 +85,16 @@
       </div>
     </div>
   </BBModal>
-  <InstanceAssignment
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { SparklesIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
@@ -109,11 +106,6 @@ import {
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import InstanceAssignment from "../InstanceAssignment.vue";
-
-interface LocalState {
-  showInstanceAssignmentDrawer: boolean;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -126,10 +118,6 @@ const props = withDefaults(
     instance: undefined,
   }
 );
-
-const state = reactive<LocalState>({
-  showInstanceAssignmentDrawer: false,
-});
 
 const emit = defineEmits(["cancel"]);
 const { t } = useI18n();
@@ -154,7 +142,13 @@ const title = computed(() => {
 
 const ok = () => {
   if (instanceMissingLicense.value) {
-    state.showInstanceAssignmentDrawer = true;
+    router.push({
+      name: INSTANCE_ROUTE_DASHBOARD,
+      query: {
+        assignLicense: "1",
+        instances: props.instance?.name,
+      },
+    });
   } else {
     router.push(autoSubscriptionRoute());
   }

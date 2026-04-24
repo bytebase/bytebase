@@ -1,6 +1,7 @@
 import { Copy, Pencil } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -12,18 +13,19 @@ import {
   useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { PurchaseSection } from "./PurchaseSection";
 
 interface SubscriptionPageProps {
-  onRequireEnterprise: () => void;
-  onManageInstanceLicenses: () => void;
+  onRequireEnterprise?: () => void;
+  onManageInstanceLicenses?: () => void;
 }
 
 export function SubscriptionPage({
-  onRequireEnterprise,
-  onManageInstanceLicenses,
+  onRequireEnterprise: onRequireEnterpriseProp,
+  onManageInstanceLicenses: onManageInstanceLicensesProp,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
@@ -63,8 +65,16 @@ export function SubscriptionPage({
   const [license, setLicense] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showInstanceAssignmentSheet, setShowInstanceAssignmentSheet] =
+    useState(false);
 
   const disabled = loading || !license;
+  const onRequireEnterprise =
+    onRequireEnterpriseProp ??
+    (() => window.open(ENTERPRISE_INQUIRE_LINK, "_blank"));
+  const onManageInstanceLicenses =
+    onManageInstanceLicensesProp ??
+    (() => setShowInstanceAssignmentSheet(true));
 
   let planType: "FREE" | "TEAM" | "ENTERPRISE" = "FREE";
   let planLabel = t("subscription.plan.free.title");
@@ -297,6 +307,10 @@ export function SubscriptionPage({
           </div>
         </div>
       )}
+      <InstanceAssignmentSheet
+        open={showInstanceAssignmentSheet}
+        onOpenChange={setShowInstanceAssignmentSheet}
+      />
     </div>
   );
 }

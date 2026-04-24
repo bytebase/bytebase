@@ -1,5 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -235,10 +236,22 @@ describe("useAppStore", () => {
     );
   });
 
+  test("uses pipeline app feature defaults before profile overrides", () => {
+    const store = createAppStore();
+
+    expect(
+      store.getState().appFeatures["bb.feature.database-change-mode"]
+    ).toBe(DatabaseChangeMode.PIPELINE);
+    expect(store.getState().appFeatures["bb.feature.hide-quick-start"]).toBe(
+      false
+    );
+    expect(store.getState().appFeatures["bb.feature.hide-trial"]).toBe(false);
+  });
+
   test("dispatches notification events for the Vue shell bridge", () => {
     const store = createAppStore();
     const listener = vi.fn();
-    window.addEventListener("bb.react-notification", listener);
+    window.addEventListener(ReactShellBridgeEvent.notification, listener);
 
     store.getState().notify({
       module: "bytebase",
@@ -248,14 +261,14 @@ describe("useAppStore", () => {
 
     expect(store.getState().notifications).toHaveLength(1);
     expect(listener).toHaveBeenCalledTimes(1);
-    window.removeEventListener("bb.react-notification", listener);
+    window.removeEventListener(ReactShellBridgeEvent.notification, listener);
   });
 
   test("keeps user-scoped preferences in localStorage", () => {
     const store = createAppStore();
     const listener = vi.fn();
     store.setState({ currentUser: user });
-    window.addEventListener("bb.react-quickstart-reset", listener);
+    window.addEventListener(ReactShellBridgeEvent.quickstartReset, listener);
 
     store.getState().setRecentProject(projectA.name);
     store.getState().setRecentProject(projectB.name);
@@ -283,6 +296,6 @@ describe("useAppStore", () => {
         }),
       })
     );
-    window.removeEventListener("bb.react-quickstart-reset", listener);
+    window.removeEventListener(ReactShellBridgeEvent.quickstartReset, listener);
   });
 });

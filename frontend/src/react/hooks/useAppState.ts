@@ -49,6 +49,10 @@ export function useServerInfo() {
   return serverInfo;
 }
 
+export function useIsSaaSMode() {
+  return useServerInfo()?.saas ?? false;
+}
+
 export function useAppFeature<T extends keyof AppFeatures>(feature: T) {
   const value = useAppStore((state) => state.appFeatures[feature]);
   const loadWorkspaceProfile = useAppStore(

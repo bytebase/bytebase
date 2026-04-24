@@ -335,7 +335,6 @@
     "labels": "ラベル",
     "language": "言語",
     "lark": "Lark",
-    "latest": "最新の",
     "learn-more": "もっと詳しく知る",
     "leave": "離れる",
     "leave-without-saving": "変更を保存していませんか?",
@@ -357,11 +356,9 @@
     "no-data": "データなし",
     "no-license": "ライセンスがありません",
     "not-started": "未開始",
-    "notices": "注意事項",
     "off": "オフ",
     "ok": "わかりました",
     "on": "オン",
-    "only-creator-allowed-action": "この操作は作成者のみが実行できます",
     "only-creator-allowed-export": "エクスポートは作成者のみが実行できます",
     "operation": "操作",
     "operations": "操作",
@@ -460,7 +457,6 @@
     "untitled": "名前のない",
     "update": "更新する",
     "updated": "更新しました",
-    "updated-at": "更新日時",
     "upload": "アップロード",
     "user": "ユーザー",
     "username": "ユーザー名",
@@ -521,8 +517,7 @@
       "approved-issue": "イシューを承認する",
       "disallow-approve-reason": {
         "some-task-checks-are-still-running": "確認すべき実行中のタスクがまだあります",
-        "some-task-checks-didnt-pass": "失敗したタスクチェックがまだあります",
-        "x-field-is-required": "{field}は必須です"
+        "some-task-checks-didnt-pass": "失敗したタスクチェックがまだあります"
       },
       "generating-approval-flow": "承認フローが生成されています",
       "re-request-review": "再度承認をリクエストする",
@@ -646,7 +641,6 @@
     "edit-labels": "タグを編集する",
     "edit-schema": "スキーマの変更",
     "engine": "エンジン",
-    "engine-not-supported-for-backup": "以前のバックアップはサポートされていません: {databases}",
     "export-schema": "スキーマをエクスポート",
     "export-schema-multi-file": "複数ファイル (ZIP)",
     "export-schema-single-file": "単一ファイル",
@@ -1172,9 +1166,6 @@
       "search": "検索するにはタイトルまたはIDを入力してください",
       "self": "高度な検索"
     },
-    "approval": {
-      "approved-and-waiting-for-rollout": "このイシューは承認されており、展開する準備ができています。"
-    },
     "approval-flow": {
       "self": "承認の流れ"
     },
@@ -1207,17 +1198,9 @@
       "limits": "制限",
       "options": "設定項目"
     },
-    "error": {
-      "statement-cannot-be-modified": "イシューの作成後にステートメントを変更することはできません"
-    },
     "issue-name": "イシュー名",
     "labels": "イシューラベル",
     "leave-a-comment": "コメントを残す…",
-    "migration-mode": {
-      "online": {
-        "description": "gh-ostをベースにしています。大規模なテーブルの場合、テーブルのロック時間を数時間から数秒 {link} に短縮できます。"
-      }
-    },
     "my-issues": "マイイシュー",
     "no-description-provided": "説明なし",
     "options-disabled-due-to-oversize": "SQL が大きすぎるため、オプションは無効になっています。",
@@ -1255,8 +1238,6 @@
     },
     "sql-check": {
       "back-to-edit": "編集に戻る",
-      "not-executed-yet": "まだ実行されていません",
-      "sql-checks": "SQLチェック項目",
       "sql-review-violations": "SQL レビュールール違反",
       "statement-is-required": "SQL文が必要です",
       "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。"
@@ -1281,18 +1262,7 @@
     },
     "task-run": {
       "logs": "ログ",
-      "session": "セッション",
-      "task-run-session": {
-        "blocked-sessions": {
-          "description": "現在のセッションによってブロックされているセッション",
-          "self": "ブロックされたセッション"
-        },
-        "blocking-sessions": {
-          "description": "現在のセッションをブロックしているセッション",
-          "self": "セッションのブロック"
-        },
-        "no-session-found": "セッションが見つかりません。"
-      }
+      "session": "セッション"
     },
     "title": {
       "change-database": "データベースの変更",
@@ -1303,10 +1273,7 @@
       "request-specific-role": "「{role}」ロールをリクエスト"
     },
     "transaction-mode": {
-      "execution-order-note": "非トランザクション ステートメントは最後に実行されます。",
-      "label": "トランザクションモード",
-      "off-tooltip": "自動コミットモードで個別にステートメントを実行します。ステートメントは即座にコミットされ、後続のステートメントが失敗してもロールバックできません。",
-      "on-tooltip": "すべてのステートメントを単一のトランザクション（BEGIN/COMMIT）でラップします。"
+      "label": "トランザクションモード"
     },
     "unfinished-resolved-issue-tips": "イシューは「承認済み」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "upload-sql": "SQLのアップロード",
@@ -1385,16 +1352,8 @@
       "unsaved-changes": "保存されていない変更",
       "unsaved-changes-message": "保存されていない変更があります。終了してもよろしいですか?"
     },
-    "ghost": {
-      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります",
-      "missing-backup-database": "インスタンス '{instance}' にデータベース 'bbdataarchive' を作成し、インスタンスとデータベースを同期してください",
-      "only-some-databases-checked": "一部のデータベースのみがチェックされます",
-      "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
-      "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません"
-    },
     "go-to-plan-page": "プランページへ移動",
     "isolation-level": {
-      "description": "トランザクションが並行変更とどのように相互作用するかを制御します。トランザクションモードがオンの場合のみ適用されます。",
       "self": "分離レベル"
     },
     "labels-required-for-review": "レビューをリクエストする前にラベルが必要です",
@@ -1432,19 +1391,7 @@
       "show-details": "詳細を表示 ↓"
     },
     "plans": "プラン",
-    "pre-backup": {
-      "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります",
-      "missing-backup-database": "インスタンス '{instance}' にデータベース 'bbdataarchive' を作成し、インスタンスとデータベースを同期してください",
-      "missing-backup-database-oracle": "インスタンス '{instance}' にデータベース 'BBDATAARCHIVE' を作成し、インスタンスとデータベースを同期してください",
-      "missing-backup-schema-postgres": "データベース '{database}' にスキーマ 'bbdataarchive' を作成してください。SET ROLE を使用している場合は、そのロールにスキーマの USAGE と CREATE 権限を付与してください。その後、データベースを同期してください",
-      "only-some-databases-checked": "一部のデータベースのみがチェックされます",
-      "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
-      "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません"
-    },
     "ready-for-review": "レビュー準備完了",
-    "refresh-indicator": {
-      "last-refresh": "最終更新: {time}"
-    },
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
     "select-targets": "ターゲットを選択",
@@ -1454,15 +1401,6 @@
     },
     "spec": {
       "change": "変化",
-      "delete-change": {
-        "content": "この変更を削除してもよろしいですか?",
-        "title": "削除変更"
-      },
-      "role-selection": {
-        "description": "このステートメントを実行する PostgreSQL ロールを選択します。",
-        "technical-note": "SQL ステートメントに「SET ROLE {role};」を追加します。",
-        "title": "データベースロールの選択"
-      },
       "type": {
         "create-database": "データベースの作成",
         "database-change": "データベースの変更",
@@ -1759,7 +1697,6 @@
     "files": "ファイル",
     "not-found": "配信パケットが到着していません",
     "releases": "リリース",
-    "title": "リリース",
     "total-files": "合計 {count} ファイル",
     "usage-description": "リリースは、GitOpsワークフローによって環境へのデプロイがトリガーされるバージョン管理されたアプリケーションアーティファクトです。",
     "vcs-source": "VCSソース",
@@ -1876,7 +1813,6 @@
       "self": "ステージ | ステージ"
     },
     "task": {
-      "no-statement": "SQL文なし",
       "no-tasks": "このステージにはタスクはありません",
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
       "statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。"
@@ -1937,7 +1873,6 @@
       "indexes": "索引",
       "unique": "唯一"
     },
-    "insert-sql": "Insert SQL",
     "message": {
       "cannot-drop-the-last-column": "最後の列は削除できません",
       "duplicated-function-name": "関数名が重複しています",
@@ -1960,7 +1895,6 @@
       "select": "スキーマの選択"
     },
     "search-database-and-table": "データベースとテーブルを検索する",
-    "self": "スキーマエディタ",
     "table": {
       "name": "テーブル名",
       "select": "テーブルの選択"
@@ -1974,7 +1908,6 @@
       "value": "値"
     },
     "tables": "テーブル",
-    "template-database": "Template database",
     "views": "ビュー"
   },
   "schema-template": {
@@ -2764,8 +2697,7 @@
     "rule-detail": "ルールの詳細",
     "select-all": "すべて選択",
     "select-review-rules": "SQL レビュールールを選択",
-    "title": "SQL レビューポリシー",
-    "view-definition": "ビューの定義"
+    "title": "SQL レビューポリシー"
   },
   "subscription": {
     "button": {
@@ -2891,7 +2823,6 @@
       "summary-report": "概略報告"
     },
     "checking": "検査中…",
-    "comment": "コメント",
     "created": "内蔵",
     "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",
     "error": {
@@ -2899,7 +2830,6 @@
     },
     "executed-by": "実行者",
     "execution-time": "実行時間",
-    "no-cancellable-tasks": "キャンセル可能なタスクはありません",
     "no-permission": "この操作を実行する権限がありません",
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-selectable-tasks": "タスクを選択できません",
@@ -2907,20 +2837,10 @@
     "no-tasks-selected": "タスクが選択されていません",
     "online-migration": {
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行イシューに分割することをアドバイスします。",
-      "configure": "設定",
-      "configure-ghost-parameters": "gh-ost パラメータを設定する",
-      "error": {
-        "not-applicable": {
-          "database-doesnt-meet-ghost-requirement": "データベース {database} は gh-ost の要件を満たしていません"
-        },
-        "nothing-changed": "変化なし"
-      },
-      "ghost-parameters": "gh-ostパラメータ",
       "self": "オンラインでの大規模なテーブル変更"
     },
     "only-showing-latest-n-runs": "最新の {n} 実行のみを表示",
     "prior-backup": "影響を受けるデータの事前バックアップ",
-    "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
     "run-checks": "実行チェック",
     "run-history": "実行履歴",
     "run-immediately": {
@@ -2932,7 +2852,6 @@
       "description": "タスクを自動的に実行開始する日時を指定します。メンテナンス期間やオフピーク時に便利です。",
       "self": "後でスケジュールする"
     },
-    "scheduled-at": "予定日時",
     "scheduled-time": "予定時刻",
     "select-scheduled-time": "予定時刻を選択してください",
     "select-task": "タスクを選択 | タスクを選択",
@@ -2949,17 +2868,9 @@
       "pending": "保留中",
       "running": "ランニング",
       "skipped": "スキップ"
-    },
-    "task-checks": "タスクのチェック項目",
-    "type": {
-      "database-create": "データベース作成",
-      "database-export": "データエクスポート",
-      "general": "一般",
-      "migrate": "マイグレーション"
     }
   },
   "task-run": {
-    "failed-runs": "失敗したタスク - 最新の実行ログ",
     "history": "タスク実行履歴",
     "latest": "最新の実行",
     "latest-logs": "最新のログ",
@@ -2992,8 +2903,7 @@
       "available": "{n} タスクのロールバックが利用可能 | {n} タスクのロールバックが利用可能",
       "no-statement-generated": "ロールバックステートメントは生成されません",
       "preview-statement": {
-        "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。",
-        "self": "プレビューステートメント"
+        "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。"
       }
     },
     "status": {
