@@ -3,6 +3,12 @@
 // Enforces the React semantic overlay layering policy introduced by PR #20012.
 // Feature code must not create global z-index overlays directly. Use shared UI
 // primitives or portal into the semantic layer roots instead.
+//
+// This is a conservative policy scanner, not a complete TypeScript evaluator.
+// It resolves direct string literals, unique static identifiers, simple static
+// string concatenations, and simple document/document.body aliases. Complex,
+// dynamic, imported, or shadowed values may be unresolved; passing this check
+// does not permit bypassing the policy.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
@@ -273,6 +279,16 @@ const getStaticString = (expression, staticStrings = new Map()) => {
   if (ts.isIdentifier(current)) {
     return getUniqueStaticString(staticStrings, current.text);
   }
+  if (
+    ts.isBinaryExpression(current) &&
+    current.operatorToken.kind === ts.SyntaxKind.PlusToken
+  ) {
+    const left = getStaticString(current.left, staticStrings);
+    const right = getStaticString(current.right, staticStrings);
+    if (left !== null && right !== null) {
+      return `${left}${right}`;
+    }
+  }
   return null;
 };
 
@@ -295,7 +311,7 @@ const collectStaticStrings = (sourceFile) => {
       recordStaticString(
         staticStrings,
         node.name.text,
-        node.initializer ? getDirectStaticString(node.initializer) : null
+        node.initializer ? getStaticString(node.initializer, staticStrings) : null
       );
     } else if (ts.isParameter(node) && ts.isIdentifier(node.name)) {
       recordStaticString(staticStrings, node.name.text, null);
@@ -414,6 +430,12 @@ const scanStringLiterals = (sourceFile, rel, lines) => {
   };
 
   const visit = (node) => {
+    if (ts.isVariableDeclaration(node) && node.initializer) {
+      const staticValue = getStaticString(node.initializer, staticStrings);
+      if (staticValue !== null) {
+        scanText(staticValue, node.initializer.getStart(sourceFile));
+      }
+    }
     scanLiteralNode(sourceFile, node, staticStrings, scanText);
     ts.forEachChild(node, visit);
   };
@@ -435,7 +457,19 @@ const skipExpressionWrappers = (expression) => {
   return current;
 };
 
-const isDocumentBodyExpression = (expression, documentBodyAliases) => {
+const isDocumentExpression = (expression, documentAliases) => {
+  const current = skipExpressionWrappers(expression);
+  return (
+    ts.isIdentifier(current) &&
+    (current.text === "document" || documentAliases.has(current.text))
+  );
+};
+
+const isDocumentBodyExpression = (
+  expression,
+  documentAliases,
+  documentBodyAliases
+) => {
   const current = skipExpressionWrappers(expression);
   if (ts.isIdentifier(current)) {
     return documentBodyAliases.has(current.text);
@@ -443,8 +477,7 @@ const isDocumentBodyExpression = (expression, documentBodyAliases) => {
   return (
     ts.isPropertyAccessExpression(current) &&
     current.name.text === "body" &&
-    ts.isIdentifier(current.expression) &&
-    current.expression.text === "document"
+    isDocumentExpression(current.expression, documentAliases)
   );
 };
 
@@ -459,23 +492,38 @@ const isCreatePortalCall = (node) => {
 
 const scanPortalTargets = (sourceFile, rel, lines) => {
   const violations = [];
+  const documentAliases = new Set();
   const documentBodyAliases = new Set();
 
   const visit = (node) => {
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
-      node.initializer &&
-      isDocumentBodyExpression(node.initializer, documentBodyAliases)
+      node.initializer
     ) {
-      documentBodyAliases.add(node.name.text);
+      if (isDocumentExpression(node.initializer, documentAliases)) {
+        documentAliases.add(node.name.text);
+      }
+      if (
+        isDocumentBodyExpression(
+          node.initializer,
+          documentAliases,
+          documentBodyAliases
+        )
+      ) {
+        documentBodyAliases.add(node.name.text);
+      }
     }
 
     if (
       ts.isCallExpression(node) &&
       isCreatePortalCall(node) &&
       node.arguments[1] &&
-      isDocumentBodyExpression(node.arguments[1], documentBodyAliases)
+      isDocumentBodyExpression(
+        node.arguments[1],
+        documentAliases,
+        documentBodyAliases
+      )
     ) {
       const lineNumber =
         sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))

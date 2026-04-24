@@ -74,6 +74,31 @@ export function FeatureOverlay() {
     );
   });
 
+  test("flags raw overlay classes concatenated from static strings", () => {
+    const violations = scanSource(
+      [
+        'const positionClass = "fixed inset-0";',
+        'const zClass = "z-50";',
+        'const overlayClass = positionClass + " " + zClass;',
+        "",
+        "export function FeatureOverlay() {",
+        "  return <div className={overlayClass} />;",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 3,
+          reason: "feature-owned fixed overlay uses raw z-index",
+        }),
+      ])
+    );
+  });
+
   test("does not resolve duplicate static identifiers across scopes", () => {
     const violations = scanSource(
       [
@@ -108,6 +133,30 @@ const target = document.body;
 
 export function FeatureOverlay() {
   return createPortal(<div />, target);
+}
+`,
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 7,
+          reason: "feature-owned portal targets document.body directly",
+        }),
+      ])
+    );
+  });
+
+  test("flags createPortal targets from document aliases", () => {
+    const violations = scanSource(
+      `
+import { createPortal } from "react-dom";
+
+const doc = document;
+
+export function FeatureOverlay() {
+  return createPortal(<div />, doc.body);
 }
 `,
       FEATURE_FILE
