@@ -1725,7 +1725,6 @@
     "create-project": "Crear Proyecto",
     "from-projects": "De otro proyecto",
     "from-unassigned-databases": "Bases de datos no asignadas",
-    "new-project": "Nuevo Proyecto",
     "request-export-data": "Solicitar exportación",
     "transfer-in-db-title": "Transferir base de datos",
     "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso."

@@ -1,4 +1,3 @@
-import { Code, ConnectError } from "@connectrpc/connect";
 import { sortBy, uniq } from "lodash-es";
 import {
   Archive,
@@ -16,11 +15,8 @@ import {
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { ProjectCreateDialog } from "@/react/components/header/ProjectCreateDialog";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import {
-  ResourceIdField,
-  type ResourceIdFieldRef,
-} from "@/react/components/ResourceIdField";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -29,15 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
-import { Input } from "@/react/components/ui/input";
-import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/react/components/ui/sheet";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -50,8 +37,7 @@ import {
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
-import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
-import { unknownProject } from "@/types";
+import { getProjectName } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -208,158 +194,6 @@ function ConfirmDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-// ============================================================
-// CreateProjectSheet
-// ============================================================
-
-function CreateProjectSheet({
-  open,
-  onClose,
-  onCreated,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onCreated: (project: Project) => void;
-}) {
-  const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
-  const [title, setTitle] = useState("");
-  const [resourceId, setResourceId] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [isResourceIdValid, setIsResourceIdValid] = useState(false);
-  const resourceIdFieldRef = useRef<ResourceIdFieldRef>(null);
-
-  // Reset form state whenever the Sheet is (re)opened. Sheet is always
-  // mounted so useState initializers only run on first mount.
-  useEffect(() => {
-    if (!open) return;
-    setTitle("");
-    setResourceId("");
-    setIsCreating(false);
-  }, [open]);
-
-  const allowCreate = useMemo(() => {
-    if (!title.trim()) return false;
-    if (!isResourceIdValid) return false;
-    if (!hasWorkspacePermissionV2("bb.projects.create")) return false;
-    return true;
-  }, [title, isResourceIdValid]);
-
-  const handleCreate = useCallback(async () => {
-    if (!allowCreate || isCreating) return;
-    try {
-      setIsCreating(true);
-      const project = { ...unknownProject(), title };
-      const created = await projectStore.createProject(project, resourceId);
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("project.create-modal.success-prompt", {
-          name: created.title,
-        }),
-      });
-
-      onCreated(created);
-      onClose();
-    } catch (error) {
-      if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
-        resourceIdFieldRef.current?.addValidationError(
-          (error as ConnectError).message
-        );
-      } else {
-        throw error;
-      }
-    } finally {
-      setIsCreating(false);
-    }
-  }, [
-    allowCreate,
-    isCreating,
-    title,
-    resourceId,
-    projectStore,
-    t,
-    onCreated,
-    onClose,
-  ]);
-
-  const validate = useCallback(
-    async (id: string) => {
-      try {
-        await projectStore.getOrFetchProjectByName(
-          `${projectNamePrefix}${id}`,
-          true
-        );
-        return [
-          {
-            type: "error" as const,
-            message: t("resource-id.validation.duplicated", {
-              resource: "project",
-            }),
-          },
-        ];
-      } catch {
-        return [];
-      }
-    },
-    [projectStore, t]
-  );
-
-  return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>{t("common.project")}</SheetTitle>
-        </SheetHeader>
-
-        <SheetBody>
-          <div className="flex flex-col gap-y-6">
-            <div>
-              <label className="text-base leading-6 font-medium text-control">
-                {t("project.create-modal.project-name")}
-                <span className="text-error ml-0.5">*</span>
-              </label>
-              <Input
-                className="mt-2 mb-1"
-                value={title}
-                maxLength={200}
-                placeholder={t("project.create-modal.project-name")}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <ResourceIdField
-                ref={resourceIdFieldRef}
-                value={resourceId}
-                resourceType="project"
-                resourceName={title}
-                resourceTitle={title}
-                validate={validate}
-                onChange={setResourceId}
-                onValidationChange={setIsResourceIdValid}
-              />
-            </div>
-          </div>
-
-          {isCreating && (
-            <div className="absolute inset-0 bg-background/50 flex justify-center items-center">
-              <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
-            </div>
-          )}
-        </SheetBody>
-
-        <SheetFooter>
-          <Button variant="ghost" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-          <Button disabled={!allowCreate} onClick={handleCreate}>
-            {t("common.create")}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
   );
 }
 
@@ -1194,7 +1028,7 @@ export function ProjectsPage() {
       </div>
 
       {/* Create drawer */}
-      <CreateProjectSheet
+      <ProjectCreateDialog
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         onCreated={handleCreated}

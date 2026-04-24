@@ -1725,7 +1725,6 @@
     "create-project": "创建项目",
     "from-projects": "从其他项目",
     "from-unassigned-databases": "未分配的数据库",
-    "new-project": "创建项目",
     "request-export-data": "申请导出数据",
     "transfer-in-db-title": "转进数据库",
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。"

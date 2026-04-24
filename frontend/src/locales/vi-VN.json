@@ -1725,7 +1725,6 @@
     "create-project": "Tạo Dự án",
     "from-projects": "Từ các dự án khác",
     "from-unassigned-databases": "Cơ sở dữ liệu chưa được gán",
-    "new-project": "Mới Dự án",
     "request-export-data": "Yêu cầu Xuất",
     "transfer-in-db-title": "Chuyển vào cơ sở dữ liệu",
     "unassigned-db-hint": "Các cơ sở dữ liệu mới được đồng bộ hóa bắt đầu chưa được gán và phải được chuyển đến một dự án để sử dụng."

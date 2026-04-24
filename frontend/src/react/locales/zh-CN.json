@@ -69,6 +69,7 @@
     "unarchive-all-chats": "取消归档所有对话",
     "unarchive-chat": "取消归档"
   },
+  "agent.self": "Agent",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -416,11 +417,13 @@
   "common.and": "和",
   "common.archive": "归档",
   "common.archived": "已归档",
+  "common.back-to-workspace": "Back to workspace",
   "common.cancel": "取消",
   "common.canceled": "已取消",
   "common.cannot-undo-this-action": "这个操作无法撤销",
   "common.catalog": "Catalog",
   "common.close": "关闭",
+  "common.close-mobile-sidebar": "关闭移动端侧边栏",
   "common.collapse": "收起",
   "common.column": "列",
   "common.comment": "Comment",
@@ -437,6 +440,7 @@
   "common.delete": "删除",
   "common.delete-resource": "删除{{type}}",
   "common.deleted": "已删除",
+  "common.demo-mode": "Demo",
   "common.deploying": "部署中",
   "common.detail": "Detail",
   "common.detailed-guide": "详细指南",
@@ -449,7 +453,9 @@
   "common.issue": "工单",
   "common.key": "键",
   "common.labels": "标签",
+  "common.language": "Language",
   "common.learn-more": "了解更多",
+  "common.license": "License",
   "common.line": "行",
   "common.load-more": "加载更多",
   "common.loading": "加载中",
@@ -467,6 +473,7 @@
   "common.password": "密码",
   "common.project": "项目",
   "common.read-only": "只读",
+  "common.recent": "Recent",
   "common.remaining": "剩余",
   "common.remove": "删除",
   "common.removed": "已移除",
@@ -492,6 +499,7 @@
   "common.value": "值",
   "common.version": "版本",
   "common.view-doc": "查看文档",
+  "common.want-help": "Want help",
   "common.warning": "警告",
   "common.write-only": "仅写入",
   "create-db": {
@@ -1389,6 +1397,7 @@
   "issue.data-export.limits": "限制",
   "issue.data-export.options": "选项",
   "issue.issue-name": "Issue name",
+  "issue.my-issues": "My Issues",
   "issue.no-description-provided": "No description provided",
   "issue.options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
   "issue.overwrite-current-statement": "覆盖当前的 SQL 语句",
@@ -1727,10 +1736,15 @@
       "webhook-url": "Webhook URL"
     }
   },
+  "project.select": "Select project",
   "quick-action": {
     "create-db": "创建数据库",
+    "new-project": "创建项目",
     "request-export-data": "申请导出数据"
   },
+  "quick-action.create-project": "Create project",
+  "quick-action.new-project": "创建项目",
+  "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
@@ -2401,6 +2415,7 @@
       }
     }
   },
+  "settings.general.workspace.default-landing-page.go-to-workspace": "Go to workspace",
   "setup": {
     "basic-info": "基本信息",
     "data": {

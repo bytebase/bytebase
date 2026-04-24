@@ -22,6 +22,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { ProjectSwitchDialog } from "@/react/components/header/ProjectSwitchDialog";
 import {
   Sheet,
   SheetBody,
@@ -430,13 +431,10 @@ function ConfigSheet({
 // LandingPage
 // ---------------------------------------------------------------------------
 
-export function LandingPage({
-  onOpenProjectSwitch,
-}: {
-  onOpenProjectSwitch?: () => void;
-} = {}) {
+export function LandingPage(_: Record<string, never> = {}) {
   const { t } = useTranslation();
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
+  const [showProjectSwitchDialog, setShowProjectSwitchDialog] = useState(false);
 
   const email = useVueState(() => useCurrentUserV1().value.email);
   const version = useVueState(() => useActuatorV1Store().version);
@@ -459,27 +457,20 @@ export function LandingPage({
     [config, fullList]
   );
 
-  const handleClick = useCallback(
-    (link: QuickLinkDef) => {
-      if (link.route) {
-        router.push({ name: link.route });
-        return;
-      }
-      switch (link.id) {
-        case "visit-projects":
-          if (onOpenProjectSwitch) {
-            onOpenProjectSwitch();
-          } else {
-            router.push({ name: PROJECT_V1_ROUTE_DASHBOARD });
-          }
-          break;
-        case "visit-issues":
-          router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
-          break;
-      }
-    },
-    [onOpenProjectSwitch]
-  );
+  const handleClick = useCallback((link: QuickLinkDef) => {
+    if (link.route) {
+      router.push({ name: link.route });
+      return;
+    }
+    switch (link.id) {
+      case "visit-projects":
+        setShowProjectSwitchDialog(true);
+        break;
+      case "visit-issues":
+        router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
+        break;
+    }
+  }, []);
 
   return (
     <>
@@ -571,6 +562,11 @@ export function LandingPage({
         fullList={fullList}
         config={config}
         setConfig={setConfig}
+      />
+
+      <ProjectSwitchDialog
+        open={showProjectSwitchDialog}
+        onClose={() => setShowProjectSwitchDialog(false)}
       />
     </>
   );

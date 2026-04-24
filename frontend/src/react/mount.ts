@@ -14,9 +14,10 @@ const authComponentLoaders = import.meta.glob([
 const sqlEditorComponentLoaders = import.meta.glob(
   "./components/sql-editor/*.tsx"
 );
-const sharedComponentLoaders = import.meta.glob(
-  "./components/ClassificationTree.tsx"
-);
+const sharedComponentLoaders = import.meta.glob([
+  "./components/*.tsx",
+  "!./components/*.test.tsx",
+]);
 const pageLoaders = {
   ...settingsPageLoaders,
   ...projectPageLoaders,

@@ -9,14 +9,39 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  record: vi.fn(),
+  push: vi.fn(),
+  resolve: vi.fn(() => ({ fullPath: "/landing" })),
 }));
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      ({
+        "settings.general.workspace.logo": "Logo",
+      })[key] ?? key,
+  }),
+}));
+
 vi.mock("@/store", () => ({
   useWorkspaceV1Store: vi.fn(),
+}));
+
+vi.mock("@/router", () => ({
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
+}));
+
+vi.mock("@/router/useRecentVisit", () => ({
+  useRecentVisit: () => ({
+    record: mocks.record,
+  }),
 }));
 
 vi.mock("@/assets/logo-full.svg", () => ({
@@ -57,7 +82,7 @@ describe("BytebaseLogo", () => {
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("https://example.com/logo.png");
-    expect(img?.getAttribute("alt")).toBe("branding logo");
+    expect(img?.getAttribute("alt")).toBe("Logo");
     unmount();
   });
 
@@ -71,6 +96,25 @@ describe("BytebaseLogo", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe("/assets/logo-full.svg");
     expect(img?.getAttribute("alt")).toBe("Bytebase");
+    unmount();
+  });
+
+  test("records and navigates when a redirect is provided", () => {
+    mocks.useVueState.mockReturnValue("");
+    const { container, render, unmount } = renderIntoContainer(
+      <BytebaseLogo redirect="workspace.landing" />
+    );
+    render();
+
+    const button = container.querySelector("button");
+    expect(button).not.toBeNull();
+    act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mocks.resolve).toHaveBeenCalledWith({ name: "workspace.landing" });
+    expect(mocks.record).toHaveBeenCalledWith("/landing");
+    expect(mocks.push).toHaveBeenCalled();
     unmount();
   });
 });

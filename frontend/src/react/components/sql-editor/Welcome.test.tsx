@@ -28,6 +28,10 @@ vi.mock("@/react/components/PermissionGuard", () => ({
   usePermissionCheck: mocks.usePermissionCheck,
 }));
 
+vi.mock("@/react/components/BytebaseLogo", () => ({
+  BytebaseLogo: () => null,
+}));
+
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
@@ -38,6 +42,7 @@ vi.mock("@/router", () => ({
 
 vi.mock("@/router/dashboard/workspaceRoutes", () => ({
   INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
+  PROJECT_V1_ROUTE_DASHBOARD: "workspace.project",
 }));
 
 vi.mock("@/store", () => ({

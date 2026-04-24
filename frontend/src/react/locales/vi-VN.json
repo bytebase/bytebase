@@ -69,6 +69,7 @@
     "unarchive-all-chats": "Bỏ lưu trữ tất cả cuộc trò chuyện",
     "unarchive-chat": "Bỏ lưu trữ"
   },
+  "agent.self": "Agent",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -416,11 +417,13 @@
   "common.and": "và",
   "common.archive": "Lưu trữ",
   "common.archived": "Đã lưu trữ",
+  "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Hủy",
   "common.canceled": "Đã hủy",
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
   "common.catalog": "Danh mục",
   "common.close": "Đóng",
+  "common.close-mobile-sidebar": "Close mobile sidebar",
   "common.collapse": "Thu gọn",
   "common.column": "Cột",
   "common.comment": "Comment",
@@ -437,6 +440,7 @@
   "common.delete": "Xóa",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Đã xóa",
+  "common.demo-mode": "Demo",
   "common.deploying": "Đang triển khai",
   "common.detail": "Detail",
   "common.detailed-guide": "Hướng dẫn chi tiết",
@@ -449,7 +453,9 @@
   "common.issue": "Issue",
   "common.key": "Khóa",
   "common.labels": "Nhãn",
+  "common.language": "Language",
   "common.learn-more": "Tìm hiểu thêm",
+  "common.license": "License",
   "common.line": "Dòng",
   "common.load-more": "Tải thêm",
   "common.loading": "Đang tải",
@@ -467,6 +473,7 @@
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
   "common.read-only": "Chỉ đọc",
+  "common.recent": "Recent",
   "common.remaining": "còn lại",
   "common.remove": "Xóa",
   "common.removed": "LOẠI BỎ",
@@ -492,6 +499,7 @@
   "common.value": "Giá trị",
   "common.version": "Phiên bản",
   "common.view-doc": "Xem tài liệu",
+  "common.want-help": "Want help",
   "common.warning": "Cảnh báo",
   "common.write-only": "chỉ ghi",
   "create-db": {
@@ -1389,6 +1397,7 @@
   "issue.data-export.limits": "Giới hạn",
   "issue.data-export.options": "Tùy chọn",
   "issue.issue-name": "Issue name",
+  "issue.my-issues": "My Issues",
   "issue.no-description-provided": "No description provided",
   "issue.options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
   "issue.overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
@@ -1727,10 +1736,15 @@
       "webhook-url": "URL Webhook"
     }
   },
+  "project.select": "Select project",
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
+    "new-project": "Mới Dự án",
     "request-export-data": "Yêu cầu Xuất"
   },
+  "quick-action.create-project": "Create project",
+  "quick-action.new-project": "Mới Dự án",
+  "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
@@ -2401,6 +2415,7 @@
       }
     }
   },
+  "settings.general.workspace.default-landing-page.go-to-workspace": "Go to workspace",
   "setup": {
     "basic-info": "Thông tin cơ bản",
     "data": {
