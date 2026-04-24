@@ -2496,6 +2496,11 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "現在のワークシートを閉じると、保存されていないデータはすべて失われますか?"
+      }
+    },
     "jit": "Just-In-Time Access",
     "link-access": "リンクアクセス",
     "no-access-requests": "No access requests",

@@ -2496,6 +2496,11 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "¿Cerrar la hoja y perder cualquier dato no guardado?"
+      }
+    },
     "jit": "Just-In-Time Access",
     "link-access": "Acceso al enlace",
     "no-access-requests": "No access requests",

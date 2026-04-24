@@ -2510,6 +2510,11 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "Close the sheet and lose any unsaved data?"
+      }
+    },
     "jit": "Just-In-Time Access",
     "link-access": "Link access",
     "no-access-requests": "No access requests",

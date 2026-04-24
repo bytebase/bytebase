@@ -2496,6 +2496,11 @@
     "expired": "已过期",
     "format-sql": "格式化 SQL",
     "grant-type-unmask": "脱敏豁免",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "关闭当前工作表会丢失所有未保存的数据？"
+      }
+    },
     "jit": "即时访问",
     "link-access": "链接访问权限",
     "no-access-requests": "暂无访问请求",

@@ -2496,6 +2496,11 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "Đóng trang tính và mất bất kỳ dữ liệu chưa lưu nào?"
+      }
+    },
     "jit": "Just-In-Time Access",
     "link-access": "Truy cập liên kết",
     "no-access-requests": "No access requests",
