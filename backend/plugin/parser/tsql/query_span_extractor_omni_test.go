@@ -436,6 +436,7 @@ func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
 		{"window_partition", "SELECT SUM(a) OVER (PARTITION BY no_such_col) FROM t"},
 		{"window_order", "SELECT SUM(a) OVER (ORDER BY no_such_col) FROM t"},
 		{"within_group_order", "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY no_such_col) FROM t"},
+		{"full_text_predicate", "SELECT CASE WHEN CONTAINS(no_such_col, 'x') THEN 1 ELSE 0 END FROM t"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

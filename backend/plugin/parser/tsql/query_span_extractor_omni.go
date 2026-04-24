@@ -873,6 +873,9 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 	if n == nil {
 		return base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}, nil
 	}
+	if r, handled, err := q.resolveSimpleExpressionNode(n); handled {
+		return r, err
+	}
 	switch v := n.(type) {
 	case *ast.ColumnRef:
 		r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
@@ -881,16 +884,6 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		}
 		r.IsPlainField = true
 		return r, nil
-	case *ast.Literal, *ast.VariableRef, *ast.Boolean:
-		return base.QuerySpanResult{Name: q.sliceName(v), SourceColumns: make(base.SourceColumnSet)}, nil
-	case *ast.ParenExpr:
-		r, err := q.resolveExpressionNode(v.Expr)
-		if err != nil {
-			return r, err
-		}
-		return r, nil
-	case *ast.CollateExpr:
-		return q.resolveExpressionNode(v.Expr)
 	case *ast.AtTimeZoneExpr:
 		r, err := q.mergeExprSources(v.Expr, v.TimeZone)
 		r.Name = q.sliceName(n)
@@ -1056,16 +1049,20 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		if v.Columns != nil {
 			for _, it := range v.Columns.Items {
 				if cr, ok := it.(*ast.ColumnRef); ok {
-					if sub, err := q.tsqlIsFieldSensitive(cr.Database, cr.Schema, cr.Table, cr.Column); err == nil {
-						r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+					sub, err := q.tsqlIsFieldSensitive(cr.Database, cr.Schema, cr.Table, cr.Column)
+					if err != nil {
+						return r, errors.Wrapf(err, "failed to resolve full-text predicate column %q", cr.Column)
 					}
+					r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 				}
 			}
 		}
 		if v.Value != nil {
-			if sub, err := q.resolveExpressionNode(v.Value); err == nil {
-				r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+			sub, err := q.resolveExpressionNode(v.Value)
+			if err != nil {
+				return r, err
 			}
+			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 		}
 		r.Name = q.sliceName(n)
 		return r, nil
@@ -1092,6 +1089,21 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		return base.QuerySpanResult{Name: q.sliceName(n), SourceColumns: make(base.SourceColumnSet)}, nil
 	default:
 		return base.QuerySpanResult{Name: q.sliceName(n), SourceColumns: make(base.SourceColumnSet)}, nil
+	}
+}
+
+func (q *omniQuerySpanExtractor) resolveSimpleExpressionNode(n ast.Node) (base.QuerySpanResult, bool, error) {
+	switch v := n.(type) {
+	case *ast.Literal, *ast.VariableRef, *ast.Boolean:
+		return base.QuerySpanResult{Name: q.sliceName(v), SourceColumns: make(base.SourceColumnSet)}, true, nil
+	case *ast.ParenExpr:
+		r, err := q.resolveExpressionNode(v.Expr)
+		return r, true, err
+	case *ast.CollateExpr:
+		r, err := q.resolveExpressionNode(v.Expr)
+		return r, true, err
+	default:
+		return base.QuerySpanResult{}, false, nil
 	}
 }
 
@@ -1228,66 +1240,13 @@ func omniNodeLoc(n ast.Node) ast.Loc {
 	if n == nil {
 		return ast.NoLoc()
 	}
+	if loc, ok := omniExpressionNodeLoc(n); ok {
+		return loc
+	}
 	switch v := n.(type) {
 	case *ast.SelectStmt:
 		return v.Loc
-	case *ast.ColumnRef:
-		return v.Loc
 	case *ast.TableRef:
-		return v.Loc
-	case *ast.Literal:
-		return v.Loc
-	case *ast.VariableRef:
-		return v.Loc
-	case *ast.StarExpr:
-		return v.Loc
-	case *ast.BinaryExpr:
-		return v.Loc
-	case *ast.UnaryExpr:
-		return v.Loc
-	case *ast.BetweenExpr:
-		return v.Loc
-	case *ast.LikeExpr:
-		return v.Loc
-	case *ast.IsExpr:
-		return v.Loc
-	case *ast.InExpr:
-		return v.Loc
-	case *ast.CaseExpr:
-		return v.Loc
-	case *ast.CaseWhen:
-		return v.Loc
-	case *ast.IifExpr:
-		return v.Loc
-	case *ast.CoalesceExpr:
-		return v.Loc
-	case *ast.NullifExpr:
-		return v.Loc
-	case *ast.FuncCallExpr:
-		return v.Loc
-	case *ast.MethodCallExpr:
-		return v.Loc
-	case *ast.CastExpr:
-		return v.Loc
-	case *ast.ConvertExpr:
-		return v.Loc
-	case *ast.TryCastExpr:
-		return v.Loc
-	case *ast.TryConvertExpr:
-		return v.Loc
-	case *ast.SubqueryExpr:
-		return v.Loc
-	case *ast.SubqueryComparisonExpr:
-		return v.Loc
-	case *ast.ExistsExpr:
-		return v.Loc
-	case *ast.FullTextPredicate:
-		return v.Loc
-	case *ast.ParenExpr:
-		return v.Loc
-	case *ast.CollateExpr:
-		return v.Loc
-	case *ast.AtTimeZoneExpr:
 		return v.Loc
 	case *ast.ResTarget:
 		return v.Loc
@@ -1295,6 +1254,69 @@ func omniNodeLoc(n ast.Node) ast.Loc {
 		return v.Loc
 	default:
 		return ast.NoLoc()
+	}
+}
+
+func omniExpressionNodeLoc(n ast.Node) (ast.Loc, bool) {
+	switch v := n.(type) {
+	case *ast.ColumnRef:
+		return v.Loc, true
+	case *ast.Literal:
+		return v.Loc, true
+	case *ast.VariableRef:
+		return v.Loc, true
+	case *ast.StarExpr:
+		return v.Loc, true
+	case *ast.BinaryExpr:
+		return v.Loc, true
+	case *ast.UnaryExpr:
+		return v.Loc, true
+	case *ast.BetweenExpr:
+		return v.Loc, true
+	case *ast.LikeExpr:
+		return v.Loc, true
+	case *ast.IsExpr:
+		return v.Loc, true
+	case *ast.InExpr:
+		return v.Loc, true
+	case *ast.CaseExpr:
+		return v.Loc, true
+	case *ast.CaseWhen:
+		return v.Loc, true
+	case *ast.IifExpr:
+		return v.Loc, true
+	case *ast.CoalesceExpr:
+		return v.Loc, true
+	case *ast.NullifExpr:
+		return v.Loc, true
+	case *ast.FuncCallExpr:
+		return v.Loc, true
+	case *ast.MethodCallExpr:
+		return v.Loc, true
+	case *ast.CastExpr:
+		return v.Loc, true
+	case *ast.ConvertExpr:
+		return v.Loc, true
+	case *ast.TryCastExpr:
+		return v.Loc, true
+	case *ast.TryConvertExpr:
+		return v.Loc, true
+	case *ast.SubqueryExpr:
+		return v.Loc, true
+	case *ast.SubqueryComparisonExpr:
+		return v.Loc, true
+	case *ast.ExistsExpr:
+		return v.Loc, true
+	case *ast.FullTextPredicate:
+		return v.Loc, true
+	case *ast.ParenExpr:
+		return v.Loc, true
+	case *ast.CollateExpr:
+		return v.Loc, true
+	case *ast.AtTimeZoneExpr:
+		return v.Loc, true
+	default:
+		return ast.NoLoc(), false
 	}
 }
 
