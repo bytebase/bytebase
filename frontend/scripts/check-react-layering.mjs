@@ -135,6 +135,31 @@ const scanBareExpression = (source, index) => {
   return { start: index, end: current };
 };
 
+const isStringQuote = (ch) => ch === "\"" || ch === "'" || ch === "`";
+
+const scanStringState = (ch, stringQuote, escaped) => {
+  if (escaped) {
+    return { stringQuote, escaped: false };
+  }
+  if (ch === "\\") {
+    return { stringQuote, escaped: true };
+  }
+  if (ch === stringQuote) {
+    return { stringQuote: null, escaped: false };
+  }
+  return { stringQuote, escaped: false };
+};
+
+const getNextBraceDepth = (ch, depth) => {
+  if (ch === "{") {
+    return depth + 1;
+  }
+  if (ch === "}") {
+    return depth - 1;
+  }
+  return depth;
+};
+
 const scanBalancedExpression = (source, index) => {
   let current = index + 1;
   let depth = 1;
@@ -143,29 +168,19 @@ const scanBalancedExpression = (source, index) => {
   while (current < source.length) {
     const ch = source[current];
     if (stringQuote !== null) {
-      if (escaped) {
-        escaped = false;
-      } else if (ch === "\\") {
-        escaped = true;
-      } else if (ch === stringQuote) {
-        stringQuote = null;
-      }
+      ({ stringQuote, escaped } = scanStringState(ch, stringQuote, escaped));
       current++;
       continue;
     }
 
-    if (ch === "\"" || ch === "'" || ch === "`") {
+    if (isStringQuote(ch)) {
       stringQuote = ch;
       current++;
       continue;
     }
-    if (ch === "{") {
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-      if (depth === 0) {
-        return { start: index, end: current + 1 };
-      }
+    depth = getNextBraceDepth(ch, depth);
+    if (depth === 0) {
+      return { start: index, end: current + 1 };
     }
     current++;
   }
