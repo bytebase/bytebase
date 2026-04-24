@@ -2,6 +2,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import type { ComponentProps } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
 import {
   getLayerRoot,
@@ -61,8 +62,13 @@ const sheetContentVariants = cva(
     variants: {
       width: {
         narrow: "w-[24rem]",
+        panel: "w-[31.25rem]",
+        medium: "w-[40rem]",
         standard: "w-[44rem]",
         wide: "w-[52rem]",
+        large: "w-[64rem]",
+        xlarge: "w-[70rem]",
+        workspace: "w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]",
       },
     },
     defaultVariants: {
@@ -108,6 +114,8 @@ function SheetContent({
 // optional `SheetDescription` — both are wrapped in a flex-col for the
 // vertical stack layout while the close button remains flush right.
 function SheetHeader({ className, children, ...props }: ComponentProps<"div">) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn(
@@ -120,7 +128,7 @@ function SheetHeader({ className, children, ...props }: ComponentProps<"div">) {
       {/* Built-in close affordance. Callers should not render their own close
           button — Base UI's Close dismisses the Sheet via Root's onOpenChange. */}
       <BaseDialog.Close
-        aria-label="Close"
+        aria-label={t("common.close")}
         className="shrink-0 rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
       >
         <X className="size-4" />

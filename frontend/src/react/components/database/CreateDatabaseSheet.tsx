@@ -1,10 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { ChevronDown, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceSelect } from "@/react/components/InstanceSelect";
+import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
@@ -17,7 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -51,124 +50,6 @@ import {
 } from "@/utils";
 
 const INTERNAL_RDS_USERS = ["rds_ad", "rdsadmin", "rds_iam"];
-
-function IssueLabelSelect({
-  labels,
-  selected,
-  required,
-  onChange,
-}: {
-  labels: { value: string; color: string }[];
-  selected: string[];
-  required: boolean;
-  onChange: (labels: string[]) => void;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const closeDropdown = useCallback(() => setOpen(false), []);
-  useClickOutside(containerRef, open, closeDropdown);
-
-  const toggleLabel = (value: string) => {
-    onChange(
-      selected.includes(value)
-        ? selected.filter((l) => l !== value)
-        : [...selected, value]
-    );
-  };
-
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1">
-        {t("issue.labels")}
-        {required && <span className="text-error"> *</span>}
-      </label>
-      <div ref={containerRef} className="relative">
-        <button
-          type="button"
-          className={cn(
-            "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs h-9 px-3 text-sm bg-background text-left transition-colors",
-            "hover:border-gray-400",
-            open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
-          )}
-          onClick={() => setOpen(!open)}
-        >
-          {selected.length > 0 ? (
-            <div className="flex items-center gap-1.5 truncate">
-              {selected.map((val) => {
-                const label = labels.find((l) => l.value === val);
-                return (
-                  <span
-                    key={val}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-control-bg text-xs"
-                  >
-                    <span
-                      className="size-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: label?.color }}
-                    />
-                    {val}
-                    <X
-                      className="size-3 text-control-placeholder hover:text-control-light"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleLabel(val);
-                      }}
-                    />
-                  </span>
-                );
-              })}
-            </div>
-          ) : (
-            <span className="text-control-placeholder">
-              {t("common.select")}
-            </span>
-          )}
-          <ChevronDown
-            className={cn(
-              "size-4 text-control-placeholder shrink-0 transition-transform",
-              open && "rotate-180"
-            )}
-          />
-        </button>
-        {open && (
-          <div className="absolute z-50 mt-1 w-full bg-background border border-block-border rounded-sm shadow-lg overflow-hidden">
-            <div className="max-h-60 overflow-y-auto">
-              {labels.length === 0 ? (
-                <div className="px-3 py-6 text-sm text-control-placeholder text-center">
-                  {t("common.no-data")}
-                </div>
-              ) : (
-                labels.map((label) => {
-                  const isSelected = selected.includes(label.value);
-                  return (
-                    <button
-                      key={label.value}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-control-bg transition-colors"
-                      onClick={() => toggleLabel(label.value)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="rounded-xs border-control-border accent-accent"
-                      />
-                      <span
-                        className="size-4 rounded-sm shrink-0"
-                        style={{ backgroundColor: label.color }}
-                      />
-                      <span>{label.value}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export interface CreateDatabaseSheetProps {
   open: boolean;

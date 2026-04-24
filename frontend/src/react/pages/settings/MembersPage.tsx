@@ -45,6 +45,14 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
+import {
   Tabs,
   TabsList,
   TabsPanel,
@@ -1265,185 +1273,179 @@ function EditMemberRoleDrawer({
     const memberEmail = member.user?.email ?? member.binding;
     return (
       <>
-        <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
-            <h2 className="text-lg font-medium">
-              {t("project.members.edit-member", {
-                member: `${member.title} (${memberEmail})`,
-              })}
-            </h2>
-            <div className="flex items-center gap-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowNestedGrant(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {t("settings.members.grant-access")}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
+        <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+          <SheetContent width="medium">
+            <SheetHeader>
+              <div className="flex min-w-0 items-center justify-between gap-x-2">
+                <SheetTitle className="truncate">
+                  {t("project.members.edit-member", {
+                    member: `${member.title} (${memberEmail})`,
+                  })}
+                </SheetTitle>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowNestedGrant(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t("settings.members.grant-access")}
+                </Button>
+              </div>
+            </SheetHeader>
 
-          {/* Body — Role Bindings */}
-          <div className="flex-1 overflow-auto px-6 py-6">
-            <div className="flex flex-col gap-y-6">
-              {liveProjectRoleBindings.length === 0 && (
-                <div className="text-center text-control-light py-8">
-                  {t("common.no-data")}
-                </div>
-              )}
-              {liveProjectRoleBindings.map((binding, idx) => {
-                const rows = getSingleBindingRows(binding);
-                const envs = roleHasEnvironmentLimitation(binding.role)
-                  ? getEnvironmentLimitation(binding)
-                  : [];
-                const showEnvBanner = roleHasEnvironmentLimitation(
-                  binding.role
-                );
-                return (
-                  <div
-                    key={`${binding.role}-${idx}`}
-                    className="border rounded-sm"
-                  >
-                    {/* Role header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                      <span className="font-medium text-sm">
-                        {displayRoleTitle(binding.role)}
-                      </span>
-                      <div className="flex items-center gap-x-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("common.edit")}
-                          onClick={() => setShowNestedGrant(true)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={t("common.delete")}
-                          disabled={isRequesting}
-                          onClick={() => handleDeleteRole(binding)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Environment info banner */}
-                    {showEnvBanner && (
-                      <div className="mx-4 mt-3 flex items-start gap-x-2 rounded-sm bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
-                        <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                        <div>
-                          {envs.length > 0 ? (
-                            <>
-                              <span>{t("project.members.allow-ddl")}</span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {envs.map((env) => (
-                                  <Badge
-                                    key={env}
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    <EnvironmentLabel
-                                      environmentName={env}
-                                      className="text-xs"
-                                    />
-                                  </Badge>
-                                ))}
-                              </div>
-                            </>
-                          ) : (
-                            <span>
-                              {t(
-                                "project.members.disallow-ddl-all-environments"
-                              )}
-                            </span>
-                          )}
+            {/* Body — Role Bindings */}
+            <SheetBody className="px-6 py-6">
+              <div className="flex flex-col gap-y-6">
+                {liveProjectRoleBindings.length === 0 && (
+                  <div className="text-center text-control-light py-8">
+                    {t("common.no-data")}
+                  </div>
+                )}
+                {liveProjectRoleBindings.map((binding, idx) => {
+                  const rows = getSingleBindingRows(binding);
+                  const envs = roleHasEnvironmentLimitation(binding.role)
+                    ? getEnvironmentLimitation(binding)
+                    : [];
+                  const showEnvBanner = roleHasEnvironmentLimitation(
+                    binding.role
+                  );
+                  return (
+                    <div
+                      key={`${binding.role}-${idx}`}
+                      className="border rounded-sm"
+                    >
+                      {/* Role header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
+                        <span className="font-medium text-sm">
+                          {displayRoleTitle(binding.role)}
+                        </span>
+                        <div className="flex items-center gap-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("common.edit")}
+                            onClick={() => setShowNestedGrant(true)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={t("common.delete")}
+                            disabled={isRequesting}
+                            onClick={() => handleDeleteRole(binding)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    )}
 
-                    {/* Database resources table */}
-                    <div className="p-4">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.database")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.schema")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.table")}
-                            </th>
-                            <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                              {t("common.expiration")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((row, rowIdx) => (
-                            <tr
-                              key={rowIdx}
-                              className="border-b last:border-b-0"
-                            >
-                              <td className="px-2 py-1.5 text-sm">
-                                {row.databaseResource?.databaseFullName ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
-                                {row.databaseResource?.schema ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
-                                {row.databaseResource?.table ?? "*"}
-                              </td>
-                              <td className="px-2 py-1.5 text-sm">
-                                {row.expiration
-                                  ? formatAbsoluteDateTime(
-                                      row.expiration.getTime()
-                                    )
-                                  : t("project.members.never-expires")}
-                              </td>
+                      {/* Environment info banner */}
+                      {showEnvBanner && (
+                        <div className="mx-4 mt-3 flex items-start gap-x-2 rounded-sm bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
+                          <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                          <div>
+                            {envs.length > 0 ? (
+                              <>
+                                <span>{t("project.members.allow-ddl")}</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {envs.map((env) => (
+                                    <Badge
+                                      key={env}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      <EnvironmentLabel
+                                        environmentName={env}
+                                        className="text-xs"
+                                      />
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <span>
+                                {t(
+                                  "project.members.disallow-ddl-all-environments"
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Database resources table */}
+                      <div className="p-4">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
+                                {t("common.database")}
+                              </th>
+                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
+                                {t("common.schema")}
+                              </th>
+                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
+                                {t("common.table")}
+                              </th>
+                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
+                                {t("common.expiration")}
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {rows.map((row, rowIdx) => (
+                              <tr
+                                key={rowIdx}
+                                className="border-b last:border-b-0"
+                              >
+                                <td className="px-2 py-1.5 text-sm">
+                                  {row.databaseResource?.databaseFullName ??
+                                    "*"}
+                                </td>
+                                <td className="px-2 py-1.5 text-sm">
+                                  {row.databaseResource?.schema ?? "*"}
+                                </td>
+                                <td className="px-2 py-1.5 text-sm">
+                                  {row.databaseResource?.table ?? "*"}
+                                </td>
+                                <td className="px-2 py-1.5 text-sm">
+                                  {row.expiration
+                                    ? formatAbsoluteDateTime(
+                                        row.expiration.getTime()
+                                      )
+                                    : t("project.members.never-expires")}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                  );
+                })}
+              </div>
+            </SheetBody>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t">
-            <div>
-              <Button
-                variant="destructive"
-                disabled={isRequesting}
-                onClick={handleRevoke}
-              >
-                {t("settings.members.revoke-access")}
-              </Button>
-            </div>
-            <div className="flex items-center gap-x-2">
-              <Button variant="outline" onClick={onClose}>
-                {t("common.cancel")}
-              </Button>
-              <Button onClick={onClose}>{t("common.ok")}</Button>
-            </div>
-          </div>
-        </div>
+            {/* Footer */}
+            <SheetFooter className="justify-between">
+              <div>
+                <Button
+                  variant="destructive"
+                  disabled={isRequesting}
+                  onClick={handleRevoke}
+                >
+                  {t("settings.members.revoke-access")}
+                </Button>
+              </div>
+              <div className="flex items-center gap-x-2">
+                <Button variant="outline" onClick={onClose}>
+                  {t("common.cancel")}
+                </Button>
+                <Button onClick={onClose}>{t("common.ok")}</Button>
+              </div>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
         {/* Nested grant access drawer (stacked on top, member pre-selected) */}
         {showNestedGrant && (
@@ -1459,23 +1461,13 @@ function EditMemberRoleDrawer({
 
   // Workspace edit mode, workspace/project create mode — original UI
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-overlay/30" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="fixed inset-y-0 right-0 z-50 w-[40rem] max-w-[100vw] bg-background shadow-xl flex flex-col"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">
-            {t("common.members", { count: 1 })}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="medium">
+        <SheetHeader>
+          <SheetTitle>{t("common.members", { count: 1 })}</SheetTitle>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody className="px-6 py-6">
           <div className="flex flex-col gap-y-6">
             {!isEditMode && !projectName && hasEmailSetting && (
               <Alert variant="info">
@@ -1524,9 +1516,9 @@ function EditMemberRoleDrawer({
               </div>
             )}
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t">
+        <SheetFooter className="justify-between">
           <div>
             {isEditMode && (
               <Button
@@ -1549,9 +1541,9 @@ function EditMemberRoleDrawer({
               {isEditMode ? t("common.update") : t("common.create")}
             </Button>
           </div>
-        </div>
-      </div>
-    </>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

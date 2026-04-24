@@ -2,6 +2,7 @@ import { Filter, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { cn } from "@/react/lib/utils";
 
 // ============================================================
@@ -710,7 +711,10 @@ export function AdvancedSearch({
       {/* Dropdown menu */}
       {showMenu && (
         <div
-          className="absolute top-[38px] w-full bg-control-bg shadow-xl origin-top-left rounded-sm overflow-hidden z-50"
+          className={cn(
+            "absolute top-[38px] w-full bg-control-bg shadow-xl origin-top-left rounded-sm overflow-hidden",
+            LAYER_SURFACE_CLASS
+          )}
           onMouseDown={(e) => e.preventDefault()}
         >
           {/* Scope menu */}

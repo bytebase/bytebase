@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -183,7 +184,12 @@ export function IssueDetailLabels() {
         </button>
 
         {open && (
-          <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-white shadow-lg">
+          <div
+            className={cn(
+              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-white shadow-lg",
+              LAYER_SURFACE_CLASS
+            )}
+          >
             <div className="max-h-60 overflow-y-auto">
               {options.length === 0 ? (
                 <div className="flex flex-col items-center gap-y-3 px-3 py-6 text-sm text-control-placeholder">

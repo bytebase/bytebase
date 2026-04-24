@@ -1,4 +1,3 @@
-import { sortBy, uniq } from "lodash-es";
 import {
   Archive,
   Check,
@@ -17,6 +16,12 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { ProjectCreateDialog } from "@/react/components/header/ProjectCreateDialog";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -26,14 +31,16 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
+import {
+  getPageSizeOptions,
+  useSessionPageSize,
+} from "@/react/hooks/useSessionPageSize";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useAuthStore,
-  useCurrentUserV1,
   useProjectV1Store,
   useUIStateStore,
 } from "@/store";
@@ -42,92 +49,9 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   extractProjectResourceName,
-  getDefaultPagination,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
-
-// ============================================================
-// Escape key stack for overlays
-// ============================================================
-
-// Track the topmost overlay's escape handler. Only active (enabled) overlays
-// participate. The ref ensures the latest callback is always invoked.
-const escapeStack: React.RefObject<(() => void) | null>[] = [];
-
-function useEscapeKey(onEscape: () => void, enabled = true) {
-  const callbackRef = useRef(onEscape);
-  callbackRef.current = onEscape;
-
-  useEffect(() => {
-    if (!enabled) return;
-    escapeStack.push(callbackRef);
-    const handler = (e: KeyboardEvent) => {
-      if (
-        e.key === "Escape" &&
-        escapeStack[escapeStack.length - 1] === callbackRef
-      ) {
-        callbackRef.current?.();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => {
-      document.removeEventListener("keydown", handler);
-      const idx = escapeStack.indexOf(callbackRef);
-      if (idx >= 0) escapeStack.splice(idx, 1);
-    };
-  }, [enabled]);
-}
-
-// ============================================================
-// Pagination helpers
-// ============================================================
-
-const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
-
-function getPageSizeOptions(): number[] {
-  const defaultSize = getDefaultPagination();
-  return sortBy(uniq([defaultSize, ...PAGE_SIZE_OPTIONS]));
-}
-
-function useSessionPageSize(
-  sessionKey: string
-): [number, (size: number) => void] {
-  const currentUser = useCurrentUserV1();
-  const email = useVueState(() => currentUser.value.email);
-  const storageKey = `bb.paged-table.${sessionKey}.${email}`;
-
-  const [pageSize, setPageSize] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const size = parsed?.pageSize;
-        const options = getPageSizeOptions();
-        if (typeof size === "number" && options.includes(size)) {
-          return Math.max(options[0], size);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return getPageSizeOptions()[0];
-  });
-
-  const updatePageSize = useCallback(
-    (size: number) => {
-      setPageSize(size);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({ pageSize: size }));
-      } catch {
-        // ignore
-      }
-    },
-    [storageKey]
-  );
-
-  return [pageSize, updatePageSize];
-}
 
 // ============================================================
 // ConfirmDialog
@@ -153,8 +77,6 @@ function ConfirmDialog({
   children?: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  const onClose = useCallback(() => onCancel(), [onCancel]);
-  useEscapeKey(onClose, open);
 
   if (!open) return null;
 
@@ -165,20 +87,14 @@ function ConfirmDialog({
       : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
-      <div
-        className={cn(
-          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
-          borderColor
-        )}
-      >
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-control-light mb-4">{description}</p>
-          {children}
-        </div>
-        <div className="flex justify-end gap-x-2 px-6 pb-6">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent className={cn("max-w-lg border-t-4", borderColor)}>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription className="mt-2">
+          {description}
+        </AlertDialogDescription>
+        {children && <div className="mt-4">{children}</div>}
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -192,8 +108,8 @@ function ConfirmDialog({
             {okText}
           </button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

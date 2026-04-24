@@ -27,6 +27,14 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -832,22 +840,15 @@ function AddSpecDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onClose} />
-      <div className="ml-auto relative bg-background w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)] h-full shadow-lg flex flex-col">
+    <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="workspace">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-control-border flex items-center justify-between">
-          <span className="text-lg font-semibold">{title}</span>
-          <button
-            className="p-1 hover:bg-control-bg rounded-xs"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <SheetBody className="p-6">
           <DatabaseAndGroupSelector
             projectName={projectName}
             changeSource={changeSource}
@@ -857,10 +858,10 @@ function AddSpecDrawer({
             selectedDatabaseGroup={selectedDatabaseGroup}
             onSelectedDatabaseGroupChange={setSelectedDatabaseGroup}
           />
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-control-border flex items-center justify-end gap-x-2">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.close")}
           </Button>
@@ -868,9 +869,9 @@ function AddSpecDrawer({
             {creating && <Loader2 className="size-4 mr-1 animate-spin" />}
             {t("common.confirm")}
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

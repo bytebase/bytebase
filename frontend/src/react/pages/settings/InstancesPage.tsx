@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { sortBy, uniq } from "lodash-es";
 import {
   ChevronDown,
   ChevronUp,
@@ -27,6 +26,12 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/react/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import {
   DropdownMenu,
@@ -44,6 +49,10 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
+import {
+  getPageSizeOptions,
+  useSessionPageSize,
+} from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -52,7 +61,6 @@ import {
   featureToRef,
   pushNotification,
   useActuatorV1Store,
-  useCurrentUserV1,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useSubscriptionV1Store,
@@ -75,63 +83,12 @@ import {
 } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
-  getDefaultPagination,
   hasWorkspacePermissionV2,
   hexToRgb,
   hostPortOfDataSource,
   hostPortOfInstanceV1,
   supportedEngineV1List,
 } from "@/utils";
-
-// ============================================================
-// Pagination helpers
-// ============================================================
-
-const PAGE_SIZE_OPTIONS = [50, 100, 200, 500];
-
-function getPageSizeOptions(): number[] {
-  const defaultSize = getDefaultPagination();
-  return sortBy(uniq([defaultSize, ...PAGE_SIZE_OPTIONS]));
-}
-
-function useSessionPageSize(
-  sessionKey: string
-): [number, (size: number) => void] {
-  const currentUser = useCurrentUserV1();
-  const email = useVueState(() => currentUser.value.email);
-  const storageKey = `bb.paged-table.${sessionKey}.${email}`;
-
-  const [pageSize, setPageSize] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const size = parsed?.pageSize;
-        const options = getPageSizeOptions();
-        if (typeof size === "number" && options.includes(size)) {
-          return Math.max(options[0], size);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return getPageSizeOptions()[0];
-  });
-
-  const updatePageSize = useCallback(
-    (size: number) => {
-      setPageSize(size);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify({ pageSize: size }));
-      } catch {
-        // ignore
-      }
-    },
-    [storageKey]
-  );
-
-  return [pageSize, updatePageSize];
-}
 
 // ============================================================
 // Shared hooks
@@ -152,17 +109,6 @@ function useClickOutside(
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [ref, active, onClose]);
-}
-
-function useEscapeKey(active: boolean, onClose: () => void) {
-  useEffect(() => {
-    if (!active) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [active, onClose]);
 }
 
 // ============================================================
@@ -189,7 +135,6 @@ function ConfirmDialog({
   children?: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(open, onCancel);
 
   if (!open) return null;
 
@@ -200,20 +145,14 @@ function ConfirmDialog({
       : "bg-warning hover:bg-warning-hover text-accent-text";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-overlay/50" onClick={onCancel} />
-      <div
-        className={cn(
-          "relative bg-background rounded-sm shadow-lg max-w-lg w-full mx-4 border-t-4",
-          borderColor
-        )}
-      >
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-control-light mb-4">{description}</p>
-          {children}
-        </div>
-        <div className="flex justify-end gap-x-2 px-6 pb-6">
+    <AlertDialog open onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+      <AlertDialogContent className={cn("max-w-lg border-t-4", borderColor)}>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription className="mt-2">
+          {description}
+        </AlertDialogDescription>
+        {children && <div className="mt-4">{children}</div>}
+        <div className="mt-6 flex justify-end gap-x-2">
           <Button variant="outline" onClick={onCancel}>
             {t("common.cancel")}
           </Button>
@@ -227,8 +166,8 @@ function ConfirmDialog({
             {okText}
           </button>
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

@@ -39,6 +39,7 @@ import {
 } from "@/plugins/cel";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Input } from "@/react/components/ui/input";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Select,
@@ -47,6 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import { Tooltip } from "@/react/components/ui/tooltip";
+import { cn } from "@/react/lib/utils";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
@@ -218,7 +221,6 @@ function PortaledDropdown({
       position: "fixed",
       top: rect.bottom + 4,
       left: rect.left,
-      zIndex: 100,
       ...(matchAnchorWidth ? { width: rect.width } : {}),
     });
   }, [anchorRef, matchAnchorWidth]);
@@ -241,10 +243,14 @@ function PortaledDropdown({
   }, [updatePosition, anchorRef]);
 
   return createPortal(
-    <div ref={dropdownRef} style={style} className={className}>
+    <div
+      ref={dropdownRef}
+      style={style}
+      className={cn(className, LAYER_SURFACE_CLASS)}
+    >
       {children}
     </div>,
-    document.body
+    getLayerRoot("overlay")
   );
 }
 
@@ -1497,18 +1503,15 @@ function ConditionGroup({
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50 group relative"
+            className="inline-flex items-center gap-1 text-sm px-1.5 py-0.5 rounded-xs hover:bg-control-bg disabled:opacity-50"
             disabled={readonly}
             onClick={addConditionGroup}
           >
             <Plus className="size-4" />
             {t("cel.condition.add-group")}
-            <span className="relative">
+            <Tooltip content={t("cel.condition.group.tooltip")}>
               <HelpCircle className="ml-1 size-3 text-control-placeholder" />
-              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block w-72 p-2 text-xs bg-main text-accent-text rounded-sm shadow-lg z-50">
-                {t("cel.condition.group.tooltip")}
-              </span>
-            </span>
+            </Tooltip>
           </button>
           {enableRawExpression && (
             <button

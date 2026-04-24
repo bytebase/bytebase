@@ -11,7 +11,6 @@ import {
   Key,
   Plus,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,7 +24,20 @@ import {
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -197,29 +209,18 @@ function TestConnectionResultDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  useEscapeKey(onClose);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-white rounded-sm shadow-lg w-[32rem] max-h-[80vh] overflow-auto p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-x-2">
-            <div className="w-6 h-6 text-green-500">&#10003;</div>
-            <h3 className="text-lg font-medium">
-              {t("identity-provider.test-connection-success")}
-            </h3>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+    <Dialog open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
+        <div className="flex items-center gap-x-2">
+          <div className="size-6 text-success">&#10003;</div>
+          <DialogTitle>
+            {t("identity-provider.test-connection-success")}
+          </DialogTitle>
         </div>
 
-        <div className="flex flex-col gap-y-4">
+        <div className="mt-4 flex flex-col gap-y-4">
           <p className="text-sm text-control-light">
             {t("identity-provider.userinfo-description")}
           </p>
@@ -284,8 +285,8 @@ function TestConnectionResultDialog({
         <div className="flex justify-end mt-4">
           <Button onClick={onClose}>{t("common.close")}</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1650,19 +1651,14 @@ function CreateWizardDrawer({
   const mappingStep = isOAuth2 ? 5 : 4;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
-      <div className="fixed inset-y-0 right-0 z-50 w-[64rem] max-w-[100vw] bg-white shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-lg font-medium">{t("identity-provider.self")}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <SheetContent width="large" className="bg-white">
+        <SheetHeader>
+          <SheetTitle>{t("identity-provider.self")}</SheetTitle>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-6 py-6">
+        <SheetBody className="px-6 py-6">
           <div className="flex flex-col gap-y-6">
             {/* Step indicators */}
             <div className="flex items-center gap-x-2">
@@ -1935,10 +1931,10 @@ function CreateWizardDrawer({
               )}
             </div>
           </div>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-x-2 px-6 py-4 border-t">
+        <SheetFooter>
           {currentStep === 1 ? (
             <Button variant="outline" onClick={onClose}>
               {t("common.cancel")}
@@ -1957,15 +1953,15 @@ function CreateWizardDrawer({
               {t("common.create")}
             </Button>
           )}
-        </div>
+        </SheetFooter>
 
         {isCreating && (
           <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center">
             <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
           </div>
         )}
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 }
 

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { SearchParams } from "./AdvancedSearch";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { LAYER_SURFACE_CLASS } from "./ui/layer";
 
 interface TimeRangePickerProps {
   params: SearchParams;
@@ -108,7 +109,9 @@ export function TimeRangePicker({
         <Calendar className="size-4 text-control-light ml-1 shrink-0" />
       </button>
       {showPicker && (
-        <div className="absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg z-50 p-3 flex flex-col gap-y-2 min-w-[300px]">
+        <div
+          className={`absolute right-0 top-[42px] bg-background border border-control-border rounded-sm shadow-lg p-3 flex flex-col gap-y-2 min-w-[300px] ${LAYER_SURFACE_CLASS}`}
+        >
           <div className="flex items-center gap-x-2">
             <label className="text-sm text-control-light whitespace-nowrap w-10">
               {t("common.from")}

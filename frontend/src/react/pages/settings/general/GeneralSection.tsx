@@ -16,6 +16,11 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -233,21 +238,22 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
 
         {/* Modal after switching to Editor mode */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-              className="fixed inset-0 bg-overlay/40"
-              onClick={() => setShowModal(false)}
-            />
-            <div className="relative bg-background rounded-sm shadow-lg p-6 max-w-md w-full mx-4 flex flex-col gap-2">
-              <h2 className="text-lg font-semibold">
+          <Dialog
+            open
+            onOpenChange={(nextOpen) => !nextOpen && setShowModal(false)}
+          >
+            <DialogContent className="w-[32rem] max-w-[calc(100vw-2rem)] p-6">
+              <DialogTitle>
                 {t("settings.general.workspace.config-updated")}
-              </h2>
-              <div className="py-2">
-                {t(
-                  "settings.general.workspace.default-landing-page.default-view-changed-to-sql-editor"
-                )}
+              </DialogTitle>
+              <div className="mt-4 flex flex-col gap-y-4">
+                <div>
+                  {t(
+                    "settings.general.workspace.default-landing-page.default-view-changed-to-sql-editor"
+                  )}
+                </div>
               </div>
-              <div className="flex items-center justify-end gap-2">
+              <div className="mt-4 flex items-center justify-end gap-x-2">
                 <Button variant="outline" onClick={() => setShowModal(false)}>
                   {t("common.ok")}
                 </Button>
@@ -257,8 +263,8 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                   )}
                 </Button>
               </div>
-            </div>
-          </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     );

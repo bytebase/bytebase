@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
   SheetBody,
@@ -509,7 +510,12 @@ export function IssueDetailActionBar() {
               </span>
             </Tooltip>
             {menuOpen && (
-              <div className="absolute right-0 top-full z-40 mt-1 min-w-44 overflow-hidden rounded-sm border border-control-border bg-white py-1 shadow-lg">
+              <div
+                className={cn(
+                  "absolute right-0 top-full mt-1 min-w-44 overflow-hidden rounded-sm border border-control-border bg-white py-1 shadow-lg",
+                  LAYER_SURFACE_CLASS
+                )}
+              >
                 {secondaryActions.map((action) => {
                   const disabled = isActionDisabled(action) || isSubmitting;
                   return (
@@ -908,7 +914,10 @@ function IssueDetailReviewPopover({
 
   return (
     <div
-      className="absolute right-0 top-full z-40 mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-white px-4 py-4 shadow-lg"
+      className={cn(
+        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-white px-4 py-4 shadow-lg",
+        LAYER_SURFACE_CLASS
+      )}
       ref={popoverRef}
     >
       {content}
