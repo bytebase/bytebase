@@ -193,9 +193,11 @@ func (q *omniQuerySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
 	}
 	switch v := expr.(type) {
 	case *ast.ColumnRef:
-		if r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column); err == nil {
-			q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, r.SourceColumns)
+		r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
+		if err != nil {
+			return errors.Wrapf(err, "failed to resolve predicate column %q", v.Column)
 		}
+		q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, r.SourceColumns)
 		return nil
 	case *ast.FullTextPredicate:
 		if v.Columns != nil {
@@ -873,12 +875,9 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 	}
 	switch v := n.(type) {
 	case *ast.ColumnRef:
-		r, rerr := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
-		if rerr != nil {
-			// Unresolvable column — return the bare syntactic name. Matches
-			// ANTLR behavior of silently tolerating unresolvable refs.
-			//nolint:nilerr
-			return base.QuerySpanResult{Name: v.Column, SourceColumns: make(base.SourceColumnSet)}, nil
+		r, err := q.tsqlIsFieldSensitive(v.Database, v.Schema, v.Table, v.Column)
+		if err != nil {
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to resolve column %q", v.Column)
 		}
 		r.IsPlainField = true
 		return r, nil

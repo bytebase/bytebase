@@ -369,6 +369,28 @@ func TestOmniQuerySpan_SubqueryComparisonNotFoundPropagates(t *testing.T) {
 	require.Empty(t, span.Results)
 }
 
+// TestOmniQuerySpan_UnresolvedColumnErrors verifies that an unresolvable
+// column reference is surfaced as an error (both from SELECT list and from
+// WHERE predicates) rather than producing a silently-partial span. Matches
+// the legacy ANTLR extractor's strict behavior.
+func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
+	cases := []struct {
+		name string
+		sql  string
+	}{
+		{"select_list", "SELECT no_such_col FROM t"},
+		{"qualified_select_list", "SELECT t.no_such_col FROM t"},
+		{"where_predicate", "SELECT a FROM t WHERE no_such_col = 1"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := newOmniTestExtractor(t, "db")
+			_, err := q.getOmniQuerySpan(context.Background(), tc.sql)
+			require.Errorf(t, err, "unresolved column %q should surface as error", tc.sql)
+		})
+	}
+}
+
 // TestOmniQuerySpan_PivotPreservesAllSourceColumns verifies that PIVOT's
 // pass-through keeps all source columns. T-SQL PIVOT only allows a single
 // table source in the grammar, so in practice extractTableSource returns
