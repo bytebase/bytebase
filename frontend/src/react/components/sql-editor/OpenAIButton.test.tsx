@@ -66,17 +66,20 @@ vi.mock("@/react/components/ui/button", () => ({
     children,
     onClick,
     disabled,
+    "aria-disabled": ariaDisabled,
     "aria-label": ariaLabel,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
+    "aria-disabled"?: boolean;
     "aria-label"?: string;
   }) => (
     <button
       data-testid="button"
       aria-label={ariaLabel}
       disabled={disabled}
+      aria-disabled={ariaDisabled}
       onClick={onClick}
     >
       {children}
@@ -248,7 +251,7 @@ describe("OpenAIButton", () => {
       "[data-testid='button']"
     ) as HTMLButtonElement | null;
     expect(button).not.toBeNull();
-    expect(button?.disabled).toBe(true);
+    expect(button?.getAttribute("aria-disabled")).toBeTruthy();
 
     // Popover body includes the not-configured key
     expect(container.textContent).toContain("plugin.ai.not-configured.self");

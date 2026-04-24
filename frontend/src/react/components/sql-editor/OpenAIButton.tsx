@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
@@ -104,51 +104,8 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
 
   // ---- Disabled state: AI feature not configured ---------------------------
   if (!openAIEnabled) {
-    const allowConfigure = hasWorkspacePermissionV2("bb.settings.set");
     return (
-      <Popover>
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              size={size}
-              aria-disabled
-              className={cn(buttonClass, "opacity-50 cursor-default")}
-              aria-label={t("plugin.ai.ai-assistant")}
-            >
-              {icon}
-            </Button>
-          }
-        />
-        <PopoverContent align="end" className="max-w-[20rem]">
-          <div className="flex flex-col">
-            <div className="border-b pb-1 font-semibold">
-              {t("plugin.ai.ai-assistant")}
-            </div>
-            <div className="pt-2 flex flex-col text-control-light">
-              <p>
-                {t("plugin.ai.not-configured.self")}{" "}
-                {allowConfigure ? (
-                  <button
-                    type="button"
-                    className="text-accent hover:underline"
-                    onClick={() => {
-                      void router.push({
-                        name: SETTING_ROUTE_WORKSPACE_GENERAL,
-                        hash: "#ai-assistant",
-                      });
-                    }}
-                  >
-                    {t("plugin.ai.not-configured.go-to-configure")}
-                  </button>
-                ) : (
-                  t("plugin.ai.not-configured.contact-admin-to-configure")
-                )}
-              </p>
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+      <AINotConfiguredButton size={size} icon={icon} className={buttonClass} />
     );
   }
 
@@ -226,5 +183,93 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Hover-triggered popover shown when AI is not configured. */
+function AINotConfiguredButton({
+  size,
+  icon,
+  className,
+}: {
+  size: "sm" | "default";
+  icon: React.ReactNode;
+  className: string;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const allowConfigure = hasWorkspacePermissionV2("bb.settings.set");
+
+  const handleEnter = useCallback(() => {
+    if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current);
+    setOpen(true);
+  }, []);
+
+  const handleLeave = useCallback(() => {
+    closeTimerRef.current = setTimeout(() => setOpen(false), 150);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) clearTimeout(closeTimerRef.current);
+    },
+    []
+  );
+
+  return (
+    <Popover open={open}>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size={size}
+            aria-disabled
+            className={cn(className, "opacity-50 cursor-default")}
+            aria-label={t("plugin.ai.ai-assistant")}
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
+          >
+            {icon}
+          </Button>
+        }
+      />
+      <PopoverContent
+        align="end"
+        className="max-w-[20rem]"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+      >
+        <div className="flex flex-col">
+          <div className="border-b pb-1 font-semibold">
+            {t("plugin.ai.ai-assistant")}
+          </div>
+          <div className="pt-2 flex flex-col text-control-light">
+            <p>
+              {t("plugin.ai.not-configured.self")}{" "}
+              {allowConfigure ? (
+                <Button
+                  variant="link"
+                  size="sm"
+                  tabIndex={-1}
+                  className="h-auto p-0 text-accent"
+                  onClick={() => {
+                    setOpen(false);
+                    void router.push({
+                      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+                      hash: "#ai-assistant",
+                    });
+                  }}
+                >
+                  {t("plugin.ai.not-configured.go-to-configure")}
+                </Button>
+              ) : (
+                t("plugin.ai.not-configured.contact-admin-to-configure")
+              )}
+            </p>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
