@@ -69,6 +69,7 @@
     "unarchive-all-chats": "Desarchivar todos los chats",
     "unarchive-chat": "Desarchivar chat"
   },
+  "agent.self": "Agent",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -416,11 +417,13 @@
   "common.and": "y",
   "common.archive": "Archivo",
   "common.archived": "Archivada",
+  "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Cancelar",
   "common.canceled": "Cancelado",
   "common.cannot-undo-this-action": "No se puede deshacer esta acción",
   "common.catalog": "Catálogo",
   "common.close": "Cerrar",
+  "common.close-mobile-sidebar": "Close mobile sidebar",
   "common.collapse": "Contraer",
   "common.column": "Columna",
   "common.comment": "Comment",
@@ -437,6 +440,7 @@
   "common.delete": "Eliminar",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Eliminado",
+  "common.demo-mode": "Demo",
   "common.deploying": "Desplegando",
   "common.detail": "Detail",
   "common.detailed-guide": "guía detallada",
@@ -449,7 +453,9 @@
   "common.issue": "Issue",
   "common.key": "Clave",
   "common.labels": "Etiquetas",
+  "common.language": "Language",
   "common.learn-more": "Aprender más",
+  "common.license": "License",
   "common.line": "Línea",
   "common.load-more": "Cargar más",
   "common.loading": "Cargando",
@@ -467,6 +473,7 @@
   "common.password": "Contraseña",
   "common.project": "Proyecto",
   "common.read-only": "Solo lectura",
+  "common.recent": "Recent",
   "common.remaining": "restantes",
   "common.remove": "Eliminar",
   "common.removed": "Eliminado",
@@ -492,6 +499,7 @@
   "common.value": "Valor",
   "common.version": "Versión",
   "common.view-doc": "Ver doc",
+  "common.want-help": "Want help",
   "common.warning": "Advertencia",
   "common.write-only": "solo escritura",
   "create-db": {
@@ -1389,6 +1397,7 @@
   "issue.data-export.limits": "Límites",
   "issue.data-export.options": "Opciones",
   "issue.issue-name": "Issue name",
+  "issue.my-issues": "My Issues",
   "issue.no-description-provided": "No description provided",
   "issue.options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
   "issue.overwrite-current-statement": "Sobrescribir la declaración SQL actual",
@@ -1727,10 +1736,15 @@
       "webhook-url": "URL del webhook"
     }
   },
+  "project.select": "Select project",
   "quick-action": {
     "create-db": "Crear base de datos",
+    "new-project": "Nuevo Proyecto",
     "request-export-data": "Solicitar exportación"
   },
+  "quick-action.create-project": "Create project",
+  "quick-action.new-project": "Nuevo Proyecto",
+  "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
@@ -2401,6 +2415,7 @@
       }
     }
   },
+  "settings.general.workspace.default-landing-page.go-to-workspace": "Go to workspace",
   "setup": {
     "basic-info": "Información básica",
     "data": {

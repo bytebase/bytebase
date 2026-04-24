@@ -1725,7 +1725,6 @@
     "create-project": "作成するプロジェクト",
     "from-projects": "他のプロジェクトから",
     "from-unassigned-databases": "割り当てられていないデータベース",
-    "new-project": "作成するプロジェクト",
     "request-export-data": "データ出力を申請する",
     "transfer-in-db-title": "データベースへの転送",
     "unassigned-db-hint": "新しく同期されたデータベースは最初は割り当てられていないため、使用するにはプロジェクトに移動する必要があります。"

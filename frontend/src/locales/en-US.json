@@ -1725,7 +1725,6 @@
     "create-project": "Create Project",
     "from-projects": "From other projects",
     "from-unassigned-databases": "Unassigned databases",
-    "new-project": "New Project",
     "request-export-data": "Request Export",
     "transfer-in-db-title": "Transfer in database",
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use."
