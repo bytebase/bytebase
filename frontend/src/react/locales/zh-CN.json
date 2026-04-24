@@ -195,6 +195,7 @@
     "show-diff": "显示差异"
   },
   "common": {
+    "action-required": "需要操作",
     "activated": "已激活",
     "active": "开启",
     "add": "添加",
@@ -758,7 +759,8 @@
     "sync-status": "同步状态",
     "sync-status-failed": "同步失败",
     "table": {
-      "select": "选择表"
+      "select": "选择表",
+      "select-tip": "请选择一个表来开始查询。"
     },
     "transfer-project": "转移项目",
     "unassign": "取消分配",
@@ -1379,6 +1381,7 @@
     },
     "title": {
       "change-database": "变更数据库",
+      "change-from-sql-editor": "从 SQL 编辑器变更",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -1472,6 +1475,7 @@
     "checks": {
       "self": "检查"
     },
+    "create-plan": "创建计划",
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
@@ -1550,6 +1554,20 @@
   "plan.targets.title": "目标",
   "plan.targets.view-all": "查看全部 ({{count}})",
   "plan.view-discussion": "查看讨论",
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "解释代码",
+        "find-problems": "找出问题"
+      },
+      "ai-assistant": "AI 助手",
+      "not-configured": {
+        "contact-admin-to-configure": "请联系您的组织管理员。",
+        "go-to-configure": "前往配置",
+        "self": "AI 助手尚未配置。"
+      }
+    }
+  },
   "policy": {
     "environment-tier": {
       "description": "使该环境在显示上不同于其他环境。",
@@ -2479,8 +2497,10 @@
     "activate-confirm": "确定要激活此访问授权吗？",
     "add-a-new-instance": "添加新实例",
     "admin-mode": {
+      "exit": "退出管理员模式",
       "self": "管理员模式"
     },
+    "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-query": {
       "batch": "批量"
@@ -2488,6 +2508,7 @@
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
     "connect-to-a-database": "连接数据库",
+    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hours": "{{hours}} 小时",
@@ -2504,6 +2525,7 @@
     "jit": "即时访问",
     "link-access": "链接访问权限",
     "no-access-requests": "暂无访问请求",
+    "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
     "only-select-allowed": "只允许执行只读语句",
     "private": "私有",

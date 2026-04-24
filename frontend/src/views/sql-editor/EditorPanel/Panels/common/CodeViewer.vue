@@ -18,8 +18,9 @@
       <NCheckbox v-model:checked="format">
         {{ $t("sql-editor.format") }}
       </NCheckbox>
-      <OpenAIButton
-        size="small"
+      <ReactPageMount
+        page="OpenAIButton"
+        size="sm"
         :statement="selectedStatement || content"
         :actions="['explain-code']"
       />
@@ -84,6 +85,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { AIChatToSQL, useAIActions } from "@/plugins/ai";
 import { useAIContext } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -93,7 +95,6 @@ import {
   type VueClass,
 } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
-import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 
 const props = defineProps<{
   db: Database;

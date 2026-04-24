@@ -4,7 +4,6 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import Emittery from "emittery";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive, ref, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -19,7 +18,12 @@ import {
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { wrapRefAsPromise } from "@/utils";
-import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
+import {
+  aiContextEvents,
+  provideAIContext,
+  useChatByTab,
+  useCurrentChat,
+} from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContext, AIContextEvents } from "../types";
 
@@ -51,7 +55,9 @@ const databaseMetadata = useMetadata(
   false /* !skipCache */
 );
 
-const events: AIContextEvents = new Emittery();
+// Reuse the module-level singleton so React consumers (e.g. OpenAIButton.tsx)
+// share this event bus without needing Vue's provide/inject.
+const events: AIContextEvents = aiContextEvents;
 const chat = useChatByTab();
 const showHistoryDialog = toRef(state, "showHistoryDialog");
 const pendingSendChat = ref<{ content: string }>();

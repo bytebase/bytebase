@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="h-full" />
+  <div ref="container" :class="containerClass" />
 </template>
 
 <script lang="ts" setup>
@@ -8,10 +8,20 @@ defineOptions({ inheritAttrs: false });
 import { computed, onMounted, onUnmounted, ref, useAttrs, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
-const props = defineProps<{
-  page: string;
-  pageProps?: Record<string, unknown>;
-}>();
+// `containerClass` defaults to `h-full` so full-height pages (Welcome,
+// HistoryPane, AccessPane, etc.) keep the previous behavior. Callers that
+// mount a natural-height surface (e.g. a toolbar inside a flex-col) should
+// override with something like `w-full` so the wrapper doesn't stretch to
+// fill its flex-column parent.
+const props = withDefaults(
+  defineProps<{
+    page: string;
+    pageProps?: Record<string, unknown>;
+    containerClass?: string;
+  }>(),
+  { containerClass: "h-full" }
+);
+const containerClass = computed(() => props.containerClass);
 
 const attrs = useAttrs();
 const { locale } = useI18n();

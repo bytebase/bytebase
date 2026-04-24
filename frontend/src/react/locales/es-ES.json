@@ -195,6 +195,7 @@
     "show-diff": "Mostrar diferencias"
   },
   "common": {
+    "action-required": "Acción requerida",
     "activated": "Activado",
     "active": "Activo",
     "add": "Agregar",
@@ -758,7 +759,8 @@
     "sync-status": "Estado de sincronización",
     "sync-status-failed": "Sincronización fallida",
     "table": {
-      "select": "Seleccionar tabla"
+      "select": "Seleccionar tabla",
+      "select-tip": "Seleccione una mesa para comenzar."
     },
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
@@ -1379,6 +1381,7 @@
     },
     "title": {
       "change-database": "Modificar base de datos",
+      "change-from-sql-editor": "Modificar desde el editor SQL",
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
@@ -1472,6 +1475,7 @@
     "checks": {
       "self": "Verificaciones"
     },
+    "create-plan": "Crear plan",
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
@@ -1550,6 +1554,20 @@
   "plan.targets.title": "Objetivos",
   "plan.targets.view-all": "Ver todo ({{count}})",
   "plan.view-discussion": "Ver discusión",
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "Explicar el código",
+        "find-problems": "encontrar problemas"
+      },
+      "ai-assistant": "Asistente de IA",
+      "not-configured": {
+        "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
+        "go-to-configure": "Ir a configurar",
+        "self": "El Asistente AI no está configurado."
+      }
+    }
+  },
   "policy": {
     "environment-tier": {
       "description": "El entorno aparecerá de manera diferente a otros entornos.",
@@ -2479,8 +2497,10 @@
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "Agregar nueva instancia",
     "admin-mode": {
+      "exit": "Salir del modo administrador",
       "self": "Modo administrador"
     },
+    "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Lote"
@@ -2488,6 +2508,7 @@
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "connect-to-a-database": "Conectar a base de datos",
+    "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en {environment}, envíe un Plan de Cambio de Datos para su aprobación.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
@@ -2504,6 +2525,7 @@
     "jit": "Just-In-Time Access",
     "link-access": "Acceso al enlace",
     "no-access-requests": "No access requests",
+    "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "private": "Privado",

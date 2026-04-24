@@ -86,10 +86,14 @@ export type SheetTreeHandle = {
 
 type Props = {
   readonly view: SheetViewMode;
+  // Multi-select state is only wired on the "my" tree (matches the Vue
+  // v-model binding). When the callbacks are absent, the context-menu
+  // "Multi-select" action is hidden so shared/draft rows cannot populate
+  // the `my` tree's checkedNodes (which feeds Delete + Move-to-folder).
   readonly multiSelectMode?: boolean;
   readonly checkedNodes?: WorksheetFolderNode[];
-  readonly onMultiSelectModeChange: (next: boolean) => void;
-  readonly onCheckedNodesChange: (nodes: WorksheetFolderNode[]) => void;
+  readonly onMultiSelectModeChange?: (next: boolean) => void;
+  readonly onCheckedNodesChange?: (nodes: WorksheetFolderNode[]) => void;
   readonly ref?: Ref<SheetTreeHandle>;
 };
 
@@ -134,21 +138,41 @@ function toTreeData(
 }
 
 /**
- * Count rows that react-arborist will render: the node itself, plus all
- * descendants of expanded folders. Matches naive-ui NTree's natural-height
- * behavior so stacked SheetTrees don't reserve react-arborist's 300px default.
+ * Count rows that react-arborist will actually render so the Tree's fixed
+ * viewport can be sized naturally (instead of its 300px default).
+ *
+ * - When `keyword` is empty, count the node plus descendants of expanded
+ *   folders — arborist hides collapsed children.
+ * - When `keyword` is set, arborist filters visible nodes to matches +
+ *   their ancestors regardless of expand state. Mirror that here so the
+ *   viewport shrinks during search; otherwise the tree reserves the full
+ *   pre-filter height and leaves a large empty block under the matches.
  */
 function countVisibleRows(
   node: WorksheetFolderNode,
-  expandedKeys: Set<string>
+  expandedKeys: Set<string>,
+  keyword: string,
+  searchMatch: (node: WorksheetFolderNode, term: string) => boolean
 ): number {
-  let count = 1;
-  if (expandedKeys.has(node.key)) {
-    for (const child of node.children) {
-      count += countVisibleRows(child, expandedKeys);
+  if (!keyword) {
+    let count = 1;
+    if (expandedKeys.has(node.key)) {
+      for (const child of node.children) {
+        count += countVisibleRows(child, expandedKeys, keyword, searchMatch);
+      }
     }
+    return count;
   }
-  return count;
+
+  let childCount = 0;
+  for (const child of node.children) {
+    childCount += countVisibleRows(child, expandedKeys, keyword, searchMatch);
+  }
+  const selfMatches = searchMatch(node, keyword);
+  if (selfMatches || childCount > 0) {
+    return 1 + childCount;
+  }
+  return 0;
 }
 
 // Generate unique folder name based on existing children
@@ -240,7 +264,13 @@ export function SheetTree({
     handleContextMenu,
     handleSharePanelShow,
     handleClickOutside: handleContextMenuClickOutside,
-  } = useDropdown(view, worksheetFilter);
+  } = useDropdown(
+    view,
+    worksheetFilter,
+    // Only expose the "Multi-select" entry when the parent wires the
+    // multi-select callbacks — i.e. on the `my` tree inside WorksheetPane.
+    !!onMultiSelectModeChange && !!onCheckedNodesChange
+  );
 
   // ---- Menu anchor ----------------------------------------------------------
   // Base UI's popup hover-floating interaction closes the menu on
@@ -363,10 +393,23 @@ export function SheetTree({
   const ROW_HEIGHT = 26;
 
   // Natural-height sizing so stacked SheetTrees don't each reserve the Tree
-  // primitive's 300px default viewport.
+  // primitive's 300px default viewport. Must account for both expand state
+  // AND the search filter — when the keyword is active, arborist hides
+  // non-matching rows, so the viewport should shrink accordingly.
+  const nodeMatches = useCallback(
+    (node: WorksheetFolderNode, term: string): boolean =>
+      filterNode(folderContext.rootPath.value)(term, node),
+    [folderContext.rootPath.value]
+  );
   const treeHeight = useMemo(
-    () => countVisibleRows(sheetTree, new Set(expandedKeysArray)) * ROW_HEIGHT,
-    [sheetTree, expandedKeysArray]
+    () =>
+      countVisibleRows(
+        sheetTree,
+        new Set(expandedKeysArray),
+        worksheetFilter.keyword,
+        nodeMatches
+      ) * ROW_HEIGHT,
+    [sheetTree, expandedKeysArray, worksheetFilter.keyword, nodeMatches]
   );
 
   // ---- Expand/collapse toggle -----------------------------------------------
@@ -658,7 +701,7 @@ export function SheetTree({
       }
       const removed = await handleDeleteFolders(folders, worksheets);
       if (removed) {
-        onMultiSelectModeChange(false);
+        onMultiSelectModeChange?.(false);
       }
     },
     [folderContext, handleDeleteFolders, onMultiSelectModeChange]
@@ -732,8 +775,10 @@ export function SheetTree({
           });
           break;
         case "multi-select":
-          onMultiSelectModeChange(true);
-          onCheckedNodesChange(revealNodes(contextMenuNode, (n) => n));
+          // Guarded — the menu item is only surfaced when the callbacks exist
+          // (the "my" tree); the optional-chaining is a belt-and-braces safety.
+          onMultiSelectModeChange?.(true);
+          onCheckedNodesChange?.(revealNodes(contextMenuNode, (n) => n));
           break;
         default:
           break;
@@ -967,13 +1012,13 @@ export function SheetTree({
                   : revealNodes(folderNode, (n) => n);
                 if (e.target.checked) {
                   const existing = new Set(checkedNodes.map((n) => n.key));
-                  onCheckedNodesChange([
+                  onCheckedNodesChange?.([
                     ...checkedNodes,
                     ...affected.filter((n) => !existing.has(n.key)),
                   ]);
                 } else {
                   const affectedKeys = new Set(affected.map((n) => n.key));
-                  onCheckedNodesChange(
+                  onCheckedNodesChange?.(
                     checkedNodes.filter((n) => !affectedKeys.has(n.key))
                   );
                 }

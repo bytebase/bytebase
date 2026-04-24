@@ -56,7 +56,12 @@ export type MenuItem =
 
 export function useDropdown(
   viewMode: SheetViewMode,
-  worksheetFilter: WorksheetFilter
+  worksheetFilter: WorksheetFilter,
+  // Only the "my" tree is wired to the parent's multi-select state. For
+  // other views (shared / draft) the context-menu entry is hidden so a
+  // right-click on a shared worksheet cannot populate the my tree's
+  // checkedNodes — which the toolbar's Delete + Move-to-folder flows act on.
+  canMultiSelect = false
 ) {
   const { t } = useTranslation();
 
@@ -133,10 +138,12 @@ export function useDropdown(
           }
         );
       }
-      items.push({
-        key: "multi-select",
-        label: t("sql-editor.tab.context-menu.actions.multi-select"),
-      });
+      if (canMultiSelect) {
+        items.push({
+          key: "multi-select",
+          label: t("sql-editor.tab.context-menu.actions.multi-select"),
+        });
+      }
     } else {
       if (allowCreateNew) {
         items.push({
@@ -151,10 +158,12 @@ export function useDropdown(
             label: t("sql-editor.tab.context-menu.actions.add-worksheet"),
           });
         }
-        items.push({
-          key: "multi-select",
-          label: t("sql-editor.tab.context-menu.actions.multi-select"),
-        });
+        if (canMultiSelect) {
+          items.push({
+            key: "multi-select",
+            label: t("sql-editor.tab.context-menu.actions.multi-select"),
+          });
+        }
       }
       if (currentNode.editable) {
         items.push(
@@ -173,7 +182,15 @@ export function useDropdown(
     return items.map(
       (item): MenuItem => ({ type: "item", key: item.key, label: item.label })
     );
-  }, [viewMode, currentNode, worksheetEntity, me, allowCreateNew, t]);
+  }, [
+    viewMode,
+    currentNode,
+    worksheetEntity,
+    me,
+    allowCreateNew,
+    canMultiSelect,
+    t,
+  ]);
 
   // ------------------------------------------------------------------
   // Handlers

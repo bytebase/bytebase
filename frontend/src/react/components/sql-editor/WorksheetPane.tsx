@@ -208,12 +208,11 @@ export function WorksheetPane() {
           />
         )}
         {views.map((view) => (
-          <SheetTree
-            key={view}
-            view={view}
-            onMultiSelectModeChange={setMultiSelectMode}
-            onCheckedNodesChange={setCheckedNodes}
-          />
+          // Non-"my" trees intentionally omit multi-select callbacks. Vue
+          // bound v-model only on the `my` tree; wiring them everywhere let
+          // a shared/draft right-click populate the my tree's checkedNodes,
+          // which the toolbar's Delete + Move-to-folder flows act on.
+          <SheetTree key={view} view={view} />
         ))}
         {!hasAnyView && (
           <div className="mt-10 text-center text-sm text-control-light">

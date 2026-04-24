@@ -195,6 +195,7 @@
     "show-diff": "違いを表示"
   },
   "common": {
+    "action-required": "対応が必要",
     "activated": "有効化しました",
     "active": "アクティブ",
     "add": "追加",
@@ -758,7 +759,8 @@
     "sync-status": "同期ステータス",
     "sync-status-failed": "同期に失敗しました",
     "table": {
-      "select": "テーブルを選択"
+      "select": "テーブルを選択",
+      "select-tip": "開始するにはテーブルを選択してください。"
     },
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
@@ -1379,6 +1381,7 @@
     },
     "title": {
       "change-database": "データベースの変更",
+      "change-from-sql-editor": "SQL エディタからの変更",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -1472,6 +1475,7 @@
     "checks": {
       "self": "チェック"
     },
+    "create-plan": "プランを作成",
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
@@ -1550,6 +1554,20 @@
   "plan.targets.title": "対象",
   "plan.targets.view-all": "すべて表示 ({{count}})",
   "plan.view-discussion": "ディスカッションを見る",
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "コードの説明",
+        "find-problems": "問題を見つける"
+      },
+      "ai-assistant": "AI アシスタント",
+      "not-configured": {
+        "contact-admin-to-configure": "組織の管理者に問い合わせてください。",
+        "go-to-configure": "設定に移動",
+        "self": "AI アシスタントが設定されていません。"
+      }
+    }
+  },
   "policy": {
     "environment-tier": {
       "description": "この環境を他の環境とは異なって見えるようにします。",
@@ -2479,8 +2497,10 @@
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "新しいインスタンスを追加",
     "admin-mode": {
+      "exit": "管理者モードを終了する",
       "self": "管理者モード"
     },
+    "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "バッチ"
@@ -2488,6 +2508,7 @@
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "connect-to-a-database": "データベースに接続",
+    "ddl-dml-requires-data-change-plan": "{environment} で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
@@ -2504,6 +2525,7 @@
     "jit": "Just-In-Time Access",
     "link-access": "リンクアクセス",
     "no-access-requests": "No access requests",
+    "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "private": "プライベート",
