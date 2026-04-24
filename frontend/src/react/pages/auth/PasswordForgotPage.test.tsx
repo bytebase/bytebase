@@ -60,10 +60,9 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/utils", async () => {
-  const actual = await vi.importActual<typeof import("@/utils")>("@/utils");
+vi.mock("@/utils", () => {
   return {
-    ...actual,
+    isValidEmail: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
     resolveWorkspaceName: mocks.resolveWorkspaceName,
   };
 });

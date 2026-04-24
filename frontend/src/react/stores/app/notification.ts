@@ -1,3 +1,4 @@
+import { emitReactNotification } from "@/react/shell-bridge";
 import type { AppSliceCreator, NotificationSlice } from "./types";
 
 export const createNotificationSlice: AppSliceCreator<NotificationSlice> = (
@@ -9,8 +10,6 @@ export const createNotificationSlice: AppSliceCreator<NotificationSlice> = (
     set((state) => ({
       notifications: [...state.notifications, notification],
     }));
-    window.dispatchEvent(
-      new CustomEvent("bb.react-notification", { detail: notification })
-    );
+    emitReactNotification(notification);
   },
 });

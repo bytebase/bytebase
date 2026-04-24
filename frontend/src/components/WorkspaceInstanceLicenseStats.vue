@@ -21,38 +21,28 @@
           <template #icon>
             <PencilIcon
               class="h-8 w-8"
-              @click="state.showInstanceAssignmentDrawer = true"
+              @click="gotoInstanceAssignment"
             />
           </template>
         </NButton>
       </template>
     </div>
   </div>
-
-  <InstanceAssignment
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import InstanceAssignment from "@/components/InstanceAssignment.vue";
+import { useRouter } from "vue-router";
+import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
-interface LocalState {
-  showInstanceAssignmentDrawer: boolean;
-}
-
 const { t } = useI18n();
-const state = reactive<LocalState>({
-  showInstanceAssignmentDrawer: false,
-});
+const router = useRouter();
 const subscriptionStore = useSubscriptionV1Store();
 const actuatorStore = useActuatorV1Store();
 
@@ -68,4 +58,13 @@ const totalLicenseCount = computed((): string => {
 const activateLicenseCount = computed((): string => {
   return `${actuatorStore.activatedInstanceCount}`;
 });
+
+const gotoInstanceAssignment = () => {
+  router.push({
+    name: INSTANCE_ROUTE_DASHBOARD,
+    query: {
+      assignLicense: "1",
+    },
+  });
+};
 </script>

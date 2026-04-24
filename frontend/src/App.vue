@@ -46,6 +46,10 @@ import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import NotificationContext from "./NotificationContext.vue";
 import { locale, t } from "./plugins/i18n";
+import {
+  type ReactQuickstartResetDetail,
+  ReactShellBridgeEvent,
+} from "./react/shell-bridge";
 import { useNotificationStore, useUIStateStore } from "./store";
 import { isDev, setDocumentTitle } from "./utils";
 
@@ -68,7 +72,7 @@ const handleReactLocaleChange = (event: Event) => {
 };
 
 const handleReactQuickstartReset = (event: Event) => {
-  const keys = (event as CustomEvent<{ keys?: unknown }>).detail?.keys;
+  const keys = (event as CustomEvent<ReactQuickstartResetDetail>).detail?.keys;
   if (!Array.isArray(keys)) {
     return;
   }
@@ -85,17 +89,23 @@ const handleReactQuickstartReset = (event: Event) => {
 };
 
 onMounted(() => {
-  window.addEventListener("bb.react-locale-change", handleReactLocaleChange);
   window.addEventListener(
-    "bb.react-quickstart-reset",
+    ReactShellBridgeEvent.localeChange,
+    handleReactLocaleChange
+  );
+  window.addEventListener(
+    ReactShellBridgeEvent.quickstartReset,
     handleReactQuickstartReset
   );
 });
 
 onUnmounted(() => {
-  window.removeEventListener("bb.react-locale-change", handleReactLocaleChange);
   window.removeEventListener(
-    "bb.react-quickstart-reset",
+    ReactShellBridgeEvent.localeChange,
+    handleReactLocaleChange
+  );
+  window.removeEventListener(
+    ReactShellBridgeEvent.quickstartReset,
     handleReactQuickstartReset
   );
 });

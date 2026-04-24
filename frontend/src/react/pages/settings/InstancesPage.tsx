@@ -20,6 +20,7 @@ import {
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import {
   Alert,
@@ -90,7 +91,9 @@ import {
   supportedEngineV1List,
 } from "@/utils";
 
-// ============================================================
+const ASSIGN_LICENSE_QUERY = "assignLicense";
+const ASSIGN_LICENSE_INSTANCES_QUERY = "instances";
+
 // Shared hooks
 // ============================================================
 
@@ -576,12 +579,14 @@ function BatchOperationsBar({
   syncing,
   onSync,
   onEditEnvironment,
+  onAssignLicense,
   showAssignLicense,
 }: {
   selectedInstances: Instance[];
   syncing: boolean;
   onSync: (enableFullSync: boolean) => void;
   onEditEnvironment: () => void;
+  onAssignLicense: () => void;
   showAssignLicense?: boolean;
 }) {
   const { t } = useTranslation();
@@ -609,7 +614,12 @@ function BatchOperationsBar({
           {t("database.edit-environment")}
         </Button>
         {showAssignLicense && (
-          <Button variant="ghost" size="md" disabled={!canUpdate}>
+          <Button
+            variant="ghost"
+            size="md"
+            disabled={!canUpdate}
+            onClick={onAssignLicense}
+          >
             <GraduationCap className="h-4 w-4 mr-1" />
             {t("subscription.instance-assignment.assign-license")}
           </Button>
@@ -800,9 +810,16 @@ export function InstancesPage() {
     }
     if (searchParams.query) parts.push(searchParams.query);
     const queryString = parts.join(" ");
-    const currentQuery = router.currentRoute.value.query.q as string;
-    if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: queryString ? { q: queryString } : {} });
+    const currentQuery = router.currentRoute.value.query;
+    const currentQueryString = currentQuery.q as string;
+    if (queryString !== (currentQueryString ?? "")) {
+      const nextQuery = { ...currentQuery };
+      if (queryString) {
+        nextQuery.q = queryString;
+      } else {
+        delete nextQuery.q;
+      }
+      router.replace({ query: nextQuery });
     }
   }, [searchParams]);
 
@@ -955,6 +972,8 @@ export function InstancesPage() {
   // Batch operations — all mutation logic lives here in the parent
   const [syncing, setSyncing] = useState(false);
   const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
+  const [showAssignLicenseSheet, setShowAssignLicenseSheet] = useState(false);
+  const [assignLicenseNames, setAssignLicenseNames] = useState<string[]>([]);
 
   const handleSync = useCallback(
     async (enableFullSync: boolean) => {
@@ -1010,6 +1029,34 @@ export function InstancesPage() {
     fetchInstances(true);
     setSelectedNames(new Set());
   }, [fetchInstances]);
+
+  const handleAssignLicense = useCallback((names: string[]) => {
+    setAssignLicenseNames(names);
+    setShowAssignLicenseSheet(true);
+  }, []);
+
+  useEffect(() => {
+    const query = router.currentRoute.value.query;
+    if (query[ASSIGN_LICENSE_QUERY] !== "1") {
+      return;
+    }
+
+    const rawInstances = query[ASSIGN_LICENSE_INSTANCES_QUERY];
+    const names =
+      typeof rawInstances === "string"
+        ? rawInstances.split(",").filter(Boolean)
+        : Array.isArray(rawInstances)
+          ? rawInstances.filter(
+              (name): name is string => typeof name === "string"
+            )
+          : [];
+    handleAssignLicense(names);
+
+    const nextQuery = { ...query };
+    delete nextQuery[ASSIGN_LICENSE_QUERY];
+    delete nextQuery[ASSIGN_LICENSE_INSTANCES_QUERY];
+    router.replace({ query: nextQuery });
+  }, [handleAssignLicense]);
 
   // Data source toggle
   const [expandedDataSources, setExpandedDataSources] = useState<Set<string>>(
@@ -1113,6 +1160,11 @@ export function InstancesPage() {
         syncing={syncing}
         onSync={handleSync}
         onEditEnvironment={() => setShowEditEnvDrawer(true)}
+        onAssignLicense={() =>
+          handleAssignLicense(
+            selectedInstanceList.map((instance) => instance.name)
+          )
+        }
         showAssignLicense={subscriptionStore.currentPlan !== PlanType.FREE}
       />
 
@@ -1120,6 +1172,12 @@ export function InstancesPage() {
         open={showEditEnvDrawer}
         onClose={() => setShowEditEnvDrawer(false)}
         onUpdate={handleEnvironmentUpdate}
+      />
+      <InstanceAssignmentSheet
+        open={showAssignLicenseSheet}
+        selectedInstanceList={assignLicenseNames}
+        onOpenChange={setShowAssignLicenseSheet}
+        onUpdated={handleRowAction}
       />
 
       {/* Table */}

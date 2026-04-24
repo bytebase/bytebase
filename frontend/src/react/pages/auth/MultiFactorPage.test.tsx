@@ -32,10 +32,8 @@ vi.mock("@/router", () => ({
   },
 }));
 
-vi.mock("@/utils", async () => {
-  const actual = await vi.importActual<typeof import("@/utils")>("@/utils");
+vi.mock("@/utils", () => {
   return {
-    ...actual,
     resolveWorkspaceName: mocks.resolveWorkspaceName,
   };
 });

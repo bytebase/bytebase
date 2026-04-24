@@ -335,7 +335,6 @@
     "labels": "Nhãn",
     "language": "Ngôn ngữ",
     "lark": "Lark",
-    "latest": "Mới nhất",
     "learn-more": "Tìm hiểu thêm",
     "leave": "Rời khỏi",
     "leave-without-saving": "Thoát mà không lưu?",
@@ -357,11 +356,9 @@
     "no-data": "Không có dữ liệu",
     "no-license": "Không có giấy phép",
     "not-started": "Chưa bắt đầu",
-    "notices": "Thông báo",
     "off": "Tắt",
     "ok": "OK",
     "on": "Bật",
-    "only-creator-allowed-action": "Chỉ người tạo mới được phép thực hiện hành động này",
     "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "operation": "Thao tác",
     "operations": "Các thao tác",
@@ -460,7 +457,6 @@
     "untitled": "Không tiêu đề",
     "update": "Cập nhật",
     "updated": "Đã cập nhật",
-    "updated-at": "Thời gian cập nhật",
     "upload": "Tải lên",
     "user": "Người dùng",
     "username": "Tên người dùng",
@@ -521,8 +517,7 @@
       "approved-issue": "đã phê duyệt vấn đề",
       "disallow-approve-reason": {
         "some-task-checks-are-still-running": "Một số kiểm tra tác vụ vẫn đang chạy",
-        "some-task-checks-didnt-pass": "Một số kiểm tra tác vụ không vượt qua",
-        "x-field-is-required": "{field} là bắt buộc"
+        "some-task-checks-didnt-pass": "Một số kiểm tra tác vụ không vượt qua"
       },
       "generating-approval-flow": "Đang tạo quy trình phê duyệt",
       "re-request-review": "Yêu cầu xem xét lại",
@@ -646,7 +641,6 @@
     "edit-labels": "Chỉnh sửa nhãn",
     "edit-schema": "Chỉnh sửa lược đồ",
     "engine": "Engine",
-    "engine-not-supported-for-backup": "Sao lưu trước đó không được hỗ trợ cho: {databases}",
     "export-schema": "Xuất schema",
     "export-schema-multi-file": "Nhiều tệp (ZIP)",
     "export-schema-single-file": "Tệp đơn",
@@ -1172,9 +1166,6 @@
       "search": "Nhập tiêu đề hoặc id để tìm kiếm",
       "self": "Tìm kiếm nâng cao"
     },
-    "approval": {
-      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
-    },
     "approval-flow": {
       "self": "Quy trình phê duyệt"
     },
@@ -1207,17 +1198,9 @@
       "limits": "Giới hạn",
       "options": "Tùy chọn"
     },
-    "error": {
-      "statement-cannot-be-modified": "Không thể sửa đổi câu lệnh sau khi vấn đề được tạo"
-    },
     "issue-name": "Tên vấn đề",
     "labels": "Nhãn vấn đề",
     "leave-a-comment": "Để lại bình luận...",
-    "migration-mode": {
-      "online": {
-        "description": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ hàng giờ xuống còn vài giây {link}."
-      }
-    },
     "my-issues": "Vấn đề của tôi",
     "no-description-provided": "Không có mô tả nào được cung cấp",
     "options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
@@ -1255,8 +1238,6 @@
     },
     "sql-check": {
       "back-to-edit": "Quay lại chỉnh sửa",
-      "not-executed-yet": "Chưa được thực hiện",
-      "sql-checks": "Kiểm tra SQL",
       "sql-review-violations": "Vi phạm đánh giá SQL",
       "statement-is-required": "Câu lệnh SQL là bắt buộc",
       "statement-is-too-large": "Vì kích thước câu lệnh hiện tại vượt quá 2MB, việc kiểm tra SQL sẽ bị bỏ qua."
@@ -1281,18 +1262,7 @@
     },
     "task-run": {
       "logs": "Nhật ký",
-      "session": "Phiên",
-      "task-run-session": {
-        "blocked-sessions": {
-          "description": "Các phiên bị chặn bởi phiên hiện tại",
-          "self": "Phiên bị chặn"
-        },
-        "blocking-sessions": {
-          "description": "Các phiên đang chặn phiên hiện tại",
-          "self": "Phiên chặn"
-        },
-        "no-session-found": "Không tìm thấy phiên."
-      }
+      "session": "Phiên"
     },
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
@@ -1303,10 +1273,7 @@
       "request-specific-role": "Yêu cầu vai trò \"{role}\""
     },
     "transaction-mode": {
-      "execution-order-note": "Các câu lệnh không liên quan đến giao dịch sẽ được thực hiện cuối cùng.",
-      "label": "Chế độ giao dịch",
-      "off-tooltip": "Thực thi các câu lệnh riêng lẻ trong chế độ tự động commit. Các câu lệnh được commit ngay lập tức và không thể khôi phục nếu câu lệnh sau đó thất bại.",
-      "on-tooltip": "Gói tất cả các câu lệnh trong một giao dịch duy nhất (BEGIN/COMMIT)."
+      "label": "Chế độ giao dịch"
     },
     "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Đã phê duyệt\" nhưng một số tác vụ của nó không được thực hiện thành công.",
     "upload-sql": "Tải lên SQL",
@@ -1385,16 +1352,8 @@
       "unsaved-changes": "Những thay đổi chưa lưu",
       "unsaved-changes-message": "Bạn chưa lưu thay đổi. Bạn có chắc chắn muốn thoát không?"
     },
-    "ghost": {
-      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
-      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên phiên bản '{instance}', sau đó đồng bộ phiên bản và cơ sở dữ liệu",
-      "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
-      "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
-      "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu"
-    },
     "go-to-plan-page": "Đi tới trang kế hoạch",
     "isolation-level": {
-      "description": "Kiểm soát cách các giao dịch tương tác với các thay đổi đồng thời. Chỉ áp dụng khi Chế độ Giao dịch được bật.",
       "self": "Mức Độ Cô Lập"
     },
     "labels-required-for-review": "Cần có nhãn trước khi yêu cầu xem xét",
@@ -1432,19 +1391,7 @@
       "show-details": "Hiển thị chi tiết ↓"
     },
     "plans": "Kế hoạch",
-    "pre-backup": {
-      "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}",
-      "missing-backup-database": "Tạo cơ sở dữ liệu 'bbdataarchive' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu",
-      "missing-backup-database-oracle": "Tạo cơ sở dữ liệu 'BBDATAARCHIVE' trên instance '{instance}', sau đó đồng bộ instance và cơ sở dữ liệu",
-      "missing-backup-schema-postgres": "Tạo schema 'bbdataarchive' trong cơ sở dữ liệu '{database}'. Nếu sử dụng SET ROLE, hãy cấp quyền USAGE và CREATE trên schema cho role đó. Sau đó đồng bộ cơ sở dữ liệu",
-      "only-some-databases-checked": "Chỉ một số cơ sở dữ liệu được kiểm tra",
-      "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
-      "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu"
-    },
     "ready-for-review": "Sẵn sàng để xem xét",
-    "refresh-indicator": {
-      "last-refresh": "Làm mới lần cuối: {time}"
-    },
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
     "select-targets": "Chọn mục tiêu",
@@ -1454,15 +1401,6 @@
     },
     "spec": {
       "change": "Thay đổi",
-      "delete-change": {
-        "content": "Bạn có chắc chắn muốn xóa thay đổi này không?",
-        "title": "Xóa thay đổi"
-      },
-      "role-selection": {
-        "description": "Chọn vai trò PostgreSQL để thực thi câu lệnh này.",
-        "technical-note": "Thêm \"SET ROLE {role};\" vào câu lệnh SQL của bạn.",
-        "title": "Lựa chọn vai trò cơ sở dữ liệu"
-      },
       "type": {
         "create-database": "Tạo cơ sở dữ liệu",
         "database-change": "Thay đổi cơ sở dữ liệu",
@@ -1759,7 +1697,6 @@
     "files": "Tệp",
     "not-found": "Không tìm thấy",
     "releases": "Bản phát hành",
-    "title": "Phát hành",
     "total-files": "Tổng số {count} tệp",
     "usage-description": "Bản phát hành là một artifact ứng dụng có phiên bản mà việc triển khai vào môi trường được kích hoạt bởi quy trình GitOps.",
     "vcs-source": "Nguồn VCS",
@@ -1876,7 +1813,6 @@
       "self": "Giai đoạn | Các giai đoạn"
     },
     "task": {
-      "no-statement": "Không có câu lệnh SQL",
       "no-tasks": "Không có nhiệm vụ nào ở giai đoạn này",
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
       "statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn."
@@ -1937,7 +1873,6 @@
       "indexes": "Chỉ mục",
       "unique": "Duy nhất"
     },
-    "insert-sql": "Insert SQL",
     "message": {
       "cannot-drop-the-last-column": "Không thể xóa cột cuối cùng",
       "duplicated-function-name": "Tên hàm trùng lặp",
@@ -1960,7 +1895,6 @@
       "select": "Chọn lược đồ"
     },
     "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
-    "self": "Trình soạn thảo lược đồ",
     "table": {
       "name": "Tên bảng",
       "select": "Chọn bảng"
@@ -1974,7 +1908,6 @@
       "value": "Giá trị"
     },
     "tables": "Bảng",
-    "template-database": "Template database",
     "views": "Khung nhìn"
   },
   "schema-template": {
@@ -2764,8 +2697,7 @@
     "rule-detail": "Chi tiết quy tắc",
     "select-all": "Chọn tất cả",
     "select-review-rules": "Chọn quy tắc đánh giá SQL",
-    "title": "Đánh giá SQL",
-    "view-definition": "Xem định nghĩa"
+    "title": "Đánh giá SQL"
   },
   "subscription": {
     "button": {
@@ -2891,7 +2823,6 @@
       "summary-report": "Báo cáo tổng hợp"
     },
     "checking": "Đang kiểm tra...",
-    "comment": "Bình luận",
     "created": "Đã tạo",
     "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "error": {
@@ -2899,7 +2830,6 @@
     },
     "executed-by": "Được thực hiện bởi",
     "execution-time": "Thời gian thực thi",
-    "no-cancellable-tasks": "Không có nhiệm vụ nào có thể hủy bỏ",
     "no-permission": "Không có quyền thực hiện hành động này",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-selectable-tasks": "Không thể chọn bất kỳ tác vụ nào",
@@ -2907,20 +2837,10 @@
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "online-migration": {
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến.",
-      "configure": "Cấu hình",
-      "configure-ghost-parameters": "Cấu hình tham số gh-ost",
-      "error": {
-        "not-applicable": {
-          "database-doesnt-meet-ghost-requirement": "Cơ sở dữ liệu {database} không đáp ứng được yêu cầu của gh-ost"
-        },
-        "nothing-changed": "Không có gì thay đổi"
-      },
-      "ghost-parameters": "Tham số gh-ost",
       "self": "Di chuyển trực tuyến"
     },
     "only-showing-latest-n-runs": "Chỉ hiển thị các lần chạy {n} mới nhất",
     "prior-backup": "Sao lưu trước",
-    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn. Chỉ áp dụng cho thay đổi dữ liệu (UPDATE, DELETE), không áp dụng cho thay đổi cấu trúc.",
     "run-checks": "Chạy kiểm tra",
     "run-history": "Lịch sử chạy",
     "run-immediately": {
@@ -2932,7 +2852,6 @@
       "description": "Đặt ngày và giờ cụ thể để các tác vụ tự động bắt đầu chạy. Hữu ích cho các khung giờ bảo trì hoặc ngoài giờ cao điểm.",
       "self": "Lên lịch cho sau"
     },
-    "scheduled-at": "Đã lên lịch tại",
     "scheduled-time": "Thời gian đã lên lịch",
     "select-scheduled-time": "Chọn thời gian đã lên lịch",
     "select-task": "Chọn nhiệm vụ | Chọn nhiệm vụ",
@@ -2949,17 +2868,9 @@
       "pending": "Đang chờ",
       "running": "Đang chạy",
       "skipped": "Đã bỏ qua"
-    },
-    "task-checks": "Kiểm tra tác vụ",
-    "type": {
-      "database-create": "Tạo cơ sở dữ liệu",
-      "database-export": "Xuất dữ liệu",
-      "general": "Chung",
-      "migrate": "Di chuyển"
     }
   },
   "task-run": {
-    "failed-runs": "Nhiệm vụ thất bại - Nhật ký thực thi mới nhất",
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest": "Thực hiện mới nhất",
     "latest-logs": "Nhật ký mới nhất",
@@ -2992,8 +2903,7 @@
       "available": "Có thể khôi phục lại cho tác vụ {n} | Có thể khôi phục lại cho tác vụ {n}",
       "no-statement-generated": "Không có câu lệnh khôi phục nào được tạo ra",
       "preview-statement": {
-        "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục.",
-        "self": "Xem trước câu lệnh"
+        "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
       }
     },
     "status": {

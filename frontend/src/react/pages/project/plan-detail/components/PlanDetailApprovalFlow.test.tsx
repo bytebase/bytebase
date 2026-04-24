@@ -117,6 +117,15 @@ vi.mock("@/store/modules/v1/issueComment", () => ({
   useIssueCommentStore: () => mocks.issueCommentStore,
 }));
 
+vi.mock("@/utils", () => ({
+  displayRoleTitle: (role: { title?: string; name?: string }) =>
+    role.title ?? role.name ?? "",
+  ensureUserFullName: (user: { title?: string; name?: string }) =>
+    user.title ?? user.name ?? "",
+  isBindingPolicyExpired: () => false,
+  memberMapToRolesInProjectIAM: () => new Map(),
+}));
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   const root = createRoot(container);

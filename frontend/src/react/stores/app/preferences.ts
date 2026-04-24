@@ -1,3 +1,4 @@
+import { emitReactQuickstartReset } from "@/react/shell-bridge";
 import {
   storageKeyIntroState,
   storageKeyRecentProjects,
@@ -64,10 +65,6 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
       ...Object.fromEntries(QUICKSTART_RESET_KEYS.map((key) => [key, false])),
     };
     writeJson(key, next);
-    window.dispatchEvent(
-      new CustomEvent("bb.react-quickstart-reset", {
-        detail: { keys: QUICKSTART_RESET_KEYS },
-      })
-    );
+    emitReactQuickstartReset({ keys: QUICKSTART_RESET_KEYS });
   },
 });

@@ -20,7 +20,7 @@ import {
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { useVueState } from "../hooks/useVueState";
-import { InstanceAssignmentBridge } from "./InstanceAssignmentBridge";
+import { InstanceAssignmentSheet } from "./InstanceAssignmentSheet";
 
 export function FeatureAttention({
   feature,
@@ -143,10 +143,10 @@ export function FeatureAttention({
           )}
         </div>
       </Alert>
-      <InstanceAssignmentBridge
+      <InstanceAssignmentSheet
         open={showInstanceAssignment}
         selectedInstanceList={instance ? [instance.name] : []}
-        onDismiss={() => setShowInstanceAssignment(false)}
+        onOpenChange={setShowInstanceAssignment}
       />
     </>
   );
