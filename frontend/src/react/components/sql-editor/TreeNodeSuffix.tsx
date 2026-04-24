@@ -85,9 +85,20 @@ export function TreeNodeSuffix({
         className="size-4 text-control shrink-0"
         onClick={(e) => {
           e.stopPropagation();
-          if (node.worksheet?.name) {
-            tabStore.closeTab(node.worksheet.name);
+          if (!node.worksheet?.name) return;
+          const tab = tabStore.getTabByWorksheet(node.worksheet.name);
+          if (tab?.mode === "WORKSHEET" && tab.status !== "CLEAN") {
+            if (
+              !window.confirm(
+                t(
+                  "sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"
+                )
+              )
+            ) {
+              return;
+            }
           }
+          tabStore.closeTab(node.worksheet.name);
         }}
       />
     );
