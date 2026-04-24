@@ -1,9 +1,6 @@
 package scripts
 
 import (
-	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -37,6 +34,7 @@ var (
 	}
 
 	frontendDirectory = "../frontend"
+	sitemapURL        = "https://www.bytebase.com/sitemap.xml"
 )
 
 func TestValidateLinks(t *testing.T) {
@@ -44,19 +42,7 @@ func TestValidateLinks(t *testing.T) {
 	links, err := extractLinkRecursive()
 	a.NoError(err)
 
-	resp, err := http.Get("http://bytebase.com/sitemap.xml")
-	if err != nil {
-		t.Fatalf("failed to get sitemap xml: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read sitemap xml: %v", err)
-	}
-	fmt.Println(string(body))
-
-	sm, err := sitemap.Get("http://bytebase.com/sitemap.xml", nil)
+	sm, err := sitemap.Get(sitemapURL, nil)
 	a.NoError(err)
 
 	paths := map[string]struct{}{}
