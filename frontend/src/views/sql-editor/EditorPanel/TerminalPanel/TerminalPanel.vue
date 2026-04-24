@@ -2,7 +2,7 @@
   <div
     class="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-dark-bg"
   >
-    <EditorAction />
+    <ReactPageMount page="EditorAction" container-class="w-full" />
 
     <div
       v-if="!tabStore.isDisconnected"
@@ -97,7 +97,7 @@ import {
   useWebTerminalStore,
 } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
-import { EditorAction, ResultViewV1 } from "../../EditorCommon";
+import { ResultViewV1 } from "../../EditorCommon";
 import { useHistory } from "./useHistory";
 
 const CompactSQLEditor = defineAsyncComponent(

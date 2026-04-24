@@ -2478,9 +2478,7 @@
       "exit": "管理者モードを終了する",
       "self": "管理者モード"
     },
-    "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {n} more databases",
-    "and-submit-an-issue": "そしてイシューを提出してください",
     "batch-export": {
       "failed-for-db": "{db} のデータのエクスポートに失敗しました",
       "self": "一括エクスポート",
@@ -2515,7 +2513,6 @@
     "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "copy-url": "URLをコピー",
     "current-connection": "現在の接続",
-    "ddl-dml-requires-data-change-plan": "{environment} で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2624,7 +2621,6 @@
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "Table view",
     "text-format": "テキスト形式",
-    "to-enable-admin-mode": "管理者モードを有効にするには",
     "unmask-warning": "ユーザーはこのクエリでマスク解除されたデータにアクセスします",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",

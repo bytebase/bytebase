@@ -2478,9 +2478,7 @@
       "exit": "Exit admin mode",
       "self": "Admin mode"
     },
-    "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "and-n-more-databases": "and {n} more databases",
-    "and-submit-an-issue": "and submit an issue",
     "batch-export": {
       "failed-for-db": "Failed to export data for {db}",
       "self": "Batch export",
@@ -2515,7 +2513,6 @@
     "copy-selected-results": "Copy selected data by {action} or {button}",
     "copy-url": "Copy URL",
     "current-connection": "Current connection",
-    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in {environment}, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2624,7 +2621,6 @@
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",
     "text-format": "Text format",
-    "to-enable-admin-mode": "to enable the admin mode",
     "unmask-warning": "User will access unmasked data through this query",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",

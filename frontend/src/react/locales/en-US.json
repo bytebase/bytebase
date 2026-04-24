@@ -196,6 +196,7 @@
     "show-diff": "Show diff"
   },
   "common": {
+    "action-required": "Action Required",
     "activated": "Activated",
     "active": "Active",
     "add": "Add",
@@ -795,7 +796,8 @@
     "sync-status": "Sync status",
     "sync-status-failed": "Sync failed",
     "table": {
-      "select": "Select table"
+      "select": "Select table",
+      "select-tip": "Please select a table to start."
     },
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
@@ -1417,6 +1419,7 @@
     },
     "title": {
       "change-database": "Change database",
+      "change-from-sql-editor": "Change from SQL Editor",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1510,6 +1513,7 @@
     "checks": {
       "self": "Checks"
     },
+    "create-plan": "Create Plan",
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
@@ -1588,6 +1592,20 @@
   "plan.targets.title": "Targets",
   "plan.targets.view-all": "View all ({{count}})",
   "plan.view-discussion": "View discussion",
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "Explain code",
+        "find-problems": "Find problems"
+      },
+      "ai-assistant": "AI Assistant",
+      "not-configured": {
+        "contact-admin-to-configure": "Please contact your org administrator.",
+        "go-to-configure": "Go to configure",
+        "self": "AI Assistant is not configured."
+      }
+    }
+  },
   "policy": {
     "environment-tier": {
       "description": "The environment will appear differently from other environments.",
@@ -2523,8 +2541,10 @@
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "Add new instance",
     "admin-mode": {
+      "exit": "Exit admin mode",
       "self": "Admin mode"
     },
+    "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Batch"
@@ -2532,6 +2552,7 @@
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
     "connect-to-a-database": "Connect to database",
+    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
@@ -2548,6 +2569,7 @@
     "jit": "Just-In-Time Access",
     "link-access": "Link access",
     "no-access-requests": "No access requests",
+    "no-database-selected": "No database selected",
     "no-history-found": "No history found",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "private": "Private",

@@ -2478,9 +2478,7 @@
       "exit": "Salir del modo administrador",
       "self": "Modo administrador"
     },
-    "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "and-n-more-databases": "and {n} more databases",
-    "and-submit-an-issue": "y enviar un problema",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {db}",
       "self": "Exportación por lotes",
@@ -2515,7 +2513,6 @@
     "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "copy-url": "Copiar URL",
     "current-connection": "Conexión actual",
-    "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en {environment}, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2624,7 +2621,6 @@
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Table view",
     "text-format": "Formato de texto",
-    "to-enable-admin-mode": "para habilitar el modo administrador",
     "unmask-warning": "El usuario accederá a datos sin enmascarar a través de esta consulta",
     "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",

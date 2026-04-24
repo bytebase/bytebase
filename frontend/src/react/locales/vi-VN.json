@@ -195,6 +195,7 @@
     "show-diff": "Hiển thị khác biệt"
   },
   "common": {
+    "action-required": "Cần thực hiện hành động",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
     "add": "Thêm",
@@ -788,7 +789,8 @@
     "sync-status": "Trạng thái đồng bộ",
     "sync-status-failed": "Đồng bộ thất bại",
     "table": {
-      "select": "Chọn bảng"
+      "select": "Chọn bảng",
+      "select-tip": "Vui lòng chọn một bảng để bắt đầu."
     },
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
@@ -1409,6 +1411,7 @@
     },
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
+      "change-from-sql-editor": "Thay đổi từ SQL Editor",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
     },
@@ -1502,6 +1505,7 @@
     "checks": {
       "self": "Kiểm tra"
     },
+    "create-plan": "Tạo kế hoạch",
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
@@ -1580,6 +1584,20 @@
   "plan.targets.title": "Mục tiêu",
   "plan.targets.view-all": "Xem tất cả ({{count}})",
   "plan.view-discussion": "Xem thảo luận",
+  "plugin": {
+    "ai": {
+      "actions": {
+        "explain-code": "Giải thích mã",
+        "find-problems": "Tìm vấn đề"
+      },
+      "ai-assistant": "Trợ lý AI",
+      "not-configured": {
+        "contact-admin-to-configure": "Vui lòng liên hệ với quản trị viên tổ chức của bạn.",
+        "go-to-configure": "Đi tới cấu hình",
+        "self": "Trợ lý AI chưa được định cấu hình."
+      }
+    }
+  },
   "policy": {
     "environment-tier": {
       "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
@@ -2509,8 +2527,10 @@
     "activate-confirm": "Are you sure you want to activate this access grant?",
     "add-a-new-instance": "Thêm phiên bản mới",
     "admin-mode": {
+      "exit": "Thoát chế độ quản trị",
       "self": "Chế độ quản trị"
     },
+    "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Hàng loạt"
@@ -2518,6 +2538,7 @@
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
+    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
@@ -2534,6 +2555,7 @@
     "jit": "Just-In-Time Access",
     "link-access": "Truy cập liên kết",
     "no-access-requests": "No access requests",
+    "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "private": "Riêng tư",

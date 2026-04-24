@@ -8,17 +8,17 @@
       />
       <WrenchIcon v-if="tab.mode === 'ADMIN'" class="w-4 h-4" />
     </template>
-    <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
+    <ReactPageMount page="SheetConnectionIcon" :tab="tab" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { PencilLineIcon, UsersIcon, WrenchIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { useSheetContext } from "@/views/sql-editor/Sheet";
-import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps<{
   tab: SQLEditorTab;

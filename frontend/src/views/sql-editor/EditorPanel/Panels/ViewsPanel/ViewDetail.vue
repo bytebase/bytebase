@@ -39,8 +39,9 @@
           >
             {{ $t("sql-editor.format") }}
           </NCheckbox>
-          <OpenAIButton
-            size="small"
+          <ReactPageMount
+            page="OpenAIButton"
+            size="sm"
             :statement="selectedStatement || view.definition"
             :actions="['explain-code']"
           />
@@ -81,6 +82,7 @@ import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ColumnIcon, ViewIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import type {
   Database,
   DatabaseMetadata,
@@ -88,7 +90,6 @@ import type {
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { STORAGE_KEY_SQL_EDITOR_CODE_VIEWER_FORMAT } from "@/utils";
-import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useCurrentTabViewStateContext } from "../../context/viewState";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";

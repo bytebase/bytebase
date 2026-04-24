@@ -2478,9 +2478,7 @@
       "exit": "退出管理员模式",
       "self": "管理员模式"
     },
-    "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {n} 个数据库",
-    "and-submit-an-issue": "并提交一个工单",
     "batch-export": {
       "failed-for-db": "无法导出 {db} 的数据",
       "self": "批量导出",
@@ -2515,7 +2513,6 @@
     "copy-selected-results": "通过 {action} 或 {button} 来快速复制选定的数据",
     "copy-url": "复制 URL",
     "current-connection": "当前连接",
-    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {file} 格式",
     "duration-day": "{days} 天",
     "duration-days": "{days} 天",
@@ -2624,7 +2621,6 @@
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
     "table-view": "Table view",
     "text-format": "文本格式",
-    "to-enable-admin-mode": "来开启管理员模式",
     "unmask-warning": "用户将通过此查询访问未脱敏的数据",
     "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",

@@ -1,7 +1,11 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden justify-start items-stretch">
     <template v-if="isDisconnected || allowReadonlyMode">
-      <EditorAction @execute="handleExecuteFromActionBar" />
+      <ReactPageMount
+        page="EditorAction"
+        container-class="w-full"
+        :onExecute="handleExecuteFromActionBar"
+      />
 
       <NSplit
         v-if="tab"
@@ -49,17 +53,17 @@
         />
       </div>
 
-      <ExecutingHintModal />
-
-      <!-- SaveSheetModal renders a React Dialog via portal; the inline mount
-           must not occupy flex space or it steals height from the Welcome
-           pane above (ReactPageMount's container is `class="h-full"`). -->
+      <!-- Both modals portal their Dialog popup via React; their inline
+           mount must not occupy flex space, otherwise ReactPageMount's
+           default `h-full` container steals height from the editor/NSplit
+           above (see the Welcome / AI-panel height bugs). -->
       <div class="hidden">
+        <ReactPageMount page="ExecutingHintModal" />
         <ReactPageMount page="SaveSheetModal" />
       </div>
     </template>
 
-    <ReadonlyModeNotSupported v-else />
+    <ReactPageMount v-else page="ReadonlyModeNotSupported" />
   </div>
 </template>
 
@@ -80,9 +84,7 @@ import {
 import type { SQLEditorQueryParams } from "@/types";
 import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import { EditorAction, ExecutingHintModal } from "../../EditorCommon";
 import { sqlEditorEvents } from "../../events";
-import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
