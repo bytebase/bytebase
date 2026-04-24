@@ -12,6 +12,17 @@ import {
   writeJson,
 } from "./utils";
 
+const QUICKSTART_RESET_KEYS = [
+  "hidden",
+  "issue.visit",
+  "project.visit",
+  "environment.visit",
+  "instance.visit",
+  "database.visit",
+  "member.visit",
+  "data.query",
+];
+
 export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   _set,
   get
@@ -50,15 +61,13 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     const previous = readJson<Record<string, boolean>>(key, {});
     const next = {
       ...previous,
-      hidden: false,
-      "issue.visit": false,
-      "project.visit": false,
-      "environment.visit": false,
-      "instance.visit": false,
-      "database.visit": false,
-      "member.visit": false,
-      "data.query": false,
+      ...Object.fromEntries(QUICKSTART_RESET_KEYS.map((key) => [key, false])),
     };
     writeJson(key, next);
+    window.dispatchEvent(
+      new CustomEvent("bb.react-quickstart-reset", {
+        detail: { keys: QUICKSTART_RESET_KEYS },
+      })
+    );
   },
 });

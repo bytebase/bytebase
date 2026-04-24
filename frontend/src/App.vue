@@ -46,7 +46,7 @@ import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import NotificationContext from "./NotificationContext.vue";
 import { locale, t } from "./plugins/i18n";
-import { useNotificationStore } from "./store";
+import { useNotificationStore, useUIStateStore } from "./store";
 import { isDev, setDocumentTitle } from "./utils";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
@@ -55,6 +55,7 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 const route = useRoute();
 const router = useRouter();
 const notificationStore = useNotificationStore();
+const uiStateStore = useUIStateStore();
 
 const handleReactLocaleChange = (event: Event) => {
   const lang = (event as CustomEvent<unknown>).detail;
@@ -66,12 +67,37 @@ const handleReactLocaleChange = (event: Event) => {
   }
 };
 
+const handleReactQuickstartReset = (event: Event) => {
+  const keys = (event as CustomEvent<{ keys?: unknown }>).detail?.keys;
+  if (!Array.isArray(keys)) {
+    return;
+  }
+  void Promise.all(
+    keys
+      .filter((key): key is string => typeof key === "string")
+      .map((key) =>
+        uiStateStore.saveIntroStateByKey({
+          key,
+          newState: false,
+        })
+      )
+  );
+};
+
 onMounted(() => {
   window.addEventListener("bb.react-locale-change", handleReactLocaleChange);
+  window.addEventListener(
+    "bb.react-quickstart-reset",
+    handleReactQuickstartReset
+  );
 });
 
 onUnmounted(() => {
   window.removeEventListener("bb.react-locale-change", handleReactLocaleChange);
+  window.removeEventListener(
+    "bb.react-quickstart-reset",
+    handleReactQuickstartReset
+  );
 });
 
 watchEffect(async () => {

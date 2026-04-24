@@ -253,7 +253,9 @@ describe("useAppStore", () => {
 
   test("keeps user-scoped preferences in localStorage", () => {
     const store = createAppStore();
+    const listener = vi.fn();
     store.setState({ currentUser: user });
+    window.addEventListener("bb.react-quickstart-reset", listener);
 
     store.getState().setRecentProject(projectA.name);
     store.getState().setRecentProject(projectB.name);
@@ -274,5 +276,13 @@ describe("useAppStore", () => {
       "project.visit": false,
       "data.query": false,
     });
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.objectContaining({
+          keys: expect.arrayContaining(["hidden", "data.query"]),
+        }),
+      })
+    );
+    window.removeEventListener("bb.react-quickstart-reset", listener);
   });
 });
