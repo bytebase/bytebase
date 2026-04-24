@@ -52,7 +52,10 @@
 
       <div class="flex-1 flex flex-row overflow-hidden">
         <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
-          <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
+          <ReactPageMount
+            v-if="asidePanelTab === 'WORKSHEET'"
+            page="WorksheetPane"
+          />
           <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
           <ReactPageMount
             v-if="asidePanelTab === 'HISTORY'"
@@ -85,7 +88,6 @@ import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import ActionBar from "./ActionBar";
 import SchemaPane from "./SchemaPane";
-import WorksheetPane from "./WorksheetPane";
 
 const editorStore = useSQLEditorStore();
 const actuatorStore = useActuatorV1Store();

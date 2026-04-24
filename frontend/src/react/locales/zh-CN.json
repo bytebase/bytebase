@@ -258,6 +258,7 @@
     "done": "完成",
     "download": "下载",
     "draft": "草稿",
+    "duplicate": "拷贝",
     "duration": "Duration",
     "edit": "编辑",
     "email": "邮箱",
@@ -278,6 +279,7 @@
     },
     "filter": "Filter",
     "filter-by-name": "按名称过滤",
+    "fork": "复刻",
     "from": "从",
     "general": "通用",
     "go-back": "返回",
@@ -403,6 +405,7 @@
     "verify": "验证",
     "view": "查看",
     "view-details": "查看详情",
+    "visibility": "可见性",
     "warning": "警告",
     "webhooks": "Webhook",
     "write-only": "仅写入",
@@ -2415,6 +2418,29 @@
       "team": "与队友合作，需要 CI/CD 工作流"
     }
   },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "仅显示收藏",
+      "show-draft": "显示草稿",
+      "show-mine": "显示我的",
+      "show-shared": "显示共享"
+    },
+    "hint-tips": {
+      "confirm-to-delete-sheet-title": "确认删除此工作表？",
+      "confirm-to-duplicate-sheet": "确定要复制这条工作表?",
+      "delete-all-sheets": "删除所有文件",
+      "duplicate-folder-name-content": "是否要将所有子文件夹和文件合并到现有文件夹“{{folder}}”中？",
+      "duplicate-folder-name-title": "重复的文件夹名称",
+      "move-to-root-folder": "移动到根文件夹",
+      "non-empty-folder-content": "您是想将所有工作表移动到根文件夹，还是直接删除它们？",
+      "non-empty-folder-title": "非空文件夹"
+    },
+    "move-worksheets": "移动工作表",
+    "notifications": {
+      "duplicate-success": "已成功拷贝至“我的工作表”"
+    },
+    "search-sheets": "搜索工作表"
+  },
   "sql-editor": {
     "access-grants": "访问授权",
     "access-search": {
@@ -2484,6 +2510,16 @@
     "search-history-by-statement": "搜索 SQL 语句",
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "添加文件夹",
+          "add-worksheet": "添加工作表",
+          "multi-select": "多选",
+          "rename": "重命名"
+        }
+      }
+    },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "view-issue": "查看工单",

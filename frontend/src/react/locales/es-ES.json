@@ -258,6 +258,7 @@
     "done": "Hecho",
     "download": "Descargar",
     "draft": "Borrador",
+    "duplicate": "Duplicar",
     "duration": "Duration",
     "edit": "Editar",
     "email": "Correo electrónico",
@@ -278,6 +279,7 @@
     },
     "filter": "Filter",
     "filter-by-name": "Filtrar por nombre",
+    "fork": "Bifurcación",
     "from": "Desde",
     "general": "General",
     "go-back": "Volver",
@@ -403,6 +405,7 @@
     "verify": "Verificar",
     "view": "Ver",
     "view-details": "Ver Detalles",
+    "visibility": "Visibilidad",
     "warning": "Advertencia",
     "webhooks": "Webhooks",
     "write-only": "solo escritura",
@@ -2415,6 +2418,29 @@
       "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD"
     }
   },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "Solo programa protagonizado",
+      "show-draft": "Mostrar borrador",
+      "show-mine": "Muéstrame el mío",
+      "show-shared": "Mostrar compartido"
+    },
+    "hint-tips": {
+      "confirm-to-delete-sheet-title": "¿Confirmar la eliminación de esta hoja de cálculo?",
+      "confirm-to-duplicate-sheet": "¿Confirmar para duplicar esta hoja?",
+      "delete-all-sheets": "Eliminar todos los archivos",
+      "duplicate-folder-name-content": "¿Desea fusionar todas las subcarpetas y archivos en la carpeta existente \"{{folder}}\"?",
+      "duplicate-folder-name-title": "Nombre de carpeta duplicado",
+      "move-to-root-folder": "Mover a la carpeta raíz",
+      "non-empty-folder-content": "¿Desea mover todas las hojas de cálculo a la carpeta raíz o simplemente eliminarlas?",
+      "non-empty-folder-title": "carpeta no vacía"
+    },
+    "move-worksheets": "Hojas de trabajo de movimiento",
+    "notifications": {
+      "duplicate-success": "Duplicado con éxito en \"Mis hojas\""
+    },
+    "search-sheets": "Hojas de búsqueda"
+  },
   "sql-editor": {
     "access-grants": "Access Grants",
     "access-search": {
@@ -2484,6 +2510,16 @@
     "search-history-by-statement": "Búsqueda por enunciado",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "self": "Editor de SQL",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "Agregar carpeta",
+          "add-worksheet": "Agregar hoja de trabajo",
+          "multi-select": "Selección múltiple",
+          "rename": "Renombrar"
+        }
+      }
+    },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "view-issue": "View Issue",

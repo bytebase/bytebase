@@ -258,6 +258,7 @@
     "done": "Done",
     "download": "Download",
     "draft": "Draft",
+    "duplicate": "Duplicate",
     "duration": "Duration",
     "edit": "Edit",
     "email": "Email",
@@ -278,6 +279,7 @@
     },
     "filter": "Filter",
     "filter-by-name": "Filter by name",
+    "fork": "Fork",
     "from": "From",
     "general": "General",
     "go-back": "Go back",
@@ -403,6 +405,7 @@
     "verify": "Verify",
     "view": "View",
     "view-details": "View Details",
+    "visibility": "Visibility",
     "warning": "Warning",
     "webhooks": "Webhooks",
     "write-only": "write only",
@@ -2415,6 +2418,29 @@
       "team": "Work with teammates, need CI/CD pipeline"
     }
   },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "Only show starred",
+      "show-draft": "Show draft",
+      "show-mine": "Show mine",
+      "show-shared": "Show shared"
+    },
+    "hint-tips": {
+      "confirm-to-delete-sheet-title": "Confirm to delete this worksheet?",
+      "confirm-to-duplicate-sheet": "Confirm to duplicate this worksheet?",
+      "delete-all-sheets": "Delete all files",
+      "duplicate-folder-name-content": "Do you want to merge all subfolders and files into the existing folder \"{{folder}}\"?",
+      "duplicate-folder-name-title": "Duplicate folder name",
+      "move-to-root-folder": "Move to root folder",
+      "non-empty-folder-content": "Do you want to move all worksheets into the root folder or just delete them?",
+      "non-empty-folder-title": "Non-empty folder"
+    },
+    "move-worksheets": "Move worksheets",
+    "notifications": {
+      "duplicate-success": "Successfully duplicate the worksheet"
+    },
+    "search-sheets": "Search Sheets"
+  },
   "sql-editor": {
     "access-grants": "Access Grants",
     "access-search": {
@@ -2484,6 +2510,16 @@
     "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "Add folder",
+          "add-worksheet": "Add worksheet",
+          "multi-select": "Multi-select",
+          "rename": "Rename"
+        }
+      }
+    },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "view-issue": "View Issue",

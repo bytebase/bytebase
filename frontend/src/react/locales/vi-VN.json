@@ -258,6 +258,7 @@
     "done": "Hoàn tất",
     "download": "Tải xuống",
     "draft": "Bản nháp",
+    "duplicate": "Nhân bản",
     "duration": "Duration",
     "edit": "Chỉnh sửa",
     "email": "Email",
@@ -278,6 +279,7 @@
     },
     "filter": "Filter",
     "filter-by-name": "Lọc theo tên",
+    "fork": "Bản sao",
     "from": "Từ",
     "general": "Chung",
     "go-back": "Quay lại",
@@ -403,6 +405,7 @@
     "verify": "Xác minh",
     "view": "Xem",
     "view-details": "Xem Chi tiết",
+    "visibility": "Hiển thị",
     "warning": "Cảnh báo",
     "webhooks": "Webhooks",
     "write-only": "chỉ ghi",
@@ -2415,6 +2418,29 @@
       "team": "Làm việc với đồng đội, cần có đường ống CI/CD"
     }
   },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "Chỉ hiển thị có dấu sao",
+      "show-draft": "Hiển thị bản nháp",
+      "show-mine": "Hiển thị của tôi",
+      "show-shared": "Hiển thị chia sẻ"
+    },
+    "hint-tips": {
+      "confirm-to-delete-sheet-title": "Xác nhận xóa bảng tính này?",
+      "confirm-to-duplicate-sheet": "Xác nhận nhân bản trang tính này?",
+      "delete-all-sheets": "Xóa tất cả các tập tin",
+      "duplicate-folder-name-content": "Bạn có muốn hợp nhất tất cả các thư mục con và tệp vào thư mục hiện có \"{{folder}}\" không?",
+      "duplicate-folder-name-title": "Tên thư mục trùng lặp",
+      "move-to-root-folder": "Di chuyển đến thư mục gốc",
+      "non-empty-folder-content": "Bạn muốn di chuyển tất cả các trang tính vào thư mục gốc hay chỉ xóa chúng?",
+      "non-empty-folder-title": "Thư mục không trống"
+    },
+    "move-worksheets": "Di chuyển các trang tính",
+    "notifications": {
+      "duplicate-success": "Đã nhân bản thành công vào \"Trang tính của tôi\""
+    },
+    "search-sheets": "Tìm kiếm Trang tính"
+  },
   "sql-editor": {
     "access-grants": "Access Grants",
     "access-search": {
@@ -2484,6 +2510,16 @@
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "Thêm thư mục",
+          "add-worksheet": "Thêm bảng tính",
+          "multi-select": "Chọn nhiều",
+          "rename": "Đổi tên"
+        }
+      }
+    },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "view-issue": "View Issue",

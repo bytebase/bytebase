@@ -25,17 +25,23 @@ function DropdownMenuContent({
   children,
   sideOffset = 4,
   align = "end",
+  anchor,
+  positionMethod,
   ref,
   ...props
 }: ComponentProps<typeof BaseMenu.Popup> & {
   sideOffset?: ComponentProps<typeof BaseMenu.Positioner>["sideOffset"];
   align?: ComponentProps<typeof BaseMenu.Positioner>["align"];
+  anchor?: ComponentProps<typeof BaseMenu.Positioner>["anchor"];
+  positionMethod?: ComponentProps<typeof BaseMenu.Positioner>["positionMethod"];
 }) {
   return (
     <BaseMenu.Portal container={getLayerRoot("overlay")}>
       <BaseMenu.Positioner
         sideOffset={sideOffset}
         align={align}
+        anchor={anchor}
+        positionMethod={positionMethod}
         className={LAYER_SURFACE_CLASS}
       >
         <BaseMenu.Popup
