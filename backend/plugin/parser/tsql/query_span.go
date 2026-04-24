@@ -12,6 +12,7 @@ func init() {
 }
 
 // GetQuerySpan returns the query span for the given statement.
+// Runs on the omni AST extractor.
 func GetQuerySpan(
 	ctx context.Context,
 	gCtx base.GetQuerySpanContext,
@@ -19,10 +20,6 @@ func GetQuerySpan(
 	database, schema string,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	q := newQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
-	querySpan, err := q.getQuerySpan(ctx, stmt.Text)
-	if err != nil {
-		return nil, err
-	}
-	return querySpan, nil
+	q := newOmniQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
+	return q.getOmniQuerySpan(ctx, stmt.Text)
 }
