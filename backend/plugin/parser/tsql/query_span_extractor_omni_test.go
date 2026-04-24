@@ -344,6 +344,46 @@ func TestOmniQuerySpan_SubqueryNotFoundPropagates(t *testing.T) {
 	require.Empty(t, span.Results)
 }
 
+// TestOmniQuerySpan_RecursiveCTEArmNotFoundPropagates verifies that a
+// recursive-CTE arm that can't resolve (e.g. references a missing table)
+// surfaces NotFoundError at the top level instead of silently falling back
+// to anchor-only columns.
+func TestOmniQuerySpan_RecursiveCTEArmNotFoundPropagates(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "WITH rec AS (SELECT a FROM t UNION ALL SELECT a FROM rec JOIN no_such_table nx ON rec.a = nx.a) SELECT * FROM rec"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.NotNil(t, span.NotFoundError, "recursive arm hitting a missing table should surface NotFoundError")
+	require.Empty(t, span.Results)
+}
+
+// TestOmniQuerySpan_SubqueryComparisonNotFoundPropagates verifies that a
+// subquery-comparison expression (x > ANY/ALL (SELECT ...)) whose subquery
+// references a missing table surfaces NotFoundError.
+func TestOmniQuerySpan_SubqueryComparisonNotFoundPropagates(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT a FROM t WHERE a > ANY (SELECT x FROM no_such_table)"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.NotNil(t, span.NotFoundError, "missing subquery table should surface NotFoundError via SubqueryComparisonExpr")
+	require.Empty(t, span.Results)
+}
+
+// TestOmniQuerySpan_PivotPreservesAllSourceColumns verifies that PIVOT's
+// pass-through keeps all source columns. T-SQL PIVOT only allows a single
+// table source in the grammar, so in practice extractTableSource returns
+// one element, but the extractor is defensive against multi-source inputs
+// (e.g. a future grammar relaxation); this guards that the single-source
+// case still emits the source columns under the pivot alias.
+func TestOmniQuerySpan_PivotPreservesAllSourceColumns(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Equal(t, base.Select, span.Type)
+	require.Len(t, span.Results, 3, "PIVOT should pass source-table columns through")
+}
+
 // TestOmniQuerySpan_EmptyAndGo verifies that empty statements and bare GO
 // produce a SELECT-typed empty span, matching ANTLR's zero-AST behavior.
 func TestOmniQuerySpan_EmptyAndGo(t *testing.T) {

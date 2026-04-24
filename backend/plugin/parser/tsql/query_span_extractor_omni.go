@@ -477,11 +477,11 @@ func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.Select
 		clone.ctes = append(clone.ctes, placeholder)
 		rarg, rerr := clone.extractFromSelectStmt(body.Rarg)
 		if rerr != nil {
-			// Recursive arm failed to resolve; fall back to the anchor column
-			// set. Matches ANTLR behavior of silently tolerating unresolvable
-			// recursive references.
-			//nolint:nilerr
-			return cols, predicates, nil
+			// Recursive arm failed to resolve (e.g. ResourceNotFoundError from
+			// a missing table). Propagate — the top-level getOmniQuerySpan
+			// converts ResourceNotFoundError into a span with NotFoundError
+			// populated so callers don't see a silently-partial lineage.
+			return nil, nil, rerr
 		}
 		rcols := rarg.GetQuerySpanResult()
 		if len(rcols) != len(cols) {
@@ -563,17 +563,18 @@ func (q *omniQuerySpanExtractor) extractPivotSource(source ast.TableExpr, alias 
 	if err != nil {
 		return nil, err
 	}
-	if len(sources) == 0 {
-		return []base.TableSource{&base.PseudoTable{Name: normIdent(alias)}}, nil
+	// A PIVOT/UNPIVOT source can be a join tree. Merge columns from every
+	// underlying table source under the pivot alias so callers still see
+	// every column; otherwise columns from tables other than the first are
+	// silently dropped.
+	var cols []base.QuerySpanResult
+	for _, s := range sources {
+		cols = append(cols, s.GetQuerySpanResult()...)
 	}
-	combined := sources[0]
-	if alias != "" {
-		combined = &base.PseudoTable{
-			Name:    normIdent(alias),
-			Columns: combined.GetQuerySpanResult(),
-		}
-	}
-	return []base.TableSource{combined}, nil
+	return []base.TableSource{&base.PseudoTable{
+		Name:    normIdent(alias),
+		Columns: cols,
+	}}, nil
 }
 
 func (q *omniQuerySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.TableSource, error) {
@@ -641,13 +642,13 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef wrapping TableVarRef with non-single output")
 	case *ast.FuncCallExpr:
 		// Aliased TVF call; no metadata → empty table source with alias.
-		return &base.PseudoTable{Name: at.Alias}, nil
+		return &base.PseudoTable{Name: normIdent(at.Alias)}, nil
 	case *ast.TableVarMethodCallRef:
 		cols := xmlNodesColumns(inner.Columns)
 		if err := applyColumnAliases(cols, columnAliases); err != nil {
 			return nil, err
 		}
-		return &base.PseudoTable{Name: at.Alias, Columns: cols}, nil
+		return &base.PseudoTable{Name: normIdent(at.Alias), Columns: cols}, nil
 	default:
 		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef inner %T", at.Table)
 	}
@@ -668,16 +669,17 @@ func (q *omniQuerySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, al
 		return nil, err
 	}
 	q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, clone.predicateColumns)
-	return &base.PseudoTable{Name: alias, Columns: cols}, nil
+	return &base.PseudoTable{Name: normIdent(alias), Columns: cols}, nil
 }
 
 func (q *omniQuerySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias string, columnAliases []string) (base.TableSource, error) {
+	name := normIdent(alias)
 	if vc.Rows == nil || vc.Rows.Len() == 0 {
-		return &base.PseudoTable{Name: alias}, nil
+		return &base.PseudoTable{Name: name}, nil
 	}
 	firstRow, ok := vc.Rows.Items[0].(*ast.List)
 	if !ok {
-		return &base.PseudoTable{Name: alias}, nil
+		return &base.PseudoTable{Name: name}, nil
 	}
 	cols := make([]base.QuerySpanResult, 0, firstRow.Len())
 	for _, it := range firstRow.Items {
@@ -695,7 +697,7 @@ func (q *omniQuerySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias
 	if err := applyColumnAliases(cols, columnAliases); err != nil {
 		return nil, err
 	}
-	return &base.PseudoTable{Name: alias, Columns: cols}, nil
+	return &base.PseudoTable{Name: name, Columns: cols}, nil
 }
 
 func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias string) ([]base.TableSource, error) {
@@ -1016,11 +1018,12 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		}
 		if body, ok := v.Subquery.(*ast.SelectStmt); ok {
 			clone := q.cloneForSubquery()
-			sub, err := clone.extractFromSelectStmt(body)
-			if err == nil {
-				for _, sc := range sub.GetQuerySpanResult() {
-					r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sc.SourceColumns)
-				}
+			sub, subErr := clone.extractFromSelectStmt(body)
+			if subErr != nil {
+				return r, subErr
+			}
+			for _, sc := range sub.GetQuerySpanResult() {
+				r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sc.SourceColumns)
 			}
 			q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, clone.predicateColumns)
 		}
@@ -1028,17 +1031,18 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		r.IsPlainField = false
 		return r, nil
 	case *ast.ExistsExpr:
-		if body, ok := v.Subquery.(*ast.SelectStmt); ok {
-			clone := q.cloneForSubquery()
-			_, err := clone.extractFromSelectStmt(body)
-			if err == nil {
-				q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, clone.predicateColumns)
-			}
-		}
-		return base.QuerySpanResult{
+		r := base.QuerySpanResult{
 			Name:          q.sliceName(n),
 			SourceColumns: make(base.SourceColumnSet),
-		}, nil
+		}
+		if body, ok := v.Subquery.(*ast.SelectStmt); ok {
+			clone := q.cloneForSubquery()
+			if _, err := clone.extractFromSelectStmt(body); err != nil {
+				return r, err
+			}
+			q.predicateColumns, _ = base.MergeSourceColumnSet(q.predicateColumns, clone.predicateColumns)
+		}
+		return r, nil
 	case *ast.FullTextPredicate:
 		r := base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}
 		if v.Columns != nil {
