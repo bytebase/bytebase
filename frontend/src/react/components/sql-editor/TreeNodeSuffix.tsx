@@ -86,13 +86,12 @@ export function TreeNodeSuffix({
         onClick={(e) => {
           e.stopPropagation();
           if (!node.worksheet?.name) return;
-          const tab = tabStore.getTabByWorksheet(node.worksheet.name);
-          if (tab?.mode === "WORKSHEET" && tab.status !== "CLEAN") {
+          // Draft nodes use tab.id as worksheet.name (drafts have no worksheet field).
+          const tab = tabStore.getTabById(node.worksheet.name);
+          if (tab && tab.status !== "CLEAN") {
             if (
               !window.confirm(
-                t(
-                  "sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"
-                )
+                t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content")
               )
             ) {
               return;

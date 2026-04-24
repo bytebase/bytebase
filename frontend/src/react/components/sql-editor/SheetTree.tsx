@@ -1271,6 +1271,7 @@ export function SheetTree({
               onClick={() => {
                 if (deleteDialogState.type !== "duplicate-folder-name") return;
                 deleteDialogState.resolve(false);
+                setDeleteDialogState({ type: "none" });
               }}
             >
               {t("common.cancel")}
@@ -1281,6 +1282,7 @@ export function SheetTree({
               onClick={() => {
                 if (deleteDialogState.type !== "duplicate-folder-name") return;
                 deleteDialogState.resolve(true);
+                setDeleteDialogState({ type: "none" });
               }}
             >
               {t("common.confirm")}
