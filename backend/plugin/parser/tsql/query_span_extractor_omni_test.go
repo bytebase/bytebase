@@ -421,6 +421,17 @@ func TestOmniQuerySpan_WithinGroupOrderBySources(t *testing.T) {
 	}, sortedSources(span.Results[0].SourceColumns))
 }
 
+func TestOmniQuerySpan_InListAccessTables(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT a FROM t WHERE a IN (ABS((SELECT x FROM db2.dbo.t2)))"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t"},
+		{Database: "db2", Schema: "dbo", Table: "t2"},
+	}, sortedSources(span.SourceColumns))
+}
+
 // TestOmniQuerySpan_UnresolvedColumnErrors verifies that an unresolvable
 // column reference is surfaced as an error (both from SELECT list and from
 // WHERE predicates) rather than producing a silently-partial span. Matches

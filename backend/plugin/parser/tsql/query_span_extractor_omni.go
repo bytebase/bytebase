@@ -1392,6 +1392,11 @@ func walkAccessTables(n ast.Node, db, schema string, out base.SourceColumnSet) {
 		walkAccessTables(v.Subquery, db, schema, out)
 	case *ast.InExpr:
 		walkAccessTables(v.Expr, db, schema, out)
+		if v.List != nil {
+			for _, it := range v.List.Items {
+				walkAccessTables(it, db, schema, out)
+			}
+		}
 		walkAccessTables(v.Subquery, db, schema, out)
 	case *ast.BinaryExpr:
 		walkAccessTables(v.Left, db, schema, out)
