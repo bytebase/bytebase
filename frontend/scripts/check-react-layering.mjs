@@ -8,6 +8,7 @@ import { readFileSync, readdirSync } from "fs";
 import { relative, resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import ts from "typescript";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -43,6 +44,41 @@ const isApprovedPath = (path) =>
   APPROVED_PREFIXES.some((prefix) => path.startsWith(prefix));
 
 const hasInlineZIndex = (line) => /\bzIndex\s*:/.test(line);
+
+const getRawOverlayViolation = (block) => {
+  const fixedMatch = block.match(/\bfixed\b/);
+  const absoluteMatch = block.match(/\babsolute\b/);
+  const zMatches = [...block.matchAll(/\bz-auto\b|\bz-(\d+)\b|\bz-\[([^\]]+)\]/g)];
+  if (zMatches.length === 0 || (!fixedMatch && !absoluteMatch)) {
+    return null;
+  }
+
+  const isAbsoluteGlobal = zMatches.some((zMatch) => {
+    if (zMatch[2] !== undefined) {
+      return true;
+    }
+    const value = Number(zMatch[1]);
+    return Number.isFinite(value) && value >= 40;
+  });
+  if (!fixedMatch && !isAbsoluteGlobal) {
+    return null;
+  }
+
+  const tokenMatch = fixedMatch ?? absoluteMatch ?? zMatches.find((zMatch) => {
+    if (isRawZToken(zMatch)) {
+      return true;
+    }
+    const value = Number(zMatch[1]);
+    return Number.isFinite(value) && value >= 40;
+  });
+
+  return {
+    reason: fixedMatch
+      ? "feature-owned fixed overlay uses raw z-index"
+      : "feature-owned absolute overlay uses high raw z-index",
+    index: tokenMatch?.index ?? 0,
+  };
+};
 
 const buildLineStarts = (source) => {
   const lineStarts = [0];
@@ -161,40 +197,17 @@ const scanClassExpressions = (source, rel, lines) => {
     }
 
     const block = source.slice(expr.start, expr.end);
-    const fixedMatch = block.match(/\bfixed\b/);
-    const absoluteMatch = block.match(/\babsolute\b/);
-    const zMatches = [...block.matchAll(/\bz-auto\b|\bz-(\d+)\b|\bz-\[([^\]]+)\]/g)];
-    if (zMatches.length === 0 || (!fixedMatch && !absoluteMatch)) {
+    const violation = getRawOverlayViolation(block);
+    if (!violation) {
       continue;
     }
 
-    const isAbsoluteGlobal = zMatches.some((zMatch) => {
-      if (zMatch[2] !== undefined) {
-        return true;
-      }
-      const value = Number(zMatch[1]);
-      return Number.isFinite(value) && value >= 40;
-    });
-    if (!fixedMatch && !isAbsoluteGlobal) {
-      continue;
-    }
-
-    const reason = fixedMatch
-      ? "feature-owned fixed overlay uses raw z-index"
-      : "feature-owned absolute overlay uses high raw z-index";
-    const tokenMatch = fixedMatch ?? absoluteMatch ?? zMatches.find((zMatch) => {
-      if (isRawZToken(zMatch)) {
-        return true;
-      }
-      const value = Number(zMatch[1]);
-      return Number.isFinite(value) && value >= 40;
-    });
-    const tokenIndex = expr.start + (tokenMatch?.index ?? 0);
+    const tokenIndex = expr.start + violation.index;
     const lineNumber = getLineNumber(lineStarts, tokenIndex);
     violations.push({
       rel,
       lineNumber,
-      reason,
+      reason: violation.reason,
       line: lines[lineNumber - 1] ?? "",
     });
   }
@@ -202,16 +215,179 @@ const scanClassExpressions = (source, rel, lines) => {
   return violations;
 };
 
-const scanFile = (file) => {
-  const rel = relative(ROOT, file);
+const createSourceFile = (source, rel) =>
+  ts.createSourceFile(
+    rel,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  );
+
+const scanStringLiterals = (sourceFile, rel, lines) => {
+  const violations = [];
+
+  const scanText = (
+    text,
+    startIndex,
+    getAbsoluteIndex = (index) => startIndex + index
+  ) => {
+    const violation = getRawOverlayViolation(text);
+    if (!violation) {
+      return;
+    }
+
+    const lineNumber =
+      sourceFile.getLineAndCharacterOfPosition(
+        getAbsoluteIndex(violation.index)
+      ).line + 1;
+    violations.push({
+      rel,
+      lineNumber,
+      reason: violation.reason,
+      line: lines[lineNumber - 1] ?? "",
+    });
+  };
+
+  const visit = (node) => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      scanText(node.text, node.getStart(sourceFile) + 1);
+    } else if (ts.isTemplateExpression(node)) {
+      const parts = [node.head.text];
+      const partStarts = [node.head.getStart(sourceFile) + 1];
+      for (const span of node.templateSpans) {
+        parts.push(span.literal.text);
+        partStarts.push(span.literal.getStart(sourceFile) + 1);
+      }
+
+      const placeholder = " ";
+      const combinedText = parts.join(placeholder);
+      const combinedLineIndexes = [];
+      let combinedOffset = 0;
+      parts.forEach((part, partIndex) => {
+        for (let index = 0; index < part.length; index++) {
+          combinedLineIndexes[combinedOffset + index] =
+            partStarts[partIndex] + index;
+        }
+        combinedOffset += part.length;
+        if (partIndex < parts.length - 1) {
+          combinedLineIndexes[combinedOffset] = partStarts[partIndex];
+          combinedOffset += placeholder.length;
+        }
+      });
+
+      const violation = getRawOverlayViolation(combinedText);
+      if (violation) {
+        scanText(
+          combinedText,
+          node.getStart(sourceFile),
+          (index) => combinedLineIndexes[index] ?? node.getStart(sourceFile)
+        );
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return violations;
+};
+
+const skipExpressionWrappers = (expression) => {
+  let current = expression;
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isNonNullExpression(current) ||
+    ts.isTypeAssertionExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+};
+
+const isDocumentBodyExpression = (expression, documentBodyAliases) => {
+  const current = skipExpressionWrappers(expression);
+  if (ts.isIdentifier(current)) {
+    return documentBodyAliases.has(current.text);
+  }
+  return (
+    ts.isPropertyAccessExpression(current) &&
+    current.name.text === "body" &&
+    ts.isIdentifier(current.expression) &&
+    current.expression.text === "document"
+  );
+};
+
+const isCreatePortalCall = (node) => {
+  const expression = skipExpressionWrappers(node.expression);
+  return (
+    (ts.isIdentifier(expression) && expression.text === "createPortal") ||
+    (ts.isPropertyAccessExpression(expression) &&
+      expression.name.text === "createPortal")
+  );
+};
+
+const scanPortalTargets = (sourceFile, rel, lines) => {
+  const violations = [];
+  const documentBodyAliases = new Set();
+
+  const visit = (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      isDocumentBodyExpression(node.initializer, documentBodyAliases)
+    ) {
+      documentBodyAliases.add(node.name.text);
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      isCreatePortalCall(node) &&
+      node.arguments[1] &&
+      isDocumentBodyExpression(node.arguments[1], documentBodyAliases)
+    ) {
+      const lineNumber =
+        sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
+          .line + 1;
+      violations.push({
+        rel,
+        lineNumber,
+        reason: "feature-owned portal targets document.body directly",
+        line: lines[lineNumber - 1] ?? "",
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return violations;
+};
+
+const dedupeViolations = (violations) => {
+  const seen = new Set();
+  return violations.filter((violation) => {
+    const key = `${violation.rel}:${violation.lineNumber}:${violation.reason}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
+export const scanSource = (source, rel) => {
   if (isApprovedPath(rel)) {
     return [];
   }
 
-  const source = readFileSync(file, "utf-8");
   const violations = [];
   const lines = source.split("\n");
+  const sourceFile = createSourceFile(source, rel);
   violations.push(...scanClassExpressions(source, rel, lines));
+  violations.push(...scanStringLiterals(sourceFile, rel, lines));
   lines.forEach((line, index) => {
     const lineNumber = index + 1;
     if (hasInlineZIndex(line)) {
@@ -223,42 +399,45 @@ const scanFile = (file) => {
       });
     }
   });
+  violations.push(...scanPortalTargets(sourceFile, rel, lines));
 
-  const portalToBody = /createPortal\([\s\S]*?document\.body/g;
-  let match;
-  while ((match = portalToBody.exec(source))) {
-    const lineNumber = source.slice(0, match.index).split("\n").length;
-    violations.push({
-      rel,
-      lineNumber,
-      reason: "feature-owned portal targets document.body directly",
-      line: lines[lineNumber - 1] ?? "",
-    });
-  }
-
-  return violations;
+  return dedupeViolations(violations);
 };
 
-const violations = findFiles(REACT_DIR).flatMap(scanFile);
+export const scanFile = (file) => {
+  const rel = relative(ROOT, file);
+  const source = readFileSync(file, "utf-8");
+  return scanSource(source, rel);
+};
 
-if (violations.length > 0) {
-  console.error(
-    `React layering policy violations (${violations.length}). ` +
-      "Use shared overlay primitives or getLayerRoot(\"overlay\").\n"
-  );
-  for (const violation of violations) {
+export const scanReactLayering = () => findFiles(REACT_DIR).flatMap(scanFile);
+
+const main = () => {
+  const violations = scanReactLayering();
+
+  if (violations.length > 0) {
     console.error(
-      `${violation.rel}:${violation.lineNumber}: ${violation.reason}\n` +
-        `  ${violation.line.trim()}\n`
+      `React layering policy violations (${violations.length}). ` +
+        "Use shared overlay primitives or getLayerRoot(\"overlay\").\n"
     );
+    for (const violation of violations) {
+      console.error(
+        `${violation.rel}:${violation.lineNumber}: ${violation.reason}\n` +
+          `  ${violation.line.trim()}\n`
+      );
+    }
+    if (!REPORT_ONLY) {
+      process.exit(1);
+    }
   }
-  if (!REPORT_ONLY) {
-    process.exit(1);
-  }
-}
 
-console.log(
-  violations.length === 0
-    ? "React layering policy: all checks passed."
-    : "React layering policy: report-only mode completed with violations."
-);
+  console.log(
+    violations.length === 0
+      ? "React layering policy: all checks passed."
+      : "React layering policy: report-only mode completed with violations."
+  );
+};
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

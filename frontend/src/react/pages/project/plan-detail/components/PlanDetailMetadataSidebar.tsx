@@ -6,24 +6,15 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import {
-  type CSSProperties,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
 import {
-  getPortalDropdownStyle,
-  isPortalDropdownStyleEqual,
-  shouldIgnorePortalDropdownScroll,
-} from "@/react/components/ui/combobox-position";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/react/components/ui/popover";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import {
@@ -285,9 +276,6 @@ function IssueLabelsSection({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
 
   const options = useMemo(
     () =>
@@ -310,79 +298,25 @@ function IssueLabelsSection({
     }
   };
 
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current) return;
-
-    const updateDropdownPosition = () => {
-      if (!triggerRef.current) return;
-      const triggerRect = triggerRef.current.getBoundingClientRect();
-      const dropdownHeight = dropdownRef.current?.offsetHeight ?? 0;
-      const nextStyle = getPortalDropdownStyle(
-        triggerRect,
-        dropdownHeight,
-        window.innerHeight
-      );
-      setDropdownStyle((previousStyle) =>
-        isPortalDropdownStyleEqual(previousStyle, nextStyle)
-          ? previousStyle
-          : nextStyle
-      );
-    };
-
-    const handleScroll = (event: Event) => {
-      if (shouldIgnorePortalDropdownScroll(event.target, dropdownRef.current)) {
-        return;
-      }
-      updateDropdownPosition();
-    };
-
-    updateDropdownPosition();
-    const resizeObserver =
-      typeof ResizeObserver === "undefined"
-        ? undefined
-        : new ResizeObserver(updateDropdownPosition);
-    resizeObserver?.observe(triggerRef.current);
-    window.addEventListener("resize", updateDropdownPosition);
-    window.addEventListener("scroll", handleScroll, true);
-
-    return () => {
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", updateDropdownPosition);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [open, options, labels]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handler = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (triggerRef.current?.contains(target)) return;
-      if (dropdownRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
   return (
     <div className="flex flex-col gap-y-1">
       <div className="flex items-center gap-x-1 textinfolabel">
         <span>{t("issue.labels")}</span>
       </div>
-      <div className="relative">
-        <button
-          ref={triggerRef}
-          className={cn(
-            "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-white px-3 py-1.5 text-left text-sm transition-colors",
-            allowChange && !isUpdating && "hover:bg-control-bg",
-            open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]",
-            (!allowChange || isUpdating) && "cursor-not-allowed opacity-60"
-          )}
-          disabled={!allowChange || isUpdating}
-          onClick={() => setOpen((current) => !current)}
-          type="button"
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              className={cn(
+                "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-white px-3 py-1.5 text-left text-sm transition-colors",
+                allowChange && !isUpdating && "hover:bg-control-bg",
+                open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]",
+                (!allowChange || isUpdating) && "cursor-not-allowed opacity-60"
+              )}
+              disabled={!allowChange || isUpdating}
+              type="button"
+            />
+          }
         >
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {labels.length > 0 ? (
@@ -407,51 +341,50 @@ function IssueLabelsSection({
               </span>
             )}
           </div>
-        </button>
+        </PopoverTrigger>
 
-        {open &&
-          createPortal(
-            <div
-              ref={dropdownRef}
-              className={`fixed overflow-hidden rounded-sm border border-control-border bg-white shadow-lg ${LAYER_SURFACE_CLASS}`}
-              style={dropdownStyle}
-            >
-              <div className="max-h-60 overflow-y-auto">
-                {options.length === 0 ? (
-                  <div className="px-3 py-6 text-sm text-control-placeholder">
-                    {t("common.no-data")}
-                  </div>
-                ) : (
-                  options.map((option) => {
-                    const isSelected = labels.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
-                        disabled={isUpdating}
-                        onClick={() => void toggleLabel(option.value)}
-                        type="button"
-                      >
-                        <input
-                          checked={isSelected}
-                          className="accent-accent"
-                          readOnly
-                          type="checkbox"
-                        />
-                        <span
-                          className="size-4 shrink-0 rounded-sm"
-                          style={{ backgroundColor: option.color }}
-                        />
-                        <span>{option.value}</span>
-                      </button>
-                    );
-                  })
-                )}
+        <PopoverContent
+          side="bottom"
+          align="start"
+          initialFocus={false}
+          finalFocus={false}
+          style={{ width: "var(--anchor-width)" }}
+          className="overflow-hidden bg-white p-0"
+        >
+          <div className="max-h-60 overflow-y-auto">
+            {options.length === 0 ? (
+              <div className="px-3 py-6 text-sm text-control-placeholder">
+                {t("common.no-data")}
               </div>
-            </div>,
-            getLayerRoot("overlay")
-          )}
-      </div>
+            ) : (
+              options.map((option) => {
+                const isSelected = labels.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
+                    disabled={isUpdating}
+                    onClick={() => void toggleLabel(option.value)}
+                    type="button"
+                  >
+                    <input
+                      checked={isSelected}
+                      className="accent-accent"
+                      readOnly
+                      type="checkbox"
+                    />
+                    <span
+                      className="size-4 shrink-0 rounded-sm"
+                      style={{ backgroundColor: option.color }}
+                    />
+                    <span>{option.value}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
