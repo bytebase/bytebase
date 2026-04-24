@@ -293,26 +293,24 @@ func TestOmniQuerySpan_DeclareTableVariableRoundTrip(t *testing.T) {
 	require.Equal(t, "name", span2.Results[1].Name)
 }
 
-// TestOmniQuerySpan_PivotPassThrough verifies that PIVOT/UNPIVOT pass the
-// source table's columns through to the result, matching the pre-migration
-// ANTLR extractor's behavior (which ignored the pivot transformation).
-// Real PIVOT column inference is a separate project.
-func TestOmniQuerySpan_PivotPassThrough(t *testing.T) {
+// TestOmniQuerySpan_UnsupportedTableSources verifies that table sources whose
+// output shape is not modeled fail explicitly instead of returning partial
+// lineage.
+func TestOmniQuerySpan_UnsupportedTableSources(t *testing.T) {
 	cases := []struct {
 		name string
 		sql  string
 	}{
 		{"pivot", "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"},
 		{"unpivot", "SELECT * FROM t UNPIVOT (v FOR c IN ([1],[2])) AS u"},
+		{"cross_apply_tvf", "SELECT * FROM t1 CROSS APPLY fn(t1.a) AS x(v)"},
+		{"aliased_tvf", "SELECT * FROM fn(t1.a) AS x(v)"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			q := newOmniTestExtractor(t, "db")
-			span, err := q.getOmniQuerySpan(context.Background(), tc.sql)
-			require.NoError(t, err)
-			require.Equal(t, base.Select, span.Type)
-			// t has columns a,b,c; PIVOT/UNPIVOT pass them all through.
-			require.Len(t, span.Results, 3, "expected source columns to pass through")
+			_, err := q.getOmniQuerySpan(context.Background(), tc.sql)
+			require.Error(t, err)
 		})
 	}
 }
@@ -369,6 +367,31 @@ func TestOmniQuerySpan_SubqueryComparisonNotFoundPropagates(t *testing.T) {
 	require.Empty(t, span.Results)
 }
 
+func TestOmniQuerySpan_ApplyRightSideCanReferenceLeft(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT x FROM t1 CROSS APPLY (VALUES (t1.a)) AS v(x)"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.Equal(t, "x", span.Results[0].Name)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+	}, sortedSources(span.Results[0].SourceColumns))
+}
+
+func TestOmniQuerySpan_ValuesClauseMergesAllRows(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT x FROM t1 CROSS APPLY (VALUES (t1.a), (t1.b)) AS v(x)"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.Equal(t, "x", span.Results[0].Name)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+		{Database: "db", Schema: "dbo", Table: "t1", Column: "b"},
+	}, sortedSources(span.Results[0].SourceColumns))
+}
+
 // TestOmniQuerySpan_UnresolvedColumnErrors verifies that an unresolvable
 // column reference is surfaced as an error (both from SELECT list and from
 // WHERE predicates) rather than producing a silently-partial span. Matches
@@ -381,6 +404,7 @@ func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
 		{"select_list", "SELECT no_such_col FROM t"},
 		{"qualified_select_list", "SELECT t.no_such_col FROM t"},
 		{"where_predicate", "SELECT a FROM t WHERE no_such_col = 1"},
+		{"window_partition", "SELECT SUM(a) OVER (PARTITION BY no_such_col) FROM t"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -389,21 +413,6 @@ func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
 			require.Errorf(t, err, "unresolved column %q should surface as error", tc.sql)
 		})
 	}
-}
-
-// TestOmniQuerySpan_PivotPreservesAllSourceColumns verifies that PIVOT's
-// pass-through keeps all source columns. T-SQL PIVOT only allows a single
-// table source in the grammar, so in practice extractTableSource returns
-// one element, but the extractor is defensive against multi-source inputs
-// (e.g. a future grammar relaxation); this guards that the single-source
-// case still emits the source columns under the pivot alias.
-func TestOmniQuerySpan_PivotPreservesAllSourceColumns(t *testing.T) {
-	q := newOmniTestExtractor(t, "db")
-	sql := "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"
-	span, err := q.getOmniQuerySpan(context.Background(), sql)
-	require.NoError(t, err)
-	require.Equal(t, base.Select, span.Type)
-	require.Len(t, span.Results, 3, "PIVOT should pass source-table columns through")
 }
 
 // TestOmniQuerySpan_EmptyAndGo verifies that empty statements and bare GO

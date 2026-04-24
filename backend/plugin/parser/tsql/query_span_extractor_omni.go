@@ -542,47 +542,25 @@ func (q *omniQuerySpanExtractor) extractTableSource(node ast.Node) ([]base.Table
 	case *ast.TableVarMethodCallRef:
 		return []base.TableSource{&base.PseudoTable{Name: v.Alias, Columns: xmlNodesColumns(v.Columns)}}, nil
 	case *ast.PivotExpr:
-		// ANTLR extractor didn't understand PIVOT either — it passed the source
-		// table's columns through, ignoring the pivot transformation, and then
-		// applied the pivot alias. Match that to avoid a regression. Real PIVOT
-		// result-column inference is a separate project.
-		return q.extractPivotSource(v.Source, v.Alias)
+		return nil, errors.New("pivot is not supported yet")
 	case *ast.UnpivotExpr:
-		return q.extractPivotSource(v.Source, v.Alias)
+		return nil, errors.New("unpivot is not supported yet")
 	case *ast.FuncCallExpr:
-		// TVF in FROM — we don't have return-shape metadata; return empty.
-		return []base.TableSource{&base.PseudoTable{}}, nil
+		return nil, errors.Wrapf(errOmniUnsupported, "FROM item type %T", node)
 	default:
 		return nil, errors.Wrapf(errOmniUnsupported, "FROM item type %T", node)
 	}
-}
-
-// extractPivotSource resolves a PIVOT/UNPIVOT source table to its columns and
-// applies the pivot clause's alias. Column transformation is intentionally
-// ignored — this mirrors the pre-migration ANTLR behavior.
-func (q *omniQuerySpanExtractor) extractPivotSource(source ast.TableExpr, alias string) ([]base.TableSource, error) {
-	sources, err := q.extractTableSource(source)
-	if err != nil {
-		return nil, err
-	}
-	// A PIVOT/UNPIVOT source can be a join tree. Merge columns from every
-	// underlying table source under the pivot alias so callers still see
-	// every column; otherwise columns from tables other than the first are
-	// silently dropped.
-	var cols []base.QuerySpanResult
-	for _, s := range sources {
-		cols = append(cols, s.GetQuerySpanResult()...)
-	}
-	return []base.TableSource{&base.PseudoTable{
-		Name:    normIdent(alias),
-		Columns: cols,
-	}}, nil
 }
 
 func (q *omniQuerySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.TableSource, error) {
 	left, err := q.extractTableSource(j.Left)
 	if err != nil {
 		return nil, err
+	}
+	if j.Type == ast.JoinCrossApply || j.Type == ast.JoinOuterApply {
+		tableSourcesSnapshot := len(q.tableSourcesFrom)
+		q.tableSourcesFrom = append(q.tableSourcesFrom, left...)
+		defer func() { q.tableSourcesFrom = q.tableSourcesFrom[:tableSourcesSnapshot] }()
 	}
 	right, err := q.extractTableSource(j.Right)
 	if err != nil {
@@ -643,8 +621,7 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 		}
 		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef wrapping TableVarRef with non-single output")
 	case *ast.FuncCallExpr:
-		// Aliased TVF call; no metadata → empty table source with alias.
-		return &base.PseudoTable{Name: normIdent(at.Alias)}, nil
+		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef inner %T", at.Table)
 	case *ast.TableVarMethodCallRef:
 		cols := xmlNodesColumns(inner.Columns)
 		if err := applyColumnAliases(cols, columnAliases); err != nil {
@@ -684,17 +661,32 @@ func (q *omniQuerySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias
 		return &base.PseudoTable{Name: name}, nil
 	}
 	cols := make([]base.QuerySpanResult, 0, firstRow.Len())
-	for _, it := range firstRow.Items {
-		expr, ok := it.(ast.ExprNode)
+	for rowIndex, item := range vc.Rows.Items {
+		row, ok := item.(*ast.List)
 		if !ok {
-			cols = append(cols, base.QuerySpanResult{})
 			continue
 		}
-		r, err := q.resolveExpression(expr)
-		if err != nil {
-			return nil, err
+		if row.Len() != firstRow.Len() {
+			return nil, errors.Errorf("VALUES row %d has %d columns, first row has %d", rowIndex+1, row.Len(), firstRow.Len())
 		}
-		cols = append(cols, r)
+		for i, it := range row.Items {
+			expr, ok := it.(ast.ExprNode)
+			if !ok {
+				if rowIndex == 0 {
+					cols = append(cols, base.QuerySpanResult{})
+				}
+				continue
+			}
+			r, err := q.resolveExpression(expr)
+			if err != nil {
+				return nil, err
+			}
+			if rowIndex == 0 {
+				cols = append(cols, r)
+				continue
+			}
+			cols[i].SourceColumns, _ = base.MergeSourceColumnSet(cols[i].SourceColumns, r.SourceColumns)
+		}
 	}
 	if err := applyColumnAliases(cols, columnAliases); err != nil {
 		return nil, err
@@ -964,22 +956,31 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 		return r, err
 	case *ast.FuncCallExpr:
 		r, err := q.mergeListSources(v.Args)
+		if err != nil {
+			return r, err
+		}
 		// Also merge Over clause partition/order.
 		if v.Over != nil {
-			if sub, err2 := q.mergeListSources(v.Over.PartitionBy); err2 == nil {
-				r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+			sub, err := q.mergeListSources(v.Over.PartitionBy)
+			if err != nil {
+				return r, err
 			}
-			if sub, err2 := q.mergeListSources(v.Over.OrderBy); err2 == nil {
-				r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+			sub, err = q.mergeListSources(v.Over.OrderBy)
+			if err != nil {
+				return r, err
 			}
+			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 		}
 		if v.Within != nil {
-			if sub, err2 := q.mergeListSources(v.Within); err2 == nil {
-				r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
+			sub, err := q.mergeListSources(v.Within)
+			if err != nil {
+				return r, err
 			}
+			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 		}
 		r.Name = q.sliceName(n)
-		return r, err
+		return r, nil
 	case *ast.MethodCallExpr:
 		r, err := q.mergeListSources(v.Args)
 		r.Name = q.sliceName(n)
