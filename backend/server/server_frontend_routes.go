@@ -3,6 +3,8 @@ package server
 import (
 	"io/fs"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -35,7 +37,17 @@ func registerFrontendRoutes(e *echo.Echo, distFS fs.FS) {
 	}
 	cacheImmutable := func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			c.Response().Header().Set(echo.HeaderCacheControl, "public, max-age=31536000, immutable")
+			// Only mark an asset immutable once we've confirmed it exists. In an HA
+			// rolling deploy, an older replica can 404 a new hashed asset briefly;
+			// we must not let browsers or CDNs cache "does not exist" for a year.
+			p := c.Param("*")
+			if unescaped, err := url.PathUnescape(p); err == nil {
+				p = unescaped
+			}
+			name := path.Clean(strings.TrimPrefix(p, "/"))
+			if info, err := fs.Stat(assetsFS, name); err == nil && !info.IsDir() {
+				c.Response().Header().Set(echo.HeaderCacheControl, "public, max-age=31536000, immutable")
+			}
 			return next(c)
 		}
 	}
@@ -49,8 +61,10 @@ func registerFrontendRoutes(e *echo.Echo, distFS fs.FS) {
 	)
 }
 
-// defaultAPIRequestSkipper is echo skipper for api requests.
+// defaultAPIRequestSkipper is echo skipper for api requests. /bytebase.v1 covers
+// Connect-go gRPC handlers so unknown gRPC paths return a structured 404 instead
+// of falling through to the SPA's HTML5 fallback (which would return index.html).
 func defaultAPIRequestSkipper(c *echo.Context) bool {
 	path := c.Request().URL.Path
-	return common.HasPrefixes(path, "/api", "/v1", "/.well-known", webhookAPIPrefix)
+	return common.HasPrefixes(path, "/api", "/v1", "/bytebase.v1", "/.well-known", webhookAPIPrefix)
 }

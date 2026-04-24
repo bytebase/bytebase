@@ -23,7 +23,7 @@ func TestRegisterFrontendRoutes_AssetCacheHeaders(t *testing.T) {
 		name             string
 		path             string
 		wantStatus       int
-		wantCacheCtrl    string // "" = no Cache-Control header; "-" = don't assert
+		wantCacheCtrl    string // "" = asserts no Cache-Control header
 		wantBodyContains string
 		bodyMustNotBe    string
 	}{
@@ -34,14 +34,14 @@ func TestRegisterFrontendRoutes_AssetCacheHeaders(t *testing.T) {
 			wantCacheCtrl: wantImmutable,
 		},
 		{
-			// Cache-Control is intentionally unconstrained on 404: the header is
-			// set before the handler runs, so a missing asset carries the immutable
-			// directive too. That's fine — caching a 404 for an old asset hash is
-			// harmless because new deploys reference new hashes.
-			name:          "missing asset returns 404 not index.html",
+			// 404 must NOT carry the immutable Cache-Control header. In an HA
+			// rolling deploy, an older replica can 404 a new hashed asset briefly;
+			// browsers/CDNs caching that 404 for a year would wedge users on a
+			// broken app long after the deploy completes.
+			name:          "missing asset returns 404 with no immutable cache",
 			path:          "/assets/this-does-not-exist.js",
 			wantStatus:    http.StatusNotFound,
-			wantCacheCtrl: "-",
+			wantCacheCtrl: "",
 			bodyMustNotBe: "<!doctype html",
 		},
 		{
@@ -72,10 +72,8 @@ func TestRegisterFrontendRoutes_AssetCacheHeaders(t *testing.T) {
 			if rec.Code != tc.wantStatus {
 				t.Fatalf("status = %d, want %d; body=%q", rec.Code, tc.wantStatus, rec.Body.String())
 			}
-			if tc.wantCacheCtrl != "-" {
-				if got := rec.Header().Get(echo.HeaderCacheControl); got != tc.wantCacheCtrl {
-					t.Errorf("Cache-Control = %q, want %q", got, tc.wantCacheCtrl)
-				}
+			if got := rec.Header().Get(echo.HeaderCacheControl); got != tc.wantCacheCtrl {
+				t.Errorf("Cache-Control = %q, want %q", got, tc.wantCacheCtrl)
 			}
 			body := rec.Body.String()
 			if tc.wantBodyContains != "" && !strings.Contains(body, tc.wantBodyContains) {
@@ -101,6 +99,34 @@ func TestRegisterFrontendRoutes_AssetHeadRequest(t *testing.T) {
 	}
 	if got, want := rec.Header().Get(echo.HeaderCacheControl), "public, max-age=31536000, immutable"; got != want {
 		t.Errorf("Cache-Control = %q, want %q", got, want)
+	}
+}
+
+func TestDefaultAPIRequestSkipper(t *testing.T) {
+	cases := map[string]bool{
+		// API-ish prefixes that must be skipped (fall through to registered handlers).
+		"/api/v1/login":                           true,
+		"/v1/projects":                            true,
+		"/v1:adminExecute":                        true,
+		"/bytebase.v1.AuthService/Login":          true,
+		"/bytebase.v1.ProjectService/GetProject":  true,
+		"/.well-known/oauth-authorization-server": true,
+		"/hook/gitlab":                            true,
+		// Paths that must NOT be skipped (they're meant for the static handler).
+		"/assets/main-abc.js": false,
+		"/projects/foo":       false,
+		"/":                   false,
+	}
+	for reqPath, want := range cases {
+		t.Run(reqPath, func(t *testing.T) {
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, reqPath, nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			if got := defaultAPIRequestSkipper(c); got != want {
+				t.Errorf("defaultAPIRequestSkipper(%q) = %v, want %v", reqPath, got, want)
+			}
+		})
 	}
 }
 
