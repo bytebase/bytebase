@@ -2478,9 +2478,7 @@
       "exit": "Thoát chế độ quản trị",
       "self": "Chế độ quản trị"
     },
-    "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {n} more databases",
-    "and-submit-an-issue": "và gửi một vấn đề",
     "batch-export": {
       "failed-for-db": "Không xuất được dữ liệu cho {db}",
       "self": "Xuất hàng loạt",
@@ -2515,7 +2513,6 @@
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
     "current-connection": "Kết nối hiện tại",
-    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong {environment}, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
@@ -2624,7 +2621,6 @@
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Table view",
     "text-format": "Định dạng văn bản",
-    "to-enable-admin-mode": "để bật chế độ quản trị",
     "unmask-warning": "Người dùng sẽ truy cập dữ liệu chưa được che giấu qua truy vấn này",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
