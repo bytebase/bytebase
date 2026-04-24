@@ -248,15 +248,40 @@ const createSourceFile = (source, rel) =>
     rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   );
 
-const getStaticString = (expression, staticStrings = new Map()) => {
+const getUniqueStaticString = (staticStrings, name) => {
+  const entry = staticStrings.get(name);
+  if (!entry || entry.count !== 1) {
+    return null;
+  }
+  return entry.value;
+};
+
+const getDirectStaticString = (expression) => {
   const current = skipExpressionWrappers(expression);
   if (ts.isStringLiteral(current) || ts.isNoSubstitutionTemplateLiteral(current)) {
     return current.text;
   }
+  return null;
+};
+
+const getStaticString = (expression, staticStrings = new Map()) => {
+  const current = skipExpressionWrappers(expression);
+  const directValue = getDirectStaticString(current);
+  if (directValue !== null) {
+    return directValue;
+  }
   if (ts.isIdentifier(current)) {
-    return staticStrings.get(current.text) ?? null;
+    return getUniqueStaticString(staticStrings, current.text);
   }
   return null;
+};
+
+const recordStaticString = (staticStrings, name, value) => {
+  const current = staticStrings.get(name);
+  staticStrings.set(name, {
+    count: (current?.count ?? 0) + 1,
+    value: current ? null : value,
+  });
 };
 
 const collectStaticStrings = (sourceFile) => {
@@ -265,13 +290,15 @@ const collectStaticStrings = (sourceFile) => {
   const visit = (node) => {
     if (
       ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer
+      ts.isIdentifier(node.name)
     ) {
-      const value = getStaticString(node.initializer, staticStrings);
-      if (value !== null) {
-        staticStrings.set(node.name.text, value);
-      }
+      recordStaticString(
+        staticStrings,
+        node.name.text,
+        node.initializer ? getDirectStaticString(node.initializer) : null
+      );
+    } else if (ts.isParameter(node) && ts.isIdentifier(node.name)) {
+      recordStaticString(staticStrings, node.name.text, null);
     }
     ts.forEachChild(node, visit);
   };

@@ -74,6 +74,31 @@ export function FeatureOverlay() {
     );
   });
 
+  test("does not resolve duplicate static identifiers across scopes", () => {
+    const violations = scanSource(
+      [
+        'const zClass = "";',
+        "const overlayClass = `fixed inset-0 ${zClass}`;",
+        "",
+        "export function OtherFeature() {",
+        '  const zClass = "z-50";',
+        "  return zClass;",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 2,
+          reason: "feature-owned fixed overlay uses raw z-index",
+        }),
+      ])
+    );
+  });
+
   test("flags createPortal targets aliased from document.body", () => {
     const violations = scanSource(
       `
