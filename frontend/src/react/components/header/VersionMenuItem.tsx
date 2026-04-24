@@ -1,6 +1,7 @@
 import { Volume2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import semver from "semver";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -9,33 +10,59 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
+import {
+  useServerInfo,
+  useSubscription,
+  useWorkspacePermission,
+} from "@/react/hooks/useAppState";
+import {
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+  useNavigate,
+} from "@/react/router";
+import type { ReleaseInfo } from "@/types/actuator";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { STORAGE_KEY_RELEASE } from "@/utils/storage-keys";
+
+function readReleaseInfo(): ReleaseInfo {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_RELEASE);
+    return raw
+      ? (JSON.parse(raw) as ReleaseInfo)
+      : {
+          ignoreRemindModalTillNextRelease: false,
+          nextCheckTs: 0,
+        };
+  } catch {
+    return {
+      ignoreRemindModalTillNextRelease: false,
+      nextCheckTs: 0,
+    };
+  }
+}
+
+function hasNewerRelease(latest: string | undefined, current: string) {
+  if (!latest) return false;
+  if (current === "development") return true;
+  const latestVersion = semver.coerce(latest);
+  const currentVersion = semver.coerce(current);
+  if (!latestVersion || !currentVersion) return false;
+  return semver.gt(latestVersion, currentVersion);
+}
 
 export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
+  const serverInfo = useServerInfo();
+  const { subscription } = useSubscription();
+  const canManageSettings = useWorkspacePermission("bb.settings.set");
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const releaseInfo = useMemo(readReleaseInfo, []);
 
-  const isDemo = useVueState(() => actuatorStore.isDemo);
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const version = useVueState(() => actuatorStore.version);
-  const gitCommitBE = useVueState(() => actuatorStore.gitCommitBE);
-  const gitCommitFE = useVueState(() => actuatorStore.gitCommitFE);
-  const hasNewRelease = useVueState(() => actuatorStore.hasNewRelease);
-  const releaseLatest = useVueState(() => actuatorStore.releaseInfo.latest);
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const purchaseLicenseUrl = useVueState(
-    () => subscriptionStore.purchaseLicenseUrl
-  );
-  const isSelfHostLicense = useVueState(
-    () => subscriptionStore.isSelfHostLicense
-  );
+  const version = serverInfo?.version ?? "";
+  const gitCommitBE = serverInfo?.gitCommit || "unknown";
+  const gitCommitFE = import.meta.env.GIT_COMMIT || "unknown";
+  const currentPlan = subscription?.plan ?? PlanType.FREE;
+  const hasNewRelease = hasNewerRelease(releaseInfo.latest?.tag_name, version);
 
   const planLabel = useMemo(() => {
     switch (currentPlan) {
@@ -55,6 +82,9 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
     return version || "unknown";
   }, [version]);
 
+  const isSelfHostLicense =
+    import.meta.env.MODE.toLowerCase() !== "release-aws";
+  const purchaseLicenseUrl = import.meta.env.BB_PURCHASE_LICENSE_URL as string;
   const releaseLink = isSelfHostLicense
     ? "https://docs.bytebase.com/get-started/self-host-vs-cloud"
     : purchaseLicenseUrl;
@@ -63,14 +93,14 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
     <>
       <div className="px-3 py-2">
         <div className="mb-2 flex items-center gap-x-2">
-          {isDemo ? (
+          {serverInfo?.demo ? (
             <Badge variant="secondary">{t("common.demo-mode")}</Badge>
-          ) : hasWorkspacePermissionV2("bb.settings.set") ? (
+          ) : canManageSettings ? (
             <button
               type="button"
               className="cursor-pointer text-sm text-accent hover:underline"
               onClick={() => {
-                void router.push({
+                void navigate.push({
                   name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
                 });
                 onCloseMenu();
@@ -101,7 +131,7 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
           </span>
         </button>
 
-        {!isSaaSMode ? (
+        {!serverInfo?.saas ? (
           <div className="mt-1 text-xs text-control-light">
             <div>BE Git hash: {gitCommitBE.slice(0, 7)}</div>
             <div>FE Git hash: {gitCommitFE.slice(0, 7)}</div>
@@ -109,20 +139,15 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
         ) : null}
       </div>
 
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(next) => {
-          setDialogOpen(next);
-        }}
-      >
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg p-6">
           <DialogTitle>
             {t("remind.release.new-version-available-with-tag", {
-              tag: releaseLatest?.tag_name ?? "",
+              tag: releaseInfo.latest?.tag_name ?? "",
             })}
           </DialogTitle>
           <DialogDescription className="mt-2">
-            {releaseLatest?.html_url ?? releaseLink}
+            {releaseInfo.latest?.html_url ?? releaseLink}
           </DialogDescription>
           <div className="mt-6 flex justify-end gap-x-2">
             <Button variant="ghost" onClick={() => setDialogOpen(false)}>
@@ -130,7 +155,10 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
             </Button>
             <Button
               onClick={() => {
-                window.open(releaseLatest?.html_url ?? releaseLink, "_blank");
+                window.open(
+                  releaseInfo.latest?.html_url ?? releaseLink,
+                  "_blank"
+                );
                 setDialogOpen(false);
               }}
             >

@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/react/router";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -27,11 +27,12 @@ const mocks = vi.hoisted(() => ({
     fullPath: `/projects/${params.projectId}`,
   })),
   currentRoute: {
-    value: {
-      params: {
-        projectId: "recent-project",
-      },
+    name: "workspace.project.detail",
+    fullPath: "/projects/recent-project",
+    params: {
+      projectId: "recent-project",
     },
+    query: {},
   },
   requestCreate: vi.fn(),
   close: vi.fn(),
@@ -50,23 +51,21 @@ vi.mock("react-i18next", () => ({
         "common.loading": "Loading",
         "common.rows-per-page": "Rows per page",
         "common.load-more": "Load more",
+        "quick-action.new-project": "New Project",
       })[key] ?? key,
   }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
-vi.mock("@/components/Project/useRecentProjects", () => ({
-  useRecentProjects: () => ({
-    recentViewProjects: { value: [recentProject] },
+vi.mock("@/react/hooks/useAppState", () => ({
+  useRecentVisit: () => ({
+    record: mocks.record,
   }),
-}));
-
-vi.mock("@/react/hooks/usePagedData", () => ({
-  usePagedData: () => ({
-    dataList: [allProject],
+  useProject: () => recentProject,
+  useRecentProjects: () => ({
+    projects: [recentProject],
+  }),
+  useProjectList: () => ({
+    projects: [allProject],
     isLoading: false,
     isFetchingMore: false,
     hasMore: false,
@@ -75,45 +74,19 @@ vi.mock("@/react/hooks/usePagedData", () => ({
     pageSizeOptions: [50],
     onPageSizeChange: vi.fn(),
   }),
-  PagedTableFooter: () => <div data-testid="paged-footer" />,
+  useWorkspacePermission: () => true,
+  projectMatchesKeyword: (project: typeof recentProject, keyword: string) =>
+    project.title.toLowerCase().includes(keyword.toLowerCase()),
 }));
 
-vi.mock("@/router", () => ({
-  router: {
-    currentRoute: mocks.currentRoute,
+vi.mock("@/react/router", () => ({
+  useCurrentRoute: () => mocks.currentRoute,
+  useNavigate: () => ({
     resolve: mocks.resolve,
     push: mocks.push,
-  },
-}));
-
-vi.mock("@/router/useRecentVisit", () => ({
-  useRecentVisit: () => ({
-    record: mocks.record,
   }),
-}));
-
-vi.mock("@/store", () => ({
-  useProjectV1Store: () => ({
-    getProjectByName: (name: string) =>
-      name === "projects/recent-project" ? recentProject : allProject,
-  }),
-}));
-
-vi.mock("@/types", () => ({
-  isDefaultProject: () => false,
-  isValidProjectName: () => true,
-}));
-
-vi.mock("@/utils", () => ({
-  filterProjectV1ListByKeyword: (
-    list: (typeof recentProject)[],
-    keyword: string
-  ) =>
-    list.filter((project) =>
-      project.title.toLowerCase().includes(keyword.toLowerCase())
-    ),
-  hasWorkspacePermissionV2: () => true,
-  isDev: () => false,
+  PROJECT_V1_ROUTE_DETAIL: "workspace.project.detail",
+  WORKSPACE_ROUTE_LANDING: "workspace.landing",
 }));
 
 vi.mock("@/react/components/ui/tabs", () => ({
@@ -204,8 +177,8 @@ describe("ProjectSwitchPanel", () => {
 
     render();
 
-    const createButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === ""
+    const createButton = container.querySelector<HTMLButtonElement>(
+      'button[aria-label="New Project"]'
     );
     expect(createButton).not.toBeUndefined();
     act(() => {

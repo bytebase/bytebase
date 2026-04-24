@@ -31,7 +31,13 @@ import {
   NDialogProvider,
   NNotificationProvider,
 } from "naive-ui";
-import { onErrorCaptured, watch, watchEffect } from "vue";
+import {
+  onErrorCaptured,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
 import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
@@ -39,9 +45,9 @@ import AuthContext from "./AuthContext.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import NotificationContext from "./NotificationContext.vue";
-import { t } from "./plugins/i18n";
+import { locale, t } from "./plugins/i18n";
 import { useNotificationStore } from "./store";
-import { isDev } from "./utils";
+import { isDev, setDocumentTitle } from "./utils";
 
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
@@ -49,6 +55,24 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 const route = useRoute();
 const router = useRouter();
 const notificationStore = useNotificationStore();
+
+const handleReactLocaleChange = (event: Event) => {
+  const lang = (event as CustomEvent<unknown>).detail;
+  if (typeof lang === "string") {
+    locale.value = lang;
+    if (route.meta.title) {
+      setDocumentTitle(route.meta.title(route));
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener("bb.react-locale-change", handleReactLocaleChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("bb.react-locale-change", handleReactLocaleChange);
+});
 
 watchEffect(async () => {
   // Override app profile.

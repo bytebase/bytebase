@@ -2,7 +2,8 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_LANDING } from "@/react/router";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -15,14 +16,20 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   resolve: vi.fn(({ name }: { name: string }) => ({ fullPath: `/${name}` })),
   currentRoute: {
-    value: {
-      name: "sql-editor.home",
-    },
+    name: "sql-editor.home",
+    fullPath: "/sql-editor",
+    params: {},
+    query: {},
   },
+  resetQuickstart: vi.fn(),
+  hideQuickStart: false,
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
+    i18n: {
+      language: "en-US",
+    },
     t: (key: string) =>
       ({
         "common.language": "Language",
@@ -38,20 +45,6 @@ vi.mock("react-i18next", () => ({
         "subscription.plan.enterprise.title": "Enterprise",
       })[key] ?? key,
   }),
-}));
-
-vi.mock("@/plugins/i18n", () => ({
-  default: {
-    global: {
-      locale: {
-        value: "en-US",
-      },
-    },
-  },
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
 }));
 
 vi.mock("@/react/components/UserAvatar", () => ({
@@ -95,61 +88,52 @@ vi.mock("@/react/components/header/VersionMenuItem", () => ({
 
 vi.mock("./common", () => ({
   HEADER_LANGUAGE_OPTIONS: [{ label: "English", value: "en-US" }],
-  resetQuickstartProgress: vi.fn(),
   setAppLocale: mocks.emitStorageChangedEvent,
 }));
 
-vi.mock("@/router", () => ({
-  router: {
-    currentRoute: mocks.currentRoute,
+vi.mock("@/react/router", () => ({
+  useCurrentRoute: () => mocks.currentRoute,
+  useNavigate: () => ({
     push: mocks.push,
     resolve: mocks.resolve,
-  },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
+  }),
+  isSqlEditorRouteName: (name?: string) => name?.startsWith("sql-editor"),
+  AUTH_SIGNIN_MODULE: "auth.signin",
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
-  WORKSPACE_ROUTE_MY_ISSUES: "workspace.my-issues",
-}));
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
   SETTING_ROUTE_PROFILE: "setting.profile",
-}));
-
-vi.mock("@/router/sqlEditor", () => ({
   SQL_EDITOR_HOME_MODULE: "sql-editor.home",
 }));
 
-vi.mock("@/store", () => ({
-  useActuatorV1Store: () => ({
-    quickStartEnabled: true,
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    title: "Alice",
+    email: "alice@example.com",
   }),
-  useAuthStore: () => ({
-    logout: mocks.logout,
+  useServerInfo: () => ({
+    enableSample: true,
+    activatedUserCount: 1,
   }),
-  useCurrentUserV1: () => ({
-    value: {
-      title: "Alice",
-      email: "alice@example.com",
-    },
-  }),
-  useSubscriptionV1Store: () => ({
-    currentPlan: 0,
+  useSubscription: () => ({
+    subscription: { plan: PlanType.FREE },
     uploadLicense: mocks.uploadLicense,
   }),
-  useUIStateStore: () => ({
-    saveIntroStateByKey: vi.fn(),
+  useWorkspace: () => ({
+    logo: "",
   }),
-  useWorkspaceV1Store: () => ({
-    currentWorkspace: {
-      logo: "",
-    },
-  }),
+  useAppFeature: () => mocks.hideQuickStart,
+  useQuickstartReset: () => mocks.resetQuickstart,
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      logout: mocks.logout,
+    }),
+  },
+}));
+
+vi.mock("@/utils/util", () => ({
   isDev: () => false,
-  isSQLEditorRoute: () => true,
 }));
 
 let ProfileMenuTrigger: typeof import("./ProfileMenuTrigger").ProfileMenuTrigger;
@@ -175,6 +159,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.hideQuickStart = false;
   window.open = vi.fn();
   ({ ProfileMenuTrigger } = await import("./ProfileMenuTrigger"));
 });
@@ -215,6 +200,18 @@ describe("ProfileMenuTrigger", () => {
     });
     expect(mocks.logout).toHaveBeenCalled();
 
+    unmount();
+  });
+
+  test("hides quick start when the app feature disables it", () => {
+    mocks.hideQuickStart = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Quick Start");
     unmount();
   });
 });

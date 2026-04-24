@@ -1,7 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import i18n from "@/plugins/i18n";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import {
   DropdownMenu,
@@ -13,26 +12,27 @@ import {
   DropdownMenuSubmenuTrigger,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
-  useActuatorV1Store,
-  useAuthStore,
-  useCurrentUserV1,
-  useSubscriptionV1Store,
-  useUIStateStore,
-  useWorkspaceV1Store,
-} from "@/store";
+  useAppFeature,
+  useCurrentUser,
+  useQuickstartReset,
+  useServerInfo,
+  useSubscription,
+  useWorkspace,
+} from "@/react/hooks/useAppState";
+import {
+  AUTH_SIGNIN_MODULE,
+  isSqlEditorRouteName,
+  SETTING_ROUTE_PROFILE,
+  SQL_EDITOR_HOME_MODULE,
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { isDev, isSQLEditorRoute } from "@/utils";
-import {
-  HEADER_LANGUAGE_OPTIONS,
-  resetQuickstartProgress,
-  setAppLocale,
-} from "./common";
+import { isDev } from "@/utils/util";
+import { HEADER_LANGUAGE_OPTIONS, setAppLocale } from "./common";
 import { VersionMenuItem } from "./VersionMenuItem";
 
 export interface ProfileMenuProps {
@@ -44,23 +44,21 @@ export function ProfileMenuTrigger({
   size = "medium",
   link = true,
 }: ProfileMenuProps) {
-  const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const authStore = useAuthStore();
-  const subscriptionStore = useSubscriptionV1Store();
-  const uiStateStore = useUIStateStore();
-  const workspaceStore = useWorkspaceV1Store();
-
-  const currentUser = useVueState(() => useCurrentUserV1().value);
-  const currentLocale = useVueState(() => i18n.global.locale.value as string);
-  const currentRouteName = useVueState(
-    () => router.currentRoute.value.name?.toString() ?? ""
-  );
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const quickStartEnabled = useVueState(() => actuatorStore.quickStartEnabled);
-  const customLogo = useVueState(
-    () => workspaceStore.currentWorkspace?.logo ?? ""
-  );
+  const { t, i18n } = useTranslation();
+  const currentUser = useCurrentUser();
+  const serverInfo = useServerInfo();
+  const { subscription, uploadLicense } = useSubscription();
+  const workspace = useWorkspace();
+  const route = useCurrentRoute();
+  const navigate = useNavigate();
+  const resetQuickstartProgress = useQuickstartReset();
+  const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
+  const currentPlan = subscription?.plan ?? PlanType.FREE;
+  const quickStartEnabled =
+    !hideQuickStart &&
+    Boolean(serverInfo?.enableSample) &&
+    (serverInfo?.activatedUserCount ?? 0) <= 1;
+  const customLogo = workspace?.logo ?? "";
   const [open, setOpen] = useState(false);
 
   const wrapperClass = useMemo(() => {
@@ -74,19 +72,19 @@ export function ProfileMenuTrigger({
 
   const logoClass = size === "small" ? "mr-2" : "mr-4";
 
-  const sqlEditorMenuLabel = currentRouteName.startsWith("sql-editor")
+  const sqlEditorMenuLabel = isSqlEditorRouteName(route.name)
     ? t("settings.general.workspace.default-landing-page.go-to-workspace")
     : t("settings.general.workspace.default-landing-page.go-to-sql-editor");
 
   const handleProfileNavigate = () => {
     if (!link) return;
     setOpen(false);
-    void router.push({ name: SETTING_ROUTE_PROFILE });
+    void navigate.push({ name: SETTING_ROUTE_PROFILE });
   };
 
   const handleWorkspaceToggle = () => {
-    const target = router.resolve({
-      name: isSQLEditorRoute(router)
+    const target = navigate.resolve({
+      name: isSqlEditorRouteName(route.name)
         ? WORKSPACE_ROUTE_LANDING
         : SQL_EDITOR_HOME_MODULE,
     });
@@ -95,7 +93,7 @@ export function ProfileMenuTrigger({
   };
 
   const switchPlan = (license: string) => {
-    void subscriptionStore.uploadLicense(license);
+    void uploadLicense(license);
     setOpen(false);
   };
 
@@ -118,7 +116,7 @@ export function ProfileMenuTrigger({
           <UserAvatar
             size="sm"
             className="cursor-pointer"
-            title={currentUser.title || currentUser.email}
+            title={currentUser?.title || currentUser?.email || ""}
           />
         </DropdownMenuTrigger>
 
@@ -130,11 +128,11 @@ export function ProfileMenuTrigger({
             <div className="text-left">
               <p className="flex justify-between gap-x-2 text-sm">
                 <span className="truncate font-medium text-main">
-                  {currentUser.title}
+                  {currentUser?.title}
                 </span>
               </p>
               <p className="truncate text-sm text-control">
-                {currentUser.email}
+                {currentUser?.email}
               </p>
             </div>
           </DropdownMenuItem>
@@ -151,7 +149,7 @@ export function ProfileMenuTrigger({
                 <DropdownMenuItem
                   key={item.value}
                   className={
-                    item.value === currentLocale ? "bg-control-bg" : ""
+                    item.value === i18n.language ? "bg-control-bg" : ""
                   }
                   onClick={() => {
                     setAppLocale(item.value);
@@ -162,7 +160,7 @@ export function ProfileMenuTrigger({
                     <input
                       type="radio"
                       readOnly
-                      checked={item.value === currentLocale}
+                      checked={item.value === i18n.language}
                     />
                   </span>
                   {item.label}
@@ -217,7 +215,7 @@ export function ProfileMenuTrigger({
           {quickStartEnabled ? (
             <DropdownMenuItem
               onClick={() => {
-                resetQuickstartProgress(uiStateStore);
+                resetQuickstartProgress();
                 setOpen(false);
               }}
             >
@@ -238,7 +236,15 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              authStore.logout();
+              const redirect =
+                route.fullPath.startsWith("/auth") || !route.fullPath
+                  ? undefined
+                  : route.fullPath;
+              const signinUrl = navigate.resolve({
+                name: AUTH_SIGNIN_MODULE,
+                query: { redirect },
+              }).fullPath;
+              void useAppStore.getState().logout(signinUrl);
             }}
           >
             {t("common.logout")}

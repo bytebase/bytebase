@@ -6,31 +6,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { useProjectV1Store } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { isValidProjectName } from "@/types";
+import { useProject } from "@/react/hooks/useAppState";
+import {
+  isValidProjectName,
+  projectNamePrefix,
+} from "@/react/lib/resourceName";
+import { useCurrentRoute } from "@/react/router";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
 
 export function ProjectSwitchPopover() {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const routeKey = useVueState(() => router.currentRoute.value.fullPath);
-  const currentProject = useVueState(() => {
-    const projectId = router.currentRoute.value.params.projectId as
-      | string
-      | undefined;
-    const projectName = projectId ? `${projectNamePrefix}${projectId}` : "";
-    return projectStore.getProjectByName(projectName);
-  });
+  const route = useCurrentRoute();
+  const projectId = route.params.projectId as string | undefined;
+  const currentProjectName = projectId
+    ? `${projectNamePrefix}${projectId}`
+    : "";
+  const currentProject = useProject(currentProjectName);
 
   useEffect(() => {
     setOpen(false);
-  }, [routeKey]);
+  }, [route.fullPath]);
 
   return (
     <>
@@ -44,7 +42,7 @@ export function ProjectSwitchPopover() {
           }
         >
           <div className="min-w-32 text-left">
-            {isValidProjectName(currentProject.name) ? (
+            {isValidProjectName(currentProject?.name) ? (
               <span className="block truncate text-sm font-medium text-control">
                 {currentProject.title}
               </span>

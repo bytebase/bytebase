@@ -7,30 +7,41 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import {
   Tabs,
   TabsList,
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
-import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
-import { useRecentVisit } from "@/router/useRecentVisit";
-import { useProjectV1Store } from "@/store";
-import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
-import { isDefaultProject, isValidProjectName } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
-  filterProjectV1ListByKeyword,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+  projectMatchesKeyword,
+  useProject,
+  useProjectList,
+  useRecentProjects,
+  useRecentVisit,
+  useWorkspacePermission,
+} from "@/react/hooks/useAppState";
+import {
+  getProjectName,
+  isValidProjectName,
+  projectNamePrefix,
+} from "@/react/lib/resourceName";
+import {
+  PROJECT_V1_ROUTE_DETAIL,
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+} from "@/react/router";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 export interface ProjectSwitchPanelProps {
   onClose: () => void;
@@ -38,6 +49,54 @@ export interface ProjectSwitchPanelProps {
 }
 
 type ProjectSwitchTab = "recent" | "all";
+
+function ProjectSwitchFooter({
+  pageSize,
+  pageSizeOptions,
+  hasMore,
+  isFetchingMore,
+  onPageSizeChange,
+  onLoadMore,
+}: {
+  pageSize: number;
+  pageSizeOptions: number[];
+  hasMore: boolean;
+  isFetchingMore: boolean;
+  onPageSizeChange: (size: number) => void;
+  onLoadMore: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-end gap-x-3 text-sm text-control-light">
+      <span className="whitespace-nowrap">{t("common.rows-per-page")}</span>
+      <Select
+        value={String(pageSize)}
+        onValueChange={(value) => onPageSizeChange(Number(value))}
+      >
+        <SelectTrigger size="sm" className="w-20 text-control">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {pageSizeOptions.map((option) => (
+            <SelectItem key={option} value={String(option)}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {hasMore ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={isFetchingMore}
+          onClick={onLoadMore}
+        >
+          {isFetchingMore ? t("common.loading") : t("common.load-more")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 function ProjectRow({
   project,
@@ -100,22 +159,18 @@ export function ProjectSwitchPanel({
   onRequestCreate,
 }: ProjectSwitchPanelProps) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
   const { record } = useRecentVisit();
-  const { recentViewProjects } = useRecentProjects();
+  const navigate = useNavigate();
+  const route = useCurrentRoute();
+  const { projects: recentProjectList } = useRecentProjects();
   const [searchText, setSearchText] = useState("");
   const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>("all");
-  const currentProjectName = useVueState(() => {
-    const projectId = router.currentRoute.value.params.projectId as
-      | string
-      | undefined;
-    return projectId ? `${projectNamePrefix}${projectId}` : "";
-  });
-  const currentProject = useVueState(() =>
-    projectStore.getProjectByName(currentProjectName)
-  );
-  const recentProjectList = useVueState(() => recentViewProjects.value ?? []);
-  const allowToCreateProject = hasWorkspacePermissionV2("bb.projects.create");
+  const projectId = route.params.projectId as string | undefined;
+  const currentProjectName = projectId
+    ? `${projectNamePrefix}${projectId}`
+    : "";
+  const currentProject = useProject(currentProjectName);
+  const allowToCreateProject = useWorkspacePermission("bb.projects.create");
 
   useEffect(() => {
     if (recentProjectList.length > 0) {
@@ -124,9 +179,8 @@ export function ProjectSwitchPanel({
   }, [recentProjectList.length]);
 
   const filteredRecentProjectList = useMemo(() => {
-    return filterProjectV1ListByKeyword(
-      recentProjectList.filter((project) => !isDefaultProject(project.name)),
-      searchText
+    return recentProjectList.filter((project) =>
+      projectMatchesKeyword(project, searchText)
     );
   }, [recentProjectList, searchText]);
 
@@ -142,7 +196,7 @@ export function ProjectSwitchPanel({
   }, [filteredRecentProjectList.length, searchText, selectedTab]);
 
   const {
-    dataList: allProjects,
+    projects: allProjects,
     isLoading,
     isFetchingMore,
     hasMore,
@@ -150,35 +204,11 @@ export function ProjectSwitchPanel({
     pageSize,
     pageSizeOptions,
     onPageSizeChange,
-  } = usePagedData<Project>({
-    sessionKey: "bb.project-switch",
-    fetchList: useCallback(
-      async ({ pageSize, pageToken }) => {
-        const { projects, nextPageToken } = await projectStore.fetchProjectList(
-          {
-            pageSize,
-            pageToken,
-            filter: {
-              query: searchText,
-              excludeDefault: true,
-              state: State.ACTIVE,
-            },
-            orderBy: "title",
-            cache: true,
-          }
-        );
-        return {
-          list: projects,
-          nextPageToken,
-        };
-      },
-      [projectStore, searchText]
-    ),
-  });
+  } = useProjectList(searchText);
 
   const handleProjectSelect = useCallback(
     (project: Project, event: ReactMouseEvent<HTMLButtonElement>) => {
-      const route = router.resolve({
+      const route = navigate.resolve({
         name: PROJECT_V1_ROUTE_DETAIL,
         params: {
           projectId: getProjectName(project.name),
@@ -189,17 +219,22 @@ export function ProjectSwitchPanel({
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        void router.push(route);
+        void navigate.push({
+          name: PROJECT_V1_ROUTE_DETAIL,
+          params: {
+            projectId: getProjectName(project.name),
+          },
+        });
       }
 
       onClose();
     },
-    [onClose, record]
+    [navigate, onClose, record]
   );
 
   const handleGotoWorkspace = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>) => {
-      const route = router.resolve({
+      const route = navigate.resolve({
         name: WORKSPACE_ROUTE_LANDING,
       });
       record(route.fullPath);
@@ -207,17 +242,17 @@ export function ProjectSwitchPanel({
       if (event.ctrlKey || event.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        void router.push(route.fullPath);
+        void navigate.push({ name: WORKSPACE_ROUTE_LANDING });
       }
 
       onClose();
     },
-    [onClose, record]
+    [navigate, onClose, record]
   );
 
   return (
     <div className="flex w-full max-h-[calc(100vh-10rem)] flex-col">
-      {isValidProjectName(currentProject.name) ? (
+      {isValidProjectName(currentProject?.name) ? (
         <Button
           variant="ghost"
           size="sm"
@@ -311,7 +346,7 @@ export function ProjectSwitchPanel({
           </div>
 
           <div className="mt-2 border-t border-control-border pt-2">
-            <PagedTableFooter
+            <ProjectSwitchFooter
               pageSize={pageSize}
               pageSizeOptions={pageSizeOptions}
               onPageSizeChange={onPageSizeChange}

@@ -123,7 +123,7 @@ describe("language migration", () => {
       JSON.stringify({ appearance: { language: "zh-CN" } })
     );
     migrateStorageKeys();
-    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe('"zh-CN"');
+    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe("zh-CN");
     expect(localStorage.getItem("bytebase_options")).toBeNull();
   });
 
@@ -142,9 +142,9 @@ describe("language migration", () => {
       "bytebase_options",
       JSON.stringify({ appearance: { language: "zh-CN" } })
     );
-    localStorage.setItem(STORAGE_KEY_LANGUAGE, '"en-US"');
+    localStorage.setItem(STORAGE_KEY_LANGUAGE, "en-US");
     migrateStorageKeys();
-    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe('"en-US"');
+    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe("en-US");
     expect(localStorage.getItem("bytebase_options")).toBeNull();
   });
 
@@ -503,7 +503,7 @@ describe("full migration scenario", () => {
 
     // Verify all migrated
     expect(localStorage.getItem(STORAGE_KEY_BACK_PATH)).toBe("/dashboard");
-    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe('"ja-JP"');
+    expect(localStorage.getItem(STORAGE_KEY_LANGUAGE)).toBe("ja-JP");
     expect(localStorage.getItem(STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT)).toBe(
       "100"
     );
