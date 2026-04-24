@@ -8,14 +8,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  workspaceLogo: "",
   record: vi.fn(),
   push: vi.fn(),
   resolve: vi.fn(() => ({ fullPath: "/landing" })),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -27,20 +23,19 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/store", () => ({
-  useWorkspaceV1Store: vi.fn(),
-}));
-
-vi.mock("@/router", () => ({
-  router: {
-    push: mocks.push,
-    resolve: mocks.resolve,
-  },
-}));
-
-vi.mock("@/router/useRecentVisit", () => ({
+vi.mock("@/react/hooks/useAppState", () => ({
+  useWorkspace: () => ({
+    logo: mocks.workspaceLogo,
+  }),
   useRecentVisit: () => ({
     record: mocks.record,
+  }),
+}));
+
+vi.mock("@/react/router", () => ({
+  useNavigate: () => ({
+    push: mocks.push,
+    resolve: mocks.resolve,
   }),
 }));
 
@@ -74,7 +69,7 @@ beforeEach(async () => {
 
 describe("BytebaseLogo", () => {
   test("renders custom workspace logo when present", () => {
-    mocks.useVueState.mockReturnValue("https://example.com/logo.png");
+    mocks.workspaceLogo = "https://example.com/logo.png";
     const { container, render, unmount } = renderIntoContainer(
       <BytebaseLogo />
     );
@@ -87,7 +82,7 @@ describe("BytebaseLogo", () => {
   });
 
   test("renders fallback Bytebase SVG when workspace has no custom logo", () => {
-    mocks.useVueState.mockReturnValue("");
+    mocks.workspaceLogo = "";
     const { container, render, unmount } = renderIntoContainer(
       <BytebaseLogo />
     );
@@ -100,7 +95,7 @@ describe("BytebaseLogo", () => {
   });
 
   test("records and navigates when a redirect is provided", () => {
-    mocks.useVueState.mockReturnValue("");
+    mocks.workspaceLogo = "";
     const { container, render, unmount } = renderIntoContainer(
       <BytebaseLogo redirect="workspace.landing" />
     );

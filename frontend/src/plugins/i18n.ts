@@ -6,6 +6,18 @@ import { mergedLocalMessage } from "./i18n-messages";
 
 const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
+const normalizeStoredLocale = (stored: string): string => {
+  if (validLocaleList.includes(stored)) {
+    return stored;
+  }
+  try {
+    const parsed = JSON.parse(stored);
+    return typeof parsed === "string" ? parsed : "";
+  } catch {
+    return "";
+  }
+};
+
 const getValidLocale = () => {
   const storage = useLocalStorage<string>(STORAGE_KEY_LANGUAGE, "");
 
@@ -15,7 +27,7 @@ const getValidLocale = () => {
     storage.value = locale;
   }
 
-  locale = storage.value || "";
+  locale = normalizeStoredLocale(storage.value || "");
   if (validLocaleList.includes(locale)) {
     return locale;
   }

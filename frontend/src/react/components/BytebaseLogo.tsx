@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useRecentVisit, useWorkspace } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
-import { router } from "@/router";
-import { useRecentVisit } from "@/router/useRecentVisit";
-import { useWorkspaceV1Store } from "@/store";
+import { useNavigate } from "@/react/router";
 
 type Props = {
   /** Optional route name — when set, the logo is wrapped in a link that records the visit. */
@@ -19,11 +17,10 @@ type Props = {
  */
 export function BytebaseLogo({ className, redirect }: Props) {
   const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
+  const workspace = useWorkspace();
   const { record } = useRecentVisit();
-  const customLogo = useVueState(
-    () => workspaceStore.currentWorkspace?.logo ?? ""
-  );
+  const navigate = useNavigate();
+  const customLogo = workspace?.logo ?? "";
 
   const content = (
     <span className="h-full w-full select-none flex flex-row justify-center items-center">
@@ -55,9 +52,9 @@ export function BytebaseLogo({ className, redirect }: Props) {
           type="button"
           className="h-full w-full cursor-pointer"
           onClick={() => {
-            const route = router.resolve({ name: redirect });
+            const route = navigate.resolve({ name: redirect });
             record(route.fullPath);
-            void router.push(route);
+            void navigate.push({ name: redirect });
           }}
         >
           {content}

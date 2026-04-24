@@ -2,8 +2,10 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
+import {
+  SQL_EDITOR_DATABASE_MODULE,
+  WORKSPACE_ROUTE_MY_ISSUES,
+} from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 (
@@ -20,13 +22,14 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   currentPlan: 0,
   currentRoute: {
-    value: {
-      params: {
-        projectId: "sample-project",
-        instanceId: "prod",
-        databaseName: "db",
-      },
+    name: "workspace.project.database.detail",
+    fullPath: "/projects/sample-project",
+    params: {
+      projectId: "sample-project",
+      instanceId: "prod",
+      databaseName: "db",
     },
+    query: {},
   },
 }));
 
@@ -42,8 +45,15 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
+vi.mock("@/react/hooks/useAppState", () => ({
+  useRecentVisit: () => ({
+    record: mocks.record,
+  }),
+  useSubscription: () => ({
+    subscription: {
+      plan: mocks.currentPlan,
+    },
+  }),
 }));
 
 vi.mock("@/react/components/BytebaseLogo", () => ({
@@ -60,39 +70,21 @@ vi.mock("@/react/components/header/ProfileMenuTrigger", () => ({
   ProfileMenuTrigger: () => <div data-testid="profile-menu-trigger" />,
 }));
 
-vi.mock("@/router", () => ({
-  router: {
-    currentRoute: mocks.currentRoute,
+vi.mock("@/react/router", () => ({
+  useCurrentRoute: () => mocks.currentRoute,
+  useNavigate: () => ({
     resolve: mocks.resolve,
     push: mocks.push,
-  },
-}));
-
-vi.mock("@/router/dashboard/workspaceRoutes", () => ({
+  }),
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
   WORKSPACE_ROUTE_MY_ISSUES: "workspace.my-issues",
-}));
-
-vi.mock("@/router/sqlEditor", () => ({
   SQL_EDITOR_HOME_MODULE: "sql-editor.home",
   SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
   SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));
 
-vi.mock("@/router/useRecentVisit", () => ({
-  useRecentVisit: () => ({
-    record: mocks.record,
-  }),
-}));
-
-vi.mock("@/utils", () => ({
+vi.mock("@/utils/storage-keys", () => ({
   STORAGE_KEY_MY_ISSUES_TAB: "bb.components.MY_ISSUES.id",
-}));
-
-vi.mock("@/store", () => ({
-  useSubscriptionV1Store: () => ({
-    currentPlan: mocks.currentPlan,
-  }),
 }));
 
 vi.mock("@/react/plugins/agent/store/agent", () => ({
@@ -133,12 +125,15 @@ beforeEach(async () => {
   });
   window.open = vi.fn();
   mocks.currentPlan = PlanType.FREE;
-  mocks.currentRoute.value = {
+  mocks.currentRoute = {
+    name: "workspace.project.database.detail",
+    fullPath: "/projects/sample-project",
     params: {
       projectId: "sample-project",
       instanceId: "prod",
       databaseName: "db",
     },
+    query: {},
   };
   ({ DashboardHeader } = await import("./DashboardHeader"));
 });

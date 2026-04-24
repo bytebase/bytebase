@@ -15,12 +15,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { router } from "@/router";
-import { pushNotification, useProjectV1Store, useUIStateStore } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import { unknownProject } from "@/types";
+import {
+  isConnectAlreadyExists,
+  useCreateProject,
+  useNotify,
+  useWorkspacePermission,
+} from "@/react/hooks/useAppState";
+import { projectNamePrefix } from "@/react/lib/resourceName";
+import { useNavigate } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 export interface ProjectCreateDialogProps {
   open: boolean;
@@ -34,8 +38,10 @@ export function ProjectCreateDialog({
   onCreated,
 }: ProjectCreateDialogProps) {
   const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
-  const uiStateStore = useUIStateStore();
+  const navigate = useNavigate();
+  const { createProject, setRecentProject } = useCreateProject();
+  const notify = useNotify();
+  const hasCreatePermission = useWorkspacePermission("bb.projects.create");
   const defaultProjectTitle = t("quick-action.new-project");
   const [title, setTitle] = useState(defaultProjectTitle);
   const [resourceId, setResourceId] = useState("");
@@ -54,17 +60,19 @@ export function ProjectCreateDialog({
   const allowCreate = useMemo(() => {
     if (!title.trim()) return false;
     if (!isResourceIdValid) return false;
-    if (!hasWorkspacePermissionV2("bb.projects.create")) return false;
+    if (!hasCreatePermission) return false;
     return true;
-  }, [isResourceIdValid, title]);
+  }, [hasCreatePermission, isResourceIdValid, title]);
 
   const validate = useCallback(
     async (id: string) => {
       try {
-        await projectStore.getOrFetchProjectByName(
-          `${projectNamePrefix}${id}`,
-          true
-        );
+        const existing = await useAppStore
+          .getState()
+          .fetchProject(`${projectNamePrefix}${id}`);
+        if (!existing) {
+          return [];
+        }
         return [
           {
             type: "error" as const,
@@ -77,7 +85,7 @@ export function ProjectCreateDialog({
         return [];
       }
     },
-    [projectStore, t]
+    [t]
   );
 
   const handleCreate = useCallback(async () => {
@@ -85,12 +93,9 @@ export function ProjectCreateDialog({
 
     try {
       setIsCreating(true);
-      const createdProject = await projectStore.createProject(
-        { ...unknownProject(), title },
-        resourceId
-      );
+      const createdProject = await createProject(title, resourceId);
 
-      pushNotification({
+      notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("project.create-modal.success-prompt", {
@@ -101,16 +106,16 @@ export function ProjectCreateDialog({
       if (onCreated) {
         onCreated(createdProject);
       } else {
-        void uiStateStore.saveIntroStateByKey({
-          key: "project.visit",
-          newState: true,
-        });
-        void router.push({ path: `/${createdProject.name}` });
+        setRecentProject(createdProject.name);
+        void navigate.push({ path: `/${createdProject.name}` });
       }
 
       onClose();
     } catch (error) {
-      if (error instanceof ConnectError && error.code === Code.AlreadyExists) {
+      if (
+        isConnectAlreadyExists(error) ||
+        (error instanceof ConnectError && error.code === Code.AlreadyExists)
+      ) {
         resourceIdFieldRef.current?.addValidationError(error.message);
       } else {
         throw error;
@@ -121,13 +126,15 @@ export function ProjectCreateDialog({
   }, [
     allowCreate,
     isCreating,
+    createProject,
+    navigate,
+    notify,
     onClose,
     onCreated,
-    projectStore,
     resourceId,
+    setRecentProject,
     t,
     title,
-    uiStateStore,
   ]);
 
   return (

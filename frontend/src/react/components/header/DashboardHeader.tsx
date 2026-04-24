@@ -10,21 +10,18 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
-import { router } from "@/router";
-import {
-  WORKSPACE_ROUTE_LANDING,
-  WORKSPACE_ROUTE_MY_ISSUES,
-} from "@/router/dashboard/workspaceRoutes";
+import { useRecentVisit, useSubscription } from "@/react/hooks/useAppState";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
-} from "@/router/sqlEditor";
-import { useRecentVisit } from "@/router/useRecentVisit";
-import { useSubscriptionV1Store } from "@/store";
+  useCurrentRoute,
+  useNavigate,
+  WORKSPACE_ROUTE_LANDING,
+  WORKSPACE_ROUTE_MY_ISSUES,
+} from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { STORAGE_KEY_MY_ISSUES_TAB } from "@/utils";
+import { STORAGE_KEY_MY_ISSUES_TAB } from "@/utils/storage-keys";
 import { ProfileMenuTrigger } from "./ProfileMenuTrigger";
 import { ProjectSwitchPopover } from "./ProjectSwitchPopover";
 
@@ -50,10 +47,10 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
   const { record } = useRecentVisit();
-  const subscriptionStore = useSubscriptionV1Store();
-
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const route = useVueState(() => router.currentRoute.value);
+  const { subscription } = useSubscription();
+  const route = useCurrentRoute();
+  const navigate = useNavigate();
+  const currentPlan = subscription?.plan ?? PlanType.FREE;
   const windowWidth = useSyncExternalStore(
     subscribeToViewport,
     getWindowWidth,
@@ -69,7 +66,7 @@ export function DashboardHeader({
 
     if (projectId) {
       if (instanceId && databaseName) {
-        return router.resolve({
+        return navigate.resolve({
           name: SQL_EDITOR_DATABASE_MODULE,
           params: {
             project: projectId,
@@ -78,7 +75,7 @@ export function DashboardHeader({
           },
         }).href;
       }
-      return router.resolve({
+      return navigate.resolve({
         name: SQL_EDITOR_PROJECT_MODULE,
         params: {
           project: projectId,
@@ -86,10 +83,11 @@ export function DashboardHeader({
       }).href;
     }
 
-    return router.resolve({
+    return navigate.resolve({
       name: SQL_EDITOR_HOME_MODULE,
     }).href;
   }, [
+    navigate,
     route.params.databaseName,
     route.params.instanceId,
     route.params.projectId,
@@ -97,10 +95,10 @@ export function DashboardHeader({
 
   const myIssueHref = useMemo(
     () =>
-      router.resolve({
+      navigate.resolve({
         name: WORKSPACE_ROUTE_MY_ISSUES,
       }).href,
-    []
+    [navigate]
   );
 
   return (
@@ -173,7 +171,7 @@ export function DashboardHeader({
           onClick={() => {
             record(myIssueHref);
             localStorage.setItem(STORAGE_KEY_MY_ISSUES_TAB, uuidv4());
-            void router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
+            void navigate.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
           }}
         >
           <CircleDot className="h-4 w-4" />
