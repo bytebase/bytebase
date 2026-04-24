@@ -50,6 +50,30 @@ export function FeatureOverlay() {
     );
   });
 
+  test("flags raw overlay classes interpolated from string constants", () => {
+    const violations = scanSource(
+      [
+        'const zClass = "z-50";',
+        "const overlayClass = `fixed inset-0 ${zClass}`;",
+        "",
+        "export function FeatureOverlay() {",
+        "  return <div className={overlayClass} />;",
+        "}",
+        "",
+      ].join("\n"),
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          lineNumber: 2,
+          reason: "feature-owned fixed overlay uses raw z-index",
+        }),
+      ])
+    );
+  });
+
   test("flags createPortal targets aliased from document.body", () => {
     const violations = scanSource(
       `
