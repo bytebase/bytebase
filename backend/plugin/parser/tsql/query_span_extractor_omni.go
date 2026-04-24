@@ -2,6 +2,7 @@ package tsql
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"unicode"
 
@@ -546,9 +547,16 @@ func (q *omniQuerySpanExtractor) extractTableSource(node ast.Node) ([]base.Table
 	case *ast.UnpivotExpr:
 		return nil, errors.New("unpivot is not supported yet")
 	case *ast.FuncCallExpr:
-		return nil, errors.Wrapf(errOmniUnsupported, "FROM item type %T", node)
+		return nil, unsupportedTableSourceError(node)
 	default:
 		return nil, errors.Wrapf(errOmniUnsupported, "FROM item type %T", node)
+	}
+}
+
+func unsupportedTableSourceError(node ast.Node) error {
+	return &base.TypeNotSupportedError{
+		Err:  errors.Errorf("only full table name in table source item is supported"),
+		Type: reflect.TypeOf(node).String(),
 	}
 }
 
@@ -621,7 +629,7 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 		}
 		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef wrapping TableVarRef with non-single output")
 	case *ast.FuncCallExpr:
-		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef inner %T", at.Table)
+		return nil, unsupportedTableSourceError(at.Table)
 	case *ast.TableVarMethodCallRef:
 		cols := xmlNodesColumns(inner.Columns)
 		if err := applyColumnAliases(cols, columnAliases); err != nil {
@@ -966,14 +974,14 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 				return r, err
 			}
 			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
-			sub, err = q.mergeListSources(v.Over.OrderBy)
+			sub, err = q.mergeOrderBySources(v.Over.OrderBy)
 			if err != nil {
 				return r, err
 			}
 			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 		}
 		if v.Within != nil {
-			sub, err := q.mergeListSources(v.Within)
+			sub, err := q.mergeOrderBySources(v.Within)
 			if err != nil {
 				return r, err
 			}
@@ -1138,6 +1146,30 @@ func (q *omniQuerySpanExtractor) mergeListSources(list *ast.List) (base.QuerySpa
 			}
 			r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 		}
+	}
+	return r, nil
+}
+
+func (q *omniQuerySpanExtractor) mergeOrderBySources(list *ast.List) (base.QuerySpanResult, error) {
+	r := base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}
+	if list == nil {
+		return r, nil
+	}
+	for _, it := range list.Items {
+		var expr ast.Node
+		switch v := it.(type) {
+		case *ast.OrderByItem:
+			expr = v.Expr
+		case ast.ExprNode:
+			expr = v
+		default:
+			return r, errors.Wrapf(errOmniUnsupported, "ORDER BY item type %T", it)
+		}
+		sub, err := q.resolveExpressionNode(expr)
+		if err != nil {
+			return r, err
+		}
+		r.SourceColumns, _ = base.MergeSourceColumnSet(r.SourceColumns, sub.SourceColumns)
 	}
 	return r, nil
 }

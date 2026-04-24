@@ -3,6 +3,7 @@ package tsql
 import (
 	"cmp"
 	"context"
+	"errors"
 	"slices"
 	"testing"
 
@@ -298,19 +299,24 @@ func TestOmniQuerySpan_DeclareTableVariableRoundTrip(t *testing.T) {
 // lineage.
 func TestOmniQuerySpan_UnsupportedTableSources(t *testing.T) {
 	cases := []struct {
-		name string
-		sql  string
+		name                 string
+		sql                  string
+		wantTypeNotSupported bool
 	}{
-		{"pivot", "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"},
-		{"unpivot", "SELECT * FROM t UNPIVOT (v FOR c IN ([1],[2])) AS u"},
-		{"cross_apply_tvf", "SELECT * FROM t1 CROSS APPLY fn(t1.a) AS x(v)"},
-		{"aliased_tvf", "SELECT * FROM fn(t1.a) AS x(v)"},
+		{name: "pivot", sql: "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"},
+		{name: "unpivot", sql: "SELECT * FROM t UNPIVOT (v FOR c IN ([1],[2])) AS u"},
+		{name: "cross_apply_tvf", sql: "SELECT * FROM t1 CROSS APPLY fn(t1.a) AS x(v)", wantTypeNotSupported: true},
+		{name: "aliased_tvf", sql: "SELECT * FROM fn(t1.a) AS x(v)", wantTypeNotSupported: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			q := newOmniTestExtractor(t, "db")
 			_, err := q.getOmniQuerySpan(context.Background(), tc.sql)
 			require.Error(t, err)
+			if tc.wantTypeNotSupported {
+				var typeNotSupported *base.TypeNotSupportedError
+				require.True(t, errors.As(err, &typeNotSupported), "expected TypeNotSupportedError, got %T: %v", err, err)
+			}
 		})
 	}
 }
@@ -392,6 +398,29 @@ func TestOmniQuerySpan_ValuesClauseMergesAllRows(t *testing.T) {
 	}, sortedSources(span.Results[0].SourceColumns))
 }
 
+func TestOmniQuerySpan_WindowOrderBySources(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT SUM(a) OVER (ORDER BY b) FROM t"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t", Column: "a"},
+		{Database: "db", Schema: "dbo", Table: "t", Column: "b"},
+	}, sortedSources(span.Results[0].SourceColumns))
+}
+
+func TestOmniQuerySpan_WithinGroupOrderBySources(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY b) FROM t"
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t", Column: "b"},
+	}, sortedSources(span.Results[0].SourceColumns))
+}
+
 // TestOmniQuerySpan_UnresolvedColumnErrors verifies that an unresolvable
 // column reference is surfaced as an error (both from SELECT list and from
 // WHERE predicates) rather than producing a silently-partial span. Matches
@@ -405,6 +434,8 @@ func TestOmniQuerySpan_UnresolvedColumnErrors(t *testing.T) {
 		{"qualified_select_list", "SELECT t.no_such_col FROM t"},
 		{"where_predicate", "SELECT a FROM t WHERE no_such_col = 1"},
 		{"window_partition", "SELECT SUM(a) OVER (PARTITION BY no_such_col) FROM t"},
+		{"window_order", "SELECT SUM(a) OVER (ORDER BY no_such_col) FROM t"},
+		{"within_group_order", "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY no_such_col) FROM t"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
