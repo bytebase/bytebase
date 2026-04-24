@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useRef } from "react";
-import type { NodeApi, TreeApi } from "react-arborist";
+import type { MoveHandler, NodeApi, TreeApi } from "react-arborist";
 import { Tree as ArboristTree } from "react-arborist";
 import { cn } from "@/react/lib/utils";
 
@@ -15,6 +15,7 @@ export interface TreeProps<T> {
   readonly renderNode: (args: {
     node: NodeApi<TreeDataNode<T>>;
     style: CSSProperties;
+    dragHandle?: (el: HTMLDivElement | null) => void;
   }) => ReactNode;
 
   readonly selectedIds?: readonly string[];
@@ -28,6 +29,18 @@ export interface TreeProps<T> {
   readonly height?: number;
   readonly rowHeight?: number;
   readonly indent?: number;
+
+  // Drag-and-drop. Defaults are disabled — opt in by passing `onMove` AND
+  // setting `disableDrag` / `disableDrop` to false (or a per-node predicate).
+  readonly onMove?: MoveHandler<TreeDataNode<T>>;
+  readonly disableDrag?: boolean | ((data: TreeDataNode<T>) => boolean);
+  readonly disableDrop?:
+    | boolean
+    | ((args: {
+        parentNode: NodeApi<TreeDataNode<T>>;
+        dragNodes: NodeApi<TreeDataNode<T>>[];
+        index: number;
+      }) => boolean);
 
   readonly className?: string;
 }
@@ -44,6 +57,9 @@ export function Tree<T>({
   height = 300,
   rowHeight = 28,
   indent = 16,
+  onMove,
+  disableDrag = true,
+  disableDrop = true,
   className,
 }: TreeProps<T>) {
   const treeRef = useRef<TreeApi<TreeDataNode<T>> | null>(null);
@@ -104,18 +120,21 @@ export function Tree<T>({
         selection={selectedIds?.[0]}
         onSelect={handleSelect}
         onToggle={onToggle}
+        onMove={onMove}
         searchTerm={searchTerm}
         searchMatch={resolvedSearchMatch}
         openByDefault={false}
-        disableDrag
-        disableDrop
+        disableDrag={disableDrag}
+        disableDrop={disableDrop}
         disableEdit
         height={height}
         rowHeight={rowHeight}
         indent={indent}
         width="100%"
       >
-        {({ node, style }) => renderNode({ node, style })}
+        {({ node, style, dragHandle }) =>
+          renderNode({ node, style, dragHandle })
+        }
       </ArboristTree>
     </div>
   );

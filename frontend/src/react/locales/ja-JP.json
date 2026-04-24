@@ -259,6 +259,7 @@
     "done": "完了",
     "download": "ダウンロード",
     "draft": "下書き",
+    "duplicate": "コピー",
     "duration": "Duration",
     "edit": "編集",
     "email": "メールアドレス",
@@ -279,6 +280,7 @@
     },
     "filter": "Filter",
     "filter-by-name": "名前でフィルタリングする",
+    "fork": "フォーク",
     "from": "開始",
     "general": "全般",
     "go-back": "戻る",
@@ -405,6 +407,7 @@
     "version": "バージョン",
     "view": "表示",
     "view-details": "詳細を表示",
+    "visibility": "可視性",
     "warning": "警告する",
     "webhooks": "Webhook",
     "write-only": "書き込み専用",
@@ -2436,6 +2439,29 @@
       "team": "チームメイトと協力し、CI/CD パイプラインが必要"
     }
   },
+  "sheet": {
+    "filter": {
+      "only-show-starred": "スター付きのみ表示",
+      "show-draft": "下書きを表示",
+      "show-mine": "私のものを表示",
+      "show-shared": "共有を表示"
+    },
+    "hint-tips": {
+      "confirm-to-delete-sheet-title": "このワークシートを削除しますか?",
+      "confirm-to-duplicate-sheet": "このワークシートをコピーしてもよろしいですか?",
+      "delete-all-sheets": "すべてのファイルを削除する",
+      "duplicate-folder-name-content": "すべてのサブフォルダーとファイルを既存のフォルダー \"{{folder}}\" にマージしますか?",
+      "duplicate-folder-name-title": "重複したフォルダ名",
+      "move-to-root-folder": "ルートフォルダに移動する",
+      "non-empty-folder-content": "すべてのワークシートをルート フォルダーに移動しますか、それとも削除するだけですか?",
+      "non-empty-folder-title": "空でないフォルダ"
+    },
+    "move-worksheets": "ワークシートを移動する",
+    "notifications": {
+      "duplicate-success": "「マイワークシート」にコピーされました"
+    },
+    "search-sheets": "ワークシートの検索"
+  },
   "sql-editor": {
     "access-grants": "Access Grants",
     "access-search": {
@@ -2470,6 +2496,11 @@
     "expired": "Expired",
     "format-sql": "Format SQL",
     "grant-type-unmask": "Unmask",
+    "hint-tips": {
+      "confirm-to-close-unsaved-sheet": {
+        "content": "現在のワークシートを閉じると、保存されていないデータはすべて失われますか?"
+      }
+    },
     "jit": "Just-In-Time Access",
     "link-access": "リンクアクセス",
     "no-access-requests": "No access requests",
@@ -2505,6 +2536,16 @@
     "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
+    "tab": {
+      "context-menu": {
+        "actions": {
+          "add-folder": "フォルダを追加",
+          "add-worksheet": "ワークシートを追加",
+          "multi-select": "複数選択",
+          "rename": "名前の変更"
+        }
+      }
+    },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-issue": "View Issue",
