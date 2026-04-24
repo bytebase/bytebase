@@ -2544,7 +2544,7 @@
       "exit": "Exit admin mode",
       "self": "Admin mode"
     },
-    "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
+    "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Batch"
@@ -2552,7 +2552,7 @@
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
     "connect-to-a-database": "Connect to database",
-    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in {environment}, please submit a Data Change Plan for approval.",
+    "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

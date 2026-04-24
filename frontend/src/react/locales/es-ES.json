@@ -2530,7 +2530,7 @@
       "exit": "Salir del modo administrador",
       "self": "Modo administrador"
     },
-    "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
+    "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Lote"
@@ -2538,7 +2538,7 @@
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "connect-to-a-database": "Conectar a base de datos",
-    "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en {environment}, envíe un Plan de Cambio de Datos para su aprobación.",
+    "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

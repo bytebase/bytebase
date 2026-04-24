@@ -2530,7 +2530,7 @@
       "exit": "Thoát chế độ quản trị",
       "self": "Chế độ quản trị"
     },
-    "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập ở chế độ quản trị.",
+    "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "Hàng loạt"
@@ -2538,7 +2538,7 @@
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
-    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong {environment}, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
+    "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

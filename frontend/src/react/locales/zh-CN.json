@@ -2530,7 +2530,7 @@
       "exit": "退出管理员模式",
       "self": "管理员模式"
     },
-    "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
+    "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-query": {
       "batch": "批量"
@@ -2538,7 +2538,7 @@
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
     "connect-to-a-database": "连接数据库",
-    "ddl-dml-requires-data-change-plan": "如需在 {environment} 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
+    "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hours": "{{hours}} 小时",

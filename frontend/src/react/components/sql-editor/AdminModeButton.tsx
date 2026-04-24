@@ -9,6 +9,7 @@ import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 type AdminModeButtonProps = {
   readonly size?: "sm" | "default";
   readonly hideText?: boolean;
+  readonly onEnter?: () => void;
 };
 
 /**
@@ -19,6 +20,7 @@ type AdminModeButtonProps = {
 export function AdminModeButton({
   size = "default",
   hideText = false,
+  onEnter,
 }: AdminModeButtonProps) {
   const { t } = useTranslation();
   const editorStore = useSQLEditorStore();
@@ -36,6 +38,7 @@ export function AdminModeButton({
 
   const handleClick = () => {
     tabStore.updateCurrentTab({ mode: "ADMIN" });
+    onEnter?.();
   };
 
   return (

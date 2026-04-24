@@ -117,7 +117,7 @@ export function ExecuteHint({ database, onClose }: Props) {
       <div className="mt-4 flex justify-between">
         {allowAdmin && (
           <div className="flex justify-start items-center gap-x-2">
-            <AdminModeButton />
+            <AdminModeButton onEnter={onClose} />
           </div>
         )}
         <div className="flex flex-1 justify-end items-center gap-x-2">

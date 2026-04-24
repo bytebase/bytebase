@@ -2530,7 +2530,7 @@
       "exit": "管理者モードを終了する",
       "self": "管理者モード"
     },
-    "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
+    "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
       "batch": "バッチ"
@@ -2538,7 +2538,7 @@
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "connect-to-a-database": "データベースに接続",
-    "ddl-dml-requires-data-change-plan": "{environment} で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
+    "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
