@@ -180,7 +180,18 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     () => readShowMissingFromStorage(currentUserEmail)
   );
 
+  // The Vue version re-bound to a computed storage key whenever the user
+  // email changed (initial hydration from anonymous → real email, or an
+  // account switch). Mirror that here: when the email key changes, reload
+  // from storage and skip the next write so we don't clobber the new
+  // user's saved preference with the previous user's value.
+  const loadedForEmailRef = useRef(currentUserEmail);
   useEffect(() => {
+    if (loadedForEmailRef.current !== currentUserEmail) {
+      loadedForEmailRef.current = currentUserEmail;
+      setShowMissingQueryDatabases(readShowMissingFromStorage(currentUserEmail));
+      return;
+    }
     writeShowMissingToStorage(currentUserEmail, showMissingQueryDatabases);
   }, [currentUserEmail, showMissingQueryDatabases]);
 
@@ -839,6 +850,15 @@ function EnvironmentTreeSection(props: {
 
   const treeByEnv = useSQLEditorTreeByEnvironment(environmentName, { email });
 
+  // Read the latest show-missing flag from inside the async `.then()`
+  // below. The fetch can outlive the render that started it, so capturing
+  // `showMissingQueryDatabases` directly would let an in-flight rebuild
+  // overwrite the tree with a stale flag (e.g. user toggles the checkbox
+  // mid-fetch — the toggle's own buildTree runs first, then the older
+  // .then() lands and clobbers it).
+  const showMissingRef = useRef(showMissingQueryDatabases);
+  showMissingRef.current = showMissingQueryDatabases;
+
   // Kick off fetch when filter / project-readiness changes. The parent
   // memoizes `filter` on (queryText, instance, labels, engines), so a
   // single dep on `filter` covers scope-chip changes too — depending only
@@ -854,7 +874,7 @@ function EnvironmentTreeSection(props: {
   useEffect(() => {
     if (!projectContextReady) return;
     void treeByEnv.prepareDatabases(filter).then(() => {
-      treeByEnv.buildTree(showMissingQueryDatabases);
+      treeByEnv.buildTree(showMissingRef.current);
       void sqlEditorEvents.emit("tree-ready");
     });
   }, [projectContextReady, filter]);
