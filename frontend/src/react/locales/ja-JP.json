@@ -196,6 +196,7 @@
   },
   "common": {
     "action-required": "対応が必要",
+    "actions": "アクション",
     "activated": "有効化しました",
     "active": "アクティブ",
     "add": "追加",
@@ -709,6 +710,7 @@
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
+    "edit-schema": "スキーマの変更",
     "engine": "エンジン",
     "expression": "Expression",
     "filter-database": "データベースをフィルター",
@@ -1304,13 +1306,15 @@
           "description": "データベースでフィルター"
         },
         "engine": {
-          "description": "エンジンでフィルタリング"
+          "description": "エンジンでフィルタリング",
+          "title": "エンジン"
         },
         "environment": {
           "description": "環境に基づいてフィルタリングする"
         },
         "instance": {
-          "description": "インスタンスによるフィルター"
+          "description": "インスタンスによるフィルター",
+          "title": "インスタンス"
         },
         "issue-label": {
           "description": "イシューラベルでフィルタリング",
@@ -2533,10 +2537,19 @@
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
-      "batch": "バッチ"
+      "batch": "バッチ",
+      "description": "{{project}} の下の {{database}} 個の追加データベースと {{group}} 個のデータベース グループに対してバッチ クエリを実行します。",
+      "select-data-source": {
+        "admin": "管理者",
+        "readonly": "読み取り専用",
+        "self": "バッチのデータソースを選択",
+        "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。"
+      }
     },
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
+    "close-sheet": "ワークシートを閉じる",
+    "connect-in-admin-mode": "管理者モードで接続する",
     "connect-to-a-database": "データベースに接続",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "duration-day": "{{days}} day",
@@ -2549,15 +2562,20 @@
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "現在のワークシートを閉じると、保存されていないデータはすべて失われますか?"
+        "content": "現在のワークシートを閉じると、保存されていないデータはすべて失われますか?",
+        "title": "未保存のワークシートを閉じてもよろしいですか?"
       }
     },
     "jit": "Just-In-Time Access",
     "link-access": "リンクアクセス",
+    "loading-databases": "データベース情報をロードしています...",
+    "manage-connections": "接続を管理する",
     "no-access-requests": "No access requests",
     "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
+    "no-queriable-database": "クエリ可能なデータベースがありません",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
+    "open-in-new-tab": "新しいタブで開く",
     "private": "プライベート",
     "private-desc": "このシートにアクセスできるのはあなただけです",
     "project-read": "プロジェクト内で読み取り可能",
@@ -2588,11 +2606,17 @@
     "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
+    "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "tab": {
       "context-menu": {
         "actions": {
           "add-folder": "フォルダを追加",
           "add-worksheet": "ワークシートを追加",
+          "close": "閉じる",
+          "close-all": "すべて閉じる",
+          "close-others": "その他を閉じる",
+          "close-saved": "保存済みを閉じる",
+          "close-to-the-right": "右側をすべて閉じます",
           "multi-select": "複数選択",
           "rename": "名前の変更"
         }
@@ -2600,6 +2624,7 @@
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
+    "view-database-detail": "データベースの詳細を表示する",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -3367,6 +3392,7 @@
     "title": "SQL レビューポリシー"
   },
   "subscription": {
+    "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
     "contact-us": "お問い合わせ",
     "current": "現在のプラン",
     "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
@@ -3381,6 +3407,7 @@
       "manage-license": "ライセンスの管理",
       "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {{n}}",
+      "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"

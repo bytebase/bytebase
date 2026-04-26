@@ -52,6 +52,7 @@ import {
 } from "@/react/components/ui/popover";
 import type { TreeDataNode } from "@/react/components/ui/tree";
 import { Tree } from "@/react/components/ui/tree";
+import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
@@ -135,44 +136,6 @@ function toTreeData(
     data: node,
     children: node.children.map(toTreeData),
   };
-}
-
-/**
- * Count rows that react-arborist will actually render so the Tree's fixed
- * viewport can be sized naturally (instead of its 300px default).
- *
- * - When `keyword` is empty, count the node plus descendants of expanded
- *   folders — arborist hides collapsed children.
- * - When `keyword` is set, arborist filters visible nodes to matches +
- *   their ancestors regardless of expand state. Mirror that here so the
- *   viewport shrinks during search; otherwise the tree reserves the full
- *   pre-filter height and leaves a large empty block under the matches.
- */
-function countVisibleRows(
-  node: WorksheetFolderNode,
-  expandedKeys: Set<string>,
-  keyword: string,
-  searchMatch: (node: WorksheetFolderNode, term: string) => boolean
-): number {
-  if (!keyword) {
-    let count = 1;
-    if (expandedKeys.has(node.key)) {
-      for (const child of node.children) {
-        count += countVisibleRows(child, expandedKeys, keyword, searchMatch);
-      }
-    }
-    return count;
-  }
-
-  let childCount = 0;
-  for (const child of node.children) {
-    childCount += countVisibleRows(child, expandedKeys, keyword, searchMatch);
-  }
-  const selfMatches = searchMatch(node, keyword);
-  if (selfMatches || childCount > 0) {
-    return 1 + childCount;
-  }
-  return 0;
 }
 
 // Generate unique folder name based on existing children

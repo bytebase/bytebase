@@ -197,6 +197,7 @@
   },
   "common": {
     "action-required": "Action Required",
+    "actions": "Actions",
     "activated": "Activated",
     "active": "Active",
     "add": "Add",
@@ -716,6 +717,7 @@
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
+    "edit-schema": "Edit Schema",
     "engine": "Engine",
     "expression": "Expression",
     "filter-database": "Filter database",
@@ -1311,13 +1313,15 @@
           "description": "Filter by database"
         },
         "engine": {
-          "description": "Filter by engines"
+          "description": "Filter by engines",
+          "title": "Engine"
         },
         "environment": {
           "description": "Filter by environment"
         },
         "instance": {
-          "description": "Filter by instance"
+          "description": "Filter by instance",
+          "title": "Instance"
         },
         "issue-label": {
           "description": "Filter by issue label",
@@ -2547,10 +2551,19 @@
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
-      "batch": "Batch"
+      "batch": "Batch",
+      "description": "Batch query {{database}} additional databases and {{group}} database groups under {{project}}.",
+      "select-data-source": {
+        "admin": "Admin",
+        "readonly": "Read-only",
+        "self": "Select data source for batch",
+        "tooltip": "Will find available data sources with restriction policy, then apply the selection."
+      }
     },
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
+    "close-sheet": "Close sheet",
+    "connect-in-admin-mode": "Connect in admin mode",
     "connect-to-a-database": "Connect to database",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "duration-day": "{{days}} day",
@@ -2563,15 +2576,20 @@
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "Close the sheet and lose any unsaved data?"
+        "content": "Close the sheet and lose any unsaved data?",
+        "title": "Close the unsaved sheet?"
       }
     },
     "jit": "Just-In-Time Access",
     "link-access": "Link access",
+    "loading-databases": "Loading Databases...",
+    "manage-connections": "Manage connections",
     "no-access-requests": "No access requests",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
+    "no-queriable-database": "No queriable database",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
+    "open-in-new-tab": "Open in new tab",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
     "project-read": "Project read",
@@ -2602,11 +2620,17 @@
     "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
+    "show-databases-without-query-permission": "Show databases without query permissions",
     "tab": {
       "context-menu": {
         "actions": {
           "add-folder": "Add folder",
           "add-worksheet": "Add worksheet",
+          "close": "Close",
+          "close-all": "Close all",
+          "close-others": "Close others",
+          "close-saved": "Close saved",
+          "close-to-the-right": "Close to the right",
           "multi-select": "Multi-select",
           "rename": "Rename"
         }
@@ -2614,6 +2638,7 @@
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
+    "view-database-detail": "View database detail",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -3381,6 +3406,7 @@
     "title": "SQL Review"
   },
   "subscription": {
+    "contact-to-upgrade": "Contact your Workspace admin to upgrade the plan.",
     "contact-us": "Contact us",
     "current": "Current plan",
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
@@ -3395,6 +3421,7 @@
       "manage-license": "Manage Instance License",
       "missing-license-attention": "You need to assign license to the instance to enable this feature.",
       "n-license-remain": "{{n}} remaining",
+      "require-license": "Require instance license",
       "success-notification": "Successfully update license assignment",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit"

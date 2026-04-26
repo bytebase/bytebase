@@ -41,15 +41,41 @@ const pageProps = computed(() => {
 });
 
 let currentPage = "";
+let unmounted = false;
+// Serialization queue. `render()` is async and the dynamic imports yield
+// for several event-loop ticks, so without serialization a watcher firing
+// during the initial mount can race the onMounted call. Both pass the
+// `if (!root)` guard, both call `mountReactPage`, and React ends up with
+// two roots on the same container — the second mount silently uses stale
+// props captured by the first call. Symptom: the first click of a Vue
+// → React boolean toggle right after page refresh appears to do nothing
+// because `open=true` from the watcher gets clobbered by the in-flight
+// mount that captured `open=false`.
+let renderQueue: Promise<void> = Promise.resolve();
 
-async function render() {
-  if (!container.value) return;
+function render(): Promise<void> {
+  const next = renderQueue.then(() => doRender());
+  // Catch on the chain we keep, so a rejection from one render doesn't
+  // permanently break the queue. The original promise is still returned
+  // to callers that may want to await it.
+  renderQueue = next.catch(() => undefined);
+  return next;
+}
+
+async function doRender() {
+  if (unmounted || !container.value) return;
   const [{ mountReactPage, updateReactPage }, i18nModule] = await Promise.all([
     import("./mount"),
     import("./i18n"),
   ]);
+  // Re-check after the dynamic imports — Close All / tab-switch can unmount
+  // this component while the imports are in flight. Without the guard,
+  // `container.value` may be `undefined` by the time we call createRoot,
+  // producing "Target container is not a DOM element".
+  if (unmounted || !container.value) return;
   if (i18nModule.default.language !== locale.value) {
     await i18nModule.default.changeLanguage(locale.value);
+    if (unmounted || !container.value) return;
   }
   // When the page component changes, unmount old root and create a fresh one
   // to avoid stale React state from the previous page.
@@ -59,6 +85,11 @@ async function render() {
   }
   if (!root) {
     root = await mountReactPage(container.value, props.page, pageProps.value);
+    if (unmounted) {
+      root?.unmount();
+      root = null;
+      return;
+    }
   } else {
     await updateReactPage(root, props.page, pageProps.value);
   }
@@ -69,6 +100,7 @@ onMounted(() => render());
 watch(locale, () => render());
 watch([() => props.page, pageProps], () => render());
 onUnmounted(() => {
+  unmounted = true;
   root?.unmount();
   root = null;
 });

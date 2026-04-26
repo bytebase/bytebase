@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
+import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -685,28 +686,15 @@ export function GrantAccessDialog({
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      {/* Feature paywall — shared FeatureModal so the dialog content is
+          driven by the subscription dynamic feature copy + plan info, and
+          honors the instance-missing-license path via the `instance` prop. */}
+      <FeatureModal
         open={showFeatureModal}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setShowFeatureModal(false);
-        }}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <FeatureAttention
-            feature={PlanFeature.FEATURE_DATA_MASKING}
-            instance={instance}
-          />
-          <div className="flex justify-end gap-x-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFeatureModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        feature={PlanFeature.FEATURE_DATA_MASKING}
+        instance={instance}
+        onOpenChange={setShowFeatureModal}
+      />
     </>
   );
 }
