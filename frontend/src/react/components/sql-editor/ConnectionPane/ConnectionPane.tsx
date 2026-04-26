@@ -189,7 +189,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   useEffect(() => {
     if (loadedForEmailRef.current !== currentUserEmail) {
       loadedForEmailRef.current = currentUserEmail;
-      setShowMissingQueryDatabases(readShowMissingFromStorage(currentUserEmail));
+      setShowMissingQueryDatabases(
+        readShowMissingFromStorage(currentUserEmail)
+      );
       return;
     }
     writeShowMissingToStorage(currentUserEmail, showMissingQueryDatabases);
@@ -870,7 +872,6 @@ function EnvironmentTreeSection(props: {
   // populated `treeStore.nodeKeysByTarget`. Emitting here (per-env, after
   // populate) instead of in the project-readiness effect avoids a race
   // where the highlight is computed against an empty tree.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment
   useEffect(() => {
     if (!projectContextReady) return;
     void treeByEnv.prepareDatabases(filter).then(() => {
