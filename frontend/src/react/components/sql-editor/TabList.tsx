@@ -322,8 +322,8 @@ export function TabList() {
         ) => {
           if (
             !open &&
-            (eventDetails?.reason === "escapeKey" ||
-              eventDetails?.reason === "outsidePress")
+            (eventDetails?.reason === "escape-key" ||
+              eventDetails?.reason === "outside-press")
           ) {
             eventDetails.cancel?.();
             return;

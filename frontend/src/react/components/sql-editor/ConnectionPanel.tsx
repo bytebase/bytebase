@@ -55,7 +55,7 @@ export function ConnectionPanel() {
     next: boolean,
     eventDetails?: { reason?: string; cancel?: () => void }
   ) => {
-    if (!next && eventDetails?.reason === "escapeKey") {
+    if (!next && eventDetails?.reason === "escape-key") {
       eventDetails.cancel?.();
       return;
     }

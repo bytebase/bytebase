@@ -39,6 +39,11 @@ export const TabContextMenu = forwardRef<TabContextMenuHandle>(
   function TabContextMenu(_, ref) {
     const { t } = useTranslation();
     const [target, setTarget] = useState<Target | null>(null);
+    // Controlled `open` so `hide()` can dismiss the menu even when the
+    // imperative caller (TabList scroll/resize handlers) wants to close
+    // a menu the user opened — Base UI's uncontrolled mode wouldn't react
+    // to clearing `target` alone.
+    const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
 
     useImperativeHandle(
@@ -53,6 +58,7 @@ export const TabContextMenu = forwardRef<TabContextMenuHandle>(
           triggerRef.current?.click();
         },
         hide() {
+          setOpen(false);
           setTarget(null);
         },
       }),
@@ -67,6 +73,7 @@ export const TabContextMenu = forwardRef<TabContextMenuHandle>(
       } else {
         void tabListEvents.emit("close-tab", { tab, index, action });
       }
+      setOpen(false);
       setTarget(null);
     };
 
@@ -74,7 +81,13 @@ export const TabContextMenu = forwardRef<TabContextMenuHandle>(
       target?.tab.mode === "WORKSHEET" && target?.tab.viewState.view === "CODE";
 
     return (
-      <DropdownMenu>
+      <DropdownMenu
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setTarget(null);
+        }}
+      >
         <DropdownMenuTrigger
           ref={triggerRef}
           aria-hidden

@@ -43,7 +43,15 @@ const mocks = vi.hoisted(() => {
   };
   const dbGroupStore = {
     fetchDBGroupListByProjectName: vi.fn().mockResolvedValue([]),
-    getDBGroupByName: vi.fn(),
+    // The component reads `.name` and `.matchedDatabases` off the result
+    // and validates `.name` via `isValidDatabaseGroupName`. Returning an
+    // unknown-name placeholder preserves the "skip invalid" branch
+    // without leaking real groups into tests that don't set them up.
+    getDBGroupByName: vi.fn(() => ({
+      name: "",
+      matchedDatabases: [],
+      title: "",
+    })),
     getOrFetchDBGroupByName: vi.fn().mockResolvedValue(undefined),
   };
   const environmentStore = {

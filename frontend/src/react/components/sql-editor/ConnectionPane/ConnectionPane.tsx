@@ -39,6 +39,7 @@ import {
   useSQLEditorUIStore,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
+import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type {
   BatchQueryContext,
   QueryDataSourceType,
@@ -197,6 +198,29 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     [currentTab?.batchQueryContext?.databaseGroups]
   );
 
+  // Map<databaseResourceName, groupTitle> for every database covered by
+  // any currently-selected database group. Mirrors Vue's
+  // `flattenSelectedDatabasesFromGroup` and drives the tree-row checkbox
+  // so users can see which databases are already implicitly included via
+  // group selection (rendered as checked + disabled + tooltip in batch
+  // mode). useVueState — the underlying group cache mutates without the
+  // store reference changing, so a deep subscription catches new
+  // matchedDatabases as they arrive from the FULL-view fetch.
+  const groupCoveredDatabaseTitles = useVueState(
+    () => {
+      const map = new Map<string, string>();
+      for (const groupName of selectedDatabaseGroupNames) {
+        const group = dbGroupStore.getDBGroupByName(groupName);
+        if (!isValidDatabaseGroupName(group.name)) continue;
+        for (const m of group.matchedDatabases) {
+          map.set(m.name, group.title);
+        }
+      }
+      return map;
+    },
+    { deep: true }
+  );
+
   const selectedDatabaseNames = useMemo(() => {
     const databases = currentTab?.batchQueryContext?.databases ?? [];
     if (
@@ -292,6 +316,11 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
 
   // Drive treeStore.state transitions so the mask spinner lifts when the
   // project is ready and hides again when the project changes.
+  // `tree-ready` is NOT emitted here — at this point each env section is
+  // still asynchronously fetching+building its slice of the tree, and the
+  // listener uses `treeStore.nodeKeysByTarget` which would return [] for
+  // the current connection. Each `EnvironmentTreeSection` emits
+  // `tree-ready` when its own buildTree resolves.
   useEffect(() => {
     if (!isValidProjectName(projectName)) return;
     if (!projectContextReady) {
@@ -299,7 +328,6 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       return;
     }
     treeStore.state = "READY";
-    void sqlEditorEvents.emit("tree-ready");
   }, [projectName, projectContextReady, treeStore]);
 
   // Highlight the current tab's connection node in the tree. Mirrors
@@ -573,6 +601,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
                     query={queryText}
                     isUnknownEnvironment={env.name === UNKNOWN_ENVIRONMENT_NAME}
                     selectedDatabaseNames={selectedDatabaseNames}
+                    groupCoveredDatabaseTitles={groupCoveredDatabaseTitles}
                     selectedKeys={selectedKeys}
                     switchingConnection={switchingConnection}
                     onConnect={connect}
@@ -772,12 +801,17 @@ function SelectedDatabaseTag({
 function EnvironmentTreeSection(props: {
   environmentName: string;
   email: string;
-  filter: { query?: string };
+  filter: DatabaseFilter;
   showMissingQueryDatabases: boolean;
   projectContextReady: boolean;
   query: string;
   isUnknownEnvironment: boolean;
   selectedDatabaseNames: string[];
+  /** databaseResourceName → groupTitle for every database implicitly
+   *  selected via a chosen database group. The row checkbox unions this
+   *  with `selectedDatabaseNames` and uses the title for the disabled-
+   *  checkbox tooltip. */
+  groupCoveredDatabaseTitles: Map<string, string>;
   /** Tree-row keys to highlight as the current connection (1:1 with Vue
    *  `selectedKeys` from `getSelectedKeys()`). */
   selectedKeys: string[];
@@ -795,6 +829,7 @@ function EnvironmentTreeSection(props: {
     query,
     isUnknownEnvironment,
     selectedDatabaseNames,
+    groupCoveredDatabaseTitles,
     selectedKeys,
     switchingConnection,
     onConnect,
@@ -804,14 +839,25 @@ function EnvironmentTreeSection(props: {
 
   const treeByEnv = useSQLEditorTreeByEnvironment(environmentName, { email });
 
-  // Kick off fetch when filter / project-readiness changes.
+  // Kick off fetch when filter / project-readiness changes. The parent
+  // memoizes `filter` on (queryText, instance, labels, engines), so a
+  // single dep on `filter` covers scope-chip changes too — depending only
+  // on `filter.query` (as before) left scope edits stale until the user
+  // also retyped the search.
+  // treeByEnv identity is stable per-render via the hook's internals.
+  // After buildTree resolves we emit `tree-ready` so the parent's
+  // current-connection-highlight effect can recompute against the now-
+  // populated `treeStore.nodeKeysByTarget`. Emitting here (per-env, after
+  // populate) instead of in the project-readiness effect avoids a race
+  // where the highlight is computed against an empty tree.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment
   useEffect(() => {
     if (!projectContextReady) return;
     void treeByEnv.prepareDatabases(filter).then(() => {
       treeByEnv.buildTree(showMissingQueryDatabases);
+      void sqlEditorEvents.emit("tree-ready");
     });
-    // treeByEnv identity is stable per-render via the hook's internals.
-  }, [projectContextReady, filter.query]);
+  }, [projectContextReady, filter]);
 
   // Rebuild when the "show missing" toggle flips.
   useEffect(() => {
@@ -876,44 +922,51 @@ function EnvironmentTreeSection(props: {
         }}
         height={Math.max(visibleRowCount, 1) * ROW_HEIGHT}
         rowHeight={ROW_HEIGHT}
-        renderNode={({ node, style }) => (
-          <TreeRow
-            style={style}
-            node={node.data.data}
-            depth={node.level}
-            isOpen={!!node.isOpen}
-            hasChildren={
-              !!node.data.data.children && node.data.data.children.length > 0
-            }
-            query={query}
-            selected={
-              node.data.data.meta.type === "database" &&
-              selectedSet.has(
-                (node.data.data.meta.target as { name: string }).name
-              )
-            }
-            switchingConnection={switchingConnection}
-            onClick={(e) => {
-              e.stopPropagation();
-              const n = node.data.data;
-              if (n.meta.type === "database") {
-                onConnect(n);
-              } else {
-                node.toggle();
+        renderNode={({ node, style }) => {
+          const data = node.data.data;
+          const isDatabase = data.meta.type === "database";
+          const databaseName = isDatabase
+            ? (data.meta.target as { name: string }).name
+            : "";
+          const matchedGroupTitle =
+            isDatabase && groupCoveredDatabaseTitles.has(databaseName)
+              ? groupCoveredDatabaseTitles.get(databaseName)
+              : undefined;
+          const checked =
+            isDatabase &&
+            (selectedSet.has(databaseName) || matchedGroupTitle !== undefined);
+          return (
+            <TreeRow
+              style={style}
+              node={data}
+              depth={node.level}
+              isOpen={!!node.isOpen}
+              hasChildren={!!data.children && data.children.length > 0}
+              query={query}
+              selected={checked}
+              checkDisabled={
+                switchingConnection || matchedGroupTitle !== undefined
               }
-            }}
-            onToggleChecked={(checked) => {
-              const n = node.data.data;
-              if (n.meta.type === "database") {
-                onToggleDatabase(
-                  (n.meta.target as { name: string }).name,
-                  checked
-                );
+              checkTooltip={
+                matchedGroupTitle !== undefined ? matchedGroupTitle : undefined
               }
-            }}
-            onContextMenu={(e) => onContextMenu(node.data.data, e)}
-          />
-        )}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isDatabase) {
+                  onConnect(data);
+                } else {
+                  node.toggle();
+                }
+              }}
+              onToggleChecked={(next) => {
+                if (isDatabase) {
+                  onToggleDatabase(databaseName, next);
+                }
+              }}
+              onContextMenu={(e) => onContextMenu(data, e)}
+            />
+          );
+        }}
       />
       {treeByEnv.fetchDataState.nextPageToken &&
         treeByEnv.expandedState.expandedKeys.includes(environmentName) &&
@@ -938,7 +991,8 @@ function TreeRow({
   hasChildren,
   query,
   selected,
-  switchingConnection,
+  checkDisabled,
+  checkTooltip,
   onClick,
   onToggleChecked,
   onContextMenu,
@@ -951,8 +1005,15 @@ function TreeRow({
   hasChildren: boolean;
   depth: number;
   query: string;
+  /** Whether the row is "checked" (batch-query selection or implicit
+   *  via group). Doubles as the row tint condition. */
   selected: boolean;
-  switchingConnection: boolean;
+  /** True when the checkbox should be locked, e.g. mid-connection-switch
+   *  or when membership is forced by a selected group. */
+  checkDisabled: boolean;
+  /** Tooltip shown on the disabled checkbox — typically the group title
+   *  that pulls this database into the batch query implicitly. */
+  checkTooltip?: string;
   onClick: (e: React.MouseEvent) => void;
   onToggleChecked: (checked: boolean) => void;
   onContextMenu: (e: React.MouseEvent) => void;
@@ -1011,7 +1072,8 @@ function TreeRow({
         node={node}
         keyword={query}
         checked={selected}
-        checkDisabled={switchingConnection}
+        checkDisabled={checkDisabled}
+        checkTooltip={checkTooltip}
         onCheckedChange={onToggleChecked}
       />
     </div>
