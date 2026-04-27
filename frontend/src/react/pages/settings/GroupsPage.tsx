@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { UserSelect } from "@/react/components/UserSelect";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
@@ -97,25 +98,6 @@ function deduplicateMembers(members: GroupMember[]): GroupMember[] {
     }
   }
   return Array.from(map.values());
-}
-
-// ============================================================
-// HighlightText
-// ============================================================
-
-function HighlightText({ text, keyword }: { text: string; keyword: string }) {
-  if (!keyword.trim()) return <>{text}</>;
-  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
-  if (idx < 0) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <span className="bg-yellow-100">
-        {text.slice(idx, idx + keyword.length)}
-      </span>
-      {text.slice(idx + keyword.length)}
-    </>
-  );
 }
 
 // ============================================================
@@ -368,7 +350,7 @@ function GroupRow({
             <div className="flex flex-col">
               <div className="flex items-center gap-x-1.5">
                 <span>
-                  <HighlightText text={group.title} keyword={searchText} />
+                  <HighlightLabelText text={group.title} keyword={searchText} />
                 </span>
                 <span className="text-control-light text-xs">
                   (
@@ -382,7 +364,7 @@ function GroupRow({
                 )}
               </div>
               <span className="textinfolabel text-xs">
-                <HighlightText text={group.name} keyword={searchText} />
+                <HighlightLabelText text={group.name} keyword={searchText} />
               </span>
             </div>
           </div>

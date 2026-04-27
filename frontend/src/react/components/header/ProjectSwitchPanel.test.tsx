@@ -180,12 +180,13 @@ describe("ProjectSwitchPanel", () => {
 
     render();
 
-    const row = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Recent Project")
+    // Rows are now `<tr>` (table layout, mirroring Vue's ProjectV1Table).
+    const row = Array.from(container.querySelectorAll("tr")).find((tr) =>
+      tr.textContent?.includes("Recent Project")
     );
     expect(row).not.toBeUndefined();
     act(() => {
-      row?.click();
+      row?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(mocks.resolve).toHaveBeenCalledWith({
@@ -275,11 +276,13 @@ describe("ProjectSwitchPanel", () => {
 
     render();
 
-    const currentProjectRow = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent?.includes("Recent Project"));
+    const currentProjectRow = Array.from(container.querySelectorAll("tr")).find(
+      (tr) => tr.textContent?.includes("Recent Project")
+    );
     act(() => {
-      currentProjectRow?.click();
+      currentProjectRow?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
     });
 
     expect(mocks.close).toHaveBeenCalledTimes(1);
@@ -296,8 +299,8 @@ describe("ProjectSwitchPanel", () => {
 
     render();
 
-    const row = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Recent Project")
+    const row = Array.from(container.querySelectorAll("tr")).find((tr) =>
+      tr.textContent?.includes("Recent Project")
     );
     act(() => {
       row?.dispatchEvent(

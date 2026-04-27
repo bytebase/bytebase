@@ -57,7 +57,7 @@ export function ProjectSwitchPopover() {
         <PopoverContent
           align="start"
           sideOffset={6}
-          className="w-[24rem] max-w-[calc(100vw-2rem)] p-3"
+          className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
         >
           <ProjectSwitchPanel
             onClose={() => setOpen(false)}

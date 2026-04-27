@@ -1,6 +1,7 @@
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Badge } from "@/react/components/ui/badge";
@@ -70,27 +71,6 @@ function PolicyTable({
     [sqlReviewStore, t]
   );
 
-  const highlight = useCallback(
-    (text: string) => {
-      if (!searchText) return text;
-      const regex = new RegExp(
-        `(${searchText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-        "gi"
-      );
-      const parts = text.split(regex);
-      return parts.map((part, i) =>
-        regex.test(part) ? (
-          <mark key={i} className="bg-yellow-100">
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      );
-    },
-    [searchText]
-  );
-
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   return (
@@ -120,7 +100,9 @@ function PolicyTable({
           <TableBody>
             {policies.map((policy) => (
               <TableRow key={policy.id}>
-                <TableCell>{highlight(policy.name)}</TableCell>
+                <TableCell>
+                  <HighlightLabelText text={policy.name} keyword={searchText} />
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {policy.resources.length === 0 && <span>-</span>}

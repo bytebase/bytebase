@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { ProjectTable } from "@/react/components/ProjectTable";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -98,62 +99,6 @@ function ProjectSwitchFooter({
   );
 }
 
-function ProjectRow({
-  project,
-  currentProjectName,
-  keyword,
-  onSelect,
-}: {
-  project: Project;
-  currentProjectName?: string;
-  keyword: string;
-  onSelect: (
-    project: Project,
-    event: ReactMouseEvent<HTMLButtonElement>
-  ) => void;
-}) {
-  const resourceId = getProjectName(project.name);
-  const labels = Object.entries(project.labels ?? {}).slice(0, 3);
-  const isCurrent = project.name === currentProjectName;
-
-  return (
-    <button
-      type="button"
-      className="flex w-full items-start gap-x-2.5 rounded-sm px-2 py-1.5 text-left hover:bg-control-bg"
-      onClick={(event) => onSelect(project, event)}
-    >
-      <span className="mt-0.5 h-4 w-4 shrink-0">
-        {isCurrent ? <Check className="h-4 w-4 text-accent" /> : null}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-control">
-          {project.title || resourceId}
-        </span>
-        <span className="block truncate text-xs text-control-light">
-          {resourceId}
-        </span>
-        {labels.length > 0 ? (
-          <span className="mt-1 flex flex-wrap gap-1">
-            {labels.map(([key, value]) => (
-              <span
-                key={`${key}:${value}`}
-                className="rounded-full bg-control-bg px-2 py-0.5 text-[11px] text-control-light"
-              >
-                {key}:{value}
-              </span>
-            ))}
-          </span>
-        ) : null}
-        {keyword.trim().length > 0 &&
-        !project.title.toLowerCase().includes(keyword.toLowerCase()) &&
-        !resourceId.toLowerCase().includes(keyword.toLowerCase()) ? (
-          <span className="sr-only">{keyword}</span>
-        ) : null}
-      </span>
-    </button>
-  );
-}
-
 export function ProjectSwitchPanel({
   onClose,
   onRequestCreate,
@@ -164,7 +109,16 @@ export function ProjectSwitchPanel({
   const route = useCurrentRoute();
   const { projects: recentProjectList } = useRecentProjects();
   const [searchText, setSearchText] = useState("");
-  const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>("all");
+  const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>(() =>
+    recentProjectList.length > 0 ? "recent" : "all"
+  );
+  // The recent list loads async (localStorage read in useEffect), so the
+  // initializer above may see an empty list. Switch to "recent" once loaded.
+  useEffect(() => {
+    if (recentProjectList.length > 0) {
+      setSelectedTab((prev) => (prev === "all" ? "recent" : prev));
+    }
+  }, [recentProjectList.length]);
   const projectId = route.params.projectId as string | undefined;
   const currentProjectName = projectId
     ? `${projectNamePrefix}${projectId}`
@@ -172,21 +126,19 @@ export function ProjectSwitchPanel({
   const currentProject = useProject(currentProjectName);
   const allowToCreateProject = useWorkspacePermission("bb.projects.create");
 
-  useEffect(() => {
-    if (recentProjectList.length > 0) {
-      setSelectedTab((previous) => (previous === "all" ? "recent" : previous));
-    }
-  }, [recentProjectList.length]);
-
   const filteredRecentProjectList = useMemo(() => {
     return recentProjectList.filter((project) =>
       projectMatchesKeyword(project, searchText)
     );
   }, [recentProjectList, searchText]);
 
+  // Mirrors Vue's `actualSelectedTab` — force the All view when a search
+  // keyword is active but yields no recent matches, regardless of which
+  // tab the user explicitly clicked. Keeping the trigger highlight in
+  // sync is the consumer's responsibility (we pass `actualSelectedTab`
+  // to `<Tabs value=…>` so both indicator and panel agree).
   const actualSelectedTab = useMemo<ProjectSwitchTab>(() => {
     if (
-      selectedTab === "recent" &&
       searchText.trim().length > 0 &&
       filteredRecentProjectList.length === 0
     ) {
@@ -207,7 +159,7 @@ export function ProjectSwitchPanel({
   } = useProjectList(searchText);
 
   const handleProjectSelect = useCallback(
-    (project: Project, event: ReactMouseEvent<HTMLButtonElement>) => {
+    (project: Project, event: ReactMouseEvent<HTMLElement>) => {
       const route = navigate.resolve({
         name: PROJECT_V1_ROUTE_DETAIL,
         params: {
@@ -256,7 +208,7 @@ export function ProjectSwitchPanel({
         <Button
           variant="ghost"
           size="sm"
-          className="mb-2 h-7 w-fit px-0 text-control-light hover:bg-transparent hover:text-control"
+          className="mb-2 mx-3 h-7 w-fit px-0 text-control-light hover:bg-transparent hover:text-control"
           onClick={handleGotoWorkspace}
         >
           <ChevronLeft className="h-4 w-4 opacity-80" />
@@ -268,7 +220,7 @@ export function ProjectSwitchPanel({
         value={actualSelectedTab}
         onValueChange={(value) => setSelectedTab(value as ProjectSwitchTab)}
       >
-        <div className="mb-2 flex items-center justify-between gap-x-3">
+        <div className="mb-2 mx-3 flex items-center justify-between gap-x-3">
           <TabsList className="gap-x-5">
             <TabsTrigger className="pb-1.5" value="recent">
               {t("common.recent")}
@@ -301,51 +253,30 @@ export function ProjectSwitchPanel({
         </div>
 
         <TabsPanel value="recent" className="mt-0">
-          <div className="flex max-h-[26rem] flex-col overflow-auto">
-            {filteredRecentProjectList.length === 0 ? (
-              <div className="px-3 py-8 text-center text-sm text-control-light">
-                {searchText.trim().length > 0
-                  ? t("common.no-data")
-                  : t("common.no-data")}
-              </div>
-            ) : (
-              filteredRecentProjectList.map((project) => (
-                <ProjectRow
-                  key={project.name}
-                  project={project}
-                  currentProjectName={currentProjectName}
-                  keyword={searchText}
-                  onSelect={handleProjectSelect}
-                />
-              ))
-            )}
+          <div className="max-h-[26rem] overflow-auto">
+            <ProjectTable
+              projectList={filteredRecentProjectList}
+              currentProject={currentProject}
+              keyword={searchText}
+              showLabels={false}
+              onRowClick={handleProjectSelect}
+            />
           </div>
         </TabsPanel>
 
         <TabsPanel value="all" className="mt-0">
-          <div className="flex max-h-[26rem] flex-col overflow-auto">
-            {isLoading && allProjects.length === 0 ? (
-              <div className="px-3 py-8 text-center text-sm text-control-light">
-                {t("common.loading")}
-              </div>
-            ) : allProjects.length === 0 ? (
-              <div className="px-3 py-8 text-center text-sm text-control-light">
-                {t("common.no-data")}
-              </div>
-            ) : (
-              allProjects.map((project) => (
-                <ProjectRow
-                  key={project.name}
-                  project={project}
-                  currentProjectName={currentProjectName}
-                  keyword={searchText}
-                  onSelect={handleProjectSelect}
-                />
-              ))
-            )}
+          <div className="max-h-[26rem] overflow-auto">
+            <ProjectTable
+              projectList={allProjects}
+              currentProject={currentProject}
+              keyword={searchText}
+              loading={isLoading}
+              showLabels={false}
+              onRowClick={handleProjectSelect}
+            />
           </div>
 
-          <div className="mt-2 border-t border-control-border pt-2">
+          <div className="mt-2 mx-3">
             <ProjectSwitchFooter
               pageSize={pageSize}
               pageSizeOptions={pageSizeOptions}
