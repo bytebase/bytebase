@@ -49,7 +49,6 @@ export function ProjectRouteShell({
   const fetchProject = useAppStore((state) => state.fetchProject);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const loadCurrentUser = useAppStore((state) => state.loadCurrentUser);
-  const loadSubscription = useAppStore((state) => state.loadSubscription);
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -63,11 +62,7 @@ export function ProjectRouteShell({
     onReadyRef.current?.(null);
 
     const load = async () => {
-      await Promise.all([
-        loadCurrentUser(),
-        loadServerInfo(),
-        loadSubscription(),
-      ]);
+      await Promise.all([loadCurrentUser(), loadServerInfo()]);
       const nextProject = await fetchProject(projectName);
       if (stale) return;
       if (!nextProject) {
@@ -105,7 +100,6 @@ export function ProjectRouteShell({
     loadCurrentUser,
     loadProjectIamPolicy,
     loadServerInfo,
-    loadSubscription,
     notify,
     projectId,
     projectName,

@@ -96,13 +96,17 @@ describe("React Project and Settings legacy Vue dependencies", () => {
     expect(violations).toEqual([]);
   });
 
-  test("ProjectRouteShell does not preload Vue IAM policy", () => {
+  test("ProjectRouteShell does not preload unrelated permission state", () => {
     const violations: string[] = [];
     for (const [file, source] of Object.entries(sources)) {
       if (!file.endsWith("/ProjectRouteShell.tsx")) {
         continue;
       }
-      for (const bannedImport of ["@/store", "useProjectIamPolicyStore"]) {
+      for (const bannedImport of [
+        "@/store",
+        "useProjectIamPolicyStore",
+        "loadSubscription",
+      ]) {
         if (source.includes(bannedImport)) {
           violations.push(`${file}: ${bannedImport}`);
         }

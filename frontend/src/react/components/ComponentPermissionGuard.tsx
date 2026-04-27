@@ -50,17 +50,13 @@ export function usePermissionDataReady(project?: Project) {
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
-  const loadSubscription = useAppStore((state) => state.loadSubscription);
   const [readyKey, setReadyKey] = useState("");
 
   useEffect(() => {
     let stale = false;
     setReadyKey("");
 
-    const requests: Promise<unknown>[] = [
-      loadWorkspacePermissionState(),
-      loadSubscription(),
-    ];
+    const requests: Promise<unknown>[] = [loadWorkspacePermissionState()];
     if (project?.name) {
       requests.push(loadProjectIamPolicy(project.name));
     }
@@ -74,12 +70,7 @@ export function usePermissionDataReady(project?: Project) {
     return () => {
       stale = true;
     };
-  }, [
-    loadProjectIamPolicy,
-    loadSubscription,
-    loadWorkspacePermissionState,
-    permissionKey,
-  ]);
+  }, [loadProjectIamPolicy, loadWorkspacePermissionState, permissionKey]);
 
   return readyKey === permissionKey;
 }
@@ -171,6 +162,7 @@ export function ComponentPermissionGuard({
   const { t } = useTranslation();
   const [showRequestRoleSheet, setShowRequestRoleSheet] = useState(false);
   const permissionReady = usePermissionDataReady(project);
+  const loadSubscription = useAppStore((state) => state.loadSubscription);
   const subscriptionPlan = useAppStore(
     (state) => state.subscription?.plan ?? PlanType.FREE
   );
@@ -192,6 +184,12 @@ export function ComponentPermissionGuard({
       ),
     [requestRolePermissionAccess]
   );
+
+  useEffect(() => {
+    if (enableRequestRole) {
+      void loadSubscription();
+    }
+  }, [enableRequestRole, loadSubscription]);
 
   if (!permissionReady) {
     return <div className={className} />;

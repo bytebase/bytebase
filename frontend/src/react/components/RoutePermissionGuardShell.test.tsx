@@ -143,6 +143,20 @@ describe("RoutePermissionGuardShell", () => {
     expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
   });
 
+  test("does not block allowed routes on subscription loading", async () => {
+    mocks.route.requiredPermissions = ["bb.settings.get"];
+    mocks.workspacePermissions.add("bb.settings.get");
+    mocks.loadSubscription.mockImplementation(
+      () => new Promise<undefined>(() => undefined)
+    );
+
+    const onReady = await renderShell({ targetClassName: "h-full min-h-0" });
+
+    expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
+    expect(container.querySelector("[role='alert']")).toBeNull();
+    expect(mocks.loadSubscription).not.toHaveBeenCalled();
+  });
+
   test("withholds the content target and renders an alert when permissions fail", async () => {
     mocks.route.requiredPermissions = ["bb.settings.set"];
 
