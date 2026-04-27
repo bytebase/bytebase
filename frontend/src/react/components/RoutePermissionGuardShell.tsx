@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import {
   ComponentPermissionGuard,
   useComponentPermissionState,
+  usePermissionDataReady,
 } from "@/react/components/ComponentPermissionGuard";
 import { useCurrentRoute } from "@/react/router";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -23,7 +24,9 @@ export function RoutePermissionGuardShell({
 }: RoutePermissionGuardShellProps) {
   const route = useCurrentRoute();
   const targetRef = useRef<HTMLDivElement>(null);
+  const onReadyRef = useRef(onReady);
   const permissions = route.requiredPermissions;
+  const permissionReady = usePermissionDataReady(project);
   const { permitted } = useComponentPermissionState({
     permissions,
     project,
@@ -31,12 +34,27 @@ export function RoutePermissionGuardShell({
   });
 
   useEffect(() => {
-    onReady?.(permitted ? targetRef.current : null);
-  }, [onReady, permitted, project?.name, route.fullPath, routeKey]);
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
-    return () => onReady?.(null);
-  }, [onReady]);
+    onReadyRef.current?.(null);
+    return () => {
+      onReadyRef.current?.(null);
+    };
+  }, [project?.name, route.fullPath, routeKey]);
+
+  useEffect(() => {
+    if (!permissionReady) {
+      onReadyRef.current?.(null);
+      return;
+    }
+    onReadyRef.current?.(permitted ? targetRef.current : null);
+  }, [permissionReady, permitted, project?.name, route.fullPath, routeKey]);
+
+  if (!permissionReady) {
+    return <div className={targetClassName} />;
+  }
 
   if (!permitted) {
     return (

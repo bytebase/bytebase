@@ -1,5 +1,12 @@
 import { ShieldAlert, ShieldUser } from "lucide-react";
-import { lazy, type ReactNode, Suspense, useMemo, useState } from "react";
+import {
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Button } from "@/react/components/ui/button";
@@ -33,6 +40,48 @@ interface ComponentPermissionState {
   missedBasicPermissions: Permission[];
   missedPermissions: Permission[];
   permitted: boolean;
+}
+
+export function usePermissionDataReady(project?: Project) {
+  const permissionKey = project?.name ?? "__workspace__";
+  const loadWorkspacePermissionState = useAppStore(
+    (state) => state.loadWorkspacePermissionState
+  );
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
+  const loadSubscription = useAppStore((state) => state.loadSubscription);
+  const [readyKey, setReadyKey] = useState("");
+
+  useEffect(() => {
+    let stale = false;
+    setReadyKey("");
+
+    const requests: Promise<unknown>[] = [
+      loadWorkspacePermissionState(),
+      loadSubscription(),
+    ];
+    if (project?.name) {
+      requests.push(loadProjectIamPolicy(project.name));
+    }
+
+    void Promise.all(requests).finally(() => {
+      if (!stale) {
+        setReadyKey(permissionKey);
+      }
+    });
+
+    return () => {
+      stale = true;
+    };
+  }, [
+    loadProjectIamPolicy,
+    loadSubscription,
+    loadWorkspacePermissionState,
+    permissionKey,
+  ]);
+
+  return readyKey === permissionKey;
 }
 
 function usePermissionAccess(project?: Project) {
@@ -121,6 +170,7 @@ export function ComponentPermissionGuard({
 }: ComponentPermissionGuardProps) {
   const { t } = useTranslation();
   const [showRequestRoleSheet, setShowRequestRoleSheet] = useState(false);
+  const permissionReady = usePermissionDataReady(project);
   const subscriptionPlan = useAppStore(
     (state) => state.subscription?.plan ?? PlanType.FREE
   );
@@ -143,6 +193,10 @@ export function ComponentPermissionGuard({
     [requestRolePermissionAccess]
   );
 
+  if (!permissionReady) {
+    return <div className={className} />;
+  }
+
   if (permitted) {
     return <>{children}</>;
   }
@@ -153,6 +207,7 @@ export function ComponentPermissionGuard({
       : missedPermissions;
   const showRequestRole =
     enableRequestRole &&
+    permissionReady &&
     missedBasicPermissions.length === 0 &&
     !!project &&
     project.allowRequestRole &&
