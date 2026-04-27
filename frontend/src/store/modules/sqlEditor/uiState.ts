@@ -21,6 +21,12 @@ export const useSQLEditorUIStore = defineStore("sqlEditorUI", () => {
   const showAIPanel = ref(false);
   const pendingInsertAtCaret = ref<string | undefined>();
   const highlightAccessGrantName = ref<string | undefined>();
+  // True while a CodeViewer-style surface is mounted (procedure/function/
+  // package body, view definition, trigger body). Panels.vue uses this to
+  // decide whether to render the AIChatToSQL side pane — matches the Vue
+  // CodeViewer's behavior of unmounting AIChatToSQL when the user navigates
+  // back to the list view.
+  const isShowingCode = ref(false);
 
   const aiPanelSize = useLocalStorage(
     STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
@@ -49,6 +55,7 @@ export const useSQLEditorUIStore = defineStore("sqlEditorUI", () => {
     showAIPanel,
     pendingInsertAtCaret,
     highlightAccessGrantName,
+    isShowingCode,
     editorPanelSize,
     handleEditorPanelResize,
   };

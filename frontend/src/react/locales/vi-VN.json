@@ -720,6 +720,9 @@
     "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
     "external-server-name": "Tên máy chủ bên ngoài",
     "filter-database": "Lọc cơ sở dữ liệu",
+    "foreign-key": {
+      "reference": "Tham chiếu"
+    },
     "foreign-keys": "Khóa ngoại",
     "index-size": "Kích thước chỉ mục",
     "indexes": "Chỉ mục",
@@ -848,6 +851,16 @@
     "procedures": "Thủ tục",
     "schema": {
       "default": "Schema mặc định"
+    },
+    "sequence": {
+      "cacheSize": "Kích thước bộ nhớ cache",
+      "cycle": "Vòng lặp",
+      "data-type": "Loại dữ liệu",
+      "increment": "Bước nhảy",
+      "lastValue": "Giá trị cuối cùng",
+      "max-value": "Giá trị lớn nhất",
+      "min-value": "Giá trị nhỏ nhất",
+      "start": "Giá trị bắt đầu"
     },
     "sequences": "Chuỗi",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
@@ -1933,16 +1946,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Khóa ngoại",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "Khi cập nhật",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Đối chiếu",
+      "comment": "Bình luận",
+      "engine": "Engine",
+      "name": "Tên"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Nhập giá trị mặc định hoặc để trống nếu không có giá trị mặc định"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,6 +1974,8 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Cột phụ thuộc",
+      "indexes": "Chỉ mục",
       "primary": "Primary",
       "unique": "Unique"
     },
@@ -1977,6 +2000,7 @@
     },
     "table-partition": {
       "expression": "Biểu thức",
+      "partitions": "Phân vùng",
       "type": "Loại",
       "value": "Giá trị"
     }
@@ -2589,6 +2613,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Định dạng",
     "format-sql": "Format SQL",
     "generate-sql": "Tạo SQL",
     "grant-type-unmask": "Unmask",

@@ -720,6 +720,9 @@
     "external-database-name": "外部数据库名称",
     "external-server-name": "外部服务器名称",
     "filter-database": "筛选数据库",
+    "foreign-key": {
+      "reference": "引用"
+    },
     "foreign-keys": "外键",
     "index-size": "索引大小",
     "indexes": "索引",
@@ -848,6 +851,16 @@
     "procedures": "存储过程",
     "schema": {
       "default": "默认 Schema"
+    },
+    "sequence": {
+      "cacheSize": "缓存大小",
+      "cycle": "循环",
+      "data-type": "数据类型",
+      "increment": "增量",
+      "lastValue": "最后值",
+      "max-value": "最大值",
+      "min-value": "最小值",
+      "start": "起始值"
     },
     "sequences": "序列",
     "start-to-sync-schema": "开始同步 schema",
@@ -1933,16 +1946,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "外键",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "更新时",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "字符排序规则",
+      "comment": "注释",
+      "engine": "引擎",
+      "name": "名称"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "输入默认值或留空以不使用默认值"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,6 +1974,8 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "依赖列",
+      "indexes": "索引",
       "primary": "Primary",
       "unique": "Unique"
     },
@@ -1977,6 +2000,7 @@
     },
     "table-partition": {
       "expression": "表达式",
+      "partitions": "分区",
       "type": "类型",
       "value": "值"
     }
@@ -2589,6 +2613,7 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "format": "格式化",
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
     "grant-type-unmask": "脱敏豁免",

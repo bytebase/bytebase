@@ -727,6 +727,9 @@
     "external-database-name": "External Database Name",
     "external-server-name": "External Server Name",
     "filter-database": "Filter database",
+    "foreign-key": {
+      "reference": "Reference"
+    },
     "foreign-keys": "Foreign keys",
     "index-size": "Index size",
     "indexes": "Indexes",
@@ -855,6 +858,16 @@
     "procedures": "Procedures",
     "schema": {
       "default": "Default schema"
+    },
+    "sequence": {
+      "cacheSize": "Cache size",
+      "cycle": "Cycle",
+      "data-type": "Data type",
+      "increment": "Increment",
+      "lastValue": "Last value",
+      "max-value": "Max value",
+      "min-value": "Min value",
+      "start": "Start value"
     },
     "sequences": "Sequences",
     "start-to-sync-schema": "Start to sync schema",
@@ -1946,16 +1959,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Foreign Key",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "On Update",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Collation",
+      "comment": "Comment",
+      "engine": "Engine",
+      "name": "Name"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Enter default value or leave empty for no default"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1966,6 +1987,8 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Depenedent columns",
+      "indexes": "Indexes",
       "primary": "Primary",
       "unique": "Unique"
     },
@@ -1990,6 +2013,7 @@
     },
     "table-partition": {
       "expression": "Expression",
+      "partitions": "Partitions",
       "type": "Type",
       "value": "Value"
     }
@@ -2603,6 +2627,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Format",
     "format-sql": "Format SQL",
     "generate-sql": "Generate SQL",
     "grant-type-unmask": "Unmask",

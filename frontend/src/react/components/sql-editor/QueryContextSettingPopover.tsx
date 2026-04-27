@@ -154,12 +154,10 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
                     </div>
                   </label>
                 );
-                return reason ? (
+                return (
                   <Tooltip key={ds.id} content={reason} side="right">
                     {radio}
                   </Tooltip>
-                ) : (
-                  <div key={ds.id}>{radio}</div>
                 );
               })}
             </div>

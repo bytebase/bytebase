@@ -720,6 +720,9 @@
     "external-database-name": "外部データベース名",
     "external-server-name": "外部サーバー名",
     "filter-database": "データベースをフィルター",
+    "foreign-key": {
+      "reference": "参照"
+    },
     "foreign-keys": "外部キー",
     "index-size": "インデックスサイズ",
     "indexes": "索引",
@@ -848,6 +851,16 @@
     "procedures": "ストアドプロシージャ",
     "schema": {
       "default": "デフォルトスキーマ"
+    },
+    "sequence": {
+      "cacheSize": "キャッシュサイズ",
+      "cycle": "サイクル",
+      "data-type": "データ型",
+      "increment": "インクリメント",
+      "lastValue": "最後の値",
+      "max-value": "最大値",
+      "min-value": "最小値",
+      "start": "開始値"
     },
     "sequences": "シーケンス",
     "start-to-sync-schema": "スキーマの同期を開始します",
@@ -1933,16 +1946,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "外部キー",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "アップデート時",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "文字の並べ替え規則",
+      "comment": "コメント",
+      "engine": "エンジン",
+      "name": "名前"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,6 +1974,8 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "従属列",
+      "indexes": "索引",
       "primary": "Primary",
       "unique": "Unique"
     },
@@ -1977,6 +2000,7 @@
     },
     "table-partition": {
       "expression": "表現",
+      "partitions": "パーティション",
       "type": "タイプ",
       "value": "値"
     }
@@ -2589,6 +2613,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "フォーマット",
     "format-sql": "Format SQL",
     "generate-sql": "SQLの生成",
     "grant-type-unmask": "Unmask",
