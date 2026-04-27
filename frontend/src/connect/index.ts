@@ -1,13 +1,9 @@
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import { createRegistry } from "@bufbuild/protobuf";
 import { AIService } from "@/types/proto-es/v1/ai_service_pb";
 import { AccessGrantService } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
-import {
-  AuditDataSchema,
-  AuditLogService,
-} from "@/types/proto-es/v1/audit_log_service_pb";
+import { AuditLogService } from "@/types/proto-es/v1/audit_log_service_pb";
 import { AuthService } from "@/types/proto-es/v1/auth_service_pb";
 import { CelService } from "@/types/proto-es/v1/cel_service_pb";
 import { DatabaseCatalogService } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -26,10 +22,7 @@ import { ReviewConfigService } from "@/types/proto-es/v1/review_config_service_p
 import { RevisionService } from "@/types/proto-es/v1/revision_service_pb";
 import { RoleService } from "@/types/proto-es/v1/role_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  SettingSchema,
-  SettingService,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { SettingService } from "@/types/proto-es/v1/setting_service_pb";
 import { SheetService } from "@/types/proto-es/v1/sheet_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { SubscriptionService } from "@/types/proto-es/v1/subscription_service_pb";
@@ -43,13 +36,12 @@ import {
   errorNotificationInterceptor,
   activeInterceptor,
 } from "./middlewares";
+import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
 import { isDev } from "@/utils";
 
 const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 
 // Registry for decoding google.protobuf.Any fields in JSON responses
-const registry = createRegistry(AuditDataSchema, SettingSchema);
-
 const transport = createConnectTransport({
   baseUrl: address,
   useBinaryFormat: isDev() ? false : true,
@@ -60,7 +52,7 @@ const transport = createConnectTransport({
   ],
   fetch: (input, init) => fetch(input, { ...init, credentials: "include" }),
   jsonOptions: {
-    registry,
+    registry: protobufJsonRegistry,
   },
 });
 
