@@ -77,6 +77,15 @@ export function useWorkspacePermission(permission: Permission) {
   return allowed;
 }
 
+export function useProjectPermission(
+  project: Project | undefined,
+  permission: Permission
+) {
+  return useAppStore((state) =>
+    project ? state.hasProjectPermission(project, permission) : false
+  );
+}
+
 export function useProject(name: string | undefined) {
   const project = useAppStore((state) =>
     name ? state.projectsByName[name] : undefined
@@ -88,6 +97,19 @@ export function useProject(name: string | undefined) {
     }
   }, [fetchProject, name]);
   return project;
+}
+
+export function useInstance(name: string | undefined) {
+  const instance = useAppStore((state) =>
+    name ? state.instancesByName[name] : undefined
+  );
+  const fetchInstance = useAppStore((state) => state.fetchInstance);
+  useEffect(() => {
+    if (name) {
+      void fetchInstance(name);
+    }
+  }, [fetchInstance, name]);
+  return instance;
 }
 
 export function useProjectList(query: string) {
@@ -210,8 +232,10 @@ export function useRecentProjects() {
 export function useRecentVisit() {
   useCurrentUser();
   const recordRecentVisit = useAppStore((state) => state.recordRecentVisit);
+  const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
   return {
     record: recordRecentVisit,
+    remove: removeRecentVisit,
   };
 }
 

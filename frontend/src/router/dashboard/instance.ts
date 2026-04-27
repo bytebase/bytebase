@@ -1,6 +1,5 @@
 import type { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import DummyRootView from "@/DummyRootView";
-import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import { t } from "@/plugins/i18n";
 import {
   databaseNamePrefix,
@@ -79,13 +78,20 @@ const instanceRoutes: RouteRecordRaw[] = [
   {
     path: "instances/:instanceId",
     components: {
-      content: InstanceLayout,
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     meta: {
       title: () => t("common.instance"),
     },
-    props: { content: true },
+    props: {
+      content: (route: RouteLocationNormalized) => ({
+        page: "InstanceRouteShell",
+        pageProps: {
+          instanceId: route.params.instanceId,
+        },
+      }),
+    },
     children: [
       {
         path: "",

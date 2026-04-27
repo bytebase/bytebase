@@ -168,11 +168,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       overrideDocumentTitle: true,
     },
     components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({
+        page: "SettingRouteShell",
+      }),
       leftSidebar: true,
     },
     children: [
@@ -225,11 +227,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       overrideDocumentTitle: true,
     },
     components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({
+        page: "SettingRouteShell",
+      }),
       leftSidebar: true,
     },
     children: [
@@ -253,10 +257,15 @@ const workspaceRoutes: RouteRecordRaw[] = [
       overrideDocumentTitle: true,
     },
     components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
-    props: true,
+    props: {
+      content: () => ({
+        page: "SettingRouteShell",
+      }),
+      leftSidebar: true,
+    },
     children: [
       {
         path: "risk-assessment",
@@ -386,11 +395,13 @@ const workspaceRoutes: RouteRecordRaw[] = [
       overrideDocumentTitle: true,
     },
     components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({
+        page: "SettingRouteShell",
+      }),
       leftSidebar: true,
     },
     children: [

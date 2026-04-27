@@ -276,9 +276,9 @@ router.beforeEach((to, from, next) => {
 });
 
 router.afterEach((to /*, from */) => {
-  // Skip routes where a layout component manages the document title:
-  // - ProjectV1Layout handles project-scoped routes (have projectId param)
-  // - SettingLayout handles settings routes (marked with overrideDocumentTitle)
+  // Skip routes where the React route shell manages the document title:
+  // - ProjectRouteShell handles project-scoped routes (have projectId param)
+  // - SettingRouteShell handles settings routes (marked with overrideDocumentTitle)
   if (to.params.projectId || to.meta.overrideDocumentTitle) return;
 
   nextTick(() => {

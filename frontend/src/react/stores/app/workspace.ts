@@ -45,6 +45,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => ({
+  serverInfoTs: 0,
   appFeatures: defaultAppProfile().features,
 
   loadServerInfo: async () => {
@@ -55,7 +56,11 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     const request = actuatorServiceClientConnect
       .getActuatorInfo({ name: get().currentUser?.workspace ?? "" })
       .then((info) => {
-        set({ serverInfo: info, serverInfoRequest: undefined });
+        set({
+          serverInfo: info,
+          serverInfoRequest: undefined,
+          serverInfoTs: Date.now(),
+        });
         return info;
       })
       .catch(() => {
@@ -64,6 +69,14 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       });
     set({ serverInfoRequest: request });
     return request;
+  },
+
+  refreshServerInfo: async () => {
+    const info = await actuatorServiceClientConnect.getActuatorInfo({
+      name: get().currentUser?.workspace ?? get().serverInfo?.workspace ?? "",
+    });
+    set({ serverInfo: info, serverInfoTs: Date.now() });
+    return info;
   },
 
   loadWorkspace: async () => {

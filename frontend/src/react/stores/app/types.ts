@@ -4,6 +4,7 @@ import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
@@ -26,6 +27,7 @@ export type AuthSlice = {
 
 export type WorkspaceSlice = {
   serverInfo?: ActuatorInfo;
+  serverInfoTs: number;
   serverInfoRequest?: Promise<ActuatorInfo | undefined>;
   workspace?: Workspace;
   workspaceRequest?: Promise<Workspace | undefined>;
@@ -35,6 +37,7 @@ export type WorkspaceSlice = {
   subscription?: Subscription;
   subscriptionRequest?: Promise<Subscription | undefined>;
   loadServerInfo: () => Promise<ActuatorInfo | undefined>;
+  refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceProfile: () => Promise<WorkspaceProfileSetting | undefined>;
   loadSubscription: () => Promise<Subscription | undefined>;
@@ -44,15 +47,20 @@ export type WorkspaceSlice = {
 export type IamSlice = {
   workspacePolicy?: IamPolicy;
   workspacePolicyRequest?: Promise<IamPolicy | undefined>;
+  projectPoliciesByName: Record<string, IamPolicy>;
+  projectPolicyRequests: Record<string, Promise<IamPolicy | undefined>>;
   roles: Role[];
   rolesRequest?: Promise<Role[]>;
   loadWorkspacePermissionState: () => Promise<void>;
+  loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
   hasWorkspacePermission: (permission: Permission) => boolean;
+  hasProjectPermission: (project: Project, permission: Permission) => boolean;
 };
 
 export type ProjectSlice = {
   projectsByName: Record<string, Project>;
   projectRequests: Record<string, Promise<Project | undefined>>;
+  projectErrorsByName: Record<string, Error | undefined>;
   fetchProject: (name: string) => Promise<Project | undefined>;
   batchFetchProjects: (names: string[]) => Promise<Project[]>;
   searchProjects: (params: ProjectListParams) => Promise<{
@@ -60,6 +68,13 @@ export type ProjectSlice = {
     nextPageToken?: string;
   }>;
   createProject: (title: string, resourceId: string) => Promise<Project>;
+};
+
+export type InstanceSlice = {
+  instancesByName: Record<string, Instance>;
+  instanceRequests: Record<string, Promise<Instance | undefined>>;
+  instanceErrorsByName: Record<string, Error | undefined>;
+  fetchInstance: (name: string) => Promise<Instance | undefined>;
 };
 
 export type NotificationSlice = {
@@ -70,6 +85,7 @@ export type NotificationSlice = {
 export type PreferencesSlice = {
   setRecentProject: (name: string) => void;
   recordRecentVisit: (path: string) => void;
+  removeRecentVisit: (path: string) => void;
   resetQuickstartProgress: () => void;
 };
 
@@ -77,6 +93,7 @@ export type AppStoreState = AuthSlice &
   WorkspaceSlice &
   IamSlice &
   ProjectSlice &
+  InstanceSlice &
   NotificationSlice &
   PreferencesSlice;
 

@@ -14,11 +14,13 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
     name: SETTING_ROUTE_WORKSPACE,
     meta: { title: () => t("common.settings") },
     components: {
-      content: () => import("@/layouts/SettingLayout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: () => import("@/react/ReactSidebarMount.vue"),
     },
     props: {
-      content: true,
+      content: () => ({
+        page: "SettingRouteShell",
+      }),
       leftSidebar: true,
     },
     children: [

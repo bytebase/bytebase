@@ -55,6 +55,17 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     writeJson(key, next);
   },
 
+  removeRecentVisit: (path) => {
+    const email = getCurrentUserEmail(get);
+    if (!email) return;
+    const key = storageKeyRecentVisit(email);
+    const previous = readJson<string[]>(key, []);
+    writeJson(
+      key,
+      previous.filter((item) => item !== path)
+    );
+  },
+
   resetQuickstartProgress: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;

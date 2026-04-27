@@ -48,7 +48,7 @@ export const useRecentProjects = () => {
       try {
         const project = projectV1Store.getProjectByName(projectName);
         if (isValidProjectName(project.name)) {
-          // Only check if project exists, let ProjectV1Layout handle permission
+          // Only check if project exists, let ProjectRouteShell handle permission
           projects.push(project);
         } else {
           // Project doesn't exist or is invalid
