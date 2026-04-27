@@ -64,6 +64,15 @@ export function Tree<T>({
 }: TreeProps<T>) {
   const treeRef = useRef<TreeApi<TreeDataNode<T>> | null>(null);
   const prevExpandedRef = useRef<readonly string[] | undefined>(undefined);
+  // react-arborist fires `onToggle` synchronously inside `tree.open()` /
+  // `tree.close()` calls. If we forward those programmatic notifications to
+  // the consumer's onToggle (which usually toggles the id in/out of the
+  // expanded set), we get a feedback loop: setting expandedIds to N keys
+  // → primitive opens N keys → Arborist fires onToggle for each → consumer
+  // toggles keys back out → primitive closes them → onToggle fires again.
+  // The flag below suppresses consumer notifications during the
+  // programmatic batch so the consumer's state stays stable.
+  const programmaticToggleRef = useRef(false);
 
   // Sync expandedIds to the arborist tree programmatically
   useEffect(() => {
@@ -73,22 +82,32 @@ export function Tree<T>({
     const prev = new Set(prevExpandedRef.current ?? []);
     const next = new Set(expandedIds ?? []);
 
-    // Close nodes that were previously open but no longer in expandedIds
-    for (const id of prev) {
-      if (!next.has(id)) {
-        tree.close(id);
+    programmaticToggleRef.current = true;
+    try {
+      // Close nodes that were previously open but no longer in expandedIds
+      for (const id of prev) {
+        if (!next.has(id)) {
+          tree.close(id);
+        }
       }
-    }
 
-    // Open nodes that are in expandedIds but not previously open
-    for (const id of next) {
-      if (!prev.has(id)) {
-        tree.open(id);
+      // Open nodes that are in expandedIds but not previously open
+      for (const id of next) {
+        if (!prev.has(id)) {
+          tree.open(id);
+        }
       }
+    } finally {
+      programmaticToggleRef.current = false;
     }
 
     prevExpandedRef.current = expandedIds;
   }, [expandedIds]);
+
+  const handleArboristToggle = (id: string) => {
+    if (programmaticToggleRef.current) return;
+    onToggle?.(id);
+  };
 
   const handleSelect = (nodes: NodeApi<TreeDataNode<T>>[]) => {
     onSelect?.(nodes.map((n) => n.id));
@@ -119,7 +138,7 @@ export function Tree<T>({
         childrenAccessor="children"
         selection={selectedIds?.[0]}
         onSelect={handleSelect}
-        onToggle={onToggle}
+        onToggle={handleArboristToggle}
         onMove={onMove}
         searchTerm={searchTerm}
         searchMatch={resolvedSearchMatch}

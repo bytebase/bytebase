@@ -21,7 +21,6 @@ import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
-import { provideTabListContext } from "@/views/sql-editor/TabList/context";
 
 const router = useRouter();
 
@@ -29,8 +28,8 @@ const router = useRouter();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
-// provide context for tabs
-provideTabListContext();
+// TabList no longer uses Vue provide/inject — React consumers import
+// `tabListEvents` from `@/views/sql-editor/TabList/events` directly.
 
 const ready = ref(false);
 

@@ -196,6 +196,7 @@
   },
   "common": {
     "action-required": "需要操作",
+    "actions": "操作",
     "activated": "已激活",
     "active": "开启",
     "add": "添加",
@@ -709,6 +710,7 @@
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
+    "edit-schema": "变更 Schema",
     "engine": "引擎",
     "expression": "Expression",
     "filter-database": "筛选数据库",
@@ -1304,13 +1306,15 @@
           "description": "按数据库筛选"
         },
         "engine": {
-          "description": "按引擎过滤"
+          "description": "按引擎过滤",
+          "title": "引擎"
         },
         "environment": {
           "description": "根据环境过滤"
         },
         "instance": {
-          "description": "根据实例过滤"
+          "description": "根据实例过滤",
+          "title": "实例"
         },
         "issue-label": {
           "description": "按工单标签过滤",
@@ -2533,10 +2537,19 @@
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-query": {
-      "batch": "批量"
+      "batch": "批量",
+      "description": "批量查询 {{project}} 下的 {{database}} 个数据库和 {{group}} 个数据库组。",
+      "select-data-source": {
+        "admin": "主数据源",
+        "readonly": "只读数据源",
+        "self": "选择批量查询使用的数据源",
+        "tooltip": "将先根据限制策略寻找数据源，然后应用该选择。"
+      }
     },
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
+    "close-sheet": "关闭工作表",
+    "connect-in-admin-mode": "以管理员模式连接",
     "connect-to-a-database": "连接数据库",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "duration-day": "{{days}} 天",
@@ -2549,15 +2562,20 @@
     "grant-type-unmask": "脱敏豁免",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "关闭当前工作表会丢失所有未保存的数据？"
+        "content": "关闭当前工作表会丢失所有未保存的数据？",
+        "title": "确定关闭未保存的工作表？"
       }
     },
     "jit": "即时访问",
     "link-access": "链接访问权限",
+    "loading-databases": "加载数据库信息...",
+    "manage-connections": "管理连接",
     "no-access-requests": "暂无访问请求",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
+    "no-queriable-database": "没有可查询的数据库",
     "only-select-allowed": "只允许执行只读语句",
+    "open-in-new-tab": "在新选项卡中打开",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
     "project-read": "项目内可读",
@@ -2588,11 +2606,17 @@
     "search-history-by-statement": "搜索 SQL 语句",
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
+    "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "tab": {
       "context-menu": {
         "actions": {
           "add-folder": "添加文件夹",
           "add-worksheet": "添加工作表",
+          "close": "关闭",
+          "close-all": "关闭所有",
+          "close-others": "关闭其他",
+          "close-saved": "关闭已保存的",
+          "close-to-the-right": "关闭右侧所有的",
           "multi-select": "多选",
           "rename": "重命名"
         }
@@ -2600,6 +2624,7 @@
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
+    "view-database-detail": "查看数据库详情",
     "view-issue": "查看工单",
     "web-socket": {
       "errors": {
@@ -3367,6 +3392,7 @@
     "title": "SQL 审核策略"
   },
   "subscription": {
+    "contact-to-upgrade": "请联系工作空间所有者来升级到试用版。",
     "contact-us": "联系我们",
     "current": "当前版本",
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
@@ -3381,6 +3407,7 @@
       "manage-license": "管理证书",
       "missing-license-attention": "请给实例分配证书以解锁该功能。",
       "n-license-remain": "剩余 {{n}} 个",
+      "require-license": "需要实例证书",
       "success-notification": "证书分配更新成功",
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制"

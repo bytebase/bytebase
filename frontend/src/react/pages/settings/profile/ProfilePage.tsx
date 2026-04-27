@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -642,35 +643,14 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         )}
       </div>
 
-      {/* Feature modal for 2FA */}
-      <Dialog open={showFeatureModal} onOpenChange={setShowFeatureModal}>
-        <DialogContent className="p-6">
-          <DialogTitle>{t("subscription.disabled-feature")}</DialogTitle>
-          <DialogDescription className="mt-2">
-            {t("subscription.require-subscription", {
-              requiredPlan: t("subscription.plan.enterprise.title"),
-            })}
-          </DialogDescription>
-          <div className="mt-4 flex justify-end gap-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowFeatureModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowFeatureModal(false);
-                router.push({
-                  name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-                });
-              }}
-            >
-              {t("common.learn-more")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* 2FA paywall — uses the shared `FeatureModal` so copy stays in
+          sync with subscription dynamic content (title, description,
+          required-plan / trial line) instead of a hand-written Dialog. */}
+      <FeatureModal
+        open={showFeatureModal}
+        feature={PlanFeature.FEATURE_TWO_FA}
+        onOpenChange={setShowFeatureModal}
+      />
 
       {/* Disable 2FA confirm dialog */}
       <Dialog

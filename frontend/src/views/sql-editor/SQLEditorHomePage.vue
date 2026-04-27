@@ -40,7 +40,7 @@
       </template>
       <template #2>
         <div class="h-full relative flex flex-col">
-          <TabList />
+          <ReactPageMount page="TabList" container-class="w-full" />
           <EditorPanel />
         </div>
       </template>
@@ -54,7 +54,10 @@
       <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
     </teleport>
 
-    <ConnectionPanel v-model:show="showConnectionPanel" />
+    <!-- ConnectionPanel reads its open state directly from uiStore via
+         useVueState, so no prop wiring is needed here. The Sheet portals
+         out of the SQL Editor layout into the overlay layer. -->
+    <ReactPageMount page="ConnectionPanel" container-class="" />
   </div>
 
   <IAMRemindModal v-if="projectContextReady" :project-name="projectName" />
@@ -76,6 +79,7 @@ import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useProjectV1Store as projectV1Store,
@@ -89,11 +93,9 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 import AsidePanel from "./AsidePanel";
-import ConnectionPanel from "./ConnectionPanel";
 import { useSQLEditorContext } from "./context";
 import EditorPanel from "./EditorPanel";
 import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewState";
-import TabList from "./TabList";
 
 type LocalState = {
   sizebarSize: number;
@@ -116,11 +118,8 @@ const projectStore = projectV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 
-const {
-  events: editorEvents,
-  showConnectionPanel,
-  pendingInsertAtCaret,
-} = useSQLEditorContext();
+const { events: editorEvents, pendingInsertAtCaret } = useSQLEditorContext();
+
 const { project: projectName, projectContextReady } = storeToRefs(editorStore);
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);

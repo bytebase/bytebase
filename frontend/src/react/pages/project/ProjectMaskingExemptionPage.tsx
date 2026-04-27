@@ -32,6 +32,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -404,10 +405,10 @@ export function ProjectMaskingExemptionPage({
             placeholder={t("issue.advanced-search.filter")}
           />
           <Button onClick={handleGrantClick} disabled={!hasCreatePermission}>
-            <ShieldCheck className="size-4" />
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATA_MASKING}
               className="text-white"
+              fallback={<ShieldCheck className="size-4" />}
             />
             {t("project.masking-exemption.grant-exemption")}
           </Button>
@@ -471,26 +472,14 @@ export function ProjectMaskingExemptionPage({
         />
       )}
 
-      {/* Feature modal — navigate to subscription page */}
-      <Dialog
+      {/* Feature paywall — uses the shared `FeatureModal` so the title,
+          description, plan info, and CTAs come from the subscription
+          dynamic content instead of a one-off Dialog. */}
+      <FeatureModal
         open={showFeatureModal}
-        onOpenChange={(open) => {
-          if (!open) setShowFeatureModal(false);
-        }}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
-          <div className="flex justify-end gap-x-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFeatureModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        feature={PlanFeature.FEATURE_DATA_MASKING}
+        onOpenChange={setShowFeatureModal}
+      />
 
       {/* Revoke confirmation dialog */}
       <Dialog

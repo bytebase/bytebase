@@ -1,4 +1,5 @@
 import { Lock, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSubscriptionV1Store } from "@/store";
@@ -17,6 +18,13 @@ interface FeatureBadgeProps {
   readonly instance?: Instance | InstanceResource;
   readonly clickable?: boolean;
   readonly className?: string;
+  /**
+   * Rendered in place of the badge when the feature IS available (and the
+   * instance has its license). Lets callers express "show this content
+   * icon when granted; replace it with the paywall sparkles when gated"
+   * in a single component, instead of stacking both icons in a Button.
+   */
+  readonly fallback?: ReactNode;
 }
 
 const planLabel: Record<number, string> = {
@@ -37,6 +45,7 @@ export function FeatureBadge({
   instance,
   clickable = true,
   className,
+  fallback = null,
 }: FeatureBadgeProps) {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
@@ -66,7 +75,7 @@ export function FeatureBadge({
   }
 
   if (hasFeature) {
-    return null;
+    return <>{fallback}</>;
   }
 
   const requiredPlanLabel = t(

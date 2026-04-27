@@ -20,12 +20,8 @@ import { ExprEditor } from "@/react/components/ExprEditor";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Button } from "@/react/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
+import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -439,26 +435,13 @@ export function ProjectMaskingExemptionCreatePage({
         </div>
       </div>
 
-      {/* Feature modal */}
-      <Dialog
+      {/* Feature paywall — shared FeatureModal so the dialog content is
+          driven by the subscription dynamic feature copy + plan info. */}
+      <FeatureModal
         open={showFeatureModal}
-        onOpenChange={(open) => {
-          if (!open) setShowFeatureModal(false);
-        }}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
-          <div className="flex justify-end gap-x-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowFeatureModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        feature={PlanFeature.FEATURE_DATA_MASKING}
+        onOpenChange={setShowFeatureModal}
+      />
     </div>
   );
 }

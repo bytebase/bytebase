@@ -1066,10 +1066,10 @@ export function GroupsPage() {
               }
             >
               <Button disabled>
-                <Plus className="h-4 w-4 mr-1" />
                 <FeatureBadge
                   feature={PlanFeature.FEATURE_USER_GROUPS}
                   clickable={false}
+                  fallback={<Plus className="h-4 w-4 mr-1" />}
                 />
                 {t("common.create")}
               </Button>
@@ -1085,10 +1085,10 @@ export function GroupsPage() {
                 setShowCreateGroupDrawer(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-1" />
               <FeatureBadge
                 feature={PlanFeature.FEATURE_USER_GROUPS}
                 clickable={false}
+                fallback={<Plus className="h-4 w-4 mr-1" />}
               />
               {t("common.create")}
             </Button>

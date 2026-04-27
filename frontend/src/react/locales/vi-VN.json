@@ -196,6 +196,7 @@
   },
   "common": {
     "action-required": "Cần thực hiện hành động",
+    "actions": "Hành động",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
     "add": "Thêm",
@@ -709,6 +710,7 @@
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
+    "edit-schema": "Chỉnh sửa lược đồ",
     "engine": "Engine",
     "expression": "Expression",
     "filter-database": "Lọc cơ sở dữ liệu",
@@ -1304,13 +1306,15 @@
           "description": "Lọc theo cơ sở dữ liệu"
         },
         "engine": {
-          "description": "Lọc theo engine"
+          "description": "Lọc theo engine",
+          "title": "Engine"
         },
         "environment": {
           "description": "Lọc theo môi trường"
         },
         "instance": {
-          "description": "Lọc theo phiên bản"
+          "description": "Lọc theo phiên bản",
+          "title": "Phiên bản"
         },
         "issue-label": {
           "description": "Lọc theo nhãn vấn đề",
@@ -2533,10 +2537,19 @@
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-query": {
-      "batch": "Hàng loạt"
+      "batch": "Hàng loạt",
+      "description": "Truy vấn hàng loạt {{database}} cơ sở dữ liệu bổ sung và {{group}} nhóm cơ sở dữ liệu trong {{project}}.",
+      "select-data-source": {
+        "admin": "Quản trị viên",
+        "readonly": "Chỉ đọc",
+        "self": "Chọn nguồn dữ liệu cho lô",
+        "tooltip": "Sẽ tìm các nguồn dữ liệu có sẵn với chính sách hạn chế, sau đó áp dụng lựa chọn."
+      }
     },
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
+    "close-sheet": "Đóng trang tính",
+    "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "duration-day": "{{days}} day",
@@ -2549,15 +2562,20 @@
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
-        "content": "Đóng trang tính và mất bất kỳ dữ liệu chưa lưu nào?"
+        "content": "Đóng trang tính và mất bất kỳ dữ liệu chưa lưu nào?",
+        "title": "Đóng trang tính chưa lưu?"
       }
     },
     "jit": "Just-In-Time Access",
     "link-access": "Truy cập liên kết",
+    "loading-databases": "Đang tải Cơ sở dữ liệu...",
+    "manage-connections": "Quản lý kết nối",
     "no-access-requests": "No access requests",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
+    "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
+    "open-in-new-tab": "Mở trong tab mới",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
     "project-read": "Đọc dự án",
@@ -2588,11 +2606,17 @@
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
+    "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "tab": {
       "context-menu": {
         "actions": {
           "add-folder": "Thêm thư mục",
           "add-worksheet": "Thêm bảng tính",
+          "close": "Đóng",
+          "close-all": "Đóng tất cả",
+          "close-others": "Đóng các trang tính khác",
+          "close-saved": "Đóng các trang tính đã lưu",
+          "close-to-the-right": "Đóng các trang tính bên phải",
           "multi-select": "Chọn nhiều",
           "rename": "Đổi tên"
         }
@@ -2600,6 +2624,7 @@
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
+    "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "view-issue": "View Issue",
     "web-socket": {
       "errors": {
@@ -3367,6 +3392,7 @@
     "title": "Đánh giá SQL"
   },
   "subscription": {
+    "contact-to-upgrade": "Liên hệ với quản trị viên Không gian làm việc của bạn để nâng cấp gói.",
     "contact-us": "Liên hệ chúng tôi",
     "current": "Gói hiện tại",
     "description": "Bạn có thể tải lên giấy phép Bytebase của mình để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
@@ -3381,6 +3407,7 @@
       "manage-license": "Quản lý giấy phép phiên bản",
       "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để bật tính năng này.",
       "n-license-remain": "còn lại {{n}}",
+      "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"

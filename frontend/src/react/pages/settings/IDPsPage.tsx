@@ -2036,8 +2036,8 @@ export function IDPsPage() {
               feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO}
               clickable={false}
               className="mr-1 text-white inline-flex"
+              fallback={<Plus className="h-4 w-4 mr-1" />}
             />
-            <Plus className="h-4 w-4 mr-1" />
             {t("common.create")}
           </Button>
         </PermissionGuard>

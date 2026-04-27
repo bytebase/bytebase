@@ -146,6 +146,11 @@ vi.mock("@/react/components/FeatureBadge", () => ({
   FeatureBadge: () => <div data-testid="feature-badge" />,
 }));
 
+vi.mock("@/react/components/ui/feature-modal", () => ({
+  FeatureModal: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="feature-modal" /> : null,
+}));
+
 vi.mock("@/react/components/ui/button", () => ({
   Button: (props: ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props} />
