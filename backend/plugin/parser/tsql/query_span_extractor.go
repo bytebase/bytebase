@@ -65,6 +65,9 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", linkedServer)
 	}
 	if strings.HasPrefix(rawTable, "#") {
+		if tempTable, ok := q.gCtx.TempTables[rawTable]; ok {
+			return tempTable, nil
+		}
 		// TODO(masking): Considering SELECT * INTO #temp FROM dbo.t1; SELECT * FROM #temp. We should mask the #temp.
 		return &base.PseudoTable{}, nil
 	}
