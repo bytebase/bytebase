@@ -260,7 +260,12 @@ func findLimitInsertPosition(sel *ast.SelectStmt) (int, bool) {
 	}
 
 	// Otherwise insert at SelectStmt.Loc.End (after everything, including outer parens).
+	// For CTE queries, omni may report SelectStmt.Loc.End before the outer ORDER BY,
+	// so account for the sort clause explicitly.
 	end := sel.Loc.End
+	if span := ast.ListSpan(sel.SortClause); span.End > end {
+		end = span.End
+	}
 	if end <= 0 {
 		return 0, false
 	}
