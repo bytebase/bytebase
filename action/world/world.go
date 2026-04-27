@@ -2,6 +2,7 @@ package world
 
 import (
 	"log/slog"
+	"net/http"
 	"time"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -23,6 +24,8 @@ type World struct {
 	ServiceAccount       string
 	ServiceAccountSecret string
 	AccessToken          string // Alternative to service account auth, e.g. from workload identity exchange
+	CustomHeaders        http.Header
+	CustomHeaderError    error
 	Project              string // projects/{project}
 	Targets              []string
 	FilePattern          string
