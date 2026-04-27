@@ -366,7 +366,23 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("query value must be a string")
 					}
-					return qb.Q().Space("btrim(access_grant.payload->>'query') = ?", strings.TrimSpace(queryStr)), nil
+					// Normalize whitespace on both sides so the run-time JIT
+					// match in preCheckAccess survives invisible differences
+					// (a trailing \n that Monaco's getValue() emits in the
+					// request drawer but the editor's getActiveStatement()
+					// doesn't, CRLF vs LF, reformatted indentation, etc.).
+					// LHS: collapse any whitespace run to a single space, then
+					// strip the leading/trailing space btrim leaves behind.
+					// RHS: strings.Fields effectively trims and Join with " "
+					// produces the same shape. Both sides therefore land on
+					// "tokens separated by single spaces, no boundary
+					// whitespace."
+					// This intentionally also collapses whitespace runs inside
+					// string literals and comments; engine-aware lexing was
+					// rejected as too costly. Mirrors the contains branch
+					// below.
+					normalized := strings.Join(strings.Fields(queryStr), " ")
+					return qb.Q().Space("btrim(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g')) = ?", normalized), nil
 				case "issue":
 					issueStr, ok := value.(string)
 					if !ok {
