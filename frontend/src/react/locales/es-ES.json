@@ -69,7 +69,7 @@
     "unarchive-all-chats": "Desarchivar todos los chats",
     "unarchive-chat": "Desarchivar chat"
   },
-  "agent.self": "Agent",
+  "agent.self": "Asistente",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -480,7 +480,7 @@
   "common.password": "Contraseña",
   "common.project": "Proyecto",
   "common.read-only": "Solo lectura",
-  "common.recent": "Recent",
+  "common.recent": "Recientes",
   "common.remaining": "restantes",
   "common.remove": "Eliminar",
   "common.removed": "Eliminado",
@@ -1459,9 +1459,9 @@
   "issue.data-export.format": "Formato",
   "issue.data-export.limits": "Límites",
   "issue.data-export.options": "Opciones",
-  "issue.issue-name": "Issue name",
-  "issue.my-issues": "My Issues",
-  "issue.no-description-provided": "No description provided",
+  "issue.issue-name": "Nombre de la incidencia",
+  "issue.my-issues": "Mis issues",
+  "issue.no-description-provided": "No se proporcionó ninguna descripción",
   "issue.options-disabled-due-to-oversize": "Las opciones están deshabilitadas porque el SQL es demasiado grande.",
   "issue.overwrite-current-statement": "Sobrescribir la declaración SQL actual",
   "issue.review.self": "Review",
@@ -1817,7 +1817,7 @@
       "webhook-url": "URL del webhook"
     }
   },
-  "project.select": "Select project",
+  "project.select": "Seleccionar proyecto",
   "quick-action": {
     "create-db": "Crear base de datos",
     "new-project": "Nuevo Proyecto",

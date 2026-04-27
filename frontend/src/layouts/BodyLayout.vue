@@ -30,7 +30,7 @@
   </teleport>
 
   <teleport
-    v-if="!isProjectRoute && routePermitted && routePermissionTarget"
+    v-if="!isProjectRoute && routePermissionTarget"
     :to="routePermissionTarget"
   >
     <router-view name="content" />
@@ -50,12 +50,11 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
-import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AgentWindowMount from "@/components/AgentWindowMount.vue";
 import Quickstart from "@/components/Quickstart.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
-import { useRoutePermitted } from "@/composables/useRoutePermitted";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";
@@ -87,7 +86,6 @@ const shellTargets = shallowRef<DashboardShellTargets>({
 const mainContainerRef = ref<HTMLDivElement>();
 const showReleaseModal = ref(false);
 const routePermissionTarget = shallowRef<HTMLDivElement | null>(null);
-const routePermitted = useRoutePermitted();
 
 const isRootPath = computed(() => {
   return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
@@ -113,6 +111,14 @@ const handleReady = (targets: DashboardShellTargets) => {
 const handlePermissionReady = (target: HTMLDivElement | null) => {
   routePermissionTarget.value = target;
 };
+
+watch(
+  () => route.fullPath,
+  () => {
+    routePermissionTarget.value = null;
+  },
+  { flush: "sync" }
+);
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   if (

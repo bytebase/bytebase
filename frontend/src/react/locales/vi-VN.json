@@ -69,7 +69,7 @@
     "unarchive-all-chats": "Bỏ lưu trữ tất cả cuộc trò chuyện",
     "unarchive-chat": "Bỏ lưu trữ"
   },
-  "agent.self": "Agent",
+  "agent.self": "Trợ lý",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -480,7 +480,7 @@
   "common.password": "Mật khẩu",
   "common.project": "Dự án",
   "common.read-only": "Chỉ đọc",
-  "common.recent": "Recent",
+  "common.recent": "Gần đây",
   "common.remaining": "còn lại",
   "common.remove": "Xóa",
   "common.removed": "LOẠI BỎ",
@@ -1459,9 +1459,9 @@
   "issue.data-export.format": "Định dạng",
   "issue.data-export.limits": "Giới hạn",
   "issue.data-export.options": "Tùy chọn",
-  "issue.issue-name": "Issue name",
-  "issue.my-issues": "My Issues",
-  "issue.no-description-provided": "No description provided",
+  "issue.issue-name": "Tên vấn đề",
+  "issue.my-issues": "Issue của tôi",
+  "issue.no-description-provided": "Không có mô tả nào được cung cấp",
   "issue.options-disabled-due-to-oversize": "Các tùy chọn bị vô hiệu hóa vì SQL quá lớn.",
   "issue.overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
   "issue.review.self": "Review",
@@ -1817,7 +1817,7 @@
       "webhook-url": "URL Webhook"
     }
   },
-  "project.select": "Select project",
+  "project.select": "Chọn dự án",
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
     "new-project": "Mới Dự án",

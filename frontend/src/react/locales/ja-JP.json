@@ -69,7 +69,7 @@
     "unarchive-all-chats": "すべてのチャットのアーカイブを解除",
     "unarchive-chat": "アーカイブ解除"
   },
-  "agent.self": "Agent",
+  "agent.self": "エージェント",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -480,7 +480,7 @@
   "common.password": "パスワード",
   "common.project": "プロジェクト",
   "common.read-only": "読み取り専用",
-  "common.recent": "Recent",
+  "common.recent": "最近",
   "common.remaining": "残り",
   "common.remove": "削除",
   "common.removed": "削除されました",
@@ -1459,9 +1459,9 @@
   "issue.data-export.format": "形式",
   "issue.data-export.limits": "制限",
   "issue.data-export.options": "オプション",
-  "issue.issue-name": "Issue name",
-  "issue.my-issues": "My Issues",
-  "issue.no-description-provided": "No description provided",
+  "issue.issue-name": "イシュー名",
+  "issue.my-issues": "自分の Issue",
+  "issue.no-description-provided": "説明なし",
   "issue.options-disabled-due-to-oversize": "SQL が大きすぎるため、オプションは無効になっています。",
   "issue.overwrite-current-statement": "現在の SQL ステートメントを上書きする",
   "issue.review.self": "Review",
@@ -1817,7 +1817,7 @@
       "webhook-url": "Webhook URL"
     }
   },
-  "project.select": "Select project",
+  "project.select": "プロジェクトを選択",
   "quick-action": {
     "create-db": "データベースの作成",
     "new-project": "作成するプロジェクト",

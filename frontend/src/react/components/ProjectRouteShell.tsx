@@ -32,6 +32,8 @@ export function ProjectRouteShell({
   const navigate = useNavigate();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
   const notify = useNotify();
   const projectName = projectResourceNameFromId(projectId);
   const project = useAppStore((state) => state.projectsByName[projectName]);
@@ -52,12 +54,12 @@ export function ProjectRouteShell({
   );
   const setRecentProject = useAppStore((state) => state.setRecentProject);
   const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
-  const [ready, setReady] = useState(false);
+  const [readyProjectName, setReadyProjectName] = useState("");
 
   useEffect(() => {
     let stale = false;
-    setReady(false);
-    onReady?.(null);
+    setReadyProjectName("");
+    onReadyRef.current?.(null);
 
     const load = async () => {
       await Promise.all([loadCurrentUser(), loadServerInfo()]);
@@ -84,14 +86,14 @@ export function ProjectRouteShell({
       setRecentProject(nextProject.name);
       await loadProjectIamPolicy(nextProject.name);
       if (!stale) {
-        setReady(true);
+        setReadyProjectName(projectName);
       }
     };
 
     void load();
     return () => {
       stale = true;
-      onReady?.(null);
+      onReadyRef.current?.(null);
     };
   }, [
     fetchProject,
@@ -99,12 +101,13 @@ export function ProjectRouteShell({
     loadProjectIamPolicy,
     loadServerInfo,
     notify,
-    onReady,
     projectId,
     projectName,
     removeRecentVisit,
     setRecentProject,
   ]);
+
+  const ready = readyProjectName === projectName;
 
   useEffect(() => {
     if (!ready || !project) return;

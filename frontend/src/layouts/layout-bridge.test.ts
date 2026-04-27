@@ -340,6 +340,11 @@ describe("layout bridges", () => {
         '[data-testid="shell-content"] [data-testid="content-view"]'
       )?.textContent
     ).toContain("connected");
+    expect(
+      document.querySelector(
+        '[data-testid="shell-quickstart"] [data-testid="quickstart"]'
+      )
+    ).not.toBeNull();
 
     wrapper.unmount();
   });
