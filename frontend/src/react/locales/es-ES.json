@@ -720,6 +720,9 @@
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
     "filter-database": "Filtrar base de datos",
+    "foreign-key": {
+      "reference": "Referencia"
+    },
     "foreign-keys": "claves foráneas",
     "index-size": "Tamaño del índice",
     "indexes": "Índices",
@@ -848,6 +851,16 @@
     "procedures": "Procedimientos",
     "schema": {
       "default": "Esquema predeterminado"
+    },
+    "sequence": {
+      "cacheSize": "Tamaño de caché",
+      "cycle": "Ciclo",
+      "data-type": "tipo de datos",
+      "increment": "Incremento",
+      "lastValue": "Último valor",
+      "max-value": "valor máximo",
+      "min-value": "valor mínimo",
+      "start": "Valor inicial"
     },
     "sequences": "Secuencias",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
@@ -1933,16 +1946,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Clave foránea",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "En actualización",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Colación",
+      "comment": "Comentario",
+      "engine": "Motor",
+      "name": "Nombre"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,6 +1974,8 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Columnas dependientes",
+      "indexes": "Índices",
       "primary": "Primary",
       "unique": "Unique"
     },
@@ -1977,6 +2000,7 @@
     },
     "table-partition": {
       "expression": "Expresión",
+      "partitions": "Particiones",
       "type": "Tipo",
       "value": "Valor"
     }
@@ -2589,6 +2613,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Formato",
     "format-sql": "Format SQL",
     "generate-sql": "Generar SQL",
     "grant-type-unmask": "Unmask",

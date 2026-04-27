@@ -159,7 +159,7 @@ export function EditorAction({ onExecute }: Props) {
                 <Button
                   variant="default"
                   size="sm"
-                  className={cn("h-7 px-1.5 gap-1 rounded-r-none")}
+                  className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
                   disabled={!allowQuery}
                   onClick={handleRunQuery}
                 >
@@ -173,7 +173,7 @@ export function EditorAction({ onExecute }: Props) {
               <Button
                 variant="default"
                 size="sm"
-                className={cn("h-7 px-1.5 gap-1 rounded-r-none")}
+                className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
                 disabled={!allowQuery}
                 onClick={handleRunQuery}
               >
