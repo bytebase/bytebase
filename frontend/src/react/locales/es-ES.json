@@ -195,6 +195,7 @@
     "show-diff": "Mostrar diferencias"
   },
   "common": {
+    "Default": "Predeterminado",
     "action-required": "Acción requerida",
     "actions": "Acciones",
     "activated": "Activado",
@@ -292,6 +293,7 @@
     "home": "Inicio",
     "id": "ID",
     "import": "Importar",
+    "info": "Información",
     "instance": "Instancia",
     "instances": "Instancias",
     "is-required": "is required",
@@ -703,17 +705,22 @@
   "database": {
     "all": "Todas las bases de datos",
     "change-database": "Modificar base de datos",
+    "checks": "Verificaciones",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "columns": "Columnas",
+    "comment": "Comentario",
     "data-size": "Tamaño de datos",
     "edit-environment": "Editar entorno",
     "edit-labels": "Editar etiquetas",
     "edit-schema": "Modificar esquema",
     "engine": "Motor",
     "expression": "Expression",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo",
     "filter-database": "Filtrar base de datos",
+    "foreign-keys": "claves foráneas",
     "index-size": "Tamaño del índice",
     "indexes": "Índices",
     "last-sync": "Última sincronización",
@@ -836,6 +843,8 @@
     "functions": "Funciones",
     "n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
     "packages": "Paquetes",
+    "partitions": "Particiones",
+    "procedures": "Procedimientos",
     "schema": {
       "default": "Esquema predeterminado"
     },
@@ -1891,6 +1900,9 @@
   "rollout.task.no-tasks": "No hay tareas en esta etapa",
   "rollout.task.selected-count": "{{count}} tarea seleccionada",
   "rollout.task.statement-truncated-hint": "Declaración truncada debido al gran tamaño.",
+  "schema-diagram": {
+    "self": "Diagrama de Esquema"
+  },
   "schema-editor": {
     "actions": {
       "add-column": "Add column",
@@ -1952,6 +1964,11 @@
       "name-placeholder": "Table name",
       "no-match": "No tables match the search",
       "no-tables": "No tables"
+    },
+    "table-partition": {
+      "expression": "Expresión",
+      "type": "Tipo",
+      "value": "Valor"
     }
   },
   "schema-template": {
@@ -2548,9 +2565,13 @@
     },
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
+    "click-to-sync-now": "Haga clic para sincronizar ahora",
     "close-sheet": "Cerrar hoja",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "connect-to-a-database": "Conectar a base de datos",
+    "copy-all-column-names": "Copiar todos los nombres de las columnas",
+    "copy-name": "Copiar nombre",
+    "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2559,6 +2580,7 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
+    "generate-sql": "Generar SQL",
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2567,15 +2589,22 @@
       }
     },
     "jit": "Just-In-Time Access",
+    "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
     "no-access-requests": "No access requests",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
+    "no-project": {
+      "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso.",
+      "go-to-create": "ir a crear",
+      "not-member-of-any-projects": "No eres miembro de ningún proyecto."
+    },
     "no-queriable-database": "No hay base de datos consultable",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "open-in-new-tab": "Abrir en nueva pestaña",
+    "preview-table-data": "Vista previa de datos de la tabla",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
     "project-read": "Lectura del proyecto",
@@ -2607,6 +2636,7 @@
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
+    "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {
         "actions": {
@@ -2625,7 +2655,9 @@
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "view-database-detail": "Ver detalle de la base de datos",
+    "view-detail": "Ver detalle",
     "view-issue": "View Issue",
+    "view-schema-text": "Ver texto del esquema",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

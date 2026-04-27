@@ -1,7 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY" | "ACCESS";
@@ -20,14 +19,6 @@ export const useSQLEditorUIStore = defineStore("sqlEditorUI", () => {
   const asidePanelTab = ref<AsidePanelTab>("WORKSHEET");
   const showConnectionPanel = ref(false);
   const showAIPanel = ref(false);
-  const schemaViewer = ref<
-    | {
-        schema?: string;
-        object?: string;
-        type?: GetSchemaStringRequest_ObjectType;
-      }
-    | undefined
-  >(undefined);
   const pendingInsertAtCaret = ref<string | undefined>();
   const highlightAccessGrantName = ref<string | undefined>();
 
@@ -56,7 +47,6 @@ export const useSQLEditorUIStore = defineStore("sqlEditorUI", () => {
     asidePanelTab,
     showConnectionPanel,
     showAIPanel,
-    schemaViewer,
     pendingInsertAtCaret,
     highlightAccessGrantName,
     editorPanelSize,

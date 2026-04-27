@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/react/components/ui/combobox";
@@ -13,6 +14,11 @@ export interface ProjectSelectProps {
   className?: string;
   /** When true, the workspace's default project is excluded. Defaults to true. */
   excludeDefault?: boolean;
+  /** Optional rich empty-state node — used by surfaces that need to
+   *  surface workspace-level guidance (e.g. AsidePanel's "not a member
+   *  of any projects" + "go to create" prompt). Falls back to the
+   *  generic "no data" string when omitted. */
+  emptyContent?: ReactNode;
 }
 
 export function ProjectSelect({
@@ -22,6 +28,7 @@ export function ProjectSelect({
   disabled,
   className,
   excludeDefault = true,
+  emptyContent,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
@@ -57,6 +64,7 @@ export function ProjectSelect({
       onChange={handleChange}
       placeholder={placeholder ?? t("common.project")}
       noResultsText={t("common.no-data")}
+      noResultsContent={emptyContent}
       onSearch={fetchProjects}
       disabled={disabled}
       className={className}

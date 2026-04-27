@@ -45,7 +45,6 @@ describe("useSQLEditorUIStore", () => {
     expect(store.asidePanelTab).toBe("WORKSHEET");
     expect(store.showConnectionPanel).toBe(false);
     expect(store.showAIPanel).toBe(false);
-    expect(store.schemaViewer).toBeUndefined();
     expect(store.pendingInsertAtCaret).toBeUndefined();
     expect(store.highlightAccessGrantName).toBeUndefined();
   });

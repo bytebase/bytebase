@@ -196,6 +196,7 @@
     "show-diff": "Show diff"
   },
   "common": {
+    "Default": "Default",
     "action-required": "Action Required",
     "actions": "Actions",
     "activated": "Activated",
@@ -295,6 +296,7 @@
     "home": "Home",
     "id": "ID",
     "import": "Import",
+    "info": "Info",
     "instance": "Instance",
     "instances": "Instances",
     "is-required": "is required",
@@ -710,17 +712,22 @@
   "database": {
     "all": "All databases",
     "change-database": "Change Database",
+    "checks": "Checks",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "columns": "Columns",
+    "comment": "Comment",
     "data-size": "Data size",
     "edit-environment": "Edit Environment",
     "edit-labels": "Edit Labels",
     "edit-schema": "Edit Schema",
     "engine": "Engine",
     "expression": "Expression",
+    "external-database-name": "External Database Name",
+    "external-server-name": "External Server Name",
     "filter-database": "Filter database",
+    "foreign-keys": "Foreign keys",
     "index-size": "Index size",
     "indexes": "Indexes",
     "last-sync": "Last sync",
@@ -843,6 +850,8 @@
     "functions": "Functions",
     "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
     "packages": "Packages",
+    "partitions": "Partitions",
+    "procedures": "Procedures",
     "schema": {
       "default": "Default schema"
     },
@@ -1904,6 +1913,9 @@
   "rollout.task.no-tasks": "No tasks in this stage",
   "rollout.task.selected-count": "{{count}} task selected",
   "rollout.task.statement-truncated-hint": "Statement truncated due to large size.",
+  "schema-diagram": {
+    "self": "Schema Diagram"
+  },
   "schema-editor": {
     "actions": {
       "add-column": "Add column",
@@ -1965,6 +1977,11 @@
       "name-placeholder": "Table name",
       "no-match": "No tables match the search",
       "no-tables": "No tables"
+    },
+    "table-partition": {
+      "expression": "Expression",
+      "type": "Type",
+      "value": "Value"
     }
   },
   "schema-template": {
@@ -2562,9 +2579,13 @@
     },
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
+    "click-to-sync-now": "Click to sync now",
     "close-sheet": "Close sheet",
     "connect-in-admin-mode": "Connect in admin mode",
     "connect-to-a-database": "Connect to database",
+    "copy-all-column-names": "Copy all column names",
+    "copy-name": "Copy name",
+    "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2573,6 +2594,7 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
+    "generate-sql": "Generate SQL",
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2581,15 +2603,22 @@
       }
     },
     "jit": "Just-In-Time Access",
+    "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
     "loading-databases": "Loading Databases...",
     "manage-connections": "Manage connections",
     "no-access-requests": "No access requests",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
+    "no-project": {
+      "contact-the-admin-to-grant-access": "Contact to the admin to grant access.",
+      "go-to-create": "Go to create",
+      "not-member-of-any-projects": "You are not any member of any projects."
+    },
     "no-queriable-database": "No queriable database",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
+    "preview-table-data": "Preview table data",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
     "project-read": "Project read",
@@ -2621,6 +2650,7 @@
     "select-a-database-to-start": "Select a database to start",
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
+    "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {
         "actions": {
@@ -2639,7 +2669,9 @@
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "view-database-detail": "View database detail",
+    "view-detail": "View detail",
     "view-issue": "View Issue",
+    "view-schema-text": "View schema text",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
