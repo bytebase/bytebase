@@ -165,6 +165,7 @@ describe("RoutePermissionGuardShell", () => {
     expect(onReady).toHaveBeenLastCalledWith(null);
     expect(container.querySelector("[role='alert']")).not.toBeNull();
     expect(container.textContent).toContain("bb.settings.set");
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
   });
 
   test("checks basic workspace permissions before route permissions", async () => {

@@ -42,6 +42,16 @@ interface ComponentPermissionState {
   permitted: boolean;
 }
 
+interface PermissionDeniedFallbackProps {
+  readonly missedBasicPermissions: Permission[];
+  readonly missedPermissions: Permission[];
+  readonly project?: Project;
+  readonly className?: string;
+  readonly path?: string;
+  readonly resources?: string[];
+  readonly enableRequestRole?: boolean;
+}
+
 export function usePermissionDataReady(project?: Project) {
   const permissionKey = project?.name ?? "__workspace__";
   const loadWorkspacePermissionState = useAppStore(
@@ -142,26 +152,17 @@ export function useComponentPermissionState({
   }, [checkBasicWorkspacePermissions, permissionAccess, permissions]);
 }
 
-/**
- * ComponentPermissionGuard gates an entire component behind a permission check.
- *
- * - If the user has all required permissions, children are rendered normally.
- * - If the user is missing permissions, an error alert is shown listing the
- *   missing permissions — matching the Vue `ComponentPermissionGuard` behavior.
- */
-export function ComponentPermissionGuard({
-  permissions,
+export function PermissionDeniedFallback({
+  missedBasicPermissions,
+  missedPermissions,
   project,
-  children,
   className,
   path,
   resources = [],
-  checkBasicWorkspacePermissions = false,
   enableRequestRole = false,
-}: ComponentPermissionGuardProps) {
+}: PermissionDeniedFallbackProps) {
   const { t } = useTranslation();
   const [showRequestRoleSheet, setShowRequestRoleSheet] = useState(false);
-  const permissionReady = usePermissionDataReady(project);
   const loadSubscription = useAppStore((state) => state.loadSubscription);
   const subscriptionPlan = useAppStore(
     (state) => state.subscription?.plan ?? PlanType.FREE
@@ -170,12 +171,6 @@ export function ComponentPermissionGuard({
     subscriptionPlan,
     PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
   );
-  const { missedBasicPermissions, missedPermissions, permitted } =
-    useComponentPermissionState({
-      permissions,
-      project,
-      checkBasicWorkspacePermissions,
-    });
   const requestRolePermissionAccess = usePermissionAccess(project);
   const canRequestRole = useMemo(
     () =>
@@ -191,21 +186,12 @@ export function ComponentPermissionGuard({
     }
   }, [enableRequestRole, loadSubscription]);
 
-  if (!permissionReady) {
-    return <div className={className} />;
-  }
-
-  if (permitted) {
-    return <>{children}</>;
-  }
-
   const missed =
     missedBasicPermissions.length > 0
       ? missedBasicPermissions
       : missedPermissions;
   const showRequestRole =
     enableRequestRole &&
-    permissionReady &&
     missedBasicPermissions.length === 0 &&
     !!project &&
     project.allowRequestRole &&
@@ -275,5 +261,51 @@ export function ComponentPermissionGuard({
         </Suspense>
       )}
     </div>
+  );
+}
+
+/**
+ * ComponentPermissionGuard gates an entire component behind a permission check.
+ *
+ * - If the user has all required permissions, children are rendered normally.
+ * - If the user is missing permissions, an error alert is shown listing the
+ *   missing permissions — matching the Vue `ComponentPermissionGuard` behavior.
+ */
+export function ComponentPermissionGuard({
+  permissions,
+  project,
+  children,
+  className,
+  path,
+  resources = [],
+  checkBasicWorkspacePermissions = false,
+  enableRequestRole = false,
+}: ComponentPermissionGuardProps) {
+  const permissionReady = usePermissionDataReady(project);
+  const { missedBasicPermissions, missedPermissions, permitted } =
+    useComponentPermissionState({
+      permissions,
+      project,
+      checkBasicWorkspacePermissions,
+    });
+
+  if (!permissionReady) {
+    return <div className={className} />;
+  }
+
+  if (permitted) {
+    return <>{children}</>;
+  }
+
+  return (
+    <PermissionDeniedFallback
+      missedBasicPermissions={missedBasicPermissions}
+      missedPermissions={missedPermissions}
+      project={project}
+      className={className}
+      path={path}
+      resources={resources}
+      enableRequestRole={enableRequestRole}
+    />
   );
 }

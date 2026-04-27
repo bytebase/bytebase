@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import {
-  ComponentPermissionGuard,
+  PermissionDeniedFallback,
   useComponentPermissionState,
   usePermissionDataReady,
 } from "@/react/components/ComponentPermissionGuard";
@@ -27,11 +27,12 @@ export function RoutePermissionGuardShell({
   const onReadyRef = useRef(onReady);
   const permissions = route.requiredPermissions;
   const permissionReady = usePermissionDataReady(project);
-  const { permitted } = useComponentPermissionState({
-    permissions,
-    project,
-    checkBasicWorkspacePermissions: true,
-  });
+  const { missedBasicPermissions, missedPermissions, permitted } =
+    useComponentPermissionState({
+      permissions,
+      project,
+      checkBasicWorkspacePermissions: true,
+    });
 
   useEffect(() => {
     onReadyRef.current = onReady;
@@ -58,16 +59,14 @@ export function RoutePermissionGuardShell({
 
   if (!permitted) {
     return (
-      <ComponentPermissionGuard
-        permissions={permissions}
+      <PermissionDeniedFallback
+        missedBasicPermissions={missedBasicPermissions}
+        missedPermissions={missedPermissions}
         project={project}
         className={className}
         path={route.fullPath}
-        checkBasicWorkspacePermissions
         enableRequestRole
-      >
-        <div />
-      </ComponentPermissionGuard>
+      />
     );
   }
 
