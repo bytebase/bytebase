@@ -9,6 +9,7 @@ import {
   PRESET_ROLES,
   PRESET_WORKSPACE_ROLES,
 } from "@/types/iam";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
@@ -19,6 +20,7 @@ interface RoleSelectProps {
   scope?: "project";
   multiple?: boolean;
   placeholder?: string;
+  filterRole?: (role: Role) => boolean;
 }
 
 export function RoleSelect({
@@ -28,6 +30,7 @@ export function RoleSelect({
   scope,
   multiple = true,
   placeholder,
+  filterRole,
 }: RoleSelectProps) {
   const { t } = useTranslation();
   const roleStore = useRoleStore();
@@ -39,14 +42,23 @@ export function RoleSelect({
 
   const groups: ComboboxGroup[] = useMemo(() => {
     const isCustomRole = (name: string) => !PRESET_ROLES.includes(name);
+    const visibleRole = (name: string) => {
+      if (!filterRole) {
+        return true;
+      }
+      const role = roleStore.getRoleByName(name);
+      return role ? filterRole(role) : false;
+    };
 
-    const workspace = PRESET_WORKSPACE_ROLES.map((name) => ({
-      value: name,
-      label: displayRoleTitle(name),
-      description: displayRoleDescription(name),
-    }));
+    const workspace = PRESET_WORKSPACE_ROLES.filter(visibleRole).map(
+      (name) => ({
+        value: name,
+        label: displayRoleTitle(name),
+        description: displayRoleDescription(name),
+      })
+    );
 
-    const project = PRESET_PROJECT_ROLES.map((name) => ({
+    const project = PRESET_PROJECT_ROLES.filter(visibleRole).map((name) => ({
       value: name,
       label: displayRoleTitle(name),
       description: displayRoleDescription(name),
@@ -54,6 +66,7 @@ export function RoleSelect({
 
     const custom = roleList
       .filter((r) => !PRESET_ROLES.includes(r.name))
+      .filter((r) => !filterRole || filterRole(r))
       .map((r) => ({
         value: r.name,
         label: displayRoleTitle(r.name),
@@ -83,7 +96,7 @@ export function RoleSelect({
     if (custom.length > 0)
       result.push({ label: t("role.custom-roles.self"), options: custom });
     return result;
-  }, [roleList, hasCustomRoleFeature, scope, t]);
+  }, [filterRole, roleList, roleStore, hasCustomRoleFeature, scope, t]);
 
   const defaultPlaceholder = multiple
     ? t("settings.members.select-role", { count: 2 })

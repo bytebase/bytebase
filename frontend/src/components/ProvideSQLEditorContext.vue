@@ -12,16 +12,25 @@
   </teleport>
 
   <Suspense>
-    <RoutePermissionGuard
-      v-if="editorStore.projectContextReady"
-      class="m-6"
-      :project="project"
-      :routes="sqlEditorRoutes"
-    >
-      <ProvideAIContext>
-        <router-view />
-      </ProvideAIContext>
-    </RoutePermissionGuard>
+    <template v-if="editorStore.projectContextReady">
+      <ReactPageMount
+        page="RoutePermissionGuardShell"
+        :page-props="{
+          project,
+          className: 'm-6',
+          targetClassName: 'h-full min-h-0 flex flex-col',
+          onReady: handlePermissionReady,
+        }"
+      />
+      <teleport
+        v-if="routePermitted && routePermissionTarget"
+        :to="routePermissionTarget"
+      >
+        <ProvideAIContext>
+          <router-view />
+        </ProvideAIContext>
+      </teleport>
+    </template>
     <div v-else class="flex items-center justify-center h-screen">
       <BBSpin />
     </div>
@@ -31,15 +40,16 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { debounce, head, omit } from "lodash-es";
-import { computed, nextTick, onMounted, watch } from "vue";
+import { computed, nextTick, onMounted, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
+import { useRoutePermitted } from "@/composables/useRoutePermitted";
 import { ProvideAIContext } from "@/plugins/ai";
-import sqlEditorRoutes, {
+import ReactPageMount from "@/react/ReactPageMount.vue";
+import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,
@@ -90,11 +100,16 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
+const routePermissionTarget = shallowRef<HTMLElement | null>(null);
 const {
   asidePanelTab,
   events: editorEvents,
   maybeSwitchProject,
 } = useSQLEditorContext();
+
+const handlePermissionReady = (target: HTMLElement | null) => {
+  routePermissionTarget.value = target;
+};
 
 useRouteChangeGuard(
   computed(() => {
@@ -154,6 +169,7 @@ const project = computed(() => {
   }
   return proj;
 });
+const routePermitted = useRoutePermitted(project);
 
 const switchWorksheet = async (sheetName: string) => {
   const openedSheetTab = tabStore.getTabByWorksheet(sheetName);

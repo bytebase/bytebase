@@ -146,7 +146,7 @@ export function DashboardBodyShell({
               variant === "workspace" ? "md:min-w-0" : "min-w-0"
             )}
           >
-            <div ref={contentRef} />
+            <div ref={contentRef} className="h-full" />
           </div>
         </div>
       </div>

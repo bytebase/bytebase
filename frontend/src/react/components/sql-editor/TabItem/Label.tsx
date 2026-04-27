@@ -114,6 +114,7 @@ export function Label({ tab }: Props) {
       />
       {/* Invisible "expand" dbl-click layer — EllipsisText strips onDblClick */}
       {!editing && !readonly && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: dbl-click is the trigger
         <div
           className="absolute inset-0 cursor-text"
           onDoubleClick={beginEdit}
