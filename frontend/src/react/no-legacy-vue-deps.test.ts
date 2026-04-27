@@ -8,9 +8,13 @@ const sources = import.meta.glob(
     "../router/dashboard/workspace.ts",
     "../router/dashboard/workspaceSetting.ts",
     "../layouts/BodyLayout.vue",
-    "../layouts/ProjectV1Layout.vue",
     "../layouts/SQLEditorLayout.vue",
     "../components/ProvideSQLEditorContext.vue",
+    "./ReactRouteShellBridge.vue",
+    "./components/ProjectRouteShell.tsx",
+    "./components/SettingRouteShell.tsx",
+    "./components/InstanceRouteShell.tsx",
+    "./components/IssuesRouteShell.tsx",
     "./components/RoutePermissionGuardShell.tsx",
   ],
   {
@@ -57,6 +61,10 @@ describe("React Project and Settings legacy Vue dependencies", () => {
       "@/components/IssueV1/components/Sidebar/IssueLabels",
       "./IssueLabelSelector.vue",
       "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue",
+      "@/layouts/ProjectV1Layout.vue",
+      "@/layouts/SettingLayout.vue",
+      "@/layouts/InstanceLayout.vue",
+      "@/layouts/IssuesLayout.vue",
     ];
     const violations: string[] = [];
     for (const [file, source] of Object.entries(sources)) {

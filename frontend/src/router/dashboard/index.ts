@@ -1,7 +1,6 @@
 import type { RouteRecordRaw } from "vue-router";
 import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
-import IssuesLayout from "@/layouts/IssuesLayout.vue";
 import { t } from "@/plugins/i18n";
 import environmentV1Routes from "./environmentV1";
 import instanceRoutes from "./instance";
@@ -28,8 +27,13 @@ const dashboardRoutes: RouteRecordRaw[] = [
       },
       {
         path: "issues",
-        components: { body: IssuesLayout },
-        props: true,
+        components: { body: () => import("@/react/ReactRouteShellBridge.vue") },
+        props: {
+          body: () => ({
+            page: "IssuesRouteShell",
+            routerViewName: "content",
+          }),
+        },
         meta: {
           title: () => t("common.issues"),
         },

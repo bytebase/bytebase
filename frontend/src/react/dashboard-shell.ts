@@ -11,6 +11,13 @@ export type DashboardShellTargets = {
   mainContainer: HTMLDivElement | null;
 };
 
+export type ReactRouteShellTargets = {
+  content: HTMLDivElement | null;
+  quickstart?: HTMLDivElement | null;
+  mainContainer?: HTMLDivElement | null;
+  routeProps?: Record<string, unknown>;
+};
+
 export type DashboardBodyShellVariant = "workspace" | "issues";
 
 export type DashboardFrameShellProps = {

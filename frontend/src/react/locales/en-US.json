@@ -812,6 +812,7 @@
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases",
+    "unassigned-databases": "Unassigned databases",
     "unique": "Unique",
     "visible": "Visible"
   },
@@ -1703,6 +1704,9 @@
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
+    "overview": {
+      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
+    },
     "select": "Select project",
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
@@ -1845,6 +1849,12 @@
   "remind": {
     "release": {
       "new-version-available-with-tag": "New version {{tag}} is available"
+    },
+    "role-expire": {
+      "checkbox": "Do not remind until any updates",
+      "content": "Your following roles are going to expire",
+      "go-to-project": "Go to the project page",
+      "title": "Role expiration remind"
     }
   },
   "resource": {

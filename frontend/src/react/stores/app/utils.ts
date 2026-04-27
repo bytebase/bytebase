@@ -1,7 +1,4 @@
 import { Code, ConnectError } from "@connectrpc/connect";
-import { resolveCELExpr } from "@/plugins/cel/logic/resolve";
-import type { SimpleExpr } from "@/plugins/cel/types";
-import { ExprType } from "@/plugins/cel/types";
 import {
   getProjectName,
   getUserName,
@@ -11,7 +8,6 @@ import {
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { CEL_ATTRIBUTE_REQUEST_TIME } from "@/utils/cel-attributes";
 import type { AppStoreState } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
@@ -64,41 +60,16 @@ function bindingMemberToNames(member: string): string[] {
   return [getUserName(member)];
 }
 
-function findExpirationDate(expr: SimpleExpr): Date | undefined {
-  if (expr.type === ExprType.ConditionGroup) {
-    for (const arg of expr.args) {
-      const date = findExpirationDate(arg);
-      if (date) return date;
-    }
-  }
-  if (expr.type !== ExprType.Condition) {
-    return undefined;
-  }
-  const [left, right] = expr.args;
-  if (
-    expr.operator === "_<_" &&
-    left === CEL_ATTRIBUTE_REQUEST_TIME &&
-    right instanceof Date
-  ) {
-    return right;
-  }
-  return undefined;
-}
-
-function getBindingExpirationDate(binding: Binding): Date | undefined {
+export function getBindingExpirationDate(binding: Binding): Date | undefined {
   const expression = binding.condition?.expression;
   const match = expression?.match(/request\.time\s*<\s*timestamp\("([^"]+)"\)/);
   if (match) {
     return new Date(match[1]);
   }
-  if (!binding.parsedExpr) {
-    return undefined;
-  }
-  const date = findExpirationDate(resolveCELExpr(binding.parsedExpr));
-  return date && !Number.isNaN(date.getTime()) ? date : undefined;
+  return undefined;
 }
 
-function isBindingExpired(binding: Binding): boolean {
+export function isBindingExpired(binding: Binding): boolean {
   const expiration = getBindingExpirationDate(binding);
   return Boolean(expiration && expiration < new Date());
 }

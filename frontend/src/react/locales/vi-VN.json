@@ -805,6 +805,7 @@
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
+    "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "unique": "Duy nhất",
     "visible": "Hiển thị"
   },
@@ -1695,6 +1696,9 @@
       },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
+    "overview": {
+      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
+    },
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
@@ -1832,6 +1836,12 @@
   "remind": {
     "release": {
       "new-version-available-with-tag": "Phiên bản mới {{tag}} có sẵn"
+    },
+    "role-expire": {
+      "checkbox": "Không nhắc nhở cho đến khi có bất kỳ cập nhật nào",
+      "content": "Các vai trò sau của bạn sắp hết hạn",
+      "go-to-project": "Đi đến trang dự án",
+      "title": "Nhắc nhở hết hạn vai trò"
     }
   },
   "resource": {

@@ -805,6 +805,7 @@
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "unassign-alert-title": "データベースの割り当てを解除する",
+    "unassigned-databases": "未割り当てのデータベース",
     "unique": "唯一",
     "visible": "見える"
   },
@@ -1695,6 +1696,9 @@
       },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
+    "overview": {
+      "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"
+    },
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
@@ -1832,6 +1836,12 @@
   "remind": {
     "release": {
       "new-version-available-with-tag": "新しいバージョン {{tag}} が利用可能です"
+    },
+    "role-expire": {
+      "checkbox": "更新があるまで通知しない",
+      "content": "次のロールは期限切れになります",
+      "go-to-project": "プロジェクトページへ",
+      "title": "ロールの有効期限通知"
     }
   },
   "resource": {
