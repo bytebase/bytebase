@@ -295,7 +295,7 @@ func TestLoader_FulltextAndSpatialIndex(t *testing.T) {
 		Columns: []*storepb.ColumnMetadata{
 			{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 			{Name: "body", Type: "text", Nullable: true},
-			{Name: "location", Type: "geometry", Nullable: true},
+			{Name: "location", Type: "geometry", Nullable: false},
 		},
 		Indexes: []*storepb.IndexMetadata{
 			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
