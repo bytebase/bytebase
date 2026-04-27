@@ -2532,7 +2532,6 @@
     },
     "invalid-database": "Invalid database {database}",
     "jit": "Just-In-Time Access",
-    "last-synced": "Last synced: {time}",
     "link-access": "Link access",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",

@@ -2532,7 +2532,6 @@
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
     "jit": "Just-In-Time Access",
-    "last-synced": "Đã đồng bộ lần cuối: {time}",
     "link-access": "Truy cập liên kết",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",

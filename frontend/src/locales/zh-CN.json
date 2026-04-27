@@ -2532,7 +2532,6 @@
     },
     "invalid-database": "数据库 {database} 无效",
     "jit": "即时访问",
-    "last-synced": "上次同步时间：{time}",
     "link-access": "链接访问权限",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",

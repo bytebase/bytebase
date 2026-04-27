@@ -129,6 +129,7 @@ function SchemaPaneInner() {
   useEffect(() => {
     if (!isValidDatabaseName(database.name)) {
       setMetadata(null);
+      setIsFetching(false);
       return;
     }
     setIsFetching(true);
