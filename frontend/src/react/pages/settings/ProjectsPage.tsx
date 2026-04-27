@@ -1,11 +1,4 @@
-import {
-  Archive,
-  Check,
-  ChevronDown,
-  EllipsisVertical,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Archive, Check, EllipsisVertical, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,13 +9,13 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { ProjectCreateDialog } from "@/react/components/header/ProjectCreateDialog";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { ProjectTable } from "@/react/components/ProjectTable";
 import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
-import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
   DropdownMenu,
@@ -428,30 +421,6 @@ function ProjectActionDropdown({
 }
 
 // ============================================================
-// HighlightText
-// ============================================================
-
-function HighlightText({ text, keyword }: { text: string; keyword: string }) {
-  if (!keyword) return <>{text}</>;
-
-  const lowerText = text.toLowerCase();
-  const lowerKeyword = keyword.toLowerCase();
-  const index = lowerText.indexOf(lowerKeyword);
-
-  if (index === -1) return <>{text}</>;
-
-  return (
-    <>
-      {text.substring(0, index)}
-      <span className="bg-yellow-100">
-        {text.substring(index, index + keyword.length)}
-      </span>
-      {text.substring(index + keyword.length)}
-    </>
-  );
-}
-
-// ============================================================
 // ProjectsPage (main)
 // ============================================================
 
@@ -695,27 +664,6 @@ export function ProjectsPage() {
       .filter((p): p is Project => p !== undefined);
   }, [selectedNames, projectStore]);
 
-  const toggleSelection = useCallback((name: string) => {
-    setSelectedNames((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  }, []);
-
-  const toggleSelectAll = useCallback(() => {
-    setSelectedNames((prev) => {
-      const selectableProjects = projects.filter(
-        (p) => extractProjectResourceName(p.name) !== "default"
-      );
-      if (prev.size === selectableProjects.length) {
-        return new Set();
-      }
-      return new Set(selectableProjects.map((p) => p.name));
-    });
-  }, [projects]);
-
   const handleBatchOperation = useCallback(() => {
     setSelectedNames(new Set());
     fetchProjects(true);
@@ -749,30 +697,6 @@ export function ProjectsPage() {
     fetchProjects(true);
   }, [fetchProjects]);
 
-  const renderSortIndicator = (columnKey: string) => {
-    if (sortKey !== columnKey) {
-      return <ChevronDown className="size-3 text-control-border" />;
-    }
-    return (
-      <ChevronDown
-        className={cn(
-          "h-3 w-3 text-accent transition-transform",
-          sortOrder === "asc" && "rotate-180"
-        )}
-      />
-    );
-  };
-
-  const selectableProjects = useMemo(
-    () =>
-      projects.filter((p) => extractProjectResourceName(p.name) !== "default"),
-    [projects]
-  );
-
-  const allSelected =
-    selectableProjects.length > 0 &&
-    selectedNames.size === selectableProjects.length;
-
   const pageSizeOptions = getPageSizeOptions();
 
   return (
@@ -805,130 +729,28 @@ export function ProjectsPage() {
       )}
 
       {/* Table */}
-      <div className="border rounded-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="bg-control-bg border-b border-control-border">
-                {canDelete && (
-                  <th className="w-12 px-4 py-2">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleSelectAll}
-                      className="rounded-xs border-control-border"
-                    />
-                  </th>
-                )}
-                <th className="px-4 py-2 text-left font-medium min-w-[128px]">
-                  {t("common.id")}
-                </th>
-                <th
-                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                  onClick={() => toggleSort("title")}
-                >
-                  <div className="flex items-center gap-x-1">
-                    {t("project.table.name")}
-                    {renderSortIndicator("title")}
-                  </div>
-                </th>
-                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-                  {t("common.labels")}
-                </th>
-                <th className="w-[50px]" />
-              </tr>
-            </thead>
-            <tbody>
-              {loading && projects.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={canDelete ? 5 : 4}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
-                      {t("common.loading")}
-                    </div>
-                  </td>
-                </tr>
-              ) : projects.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={canDelete ? 5 : 4}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    {t("common.no-data")}
-                  </td>
-                </tr>
-              ) : (
-                projects.map((project, i) => {
-                  const resourceName = extractProjectResourceName(project.name);
-                  const isDefault = resourceName === "default";
-                  const isSelected = selectedNames.has(project.name);
-
-                  return (
-                    <tr
-                      key={project.name}
-                      className={cn(
-                        "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
-                        i % 2 === 1 && "bg-control-bg/50"
-                      )}
-                      onClick={(e) => handleRowClick(project, e)}
-                    >
-                      {canDelete && (
-                        <td
-                          className="w-12 px-4 py-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            disabled={isDefault}
-                            onChange={() => toggleSelection(project.name)}
-                            className="rounded-xs border-control-border disabled:opacity-50"
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 py-2">
-                        <HighlightText
-                          text={resourceName}
-                          keyword={searchText}
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-x-2">
-                          <HighlightText
-                            text={project.title}
-                            keyword={searchText}
-                          />
-                          {project.state === State.DELETED && (
-                            <Badge variant="warning" className="text-xs">
-                              {t("common.archived")}
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 hidden md:table-cell">
-                        <LabelsDisplay labels={project.labels} />
-                      </td>
-                      <td className="px-4 py-2">
-                        <div
-                          className="flex justify-end"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ProjectActionDropdown
-                            project={project}
-                            onAction={handleProjectAction}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="border rounded-sm overflow-x-auto">
+        <ProjectTable
+          className="min-w-[700px]"
+          projectList={projects}
+          keyword={searchText}
+          loading={loading}
+          showSelection={canDelete}
+          showLabels
+          showActions
+          renderActions={(project) => (
+            <ProjectActionDropdown
+              project={project}
+              onAction={handleProjectAction}
+            />
+          )}
+          selectedProjectNames={Array.from(selectedNames)}
+          onSelectedChange={(names) => setSelectedNames(new Set(names))}
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSortChange={(key) => toggleSort(key)}
+          onRowClick={(project, e) => handleRowClick(project, e)}
+        />
       </div>
 
       {/* Pagination footer */}
@@ -949,33 +771,6 @@ export function ProjectsPage() {
         onClose={() => setShowCreateDrawer(false)}
         onCreated={handleCreated}
       />
-    </div>
-  );
-}
-
-// ============================================================
-// LabelsDisplay
-// ============================================================
-
-function LabelsDisplay({ labels }: { labels: { [key: string]: string } }) {
-  const entries = Object.entries(labels);
-  if (entries.length === 0)
-    return <span className="text-control-placeholder">-</span>;
-
-  const displayEntries = entries.slice(0, 3);
-  const hasMore = entries.length > 3;
-
-  return (
-    <div className="flex items-center gap-x-1">
-      {displayEntries.map(([key, value]) => (
-        <span
-          key={key}
-          className="rounded-xs bg-control-bg py-0.5 px-2 text-sm"
-        >
-          {key}:{value}
-        </span>
-      ))}
-      {hasMore && <span>...</span>}
     </div>
   );
 }

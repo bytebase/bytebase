@@ -8,6 +8,7 @@ import {
   type SearchScope,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
+import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -39,7 +40,6 @@ import {
   extractProjectResourceName,
   formatAbsoluteDateTime,
   getDefaultPagination,
-  getHighlightHTMLByRegExp,
   getIssueRoute,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
@@ -501,28 +501,6 @@ function IssueListItem({
     [highlightText]
   );
 
-  const highlightedTitle = useMemo(
-    () =>
-      getHighlightHTMLByRegExp(
-        issue.title,
-        highlightWords,
-        false,
-        "bg-yellow-100"
-      ),
-    [issue.title, highlightWords]
-  );
-
-  const highlightedDescription = useMemo(
-    () =>
-      getHighlightHTMLByRegExp(
-        issue.description,
-        highlightWords,
-        false,
-        "bg-yellow-100"
-      ),
-    [issue.description, highlightWords]
-  );
-
   const expanded =
     highlightText &&
     issue.description &&
@@ -548,8 +526,12 @@ function IssueListItem({
                 href={issueUrl}
                 className="font-medium text-main text-base truncate hover:underline"
                 onClick={(e) => e.stopPropagation()}
-                dangerouslySetInnerHTML={{ __html: highlightedTitle }}
-              />
+              >
+                <HighlightLabelText
+                  text={issue.title}
+                  keyword={highlightWords}
+                />
+              </a>
             ) : (
               <a
                 href={issueUrl}
@@ -599,12 +581,12 @@ function IssueListItem({
           </div>
           {/* Expanded description for search highlights */}
           {expanded && (
-            <div
-              className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all text-sm text-control-light"
-              dangerouslySetInnerHTML={{
-                __html: highlightedDescription,
-              }}
-            />
+            <div className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all text-sm text-control-light">
+              <HighlightLabelText
+                text={issue.description}
+                keyword={highlightWords}
+              />
+            </div>
           )}
         </div>
 
