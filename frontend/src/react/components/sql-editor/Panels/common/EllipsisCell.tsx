@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { getLayerRoot } from "@/react/components/ui/layer";
 import { cn } from "@/react/lib/utils";
 
 interface EllipsisCellProps {
@@ -65,11 +66,11 @@ export function EllipsisCell({
               transform: "translate(-50%, -100%) translateY(-6px)",
               maxWidth: "min(33vw, 320px)",
             }}
-            className="z-50 rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs font-normal text-white shadow-md whitespace-pre-wrap break-all pointer-events-none"
+            className="rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs font-normal text-white shadow-md whitespace-pre-wrap break-all pointer-events-none"
           >
             <HighlightLabelText text={tooltip ?? content} keyword={keyword} />
           </span>,
-          document.body
+          getLayerRoot("overlay")
         )}
     </span>
   );
