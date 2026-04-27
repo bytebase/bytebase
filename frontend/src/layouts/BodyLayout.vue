@@ -14,17 +14,19 @@
   </teleport>
 
   <teleport v-if="contentTarget" :to="contentTarget">
-    <RoutePermissionGuard
-      class="m-4"
-      :routes="[
-        ...workspaceRoutes,
-        ...workspaceSettingRoutes,
-        ...environmentV1Routes,
-        ...instanceRoutes,
-      ]"
-    >
-      <router-view name="content" />
-    </RoutePermissionGuard>
+    <ReactPageMount
+      page="RoutePermissionGuardShell"
+      :page-props="{
+        routeKey: route.fullPath,
+        className: 'm-4',
+        targetClassName: 'h-full min-h-0',
+        onReady: handlePermissionReady,
+      }"
+    />
+  </teleport>
+
+  <teleport v-if="routePermissionTarget" :to="routePermissionTarget">
+    <router-view name="content" />
   </teleport>
 
   <teleport v-if="quickstartTarget" :to="quickstartTarget">
@@ -44,17 +46,12 @@ import { useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AgentWindowMount from "@/components/AgentWindowMount.vue";
-import RoutePermissionGuard from "@/components/Permission/RoutePermissionGuard.vue";
 import Quickstart from "@/components/Quickstart.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";
-import environmentV1Routes from "@/router/dashboard/environmentV1";
-import instanceRoutes from "@/router/dashboard/instance";
-import workspaceRoutes from "@/router/dashboard/workspace";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import workspaceSettingRoutes from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -81,6 +78,7 @@ const shellTargets = shallowRef<DashboardShellTargets>({
 });
 const mainContainerRef = ref<HTMLDivElement>();
 const showReleaseModal = ref(false);
+const routePermissionTarget = shallowRef<HTMLDivElement | null>(null);
 
 const isRootPath = computed(() => {
   return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
@@ -98,6 +96,10 @@ const sidebarTarget = computed(() => {
 const handleReady = (targets: DashboardShellTargets) => {
   shellTargets.value = targets;
   mainContainerRef.value = targets.mainContainer ?? undefined;
+};
+
+const handlePermissionReady = (target: HTMLDivElement | null) => {
+  routePermissionTarget.value = target;
 };
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {

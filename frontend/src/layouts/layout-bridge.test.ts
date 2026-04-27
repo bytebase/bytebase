@@ -39,9 +39,14 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
         const content = ref<HTMLDivElement | null>(null);
         const quickstart = ref<HTMLDivElement | null>(null);
         const mainContainer = ref<HTMLDivElement | null>(null);
+        const permissionTarget = ref<HTMLDivElement | null>(null);
 
         onMounted(() => {
           if (props.page === "DashboardFrameShell") {
+            return;
+          }
+          if (props.page === "RoutePermissionGuardShell") {
+            props.pageProps?.onReady?.(permissionTarget.value);
             return;
           }
 
@@ -61,53 +66,39 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
         });
 
         return () =>
-          h("div", { "data-testid": "mock-shell" }, [
-            h("div", {
-              ref: desktopSidebar,
-              "data-testid": "shell-desktop-sidebar",
-            }),
-            h("div", {
-              ref: mobileSidebar,
-              "data-testid": "shell-mobile-sidebar",
-            }),
-            h(
-              "div",
-              {
-                id: "bb-layout-main",
-                ref: mainContainer,
-              },
-              [
+          props.page === "RoutePermissionGuardShell"
+            ? h("div", {
+                ref: permissionTarget,
+                "data-testid": "permission-guard",
+                class: props.pageProps?.targetClassName,
+              })
+            : h("div", { "data-testid": "mock-shell" }, [
                 h("div", {
-                  ref: content,
-                  "data-testid": "shell-content",
+                  ref: desktopSidebar,
+                  "data-testid": "shell-desktop-sidebar",
                 }),
-              ]
-            ),
-            h("div", {
-              ref: quickstart,
-              "data-testid": "shell-quickstart",
-            }),
-          ]);
-      },
-    }),
-  };
-});
-
-vi.mock("@/components/Permission/RoutePermissionGuard.vue", async () => {
-  const { defineComponent, h } = await import("vue");
-  return {
-    default: defineComponent({
-      name: "MockRoutePermissionGuard",
-      setup(_, { slots, attrs }) {
-        return () =>
-          h(
-            "div",
-            {
-              "data-testid": "permission-guard",
-              class: attrs.class,
-            },
-            slots.default?.()
-          );
+                h("div", {
+                  ref: mobileSidebar,
+                  "data-testid": "shell-mobile-sidebar",
+                }),
+                h(
+                  "div",
+                  {
+                    id: "bb-layout-main",
+                    ref: mainContainer,
+                  },
+                  [
+                    h("div", {
+                      ref: content,
+                      "data-testid": "shell-content",
+                    }),
+                  ]
+                ),
+                h("div", {
+                  ref: quickstart,
+                  "data-testid": "shell-quickstart",
+                }),
+              ]);
       },
     }),
   };
@@ -152,22 +143,6 @@ vi.mock("@/components/ReleaseRemindModal.vue", async () => {
 
 vi.mock("@/plugins/i18n", () => ({
   t: (key: string) => key,
-}));
-
-vi.mock("@/router/dashboard/environmentV1", () => ({
-  default: [],
-}));
-
-vi.mock("@/router/dashboard/instance", () => ({
-  default: [],
-}));
-
-vi.mock("@/router/dashboard/workspace", () => ({
-  default: [],
-}));
-
-vi.mock("@/router/dashboard/workspaceSetting", () => ({
-  default: [],
 }));
 
 vi.mock("@/router/dashboard/workspaceRoutes", () => ({
