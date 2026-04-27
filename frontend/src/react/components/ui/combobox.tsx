@@ -54,8 +54,12 @@ type ComboboxBaseProps = {
   placeholder?: string;
   /** Custom render for the selected value in the trigger (single mode only) */
   renderValue?: (option: ComboboxOption) => React.ReactNode;
-  /** Text shown when no options match the search */
+  /** Text shown when no options match the search. Ignored when
+   *  `noResultsContent` is provided. */
   noResultsText?: string;
+  /** Custom rich empty-state node — replaces `noResultsText`. Useful when
+   *  the empty state needs links or conditional copy beyond a flat string. */
+  noResultsContent?: React.ReactNode;
   /** Server-side search callback. When provided, filters via this instead of client-side. */
   onSearch?: (query: string) => void;
   className?: string;
@@ -89,6 +93,7 @@ export function Combobox(props: ComboboxProps) {
     placeholder = "",
     renderValue,
     noResultsText,
+    noResultsContent,
     onSearch,
     className,
     disabled,
@@ -381,9 +386,13 @@ export function Combobox(props: ComboboxProps) {
       />
       <div className="max-h-60 overflow-y-auto">
         {filteredGroups.every((g) => g.options.length === 0) ? (
-          <div className="px-3 py-6 text-sm text-control-placeholder text-center">
-            {noResultsText ?? "—"}
-          </div>
+          noResultsContent !== undefined ? (
+            <div className="p-3">{noResultsContent}</div>
+          ) : (
+            <div className="px-3 py-6 text-sm text-control-placeholder text-center">
+              {noResultsText ?? "—"}
+            </div>
+          )
         ) : (
           filteredGroups.map((group) => (
             <div key={group.label}>

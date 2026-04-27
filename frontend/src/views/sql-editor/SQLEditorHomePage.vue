@@ -23,7 +23,7 @@
         width="80vw"
         placement="left"
       >
-        <AsidePanel />
+        <ReactPageMount page="AsidePanel" container-class="h-full" />
       </Drawer>
     </teleport>
     <NSplit
@@ -36,7 +36,7 @@
       @update:size="size => state.sizebarSize = size"
     >
       <template #1>
-        <AsidePanel />
+        <ReactPageMount page="AsidePanel" container-class="h-full" />
       </template>
       <template #2>
         <div class="h-full relative flex flex-col">
@@ -92,7 +92,6 @@ import {
   extractDatabaseResourceName,
   extractProjectResourceName,
 } from "@/utils";
-import AsidePanel from "./AsidePanel";
 import { useSQLEditorContext } from "./context";
 import EditorPanel from "./EditorPanel";
 import { provideCurrentTabViewStateContext } from "./EditorPanel/context/viewState";

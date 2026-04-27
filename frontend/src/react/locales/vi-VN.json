@@ -195,6 +195,7 @@
     "show-diff": "Hiển thị khác biệt"
   },
   "common": {
+    "Default": "Mặc định",
     "action-required": "Cần thực hiện hành động",
     "actions": "Hành động",
     "activated": "Đã kích hoạt",
@@ -292,6 +293,7 @@
     "home": "Trang chủ",
     "id": "ID",
     "import": "Nhập",
+    "info": "Thông tin",
     "instance": "Phiên bản",
     "instances": "Phiên bản",
     "is-required": "is required",
@@ -703,17 +705,22 @@
   "database": {
     "all": "Tất cả cơ sở dữ liệu",
     "change-database": "Thay đổi cơ sở dữ liệu",
+    "checks": "Kiểm tra",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "columns": "Cột",
+    "comment": "Bình luận",
     "data-size": "Kích thước dữ liệu",
     "edit-environment": "Chỉnh sửa Môi trường",
     "edit-labels": "Chỉnh sửa nhãn",
     "edit-schema": "Chỉnh sửa lược đồ",
     "engine": "Engine",
     "expression": "Expression",
+    "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
+    "external-server-name": "Tên máy chủ bên ngoài",
     "filter-database": "Lọc cơ sở dữ liệu",
+    "foreign-keys": "Khóa ngoại",
     "index-size": "Kích thước chỉ mục",
     "indexes": "Chỉ mục",
     "last-sync": "Lần đồng bộ cuối cùng",
@@ -836,6 +843,8 @@
     "functions": "Hàm",
     "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "packages": "Gói",
+    "partitions": "Phân vùng",
+    "procedures": "Thủ tục",
     "schema": {
       "default": "Schema mặc định"
     },
@@ -1891,6 +1900,9 @@
   "rollout.task.no-tasks": "Không có tác vụ trong giai đoạn này",
   "rollout.task.selected-count": "Đã chọn {{count}} tác vụ",
   "rollout.task.statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn.",
+  "schema-diagram": {
+    "self": "Sơ đồ Lược đồ"
+  },
   "schema-editor": {
     "actions": {
       "add-column": "Add column",
@@ -1952,6 +1964,11 @@
       "name-placeholder": "Table name",
       "no-match": "No tables match the search",
       "no-tables": "No tables"
+    },
+    "table-partition": {
+      "expression": "Biểu thức",
+      "type": "Loại",
+      "value": "Giá trị"
     }
   },
   "schema-template": {
@@ -2548,9 +2565,13 @@
     },
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
+    "click-to-sync-now": "Nhấp để đồng bộ ngay",
     "close-sheet": "Đóng trang tính",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
+    "copy-all-column-names": "Sao chép tất cả tên cột",
+    "copy-name": "Sao chép tên",
+    "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2559,6 +2580,7 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
+    "generate-sql": "Tạo SQL",
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2567,15 +2589,22 @@
       }
     },
     "jit": "Just-In-Time Access",
+    "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "manage-connections": "Quản lý kết nối",
     "no-access-requests": "No access requests",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
+    "no-project": {
+      "contact-the-admin-to-grant-access": "Liên hệ với quản trị viên để cấp quyền truy cập.",
+      "go-to-create": "Đi tới tạo",
+      "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào."
+    },
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
+    "preview-table-data": "Xem trước dữ liệu bảng",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
     "project-read": "Đọc dự án",
@@ -2607,6 +2636,7 @@
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
+    "sync-in-progress": "Đang đồng bộ",
     "tab": {
       "context-menu": {
         "actions": {
@@ -2625,7 +2655,9 @@
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
+    "view-detail": "Xem chi tiết",
     "view-issue": "View Issue",
+    "view-schema-text": "Xem văn bản lược đồ",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

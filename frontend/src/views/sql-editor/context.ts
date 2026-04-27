@@ -11,7 +11,6 @@ import {
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import { isWorksheetWritableV1 } from "@/utils";
 import type { SQLEditorEvents as SQLEditorEventsMap } from "./events";
 import { sqlEditorEvents } from "./events";
@@ -37,14 +36,6 @@ export type SQLEditorContext = {
     min: number;
     max: number;
   }>;
-  schemaViewer: Ref<
-    | {
-        schema?: string;
-        object?: string;
-        type?: GetSchemaStringRequest_ObjectType;
-      }
-    | undefined
-  >;
 
   pendingInsertAtCaret: Ref<string | undefined>;
 
@@ -92,7 +83,6 @@ export const provideSQLEditorContext = () => {
     asidePanelTab,
     showConnectionPanel,
     showAIPanel,
-    schemaViewer,
     pendingInsertAtCaret,
     highlightAccessGrantName,
     editorPanelSize,
@@ -103,7 +93,6 @@ export const provideSQLEditorContext = () => {
     showConnectionPanel,
     showAIPanel,
     editorPanelSize,
-    schemaViewer,
     pendingInsertAtCaret,
     highlightAccessGrantName,
     events: sqlEditorEvents,

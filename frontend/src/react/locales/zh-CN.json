@@ -195,6 +195,7 @@
     "show-diff": "显示差异"
   },
   "common": {
+    "Default": "默认",
     "action-required": "需要操作",
     "actions": "操作",
     "activated": "已激活",
@@ -292,6 +293,7 @@
     "home": "主页",
     "id": "ID",
     "import": "导入",
+    "info": "信息",
     "instance": "实例",
     "instances": "实例",
     "is-required": "is required",
@@ -703,17 +705,22 @@
   "database": {
     "all": "所有数据库",
     "change-database": "变更数据库",
+    "checks": "Check 约束",
     "classification": {
       "description": "定义分类分级，跨列和数据库统一应用脱敏策略。"
     },
     "columns": "列",
+    "comment": "注释",
     "data-size": "数据大小",
     "edit-environment": "编辑环境",
     "edit-labels": "编辑标签",
     "edit-schema": "变更 Schema",
     "engine": "引擎",
     "expression": "Expression",
+    "external-database-name": "外部数据库名称",
+    "external-server-name": "外部服务器名称",
     "filter-database": "筛选数据库",
+    "foreign-keys": "外键",
     "index-size": "索引大小",
     "indexes": "索引",
     "last-sync": "最后一次同步",
@@ -836,6 +843,8 @@
     "functions": "函数",
     "n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
     "packages": "包",
+    "partitions": "分区",
+    "procedures": "存储过程",
     "schema": {
       "default": "默认 Schema"
     },
@@ -1891,6 +1900,9 @@
   "rollout.task.no-tasks": "此阶段没有任务",
   "rollout.task.selected-count": "已选择 {{count}} 个任务",
   "rollout.task.statement-truncated-hint": "由于语句过长，已被截断。",
+  "schema-diagram": {
+    "self": "Schema 关系图"
+  },
   "schema-editor": {
     "actions": {
       "add-column": "Add column",
@@ -1952,6 +1964,11 @@
       "name-placeholder": "Table name",
       "no-match": "No tables match the search",
       "no-tables": "No tables"
+    },
+    "table-partition": {
+      "expression": "表达式",
+      "type": "类型",
+      "value": "值"
     }
   },
   "schema-template": {
@@ -2548,9 +2565,13 @@
     },
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
+    "click-to-sync-now": "点击立即同步",
     "close-sheet": "关闭工作表",
     "connect-in-admin-mode": "以管理员模式连接",
     "connect-to-a-database": "连接数据库",
+    "copy-all-column-names": "复制所有列名",
+    "copy-name": "复制名称",
+    "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
@@ -2559,6 +2580,7 @@
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
     "format-sql": "格式化 SQL",
+    "generate-sql": "生成 SQL",
     "grant-type-unmask": "脱敏豁免",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2567,15 +2589,22 @@
       }
     },
     "jit": "即时访问",
+    "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",
     "loading-databases": "加载数据库信息...",
     "manage-connections": "管理连接",
     "no-access-requests": "暂无访问请求",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
+    "no-project": {
+      "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。",
+      "go-to-create": "去创建",
+      "not-member-of-any-projects": "你不是任何项目的成员。"
+    },
     "no-queriable-database": "没有可查询的数据库",
     "only-select-allowed": "只允许执行只读语句",
     "open-in-new-tab": "在新选项卡中打开",
+    "preview-table-data": "预览表数据",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
     "project-read": "项目内可读",
@@ -2607,6 +2636,7 @@
     "select-a-database-to-start": "选择数据库以开始",
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
+    "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {
         "actions": {
@@ -2625,7 +2655,9 @@
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "view-database-detail": "查看数据库详情",
+    "view-detail": "查看详情",
     "view-issue": "查看工单",
+    "view-schema-text": "查看文本 Schema",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

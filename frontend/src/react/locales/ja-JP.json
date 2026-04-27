@@ -195,6 +195,7 @@
     "show-diff": "違いを表示"
   },
   "common": {
+    "Default": "デフォルト",
     "action-required": "対応が必要",
     "actions": "アクション",
     "activated": "有効化しました",
@@ -292,6 +293,7 @@
     "home": "ホームページ",
     "id": "ID",
     "import": "インポート",
+    "info": "情報",
     "instance": "インスタンス",
     "instances": "インスタンス",
     "is-required": "is required",
@@ -703,17 +705,22 @@
   "database": {
     "all": "すべてのデータベース",
     "change-database": "データベースの変更",
+    "checks": "チェック",
     "classification": {
       "description": "Define classification levels to apply consistent masking policies across columns and databases."
     },
     "columns": "カラム",
+    "comment": "コメント",
     "data-size": "データサイズ",
     "edit-environment": "環境の編集",
     "edit-labels": "ラベルを編集",
     "edit-schema": "スキーマの変更",
     "engine": "エンジン",
     "expression": "Expression",
+    "external-database-name": "外部データベース名",
+    "external-server-name": "外部サーバー名",
     "filter-database": "データベースをフィルター",
+    "foreign-keys": "外部キー",
     "index-size": "インデックスサイズ",
     "indexes": "索引",
     "last-sync": "最後の同期",
@@ -836,6 +843,8 @@
     "functions": "関数",
     "n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
     "packages": "パッケージ",
+    "partitions": "パーティション",
+    "procedures": "ストアドプロシージャ",
     "schema": {
       "default": "デフォルトスキーマ"
     },
@@ -1891,6 +1900,9 @@
   "rollout.task.no-tasks": "このステージにはタスクがありません",
   "rollout.task.selected-count": "{{count}} 件のタスクを選択中",
   "rollout.task.statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。",
+  "schema-diagram": {
+    "self": "スキーマ図"
+  },
   "schema-editor": {
     "actions": {
       "add-column": "Add column",
@@ -1952,6 +1964,11 @@
       "name-placeholder": "Table name",
       "no-match": "No tables match the search",
       "no-tables": "No tables"
+    },
+    "table-partition": {
+      "expression": "表現",
+      "type": "タイプ",
+      "value": "値"
     }
   },
   "schema-template": {
@@ -2548,9 +2565,13 @@
     },
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
+    "click-to-sync-now": "クリックして今すぐ同期します",
     "close-sheet": "ワークシートを閉じる",
     "connect-in-admin-mode": "管理者モードで接続する",
     "connect-to-a-database": "データベースに接続",
+    "copy-all-column-names": "すべての列名をコピーします",
+    "copy-name": "名前をコピーする",
+    "copy-url": "URLをコピー",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
@@ -2559,6 +2580,7 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format-sql": "Format SQL",
+    "generate-sql": "SQLの生成",
     "grant-type-unmask": "Unmask",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -2567,15 +2589,22 @@
       }
     },
     "jit": "Just-In-Time Access",
+    "last-synced": "最終同期時間: <time></time>",
     "link-access": "リンクアクセス",
     "loading-databases": "データベース情報をロードしています...",
     "manage-connections": "接続を管理する",
     "no-access-requests": "No access requests",
     "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
+    "no-project": {
+      "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。",
+      "go-to-create": "作成に行く",
+      "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。"
+    },
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
+    "preview-table-data": "テーブルデータのプレビュー",
     "private": "プライベート",
     "private-desc": "このシートにアクセスできるのはあなただけです",
     "project-read": "プロジェクト内で読み取り可能",
@@ -2607,6 +2636,7 @@
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
+    "sync-in-progress": "同期中",
     "tab": {
       "context-menu": {
         "actions": {
@@ -2625,7 +2655,9 @@
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-database-detail": "データベースの詳細を表示する",
+    "view-detail": "詳細を見る",
     "view-issue": "View Issue",
+    "view-schema-text": "テキストの表示 スキーマ",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
