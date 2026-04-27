@@ -18,78 +18,61 @@ const mocks = vi.hoisted(() => ({
   },
   workspacePermissions: new Set<Permission>(),
   projectPermissions: new Set<Permission>(),
-  hasFeature: vi.fn(() => true),
+  loadWorkspacePermissionState: vi.fn(async () => {}),
+  loadProjectIamPolicy: vi.fn(async (_project: string) => undefined),
+  loadSubscription: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/react/router", () => ({
   useCurrentRoute: () => mocks.route,
 }));
 
-vi.mock("@/react/components/ComponentPermissionGuard", () => {
-  const basicPermissions: Permission[] = [
-    "bb.roles.list",
-    "bb.workspaces.getIamPolicy",
-    "bb.settings.getWorkspaceProfile",
-  ];
-  const getState = ({
-    permissions,
-    project,
-    checkBasicWorkspacePermissions,
-  }: {
-    permissions: Permission[];
-    project?: unknown;
-    checkBasicWorkspacePermissions?: boolean;
-  }) => {
-    const missedBasicPermissions = checkBasicWorkspacePermissions
-      ? basicPermissions.filter((p) => !mocks.workspacePermissions.has(p))
-      : [];
-    const missedPermissions = permissions.filter((p) =>
-      project
-        ? !mocks.workspacePermissions.has(p) && !mocks.projectPermissions.has(p)
-        : !mocks.workspacePermissions.has(p)
-    );
-    return {
-      missedBasicPermissions,
-      missedPermissions,
-      permitted:
-        missedBasicPermissions.length === 0 && missedPermissions.length === 0,
-    };
-  };
-  return {
-    useComponentPermissionState: getState,
-    ComponentPermissionGuard: ({
-      permissions,
-      project,
-      checkBasicWorkspacePermissions,
-      path,
-      className,
-    }: {
-      permissions: Permission[];
-      project?: unknown;
-      checkBasicWorkspacePermissions?: boolean;
-      path?: string;
-      className?: string;
-    }) => {
-      const { missedBasicPermissions, missedPermissions } = getState({
-        permissions,
-        project,
-        checkBasicWorkspacePermissions,
-      });
-      const missed =
-        missedBasicPermissions.length > 0
-          ? missedBasicPermissions
-          : missedPermissions;
-      return (
-        <div role="alert" className={className}>
-          <span>{path}</span>
-          {missed.map((permission) => (
-            <span key={permission}>{permission}</span>
-          ))}
-        </div>
-      );
-    },
-  };
-});
+vi.mock("@/react/hooks/useVueState", () => ({
+  useVueState: (getter: () => unknown) => getter(),
+}));
+
+vi.mock("@/react/components/FeatureBadge", () => ({
+  FeatureBadge: () => <span data-testid="feature-badge" />,
+}));
+
+vi.mock("@/react/pages/settings/RequestRoleSheet", () => ({
+  RequestRoleSheet: () => <div data-testid="request-role-sheet" />,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (
+    selector: (state: {
+      currentUser: { name: string };
+      roles: unknown[];
+      subscription: { plan: number };
+      workspacePolicy: undefined;
+      projectPoliciesByName: Record<string, unknown>;
+      hasWorkspacePermission: (permission: Permission) => boolean;
+      hasProjectPermission: (
+        _project: unknown,
+        permission: Permission
+      ) => boolean;
+      loadWorkspacePermissionState: () => Promise<void>;
+      loadProjectIamPolicy: (project: string) => Promise<undefined>;
+      loadSubscription: () => Promise<undefined>;
+    }) => unknown
+  ) =>
+    selector({
+      currentUser: { name: "users/alice@example.com" },
+      roles: [],
+      subscription: { plan: 3 },
+      workspacePolicy: undefined,
+      projectPoliciesByName: {},
+      hasWorkspacePermission: (permission) =>
+        mocks.workspacePermissions.has(permission),
+      hasProjectPermission: (_project, permission) =>
+        mocks.workspacePermissions.has(permission) ||
+        mocks.projectPermissions.has(permission),
+      loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
+      loadProjectIamPolicy: mocks.loadProjectIamPolicy,
+      loadSubscription: mocks.loadSubscription,
+    }),
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -111,7 +94,12 @@ beforeEach(() => {
   mocks.route.fullPath = "/settings";
   mocks.workspacePermissions = new Set(BASIC_PERMISSIONS);
   mocks.projectPermissions = new Set();
-  mocks.hasFeature.mockReturnValue(true);
+  mocks.loadWorkspacePermissionState.mockReset();
+  mocks.loadWorkspacePermissionState.mockResolvedValue(undefined);
+  mocks.loadProjectIamPolicy.mockReset();
+  mocks.loadProjectIamPolicy.mockResolvedValue(undefined);
+  mocks.loadSubscription.mockReset();
+  mocks.loadSubscription.mockResolvedValue(undefined);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -131,8 +119,16 @@ const renderShell = async (
   await act(async () => {
     root.render(<RoutePermissionGuardShell onReady={onReady} {...props} />);
   });
+  await act(async () => {
+    await Promise.resolve();
+  });
   return onReady;
 };
+
+const requestRoleButton = () =>
+  Array.from(container.querySelectorAll("button")).find((button) =>
+    button.textContent?.includes("issue.title.request-role")
+  );
 
 describe("RoutePermissionGuardShell", () => {
   test("exposes a content target when route permissions pass", async () => {
@@ -144,6 +140,21 @@ describe("RoutePermissionGuardShell", () => {
     expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
     expect(container.querySelector("[role='alert']")).toBeNull();
     expect(container.firstElementChild?.className).toBe("h-full min-h-0");
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not block allowed routes on subscription loading", async () => {
+    mocks.route.requiredPermissions = ["bb.settings.get"];
+    mocks.workspacePermissions.add("bb.settings.get");
+    mocks.loadSubscription.mockImplementation(
+      () => new Promise<undefined>(() => undefined)
+    );
+
+    const onReady = await renderShell({ targetClassName: "h-full min-h-0" });
+
+    expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
+    expect(container.querySelector("[role='alert']")).toBeNull();
+    expect(mocks.loadSubscription).not.toHaveBeenCalled();
   });
 
   test("withholds the content target and renders an alert when permissions fail", async () => {
@@ -154,6 +165,7 @@ describe("RoutePermissionGuardShell", () => {
     expect(onReady).toHaveBeenLastCalledWith(null);
     expect(container.querySelector("[role='alert']")).not.toBeNull();
     expect(container.textContent).toContain("bb.settings.set");
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
   });
 
   test("checks basic workspace permissions before route permissions", async () => {
@@ -174,16 +186,39 @@ describe("RoutePermissionGuardShell", () => {
     await act(async () => {
       root.render(<RoutePermissionGuardShell onReady={onReady} />);
     });
-    const initialCalls = onReady.mock.calls.length;
     expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
 
     mocks.route.fullPath = "/settings?next=foo";
     await act(async () => {
       root.render(<RoutePermissionGuardShell onReady={onReady} />);
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    expect(onReady).toHaveBeenCalledTimes(initialCalls + 1);
     expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
+  });
+
+  test("does not reload permissions when onReady callback identity changes", async () => {
+    mocks.route.requiredPermissions = ["bb.settings.get"];
+    mocks.workspacePermissions.add("bb.settings.get");
+
+    await act(async () => {
+      root.render(<RoutePermissionGuardShell onReady={vi.fn()} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      root.render(<RoutePermissionGuardShell onReady={vi.fn()} />);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
   });
 
   test("uses project permissions when a project is provided", async () => {
@@ -199,5 +234,70 @@ describe("RoutePermissionGuardShell", () => {
 
     expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
     expect(container.querySelector("[role='alert']")).toBeNull();
+    expect(mocks.loadProjectIamPolicy).toHaveBeenCalledWith("projects/prod");
+  });
+
+  test("clears the content target while a new project policy is loading", async () => {
+    mocks.route.requiredPermissions = ["bb.databases.get"];
+    mocks.projectPermissions = new Set(["bb.databases.get"]);
+
+    const onReady = await renderShell({
+      project: {
+        name: "projects/prod",
+        allowRequestRole: true,
+      } as never,
+    });
+    expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
+
+    mocks.loadProjectIamPolicy.mockImplementation((project) =>
+      project === "projects/next"
+        ? new Promise<undefined>(() => undefined)
+        : Promise.resolve(undefined)
+    );
+
+    await act(async () => {
+      root.render(
+        <RoutePermissionGuardShell
+          onReady={onReady}
+          project={
+            {
+              name: "projects/next",
+              allowRequestRole: true,
+            } as never
+          }
+        />
+      );
+    });
+
+    expect(onReady).toHaveBeenLastCalledWith(null);
+    expect(container.querySelector("[role='alert']")).toBeNull();
+  });
+
+  test("enables request role CTA through React project permissions", async () => {
+    mocks.route.requiredPermissions = ["bb.databases.get"];
+    mocks.projectPermissions = new Set(["bb.issues.create"]);
+
+    await renderShell({
+      project: {
+        name: "projects/prod",
+        allowRequestRole: true,
+      } as never,
+    });
+
+    expect(requestRoleButton()?.disabled).toBe(false);
+  });
+
+  test("disables request role CTA when React project permissions are missing", async () => {
+    mocks.route.requiredPermissions = ["bb.databases.get"];
+    mocks.projectPermissions = new Set();
+
+    await renderShell({
+      project: {
+        name: "projects/prod",
+        allowRequestRole: true,
+      } as never,
+    });
+
+    expect(requestRoleButton()?.disabled).toBe(true);
   });
 });

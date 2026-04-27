@@ -30,7 +30,7 @@ import {
 } from "@/react/hooks/useSessionPageSize";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUES } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useAuthStore,
@@ -45,6 +45,13 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+
+export function projectIssuesRoute(project: Project) {
+  return {
+    name: PROJECT_V1_ROUTE_ISSUES,
+    params: { projectId: getProjectName(project.name) },
+  };
+}
 
 // ============================================================
 // ConfirmDialog
@@ -675,19 +682,16 @@ export function ProjectsPage() {
   const canDelete = hasWorkspacePermissionV2("bb.projects.delete");
 
   const handleCreated = useCallback((project: Project) => {
-    router.push({ path: `/${project.name}` });
+    router.push(projectIssuesRoute(project));
   }, []);
 
   const handleRowClick = useCallback(
     (project: Project, e: React.MouseEvent) => {
-      const route = router.resolve({
-        name: PROJECT_V1_ROUTE_DETAIL,
-        params: { projectId: getProjectName(project.name) },
-      });
+      const route = router.resolve(projectIssuesRoute(project));
       if (e.ctrlKey || e.metaKey) {
         window.open(route.fullPath, "_blank");
       } else {
-        router.push(route);
+        router.push(projectIssuesRoute(project));
       }
     },
     []

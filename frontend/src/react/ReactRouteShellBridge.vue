@@ -16,11 +16,16 @@
     />
     <router-view v-else v-bind="targets.routeProps ?? {}" />
   </teleport>
+
+  <teleport v-if="targets.quickstart" :to="targets.quickstart">
+    <Quickstart />
+  </teleport>
 </template>
 
 <script lang="ts" setup>
 import { computed, shallowRef } from "vue";
 import { useRoute } from "vue-router";
+import Quickstart from "@/components/Quickstart.vue";
 import { provideBodyLayoutContext } from "@/layouts/common";
 import type { ReactRouteShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";
