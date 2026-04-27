@@ -472,7 +472,6 @@
     "warning": "Warning",
     "webhooks": "Webhooks",
     "wecom": "WeCom",
-    "workspace-initialize-error": "Failed to initialize the workspace",
     "write-only": "write only",
     "you": "you"
   },
@@ -1519,7 +1518,6 @@
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "never-expires": "Never",
       "role-never-expires": "This role never expires.",
-      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
       "workspace-level-roles": "Workspace level roles"
     },
     "overview": {

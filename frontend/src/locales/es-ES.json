@@ -472,7 +472,6 @@
     "warning": "Advertencia",
     "webhooks": "Webhooks",
     "wecom": "WeCom",
-    "workspace-initialize-error": "Error al inicializar el espacio de trabajo",
     "write-only": "solo escritura",
     "you": "tu"
   },
@@ -1519,7 +1518,6 @@
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "never-expires": "Nunca caduca",
       "role-never-expires": "Este rol nunca expira.",
-      "roles-are-filtered-by-permissions": "Roles are filtered by the permissions",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo"
     },
     "overview": {
