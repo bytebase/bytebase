@@ -40,7 +40,13 @@ import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useCurrentUserV1, useSettingV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useRoleStore,
+  useSettingV1Store,
+} from "@/store";
+import type { Permission } from "@/types";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -50,6 +56,7 @@ import {
   RoleGrantSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
   batchConvertParsedExprToCELString,
   displayRoleTitle,
@@ -73,8 +80,11 @@ import type { DatabaseMode } from "./types";
 export interface RequestRoleSheetProps {
   open: boolean;
   project: Project;
+  requiredPermissions?: Permission[];
   onClose: () => void;
 }
+
+const EMPTY_REQUIRED_PERMISSIONS: Permission[] = [];
 
 // i18n key lookup for the three DatabaseMode radio labels. Kept as a flat
 // function to avoid nested ternaries in the render tree.
@@ -106,6 +116,7 @@ export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
 
 function RequestRoleForm({
   project,
+  requiredPermissions = EMPTY_REQUIRED_PERMISSIONS,
   onClose,
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
@@ -137,6 +148,27 @@ function RequestRoleForm({
   const [submitting, setSubmitting] = useState(false);
 
   const settingStore = useSettingV1Store();
+  const roleStore = useRoleStore();
+  const selectedRole = useVueState(() =>
+    role ? roleStore.getRoleByName(role) : undefined
+  );
+  const requiredPermissionList = useMemo(
+    () => [...new Set(requiredPermissions)],
+    [requiredPermissions]
+  );
+  const roleMatchesRequiredPermissions = (candidate: Role | undefined) => {
+    if (requiredPermissionList.length === 0) {
+      return true;
+    }
+    if (!candidate) {
+      return false;
+    }
+    return requiredPermissionList.every((permission) =>
+      candidate.permissions.includes(permission)
+    );
+  };
+  const selectedRoleMatchesRequiredPermissions =
+    roleMatchesRequiredPermissions(selectedRole);
 
   // Workspace-configured maximum role expiration, in days. Matches the old
   // Vue ExpirationSelector: PROJECT_OWNER grants are exempted (project
@@ -239,6 +271,7 @@ function RequestRoleForm({
     !expirationExceedsMax &&
     !labelsMisconfigured &&
     databaseScopeComplete &&
+    selectedRoleMatchesRequiredPermissions &&
     (!project.forceIssueLabels || labels.length > 0);
 
   const handleSubmit = async () => {
@@ -402,6 +435,18 @@ function RequestRoleForm({
               </AlertDescription>
             </Alert>
           )}
+          {requiredPermissionList.length > 0 && (
+            <Alert>
+              <AlertTitle>{t("common.required-permission")}</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-4">
+                  {requiredPermissionList.map((permission) => (
+                    <li key={permission}>{permission}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
               {t("common.role.self")}
@@ -420,7 +465,15 @@ function RequestRoleForm({
                 setExprGroup(wrapAsGroup(emptySimpleExpr()));
                 setEnvironments([]);
               }}
+              filterRole={roleMatchesRequiredPermissions}
             />
+            {!!role && !selectedRoleMatchesRequiredPermissions && (
+              <p className="text-xs text-error">
+                {t("common.missing-required-permission", {
+                  permissions: requiredPermissionList.join(", "),
+                })}
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">

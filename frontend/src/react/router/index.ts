@@ -41,6 +41,7 @@ import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
+import type { Permission } from "@/types";
 
 export {
   AUTH_SIGNIN_MODULE,
@@ -82,6 +83,7 @@ export type ReactRoute = {
   fullPath: string;
   params: Record<string, string | string[] | undefined>;
   query: Record<string, unknown>;
+  requiredPermissions: Permission[];
 };
 
 export type ReactResolvedRoute = {
@@ -90,6 +92,10 @@ export type ReactResolvedRoute = {
 };
 
 let cachedRoute: ReactRoute | undefined;
+
+function dedupePermissions(permissions: Permission[]): Permission[] {
+  return [...new Set(permissions)];
+}
 
 function snapshotRoute(): ReactRoute {
   const route = router.currentRoute.value;
@@ -101,6 +107,12 @@ function snapshotRoute(): ReactRoute {
     fullPath: route.fullPath,
     params: route.params as Record<string, string | string[] | undefined>,
     query: route.query as Record<string, unknown>,
+    requiredPermissions: dedupePermissions(
+      route.matched.flatMap(
+        (record) =>
+          (record.meta.requiredPermissionList?.() ?? []) as Permission[]
+      )
+    ),
   };
   return cachedRoute;
 }

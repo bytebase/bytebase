@@ -6,6 +6,7 @@ import type {
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Permission } from "@/types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -216,6 +217,15 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   useCurrentUserV1: () => ({ value: mocks.currentUser }),
+  useRoleStore: () => ({
+    getRoleByName: (name: string) => ({
+      name,
+      permissions:
+        name === "roles/projectOwner"
+          ? ["bb.projects.get", "bb.databases.get"]
+          : [],
+    }),
+  }),
   useSettingV1Store: () => stableSettingStore,
   pushNotification: (...args: unknown[]) => mocks.pushNotification(...args),
 }));
@@ -260,7 +270,10 @@ async function flush(): Promise<void> {
   });
 }
 
-async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
+async function renderSheet(
+  enforceIssueTitle: boolean,
+  requiredPermissions?: Permission[]
+): Promise<void> {
   const project = {
     ...PROJECT_BASE,
     enforceIssueTitle,
@@ -270,6 +283,7 @@ async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
       createElement(RequestRoleSheet, {
         open: true,
         project,
+        requiredPermissions,
         onClose: () => {},
       })
     );
@@ -370,5 +384,18 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     // formatIssueTitle sentinel: mock wraps in FMT(...) so if the production
     // code drops the formatIssueTitle() call, this assertion fails.
     expect(req.issue.title).toBe("FMT(issue.title.request-specific-role)");
+  });
+
+  it("blocks stale role submissions when the selected role misses required permissions", async () => {
+    await renderSheet(false, ["bb.databases.get"]);
+    await selectRole("roles/nonMatching");
+    await flush();
+
+    expect(getSubmitButton().disabled).toBe(true);
+
+    await selectRole("roles/projectOwner");
+    await flush();
+
+    expect(getSubmitButton().disabled).toBe(false);
   });
 });
