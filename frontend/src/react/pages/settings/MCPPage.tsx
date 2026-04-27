@@ -15,22 +15,14 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useServerState } from "@/react/hooks/useAppState";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { useActuatorV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function MCPPage() {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-
-  const externalUrl = useVueState(
-    () => actuatorStore.serverInfo?.externalUrl ?? ""
-  );
-  const needConfigureExternalUrl = useVueState(
-    () => actuatorStore.needConfigureExternalUrl
-  );
+  const { externalUrl, needConfigureExternalUrl } = useServerState();
   const canConfigureExternalUrl = hasWorkspacePermissionV2(
     "bb.settings.setWorkspaceProfile"
   );

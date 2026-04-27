@@ -4,13 +4,21 @@ import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
+import type {
+  Instance,
+  InstanceResource,
+} from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
-import type { Subscription } from "@/types/proto-es/v1/subscription_service_pb";
+import type {
+  PlanFeature,
+  PlanType,
+  Subscription,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
+import type { Environment } from "@/types/v1/environment";
 
 export type ProjectListParams = {
   pageSize: number;
@@ -33,6 +41,8 @@ export type WorkspaceSlice = {
   workspaceRequest?: Promise<Workspace | undefined>;
   workspaceProfile?: WorkspaceProfileSetting;
   workspaceProfileRequest?: Promise<WorkspaceProfileSetting | undefined>;
+  environmentList: Environment[];
+  environmentRequest?: Promise<Environment[]>;
   appFeatures: AppFeatures;
   subscription?: Subscription;
   subscriptionRequest?: Promise<Subscription | undefined>;
@@ -40,8 +50,41 @@ export type WorkspaceSlice = {
   refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceProfile: () => Promise<WorkspaceProfileSetting | undefined>;
+  loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
+  refreshEnvironmentList: () => Promise<Environment[]>;
   loadSubscription: () => Promise<Subscription | undefined>;
+  refreshSubscription: () => Promise<Subscription | undefined>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
+  currentPlan: () => PlanType;
+  isFreePlan: () => boolean;
+  isTrialing: () => boolean;
+  isExpired: () => boolean;
+  daysBeforeExpire: () => number;
+  trialingDays: () => number;
+  showTrial: () => boolean;
+  expireAt: () => string;
+  instanceCountLimit: () => number;
+  userCountLimit: () => number;
+  instanceLicenseCount: () => number;
+  hasFeature: (feature: PlanFeature) => boolean;
+  hasInstanceFeature: (
+    feature: PlanFeature,
+    instance?: Instance | InstanceResource
+  ) => boolean;
+  instanceMissingLicense: (
+    feature: PlanFeature,
+    instance?: Instance | InstanceResource
+  ) => boolean;
+  getMinimumRequiredPlan: (feature: PlanFeature) => PlanType;
+  isSaaSMode: () => boolean;
+  workspaceResourceName: () => string;
+  externalUrl: () => string;
+  needConfigureExternalUrl: () => boolean;
+  version: () => string;
+  changelogURL: () => string;
+  activatedInstanceCount: () => number;
+  totalInstanceCount: () => number;
+  userCountInIam: () => number;
 };
 
 export type IamSlice = {

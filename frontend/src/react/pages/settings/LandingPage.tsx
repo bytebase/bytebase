@@ -30,6 +30,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useCurrentUser, useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -59,11 +60,7 @@ import {
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import {
-  useActuatorV1Store,
-  useCurrentUserV1,
-  useProjectV1Store,
-} from "@/store";
+import { useActuatorV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -86,7 +83,7 @@ interface QuickLinkDef {
 
 function useFullQuickLinkList(): QuickLinkDef[] {
   const { t } = useTranslation();
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const { isSaaSMode } = useServerState();
 
   return useMemo(() => {
     // Two special items always first
@@ -436,9 +433,8 @@ export function LandingPage(_: Record<string, never> = {}) {
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
   const [showProjectSwitchDialog, setShowProjectSwitchDialog] = useState(false);
 
-  const email = useVueState(() => useCurrentUserV1().value.email);
-  const version = useVueState(() => useActuatorV1Store().version);
-  const changelogURL = useVueState(() => useActuatorV1Store().changelogURL);
+  const email = useCurrentUser()?.email ?? "";
+  const { version, changelogURL } = useServerState();
   const hasNewRelease = useVueState(() => useActuatorV1Store().hasNewRelease);
   const releaseLatest = useVueState(
     () => useActuatorV1Store().releaseInfo.latest

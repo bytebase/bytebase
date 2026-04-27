@@ -22,10 +22,11 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useServerState } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
-import { useActuatorV1Store, useSettingV1Store } from "@/store";
+import { useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -43,12 +44,10 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
   function GeneralSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
     const settingV1Store = useSettingV1Store();
-    const actuatorV1Store = useActuatorV1Store();
+    const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
 
-    const isSaaSMode = useVueState(() => actuatorV1Store.isSaaSMode);
-    const externalUrlFromFlag = useVueState(
-      () => actuatorV1Store.serverInfo?.externalUrlFromFlag ?? false
-    );
+    const { isSaaSMode, externalUrl, serverInfo } = useServerState();
+    const externalUrlFromFlag = serverInfo?.externalUrlFromFlag ?? false;
 
     const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
@@ -60,9 +59,9 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
           mode === DatabaseChangeMode.EDITOR
             ? mode
             : DatabaseChangeMode.PIPELINE,
-        externalUrl: actuatorV1Store.serverInfo?.externalUrl ?? "",
+        externalUrl,
       };
-    }, [settingV1Store, actuatorV1Store]);
+    }, [settingV1Store, externalUrl]);
 
     const [state, setState] = useState<LocalState>(getInitialState);
     const [showModal, setShowModal] = useState(false);
@@ -87,6 +86,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
             paths: ["value.workspace_profile.external_url"],
           }),
         });
+        await refreshServerInfo();
       }
       if (state.databaseChangeMode !== initState.databaseChangeMode) {
         await settingV1Store.updateWorkspaceProfile({
@@ -101,7 +101,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
           setShowModal(true);
         }
       }
-    }, [state, getInitialState, settingV1Store]);
+    }, [state, getInitialState, settingV1Store, refreshServerInfo]);
 
     useImperativeHandle(
       ref,

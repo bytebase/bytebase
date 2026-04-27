@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   exportAuditLogs: vi.fn(),
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   pushNotification: vi.fn(),
-  useSubscriptionV1Store: vi.fn(() => ({ hasFeature: () => true })),
+  usePlanFeature: vi.fn(() => true),
   useUserStore: vi.fn(() => ({ fetchUserList: vi.fn() })),
 }));
 
@@ -37,8 +37,11 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   useUserStore: mocks.useUserStore,
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  usePlanFeature: mocks.usePlanFeature,
 }));
 
 vi.mock("@/store/modules/v1/common", () => ({
@@ -72,10 +75,6 @@ vi.mock("@/react/hooks/usePagedData", () => ({
 vi.mock("@/react/hooks/useSessionPageSize", () => ({
   getPageSizeOptions: () => [10],
   useSessionPageSize: () => [10, vi.fn()],
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
 }));
 
 vi.mock("@/connect/methods", () => ({

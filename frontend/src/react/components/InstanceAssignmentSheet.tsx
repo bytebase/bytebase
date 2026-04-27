@@ -15,14 +15,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import {
+  useServerState,
+  useSubscriptionState,
+} from "@/react/hooks/useAppState";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
-  useActuatorV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
-  useSubscriptionV1Store,
 } from "@/store";
 import { isValidInstanceName } from "@/types";
 import type {
@@ -51,19 +53,10 @@ export function InstanceAssignmentSheet({
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
+  const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
 
-  const instanceLicenseCount = useVueState(
-    () => subscriptionStore.instanceLicenseCount
-  );
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const activatedInstanceCount = useVueState(
-    () => actuatorStore.activatedInstanceCount
-  );
-  const workspaceResourceName = useVueState(
-    () => actuatorStore.workspaceResourceName
-  );
+  const { instanceLicenseCount, currentPlan } = useSubscriptionState();
+  const { activatedInstanceCount } = useServerState();
 
   const [instances, setInstances] = useState<Instance[]>([]);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
@@ -202,7 +195,7 @@ export function InstanceAssignmentSheet({
       for (const instance of updated) {
         databaseStore.updateDatabaseInstance(instance);
       }
-      await actuatorStore.fetchServerInfo(workspaceResourceName);
+      await refreshServerInfo();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -214,7 +207,6 @@ export function InstanceAssignmentSheet({
       setProcessing(false);
     }
   }, [
-    actuatorStore,
     canManageSubscription,
     databaseStore,
     instanceStore,
@@ -224,7 +216,7 @@ export function InstanceAssignmentSheet({
     processing,
     selectedNames,
     t,
-    workspaceResourceName,
+    refreshServerInfo,
   ]);
 
   const confirmDisabled =
