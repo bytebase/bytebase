@@ -19,7 +19,10 @@
         onReady: handlePermissionReady,
       }"
     />
-    <teleport v-if="routePermissionTarget" :to="routePermissionTarget">
+    <teleport
+      v-if="routePermitted && routePermissionTarget"
+      :to="routePermissionTarget"
+    >
       <router-view
         :project-id="projectId"
         :allow-edit="allowEdit"
@@ -46,6 +49,7 @@ import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import IAMRemindModal from "@/components/IAMRemindModal.vue";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
+import { useRoutePermitted } from "@/composables/useRoutePermitted";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
@@ -130,6 +134,7 @@ watchEffect(async () => {
 
 const { project, ready } = useProjectByName(projectName);
 const { ready: iamReady } = useProjectIamPolicy(projectName);
+const routePermitted = useRoutePermitted(project);
 
 const initialized = computed(
   () =>

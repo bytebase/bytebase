@@ -129,9 +129,7 @@ const renderShell = async (
 ) => {
   const onReady = vi.fn();
   await act(async () => {
-    root.render(
-      <RoutePermissionGuardShell onReady={onReady} {...props} />
-    );
+    root.render(<RoutePermissionGuardShell onReady={onReady} {...props} />);
   });
   return onReady;
 };

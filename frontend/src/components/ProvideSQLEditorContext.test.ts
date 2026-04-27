@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     fullPath: "/sql-editor/projects/prod",
     params: { project: "prod" },
     query: {},
+    matched: [] as Array<{ meta: { requiredPermissionList?: () => string[] } }>,
   },
   routerReplace: vi.fn(),
   maybeSwitchProject: vi.fn(async (project: string) => {
@@ -149,6 +150,7 @@ vi.mock("@/views/sql-editor/context", async () => {
 
 vi.mock("@/types", () => ({
   DEFAULT_SQL_EDITOR_TAB_MODE: "READONLY",
+  BASIC_WORKSPACE_PERMISSIONS: [],
   isValidDatabaseName: (name?: string) => name?.startsWith("instances/"),
   isValidInstanceName: (name?: string) => name?.startsWith("instances/"),
   isValidProjectName: (name?: string) => name?.startsWith("projects/"),
@@ -173,6 +175,10 @@ vi.mock("@/utils", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
+  usePermissionStore: () => ({
+    currentPermissions: new Set<string>(["bb.test"]),
+    currentPermissionsInProjectV1: () => new Set<string>(["bb.test"]),
+  }),
   useActuatorV1Store: () => ({
     serverInfo: { defaultProject: "projects/default" },
   }),

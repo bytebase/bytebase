@@ -22,7 +22,10 @@
           onReady: handlePermissionReady,
         }"
       />
-      <teleport v-if="routePermissionTarget" :to="routePermissionTarget">
+      <teleport
+        v-if="routePermitted && routePermissionTarget"
+        :to="routePermissionTarget"
+      >
         <ProvideAIContext>
           <router-view />
         </ProvideAIContext>
@@ -43,6 +46,7 @@ import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
+import { useRoutePermitted } from "@/composables/useRoutePermitted";
 import { ProvideAIContext } from "@/plugins/ai";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
@@ -165,6 +169,7 @@ const project = computed(() => {
   }
   return proj;
 });
+const routePermitted = useRoutePermitted(project);
 
 const switchWorksheet = async (sheetName: string) => {
   const openedSheetTab = tabStore.getTabByWorksheet(sheetName);

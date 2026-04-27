@@ -157,6 +157,8 @@ vi.mock("@/store", () => ({
   }),
   usePermissionStore: () => ({
     currentRolesInWorkspace: new Set<string>(),
+    currentPermissions: new Set<string>(["bb.test"]),
+    currentPermissionsInProjectV1: () => new Set<string>(["bb.test"]),
   }),
   useSubscriptionV1Store: () => ({
     currentPlan: 0,
@@ -167,6 +169,7 @@ vi.mock("@/types", () => ({
   PresetRoleType: {
     WORKSPACE_ADMIN: "WORKSPACE_ADMIN",
   },
+  BASIC_WORKSPACE_PERMISSIONS: [],
 }));
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({

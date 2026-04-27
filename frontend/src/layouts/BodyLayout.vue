@@ -24,7 +24,10 @@
     />
   </teleport>
 
-  <teleport v-if="routePermissionTarget" :to="routePermissionTarget">
+  <teleport
+    v-if="routePermitted && routePermissionTarget"
+    :to="routePermissionTarget"
+  >
     <router-view name="content" />
   </teleport>
 
@@ -47,6 +50,7 @@ import { useRoute, useRouter } from "vue-router";
 import AgentWindowMount from "@/components/AgentWindowMount.vue";
 import Quickstart from "@/components/Quickstart.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
+import { useRoutePermitted } from "@/composables/useRoutePermitted";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";
@@ -78,6 +82,7 @@ const shellTargets = shallowRef<DashboardShellTargets>({
 const mainContainerRef = ref<HTMLDivElement>();
 const showReleaseModal = ref(false);
 const routePermissionTarget = shallowRef<HTMLDivElement | null>(null);
+const routePermitted = useRoutePermitted();
 
 const isRootPath = computed(() => {
   return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
