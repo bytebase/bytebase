@@ -4,84 +4,88 @@ import (
 	"context"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
-	partiqlparser "github.com/bytebase/parser/partiql"
+	omnipartiql "github.com/bytebase/omni/partiql"
+	"github.com/bytebase/omni/partiql/catalog"
+	"github.com/bytebase/omni/partiql/completion"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-var (
-	// globalFollowSetsByState is the global follow sets by state.
-	// It is shared by all PostgreSQL completers.
-	// The FollowSetsByState is the thread-safe struct.
-	globalFollowSetsByState = base.NewFollowSetsByState()
-
-	ignoredTokens = map[int]bool{
-		partiqlparser.PartiQLParserParserEOF: true,
-
-		// Operator and literals.
-		partiqlparser.PartiQLParserParserCARET:              true,
-		partiqlparser.PartiQLParserParserCOMMA:              true,
-		partiqlparser.PartiQLParserParserPLUS:               true,
-		partiqlparser.PartiQLParserParserMINUS:              true,
-		partiqlparser.PartiQLParserParserSLASH_FORWARD:      true,
-		partiqlparser.PartiQLParserParserPERCENT:            true,
-		partiqlparser.PartiQLParserParserAT_SIGN:            true,
-		partiqlparser.PartiQLParserParserTILDE:              true,
-		partiqlparser.PartiQLParserParserASTERISK:           true,
-		partiqlparser.PartiQLParserParserLT_EQ:              true,
-		partiqlparser.PartiQLParserParserGT_EQ:              true,
-		partiqlparser.PartiQLParserParserEQ:                 true,
-		partiqlparser.PartiQLParserParserNEQ:                true,
-		partiqlparser.PartiQLParserParserCONCAT:             true,
-		partiqlparser.PartiQLParserParserANGLE_LEFT:         true,
-		partiqlparser.PartiQLParserParserANGLE_RIGHT:        true,
-		partiqlparser.PartiQLParserParserANGLE_DOUBLE_LEFT:  true,
-		partiqlparser.PartiQLParserParserANGLE_DOUBLE_RIGHT: true,
-		partiqlparser.PartiQLParserParserBRACKET_LEFT:       true,
-		partiqlparser.PartiQLParserParserBRACKET_RIGHT:      true,
-		partiqlparser.PartiQLParserParserBRACE_LEFT:         true,
-		partiqlparser.PartiQLParserParserBRACE_RIGHT:        true,
-		partiqlparser.PartiQLParserParserPAREN_LEFT:         true,
-		partiqlparser.PartiQLParserParserPAREN_RIGHT:        true,
-		partiqlparser.PartiQLParserParserBACKTICK:           true,
-		partiqlparser.PartiQLParserParserCOLON:              true,
-		partiqlparser.PartiQLParserParserCOLON_SEMI:         true,
-		partiqlparser.PartiQLParserParserQUESTION_MARK:      true,
-		partiqlparser.PartiQLParserParserPERIOD:             true,
-
-		// Literals & Identifiers.
-		partiqlparser.PartiQLParserParserLITERAL_STRING:    true,
-		partiqlparser.PartiQLParserParserLITERAL_INTEGER:   true,
-		partiqlparser.PartiQLParserParserLITERAL_DECIMAL:   true,
-		partiqlparser.PartiQLParserParserIDENTIFIER:        true,
-		partiqlparser.PartiQLParserParserIDENTIFIER_QUOTED: true,
-
-		// To Ignore.
-		partiqlparser.PartiQLParserParserUNRECOGNIZED: true,
-	}
-
-	preferredRules = map[int]bool{
-		// The parser grammar is not friendly to the completion, for the statement "SELECT * FROM Music", the fromClause parse
-		// tree is:
-		// fromClause -> tableReference -> TableNonJoin -> ...(12) -> varRefExpr -> IDENTIFIER
-		// So we set the varRefExpr as the preferred rule to get the table name, although it's not the most accurate rule.
-		partiqlparser.PartiQLParserParserRULE_varRefExpr: true,
-	}
-)
-
-type CompletionMap map[string]base.Candidate
-
-func (m CompletionMap) Insert(entry base.Candidate) {
-	m[entry.String()] = entry
+func init() {
+	base.RegisterCompleteFunc(storepb.Engine_DYNAMODB, Completion)
 }
 
-func (m CompletionMap) toSlice() []base.Candidate {
+// Completion provides auto-complete candidates for PartiQL statements.
+// It uses the omni completion engine for keyword and table suggestions,
+// and supplements with column suggestions from bytebase metadata.
+func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
+	// Build omni catalog from bytebase metadata.
+	cat := catalog.New()
+	var databaseMetadata *model.DatabaseMetadata
+	if cCtx.Metadata != nil && cCtx.DefaultDatabase != "" {
+		_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, cCtx.DefaultDatabase)
+		if err == nil && dbMeta != nil {
+			databaseMetadata = dbMeta
+			schema := dbMeta.GetSchemaMetadata("")
+			if schema != nil {
+				for _, table := range schema.ListTableNames() {
+					cat.AddTable(table)
+				}
+			}
+		}
+	}
+
+	// Convert (line, offset) to byte position in the statement.
+	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
+
+	// Get omni completion candidates.
+	omniCandidates := completion.Complete(statement, pos, cat)
+
+	// Convert to base.Candidate format.
+	candidateMap := make(map[string]base.Candidate)
+	for _, c := range omniCandidates {
+		var candidateType base.CandidateType
+		switch c.Kind {
+		case "keyword":
+			candidateType = base.CandidateTypeKeyword
+		case "table":
+			candidateType = base.CandidateTypeTable
+		default:
+			candidateType = base.CandidateTypeNone
+		}
+		key := candidateKey(c.Text, candidateType)
+		candidateMap[key] = base.Candidate{
+			Type: candidateType,
+			Text: c.Text,
+		}
+	}
+
+	// Add column completions if we detect a SELECT-item context.
+	// The omni completion engine handles keyword/table contexts; for columns,
+	// we check whether the cursor is in a position where columns are relevant
+	// (after SELECT but before FROM, or in WHERE/HAVING clauses).
+	if databaseMetadata != nil && isColumnContext(statement, pos) {
+		addColumnCandidates(candidateMap, statement, pos, databaseMetadata)
+	}
+
+	// Filter candidates by scene. In query-only mode, exclude DML/DDL
+	// keywords that are not valid in read-only editor contexts.
+	if cCtx.Scene == base.SceneTypeQuery {
+		for key, c := range candidateMap {
+			if c.Type == base.CandidateTypeKeyword && isDMLKeyword(c.Text) {
+				delete(candidateMap, key)
+			}
+		}
+	}
+
+	// Sort and return.
 	var result []base.Candidate
-	for _, candidate := range m {
-		result = append(result, candidate)
+	for _, c := range candidateMap {
+		result = append(result, c)
 	}
 	slices.SortFunc(result, func(a, b base.Candidate) int {
 		if a.Type != b.Type {
@@ -98,501 +102,416 @@ func (m CompletionMap) toSlice() []base.Candidate {
 		}
 		return 0
 	})
-	return result
-}
-
-func (m CompletionMap) insertMetadataColumns(c *Completer) {
-	for _, reference := range c.references {
-		if physicalTableReference, ok := reference.(*base.PhysicalTableReference); ok {
-			database := c.defaultDatabase
-			if physicalTableReference.Database != "" {
-				database = physicalTableReference.Database
-			}
-			if database == "" {
-				continue
-			}
-			_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
-			if err != nil {
-				return
-			}
-			if databaseMetadata == nil {
-				return
-			}
-			schema := databaseMetadata.GetSchemaMetadata("")
-			if schema == nil {
-				return
-			}
-			var tableName string
-			for _, table := range schema.ListTableNames() {
-				if strings.EqualFold(table, physicalTableReference.Table) {
-					tableName = table
-					break
-				}
-			}
-			if tableName == "" {
-				return
-			}
-			table := schema.GetTable(tableName)
-			if table == nil {
-				return
-			}
-			for _, column := range table.GetProto().GetColumns() {
-				if _, ok := m[column.Name]; !ok {
-					m.Insert(base.Candidate{
-						Type: base.CandidateTypeColumn,
-						Text: column.Name,
-					})
-				}
-			}
-		}
-	}
-}
-
-func (m CompletionMap) insertMetadataTables(c *Completer) {
-	if c.defaultDatabase == "" {
-		return
-	}
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
-	if err != nil {
-		return
-	}
-	if databaseMetadata == nil {
-		return
-	}
-	schema := databaseMetadata.GetSchemaMetadata("")
-	if schema == nil {
-		return
-	}
-	for _, table := range schema.ListTableNames() {
-		if _, ok := m[table]; !ok {
-			m.Insert(base.Candidate{
-				Type: base.CandidateTypeTable,
-				Text: table,
-			})
-		}
-	}
-}
-
-func init() {
-	base.RegisterCompleteFunc(storepb.Engine_DYNAMODB, Completion)
-}
-
-type Completer struct {
-	ctx     context.Context
-	core    *base.CodeCompletionCore
-	scene   base.SceneType
-	parser  *partiqlparser.PartiQLParserParser
-	lexer   *partiqlparser.PartiQLLexer
-	scanner *base.Scanner
-
-	instanceID      string
-	defaultDatabase string
-	defaultSchema   string
-	metadataGetter  base.GetDatabaseMetadataFunc
-
-	noSeparatorRequired map[int]bool
-	// referencesStack is a hierarchical stack of table references.
-	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]base.TableReference
-	// references is the flattened table references.
-	// It's helpful to look up the table reference.
-	references []base.TableReference
-}
-
-func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	result, err := completer.complete()
-	if err != nil {
-		return nil, err
-	}
-	if len(result) > 0 {
-		return result, nil
-	}
-
-	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	return trickyCompleter.complete()
-}
-
-func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		ignoredTokens,  /* IgnoredTokens */
-		preferredRules, /* PreferredRules */
-		&globalFollowSetsByState,
-		partiqlparser.PartiQLParserParserRULE_exprSelect, /* queryRule */
-		-1, /* shadowQueryRule */
-		-1, /* selectItemAliasRule */
-		-1, /* cteRule */
-	)
-
-	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       "dbo",
-		metadataGetter:      cCtx.Metadata,
-		noSeparatorRequired: make(map[int]bool),
-	}
-}
-
-func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		ignoredTokens,  /* IgnoredTokens */
-		preferredRules, /* PreferredRules */
-		&globalFollowSetsByState,
-		partiqlparser.PartiQLParserParserRULE_exprSelect, /* queryRule */
-		-1, /* shadowQueryRule */
-		-1, /* selectItemAliasRule */
-		-1, /* cteRule */
-	)
-
-	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
-		defaultSchema:       "dbo",
-		metadataGetter:      cCtx.Metadata,
-		noSeparatorRequired: nil,
-	}
-}
-
-func (c *Completer) complete() ([]base.Candidate, error) {
-	caretIndex := c.scanner.GetIndex()
-	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
-		caretIndex--
-	}
-	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-	c.parser.Reset()
-	var context antlr.ParserRuleContext
-	if c.scene == base.SceneTypeQuery {
-		context = c.parser.SelectClause()
-	} else {
-		context = c.parser.Script()
-	}
-	candidates := c.core.CollectCandidates(caretIndex, context)
-
-	for ruleName := range candidates.Rules {
-		if ruleName == partiqlparser.PartiQLParserParserRULE_varRefExpr {
-			c.collectLeadingTableReferences(caretIndex)
-			c.takeReferencesSnapshot()
-			c.collectRemainingTableReferences()
-			c.takeReferencesSnapshot()
-		}
-	}
-
-	return c.convertCandidates(candidates)
-}
-
-func (c *Completer) takeReferencesSnapshot() {
-	for _, references := range c.referencesStack {
-		c.references = append(c.references, references...)
-	}
-}
-
-func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
-	keywordEntries := make(CompletionMap)
-	tableEntries := make(CompletionMap)
-	columnEntries := make(CompletionMap)
-	for tokenCandidate, continuous := range candidates.Tokens {
-		if tokenCandidate < 0 || tokenCandidate >= len(c.parser.SymbolicNames) {
-			continue
-		}
-		candidateText := c.parser.SymbolicNames[tokenCandidate]
-		for _, continuous := range continuous {
-			if continuous < 0 || continuous >= len(c.parser.SymbolicNames) {
-				continue
-			}
-			continuousText := c.parser.SymbolicNames[continuous]
-			candidateText += " " + continuousText
-		}
-		keywordEntries.Insert(base.Candidate{
-			Type: base.CandidateTypeKeyword,
-			Text: candidateText,
-		})
-	}
-
-	for ruleCandidate, ruleStack := range candidates.Rules {
-		c.scanner.PopAndRestore()
-		c.scanner.Push()
-
-		switch ruleCandidate {
-		case partiqlparser.PartiQLParserParserRULE_varRefExpr:
-			isSelectItem := false
-			isFromClause := false
-			// If previous token contains from, we insert the table names, otherwise we insert the column names.
-			for _, rule := range ruleStack {
-				if rule.ID == partiqlparser.PartiQLParserParserRULE_selectClause {
-					isSelectItem = true
-					break
-				} else if rule.ID == partiqlparser.PartiQLParserParserRULE_fromClause {
-					isFromClause = true
-					break
-				}
-			}
-
-			if isSelectItem {
-				columnEntries.insertMetadataColumns(c)
-			}
-			if isFromClause {
-				tableEntries.insertMetadataTables(c)
-			}
-		default:
-		}
-	}
-
-	c.scanner.PopAndRestore()
-	var result []base.Candidate
-	result = append(result, keywordEntries.toSlice()...)
-	result = append(result, tableEntries.toSlice()...)
-	result = append(result, columnEntries.toSlice()...)
 	return result, nil
 }
 
-func (c *Completer) collectLeadingTableReferences(caretIndex int) {
-	c.scanner.Push()
+// lineOffsetToBytePos converts a 1-based line number and 0-based
+// character (rune) offset to a 0-based byte position in the string.
+// The offset is in characters, not bytes, so we iterate runes to
+// handle multibyte UTF-8 correctly.
+func lineOffsetToBytePos(s string, line, offset int) int {
+	pos := 0
+	currentLine := 1
+	for pos < len(s) && currentLine < line {
+		if s[pos] == '\n' {
+			currentLine++
+		}
+		pos++
+	}
+	// Now advance by `offset` runes (not bytes) within the target line.
+	for i := 0; i < offset && pos < len(s); i++ {
+		_, size := utf8.DecodeRuneInString(s[pos:])
+		pos += size
+	}
+	if pos > len(s) {
+		return len(s)
+	}
+	return pos
+}
 
-	c.scanner.SeekIndex(0)
+// candidateKey produces a dedup key for a candidate.
+func candidateKey(text string, typ base.CandidateType) string {
+	return string(typ) + ":" + text
+}
 
-	level := 0
+// isColumnContext returns true if the cursor position appears to be in a
+// context where column names should be suggested. This covers:
+//   - Between SELECT and FROM (the projection list)
+//   - After FROM when inside a clause that takes expressions: WHERE,
+//     HAVING, SET, ORDER BY, GROUP BY, and any operator/function position
+//     within those clauses (e.g., WHERE Artist = |)
+//
+// Table-only contexts (immediately after FROM/JOIN/INTO) return false.
+func isColumnContext(statement string, pos int) bool {
+	if pos > len(statement) {
+		pos = len(statement)
+	}
+	// Strip quoted identifiers before uppercasing so that "order" doesn't
+	// match the ORDER keyword in lastKeywordIndex.
+	before := strings.ToUpper(stripQuotedIdentifiers(statement[:pos]))
+
+	// Strip any partial identifier the user is currently typing.
+	trimmed := strings.TrimRight(before, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$\"")
+	trimmed = strings.TrimRight(trimmed, " \t\n\r")
+
+	// Table context: cursor is right after FROM/JOIN/INTO.
+	if strings.HasSuffix(trimmed, "FROM") ||
+		strings.HasSuffix(trimmed, "JOIN") ||
+		strings.HasSuffix(trimmed, "INTO") {
+		return false
+	}
+
+	// Between SELECT and FROM (the projection list) — column context.
+	selectIdx := lastKeywordIndex(before, "SELECT")
+	fromIdx := lastKeywordIndex(before, "FROM")
+	if selectIdx >= 0 && (fromIdx < 0 || fromIdx < selectIdx) {
+		return true
+	}
+
+	// After FROM: if any expression-bearing clause keyword appears in the
+	// text before the cursor, we're in a column context.
+	for _, kw := range []string{"WHERE", "HAVING", "SET", "ORDER", "GROUP", "BY", "AND", "OR", "ON", "WHEN", "THEN", "ELSE"} {
+		kwIdx := lastKeywordIndex(before, kw)
+		if kwIdx >= 0 && kwIdx > fromIdx {
+			return true
+		}
+	}
+
+	// Fallback: if FROM was seen and the cursor is past it in a position
+	// that is NOT right after FROM/JOIN/INTO (already excluded above),
+	// we're likely in an expression context within a clause.
+	if fromIdx >= 0 {
+		for _, kw := range []string{"WHERE", "HAVING", "SET", "ORDER", "GROUP"} {
+			if lastKeywordIndex(before, kw) > fromIdx {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// lastKeywordIndex returns the index of the last occurrence of kw in s
+// that appears at a word boundary (not inside an identifier). Returns -1
+// if not found. Both s and kw must be uppercase.
+func lastKeywordIndex(s, kw string) int {
+	search := s
 	for {
-		found := c.scanner.GetTokenType() == partiqlparser.PartiQLLexerFROM
-		for !found {
-			if !c.scanner.Forward(false) || c.scanner.GetIndex() >= caretIndex {
+		idx := strings.LastIndex(search, kw)
+		if idx < 0 {
+			return -1
+		}
+		end := idx + len(kw)
+		startOk := idx == 0 || !isIdentRune(rune(search[idx-1]))
+		endOk := end >= len(search) || !isIdentRune(rune(search[end]))
+		if startOk && endOk {
+			return idx
+		}
+		// Shrink the search window and try again.
+		search = search[:idx]
+	}
+}
+
+func isIdentRune(r rune) bool {
+	return (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') ||
+		(r >= '0' && r <= '9') || r == '_' || r == '$'
+}
+
+// addColumnCandidates extracts column names from tables referenced in
+// the active statement (the one containing the cursor) and adds them
+// to the candidate map. It isolates the current statement by finding
+// the semicolon boundaries around pos, then scans the FULL current
+// statement (including text after the cursor, e.g., FROM clauses that
+// follow a SELECT |).
+func addColumnCandidates(m map[string]base.Candidate, statement string, pos int, dbMeta *model.DatabaseMetadata) {
+	schema := dbMeta.GetSchemaMetadata("")
+	if schema == nil {
+		return
+	}
+
+	// Isolate the current statement: find the semicolons before and after pos.
+	currentStmt := extractCurrentStatement(statement, pos)
+	tables := extractTableNamesFromStatement(currentStmt)
+	if len(tables) == 0 {
+		// If no FROM clause found, try all tables.
+		tables = schema.ListTableNames()
+	}
+
+	for _, tableName := range tables {
+		// Case-sensitive lookup to match DynamoDB behavior.
+		var actualName string
+		for _, t := range schema.ListTableNames() {
+			if strings.EqualFold(t, tableName) {
+				actualName = t
 				break
 			}
-
-			switch c.scanner.GetTokenType() {
-			case partiqlparser.PartiQLLexerPAREN_LEFT:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case partiqlparser.PartiQLLexerPAREN_RIGHT:
-				if level == 0 {
-					c.scanner.PopAndRestore()
-					return // We cannot go above the initial nesting level.
+		}
+		if actualName == "" {
+			continue
+		}
+		table := schema.GetTable(actualName)
+		if table == nil {
+			continue
+		}
+		for _, col := range table.GetProto().GetColumns() {
+			key := candidateKey(col.Name, base.CandidateTypeColumn)
+			if _, exists := m[key]; !exists {
+				m[key] = base.Candidate{
+					Type: base.CandidateTypeColumn,
+					Text: col.Name,
 				}
-			case partiqlparser.PartiQLLexerFROM:
-				found = true
-			default:
-				// Continue scanning for FROM clause
 			}
-		}
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No FROM clause found.
-		}
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == partiqlparser.PartiQLLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
 		}
 	}
 }
 
-func (c *Completer) collectRemainingTableReferences() {
-	c.scanner.Push()
+// extractTableNamesFromStatement scans the statement to find table names
+// after FROM/JOIN/INTO keywords. Handles:
+//   - Comma-separated tables with or without spaces: FROM Music, Album / FROM Music,Album
+//   - Quoted identifiers that match keywords: FROM "order" → table "order" (not keyword ORDER)
+//   - Aliases: FROM Music AS m, Album a → extracts Music and Album
+//   - Comments between keywords and table names (stripped before scanning)
+func extractTableNamesFromStatement(statement string) []string {
+	// Strip comments, then split on whitespace AND commas to handle
+	// both "Music, Album" and "Music,Album" uniformly.
+	cleaned := stripSQLComments(statement)
+	tokens := tokenizeForTableExtraction(cleaned)
 
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == partiqlparser.PartiQLLexerFROM
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) {
+	var tables []string
+	i := 0
+	for i < len(tokens) {
+		upper := strings.ToUpper(tokens[i].text)
+		if (upper == "FROM" || upper == "JOIN" || upper == "INTO") && i+1 < len(tokens) {
+			i++
+			// Collect table names from a comma-separated list.
+			for i < len(tokens) {
+				tok := tokens[i]
+				// A quoted identifier is always a table name, even if
+				// its unquoted form matches a keyword.
+				name := tok.text
+				if tok.quoted {
+					tables = append(tables, name)
+				} else if isKeyword(strings.ToUpper(name)) {
+					break
+				} else {
+					tables = append(tables, name)
+				}
+				i++
+				// Skip optional AS + alias.
+				if i < len(tokens) && strings.ToUpper(tokens[i].text) == "AS" {
+					i += 2 // skip AS and alias
+				} else if i < len(tokens) && !tokens[i].comma && !isKeyword(strings.ToUpper(tokens[i].text)) {
+					// Implicit alias — skip one token.
+					i++
+				}
+				// If the next token is a comma separator, continue.
+				if i < len(tokens) && tokens[i].comma {
+					i++ // skip the comma marker
+					continue
+				}
 				break
 			}
+		} else {
+			i++
+		}
+	}
+	return tables
+}
 
-			switch c.scanner.GetTokenType() {
-			case partiqlparser.PartiQLLexerPAREN_LEFT:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case partiqlparser.PartiQLLexerPAREN_RIGHT:
-				if level > 0 {
-					level--
+// tableToken is a token in the table-extraction scanner.
+type tableToken struct {
+	text   string // the identifier or keyword text (quotes stripped)
+	quoted bool   // true if the original was double-quoted
+	comma  bool   // true if this is a comma separator
+}
+
+// tokenizeForTableExtraction splits a comment-stripped SQL string into
+// tokens suitable for table-name extraction. It splits on whitespace
+// and commas, handling:
+//   - "Music,Album" → [Music] [,] [Album]
+//   - "Music , Album" → [Music] [,] [Album]
+//   - `"order"` → [{text:"order", quoted:true}]
+func tokenizeForTableExtraction(s string) []tableToken {
+	var tokens []tableToken
+	i := 0
+	for i < len(s) {
+		// Skip whitespace.
+		if s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r' {
+			i++
+			continue
+		}
+		// Comma is its own token.
+		if s[i] == ',' {
+			tokens = append(tokens, tableToken{comma: true})
+			i++
+			continue
+		}
+		// Double-quoted identifier.
+		if s[i] == '"' {
+			i++ // skip opening "
+			start := i
+			for i < len(s) && s[i] != '"' {
+				if s[i] == '"' && i+1 < len(s) && s[i+1] == '"' {
+					i += 2
+					continue
 				}
+				i++
+			}
+			text := s[start:i]
+			if i < len(s) {
+				i++ // skip closing "
+			}
+			tokens = append(tokens, tableToken{text: text, quoted: true})
+			continue
+		}
+		// Bare word: identifier or keyword.
+		start := i
+		for i < len(s) && s[i] != ' ' && s[i] != '\t' && s[i] != '\n' &&
+			s[i] != '\r' && s[i] != ',' && s[i] != '"' && s[i] != ';' &&
+			s[i] != '(' && s[i] != ')' {
+			i++
+		}
+		if i > start {
+			tokens = append(tokens, tableToken{text: s[start:i]})
+		} else {
+			// Delimiter character like (, ), ; — skip it to avoid
+			// an infinite loop.
+			i++
+		}
+	}
+	return tokens
+}
 
-			case partiqlparser.PartiQLLexerFROM:
-				if level == 0 {
-					found = true
+// stripSQLComments removes line comments (--...) and block comments
+// (/*...*/) from a SQL string, replacing them with spaces to preserve
+// token boundaries. Respects single-quoted strings.
+func stripSQLComments(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	i := 0
+	for i < len(s) {
+		switch {
+		case s[i] == '\'':
+			// Single-quoted string: copy verbatim.
+			b.WriteByte(s[i])
+			i++
+			for i < len(s) {
+				b.WriteByte(s[i])
+				if s[i] == '\'' {
+					i++
+					if i < len(s) && s[i] == '\'' {
+						b.WriteByte(s[i])
+						i++
+						continue
+					}
+					break
 				}
-			default:
-				// Continue scanning
+				i++
 			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clause found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == partiqlparser.PartiQLLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) parseTableReferences(fromClause string) {
-	input := antlr.NewInputStream(fromClause)
-	lexer := partiqlparser.NewPartiQLLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := partiqlparser.NewPartiQLParserParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.FromClause()
-	listener := &tableRefListener{
-		context:        c,
-		fromClauseMode: true,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-}
-
-type tableRefListener struct {
-	*partiqlparser.BasePartiQLParserListener
-
-	context        *Completer
-	fromClauseMode bool
-}
-
-func (l *tableRefListener) EnterVarRefExpr(ctx *partiqlparser.VarRefExprContext) {
-	name := unquote(ctx.GetText())
-	l.context.references = append(l.context.references, &base.PhysicalTableReference{
-		Table: name,
-	})
-}
-
-func unquote(s string) string {
-	if len(s) < 2 {
-		return s
-	}
-	if s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
-}
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*partiqlparser.PartiQLParserParser, *partiqlparser.PartiQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := partiqlparser.NewPartiQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := partiqlparser.NewPartiQLParserParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	input := antlr.NewInputStream(statement)
-	lexer := partiqlparser.NewPartiQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-	latestSelect := 0
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
-		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
-			break
-		}
-		if token.GetTokenType() == partiqlparser.PartiQLLexerSELECT && token.GetColumn() == 0 {
-			latestSelect = token.GetTokenIndex()
-			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
-			newCaretOffset = caretOffset
-		}
-	}
-
-	if latestSelect == 0 {
-		return statement, caretLine, caretOffset
-	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
-}
-
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*partiqlparser.PartiQLParserParser, *partiqlparser.PartiQLLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := partiqlparser.NewPartiQLLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := partiqlparser.NewPartiQLParserParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-// skipHeadingSQLs skips the SQL statements which before the caret position.
-// caretLine is 1-based and caretOffset is 0-based.
-func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
-	list, err := SplitSQL(statement)
-	if err != nil || notEmptySQLCount(list) <= 1 {
-		return statement, caretLine, caretOffset
-	}
-
-	caretLine-- // Convert to 0-based.
-
-	start := 0
-	for i, sql := range list {
-		sqlEndLine := int(sql.End.GetLine())
-		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				break
+		case s[i] == '-' && i+1 < len(s) && s[i+1] == '-':
+			// Line comment: replace with space.
+			b.WriteByte(' ')
+			i += 2
+			for i < len(s) && s[i] != '\n' && s[i] != '\r' {
+				i++
 			}
-			previousSQLEndLine := int(list[i-1].End.GetLine())
-			previousSQLEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLine - previousSQLEndLine + 1 // Convert to 1-based.
-			if caretLine == previousSQLEndLine {
-				// The caret is in the same line as the last line of the previous SQL statement.
-				// End.Column is 1-based exclusive, so (End.Column - 1) gives 0-based start of next statement.
-				// newCaretOffset = caretOffset - (previousSQLEndColumn - 1)
-				newCaretOffset = caretOffset - previousSQLEndColumn + 1
+		case s[i] == '/' && i+1 < len(s) && s[i+1] == '*':
+			// Block comment: replace with space.
+			b.WriteByte(' ')
+			i += 2
+			depth := 1
+			for i+1 < len(s) && depth > 0 {
+				if s[i] == '/' && s[i+1] == '*' {
+					depth++
+					i += 2
+				} else if s[i] == '*' && s[i+1] == '/' {
+					depth--
+					i += 2
+				} else {
+					i++
+				}
 			}
-			break
+		default:
+			b.WriteByte(s[i])
+			i++
 		}
 	}
-
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
-		}
-	}
-
-	return buf.String(), newCaretLine, newCaretOffset
+	return b.String()
 }
 
-func notEmptySQLCount(list []base.Statement) int {
-	count := 0
-	for _, sql := range list {
-		if !sql.Empty {
-			count++
+// extractCurrentStatement returns the statement segment containing pos
+// by using omni's Split to find the correct semicolon boundaries. This
+// respects strings, comments, and Ion literals — a semicolon inside
+// 'a;b' won't split the statement.
+func extractCurrentStatement(statement string, pos int) string {
+	segs := omnipartiql.Split(statement)
+	for _, seg := range segs {
+		if pos >= seg.ByteStart && pos <= seg.ByteEnd {
+			return seg.Text
 		}
 	}
-	return count
+	// Fallback: return the whole statement.
+	return statement
+}
+
+// isKeyword returns true if the given uppercase word is a SQL keyword.
+func isKeyword(w string) bool {
+	switch w {
+	case "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", "INTO",
+		"VALUE", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "DROP",
+		"TABLE", "INDEX", "AS", "AT", "BY", "ON", "IN", "IS", "LIKE",
+		"BETWEEN", "ORDER", "GROUP", "HAVING", "LIMIT", "OFFSET",
+		"JOIN", "LEFT", "RIGHT", "INNER", "OUTER", "CROSS",
+		"UNION", "INTERSECT", "EXCEPT", "DISTINCT", "ALL",
+		"NULL", "MISSING", "TRUE", "FALSE", "CAST", "CASE", "WHEN",
+		"THEN", "ELSE", "END", "EXISTS", "ASC", "DESC", "EXPLAIN":
+		return true
+	}
+	return false
+}
+
+// isDMLKeyword returns true if the keyword is a DML/DDL operation that
+// should be excluded in query-only (read-only) editor scenes.
+func isDMLKeyword(w string) bool {
+	switch strings.ToUpper(w) {
+	case "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "REPLACE",
+		"UPSERT", "REMOVE", "SET":
+		return true
+	}
+	return false
+}
+
+// stripQuotedIdentifiers replaces double-quoted identifiers with
+// placeholder text so that keyword searches don't match content inside
+// quotes (e.g., "order" should not be treated as the ORDER keyword).
+func stripQuotedIdentifiers(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	i := 0
+	for i < len(s) {
+		if s[i] == '"' {
+			// Replace the entire "..." with underscores to preserve length.
+			b.WriteByte('_')
+			i++ // skip opening "
+			for i < len(s) {
+				if s[i] == '"' {
+					i++
+					if i < len(s) && s[i] == '"' {
+						b.WriteByte('_')
+						b.WriteByte('_')
+						i++
+						continue
+					}
+					b.WriteByte('_')
+					break
+				}
+				b.WriteByte('_')
+				i++
+			}
+		} else {
+			b.WriteByte(s[i])
+			i++
+		}
+	}
+	return b.String()
 }
