@@ -10,7 +10,6 @@ export interface RoutePermissionGuardShellProps {
   project?: Project;
   className?: string;
   targetClassName?: string;
-  routeKey?: string;
   onReady?: (target: HTMLDivElement | null) => void;
 }
 
@@ -18,7 +17,6 @@ export function RoutePermissionGuardShell({
   project,
   className,
   targetClassName,
-  routeKey,
   onReady,
 }: RoutePermissionGuardShellProps) {
   const route = useCurrentRoute();
@@ -32,8 +30,11 @@ export function RoutePermissionGuardShell({
 
   useEffect(() => {
     onReady?.(permitted ? targetRef.current : null);
+  }, [onReady, permitted]);
+
+  useEffect(() => {
     return () => onReady?.(null);
-  }, [onReady, permitted, project?.name, route.fullPath, routeKey]);
+  }, [onReady]);
 
   if (!permitted) {
     return (

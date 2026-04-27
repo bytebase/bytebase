@@ -17,7 +17,6 @@
         page="RoutePermissionGuardShell"
         :page-props="{
           project,
-          routeKey: route.fullPath,
           className: 'm-6',
           targetClassName: 'h-full min-h-0 flex flex-col',
           onReady: handlePermissionReady,

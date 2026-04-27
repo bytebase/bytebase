@@ -17,7 +17,6 @@
     <ReactPageMount
       page="RoutePermissionGuardShell"
       :page-props="{
-        routeKey: route.fullPath,
         className: 'm-4',
         targetClassName: 'h-full min-h-0',
         onReady: handlePermissionReady,
