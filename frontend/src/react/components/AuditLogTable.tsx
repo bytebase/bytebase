@@ -1,5 +1,4 @@
-import { file_google_rpc_error_details } from "@buf/googleapis_googleapis.bufbuild_es/google/rpc/error_details_pb";
-import { create, createRegistry, toJsonString } from "@bufbuild/protobuf";
+import { create, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -52,21 +51,17 @@ import { getDateForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
-  AuditDataSchema,
   AuditLog_Severity,
   ExportAuditLogsRequestSchema,
   SearchAuditLogsRequestSchema,
 } from "@/types/proto-es/v1/audit_log_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { IssueService } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  file_v1_plan_service,
-  PlanService,
-} from "@/types/proto-es/v1/plan_service_pb";
+import { PlanService } from "@/types/proto-es/v1/plan_service_pb";
 import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
-import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
 import {
   formatAbsoluteDateTime,
   getDefaultPagination,
@@ -74,13 +69,6 @@ import {
 } from "@/utils";
 
 dayjs.extend(utc);
-
-const registry = createRegistry(
-  file_google_rpc_error_details,
-  file_v1_plan_service,
-  AuditDataSchema,
-  SettingSchema
-);
 
 // ============================================================
 // Filter helpers
@@ -402,7 +390,7 @@ function useColumnDefs(): ColumnDef[] {
           log.status ? (
             <JSONStringView
               jsonString={toJsonString(StatusSchema, log.status, {
-                registry,
+                registry: protobufJsonRegistry,
               })}
             />
           ) : (
@@ -431,7 +419,7 @@ function useColumnDefs(): ColumnDef[] {
           log.serviceData ? (
             <JSONStringView
               jsonString={toJsonString(AnySchema, log.serviceData, {
-                registry,
+                registry: protobufJsonRegistry,
               })}
             />
           ) : (
