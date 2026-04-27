@@ -242,8 +242,8 @@ github.com/buger/jsonparser v1.1.2 h1:frqHqw7otoVbk5M8LlE/L7HTnIq2v9RX6EJ48i9AxJ
 github.com/buger/jsonparser v1.1.2/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920 h1:IfmPt5o5R70NKtOrs+QHOoCgViYZelZysGxVBvV4ybA=
 github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920/go.mod h1:ykhjIPiv0IWpu3OGXCHdz2eUSe8UNGGD6baqjs8jSuU=
-github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260414094732-5b89f0889452 h1:qq3h3lkj7hqzFY0pIsr4Rd/R9ilw89/TwvBYVvelUu8=
-github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260414094732-5b89f0889452/go.mod h1:QrbiVoIAhIhavt4KFh6gC/gDg7xX67kbKvXnjnja+go=
+github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca h1:bDgHzFb+pn23vrCdQ8+VYTu8dHKwV9KWgcAUvL6CT+s=
+github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca/go.mod h1:OwIkGuhFwOV7zicy7lmJl3MRqhkf2OmCSX8NMFEPm4A=
 github.com/bytebase/gh-ost2 v1.1.7-0.20260423064345-9ba1fc3fcc87 h1:Kqq9KRhwLKvkCMOZm3FQXj/48enNefUDRA21HSXzjp0=
 github.com/bytebase/gh-ost2 v1.1.7-0.20260423064345-9ba1fc3fcc87/go.mod h1:XVUEFLOcM31VxA/pvm1YMolnDWlzVyvsqZy9OZKVJ8k=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
