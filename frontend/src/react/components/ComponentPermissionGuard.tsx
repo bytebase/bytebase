@@ -2,14 +2,16 @@ import { ShieldAlert, ShieldUser } from "lucide-react";
 import { lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
-import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { REQUEST_ROLE_REQUIRED_PERMISSIONS } from "@/react/pages/settings/requestRoleButton";
-import { usePermissionStore, useSubscriptionV1Store } from "@/store";
-import { BASIC_WORKSPACE_PERMISSIONS, type Permission } from "@/types";
+import { useAppStore } from "@/react/stores/app";
+import { BASIC_WORKSPACE_PERMISSIONS, type Permission } from "@/types/iam";
+import { hasFeature as planHasFeature } from "@/types/plan";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+} from "@/types/proto-es/v1/subscription_service_pb";
 
 const RequestRoleSheet = lazy(async () => {
   const module = await import("@/react/pages/settings/RequestRoleSheet");
@@ -33,6 +35,41 @@ interface ComponentPermissionState {
   permitted: boolean;
 }
 
+function usePermissionAccess(project?: Project) {
+  const currentUserName = useAppStore((state) => state.currentUser?.name ?? "");
+  const roles = useAppStore((state) => state.roles);
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const projectPolicy = useAppStore((state) =>
+    project ? state.projectPoliciesByName[project.name] : undefined
+  );
+  const hasWorkspacePermission = useAppStore(
+    (state) => state.hasWorkspacePermission
+  );
+  const hasProjectPermission = useAppStore(
+    (state) => state.hasProjectPermission
+  );
+
+  return useMemo(
+    () => ({
+      hasRoutePermission: (permission: Permission) =>
+        project
+          ? hasProjectPermission(project, permission)
+          : hasWorkspacePermission(permission),
+      hasWorkspacePermission: (permission: Permission) =>
+        hasWorkspacePermission(permission),
+    }),
+    [
+      currentUserName,
+      hasProjectPermission,
+      hasWorkspacePermission,
+      project,
+      projectPolicy,
+      roles,
+      workspacePolicy,
+    ]
+  );
+}
+
 export function useComponentPermissionState({
   permissions,
   project,
@@ -43,33 +80,17 @@ export function useComponentPermissionState({
     "permissions" | "project" | "checkBasicWorkspacePermissions"
   >
 >): ComponentPermissionState {
-  const permissionStore = usePermissionStore();
-  const workspacePermissionKey = useVueState(() =>
-    [...permissionStore.currentPermissions].sort().join("\n")
-  );
-  const projectPermissionKey = useVueState(() =>
-    project
-      ? [...permissionStore.currentPermissionsInProjectV1(project)]
-          .sort()
-          .join("\n")
-      : ""
-  );
+  const permissionAccess = usePermissionAccess(project);
 
   return useMemo(() => {
-    const workspacePermissions = new Set(
-      workspacePermissionKey.split("\n").filter(Boolean) as Permission[]
-    );
-    const projectPermissions = new Set(
-      projectPermissionKey.split("\n").filter(Boolean) as Permission[]
-    );
     const missedBasicPermissions = checkBasicWorkspacePermissions
-      ? BASIC_WORKSPACE_PERMISSIONS.filter((p) => !workspacePermissions.has(p))
+      ? BASIC_WORKSPACE_PERMISSIONS.filter(
+          (p) => !permissionAccess.hasWorkspacePermission(p)
+        )
       : [];
 
-    const missedPermissions = permissions.filter((p) =>
-      project
-        ? !workspacePermissions.has(p) && !projectPermissions.has(p)
-        : !workspacePermissions.has(p)
+    const missedPermissions = permissions.filter(
+      (p) => !permissionAccess.hasRoutePermission(p)
     );
 
     return {
@@ -78,13 +99,7 @@ export function useComponentPermissionState({
       permitted:
         missedBasicPermissions.length === 0 && missedPermissions.length === 0,
     };
-  }, [
-    checkBasicWorkspacePermissions,
-    permissions,
-    project,
-    projectPermissionKey,
-    workspacePermissionKey,
-  ]);
+  }, [checkBasicWorkspacePermissions, permissionAccess, permissions]);
 }
 
 /**
@@ -106,9 +121,12 @@ export function ComponentPermissionGuard({
 }: ComponentPermissionGuardProps) {
   const { t } = useTranslation();
   const [showRequestRoleSheet, setShowRequestRoleSheet] = useState(false);
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasRequestRoleFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
+  const subscriptionPlan = useAppStore(
+    (state) => state.subscription?.plan ?? PlanType.FREE
+  );
+  const hasRequestRoleFeature = planHasFeature(
+    subscriptionPlan,
+    PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
   );
   const { missedBasicPermissions, missedPermissions, permitted } =
     useComponentPermissionState({
@@ -116,6 +134,14 @@ export function ComponentPermissionGuard({
       project,
       checkBasicWorkspacePermissions,
     });
+  const requestRolePermissionAccess = usePermissionAccess(project);
+  const canRequestRole = useMemo(
+    () =>
+      REQUEST_ROLE_REQUIRED_PERMISSIONS.every((permission) =>
+        requestRolePermissionAccess.hasRoutePermission(permission)
+      ),
+    [requestRolePermissionAccess]
+  );
 
   if (permitted) {
     return <>{children}</>;
@@ -165,29 +191,22 @@ export function ComponentPermissionGuard({
           )}
           {showRequestRole && (
             <div>
-              <PermissionGuard
-                permissions={[...REQUEST_ROLE_REQUIRED_PERMISSIONS]}
-                project={project}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!canRequestRole || !hasRequestRoleFeature}
+                onClick={() => setShowRequestRoleSheet(true)}
               >
-                {({ disabled }) => (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={disabled || !hasRequestRoleFeature}
-                    onClick={() => setShowRequestRoleSheet(true)}
-                  >
-                    {hasRequestRoleFeature ? (
-                      <ShieldUser className="size-4" />
-                    ) : (
-                      <FeatureBadge
-                        feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW}
-                        clickable={false}
-                      />
-                    )}
-                    {t("issue.title.request-role")}
-                  </Button>
+                {hasRequestRoleFeature ? (
+                  <ShieldUser className="size-4" />
+                ) : (
+                  <FeatureBadge
+                    feature={PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW}
+                    clickable={false}
+                  />
                 )}
-              </PermissionGuard>
+                {t("issue.title.request-role")}
+              </Button>
             </div>
           )}
         </div>

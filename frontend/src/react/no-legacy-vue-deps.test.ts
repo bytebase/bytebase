@@ -16,6 +16,7 @@ const sources = import.meta.glob(
     "./components/InstanceRouteShell.tsx",
     "./components/IssuesRouteShell.tsx",
     "./components/RoutePermissionGuardShell.tsx",
+    "./components/ComponentPermissionGuard.tsx",
   ],
   {
     query: "?raw",
@@ -69,6 +70,39 @@ describe("React Project and Settings legacy Vue dependencies", () => {
     const violations: string[] = [];
     for (const [file, source] of Object.entries(sources)) {
       for (const bannedImport of bannedImports) {
+        if (source.includes(bannedImport)) {
+          violations.push(`${file}: ${bannedImport}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("route permission guard reads React permission state", () => {
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(sources)) {
+      if (!file.endsWith("/ComponentPermissionGuard.tsx")) {
+        continue;
+      }
+      for (const bannedImport of [
+        "usePermissionStore",
+        "@/react/components/PermissionGuard",
+      ]) {
+        if (source.includes(bannedImport)) {
+          violations.push(`${file}: ${bannedImport}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("ProjectRouteShell does not preload Vue IAM policy", () => {
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(sources)) {
+      if (!file.endsWith("/ProjectRouteShell.tsx")) {
+        continue;
+      }
+      for (const bannedImport of ["@/store", "useProjectIamPolicyStore"]) {
         if (source.includes(bannedImport)) {
           violations.push(`${file}: ${bannedImport}`);
         }
