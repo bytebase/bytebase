@@ -69,7 +69,7 @@
     "unarchive-all-chats": "取消归档所有对话",
     "unarchive-chat": "取消归档"
   },
-  "agent.self": "Agent",
+  "agent.self": "助手",
   "audit-log": {
     "advanced-search": {
       "scope": {
@@ -480,7 +480,7 @@
   "common.password": "密码",
   "common.project": "项目",
   "common.read-only": "只读",
-  "common.recent": "Recent",
+  "common.recent": "最近访问",
   "common.remaining": "剩余",
   "common.remove": "删除",
   "common.removed": "已移除",
@@ -1446,9 +1446,9 @@
   "issue.data-export.format": "格式",
   "issue.data-export.limits": "限制",
   "issue.data-export.options": "选项",
-  "issue.issue-name": "Issue name",
-  "issue.my-issues": "My Issues",
-  "issue.no-description-provided": "No description provided",
+  "issue.issue-name": "工单名称",
+  "issue.my-issues": "我的工单",
+  "issue.no-description-provided": "未提供描述",
   "issue.options-disabled-due-to-oversize": "由于 SQL 文件过大，选项已禁用。",
   "issue.overwrite-current-statement": "覆盖当前的 SQL 语句",
   "issue.review.self": "评审",
@@ -1804,7 +1804,7 @@
       "webhook-url": "Webhook URL"
     }
   },
-  "project.select": "Select project",
+  "project.select": "选择项目",
   "quick-action": {
     "create-db": "创建数据库",
     "new-project": "创建项目",
