@@ -63,7 +63,7 @@ export function InfoPanel() {
               keyword={tables}
               onKeywordChange={setTables}
             >
-              <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+              <div className="max-h-64 overflow-auto">
                 <TablesTable
                   db={db}
                   database={databaseMetadata}
@@ -85,7 +85,7 @@ export function InfoPanel() {
               keyword={views}
               onKeywordChange={setViews}
             >
-              <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+              <div className="max-h-64 overflow-auto">
                 <ViewsTable
                   database={databaseMetadata}
                   schema={schema}
@@ -106,7 +106,7 @@ export function InfoPanel() {
               keyword={functions}
               onKeywordChange={setFunctions}
             >
-              <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+              <div className="max-h-64 overflow-auto">
                 <FunctionsTable
                   database={databaseMetadata}
                   schema={schema}
@@ -129,7 +129,7 @@ export function InfoPanel() {
               keyword={procedures}
               onKeywordChange={setProcedures}
             >
-              <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+              <div className="max-h-64 overflow-auto">
                 <ProceduresTable
                   database={databaseMetadata}
                   schema={schema}
@@ -153,7 +153,7 @@ export function InfoPanel() {
                 keyword={sequences}
                 onKeywordChange={setSequences}
               >
-                <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+                <div className="max-h-64 overflow-auto">
                   <SequencesTable
                     database={databaseMetadata}
                     schema={schema}
@@ -178,7 +178,7 @@ export function InfoPanel() {
                 keyword={externalTables}
                 onKeywordChange={setExternalTables}
               >
-                <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+                <div className="max-h-64 overflow-auto">
                   <ExternalTablesTable
                     database={databaseMetadata}
                     schema={schema}
@@ -201,7 +201,7 @@ export function InfoPanel() {
                 keyword={packages}
                 onKeywordChange={setPackages}
               >
-                <div className="max-h-64 overflow-x-auto overflow-y-hidden">
+                <div className="max-h-64 overflow-auto">
                   <PackagesTable
                     database={databaseMetadata}
                     schema={schema}

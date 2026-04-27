@@ -1,7 +1,8 @@
 import type * as monaco from "monaco-editor";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { MonacoModule } from "@/components/MonacoEditor";
 import type { ChatAction } from "@/plugins/ai/types";
+import { useVueState } from "@/react/hooks/useVueState";
 import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
@@ -29,22 +30,15 @@ export function useAIActions({
   callback,
 }: UseAIActionsOptions) {
   const settingStore = useSettingV1Store();
-  // Setting is fetched globally by `ProvideAIContext.vue`; we just need
-  // to read the resolved value at registration time. The Pinia setting
-  // store is reactive but we don't need cross-render reactivity here —
-  // the editor is short-lived and re-mounted per panel detail switch.
-  const [aiEnabled, setAiEnabled] = useState(() => readEnabled(settingStore));
+  // Subscribe to the Pinia setting so the registered Monaco actions
+  // re-register or unregister live when an admin toggles AI access
+  // while the editor is mounted (matches the Vue `watchEffect` behavior
+  // in `editor-actions.ts`).
+  const aiEnabled = useVueState(() => readEnabled(settingStore));
+  // Defensive fetch — the global `ProvideAIContext.vue` triggers this
+  // on app mount, but a deep-link to a code panel can race that.
   useEffect(() => {
-    let cancelled = false;
-    void settingStore
-      .getOrFetchSettingByName(Setting_SettingName.AI, true)
-      .then(() => {
-        if (cancelled) return;
-        setAiEnabled(readEnabled(settingStore));
-      });
-    return () => {
-      cancelled = true;
-    };
+    void settingStore.getOrFetchSettingByName(Setting_SettingName.AI, true);
   }, [settingStore]);
 
   useEffect(() => {
