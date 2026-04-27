@@ -36,6 +36,8 @@ type clientOptions struct {
 	timeout time.Duration
 	// retryConfig controls retry behavior for transient errors.
 	retryConfig *retryConfig
+	// customHeaders contains caller-provided headers for Bytebase API requests.
+	customHeaders http.Header
 }
 
 // defaultClientOptions returns the default client options.
@@ -90,6 +92,11 @@ func newClient(url, accessToken, serviceAccount, serviceAccountSecret string, op
 		}
 		httpClient = &http.Client{Timeout: timeout}
 	}
+	if len(opts.customHeaders) > 0 {
+		copiedClient := *httpClient
+		httpClient = &copiedClient
+		httpClient.Transport = newCustomHeaderTransport(httpClient.Transport, opts.customHeaders)
+	}
 
 	var tokenRefresher func(ctx context.Context) (string, error)
 	if accessToken != "" {
@@ -116,6 +123,37 @@ func newClient(url, accessToken, serviceAccount, serviceAccountSecret string, op
 		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
 		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}, nil
+}
+
+type customHeaderTransport struct {
+	base    http.RoundTripper
+	headers http.Header
+}
+
+func newCustomHeaderTransport(base http.RoundTripper, headers http.Header) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return &customHeaderTransport{
+		base:    base,
+		headers: headers.Clone(),
+	}
+}
+
+func (t *customHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	for name, values := range t.headers {
+		for _, value := range values {
+			req.Header.Add(name, value)
+		}
+	}
+	return t.base.RoundTrip(req)
+}
+
+func (t *customHeaderTransport) CloseIdleConnections() {
+	if transport, ok := t.base.(interface{ CloseIdleConnections() }); ok {
+		transport.CloseIdleConnections()
+	}
 }
 
 func getTokenRefresher(httpClient connect.HTTPClient, email, password, url string) func(ctx context.Context) (string, error) {
