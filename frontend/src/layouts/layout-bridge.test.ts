@@ -178,8 +178,8 @@ vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   },
 }));
 
+import ReactRouteShellBridge from "@/react/ReactRouteShellBridge.vue";
 import BodyLayout from "./BodyLayout.vue";
-import IssuesLayout from "./IssuesLayout.vue";
 
 const SidebarView = defineComponent({
   name: "SidebarView",
@@ -204,13 +204,14 @@ const ContentView = defineComponent({
 });
 
 async function mountRouteTree(
-  routes: Parameters<typeof createRouter>[0]["routes"]
+  routes: Parameters<typeof createRouter>[0]["routes"],
+  target = "/target"
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes,
   });
-  await router.push("/target");
+  await router.push(target);
   await router.isReady();
 
   const wrapper = mount(RouterView, {
@@ -272,11 +273,50 @@ describe("layout bridges", () => {
     wrapper.unmount();
   });
 
-  test("IssuesLayout reuses the shell without teleporting sidebar content", async () => {
+  test("BodyLayout lets project routes reach their project permission shell", async () => {
+    const wrapper = await mountRouteTree(
+      [
+        {
+          path: "/",
+          component: BodyLayout,
+          children: [
+            {
+              path: "target/:projectId",
+              name: "workspace.projects.detail",
+              components: {
+                leftSidebar: SidebarView,
+                content: ContentView,
+              },
+            },
+          ],
+        },
+      ],
+      "/target/prod"
+    );
+
+    expect(
+      document.querySelector(
+        '[data-testid="shell-content"] > [data-testid="content-view"]'
+      )?.textContent
+    ).toContain("connected");
+    expect(
+      document.querySelector(
+        '[data-testid="shell-content"] [data-testid="permission-guard"]'
+      )
+    ).toBeNull();
+
+    wrapper.unmount();
+  });
+
+  test("ReactRouteShellBridge teleports named route content into React shell", async () => {
     const wrapper = await mountRouteTree([
       {
         path: "/",
-        component: IssuesLayout,
+        component: ReactRouteShellBridge,
+        props: {
+          page: "IssuesRouteShell",
+          routerViewName: "content",
+        },
         children: [
           {
             path: "target",

@@ -805,6 +805,7 @@
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "unassign-alert-title": "Desasignar bases de datos",
+    "unassigned-databases": "Bases de datos no asignadas",
     "unique": "Único",
     "visible": "Visible"
   },
@@ -1695,6 +1696,9 @@
       },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
+    "overview": {
+      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
+    },
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
@@ -1832,6 +1836,12 @@
   "remind": {
     "release": {
       "new-version-available-with-tag": "La nueva versión {{tag}} está disponible"
+    },
+    "role-expire": {
+      "checkbox": "No recordar hasta que haya actualizaciones",
+      "content": "Tus siguientes roles expirarán",
+      "go-to-project": "Ir a la página del proyecto",
+      "title": "Recordatorio de expiración del rol"
     }
   },
   "resource": {

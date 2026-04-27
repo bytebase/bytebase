@@ -13,10 +13,15 @@
     <router-view name="leftSidebar" />
   </teleport>
 
-  <teleport v-if="contentTarget" :to="contentTarget">
+  <teleport v-if="contentTarget && isProjectRoute" :to="contentTarget">
+    <router-view name="content" />
+  </teleport>
+
+  <teleport v-else-if="contentTarget" :to="contentTarget">
     <ReactPageMount
       page="RoutePermissionGuardShell"
       :page-props="{
+        routeKey: route.fullPath,
         className: 'm-4',
         targetClassName: 'h-full min-h-0',
         onReady: handlePermissionReady,
@@ -25,7 +30,7 @@
   </teleport>
 
   <teleport
-    v-if="routePermitted && routePermissionTarget"
+    v-if="!isProjectRoute && routePermitted && routePermissionTarget"
     :to="routePermissionTarget"
   >
     <router-view name="content" />
@@ -86,6 +91,9 @@ const routePermitted = useRoutePermitted();
 
 const isRootPath = computed(() => {
   return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
+});
+const isProjectRoute = computed(() => {
+  return Boolean(route.params.projectId);
 });
 
 const contentTarget = computed(() => shellTargets.value.content);

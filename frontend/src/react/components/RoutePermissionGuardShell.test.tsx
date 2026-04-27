@@ -166,7 +166,7 @@ describe("RoutePermissionGuardShell", () => {
     expect(container.textContent).not.toContain("bb.settings.set");
   });
 
-  test("does not re-emit on route changes when permission state is unchanged", async () => {
+  test("re-emits the content target on route changes", async () => {
     mocks.route.requiredPermissions = ["bb.settings.get"];
     mocks.workspacePermissions.add("bb.settings.get");
 
@@ -182,7 +182,8 @@ describe("RoutePermissionGuardShell", () => {
       root.render(<RoutePermissionGuardShell onReady={onReady} />);
     });
 
-    expect(onReady).toHaveBeenCalledTimes(initialCalls);
+    expect(onReady).toHaveBeenCalledTimes(initialCalls + 1);
+    expect(onReady).toHaveBeenLastCalledWith(expect.any(HTMLDivElement));
   });
 
   test("uses project permissions when a project is provided", async () => {

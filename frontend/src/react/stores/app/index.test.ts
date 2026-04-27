@@ -7,6 +7,7 @@ import {
   BindingSchema,
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
+import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import {
@@ -34,9 +35,11 @@ const mocks = vi.hoisted(() => ({
   uploadLicense: vi.fn(),
   getSetting: vi.fn(),
   getProject: vi.fn(),
+  getProjectIamPolicy: vi.fn(),
   batchGetProjects: vi.fn(),
   searchProjects: vi.fn(),
   createProject: vi.fn(),
+  getInstance: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -48,9 +51,13 @@ vi.mock("@/connect", () => ({
   },
   projectServiceClientConnect: {
     getProject: mocks.getProject,
+    getIamPolicy: mocks.getProjectIamPolicy,
     batchGetProjects: mocks.batchGetProjects,
     searchProjects: mocks.searchProjects,
     createProject: mocks.createProject,
+  },
+  instanceServiceClientConnect: {
+    getInstance: mocks.getInstance,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -104,8 +111,10 @@ describe("useAppStore", () => {
     expect(state.loadWorkspace).toBeTypeOf("function");
     expect(state.hasWorkspacePermission).toBeTypeOf("function");
     expect(state.fetchProject).toBeTypeOf("function");
+    expect(state.fetchInstance).toBeTypeOf("function");
     expect(state.notify).toBeTypeOf("function");
     expect(state.recordRecentVisit).toBeTypeOf("function");
+    expect(state.removeRecentVisit).toBeTypeOf("function");
   });
 
   test("deduplicates project fetches and caches the result", async () => {
@@ -248,6 +257,63 @@ describe("useAppStore", () => {
     expect(store.getState().appFeatures["bb.feature.hide-trial"]).toBe(false);
   });
 
+  test("loads project IAM policy and checks project permissions", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({
+      roles: [
+        createProto(RoleSchema, {
+          name: "roles/projectDeveloper",
+          permissions: ["bb.projects.update"],
+        }),
+      ],
+    });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    mocks.getProjectIamPolicy.mockResolvedValue(
+      createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/projectDeveloper",
+            members: ["user:alice@example.com"],
+          }),
+        ],
+      })
+    );
+    const store = createAppStore();
+
+    await store.getState().loadProjectIamPolicy(projectA.name);
+
+    expect(mocks.getProjectIamPolicy).toHaveBeenCalledTimes(1);
+    expect(
+      store.getState().hasProjectPermission(projectA, "bb.projects.update")
+    ).toBe(true);
+    expect(
+      store.getState().hasProjectPermission(projectA, "bb.projects.delete")
+    ).toBe(false);
+  });
+
+  test("caches instances by resource name", async () => {
+    const instance = createProto(InstanceSchema, {
+      name: "instances/prod",
+      title: "Prod",
+    });
+    mocks.getInstance.mockResolvedValue(instance);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchInstance(instance.name),
+      store.getState().fetchInstance(instance.name),
+    ]);
+
+    expect(first).toBe(instance);
+    expect(second).toBe(instance);
+    expect(mocks.getInstance).toHaveBeenCalledTimes(1);
+    expect(store.getState().instancesByName[instance.name]).toBe(instance);
+  });
+
   test("dispatches notification events for the Vue shell bridge", () => {
     const store = createAppStore();
     const listener = vi.fn();
@@ -274,6 +340,7 @@ describe("useAppStore", () => {
     store.getState().setRecentProject(projectB.name);
     store.getState().recordRecentVisit("/projects/a?tab=1");
     store.getState().recordRecentVisit("/projects/a?tab=2");
+    store.getState().removeRecentVisit("/missing");
     store.getState().resetQuickstartProgress();
 
     expect(

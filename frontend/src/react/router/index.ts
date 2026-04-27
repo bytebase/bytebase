@@ -3,6 +3,7 @@ import type { RouteLocationRaw } from "vue-router";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
+  PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DETAIL,
 } from "@/router/dashboard/projectV1";
@@ -49,6 +50,7 @@ export {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DETAIL,
   SETTING_ROUTE_PROFILE,
@@ -84,6 +86,8 @@ export type ReactRoute = {
   params: Record<string, string | string[] | undefined>;
   query: Record<string, unknown>;
   requiredPermissions: Permission[];
+  title?: string;
+  overrideDocumentTitle: boolean;
 };
 
 export type ReactResolvedRoute = {
@@ -113,6 +117,8 @@ function snapshotRoute(): ReactRoute {
           (record.meta.requiredPermissionList?.() ?? []) as Permission[]
       )
     ),
+    title: route.meta.title?.(route),
+    overrideDocumentTitle: route.meta.overrideDocumentTitle ?? false,
   };
   return cachedRoute;
 }

@@ -271,7 +271,7 @@ export function ProjectSidebar() {
   }, []);
 
   // Ensure the project is fetched into the store cache.
-  // ProjectV1Layout also fetches it, but this guards against race conditions.
+  // ProjectRouteShell also fetches it, but this guards against race conditions.
   useEffect(() => {
     if (projectId) {
       projectStore.getOrFetchProjectByName(

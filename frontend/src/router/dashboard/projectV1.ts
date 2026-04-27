@@ -145,10 +145,18 @@ const projectV1Routes: RouteRecordRaw[] = [
   {
     path: "projects/:projectId",
     components: {
-      content: () => import("@/layouts/ProjectV1Layout.vue"),
+      content: () => import("@/react/ReactRouteShellBridge.vue"),
       leftSidebar: ReactProjectSidebarMount,
     },
-    props: { content: true, leftSidebar: true },
+    props: {
+      content: (route: RouteLocationNormalized) => ({
+        page: "ProjectRouteShell",
+        pageProps: {
+          projectId: route.params.projectId,
+        },
+      }),
+      leftSidebar: true,
+    },
     meta: {
       requiredPermissionList: () => ["bb.projects.get"],
     },

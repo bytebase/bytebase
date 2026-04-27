@@ -805,6 +805,7 @@
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "unassign-alert-title": "取消分配数据库",
+    "unassigned-databases": "未分配的数据库",
     "unique": "唯一",
     "visible": "Visible"
   },
@@ -1695,6 +1696,9 @@
       },
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
+    "overview": {
+      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
+    },
     "settings": {
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
@@ -1832,6 +1836,12 @@
   "remind": {
     "release": {
       "new-version-available-with-tag": "新版本 {{tag}} 已推出"
+    },
+    "role-expire": {
+      "checkbox": "直到有更新再提醒",
+      "content": "您的角色即将到期",
+      "go-to-project": "前往项目页面",
+      "title": "角色到期提醒"
     }
   },
   "resource": {
