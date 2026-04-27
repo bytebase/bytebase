@@ -2,6 +2,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -108,12 +109,16 @@ export function ProjectSwitchPanel({
   const route = useCurrentRoute();
   const { projects: recentProjectList } = useRecentProjects();
   const [searchText, setSearchText] = useState("");
-  // Mirror Vue's `onMounted(() => state.selectedTab = recent.length < 1 ? "all" : "recent")`.
-  // Initializing from the recent list directly avoids the flicker the
-  // useEffect-based version had (mount on "all" → snap to "recent").
   const [selectedTab, setSelectedTab] = useState<ProjectSwitchTab>(() =>
     recentProjectList.length > 0 ? "recent" : "all"
   );
+  // The recent list loads async (localStorage read in useEffect), so the
+  // initializer above may see an empty list. Switch to "recent" once loaded.
+  useEffect(() => {
+    if (recentProjectList.length > 0) {
+      setSelectedTab((prev) => (prev === "all" ? "recent" : prev));
+    }
+  }, [recentProjectList.length]);
   const projectId = route.params.projectId as string | undefined;
   const currentProjectName = projectId
     ? `${projectNamePrefix}${projectId}`
