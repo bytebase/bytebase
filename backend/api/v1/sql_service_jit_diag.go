@@ -13,6 +13,15 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// jitGrantMissDiagLimit caps how many candidate grants the diagnostic
+// inspects per failed match. A user can theoretically have many ACTIVE
+// grants for the same database (re-requested several times within the TTL,
+// or multi-target grants overlapping); without this cap, debug logging
+// would amplify the DB and log volume during incident triage. 20 is well
+// above any realistic count we have seen and small enough to bound the
+// extra work.
+const jitGrantMissDiagLimit = 20
+
 // jitGrantMissDiag captures the bare-minimum forensic information about a JIT
 // grant that *almost* matched a query but didn't. It deliberately excludes the
 // SQL itself — operators get bytes and content hashes, never customer SQL in
@@ -82,11 +91,19 @@ func (s *SQLService) logJITGrantMissDiagnostic(
 		slog.Debug("jit grant miss diagnostic: failed to build filter", log.BBError(err))
 		return
 	}
+	limit := jitGrantMissDiagLimit
 	candidates, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
 		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		ProjectID: &projectID,
 		Creator:   &userEmail,
 		FilterQ:   diagFilterQ,
+		Limit:     &limit,
+		// Newest first so the diagnostic surfaces the user's most recent
+		// (most likely the just-rejected) request before older ones, and so
+		// the log output is deterministic.
+		OrderByKeys: []*store.OrderByKey{
+			{Key: "access_grant.created_at", SortOrder: store.DESC},
+		},
 	})
 	if err != nil {
 		slog.Debug("jit grant miss diagnostic: failed to list candidates", log.BBError(err))
