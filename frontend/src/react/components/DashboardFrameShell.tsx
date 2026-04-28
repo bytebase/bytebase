@@ -2,7 +2,18 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DashboardFrameShellProps } from "@/react/dashboard-shell";
 import { useAppStore } from "@/react/stores/app";
+import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { BannersWrapper } from "./BannersWrapper";
+
+const loadLegacyDashboardState = () => {
+  return Promise.all([
+    useEnvironmentV1Store().fetchEnvironments(),
+    useSettingV1Store().getOrFetchSettingByName(
+      Setting_SettingName.WORKSPACE_PROFILE
+    ),
+  ]);
+};
 
 export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -15,7 +26,11 @@ export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
 
   useEffect(() => {
     let mounted = true;
-    void Promise.all([loadEnvironmentList(), loadWorkspaceProfile()])
+    void Promise.all([
+      loadEnvironmentList(),
+      loadWorkspaceProfile(),
+      loadLegacyDashboardState(),
+    ])
       .catch(() => undefined)
       .then(() => {
         if (mounted) {
