@@ -13,6 +13,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/dynamodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/elasticsearch"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/milvus"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
@@ -32,6 +33,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/milvus"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
@@ -47,6 +49,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 
 	// Advisors.
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/milvus"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"

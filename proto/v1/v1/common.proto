@@ -67,6 +67,8 @@ enum Engine {
   TRINO = 24;
   // Apache Cassandra NoSQL database.
   CASSANDRA = 25;
+  // Milvus vector database.
+  MILVUS = 26;
 }
 
 // Version control system type.
