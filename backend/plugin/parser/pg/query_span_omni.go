@@ -311,9 +311,22 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 // selStmt is the original parse tree, used to determine IsPlainField
 // (which is true only for columns that came from * expansion).
 func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
+	return e.extractLineageWithVisited(q, selStmt, make(map[*catalog.Query]bool))
+}
+
+func (e *omniQuerySpanExtractor) extractLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
+	if q == nil {
+		return nil
+	}
+	if visited[q] {
+		return nil
+	}
+	visited[q] = true
+	defer delete(visited, q)
+
 	// Handle set operations (UNION/INTERSECT/EXCEPT).
 	if q.SetOp != catalog.SetOpNone {
-		return e.extractSetOpLineage(q, selStmt)
+		return e.extractSetOpLineageWithVisited(q, selStmt, visited)
 	}
 
 	// Build a plain-field mask from the parse tree's target list.
@@ -380,9 +393,24 @@ func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.S
 // CTEs and subqueries, is a simple column reference (VarExpr pointing to a
 // physical table). Aggregates, functions, and other expressions return false.
 func isUltimatelyPlainColumn(q *catalog.Query, expr catalog.AnalyzedExpr) bool {
+	return isUltimatelyPlainColumnWithVisited(q, expr, make(map[queryExprKey]bool))
+}
+
+type queryExprKey struct {
+	query *catalog.Query
+	expr  catalog.AnalyzedExpr
+}
+
+func isUltimatelyPlainColumnWithVisited(q *catalog.Query, expr catalog.AnalyzedExpr, visited map[queryExprKey]bool) bool {
 	if expr == nil {
 		return false
 	}
+	key := queryExprKey{query: q, expr: expr}
+	if visited[key] {
+		return false
+	}
+	visited[key] = true
+
 	v, ok := expr.(*catalog.VarExpr)
 	if !ok {
 		return false
@@ -398,13 +426,13 @@ func isUltimatelyPlainColumn(q *catalog.Query, expr catalog.AnalyzedExpr) bool {
 		return true
 	case catalog.RTESubquery:
 		if rte.Subquery != nil && colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
-			return isUltimatelyPlainColumn(rte.Subquery, rte.Subquery.TargetList[colIdx].Expr)
+			return isUltimatelyPlainColumnWithVisited(rte.Subquery, rte.Subquery.TargetList[colIdx].Expr, visited)
 		}
 	case catalog.RTECTE:
 		if rte.CTEIndex >= 0 && rte.CTEIndex < len(q.CTEList) {
 			cte := q.CTEList[rte.CTEIndex]
 			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
-				return isUltimatelyPlainColumn(cte.Query, cte.Query.TargetList[colIdx].Expr)
+				return isUltimatelyPlainColumnWithVisited(cte.Query, cte.Query.TargetList[colIdx].Expr, visited)
 			}
 		}
 	default:
@@ -557,13 +585,17 @@ func countStarColumnsFromRTE(q *catalog.Query, targets []*catalog.TargetEntry, s
 	return count
 }
 
-// extractSetOpLineage handles UNION/INTERSECT/EXCEPT by merging lineage from both branches.
-func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
+func (e *omniQuerySpanExtractor) extractSetOpLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
 	if q.LArg == nil || q.RArg == nil {
 		return nil
 	}
-	lResults := e.extractLineage(q.LArg, selStmt.Larg)
-	rResults := e.extractLineage(q.RArg, selStmt.Rarg)
+	var lSelStmt, rSelStmt *ast.SelectStmt
+	if selStmt != nil {
+		lSelStmt = selStmt.Larg
+		rSelStmt = selStmt.Rarg
+	}
+	lResults := e.extractLineageWithVisited(q.LArg, lSelStmt, visited)
+	rResults := e.extractLineageWithVisited(q.RArg, rSelStmt, visited)
 
 	// For EXCEPT, output rows come only from the left branch — do not
 	// merge right-side lineage into the result columns.
@@ -592,16 +624,30 @@ func (e *omniQuerySpanExtractor) extractSetOpLineage(q *catalog.Query, selStmt *
 // walkExpr recursively walks an analyzed expression tree and collects all
 // source column references into the result set.
 func (e *omniQuerySpanExtractor) walkExpr(q *catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet) {
+	e.walkExprWithVisited([]*catalog.Query{q}, expr, result, make(map[queryExprKey]bool))
+}
+
+func (e *omniQuerySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
 	if expr == nil {
 		return
 	}
+	q := currentQuery(queryStack)
+	if q == nil {
+		return
+	}
+	key := queryExprKey{query: q, expr: expr}
+	if visited[key] {
+		return
+	}
+	visited[key] = true
+
 	switch v := expr.(type) {
 	case *catalog.VarExpr:
-		e.resolveVar(q, v, result)
+		e.resolveVar(queryStack, v, result, visited)
 	case *catalog.FuncCallExpr:
 		// Walk arguments first — they contribute to access tables.
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 		// Trace lineage through user-defined function body.
 		if proc := e.cat.GetUserProcByOID(v.FuncOID); proc != nil {
@@ -614,81 +660,111 @@ func (e *omniQuerySpanExtractor) walkExpr(q *catalog.Query, expr catalog.Analyze
 		}
 	case *catalog.AggExpr:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.OpExpr:
-		e.walkExpr(q, v.Left, result)
-		e.walkExpr(q, v.Right, result)
+		e.walkExprWithVisited(queryStack, v.Left, result, visited)
+		e.walkExprWithVisited(queryStack, v.Right, result, visited)
 	case *catalog.BoolExprQ:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.CaseExprQ:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 		for _, w := range v.When {
-			e.walkExpr(q, w.Condition, result)
-			e.walkExpr(q, w.Result, result)
+			e.walkExprWithVisited(queryStack, w.Condition, result, visited)
+			e.walkExprWithVisited(queryStack, w.Result, result, visited)
 		}
-		e.walkExpr(q, v.Default, result)
+		e.walkExprWithVisited(queryStack, v.Default, result, visited)
 	case *catalog.CoalesceExprQ:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.SubLinkExpr:
-		e.walkExpr(q, v.TestExpr, result)
+		e.walkExprWithVisited(queryStack, v.TestExpr, result, visited)
 		if v.SubQuery != nil {
+			subQueryStack := appendQuery(queryStack, v.SubQuery)
 			for _, te := range v.SubQuery.TargetList {
 				if !te.ResJunk {
-					e.walkExpr(v.SubQuery, te.Expr, result)
+					e.walkExprWithVisited(subQueryStack, te.Expr, result, visited)
 				}
 			}
 		}
 	case *catalog.RelabelExpr:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	case *catalog.CoerceViaIOExpr:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	case *catalog.RowExprQ:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.WindowFuncExpr:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
-		e.walkExpr(q, v.AggFilter, result)
+		e.walkExprWithVisited(queryStack, v.AggFilter, result, visited)
 	case *catalog.NullIfExprQ:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.MinMaxExprQ:
 		for _, arg := range v.Args {
-			e.walkExpr(q, arg, result)
+			e.walkExprWithVisited(queryStack, arg, result, visited)
 		}
 	case *catalog.ArrayExprQ:
 		for _, elem := range v.Elements {
-			e.walkExpr(q, elem, result)
+			e.walkExprWithVisited(queryStack, elem, result, visited)
 		}
 	case *catalog.ScalarArrayOpExpr:
-		e.walkExpr(q, v.Left, result)
-		e.walkExpr(q, v.Right, result)
+		e.walkExprWithVisited(queryStack, v.Left, result, visited)
+		e.walkExprWithVisited(queryStack, v.Right, result, visited)
 	case *catalog.CollateExprQ:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	case *catalog.NullTestExpr:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	case *catalog.BooleanTestExpr:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	case *catalog.DistinctExprQ:
-		e.walkExpr(q, v.Left, result)
-		e.walkExpr(q, v.Right, result)
+		e.walkExprWithVisited(queryStack, v.Left, result, visited)
+		e.walkExprWithVisited(queryStack, v.Right, result, visited)
 	case *catalog.FieldSelectExprQ:
-		e.walkExpr(q, v.Arg, result)
+		e.walkExprWithVisited(queryStack, v.Arg, result, visited)
 	// ConstExpr, SQLValueFuncExpr, CoerceToDomainValueExpr — no column refs.
 	default:
 	}
 }
 
+func currentQuery(queryStack []*catalog.Query) *catalog.Query {
+	if len(queryStack) == 0 {
+		return nil
+	}
+	return queryStack[len(queryStack)-1]
+}
+
+func appendQuery(queryStack []*catalog.Query, q *catalog.Query) []*catalog.Query {
+	nextStack := make([]*catalog.Query, 0, len(queryStack)+1)
+	nextStack = append(nextStack, queryStack...)
+	if q == nil {
+		return nextStack
+	}
+	return append(nextStack, q)
+}
+
 // resolveVar resolves a VarExpr to its ultimate source column(s).
-func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr, result base.SourceColumnSet) {
+func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *catalog.VarExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
+	q := currentQuery(queryStack)
+	effectiveStack := queryStack
+	if v.LevelsUp > 0 {
+		ancestorIdx := len(queryStack) - 1 - v.LevelsUp
+		if ancestorIdx < 0 {
+			return
+		}
+		q = queryStack[ancestorIdx]
+		effectiveStack = queryStack[:ancestorIdx+1]
+	}
+	if q == nil {
+		return
+	}
 	if v.RangeIdx < 0 || v.RangeIdx >= len(q.RangeTable) {
 		return
 	}
@@ -718,7 +794,7 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 		}
 		if colIdx >= 0 && colIdx < len(rte.Subquery.TargetList) {
 			te := rte.Subquery.TargetList[colIdx]
-			e.walkExpr(rte.Subquery, te.Expr, result)
+			e.walkExprWithVisited(appendQuery(effectiveStack, rte.Subquery), te.Expr, result, visited)
 		}
 
 	case catalog.RTECTE:
@@ -726,7 +802,7 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 			cte := q.CTEList[rte.CTEIndex]
 			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
 				te := cte.Query.TargetList[colIdx]
-				e.walkExpr(cte.Query, te.Expr, result)
+				e.walkExprWithVisited(appendQuery(effectiveStack, cte.Query), te.Expr, result, visited)
 			}
 		}
 
@@ -748,7 +824,7 @@ func (e *omniQuerySpanExtractor) resolveVar(q *catalog.Query, v *catalog.VarExpr
 					// Built-in function (no user proc) — trace lineage through
 					// the function's arguments. E.g., jsonb_each(a) depends on column a.
 					for _, arg := range fc.Args {
-						e.walkExpr(q, arg, result)
+						e.walkExprWithVisited(effectiveStack, arg, result, visited)
 					}
 				}
 			}
