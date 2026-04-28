@@ -101,13 +101,17 @@ func (c *columnNoNullChecker) checkAlterTable(n *ast.AlterTableStmt, ostmt OmniS
 		var columns []string
 		switch cmd.Type {
 		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				columns = append(columns, cmd.Column.Name)
-			}
-			for _, col := range cmd.Columns {
-				if col != nil {
-					columns = append(columns, col.Name)
+			// omni populates either Columns (multi-column ADD COLUMN (...))
+			// or Column (single-column ADD COLUMN). Mutually exclusive in
+			// practice but not enforced by the type — read defensively.
+			if len(cmd.Columns) > 0 {
+				for _, col := range cmd.Columns {
+					if col != nil {
+						columns = append(columns, col.Name)
+					}
 				}
+			} else if cmd.Column != nil {
+				columns = append(columns, cmd.Column.Name)
 			}
 		case ast.ATChangeColumn:
 			// Only care about the new column name.
@@ -115,7 +119,10 @@ func (c *columnNoNullChecker) checkAlterTable(n *ast.AlterTableStmt, ostmt OmniS
 				columns = append(columns, cmd.Column.Name)
 			}
 		default:
-			// Skip other alter table specification types.
+			// MODIFY COLUMN (ATModifyColumn) is intentionally NOT handled.
+			// Pre-existing inheritance from the pingcap-AST version of this
+			// advisor — `ALTER TABLE t MODIFY COLUMN x INT NULL` slips past.
+			// Not an omni-introduced regression; preserve current behavior.
 		}
 		for _, name := range columns {
 			cn := columnName{
