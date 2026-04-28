@@ -80,10 +80,7 @@ import {
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   hasWorkspacePermissionV2,
@@ -840,6 +837,9 @@ export function InstancesPage() {
   const totalInstanceCount = useVueState(
     () => actuatorStore.totalInstanceCount
   );
+  const hasSplitInstanceLicense = useVueState(
+    () => subscriptionStore.hasSplitInstanceLicense
+  );
   const quotaExhausted = totalInstanceCount >= instanceCountLimit;
 
   // Data fetching
@@ -1040,10 +1040,16 @@ export function InstancesPage() {
     setSelectedNames(new Set());
   }, [fetchInstances]);
 
-  const handleAssignLicense = useCallback((names: string[]) => {
-    setAssignLicenseNames(names);
-    setShowAssignLicenseSheet(true);
-  }, []);
+  const handleAssignLicense = useCallback(
+    (names: string[]) => {
+      if (!hasSplitInstanceLicense) {
+        return;
+      }
+      setAssignLicenseNames(names);
+      setShowAssignLicenseSheet(true);
+    },
+    [hasSplitInstanceLicense]
+  );
 
   useEffect(() => {
     const query = router.currentRoute.value.query;
@@ -1292,7 +1298,7 @@ export function InstancesPage() {
             selectedInstanceList.map((instance) => instance.name)
           )
         }
-        showAssignLicense={subscriptionStore.currentPlan !== PlanType.FREE}
+        showAssignLicense={hasSplitInstanceLicense}
       />
 
       <EditEnvironmentSheet
@@ -1300,12 +1306,14 @@ export function InstancesPage() {
         onClose={() => setShowEditEnvDrawer(false)}
         onUpdate={handleEnvironmentUpdate}
       />
-      <InstanceAssignmentSheet
-        open={showAssignLicenseSheet}
-        selectedInstanceList={assignLicenseNames}
-        onOpenChange={setShowAssignLicenseSheet}
-        onUpdated={handleRowAction}
-      />
+      {hasSplitInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showAssignLicenseSheet}
+          selectedInstanceList={assignLicenseNames}
+          onOpenChange={setShowAssignLicenseSheet}
+          onUpdated={handleRowAction}
+        />
+      )}
 
       {/* Table */}
       <div className="border rounded-sm">

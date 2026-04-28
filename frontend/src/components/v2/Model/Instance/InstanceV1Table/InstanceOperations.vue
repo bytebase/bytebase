@@ -62,7 +62,6 @@ import {
 import type { Permission } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 
 interface Action {
   icon?: VNode;
@@ -96,7 +95,7 @@ const state = reactive<LocalState>({
 });
 
 const canAssignLicense = computed(() => {
-  return subscriptionStore.currentPlan !== PlanType.FREE;
+  return subscriptionStore.hasSplitInstanceLicense;
 });
 
 const actions = computed((): Action[] => {

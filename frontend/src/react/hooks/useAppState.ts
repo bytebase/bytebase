@@ -64,6 +64,9 @@ export function useSubscriptionState() {
   const instanceLicenseCount = useAppStore((state) =>
     state.instanceLicenseCount()
   );
+  const hasUnifiedInstanceLicense = useAppStore((state) =>
+    state.hasUnifiedInstanceLicense()
+  );
   useEffect(() => {
     void loadSubscription();
   }, [loadSubscription]);
@@ -81,6 +84,7 @@ export function useSubscriptionState() {
     instanceCountLimit,
     userCountLimit,
     instanceLicenseCount,
+    hasUnifiedInstanceLicense,
   };
 }
 

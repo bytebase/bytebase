@@ -95,7 +95,7 @@ func configureGrpcRouters(
 	celService := apiv1.NewCelService()
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, licenseService)
-	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, profile, iamManager)
+	databaseService := apiv1.NewDatabaseService(stores, schemaSyncer, profile, iamManager, licenseService)
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores)

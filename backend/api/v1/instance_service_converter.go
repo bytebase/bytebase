@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func convertToV1Instance(instance *store.InstanceMessage) *v1pb.Instance {
+func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb.Instance {
 	engine := convertToEngine(instance.Metadata.GetEngine())
 	dataSources := convertDataSources(instance.Metadata.GetDataSources())
 
@@ -25,7 +25,7 @@ func convertToV1Instance(instance *store.InstanceMessage) *v1pb.Instance {
 		DataSources:   dataSources,
 		State:         convertDeletedToState(instance.Deleted),
 		Environment:   buildEnvironmentName(instance.EnvironmentID),
-		Activation:    instance.Metadata.GetActivation(),
+		Activation:    activation,
 		SyncInterval:  instance.Metadata.GetSyncInterval(),
 		SyncDatabases: instance.Metadata.GetSyncDatabases(),
 		Roles:         convertInstanceRoles(instance, instance.Metadata.GetRoles()),
@@ -93,16 +93,15 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 	}, nil
 }
 
-func convertToV1InstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
-	instance := convertToV1Instance(instanceMessage)
+func convertToV1InstanceResource(instanceMessage *store.InstanceMessage, activation bool) *v1pb.InstanceResource {
 	return &v1pb.InstanceResource{
-		Name:          instance.Name,
-		Title:         instance.Title,
-		Engine:        instance.Engine,
-		EngineVersion: instance.EngineVersion,
-		DataSources:   instance.DataSources,
-		Activation:    instance.Activation,
-		Environment:   instance.Environment,
+		Name:          buildInstanceName(instanceMessage.ResourceID),
+		Title:         instanceMessage.Metadata.GetTitle(),
+		Engine:        convertToEngine(instanceMessage.Metadata.GetEngine()),
+		EngineVersion: instanceMessage.Metadata.GetVersion(),
+		DataSources:   convertDataSources(instanceMessage.Metadata.GetDataSources()),
+		Activation:    activation,
+		Environment:   buildEnvironmentName(instanceMessage.EnvironmentID),
 	}
 }
 

@@ -43,6 +43,9 @@ export function FeatureAttention({
   const instanceMissingLicense = useAppStore((state) =>
     state.instanceMissingLicense(feature, instance)
   );
+  const hasUnifiedInstanceLicense = useAppStore((state) =>
+    state.hasUnifiedInstanceLicense()
+  );
   const requiredPlan = useAppStore((state) =>
     state.getMinimumRequiredPlan(feature)
   );
@@ -50,6 +53,7 @@ export function FeatureAttention({
     state.hasFeature(feature)
   );
   const existInstanceWithoutLicense =
+    !hasUnifiedInstanceLicense &&
     totalInstanceCount > activatedInstanceCount &&
     instanceLimitFeature.has(feature);
 
@@ -100,7 +104,10 @@ export function FeatureAttention({
       actionText = t("subscription.request-n-days-trial", {
         days: trialingDays,
       });
-    } else if (hasWorkspacePermissionV2("bb.instances.update")) {
+    } else if (
+      !hasUnifiedInstanceLicense &&
+      hasWorkspacePermissionV2("bb.instances.update")
+    ) {
       actionText = t("subscription.instance-assignment.assign-license");
     }
   }
@@ -144,11 +151,13 @@ export function FeatureAttention({
           )}
         </div>
       </Alert>
-      <InstanceAssignmentSheet
-        open={showInstanceAssignment}
-        selectedInstanceList={instance ? [instance.name] : []}
-        onOpenChange={setShowInstanceAssignment}
-      />
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignment}
+          selectedInstanceList={instance ? [instance.name] : []}
+          onOpenChange={setShowInstanceAssignment}
+        />
+      )}
     </>
   );
 }

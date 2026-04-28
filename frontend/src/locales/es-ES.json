@@ -2651,10 +2651,10 @@
       "n-license-remain": "permanecer {n}",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
+      "used-and-total-instance": "Límite de instancias activas/totales",
       "used-and-total-license": "Licencia asignada / total",
       "used-and-total-user": "Límite de usuarios activos/totales"
     },
-    "max-instance-count": "Cantidad máxima de instancias",
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
