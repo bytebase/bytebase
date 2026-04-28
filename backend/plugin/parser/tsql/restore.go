@@ -335,7 +335,7 @@ func updateSetColumns(setClause *ast.List) []string {
 			continue
 		}
 		if setExpr.Variable != "" {
-			if column := updateColumnFromExpr(setExpr.Value); column != "" {
+			if column := updateColumnFromDualAssignment(setExpr.Value); column != "" {
 				columns = append(columns, column)
 			}
 		}
@@ -343,14 +343,23 @@ func updateSetColumns(setClause *ast.List) []string {
 	return columns
 }
 
-func updateColumnFromExpr(expr ast.ExprNode) string {
+func updateColumnFromDualAssignment(expr ast.ExprNode) string {
 	switch e := expr.(type) {
-	case *ast.ColumnRef:
-		return e.Column
 	case *ast.BinaryExpr:
 		if e.Op == ast.BinOpEq {
 			return updateColumnFromExpr(e.Left)
 		}
+	case *ast.ParenExpr:
+		return updateColumnFromDualAssignment(e.Expr)
+	default:
+	}
+	return ""
+}
+
+func updateColumnFromExpr(expr ast.ExprNode) string {
+	switch e := expr.(type) {
+	case *ast.ColumnRef:
+		return e.Column
 	case *ast.ParenExpr:
 		return updateColumnFromExpr(e.Expr)
 	default:

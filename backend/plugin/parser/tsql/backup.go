@@ -3,7 +3,6 @@ package tsql
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -556,11 +555,7 @@ func listLoc(list *ast.List) ast.Loc {
 }
 
 func dmlNodeLoc(node ast.Node) ast.Loc {
-	if node == nil {
-		return ast.NoLoc()
-	}
-	v := reflect.ValueOf(node)
-	if v.Kind() == reflect.Ptr && v.IsNil() {
+	if common.IsNil(node) {
 		return ast.NoLoc()
 	}
 	switch n := node.(type) {
