@@ -19,12 +19,9 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
+import { usePlanFeature, useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useActuatorV1Store,
-  useIdentityProviderStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useIdentityProviderStore } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   defaultAccessTokenDurationInHours,
@@ -101,29 +98,19 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const settingV1Store = useSettingV1Store();
     const idpStore = useIdentityProviderStore();
 
-    const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-    const hasDisallowSignupFeature = useVueState(() =>
-      useSubscriptionV1Store().hasFeature(
-        PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP
-      )
+    const { isSaaSMode, workspaceResourceName } = useServerState();
+    const hasDisallowSignupFeature = usePlanFeature(
+      PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP
     );
-    const has2FAFeature = useVueState(() =>
-      useSubscriptionV1Store().hasFeature(PlanFeature.FEATURE_TWO_FA)
+    const has2FAFeature = usePlanFeature(PlanFeature.FEATURE_TWO_FA);
+    const hasDisallowPasswordSigninFeature = usePlanFeature(
+      PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN
     );
-    const hasDisallowPasswordSigninFeature = useVueState(() =>
-      useSubscriptionV1Store().hasFeature(
-        PlanFeature.FEATURE_DISALLOW_PASSWORD_SIGNIN
-      )
+    const hasPasswordFeature = usePlanFeature(
+      PlanFeature.FEATURE_PASSWORD_RESTRICTIONS
     );
-    const hasPasswordFeature = useVueState(() =>
-      useSubscriptionV1Store().hasFeature(
-        PlanFeature.FEATURE_PASSWORD_RESTRICTIONS
-      )
-    );
-    const hasSecureTokenFeature = useVueState(() =>
-      useSubscriptionV1Store().hasFeature(
-        PlanFeature.FEATURE_TOKEN_DURATION_CONTROL
-      )
+    const hasSecureTokenFeature = usePlanFeature(
+      PlanFeature.FEATURE_TOKEN_DURATION_CONTROL
     );
 
     const [allowEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
@@ -138,15 +125,19 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
     );
 
-    // Fetch identity providers and EMAIL setting on mount.
+    // Fetch identity providers after the workspace resource name is ready.
     useEffect(() => {
-      idpStore.fetchIdentityProviderList(
-        useActuatorV1Store().workspaceResourceName
-      );
+      if (workspaceResourceName) {
+        idpStore.fetchIdentityProviderList(workspaceResourceName);
+      }
+    }, [idpStore, workspaceResourceName]);
+
+    // Fetch EMAIL setting on mount.
+    useEffect(() => {
       // Populate the EMAIL setting into the store cache; useVueState above
       // picks up the change reactively.
       settingV1Store.getOrFetchSettingByName(Setting_SettingName.EMAIL, true);
-    }, []);
+    }, [settingV1Store]);
 
     // --- Toggle state ---
     const getInitialToggleState = useCallback((): ToggleState => {

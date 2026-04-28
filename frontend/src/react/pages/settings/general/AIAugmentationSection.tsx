@@ -14,8 +14,8 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
 import { Input } from "@/react/components/ui/input";
+import { useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules";
 import {
   AISetting_Provider,
@@ -86,8 +86,7 @@ export const AIAugmentationSection = forwardRef<
   const settingV1Store = useSettingV1Store();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const { isSaaSMode } = useServerState();
   const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
 
   const aiSetting = useVueState(() => {

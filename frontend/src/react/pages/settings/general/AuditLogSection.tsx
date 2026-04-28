@@ -10,8 +10,8 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSettingV1Store, useSubscriptionV1Store } from "@/store";
+import { usePlanFeature } from "@/react/hooks/useAppState";
+import { useSettingV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -29,11 +29,8 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
   function AuditLogSection({ allowEdit, onDirtyChange }, ref) {
     const { t } = useTranslation();
     const settingV1Store = useSettingV1Store();
-    const subscriptionV1Store = useSubscriptionV1Store();
 
-    const hasAuditLogFeature = useVueState(() =>
-      subscriptionV1Store.hasFeature(PlanFeature.FEATURE_AUDIT_LOG)
-    );
+    const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
 
     const getInitialState = useCallback(
       (): State => ({

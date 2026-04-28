@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useServerState } from "@/react/hooks/useAppState";
 import { router } from "@/router";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AccountSection } from "./AccountSection";
 import { AIAugmentationSection } from "./AIAugmentationSection";
@@ -19,8 +19,7 @@ import type { SectionHandle } from "./useSettingSection";
 
 export function GeneralPage() {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const { isSaaSMode } = useServerState();
   const canEditProfile = hasWorkspacePermissionV2(
     "bb.settings.setWorkspaceProfile"
   );

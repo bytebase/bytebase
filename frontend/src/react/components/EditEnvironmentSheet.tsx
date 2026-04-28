@@ -10,9 +10,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
-import { useEnvironmentV1Store } from "@/store";
 
 export function EditEnvironmentSheet({
   open,
@@ -24,10 +23,7 @@ export function EditEnvironmentSheet({
   onUpdate: (environment: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useEnvironmentList();
   const [selected, setSelected] = useState("");
   const [updating, setUpdating] = useState(false);
 

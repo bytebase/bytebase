@@ -7,10 +7,10 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSubscriptionState } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
   Instance,
@@ -45,18 +45,16 @@ const planLabel: Record<number, string> = {
  */
 export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
+  const { showTrial, trialingDays } = useSubscriptionState();
   const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
 
   const resolvedFeature = feature ?? PlanFeature.FEATURE_UNSPECIFIED;
-  const instanceMissingLicense = useVueState(() =>
-    subscriptionStore.instanceMissingLicense(resolvedFeature, instance)
+  const instanceMissingLicense = useAppStore((state) =>
+    state.instanceMissingLicense(resolvedFeature, instance)
   );
-  const requiredPlan = useVueState(() =>
-    subscriptionStore.getMinimumRequiredPlan(resolvedFeature)
+  const requiredPlan = useAppStore((state) =>
+    state.getMinimumRequiredPlan(resolvedFeature)
   );
-  const showTrial = useVueState(() => subscriptionStore.showTrial);
-  const trialingDays = useVueState(() => subscriptionStore.trialingDays);
 
   if (!feature) {
     return null;

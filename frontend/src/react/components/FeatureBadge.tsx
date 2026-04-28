@@ -1,8 +1,8 @@
 import { Lock, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSubscriptionV1Store } from "@/store";
+import { useSubscriptionState } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import type {
   Instance,
   InstanceResource,
@@ -48,16 +48,16 @@ export function FeatureBadge({
   fallback = null,
 }: FeatureBadgeProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
+  useSubscriptionState();
 
-  const hasFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(feature, instance)
+  const hasFeature = useAppStore((state) =>
+    state.hasInstanceFeature(feature, instance)
   );
-  const instanceMissingLicense = useVueState(() =>
-    subscriptionStore.instanceMissingLicense(feature, instance)
+  const instanceMissingLicense = useAppStore((state) =>
+    state.instanceMissingLicense(feature, instance)
   );
-  const minimumPlan = useVueState(() =>
-    subscriptionStore.getMinimumRequiredPlan(feature)
+  const minimumPlan = useAppStore((state) =>
+    state.getMinimumRequiredPlan(feature)
   );
 
   if (instanceMissingLicense) {

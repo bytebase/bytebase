@@ -1,8 +1,7 @@
 import { ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
-import { featureToRef, useEnvironmentV1Store } from "@/store";
 import type { Environment } from "@/types";
 import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -26,14 +25,9 @@ export function EnvironmentLabel({
   className?: string;
 }) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
 
   // Always called (rules of hooks); result ignored when envProp is provided.
-  const envFromStore = useVueState(() =>
-    environmentStore.getEnvironmentByName(
-      environmentName || NULL_ENVIRONMENT_NAME
-    )
-  );
+  const envFromStore = useEnvironment(environmentName || NULL_ENVIRONMENT_NAME);
 
   const environment = envProp ?? envFromStore;
 
@@ -41,8 +35,8 @@ export function EnvironmentLabel({
     environment.name === UNKNOWN_ENVIRONMENT_NAME ||
     environment.name === NULL_ENVIRONMENT_NAME;
 
-  const hasEnvTierFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
   );
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";

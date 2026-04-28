@@ -56,6 +56,7 @@ import {
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -639,6 +640,9 @@ function EnvironmentDetail({
   const environmentStore = useEnvironmentV1Store();
   const policyStore = usePolicyV1Store();
   const subscriptionStore = useSubscriptionV1Store();
+  const refreshEnvironmentList = useAppStore(
+    (state) => state.refreshEnvironmentList
+  );
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
   const canGetPolicy = hasWorkspacePermissionV2("bb.policies.get");
@@ -789,6 +793,7 @@ function EnvironmentDetail({
       setEditTitle(updated.title);
       setEditColor(updated.color || "#4f46e5");
       setEditProtected(updated.tags?.protected === "protected");
+      await refreshEnvironmentList();
     }
 
     // Update rollout policy if changed
@@ -1437,6 +1442,9 @@ export function EnvironmentsPage() {
   const environmentStore = useEnvironmentV1Store();
   const policyStore = usePolicyV1Store();
   const uiStateStore = useUIStateStore();
+  const refreshEnvironmentList = useAppStore(
+    (state) => state.refreshEnvironmentList
+  );
 
   const environmentList = useVueState(() => [
     ...environmentStore.environmentList,
@@ -1560,6 +1568,7 @@ export function EnvironmentsPage() {
     }
 
     setShowCreate(false);
+    await refreshEnvironmentList();
     selectTab(createdEnvironment.id);
   };
 
@@ -1572,6 +1581,7 @@ export function EnvironmentsPage() {
       style: "SUCCESS",
       title: t("common.deleted"),
     });
+    await refreshEnvironmentList();
     // Select first remaining environment
     const remaining = environmentStore.environmentList;
     if (remaining.length > 0) {
@@ -1581,6 +1591,7 @@ export function EnvironmentsPage() {
 
   const handleReorder = async (reordered: Environment[]) => {
     await environmentStore.reorderEnvironmentList(reordered);
+    await refreshEnvironmentList();
     setShowReorder(false);
     pushNotification({
       module: "bytebase",
