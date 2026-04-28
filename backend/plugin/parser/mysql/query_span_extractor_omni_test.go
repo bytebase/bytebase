@@ -376,6 +376,105 @@ func TestOmniQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
 	require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
 }
 
+func TestOmniQuerySpanSystematicMigrationRegressions(t *testing.T) {
+	gCtx := newOmniTestQuerySpanContext()
+
+	t.Run("derived_table_column_aliases_are_applied", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT x.c1 FROM (SELECT a, b FROM t) AS x(c1, c2)",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "c1", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
+	})
+
+	t.Run("in_subquery_sources_are_part_of_result_lineage", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT a IN (SELECT t2.c FROM t2) AS matched FROM t1",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{
+				Name: "matched",
+				SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{
+					{Database: "db", Table: "t1", Column: "a"},
+					{Database: "db", Table: "t2", Column: "c"},
+				}),
+				IsPlainField: false,
+			},
+		}, span.Results)
+	})
+
+	t.Run("explicit_expression_nodes_do_not_drop_lineage", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			`SELECT
+  EXISTS (SELECT t2.a FROM t2 WHERE t2.a = t.a) AS exists_field,
+  CONVERT(a USING utf8mb4) AS converted,
+  a COLLATE utf8mb4_bin AS collated,
+  MATCH(a) AGAINST (b) AS matched,
+  ROW(a, b) AS row_field,
+  a MEMBER OF(c) AS member_field,
+  a + INTERVAL b DAY AS interval_field
+FROM t`,
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{
+				Name: "exists_field",
+				SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{
+					{Database: "db", Table: "t2", Column: "a"},
+				}),
+				IsPlainField: false,
+			},
+			{Name: "converted", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: false},
+			{Name: "collated", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: false},
+			{Name: "matched", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
+			{Name: "row_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
+			{Name: "member_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "c"}}), IsPlainField: false},
+			{Name: "interval_field", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
+		}, span.Results)
+	})
+
+	t.Run("legacy_dml_roots_stay_dml", func(t *testing.T) {
+		tests := []string{
+			"CALL p()",
+			"DO 1",
+			"HANDLER t OPEN",
+			"HANDLER t READ FIRST",
+			"HANDLER t CLOSE",
+		}
+		for _, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, base.DML, span.Type, statement)
+			require.Empty(t, span.Results, statement)
+		}
+	})
+
+	t.Run("table_and_values_roots_return_select_results", func(t *testing.T) {
+		tableSpan, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t")
+		require.NoError(t, err)
+		require.Equal(t, base.Select, tableSpan.Type)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
+			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "c"}}), IsPlainField: true},
+		}, tableSpan.Results)
+
+		valuesSpan, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "VALUES ROW(1, 2 + 3)")
+		require.NoError(t, err)
+		require.Equal(t, base.Select, valuesSpan.Type)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "1", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+			{Name: "2+3", SourceColumns: base.SourceColumnSet{}, IsPlainField: false},
+		}, valuesSpan.Results)
+	})
+}
+
 func sourceColumnSetFromResources(resources []base.ColumnResource) base.SourceColumnSet {
 	result := make(base.SourceColumnSet)
 	for _, resource := range resources {

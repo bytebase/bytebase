@@ -17,16 +17,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestMySQLOmniQuerySpanParityHarness is the strict cutover guard. It compares
-// the public MySQL query-span path against the package-internal omni path across
-// the existing YAML corpus.
-func TestMySQLOmniQuerySpanParityHarness(t *testing.T) {
+// TestMySQLOmniQuerySpanGoldenHarness is the strict cutover guard. It compares
+// the package-internal omni path against the existing YAML corpus instead of
+// comparing GetQuerySpan to itself after the production cutover.
+func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 	type testCase struct {
-		Description        string `yaml:"description,omitempty"`
-		Statement          string `yaml:"statement,omitempty"`
-		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
-		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
-		Metadata           string `yaml:"metadata,omitempty"`
+		Description        string              `yaml:"description,omitempty"`
+		Statement          string              `yaml:"statement,omitempty"`
+		DefaultDatabase    string              `yaml:"defaultDatabase,omitempty"`
+		IgnoreCaseSensitve bool                `yaml:"ignoreCaseSensitive,omitempty"`
+		Metadata           string              `yaml:"metadata,omitempty"`
+		QuerySpan          *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
 	type diff struct {
@@ -68,7 +69,7 @@ func TestMySQLOmniQuerySpanParityHarness(t *testing.T) {
 			}
 			total++
 
-			ref, omni, err := runMySQLOmniParityCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
+			omni, err := runMySQLOmniGoldenCase(context.Background(), tc.Statement, tc.Metadata, tc.DefaultDatabase, engine, tc.IgnoreCaseSensitve)
 			if err != nil {
 				diffs = append(diffs, diff{
 					fixture:     testDataPath,
@@ -79,19 +80,19 @@ func TestMySQLOmniQuerySpanParityHarness(t *testing.T) {
 				})
 				continue
 			}
-			if !reflect.DeepEqual(ref, omni) {
+			if !reflect.DeepEqual(tc.QuerySpan, omni) {
 				diffs = append(diffs, diff{
 					fixture:     testDataPath,
 					index:       i,
 					description: tc.Description,
 					statement:   tc.Statement,
-					details:     fmt.Sprintf("ref=%+v omni=%+v", ref, omni),
+					details:     fmt.Sprintf("want=%+v omni=%+v", tc.QuerySpan, omni),
 				})
 			}
 		}
 	}
 
-	t.Logf("MySQL omni query-span parity: %d/%d matched, %d diffs", total-len(diffs), total, len(diffs))
+	t.Logf("MySQL omni query-span golden: %d/%d matched, %d diffs", total-len(diffs), total, len(diffs))
 	for i, d := range diffs {
 		if i >= 10 {
 			t.Logf("... %d more diffs omitted", len(diffs)-i)
@@ -102,17 +103,17 @@ func TestMySQLOmniQuerySpanParityHarness(t *testing.T) {
 	require.Empty(t, diffs)
 }
 
-func runMySQLOmniParityCase(
+func runMySQLOmniGoldenCase(
 	ctx context.Context,
 	statement string,
 	metadataText string,
 	defaultDatabase string,
 	engine storepb.Engine,
 	ignoreCaseSensitive bool,
-) (*base.YamlQuerySpan, *base.YamlQuerySpan, error) {
+) (*base.YamlQuerySpan, error) {
 	metadata := &storepb.DatabaseSchemaMetadata{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataText), metadata); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
@@ -121,13 +122,9 @@ func runMySQLOmniParityCase(
 		Engine:                  engine,
 	}
 
-	ref, err := GetQuerySpan(ctx, gCtx, base.Statement{Text: statement}, defaultDatabase, "", ignoreCaseSensitive)
-	if err != nil {
-		return nil, nil, err
-	}
 	omni, err := newOmniQuerySpanExtractor(defaultDatabase, gCtx, ignoreCaseSensitive).getOmniQuerySpan(ctx, statement)
 	if err != nil {
-		return ref.ToYaml(), nil, err
+		return nil, err
 	}
-	return ref.ToYaml(), omni.ToYaml(), nil
+	return omni.ToYaml(), nil
 }

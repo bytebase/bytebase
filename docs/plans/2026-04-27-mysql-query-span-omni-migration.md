@@ -4,7 +4,7 @@
 
 **Goal:** Migrate MySQL query-span extraction from ANTLR parse-tree walking to omni MySQL AST without runtime fallback.
 
-**Architecture:** Follow the MSSQL migration model: build a package-internal omni extractor that mirrors the existing extractor's behavior, prove it with probe tests, focused behavior tests, and a full-corpus parity harness, then cut over once parity is zero. Do not use the PostgreSQL catalog-analyzer model for this migration; MySQL already has a hand-written extractor whose behavior can be translated directly onto omni AST.
+**Architecture:** Follow the MSSQL migration model: build a package-internal omni extractor that mirrors the existing extractor's behavior, prove it with probe tests, focused behavior tests, and a full-corpus golden harness, then cut over once fixture output is unchanged. Do not use the PostgreSQL catalog-analyzer model for this migration; MySQL already has a hand-written extractor whose behavior can be translated directly onto omni AST.
 
 **Tech Stack:** Go, `github.com/bytebase/omni/mysql/ast`, `backend/plugin/parser/base` query-span model, existing YAML fixtures under `backend/plugin/parser/mysql/test-data/query-span/`.
 
@@ -14,7 +14,9 @@
 - Omni parses 30/30 current MySQL query-span fixture statements.
 - Probe assertions cover aliases, stars, joins, derived tables, CTEs, set operations, correlated subqueries, `JSON_TABLE`, and query-type root nodes.
 - `backend/plugin/parser/mysql/query_span_extractor_omni.go` is the production MySQL query-span extractor.
-- Strict parity is 30/30 matched and 0 diffs across the current MySQL query-span fixture corpus.
+- Strict golden coverage is 30/30 matched and 0 diffs across the current MySQL query-span fixture corpus.
+- Post-review systematic regression tests cover derived-table column alias lists, `IN (SELECT ...)` result lineage, explicit long-tail expression nodes, legacy DML roots (`CALL`, `DO`, `HANDLER`), and `TABLE` / `VALUES` select-family roots.
+- The omni expression extractor now fails on unsupported expression node types instead of silently returning empty lineage.
 - Public `GetQuerySpan` is omni-backed through `querySpanExtractor.getQuerySpan`.
 - `query_span*.go` production code no longer depends on `ParseMySQL`, `GetANTLRAST`, `antlr4-go`, or `github.com/bytebase/parser/mysql`.
 
@@ -41,7 +43,7 @@ GetQuerySpan
       -> isMixedQuery(...)
       -> classifyOmniQueryType(root, allSystems)
       -> if non-SELECT: return type + access tables
-      -> extractFromSelectStmt(*ast.SelectStmt)
+      -> extractFromSelectRoot(*ast.SelectStmt | *ast.TableStmt | *ast.ValuesStmt)
           -> processCTEs
           -> extractFromSetOp
           -> extractFromClause
@@ -87,7 +89,7 @@ Final file ownership:
 - Tests:
   - `query_span_omni_probe_test.go` stays through cutover, then can remain as a parser regression test.
   - `query_span_extractor_omni_test.go` stays as focused unit coverage.
-  - `query_span_omni_parity_test.go` stays until cutover; after parity reaches zero, either convert it into a strict temporary gate for the cutover PR or delete it after `TestGetQuerySpan` covers the same corpus.
+  - `query_span_omni_parity_test.go` remains as a golden harness after cutover. It must compare the internal omni extractor directly against YAML expectations, not `GetQuerySpan` against the internal omni path.
 
 ## Coverage Matrix
 
@@ -95,10 +97,10 @@ The current fixture corpus is the minimum gate. Add focused tests for each bucke
 
 | Bucket | Required behavior |
 |---|---|
-| Query type | `SELECT`, `EXPLAIN`, `EXPLAIN ANALYZE SELECT`, `SHOW`, `SET`, DDL, DML, all-system SELECT |
+| Query type | `SELECT`, `TABLE`, `VALUES`, `EXPLAIN`, `EXPLAIN ANALYZE SELECT`, `SHOW`, `SET`, DDL, DML, all-system SELECT, legacy DML roots (`CALL`, `DO`, `HANDLER`) |
 | Access tables | top-level FROM, joined tables, derived-table body tables, CTE body tables, subqueries in SELECT/WHERE, system-table suppression |
 | Target list | constants, bare columns, qualified columns, aliases, expression names, `*`, `table.*` |
-| Expressions | column refs, literals, binary/unary ops, functions, aggregates, `CASE`, `CAST`, `BETWEEN`, `IN`, `LIKE`, `IS`, `EXISTS`, scalar subquery, window args |
+| Expressions | column refs, literals, binary/unary ops, functions, aggregates, `CASE`, `CAST`, `BETWEEN`, `IN` value list, `IN` subquery, `LIKE`, `IS`, `EXISTS`, scalar subquery, `CONVERT`, `COLLATE`, `MATCH`, `ROW`, `MEMBER OF`, `INTERVAL`, window args |
 | FROM | `TableRef`, aliases, comma joins, `JoinClause`, `ON`, `USING`, nested joins |
 | Derived tables | subquery table source, derived alias, derived column alias list, nested derived tables |
 | Set operations | `UNION`, `UNION ALL`, recursive CTE union, positional source-column merge |
@@ -174,7 +176,7 @@ Every implementation task follows TDD:
 2. Run the focused test and confirm it fails for the expected missing behavior.
 3. Implement the smallest behavior.
 4. Run the focused test.
-5. Run parity harness and record matched/diff count.
+5. Run golden harness and record matched/diff count.
 6. Run existing `TestGetQuerySpan` to protect the reference path before cutover.
 
 ### Phase 0: Probe And Scaffold
@@ -191,7 +193,7 @@ Files:
 Proof:
 
 ```bash
-go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^(TestMySQLOmniQuerySpanMigrationProbe|TestOmniQuerySpanScaffold_QueryTypesAndAccessTables|TestMySQLOmniQuerySpanParityHarness|TestGetQuerySpan)$'
+go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^(TestMySQLOmniQuerySpanMigrationProbe|TestOmniQuerySpanScaffold_QueryTypesAndAccessTables|TestMySQLOmniQuerySpanGoldenHarness|TestGetQuerySpan)$'
 ```
 
 ### Phase 1: Simple SELECT Result Columns
@@ -394,26 +396,57 @@ Implementation:
 - Preserve `MixUserSystemTablesError`.
 - Ensure all-system access tables are suppressed in returned span.
 
-### Phase 10: Strict Parity Gate
+### Phase 10: Strict Golden Gate
 
 Status: done.
 
-Goal: Make parity harness strict and reach zero diffs.
+Goal: Make the fixture harness strict and reach zero diffs against checked-in YAML expectations.
 
 Steps:
 
-1. Change parity harness to fail when diffs exist.
+1. Change the harness to fail when diffs exist.
 2. Run it against all current fixtures.
 3. Fix remaining diffs.
-4. Keep strict harness until cutover.
+4. After cutover, keep the harness as a golden check and ensure it does not compare `GetQuerySpan` to the same internal omni path.
 
 Proof:
 
 ```bash
-go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^TestMySQLOmniQuerySpanParityHarness$'
+go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^TestMySQLOmniQuerySpanGoldenHarness$'
 ```
 
 Current result: `30/30 matched, 0 diffs`.
+
+### Phase 10.5: Post-Review Systematic Correction
+
+Status: done.
+
+Goal: Close the review findings and add regression coverage for the migration failure modes that let them through.
+
+Root causes:
+
+1. The migration moved from ANTLR's recursive parse-tree traversal to omni's explicit AST type switches, but some omni child fields were not wired into lineage extraction.
+2. Probe tests verified AST shape availability, not extractor behavior.
+3. The post-cutover golden harness initially used `GetQuerySpan` as the reference even though `GetQuerySpan` already delegated to omni.
+4. The fixture corpus was too small to cover long-tail root statements and expression nodes from the old extractor.
+
+Regression tests:
+
+- `TestOmniQuerySpanSystematicMigrationRegressions/derived_table_column_aliases_are_applied`
+- `TestOmniQuerySpanSystematicMigrationRegressions/in_subquery_sources_are_part_of_result_lineage`
+- `TestOmniQuerySpanSystematicMigrationRegressions/explicit_expression_nodes_do_not_drop_lineage`
+- `TestOmniQuerySpanSystematicMigrationRegressions/legacy_dml_roots_stay_dml`
+- `TestOmniQuerySpanSystematicMigrationRegressions/table_and_values_roots_return_select_results`
+- `TestMySQLOmniQuerySpanGoldenHarness`
+
+Implementation corrections:
+
+- Apply `SubqueryExpr.Columns` to derived table pseudo columns with length validation.
+- Merge `InExpr.Select` result sources into the expression lineage.
+- Add explicit expression handlers for `EXISTS`, `CONVERT`, `COLLATE`, `MATCH`, `ROW`, `MEMBER OF`, `INTERVAL`, and `DEFAULT`.
+- Return an error for unsupported omni expression node types instead of silently returning empty lineage.
+- Classify `CALL`, `DO`, and `HANDLER` roots as DML.
+- Extract `TABLE` and `VALUES` roots as select-family results.
 
 ### Phase 11: Cutover
 
@@ -446,7 +479,7 @@ Goal: Remove temporary migration scaffolding.
 Steps:
 
 1. Decide whether to keep `query_span_omni_probe_test.go` as a permanent parser-shape regression test.
-2. Delete or downgrade parity harness after `TestGetQuerySpan` is omni-backed and strict fixture tests pass.
+2. Keep `query_span_omni_parity_test.go` as a golden harness after `TestGetQuerySpan` is omni-backed and strict fixture tests pass.
 3. Update this plan with final status.
 4. Run full required Go checks.
 
@@ -455,7 +488,7 @@ Steps:
 Focused query-span proof:
 
 ```bash
-go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^(TestGetQuerySpan|TestMySQLOmniQuerySpanMigrationProbe|TestOmniQuerySpan|TestMySQLOmniQuerySpanParityHarness)'
+go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/mysql -run '^(TestGetQuerySpan|TestMySQLOmniQuerySpanMigrationProbe|TestOmniQuerySpan|TestMySQLOmniQuerySpanGoldenHarness)'
 ```
 
 Package proof:
@@ -476,7 +509,7 @@ go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/serve
 
 - Probe test passes.
 - Focused omni extractor tests pass.
-- Strict parity harness reports 0 diffs.
+- Strict golden harness reports 0 diffs.
 - Existing `TestGetQuerySpan` passes unchanged after switching to omni.
 - No production query-span dependency on ANTLR remains.
 - `golangci-lint run --allow-parallel-runners` passes.
