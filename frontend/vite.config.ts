@@ -10,8 +10,6 @@ import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 import { CodeInspectorPlugin } from "code-inspector-plugin";
 import { resolve } from "path";
-import IconsResolver from "unplugin-icons/resolver";
-import Icons from "unplugin-icons/vite";
 import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vite";
 import { exportCspHashes } from "./vite-plugin-export-csp-hashes";
@@ -59,15 +57,6 @@ export default defineConfig({
     tailwindcss(),
     Components({
       allowOverrides: true,
-      // auto import icons
-      resolvers: [
-        IconsResolver({
-          prefix: "",
-        }),
-      ],
-    }),
-    Icons({
-      compiler: "vue3",
     }),
     yaml(),
     ...(process.env.VITEST

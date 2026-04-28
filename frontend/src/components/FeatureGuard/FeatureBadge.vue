@@ -15,7 +15,7 @@
   >
     <NTooltip :show-arrow="true">
       <template #trigger>
-        <heroicons-solid:lock-closed class="w-5 h-5" />
+        <Lock class="w-5 h-5" />
       </template>
       <span class="w-56 text-sm">
         {{ $t("subscription.instance-assignment.missing-license-attention") }}
@@ -52,7 +52,7 @@
 </template>
 
 <script lang="ts" setup>
-import { SparklesIcon } from "lucide-vue-next";
+import { Lock, SparklesIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";

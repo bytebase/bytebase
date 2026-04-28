@@ -203,7 +203,6 @@
   "common": {
     "Default": "默认",
     "access-denied": "拒绝访问",
-    "access-expires": "访问到期",
     "action-required": "需要操作",
     "activated": "已激活",
     "active": "开启",
@@ -237,7 +236,6 @@
     "collapse": "收起",
     "column": "列",
     "comment": "评论",
-    "condition": "条件",
     "configure": "配置",
     "configure-now": "现在配置",
     "confirm": "确认",
@@ -257,13 +255,7 @@
     "database": "数据库",
     "database-group": "数据库分组",
     "databases": "数据库",
-    "date": {
-      "days": "{days} 天",
-      "month": "1 个月",
-      "months": "{months} 个月",
-      "week": "1 周",
-      "year": "1 年"
-    },
+    "date": {},
     "deactivate": "禁用",
     "default": "默认",
     "definition": "定义",
@@ -314,13 +306,7 @@
     "go-back": "返回",
     "google-chat": "Google Chat",
     "groups": "分组",
-    "hard-delete": {
-      "description": "此资源和其他相关资源将被硬删除。这个操作无法撤销",
-      "double-comfirm": "要确认删除，请输入：{name}",
-      "notification": "成功删除资源“{name}”。",
-      "self": "彻底删除",
-      "title": "彻底删除 {name}？"
-    },
+    "hard-delete": {},
     "history": "历史记录",
     "home": "主页",
     "id": "ID",
@@ -336,7 +322,6 @@
     "language": "语言",
     "lark": "Lark",
     "learn-more": "了解更多",
-    "leave": "离开",
     "leave-without-saving": "不保存变动？",
     "license": "证书",
     "line": "行",
@@ -348,7 +333,6 @@
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
-    "mode": "模式",
     "n-items-selected": "已选 {n} 项",
     "n-more": "+{n} 更多",
     "name": "名称",
@@ -409,7 +393,6 @@
     "rows-per-page": "每页行数",
     "run": "运行",
     "save": "保存",
-    "schedule": "计划",
     "schema": "Schema",
     "scope": "范围",
     "search": "搜索",
@@ -434,7 +417,6 @@
     "state": "状态",
     "statement": "语句",
     "status": "状态",
-    "stay": "停留",
     "submit": "提交",
     "succeed": "成功",
     "success": "成功",
@@ -468,7 +450,6 @@
     "view-doc": "查看文档",
     "visibility": "可见性",
     "want-help": "加入用户群",
-    "warehouse": "仓库",
     "warning": "警告",
     "webhooks": "Webhook",
     "wecom": "企业微信",
@@ -652,13 +633,11 @@
       "reference": "引用"
     },
     "foreign-keys": "外键",
-    "foreign-table-detail": "外部表详情",
     "index-size": "索引大小",
     "indexes": "索引",
     "labels": "数据库标签",
     "last-sync": "最后一次同步",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
-    "mixed-values-for-label": "该标签拥有不同的值",
     "nullable": "可为空",
     "partition-tables": "分区表",
     "partitioned": "分区",
@@ -736,23 +715,15 @@
       "select": "选择表",
       "select-tip": "请选择一个表来开始查询。"
     },
-    "table-detail": "表详情",
     "transfer": {
-      "errors": {
-        "select-at-least-one-database": "至少选择一个数据库",
-        "select-target-project": "选择目标项目"
-      },
-      "select-databases": "选择数据库",
-      "select-target-project": "选择目标项目"
+      "errors": {}
     },
-    "transfer-database-to": "将数据库转移到目标项目",
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "unassign-alert-title": "取消分配数据库",
     "unassigned-databases": "未分配的数据库",
     "unique": "Unique",
-    "view-definition": "查看定义",
     "visible": "Visible"
   },
   "database-group": {
@@ -760,7 +731,6 @@
       "self": "条件"
     },
     "delete-group": "删除数据库组 {name}",
-    "deleted": "已删除的数据库组",
     "matched-database": "相匹配的数据库",
     "no-matched-databases": "没有匹配的数据库",
     "select": "选择数据库分组",
@@ -779,7 +749,6 @@
     "failed-to-sync-schema": "同步 schema 失败",
     "failed-to-sync-schema-for-database-database-value-name": "为数据库'{0}'同步 schema 失败。",
     "functions": "函数",
-    "labels-for-resource": "{resource}的标签",
     "n-databases-had-sync-errors": "{0} 个数据库同步出错",
     "packages": "包",
     "partitions": "分区",
@@ -1221,8 +1190,6 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
-      "custom-date": "自定义日期",
-      "custom-date-placeholder": "选择到期日期和时间",
       "details": "请求详细",
       "expired-at": "过期时间",
       "manually-select": "手动选择",
@@ -1235,12 +1202,7 @@
       "sort": "排序",
       "updated": "更新时间"
     },
-    "sql-check": {
-      "back-to-edit": "返回编辑",
-      "sql-review-violations": "违反的 SQL 审核规则",
-      "statement-is-required": "SQL 语句不能为空",
-      "statement-is-too-large": "当前语句大小超过 2MB，将跳过 SQL 检查。"
-    },
+    "sql-check": {},
     "statement-from-sheet-warning": "由于 SQL 文件过大，因此被截断以便显示，并且编辑功能已禁用。你可以上传新的 SQL 文件以将其覆盖。",
     "status-transition": {
       "modal": {
@@ -1274,7 +1236,6 @@
     "transaction-mode": {
       "label": "事务模式"
     },
-    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "upload-sql": "上传 SQL",
     "upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
     "waiting-approval": "等待审批"
@@ -1347,9 +1308,7 @@
       "placeholder": "添加描述"
     },
     "editor": {
-      "save-changes-before-continuing": "请保存或取消更改，然后再继续",
-      "unsaved-changes": "未保存的更改",
-      "unsaved-changes-message": "有未保存的更改。您确定要离开吗？"
+      "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
     "go-to-plan-page": "前往变更计划页",
     "isolation-level": {
@@ -1401,10 +1360,7 @@
     "spec": {
       "change": "变更项",
       "type": {
-        "create-database": "创建数据库",
-        "database-change": "数据库变更",
-        "export-data": "导出数据",
-        "unknown": "未知"
+        "database-change": "数据库变更"
       }
     },
     "state": {
@@ -1517,7 +1473,6 @@
       "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
       "never-expires": "永不过期",
-      "role-never-expires": "此角色没有过期时间。",
       "workspace-level-roles": "工作空间级别角色"
     },
     "overview": {
@@ -1659,11 +1614,7 @@
   "quick-action": {
     "create-db": "创建数据库",
     "create-project": "创建项目",
-    "from-projects": "从其他项目",
-    "from-unassigned-databases": "未分配的数据库",
-    "request-export-data": "申请导出数据",
-    "transfer-in-db-title": "转进数据库",
-    "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。"
+    "request-export-data": "申请导出数据"
   },
   "quick-start": {
     "guide": "可点击步骤进行尝试",
@@ -2185,13 +2136,11 @@
       "search-member": "搜索成员",
       "select-account": "选择账户 | 选择账户",
       "select-account-hint": "您可以搜索用户和组，或输入完整的电子邮件地址来选择服务账号或工作负载身份。",
-      "select-in-project": "选择 {project} 内的用户或群组",
       "select-role": "选择角色 | 选择角色",
       "service-account": "服务账号",
       "service-accounts": "服务账号",
       "service-key-copied": "Service Key 已复制，请勿泄漏",
       "show-inactive": "显示已停用账户",
-      "system-bot": "机器人助手",
       "table": {
         "account": "账户",
         "groups": "群组",
@@ -2298,8 +2247,6 @@
       },
       "grant-access": "授权访问",
       "never-expires": "无过期时间",
-      "remove-classification-tips": "删除此列的分类吗？",
-      "remove-semantic-type-tips": "删除此列的语义类型吗？",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "semantic-types": {
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
@@ -2636,7 +2583,6 @@
   "sql-review": {
     "add-or-remove-rules": "添加或删除规则",
     "add-rules": "添加规则",
-    "all-checks-passed": "所有检查都通过了",
     "attach-resource": {
       "change-resources": "更改绑定的资源",
       "label": "审核策略需要绑定到环境资源或项目资源上，并影响对应资源下所有数据库。若一个数据库同时受到项目级别与环境级别策略影响，则只有项目级别策略生效。",
@@ -2646,9 +2592,7 @@
       "override-warning": "以下资源已与其他 SQL 审核策略绑定。点击\"{button}\"将覆盖配置。",
       "self": "绑定到资源"
     },
-    "category": {
-      "builtin": "内置"
-    },
+    "category": {},
     "configure-policy": "配置审核策略",
     "create": {
       "basic-info": {
@@ -2685,15 +2629,11 @@
     "policy-removed": "审核策略已删除",
     "policy-update-failed": "审核策略更新失败",
     "policy-updated": "审核策略已更新",
-    "rule-detail": "规则详情",
     "select-all": "选择全部",
     "select-review-rules": "选择 SQL 审核规则",
     "title": "SQL 审核策略"
   },
   "subscription": {
-    "button": {
-      "upgrade": "升级"
-    },
     "contact-to-upgrade": "请联系工作空间所有者来升级到试用版。",
     "contact-us": "联系我们",
     "current": "当前",
@@ -2718,7 +2658,6 @@
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
     },
-    "overuse-warning": "{neededPlan}在{currentPlan}将会受限，请尽快升级以确保正常使用。",
     "plan": {
       "enterprise": {
         "title": "企业版"
@@ -2798,9 +2737,7 @@
   "task": {
     "affected-rows": "影响行数",
     "cancel-task": "取消任务",
-    "check-result": {
-      "title-general": "检查结果"
-    },
+    "check-result": {},
     "check-type": {
       "affected-rows": {
         "description": "根据统计信息估算。",
@@ -2827,12 +2764,10 @@
     "no-skippable-tasks": "没有可跳过的任务",
     "no-tasks-selected": "未选择任何任务",
     "online-migration": {
-      "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。",
       "self": "在线大表变更"
     },
     "only-showing-latest-n-runs": "仅显示最近 {n} 条记录",
     "prior-backup": "预备份受影响数据",
-    "run-checks": "运行检查",
     "run-history": "执行历史",
     "run-immediately": {
       "description": "点击“运行”后，任务将立即开始执行。",

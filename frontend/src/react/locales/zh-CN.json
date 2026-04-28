@@ -156,7 +156,13 @@
   },
   "auth.token-expired-title": "令牌已过期",
   "banner": {
-    "external-url": "Bytebase 还没有配置 --external-url"
+    "cloud": "云服务",
+    "deploy": "本地部署",
+    "external-url": "Bytebase 还没有配置 --external-url",
+    "license-expired": "您的{{plan}}证书已在 {{expireAt}} 过期",
+    "license-expires": "您的{{plan}}证书将在 {{days}} 天后（{{expireAt}}）过期",
+    "request-demo": "预约一个 30 分钟的产品演示。",
+    "trial-expires": "您的{{plan}}试用将在 {{days}} 天后（{{expireAt}}）过期"
   },
   "bbkit": {
     "confirm-button": {
@@ -3484,6 +3490,10 @@
       "used-and-total-user": "活跃/总用户限制"
     },
     "max-instance-count": "最多实例数",
+    "overuse-modal": {
+      "description": "您正在使用{{plan}}不可用的功能。请尽快升级以确保正常使用："
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan>在{{currentPlan}}将会受限，请尽快升级以确保正常使用。",
     "plan": {
       "enterprise": {
         "desc": "额外的安全，合规，权限功能，SLA 支持。",
@@ -3504,6 +3514,7 @@
       "try": "免费试用"
     },
     "plan-compare": "比较不同版本的功能，寻找适合您的方案",
+    "plan-features": "{{plan}}功能",
     "purchase": {
       "accept-terms-prefix": "我接受",
       "and": "和",
@@ -3550,6 +3561,8 @@
         "title": "证书更新成功"
       }
     },
+    "upgrade": "升级",
+    "upgrade-now": "现在升级",
     "upload-license": "上传证书",
     "usage": {
       "instance-count": {

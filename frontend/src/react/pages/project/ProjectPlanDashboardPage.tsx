@@ -12,7 +12,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import {
   AdvancedSearch,
@@ -20,6 +19,7 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import {
   PermissionGuard,
@@ -1113,12 +1113,8 @@ function DatabaseSelector({
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">
-                        {inst && EngineIconPath[inst.engine] && (
-                          <img
-                            className="size-4 shrink-0"
-                            src={EngineIconPath[inst.engine]}
-                            alt=""
-                          />
+                        {inst && (
+                          <EngineIcon engine={inst.engine} className="size-4" />
                         )}
                         <span>{databaseName}</span>
                       </div>

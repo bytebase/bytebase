@@ -4,5 +4,5 @@
   </div>
 </template>
 <script setup lang="ts">
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
+import { Database as DatabaseIcon } from "lucide-vue-next";
 </script>

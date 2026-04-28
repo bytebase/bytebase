@@ -12,13 +12,13 @@ import {
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   getValueFromScopes,
   type ScopeOption,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -712,11 +712,7 @@ export function InstancesPage() {
           custom: true,
           render: () => (
             <span className="inline-flex items-center gap-x-1.5">
-              <img
-                className="h-4 w-4 shrink-0"
-                src={EngineIconPath[engine]}
-                alt=""
-              />
+              <EngineIcon engine={engine} className="h-4 w-4" />
               <span>{engineNameV1(engine)}</span>
             </span>
           ),
@@ -1273,10 +1269,9 @@ export function InstancesPage() {
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-x-2 min-w-0">
-                          <img
-                            className="h-5 w-5 shrink-0"
-                            src={EngineIconPath[instance.engine]}
-                            alt=""
+                          <EngineIcon
+                            engine={instance.engine}
+                            className="h-5 w-5"
                           />
                           <EllipsisText text={instance.title} />
                         </div>

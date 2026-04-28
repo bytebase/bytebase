@@ -54,6 +54,7 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -667,9 +668,7 @@ function EnvironmentDetail({
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
 
-  const environmentList = useVueState(() => [
-    ...environmentStore.environmentList,
-  ]);
+  const environmentList = useEnvironmentList();
 
   // Reset state when environment changes
   useEffect(() => {
@@ -1446,9 +1445,7 @@ export function EnvironmentsPage() {
     (state) => state.refreshEnvironmentList
   );
 
-  const environmentList = useVueState(() => [
-    ...environmentStore.environmentList,
-  ]);
+  const environmentList = useEnvironmentList();
   const environmentListKey = getEnvironmentListKey(environmentList);
 
   const [selectedId, setSelectedId] = useState("");
@@ -1460,6 +1457,10 @@ export function EnvironmentsPage() {
   detailDirtyRef.current = detailDirty;
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
+
+  useEffect(() => {
+    void environmentStore.fetchEnvironments();
+  }, [environmentStore]);
 
   // Initialize selected tab and intro state
   useEffect(() => {
@@ -1581,9 +1582,8 @@ export function EnvironmentsPage() {
       style: "SUCCESS",
       title: t("common.deleted"),
     });
-    await refreshEnvironmentList();
+    const remaining = await refreshEnvironmentList();
     // Select first remaining environment
-    const remaining = environmentStore.environmentList;
     if (remaining.length > 0) {
       selectTab(remaining[0].id);
     }

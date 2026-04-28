@@ -18,7 +18,7 @@
         <NTooltip>
           <template #trigger>
             <NButton tooltip>
-              <heroicons-outline:photo @click="handleScreenshot" />
+              <Image @click="handleScreenshot" />
             </NButton>
           </template>
           <div class="whitespace-nowrap">Screenshot</div>
@@ -29,7 +29,7 @@
         <NTooltip>
           <template #trigger>
             <NButton tooltip>
-              <Square2x2 @click="handleFitView" />
+              <LayoutGrid @click="handleFitView" />
             </NButton>
           </template>
           <div class="whitespace-nowrap">
@@ -53,10 +53,10 @@
 </template>
 
 <script lang="ts" setup>
+import { Image, LayoutGrid } from "lucide-vue-next";
 import { NButton, NButtonGroup, NTooltip } from "naive-ui";
 import { ref, useSlots } from "vue";
 import { extractDatabaseResourceName } from "@/utils";
-import Square2x2 from "~icons/heroicons-outline/squares-2x2";
 import { useSchemaDiagramContext } from "../common";
 import { ZOOM_RANGE } from "../common/const";
 import { useDragCanvas, useFitView, useSetCenter } from "./composables";

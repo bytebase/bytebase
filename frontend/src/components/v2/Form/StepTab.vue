@@ -48,7 +48,7 @@
           v-bind="backButtonProps"
           @click.prevent="$emit('update:currentIndex', currentIndex - 1)"
         >
-          <heroicons-outline:chevron-left
+          <ChevronLeft
             class="-ml-1 mr-1 h-5 w-5 text-control-light"
           />
           <span> {{ $t("common.back") }}</span>
@@ -77,6 +77,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronLeft } from "lucide-vue-next";
 import type { ButtonProps } from "naive-ui";
 import { NButton, NStep, NSteps } from "naive-ui";
 import { t } from "@/plugins/i18n";

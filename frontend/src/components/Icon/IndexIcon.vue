@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-import DiamondIcon from "~icons/tabler/diamonds";
+import { Diamond as DiamondIcon } from "lucide-vue-next";
 </script>

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
@@ -52,7 +53,6 @@ import {
 import type { EditDataSource } from "./common";
 import { hasSslConfig } from "./common";
 import {
-  EngineIconPath,
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
   SnowflakeExtraLinkPlaceHolder,
@@ -247,9 +247,7 @@ function InstanceEngineRadioGrid({
           }`}
           onClick={() => onEngineChange(eng)}
         >
-          {EngineIconPath[eng] && (
-            <img src={EngineIconPath[eng]} alt="" className="size-5 shrink-0" />
-          )}
+          <EngineIcon engine={eng} className="size-5" />
           <span className="truncate">{engineNameV1(eng)}</span>
           {isEngineBeta(eng) && (
             <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
@@ -1283,13 +1281,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   {t("database.engine")}
                 </p>
                 <div className="mt-1 flex items-center gap-x-1.5">
-                  {EngineIconPath[basicInfo.engine] && (
-                    <img
-                      src={EngineIconPath[basicInfo.engine]}
-                      alt=""
-                      className="size-4"
-                    />
-                  )}
+                  <EngineIcon engine={basicInfo.engine} className="size-4" />
                   <span className="text-sm font-medium text-main">
                     {engineNameV1(basicInfo.engine)}
                   </span>
@@ -1351,13 +1343,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 <span className="ml-0.5 text-error">*</span>
                 {instance && (
                   <div className="ml-2 flex items-center">
-                    {EngineIconPath[instance.engine] && (
-                      <img
-                        src={EngineIconPath[instance.engine]}
-                        alt=""
-                        className="size-4"
-                      />
-                    )}
+                    <EngineIcon engine={instance.engine} className="size-4" />
                     <span className="ml-1">{instance.engineVersion}</span>
                   </div>
                 )}
