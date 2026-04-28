@@ -20,7 +20,9 @@ vi.mock("@/types", () => ({
   getDateForPbTimestampProtoEs: vi.fn(() => new Date()),
   getMinimumRequiredPlan: vi.fn(() => PlanType.TEAM),
   getTimeForPbTimestampProtoEs: vi.fn(() => Date.now()),
-  instanceLimitFeature: new Set<PlanFeature>([PlanFeature.FEATURE_DATA_MASKING]),
+  instanceLimitFeature: new Set<PlanFeature>([
+    PlanFeature.FEATURE_DATA_MASKING,
+  ]),
   PLANS: [
     {
       type: PlanType.ENTERPRISE,

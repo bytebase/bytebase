@@ -51,7 +51,9 @@ vi.mock("@/react/stores/app", () => ({
 
 vi.mock("@/types", () => ({
   ENTERPRISE_INQUIRE_LINK,
-  instanceLimitFeature: new Set<PlanFeature>([PlanFeature.FEATURE_DATA_MASKING]),
+  instanceLimitFeature: new Set<PlanFeature>([
+    PlanFeature.FEATURE_DATA_MASKING,
+  ]),
 }));
 
 vi.mock("@/utils", () => ({
