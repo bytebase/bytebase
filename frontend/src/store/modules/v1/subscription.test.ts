@@ -68,6 +68,39 @@ describe("useSubscriptionV1Store unified instance license", () => {
     expect(store.hasUnifiedInstanceLicense).toBe(false);
   });
 
+  test("computes legacy split instance license mode", () => {
+    const store = useSubscriptionV1Store();
+    store.setSubscription(
+      create(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        instances: 50,
+        activeInstances: 20,
+      })
+    );
+
+    expect(store.hasSplitInstanceLicense).toBe(true);
+
+    store.setSubscription(
+      create(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        instances: 10,
+        activeInstances: 10,
+      })
+    );
+
+    expect(store.hasSplitInstanceLicense).toBe(false);
+
+    store.setSubscription(
+      create(SubscriptionSchema, {
+        plan: PlanType.FREE,
+        instances: 0,
+        activeInstances: 0,
+      })
+    );
+
+    expect(store.hasSplitInstanceLicense).toBe(false);
+  });
+
   test("does not report missing instance license in unified mode", () => {
     const store = useSubscriptionV1Store();
     store.setSubscription(

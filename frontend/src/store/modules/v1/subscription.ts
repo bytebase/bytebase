@@ -107,6 +107,10 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     return instanceCountLimit.value <= instanceLicenseCount.value;
   });
 
+  const hasSplitInstanceLicense = computed(() => {
+    return !isFreePlan.value && !hasUnifiedInstanceLicense.value;
+  });
+
   const expireAt = computed(() => {
     if (
       !subscription.value ||
@@ -360,6 +364,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     userCountLimit,
     instanceLicenseCount,
     hasUnifiedInstanceLicense,
+    hasSplitInstanceLicense,
     expireAt,
     isTrialing,
     isExpired,
