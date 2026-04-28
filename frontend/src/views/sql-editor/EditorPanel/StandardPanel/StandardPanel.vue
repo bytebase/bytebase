@@ -8,7 +8,7 @@
     >
       <template #1>
         <NSplit
-          :disabled="!showAIPanel"
+          :disabled="!showAIPanel || !tab"
           :size="editorPanelSize.size"
           :min="editorPanelSize.min"
           :max="editorPanelSize.max"
@@ -22,7 +22,7 @@
               :page-props="{ onChangeConnection: handleChangeConnection }"
             />
           </template>
-          <template v-if="showAIPanel" #2>
+          <template v-if="showAIPanel && tab" #2>
             <div class="h-full overflow-hidden flex flex-col">
               <Suspense>
                 <AIChatToSQL key="ai-chat-to-sql" />
@@ -47,7 +47,7 @@
     <NSplit
       v-else
       class="h-full"
-      :disabled="!showAIPanel"
+      :disabled="!showAIPanel || !tab"
       :size="editorPanelSize.size"
       :min="editorPanelSize.min"
       :max="editorPanelSize.max"
@@ -61,7 +61,7 @@
           :page-props="{ onChangeConnection: handleChangeConnection }"
         />
       </template>
-      <template v-if="showAIPanel" #2>
+      <template v-if="showAIPanel && tab" #2>
         <div class="h-full overflow-hidden flex flex-col">
           <Suspense>
             <AIChatToSQL key="ai-chat-to-sql" />

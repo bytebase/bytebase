@@ -1,6 +1,6 @@
 import type { IDisposable, IRange } from "monaco-editor";
 import * as monaco from "monaco-editor";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v1 as uuidv1 } from "uuid";
 import type {
   IStandaloneCodeEditor,
@@ -100,6 +100,9 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   }, [tabId, language]);
 
   // ----- live refs -----
+  // State-backed so useAIActions re-runs when Monaco is ready.
+  const [monacoState, setMonacoState] = useState<MonacoModule | null>(null);
+  const [editorState, setEditorState] = useState<IStandaloneCodeEditor | null>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<MonacoModule | null>(null);
   const activeContentRef = useRef<string>(content ?? "");
@@ -205,6 +208,8 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     (m: MonacoModule, editor: IStandaloneCodeEditor) => {
       monacoRef.current = m;
       editorRef.current = editor;
+      setMonacoState(m);
+      setEditorState(editor);
       activeSQLEditorRef.value = editor;
 
       editor.addAction({
@@ -262,8 +267,8 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   );
 
   useAIActions({
-    monaco: monacoRef.current,
-    editor: editorRef.current,
+    monaco: monacoState,
+    editor: editorState,
     actions: AI_ACTIONS,
     callback: handleAIAction,
   });

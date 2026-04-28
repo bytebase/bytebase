@@ -49,8 +49,15 @@ export const useChatByTab = () => {
     return chat;
   };
 
+  const emptyChat: AIChatInfo = {
+    list: ref([]),
+    ready: ref(false),
+    selected: ref(undefined),
+  };
+
   return computed(() => {
-    const tab = useSQLEditorTabStore().currentTab!;
+    const tab = useSQLEditorTabStore().currentTab;
+    if (!tab) return emptyChat;
     return getChatByTab(tab);
   });
 };
