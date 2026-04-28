@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -98,6 +99,93 @@ func TestRestoreIdentityHandling(t *testing.T) {
 	// This is required by SQL Server when IDENTITY_INSERT is ON
 	a.Contains(restoreSQL, "INSERT INTO [db].[dbo].[positions] ([position_id], [title])")
 	a.NotContains(restoreSQL, "SELECT * FROM")
+}
+
+func TestRestoreOmniBoundaryCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		startLine int32
+		endLine   int32
+		want      string
+	}{
+		{
+			name: "selects only update inside backup position range",
+			input: strings.Join([]string{
+				"DELETE FROM test WHERE a = 1;",
+				"UPDATE test SET b = b + 1, c = DEFAULT WHERE a = 2;",
+			}, "\n"),
+			startLine: 2,
+			endLine:   2,
+			want: strings.Join([]string{
+				"/*",
+				"Original SQL:",
+				"UPDATE test SET b = b + 1, c = DEFAULT WHERE a = 2;",
+				"*/",
+				"MERGE INTO [db].[dbo].[test] AS t",
+				"USING [bbarchive].[dbo].[prefix_1_test] AS b",
+				"  ON t.[a] = b.[a]",
+				"WHEN MATCHED THEN",
+				"  UPDATE SET t.[b] = b.[b], t.[c] = b.[c]",
+				"WHEN NOT MATCHED THEN",
+				" INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);",
+			}, "\n"),
+		},
+		{
+			name:      "dual assignment update restores assigned column",
+			input:     "UPDATE test SET @v = b = 1 WHERE a = 1;",
+			startLine: 1,
+			endLine:   1,
+			want: strings.Join([]string{
+				"/*",
+				"Original SQL:",
+				"UPDATE test SET @v = b = 1 WHERE a = 1;",
+				"*/",
+				"MERGE INTO [db].[dbo].[test] AS t",
+				"USING [bbarchive].[dbo].[prefix_1_test] AS b",
+				"  ON t.[a] = b.[a]",
+				"WHEN MATCHED THEN",
+				"  UPDATE SET t.[b] = b.[b]",
+				"WHEN NOT MATCHED THEN",
+				" INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);",
+			}, "\n"),
+		},
+		{
+			name:      "delete restore uses insert",
+			input:     "DELETE FROM test WHERE a = 1;",
+			startLine: 1,
+			endLine:   1,
+			want: strings.Join([]string{
+				"/*",
+				"Original SQL:",
+				"DELETE FROM test WHERE a = 1;",
+				"*/",
+				"INSERT INTO [db].[dbo].[test] SELECT * FROM [bbarchive].[dbo].[prefix_1_test];",
+			}, "\n"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+				GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+			}, tc.input, &store.PriorBackupDetail_Item{
+				SourceTable: &store.PriorBackupDetail_Item_Table{
+					Database: "instances/i1/databases/db",
+					Schema:   "dbo",
+					Table:    "test",
+				},
+				TargetTable: &store.PriorBackupDetail_Item_Table{
+					Database: "instances/i1/databases/bbarchive",
+					Table:    "prefix_1_test",
+				},
+				StartPosition: &store.Position{Line: tc.startLine, Column: 0},
+				EndPosition:   &store.Position{Line: tc.endLine, Column: math.MaxInt32},
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.want, result)
+		})
+	}
 }
 
 func TestRestore(t *testing.T) {
