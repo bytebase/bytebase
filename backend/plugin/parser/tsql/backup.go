@@ -490,11 +490,21 @@ func skipLineComment(source string, start, end int) int {
 }
 
 func skipBlockComment(source string, start, end int) int {
+	depth := 1
 	for start+1 < end {
-		if source[start] == '*' && source[start+1] == '/' {
-			return start + 2
+		switch {
+		case source[start] == '/' && source[start+1] == '*':
+			depth++
+			start += 2
+		case source[start] == '*' && source[start+1] == '/':
+			depth--
+			start += 2
+			if depth == 0 {
+				return start
+			}
+		default:
+			start++
 		}
-		start++
 	}
 	return end
 }

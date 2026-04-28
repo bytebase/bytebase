@@ -63,6 +63,14 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 			}, "\n"),
 		},
 		{
+			name:  "option keyword in nested comment",
+			input: "UPDATE test SET c1 = 1 /* outer /* inner */ OPTION in outer */ OPTION (RECOMPILE);",
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* FROM test OPTION (RECOMPILE)) AS backup_table;",
+			}, "\n"),
+		},
+		{
 			name: "delete alias from join",
 			input: strings.Join([]string{
 				"DELETE FROM t_alias",
