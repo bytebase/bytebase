@@ -15,8 +15,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSubscriptionV1Store } from "@/store";
+import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   Announcement_AlertLevel,
@@ -48,11 +47,8 @@ export const AnnouncementSection = forwardRef<
 >(function AnnouncementSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
   const settingV1Store = useSettingV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
 
-  const hasFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT)
-  );
+  const hasFeature = usePlanFeature(PlanFeature.FEATURE_DASHBOARD_ANNOUNCEMENT);
 
   const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 

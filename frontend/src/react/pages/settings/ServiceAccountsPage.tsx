@@ -45,6 +45,34 @@ import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
+function execCommandCopy(text: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fall through to execCommand fallback
+    }
+  }
+  return execCommandCopy(text);
+}
+
 // ============================================================
 // ServiceAccountTable
 // ============================================================
@@ -120,8 +148,7 @@ function ServiceAccountTable({
       );
       const updated = serviceAccountToUser(sa);
       onUserUpdated(updated);
-      if (updated.serviceKey) {
-        await navigator.clipboard.writeText(updated.serviceKey);
+      if (updated.serviceKey && (await copyToClipboard(updated.serviceKey))) {
         setCopiedKeys((prev) => new Set(prev).add(updated.name));
         pushNotification({
           module: "bytebase",
@@ -135,7 +162,7 @@ function ServiceAccountTable({
   };
 
   const handleCopyKey = async (user: User) => {
-    await navigator.clipboard.writeText(user.serviceKey);
+    if (!(await copyToClipboard(user.serviceKey))) return;
     setCopiedKeys((prev) => new Set(prev).add(user.name));
     pushNotification({
       module: "bytebase",
@@ -420,7 +447,10 @@ function ServiceAccountForm({
   );
 
   const isEditMode = !!serviceAccount && !!serviceAccount.email;
-  const emailSuffix = getServiceAccountSuffix();
+  const emailSuffix = useMemo(() => {
+    const pid = project ? project.replace(/^projects\//, "") : "";
+    return getServiceAccountSuffix(pid || undefined);
+  }, [project]);
 
   // Capture initial values on mount — parent keys by serviceAccount so
   // these reflect the latest props.

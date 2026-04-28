@@ -2,10 +2,9 @@ import { Check, Copy, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIconPath } from "@/components/InstanceForm/constants";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
-import { featureToRef, useEnvironmentV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -54,7 +53,6 @@ export function DatabaseDetailHeader({
 }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const environmentStore = useEnvironmentV1Store();
   const { databaseName } = useMemo(
     () => extractDatabaseParts(database.name),
     [database.name]
@@ -66,12 +64,9 @@ export function DatabaseDetailHeader({
   const canViewInstance = hasWorkspacePermissionV2("bb.instances.get");
   const engineIconSrc = EngineIconPath[String(instanceResource.engine)];
 
-  const environment = useVueState(() =>
-    environmentStore.getEnvironmentByName(database.effectiveEnvironment ?? "")
-  );
-
-  const hasEnvironmentTierFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
+  const environment = useEnvironment(database.effectiveEnvironment ?? "");
+  const hasEnvironmentTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
   );
 
   const isValidEnv =

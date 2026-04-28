@@ -99,6 +99,7 @@ import {
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
+import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 import { RequestRoleSheet } from "./RequestRoleSheet";
 import {
   getRequestRoleButtonState,
@@ -999,11 +1000,6 @@ function EditMemberRoleDrawer({
     []
   );
 
-  const getEnvironmentLimitation = useCallback((binding: Binding): string[] => {
-    if (!binding.parsedExpr) return [];
-    return convertFromExpr(binding.parsedExpr).environments ?? [];
-  }, []);
-
   const handleDeleteRole = async (roleBinding: Binding) => {
     if (!member || !projectName) return;
     const roleName = displayRoleTitle(roleBinding.role);
@@ -1302,12 +1298,8 @@ function EditMemberRoleDrawer({
                 )}
                 {liveProjectRoleBindings.map((binding, idx) => {
                   const rows = getSingleBindingRows(binding);
-                  const envs = roleHasEnvironmentLimitation(binding.role)
-                    ? getEnvironmentLimitation(binding)
-                    : [];
-                  const showEnvBanner = roleHasEnvironmentLimitation(
-                    binding.role
-                  );
+                  const envLimitation =
+                    getProjectRoleBindingEnvironmentLimitationState(binding);
                   return (
                     <div
                       key={`${binding.role}-${idx}`}
@@ -1340,15 +1332,21 @@ function EditMemberRoleDrawer({
                       </div>
 
                       {/* Environment info banner */}
-                      {showEnvBanner && (
+                      {envLimitation && (
                         <div className="mx-4 mt-3 flex items-start gap-x-2 rounded-sm bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
                           <Info className="h-4 w-4 shrink-0 mt-0.5" />
                           <div>
-                            {envs.length > 0 ? (
+                            {envLimitation.type === "unrestricted" ? (
+                              <span>
+                                {t(
+                                  "project.members.allow-ddl-all-environments"
+                                )}
+                              </span>
+                            ) : envLimitation.environments.length > 0 ? (
                               <>
                                 <span>{t("project.members.allow-ddl")}</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {envs.map((env) => (
+                                  {envLimitation.environments.map((env) => (
                                     <Badge
                                       key={env}
                                       variant="secondary"

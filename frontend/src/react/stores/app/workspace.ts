@@ -1,4 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import dayjs from "dayjs";
+import semver from "semver";
 import {
   actuatorServiceClientConnect,
   settingServiceClientConnect,
@@ -11,20 +13,42 @@ import {
 } from "@/react/lib/resourceName";
 import { defaultAppProfile } from "@/types/appProfile";
 import {
+  hasFeature as checkFeature,
+  hasInstanceFeature as checkInstanceFeature,
+  getMinimumRequiredPlan,
+  instanceLimitFeature,
+  PLANS,
+} from "@/types/plan";
+import {
   DatabaseChangeMode,
+  type EnvironmentSetting_Environment,
+  EnvironmentSetting_EnvironmentSchema,
   GetSettingRequestSchema,
   Setting_SettingName,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
   GetSubscriptionRequestSchema,
+  PlanType,
   UploadLicenseRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
+} from "@/types/timestamp";
+import type { Environment } from "@/types/v1/environment";
+import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
 const workspaceProfileSettingName = `${settingNamePrefix}${
   Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]
 }`;
+const environmentSettingName = `${settingNamePrefix}${
+  Setting_SettingName[Setting_SettingName.ENVIRONMENT]
+}`;
+const externalUrlPlaceholder =
+  "https://docs.bytebase.com/get-started/self-host/external-url";
+const trialingDays = 14;
 
 function appFeaturesFromDatabaseChangeMode(mode: DatabaseChangeMode) {
   const appFeatures = defaultAppProfile().features;
@@ -41,11 +65,35 @@ function appFeaturesFromDatabaseChangeMode(mode: DatabaseChangeMode) {
   return appFeatures;
 }
 
+function environmentNameFromId(id: string) {
+  return `environments/${id}`;
+}
+
+function convertEnvironmentList(
+  environments: EnvironmentSetting_Environment[]
+): Environment[] {
+  return environments.map<Environment>((env, i) => ({
+    ...createProto(EnvironmentSetting_EnvironmentSchema, {
+      name: environmentNameFromId(env.id),
+      id: env.id,
+      title: env.title,
+      color: env.color,
+      tags: env.tags,
+    }),
+    order: i,
+  }));
+}
+
+function isSelfHostLicense() {
+  return import.meta.env.MODE.toLowerCase() !== "release-aws";
+}
+
 export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => ({
   serverInfoTs: 0,
+  environmentList: [],
   appFeatures: defaultAppProfile().features,
 
   loadServerInfo: async () => {
@@ -137,11 +185,56 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     return request;
   },
 
+  loadEnvironmentList: async (force = false) => {
+    const existing = get().environmentList;
+    if (!force && existing.length > 0) return existing;
+    const pending = get().environmentRequest;
+    if (pending) return pending;
+    const request = settingServiceClientConnect
+      .getSetting(
+        createProto(GetSettingRequestSchema, {
+          name: environmentSettingName,
+        })
+      )
+      .then((setting) => {
+        const settingValue = setting.value?.value;
+        const environments =
+          settingValue?.case === "environment"
+            ? convertEnvironmentList(settingValue.value.environments)
+            : [];
+        set({ environmentList: environments, environmentRequest: undefined });
+        return environments;
+      })
+      .catch(() => {
+        set({ environmentRequest: undefined });
+        return [];
+      });
+    set({ environmentRequest: request });
+    return request;
+  },
+
+  refreshEnvironmentList: async () => get().loadEnvironmentList(true),
+
   loadSubscription: async () => {
     const existing = get().subscription;
     if (existing) return existing;
     const pending = get().subscriptionRequest;
     if (pending) return pending;
+    const request = subscriptionServiceClientConnect
+      .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
+      .then((subscription) => {
+        set({ subscription, subscriptionRequest: undefined });
+        return subscription;
+      })
+      .catch(() => {
+        set({ subscriptionRequest: undefined });
+        return undefined;
+      });
+    set({ subscriptionRequest: request });
+    return request;
+  },
+
+  refreshSubscription: async () => {
     const request = subscriptionServiceClientConnect
       .getSubscription(createProto(GetSubscriptionRequestSchema, {}))
       .then((subscription) => {
@@ -163,4 +256,148 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     set({ subscription });
     return subscription;
   },
+
+  currentPlan: () => {
+    return get().subscription?.plan ?? PlanType.FREE;
+  },
+
+  isFreePlan: () => get().currentPlan() === PlanType.FREE,
+
+  isTrialing: () => Boolean(get().subscription?.trialing),
+
+  isExpired: () => {
+    const subscription = get().subscription;
+    if (!subscription?.expiresTime || get().isFreePlan()) {
+      return false;
+    }
+    return dayjs(
+      getDateForPbTimestampProtoEs(subscription.expiresTime)
+    ).isBefore(new Date());
+  },
+
+  daysBeforeExpire: () => {
+    const subscription = get().subscription;
+    if (!subscription?.expiresTime || get().isFreePlan()) {
+      return -1;
+    }
+    return Math.max(
+      dayjs(getDateForPbTimestampProtoEs(subscription.expiresTime)).diff(
+        new Date(),
+        "day"
+      ),
+      0
+    );
+  },
+
+  trialingDays: () => trialingDays,
+
+  showTrial: () => {
+    if (!isSelfHostLicense()) {
+      return false;
+    }
+    return !get().subscription || get().isFreePlan();
+  },
+
+  expireAt: () => {
+    const subscription = get().subscription;
+    if (!subscription?.expiresTime || get().isFreePlan()) {
+      return "";
+    }
+    return formatAbsoluteDateTime(
+      getTimeForPbTimestampProtoEs(subscription.expiresTime)
+    );
+  },
+
+  instanceCountLimit: () => {
+    const subscription = get().subscription;
+    const licenseLimit = subscription?.instances ?? 0;
+    if (licenseLimit > 0) {
+      return licenseLimit;
+    }
+    const planLimit =
+      PLANS.find((plan) => plan.type === get().currentPlan())
+        ?.maximumInstanceCount ?? 0;
+    if (planLimit < 0) {
+      return licenseLimit > 0 ? licenseLimit : Number.MAX_VALUE;
+    }
+    return planLimit;
+  },
+
+  userCountLimit: () => {
+    let limit =
+      PLANS.find((plan) => plan.type === get().currentPlan())
+        ?.maximumSeatCount ?? 0;
+    if (limit < 0) {
+      limit = Number.MAX_VALUE;
+    }
+    const seats = get().subscription?.seats ?? 0;
+    if (seats < 0) {
+      return Number.MAX_VALUE;
+    }
+    if (seats === 0) {
+      return limit;
+    }
+    return seats;
+  },
+
+  instanceLicenseCount: () => {
+    const count = get().subscription?.activeInstances ?? 0;
+    return count < 0 ? Number.MAX_VALUE : count;
+  },
+
+  hasFeature: (feature) => {
+    if (get().isExpired()) {
+      return false;
+    }
+    return checkFeature(get().currentPlan(), feature);
+  },
+
+  hasInstanceFeature: (feature, instance) => {
+    const plan = get().currentPlan();
+    if (plan === PlanType.FREE) {
+      return get().hasFeature(feature);
+    }
+    if (!instance || !instanceLimitFeature.has(feature)) {
+      return get().hasFeature(feature);
+    }
+    return checkInstanceFeature(plan, feature, instance.activation);
+  },
+
+  instanceMissingLicense: (feature, instance) => {
+    if (!instanceLimitFeature.has(feature) || !instance) {
+      return false;
+    }
+    return get().hasFeature(feature) && !instance.activation;
+  },
+
+  getMinimumRequiredPlan,
+
+  isSaaSMode: () => get().serverInfo?.saas ?? false,
+
+  workspaceResourceName: () => get().serverInfo?.workspace ?? "",
+
+  externalUrl: () => get().serverInfo?.externalUrl ?? "",
+
+  needConfigureExternalUrl: () => {
+    const serverInfo = get().serverInfo;
+    if (!serverInfo) return false;
+    const url = serverInfo.externalUrl ?? "";
+    return url === "" || url === externalUrlPlaceholder;
+  },
+
+  version: () => get().serverInfo?.version ?? "",
+
+  changelogURL: () => {
+    const version = semver.valid(get().serverInfo?.version);
+    if (!version) return "";
+    return `https://docs.bytebase.com/changelog/bytebase-${version
+      .split(".")
+      .join("-")}/`;
+  },
+
+  activatedInstanceCount: () => get().serverInfo?.activatedInstanceCount ?? 0,
+
+  totalInstanceCount: () => get().serverInfo?.totalInstanceCount ?? 0,
+
+  userCountInIam: () => get().serverInfo?.userCountInIam ?? 0,
 });

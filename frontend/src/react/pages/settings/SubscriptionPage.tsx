@@ -6,13 +6,12 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
-  getWorkspaceId,
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+  useNotify,
+  useServerState,
+  useSubscriptionState,
+} from "@/react/hooks/useAppState";
+import { getResourceId, workspaceNamePrefix } from "@/react/lib/resourceName";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -28,39 +27,34 @@ export function SubscriptionPage({
   onManageInstanceLicenses: onManageInstanceLicensesProp,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
+  const notify = useNotify();
 
   const allowManage = hasWorkspacePermissionV2("bb.subscription.manage");
   const allowManageInstanceLicenses =
     allowManage && hasWorkspacePermissionV2("bb.instances.list");
 
-  // Subscribe to Vue reactive state
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
-  const isTrialing = useVueState(() => subscriptionStore.isTrialing);
-  const isExpired = useVueState(() => subscriptionStore.isExpired);
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const isSelfHostLicense = useVueState(
-    () => subscriptionStore.isSelfHostLicense
-  );
-  const showTrial = useVueState(() => subscriptionStore.showTrial);
-  const trialingDays = useVueState(() => subscriptionStore.trialingDays);
-  const expireAt = useVueState(() => subscriptionStore.expireAt);
-  const instanceCountLimit = useVueState(
-    () => subscriptionStore.instanceCountLimit
-  );
-  const instanceLicenseCount = useVueState(
-    () => subscriptionStore.instanceLicenseCount
-  );
-  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
-  const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
-  const activatedInstanceCount = useVueState(
-    () => actuatorStore.activatedInstanceCount
-  );
-  const workspaceId = useVueState(() =>
-    getWorkspaceId(actuatorStore.workspaceResourceName)
-  );
+  const {
+    uploadLicense,
+    currentPlan,
+    isFreePlan,
+    isTrialing,
+    isExpired,
+    showTrial,
+    trialingDays,
+    expireAt,
+    instanceCountLimit,
+    instanceLicenseCount,
+    userCountLimit,
+  } = useSubscriptionState();
+  const {
+    isSaaSMode,
+    userCountInIam,
+    activatedInstanceCount,
+    workspaceResourceName,
+  } = useServerState();
+  const isSelfHostLicense =
+    import.meta.env.MODE.toLowerCase() !== "release-aws";
+  const workspaceId = getResourceId(workspaceResourceName, workspaceNamePrefix);
 
   const [license, setLicense] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,8 +94,8 @@ export function SubscriptionPage({
     if (disabled) return;
     setLoading(true);
     try {
-      await subscriptionStore.uploadLicense(license);
-      pushNotification({
+      await uploadLicense(license);
+      notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("subscription.update.success.title"),
@@ -109,7 +103,7 @@ export function SubscriptionPage({
       });
       setLicense("");
     } catch {
-      pushNotification({
+      notify({
         module: "bytebase",
         style: "CRITICAL",
         title: t("subscription.update.failure.title"),

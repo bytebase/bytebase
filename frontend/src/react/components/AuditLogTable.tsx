@@ -28,18 +28,14 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import { usePlanFeature } from "@/react/hooks/useAppState";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useSubscriptionV1Store,
-  useUserStore,
-} from "@/store";
+import { pushNotification, useUserStore } from "@/store";
 import {
   extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
@@ -520,10 +516,7 @@ export function AuditLogTable({
   readonlyScopes,
 }: AuditLogTableProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasAuditLogFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_AUDIT_LOG)
-  );
+  const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
