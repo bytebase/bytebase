@@ -481,9 +481,15 @@ export function MonacoEditor({
   // flips true once `editor.setModel(model)` has run. Mirrors Vue's
   // `useAutoComplete` call site, which lives inside the post-setup
   // path of `MonacoTextModelEditor.vue`.
+  //
+  // Skipped entirely when the caller does not opt in to SQL LSP via
+  // `autoCompleteContext`, so editors like `SchemaEditorLite` that mount
+  // a writable Monaco for plain text editing don't initialize the LSP
+  // client or send empty `setMetadata` traffic.
   useEffect(() => {
     if (readOnly || !ready) return;
     const ctx = autoCompleteContext;
+    if (!ctx) return;
     const params: {
       instanceId: string;
       databaseName: string;
@@ -492,20 +498,18 @@ export function MonacoEditor({
     } = {
       instanceId: "",
       databaseName: "",
-      scene: ctx?.scene,
+      scene: ctx.scene,
     };
-    if (ctx) {
-      const instance = extractInstanceResourceName(ctx.instance);
-      if (instance && instance !== String(UNKNOWN_ID)) {
-        params.instanceId = ctx.instance;
-      }
-      const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
-      if (databaseName && databaseName !== String(UNKNOWN_ID)) {
-        params.databaseName = databaseName;
-      }
-      if (ctx.schema !== undefined) {
-        params.schema = ctx.schema;
-      }
+    const instance = extractInstanceResourceName(ctx.instance);
+    if (instance && instance !== String(UNKNOWN_ID)) {
+      params.instanceId = ctx.instance;
+    }
+    const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
+    if (databaseName && databaseName !== String(UNKNOWN_ID)) {
+      params.databaseName = databaseName;
+    }
+    if (ctx.schema !== undefined) {
+      params.schema = ctx.schema;
     }
     const apply = debounce(async () => {
       const client = await initializeLSPClient();

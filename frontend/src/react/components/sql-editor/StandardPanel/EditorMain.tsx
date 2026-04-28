@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { ConnectionHolder } from "@/react/components/sql-editor/ConnectionHolder";
+import { ReadonlyModeNotSupported } from "@/react/components/sql-editor/ReadonlyModeNotSupported";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -108,10 +108,10 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
   }, [databaseStore, tabStore, execute]);
 
   if (!isDisconnected && !allowReadonlyMode) {
-    // Mirrors the Vue `<NoPermissionPlaceholder>`/disabled state —
-    // when the instance is connected but doesn't expose a read-only
-    // data source we surface the connection holder.
-    return <ConnectionHolder />;
+    // Connected to an instance without a read-only data source —
+    // surface the admin-mode CTA, matching Vue `EditorMain.vue`'s
+    // `<ReactPageMount v-else page="ReadonlyModeNotSupported" />` branch.
+    return <ReadonlyModeNotSupported />;
   }
 
   return (

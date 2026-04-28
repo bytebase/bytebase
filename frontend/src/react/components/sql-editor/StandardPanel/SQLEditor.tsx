@@ -99,10 +99,18 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     return `${name}.${ext}`;
   }, [tabId, language]);
 
+  // Clear the stale active statement when switching tabs so the toolbar
+  // doesn't execute the previous tab's SQL against the new connection.
+  useEffect(() => {
+    activeStatementRef.value = "";
+  }, [tabId]);
+
   // ----- live refs -----
   // State-backed so useAIActions re-runs when Monaco is ready.
   const [monacoState, setMonacoState] = useState<MonacoModule | null>(null);
-  const [editorState, setEditorState] = useState<IStandaloneCodeEditor | null>(null);
+  const [editorState, setEditorState] = useState<IStandaloneCodeEditor | null>(
+    null
+  );
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<MonacoModule | null>(null);
   const activeContentRef = useRef<string>(content ?? "");
