@@ -20,7 +20,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `EXPLAIN SELECT ...` returns `Explain` without result columns.
 - [x] `EXPLAIN ANALYZE SELECT ...` returns `Select` and preserves select access tables.
 - [x] `EXPLAIN ANALYZE TABLE t` returns `Select` and preserves table access.
-- [~] `EXPLAIN ANALYZE VALUES ROW(...)` returns `Select` and preserves values results — (omni parser currently rejects this syntax)
+- [~] `EXPLAIN ANALYZE VALUES ROW(...)` returns `Select` and preserves values results — (MySQL supports this; omni parser currently rejects `VALUES` under `EXPLAIN ANALYZE`)
 - [x] `EXPLAIN ANALYZE INSERT ...` returns `DML` and no result columns.
 - [x] Multiple statements in one query return the legacy single-statement error.
 
@@ -125,7 +125,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] natural right join merges common columns.
 - [x] `JOIN ... ON` expression contributes access-table dependencies.
 - [x] nested join tree preserves visible source ordering.
-- [~] parenthesized table reference list behaves like legacy cross-join expansion — (omni parser currently rejects `FROM (t1, t2)`)
+- [~] parenthesized table reference list behaves like legacy cross-join expansion — (MySQL supports this nested-join extension; omni parser currently rejects `FROM (t1, t2)`)
 
 ### 3.3 Derived Tables And Table Functions
 
@@ -138,7 +138,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `JSON_TABLE` exposes declared columns as pseudo-table columns.
 - [x] `JSON_TABLE` column lineage comes from the JSON document expression.
 - [x] nested `JSON_TABLE` columns flatten in legacy order.
-- [~] `JSON_TABLE` with alias omitted uses the legacy generated table name — (omni parser currently rejects alias-less `JSON_TABLE`)
+- [x] `JSON_TABLE` with alias omitted is rejected because MySQL requires a table-function alias.
 
 ## Phase 4: Subqueries, CTEs, And Set Operations
 

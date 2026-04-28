@@ -1002,6 +1002,16 @@ JSON_TABLE(product_info, '$' COLUMNS (
 		{Name: "variant_id", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
 		{Name: "variant_name", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
 	}, span.Results)
+
+	_, err = newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+		context.Background(),
+		`SELECT *
+FROM products,
+JSON_TABLE(product_info, '$' COLUMNS (
+  product_id INT PATH '$.id'
+))`,
+	)
+	require.Error(t, err)
 }
 
 func TestOmniQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
