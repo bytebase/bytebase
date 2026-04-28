@@ -156,7 +156,13 @@
   },
   "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
-    "external-url": "Bytebase chưa được cấu hình --external-url"
+    "cloud": "Đám mây",
+    "deploy": "Tự lưu trữ",
+    "external-url": "Bytebase chưa được cấu hình --external-url",
+    "license-expired": "Giấy phép {{plan}} của bạn đã hết hạn vào {{expireAt}}.",
+    "license-expires": "Giấy phép {{plan}} của bạn sẽ hết hạn sau {{days}} ngày vào {{expireAt}}.",
+    "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
+    "trial-expires": "Bản dùng thử miễn phí {{plan}} của bạn sẽ hết hạn trong {{days}} ngày nữa vào {{expireAt}}."
   },
   "bbkit": {
     "confirm-button": {
@@ -3481,6 +3487,10 @@
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"
     },
     "max-instance-count": "Số lượng phiên bản tối đa",
+    "overuse-modal": {
+      "description": "Bạn đang sử dụng các tính năng không có trong {{plan}}. Nâng cấp ngay để đảm bảo quyền truy cập liên tục:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> trên {{currentPlan}} sẽ bị hạn chế. Nâng cấp ngay để đảm bảo quyền truy cập liên tục.",
     "plan": {
       "enterprise": {
         "desc": "Các tính năng bảo mật, tuân thủ và quyền bổ sung. Hỗ trợ chuyên dụng với SLA.",
@@ -3501,6 +3511,7 @@
       "try": "Bắt đầu dùng thử miễn phí"
     },
     "plan-compare": "So sánh tính năng giữa các gói khác nhau",
+    "plan-features": "Tính năng của {{plan}}",
     "purchase": {
       "accept-terms-prefix": "Tôi chấp nhận",
       "and": "và",
@@ -3547,6 +3558,8 @@
         "title": "Đã cập nhật thành công giấy phép"
       }
     },
+    "upgrade": "Nâng cấp",
+    "upgrade-now": "Nâng cấp ngay",
     "upload-license": "Tải lên giấy phép",
     "usage": {
       "instance-count": {

@@ -156,7 +156,13 @@
   },
   "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
-    "external-url": "Bytebase は --extern-url を設定していません"
+    "cloud": "クラウドサービス",
+    "deploy": "ローカル展開",
+    "external-url": "Bytebase は --extern-url を設定していません",
+    "license-expired": "{{plan}} のライセンスは {{expireAt}} に期限切れになりました。",
+    "license-expires": "{{plan}} ライセンスは {{expireAt}} に期限切れになりました",
+    "request-demo": "30 分間の製品デモを予約してください。",
+    "trial-expires": "{{plan}} トライアルは {{days}} 日後に期限切れになります"
   },
   "bbkit": {
     "confirm-button": {
@@ -3481,6 +3487,10 @@
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },
     "max-instance-count": "最大インスタンス数",
+    "overuse-modal": {
+      "description": "{{plan}} では使用できない機能を使用しています。通常どおり使用できるように、できるだけ早くアップグレードしてください："
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> は {{currentPlan}} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "plan": {
       "enterprise": {
         "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。",
@@ -3501,6 +3511,7 @@
       "try": "無料トライアルを開始する"
     },
     "plan-compare": "異なるプラン間の機能を比較する",
+    "plan-features": "{{plan}} の機能",
     "purchase": {
       "accept-terms-prefix": "以下に同意します：",
       "and": "および",
@@ -3547,6 +3558,8 @@
         "title": "ライセンスが正常に更新されました"
       }
     },
+    "upgrade": "アップグレード",
+    "upgrade-now": "今すぐアップグレード",
     "upload-license": "ライセンスのアップロード",
     "usage": {
       "instance-count": {
