@@ -322,6 +322,18 @@ func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspac
 	return int(limit)
 }
 
+func isUnifiedInstanceLimit(instanceLimit, activatedInstanceLimit int) bool {
+	return instanceLimit <= activatedInstanceLimit
+}
+
+// IsUnifiedInstanceLicense returns whether every registrable instance is effectively activated.
+func (s *LicenseService) IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool {
+	return isUnifiedInstanceLimit(
+		s.GetInstanceLimit(ctx, workspaceID),
+		s.GetActivatedInstanceLimit(ctx, workspaceID),
+	)
+}
+
 // GetUserLimit gets the user limit value for the plan.
 func (s *LicenseService) GetUserLimit(ctx context.Context, workspaceID string) int {
 	subscription := s.LoadSubscription(ctx, workspaceID)
