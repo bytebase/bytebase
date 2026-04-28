@@ -3,14 +3,11 @@ package tsql
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
-
-	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -46,11 +43,11 @@ type TableReference struct {
 }
 
 type statementInfo struct {
-	offset    int
-	statement string
-	tree      antlr.ParserRuleContext
-	table     *TableReference
-	baseLine  int
+	statement     string
+	node          ast.Node
+	table         *TableReference
+	startPosition *storepb.Position
+	endPosition   *storepb.Position
 }
 
 func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -131,7 +128,7 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 				return nil, errors.Wrap(err, "failed to write buffer")
 			}
 		}
-		topClause, fromClause, err := extractSuffixSelectStatement(item.tree)
+		topClause, fromClause, err := extractSuffixSelectStatement(item.node, item.statement)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
 		}
@@ -166,333 +163,430 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 		SourceSchema:    table.Schema,
 		SourceTableName: table.Table,
 		TargetTableName: targetTable,
-		StartPosition: &storepb.Position{
-			Line:   int32(statementInfoList[0].baseLine + statementInfoList[0].tree.GetStart().GetLine()),
-			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-		},
-		EndPosition: &storepb.Position{
-			Line:   int32(statementInfoList[len(statementInfoList)-1].baseLine + statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
-			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-		},
+		StartPosition:   statementInfoList[0].startPosition,
+		EndPosition:     statementInfoList[len(statementInfoList)-1].endPosition,
 	}, nil
 }
 
-func extractSuffixSelectStatement(tree antlr.Tree) (string, string, error) {
-	extractor := &suffixSelectStatementExtractor{}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-	return extractor.topClause, extractor.fromClause, extractor.err
-}
-
-type suffixSelectStatementExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	topClause  string
-	fromClause string
-	err        error
-}
-
-func (e *suffixSelectStatementExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if e.err != nil {
-		return
-	}
-
-	if IsTopLevel(ctx.GetParent()) && ctx.Ddl_object() != nil {
-		if ctx.CURRENT() != nil {
-			e.err = errors.New("UPDATE statement with CURSOR clause is not supported")
-			return
+func extractSuffixSelectStatement(node ast.Node, source string) (string, string, error) {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		if _, ok := n.WhereClause.(*ast.CurrentOfExpr); ok {
+			return "", "", errors.New("UPDATE statement with CURSOR clause is not supported")
 		}
-
-		if ctx.TOP() != nil {
-			if ctx.PERCENT() != nil {
-				e.topClause = ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.TOP().GetSymbol(), ctx.PERCENT().GetSymbol())
-			} else {
-				e.topClause = ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.TOP().GetSymbol(), ctx.RR_BRACKET().GetSymbol())
-			}
+		fromSource, searchStart := dmlFromSource(source, n.Relation, n.FromClause, dmlNodeLoc(n), n.WhereClause, n.OptionClause)
+		return sourceFromLoc(source, dmlNodeLoc(n.Top)), buildDMLFromClause(source, fromSource, searchStart, dmlNodeLoc(n), n.WhereClause, n.OptionClause), nil
+	case *ast.DeleteStmt:
+		if _, ok := n.WhereClause.(*ast.CurrentOfExpr); ok {
+			return "", "", errors.New("DELETE statement with CURSOR clause is not supported")
 		}
-
-		var buf strings.Builder
-		if _, err := buf.WriteString("FROM "); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		if ctx.Table_sources() == nil {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Ddl_object())); err != nil {
-				e.err = errors.Wrap(err, "failed to write buffer")
-				return
-			}
-		} else {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Table_sources())); err != nil {
-				e.err = errors.Wrap(err, "failed to write buffer")
-				return
-			}
-		}
-		if _, err := buf.WriteString(" "); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		var start, stop int
-		if ctx.WHERE() != nil {
-			start = ctx.WHERE().GetSymbol().GetTokenIndex()
-		} else if ctx.For_clause() != nil {
-			start = ctx.For_clause().GetStart().GetTokenIndex()
-		} else if ctx.Option_clause() != nil {
-			start = ctx.Option_clause().GetStart().GetTokenIndex()
-		} else if ctx.SEMI() != nil {
-			start = ctx.SEMI().GetSymbol().GetTokenIndex()
-		} else {
-			return
-		}
-
-		if ctx.SEMI() != nil {
-			stop = ctx.SEMI().GetSymbol().GetTokenIndex() - 1
-		} else {
-			stop = ctx.GetStop().GetTokenIndex()
-		}
-		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(start, stop))); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		e.fromClause = buf.String()
-	}
-}
-
-func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if e.err != nil {
-		return
-	}
-
-	if IsTopLevel(ctx.GetParent()) {
-		if ctx.CURRENT() != nil {
-			e.err = errors.New("DELETE statement with CURSOR clause is not supported")
-			return
-		}
-
-		if ctx.TOP() != nil {
-			if ctx.DECIMAL() != nil {
-				e.topClause = "TOP DECIMAL"
-			} else {
-				if ctx.PERCENT() != nil {
-					e.topClause = ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.TOP().GetSymbol(), ctx.PERCENT().GetSymbol())
-				} else {
-					e.topClause = ctx.GetParser().GetTokenStream().GetTextFromTokens(ctx.TOP().GetSymbol(), ctx.RR_BRACKET().GetSymbol())
-				}
-			}
-		}
-
-		var buf strings.Builder
-		if _, err := buf.WriteString("FROM "); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		if ctx.From_table_sources() == nil {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Delete_statement_from())); err != nil {
-				e.err = errors.Wrap(err, "failed to write buffer")
-				return
-			}
-		} else {
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.From_table_sources().Table_sources())); err != nil {
-				e.err = errors.Wrap(err, "failed to write buffer")
-				return
-			}
-		}
-
-		if _, err := buf.WriteString(" "); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		var start, stop int
-		if ctx.WHERE() != nil {
-			start = ctx.WHERE().GetSymbol().GetTokenIndex()
-		} else if ctx.For_clause() != nil {
-			start = ctx.For_clause().GetStart().GetTokenIndex()
-		} else if ctx.Option_clause() != nil {
-			start = ctx.Option_clause().GetStart().GetTokenIndex()
-		} else if ctx.SEMI() != nil {
-			start = ctx.SEMI().GetSymbol().GetTokenIndex()
-		} else {
-			return
-		}
-
-		if ctx.SEMI() != nil {
-			stop = ctx.SEMI().GetSymbol().GetTokenIndex() - 1
-		} else {
-			stop = ctx.GetStop().GetTokenIndex()
-		}
-		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.NewInterval(start, stop))); err != nil {
-			e.err = errors.Wrap(err, "failed to write buffer")
-			return
-		}
-		e.fromClause = buf.String()
+		fromSource, searchStart := dmlFromSource(source, n.Relation, n.FromClause, dmlNodeLoc(n), n.WhereClause, n.OptionClause)
+		return sourceFromLoc(source, dmlNodeLoc(n.Top)), buildDMLFromClause(source, fromSource, searchStart, dmlNodeLoc(n), n.WhereClause, n.OptionClause), nil
+	default:
+		return "", "", nil
 	}
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	antlrASTs, err := ParseTSQL(statement)
+	parsedStatements, err := parseTSQLStatements(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
 
-	extractor := &dmlExtractor{
-		databaseName: databaseName,
-	}
-
-	for _, ast := range antlrASTs {
-		extractor.baseLine = base.GetLineOffset(ast.StartPosition)
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ast.Tree)
-	}
-
-	return extractor.dmls, nil
-}
-
-type dmlExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	databaseName string
-	dmls         []statementInfo
-	offset       int
-	baseLine     int
-}
-
-func IsTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-	switch ctx := ctx.(type) {
-	case *parser.Dml_clauseContext,
-		*parser.Sql_clausesContext,
-		*parser.Batch_without_goContext:
-		return IsTopLevel(ctx.GetParent())
-	case *parser.Tsql_fileContext:
-		return true
-	default:
-		return false
-	}
-}
-
-func (e *dmlExtractor) ExitBatch(ctx *parser.Batch_without_goContext) {
-	if len(ctx.AllSql_clauses()) == 0 {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) ExitSql_clauses(ctx *parser.Sql_clausesContext) {
-	if IsTopLevel(ctx.GetParent()) {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if IsTopLevel(ctx.GetParent()) && ctx.Ddl_object() != nil {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
+	var dmls []statementInfo
+	for _, parsedStatement := range parsedStatements {
+		node, ok := GetOmniNode(parsedStatement.AST)
+		if !ok || node == nil {
+			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Ddl_object())
-
-		table := extractor.table
-		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		var (
+			table         *TableReference
+			statementType StatementType
+			err           error
+		)
+		switch n := node.(type) {
+		case *ast.UpdateStmt:
+			table, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			statementType = StatementTypeUpdate
+		case *ast.DeleteStmt:
+			table, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			statementType = StatementTypeDelete
+		default:
+			continue
 		}
-		table.StatementType = StatementTypeUpdate
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-			baseLine:  e.baseLine,
+		if err != nil {
+			return nil, err
+		}
+		if table == nil {
+			return nil, errors.Errorf("failed to resolve DML target table")
+		}
+		table.StatementType = statementType
+		loc := dmlNodeLoc(node)
+		dmls = append(dmls, statementInfo{
+			statement:     parsedStatement.Text,
+			node:          node,
+			table:         table,
+			startPosition: positionFromByteOffset(parsedStatement.Start, parsedStatement.Text, loc.Start),
+			endPosition:   positionFromByteOffset(parsedStatement.Start, parsedStatement.Text, dmlEndOffset(parsedStatement.Text, loc)),
 		})
 	}
+
+	return dmls, nil
 }
 
-func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if IsTopLevel(ctx.GetParent()) {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
-
-		table := extractor.table
-		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
-		}
-		table.StatementType = StatementTypeDelete
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-			baseLine:  e.baseLine,
-		})
+func resolveDMLTargetTable(relation ast.TableExpr, fromClause *ast.List, databaseName string) (*TableReference, error) {
+	table, err := tableReferenceFromTableExpr(relation, databaseName, defaultSchema)
+	if err != nil || table == nil {
+		return table, err
 	}
-}
-
-func extractPhysicalTable(ctx antlr.Tree, table *TableReference) *TableReference {
-	if ctx == nil || table == nil {
-		return table
-	}
-
-	extractor := &physicalTableExtractor{
-		table: table,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
-	if extractor.result != nil {
-		return extractor.result
-	}
-	return table
-}
-
-type physicalTableExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	table  *TableReference
-	result *TableReference
-}
-
-func (e *physicalTableExtractor) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
-	if ctx.As_table_alias() != nil && ctx.Full_table_name() != nil {
-		alias := unquote(ctx.As_table_alias().Table_alias().GetText())
-		if alias == e.table.Table {
-			databaseName, schemaName, tableName := extractFullTableName(ctx.Full_table_name(), e.table.Database, e.table.Schema)
-			e.result = &TableReference{
-				Database:      databaseName,
-				Schema:        schemaName,
-				Table:         tableName,
-				Alias:         alias,
-				StatementType: e.table.StatementType,
-			}
+	if fromClause != nil && table.Database == databaseName && table.Schema == defaultSchema {
+		if physical := findPhysicalTableForAlias(fromClause, table); physical != nil {
+			return physical, nil
 		}
 	}
+	return table, nil
 }
 
-type tableExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	databaseName string
-	table        *TableReference
-}
-
-func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext) {
-	databaseName, schemaName, tableName := extractFullTableName(ctx, e.databaseName, defaultSchema)
-	table := TableReference{
-		Database: databaseName,
-		Schema:   schemaName,
-		Table:    tableName,
-	}
-	e.table = &table
-}
-
-func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
-	name, err := NormalizeFullTableName(ctx)
-	if err != nil {
-		slog.Debug("Failed to normalize full table name", "error", err)
-		return defaultDatabase, defaultSchema, ""
+func tableReferenceFromTableExpr(expr ast.TableExpr, defaultDatabase, defaultSchema string) (*TableReference, error) {
+	ref, ok := expr.(*ast.TableRef)
+	if !ok {
+		return nil, errors.Errorf("unsupported DML target table source %T", expr)
 	}
 	schemaName := defaultSchema
-	if name.Schema != "" {
-		schemaName = name.Schema
+	if ref.Schema != "" {
+		schemaName = ref.Schema
 	}
 	databaseName := defaultDatabase
-	if name.Database != "" {
-		databaseName = name.Database
+	if ref.Database != "" {
+		databaseName = ref.Database
 	}
-	return databaseName, schemaName, name.Table
+	return &TableReference{
+		Database: databaseName,
+		Schema:   schemaName,
+		Table:    ref.Object,
+		Alias:    ref.Alias,
+	}, nil
+}
+
+func findPhysicalTableForAlias(list *ast.List, table *TableReference) *TableReference {
+	if list == nil || table == nil {
+		return nil
+	}
+	for _, item := range list.Items {
+		if result := findPhysicalTableForAliasInNode(item, table); result != nil {
+			return result
+		}
+	}
+	return nil
+}
+
+func findPhysicalTableForAliasInNode(node ast.Node, table *TableReference) *TableReference {
+	switch n := node.(type) {
+	case *ast.TableRef:
+		if n.Alias != "" && n.Alias == table.Table {
+			ref, err := tableReferenceFromTableExpr(n, table.Database, table.Schema)
+			if err != nil {
+				return nil
+			}
+			ref.Alias = n.Alias
+			return ref
+		}
+	case *ast.AliasedTableRef:
+		if ref, ok := n.Table.(*ast.TableRef); ok && n.Alias == table.Table {
+			result, err := tableReferenceFromTableExpr(ref, table.Database, table.Schema)
+			if err != nil {
+				return nil
+			}
+			result.Alias = n.Alias
+			return result
+		}
+	case *ast.JoinClause:
+		if result := findPhysicalTableForAliasInNode(n.Left, table); result != nil {
+			return result
+		}
+		return findPhysicalTableForAliasInNode(n.Right, table)
+	default:
+	}
+	return nil
+}
+
+func dmlFromSource(source string, relation ast.TableExpr, fromClause *ast.List, stmtLoc ast.Loc, where ast.ExprNode, option *ast.List) (string, int) {
+	if fromClause != nil && len(fromClause.Items) > 0 {
+		loc := listLoc(fromClause)
+		end := dmlTailStart(source, loc.End, stmtLoc, where, option)
+		if end < 0 {
+			end = trimDMLStatementEnd(source, stmtLoc.End)
+		}
+		return strings.TrimSpace(source[loc.Start:end]), end
+	}
+	loc := dmlNodeLoc(relation)
+	return sourceFromLoc(source, loc), loc.End
+}
+
+func buildDMLFromClause(source, fromSource string, searchStart int, stmtLoc ast.Loc, where ast.ExprNode, option *ast.List) string {
+	if fromSource == "" {
+		return ""
+	}
+	tail := dmlTrailingClause(source, searchStart, stmtLoc, where, option)
+	if tail == "" {
+		return "FROM " + fromSource
+	}
+	return "FROM " + fromSource + " " + tail
+}
+
+func dmlTrailingClause(source string, searchStart int, stmtLoc ast.Loc, where ast.ExprNode, option *ast.List) string {
+	end := trimDMLStatementEnd(source, stmtLoc.End)
+	start := dmlTailStart(source, searchStart, stmtLoc, where, option)
+	if start < 0 || start >= end {
+		return ""
+	}
+	return strings.TrimSpace(source[start:end])
+}
+
+func dmlTailStart(source string, searchStart int, _ ast.Loc, where ast.ExprNode, option *ast.List) int {
+	if where != nil {
+		if start := findKeywordBefore(source, "WHERE", dmlNodeLoc(where).Start, searchStart); start >= 0 {
+			return start
+		}
+	}
+	if option != nil {
+		return findKeywordAfter(source, "OPTION", searchStart, len(source))
+	}
+	return -1
+}
+
+func trimDMLStatementEnd(source string, end int) int {
+	if end > len(source) {
+		end = len(source)
+	}
+	for end > 0 {
+		switch source[end-1] {
+		case ';', ' ', '\t', '\r', '\n':
+			end--
+		default:
+			return end
+		}
+	}
+	return end
+}
+
+func findKeywordBefore(source, keyword string, before int, after int) int {
+	if before > len(source) {
+		before = len(source)
+	}
+	if after < 0 {
+		after = 0
+	}
+	return findKeywordOutsideSQL(source, keyword, after, before, true)
+}
+
+func findKeywordAfter(source, keyword string, start int, end int) int {
+	if start < 0 {
+		start = 0
+	}
+	if end > len(source) {
+		end = len(source)
+	}
+	return findKeywordOutsideSQL(source, keyword, start, end, false)
+}
+
+func findKeywordOutsideSQL(source, keyword string, start, end int, last bool) int {
+	if start >= end {
+		return -1
+	}
+	result := -1
+	for i := start; i < end; {
+		switch source[i] {
+		case '\'':
+			i = skipQuotedSQL(source, i, end, '\'')
+		case '"':
+			i = skipQuotedSQL(source, i, end, '"')
+		case '[':
+			i = skipQuotedSQL(source, i, end, ']')
+		case '-':
+			if i+1 < end && source[i+1] == '-' {
+				i = skipLineComment(source, i+2, end)
+				continue
+			}
+			if keywordMatchAt(source, keyword, i, start, end) {
+				if !last {
+					return i
+				}
+				result = i
+				i += len(keyword)
+				continue
+			}
+			i++
+		case '/':
+			if i+1 < end && source[i+1] == '*' {
+				i = skipBlockComment(source, i+2, end)
+				continue
+			}
+			if keywordMatchAt(source, keyword, i, start, end) {
+				if !last {
+					return i
+				}
+				result = i
+				i += len(keyword)
+				continue
+			}
+			i++
+		default:
+			if keywordMatchAt(source, keyword, i, start, end) {
+				if !last {
+					return i
+				}
+				result = i
+				i += len(keyword)
+				continue
+			}
+			i++
+		}
+	}
+	return result
+}
+
+func keywordMatchAt(source, keyword string, offset, start, end int) bool {
+	if offset+len(keyword) > end || !strings.EqualFold(source[offset:offset+len(keyword)], keyword) {
+		return false
+	}
+	if offset > start && isSQLIdentifierChar(source[offset-1]) {
+		return false
+	}
+	if offset+len(keyword) < end && isSQLIdentifierChar(source[offset+len(keyword)]) {
+		return false
+	}
+	return true
+}
+
+func isSQLIdentifierChar(ch byte) bool {
+	return ch == '_' || ch == '@' || ch == '#' || ch == '$' ||
+		(ch >= '0' && ch <= '9') ||
+		(ch >= 'A' && ch <= 'Z') ||
+		(ch >= 'a' && ch <= 'z')
+}
+
+func skipQuotedSQL(source string, start, end int, closeCh byte) int {
+	i := start + 1
+	for i < end {
+		if source[i] == closeCh {
+			if i+1 < end && source[i+1] == closeCh {
+				i += 2
+				continue
+			}
+			return i + 1
+		}
+		i++
+	}
+	return end
+}
+
+func skipLineComment(source string, start, end int) int {
+	for start < end && source[start] != '\n' {
+		start++
+	}
+	return start
+}
+
+func skipBlockComment(source string, start, end int) int {
+	depth := 1
+	for start+1 < end {
+		switch {
+		case source[start] == '/' && source[start+1] == '*':
+			depth++
+			start += 2
+		case source[start] == '*' && source[start+1] == '/':
+			depth--
+			start += 2
+			if depth == 0 {
+				return start
+			}
+		default:
+			start++
+		}
+	}
+	return end
+}
+
+func sourceFromLoc(source string, loc ast.Loc) string {
+	if loc.Start < 0 || loc.End < 0 || loc.Start >= len(source) {
+		return ""
+	}
+	end := loc.End
+	if end > len(source) {
+		end = len(source)
+	}
+	return strings.TrimSpace(source[loc.Start:end])
+}
+
+func positionFromByteOffset(start *storepb.Position, source string, offset int) *storepb.Position {
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= len(source) && len(source) > 0 {
+		offset = len(source) - 1
+	}
+	line, column := base.CalculateLineAndColumn(source, offset)
+	startLine := int32(1)
+	if start != nil {
+		startLine = start.Line
+	}
+	return &storepb.Position{
+		Line:   startLine + int32(line),
+		Column: int32(column),
+	}
+}
+
+func dmlEndOffset(source string, loc ast.Loc) int {
+	if loc.End >= 0 && loc.End < len(source) && source[loc.End] == ';' {
+		return loc.End
+	}
+	return loc.End - 1
+}
+
+func listLoc(list *ast.List) ast.Loc {
+	if list == nil || len(list.Items) == 0 {
+		return ast.NoLoc()
+	}
+	return ast.Loc{
+		Start: dmlNodeLoc(list.Items[0]).Start,
+		End:   dmlNodeLoc(list.Items[len(list.Items)-1]).End,
+	}
+}
+
+func dmlNodeLoc(node ast.Node) ast.Loc {
+	if common.IsNil(node) {
+		return ast.NoLoc()
+	}
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return n.Loc
+	case *ast.DeleteStmt:
+		return n.Loc
+	case *ast.TopClause:
+		return n.Loc
+	case *ast.TableRef:
+		return n.Loc
+	case *ast.TableVarRef:
+		return n.Loc
+	case *ast.TableVarMethodCallRef:
+		return n.Loc
+	case *ast.AliasedTableRef:
+		return n.Loc
+	case *ast.JoinClause:
+		loc := n.Loc
+		leftLoc := dmlNodeLoc(n.Left)
+		if leftLoc.Start >= 0 && (loc.Start < 0 || leftLoc.Start < loc.Start) {
+			loc.Start = leftLoc.Start
+		}
+		return loc
+	case *ast.SetExpr:
+		return n.Loc
+	default:
+		loc := omniNodeLoc(node)
+		if loc.Start >= 0 {
+			return loc
+		}
+		return ast.NoLoc()
+	}
 }
