@@ -307,11 +307,12 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 	if err := s.IsFeatureEnabled(ctx, workspaceID, f); err != nil {
 		return err
 	}
-	if s.IsUnifiedInstanceLicense(ctx, workspaceID) {
-		return nil
-	}
-	if !instance.Metadata.GetActivation() {
-		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, f.String(), instance.ResourceID)
+	if !s.IsInstanceEffectivelyActivated(ctx, workspaceID, instance) {
+		instanceID := ""
+		if instance != nil {
+			instanceID = instance.ResourceID
+		}
+		return errors.Errorf(`feature "%s" requires an activated instance under the current license: %s`, f.String(), instanceID)
 	}
 	return nil
 }
@@ -376,6 +377,14 @@ func (s *LicenseService) IsUnifiedInstanceLicense(ctx context.Context, workspace
 		s.GetInstanceLimit(ctx, workspaceID),
 		s.GetActivatedInstanceLimit(ctx, workspaceID),
 	)
+}
+
+// IsInstanceEffectivelyActivated returns whether the instance can use instance-gated features.
+func (s *LicenseService) IsInstanceEffectivelyActivated(ctx context.Context, workspaceID string, instance *store.InstanceMessage) bool {
+	if instance == nil {
+		return false
+	}
+	return instance.Metadata.GetActivation() || s.IsUnifiedInstanceLicense(ctx, workspaceID)
 }
 
 // StoreLicense will store license into file.

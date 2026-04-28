@@ -520,7 +520,11 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 }
 
 func (s *Syncer) getOrDefaultSyncInterval(ctx context.Context, instance *store.InstanceMessage) time.Duration {
-	if !instance.Metadata.GetActivation() && (s.licenseService == nil || !s.licenseService.IsUnifiedInstanceLicense(ctx, instance.Workspace)) {
+	activated := instance.Metadata.GetActivation()
+	if s.licenseService != nil {
+		activated = s.licenseService.IsInstanceEffectivelyActivated(ctx, instance.Workspace, instance)
+	}
+	if !activated {
 		return defaultSyncInterval
 	}
 	if !instance.Metadata.GetSyncInterval().IsValid() {

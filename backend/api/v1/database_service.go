@@ -998,10 +998,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	if database.EffectiveEnvironmentID != nil && *database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = new(common.FormatEnvironment(*database.EffectiveEnvironmentID))
 	}
-	instanceResource := convertToV1InstanceResource(instance)
-	if s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx)) {
-		instanceResource = convertToV1InstanceResourceWithEffectiveActivation(instance, true)
-	}
+	instanceResource := convertToV1InstanceResource(
+		instance,
+		s.licenseService.IsInstanceEffectivelyActivated(ctx, common.GetWorkspaceIDFromContext(ctx), instance),
+	)
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		State:                convertDeletedToState(database.Deleted),

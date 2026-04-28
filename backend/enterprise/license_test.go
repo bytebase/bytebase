@@ -80,6 +80,38 @@ func TestIsFeatureEnabledForInstanceSplitLicense(t *testing.T) {
 	}
 }
 
+func TestIsInstanceEffectivelyActivated(t *testing.T) {
+	ctx := context.Background()
+	instance := &store.InstanceMessage{
+		ResourceID: "prod",
+		Workspace:  "test-workspace",
+		Metadata:   &storepb.Instance{Activation: false},
+	}
+
+	unifiedService := newTestLicenseService(&v1pb.Subscription{
+		Plan:            v1pb.PlanType_ENTERPRISE,
+		Instances:       10,
+		ActiveInstances: 10,
+	})
+	if !unifiedService.IsInstanceEffectivelyActivated(ctx, "test-workspace", instance) {
+		t.Fatal("unified license should effectively activate stored inactive instance")
+	}
+
+	splitService := newTestLicenseService(&v1pb.Subscription{
+		Plan:            v1pb.PlanType_ENTERPRISE,
+		Instances:       50,
+		ActiveInstances: 20,
+	})
+	if splitService.IsInstanceEffectivelyActivated(ctx, "test-workspace", instance) {
+		t.Fatal("split license should use stored inactive state")
+	}
+
+	instance.Metadata.Activation = true
+	if !splitService.IsInstanceEffectivelyActivated(ctx, "test-workspace", instance) {
+		t.Fatal("split license should keep stored active state")
+	}
+}
+
 func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	claims := newLicenseClaims(&LicenseParams{
 		Plan:        v1pb.PlanType_ENTERPRISE.String(),

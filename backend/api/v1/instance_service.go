@@ -111,9 +111,9 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	response := &v1pb.ListInstancesResponse{
 		NextPageToken: nextPageToken,
 	}
-	unified := s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx))
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	for _, instance := range instances {
-		ins := convertToV1InstanceWithUnifiedMode(instance, unified)
+		ins := convertToV1Instance(instance, s.licenseService.IsInstanceEffectivelyActivated(ctx, workspaceID, instance))
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -215,15 +215,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return connect.NewResponse(result), nil
 	}
 
-	if instanceMessage.Metadata.GetActivation() && !s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
-		activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if count >= activatedInstanceLimit {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
-		}
+	if err := s.checkActivationLimit(ctx, workspaceID, instanceMessage.Metadata.GetActivation()); err != nil {
+		return nil, err
 	}
 
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
@@ -260,14 +253,7 @@ func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Ins
 }
 
 func (s *InstanceService) convertToV1Instance(ctx context.Context, instance *store.InstanceMessage) *v1pb.Instance {
-	return convertToV1InstanceWithUnifiedMode(instance, s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx)))
-}
-
-func convertToV1InstanceWithUnifiedMode(instance *store.InstanceMessage, unified bool) *v1pb.Instance {
-	if unified {
-		return convertToV1InstanceWithEffectiveActivation(instance, true)
-	}
-	return convertToV1Instance(instance)
+	return convertToV1Instance(instance, s.licenseService.IsInstanceEffectivelyActivated(ctx, common.GetWorkspaceIDFromContext(ctx), instance))
 }
 
 func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
@@ -409,6 +395,21 @@ func parseInlinePrivateKey(der []byte) (any, error) {
 }
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
+
+func (s *InstanceService) checkActivationLimit(ctx context.Context, workspaceID string, activating bool) error {
+	if !activating || s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		return nil
+	}
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
+	count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if count >= activatedInstanceLimit {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
+	}
+	return nil
+}
 
 func (s *InstanceService) checkDataSource(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
@@ -569,15 +570,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	if updateActivation && !s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
-		activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if count >= activatedInstanceLimit {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
-		}
+	if err := s.checkActivationLimit(ctx, workspaceID, updateActivation); err != nil {
+		return nil, err
 	}
 
 	ins, err := s.store.UpdateInstance(ctx, patch)
