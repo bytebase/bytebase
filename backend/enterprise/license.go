@@ -316,27 +316,6 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 	return nil
 }
 
-// GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
-func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspaceID string) int {
-	limit := s.LoadSubscription(ctx, workspaceID).ActiveInstances
-	if limit < 0 {
-		return math.MaxInt
-	}
-	return int(limit)
-}
-
-func isUnifiedInstanceLimit(instanceLimit, activatedInstanceLimit int) bool {
-	return instanceLimit <= activatedInstanceLimit
-}
-
-// IsUnifiedInstanceLicense returns whether every registrable instance is effectively activated.
-func (s *LicenseService) IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool {
-	return isUnifiedInstanceLimit(
-		s.GetInstanceLimit(ctx, workspaceID),
-		s.GetActivatedInstanceLimit(ctx, workspaceID),
-	)
-}
-
 // GetUserLimit gets the user limit value for the plan.
 func (s *LicenseService) GetUserLimit(ctx context.Context, workspaceID string) int {
 	subscription := s.LoadSubscription(ctx, workspaceID)
@@ -376,6 +355,27 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context, workspaceID strin
 		limit = math.MaxInt
 	}
 	return limit
+}
+
+// GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
+func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspaceID string) int {
+	limit := s.LoadSubscription(ctx, workspaceID).ActiveInstances
+	if limit < 0 {
+		return math.MaxInt
+	}
+	return int(limit)
+}
+
+func isUnifiedInstanceLimit(instanceLimit, activatedInstanceLimit int) bool {
+	return instanceLimit <= activatedInstanceLimit
+}
+
+// IsUnifiedInstanceLicense returns whether every registrable instance is effectively activated.
+func (s *LicenseService) IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool {
+	return isUnifiedInstanceLimit(
+		s.GetInstanceLimit(ctx, workspaceID),
+		s.GetActivatedInstanceLimit(ctx, workspaceID),
+	)
 }
 
 // StoreLicense will store license into file.
