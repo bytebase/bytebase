@@ -34,6 +34,7 @@ func TestSyncDatabaseSchemaNilDatabase(t *testing.T) {
 }
 
 func TestGetOrDefaultSyncIntervalUsesEffectiveActivation(t *testing.T) {
+	ctx := context.Background()
 	customInterval := 10 * time.Minute
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
@@ -41,7 +42,10 @@ func TestGetOrDefaultSyncIntervalUsesEffectiveActivation(t *testing.T) {
 			SyncInterval: durationpb.New(customInterval),
 		},
 	}
+	s := &Syncer{}
 
-	require.Equal(t, defaultSyncInterval, getOrDefaultSyncInterval(instance, false))
-	require.Equal(t, customInterval, getOrDefaultSyncInterval(instance, true))
+	require.Equal(t, defaultSyncInterval, s.getOrDefaultSyncInterval(ctx, instance))
+
+	instance.Metadata.Activation = true
+	require.Equal(t, customInterval, s.getOrDefaultSyncInterval(ctx, instance))
 }

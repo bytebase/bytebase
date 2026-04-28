@@ -178,7 +178,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	now := time.Now()
 	for _, instance := range instances {
 		instance := instance
-		interval := getOrDefaultSyncInterval(instance, s.instanceEffectivelyActivated(ctx, instance))
+		interval := s.getOrDefaultSyncInterval(ctx, instance)
 		if interval == defaultSyncInterval {
 			continue
 		}
@@ -221,7 +221,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 		// The database inherits the sync interval from the instance.
-		interval := getOrDefaultSyncInterval(instance, s.instanceEffectivelyActivated(ctx, instance))
+		interval := s.getOrDefaultSyncInterval(ctx, instance)
 		if interval == defaultSyncInterval {
 			continue
 		}
@@ -519,15 +519,8 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 	return false
 }
 
-func (s *Syncer) instanceEffectivelyActivated(ctx context.Context, instance *store.InstanceMessage) bool {
-	if instance.Metadata.GetActivation() {
-		return true
-	}
-	return s.licenseService.IsUnifiedInstanceLicense(ctx, instance.Workspace)
-}
-
-func getOrDefaultSyncInterval(instance *store.InstanceMessage, effectivelyActivated bool) time.Duration {
-	if !effectivelyActivated {
+func (s *Syncer) getOrDefaultSyncInterval(ctx context.Context, instance *store.InstanceMessage) time.Duration {
+	if !instance.Metadata.GetActivation() && (s.licenseService == nil || !s.licenseService.IsUnifiedInstanceLicense(ctx, instance.Workspace)) {
 		return defaultSyncInterval
 	}
 	if !instance.Metadata.GetSyncInterval().IsValid() {
