@@ -20,6 +20,7 @@ export function ColumnResizeHandle({
         className
       )}
       onMouseDown={onMouseDown}
+      onClick={(e) => e.stopPropagation()}
     />
   );
 }
