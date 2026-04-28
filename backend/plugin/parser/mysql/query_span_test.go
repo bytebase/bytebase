@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -147,15 +146,19 @@ func TestExtractTableRefs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		parseResult, err := ParseMySQL(test.statement)
+		parseResult, err := ParseMySQLOmni(test.statement)
 		require.NoError(t, err, "failed to parse statement: %s", test.statement)
-		require.Len(t, parseResult, 1, "expected one parse result for statement: %s", test.statement)
-		require.NotNil(t, parseResult[0].Tree, "parse tree is nil for statement: %s", test.statement)
+		require.Len(t, parseResult.Items, 1, "expected one parse result for statement: %s", test.statement)
 
-		tree, ok := parseResult[0].Tree.(antlr.ParserRuleContext)
-		require.True(t, ok, "expected parse tree to be of type antlr.RuleContext for statement: %s", test.statement)
-
-		resources := extractTableRefs("db", tree)
-		require.Equal(t, test.expected, resources, test.statement)
+		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db")
+		var resources []base.SchemaResource
+		for resource := range sourceColumns {
+			resources = append(resources, base.SchemaResource{
+				Database: resource.Database,
+				Schema:   resource.Schema,
+				Table:    resource.Table,
+			})
+		}
+		require.ElementsMatch(t, test.expected, resources, test.statement)
 	}
 }
