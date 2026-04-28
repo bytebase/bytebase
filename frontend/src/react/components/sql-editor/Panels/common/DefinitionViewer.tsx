@@ -116,6 +116,7 @@ export function DefinitionViewer({
 
   return (
     <ReadonlyMonaco
+      autoHeight={false}
       content={content}
       className="w-full h-full relative"
       options={{ automaticLayout: true }}

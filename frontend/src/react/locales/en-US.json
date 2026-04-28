@@ -340,6 +340,7 @@
     "pending": "Pending",
     "permissions": "Permissions",
     "plan": "Plan",
+    "preview": "Preview",
     "previous": "Previous",
     "project": "Project",
     "projects": "Projects",
@@ -2690,6 +2691,7 @@
     "save-sheet-input-placeholder": "Please input a sheet name",
     "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
+    "select-encoding": "Select encoding",
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "sync-in-progress": "Sync in progress",
@@ -2709,6 +2711,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "view-database-detail": "View database detail",
     "view-detail": "View detail",

@@ -22,6 +22,7 @@ import {
 import { batchConvertPositionToMonacoPosition } from "@/utils/v1/position";
 import {
   createMonacoEditor,
+  getResolvedTheme,
   loadMonacoEditor,
   setMonacoModelLanguage,
 } from "./core";
@@ -61,6 +62,15 @@ export interface MonacoEditorProps {
   advices?: AdviceOption[];
   autoCompleteContext?: AutoCompleteContext;
   autoFocus?: boolean;
+  /**
+   * When `true` (default), the editor's height grows with content,
+   * clamped to `[min, max]`. When `false`, the inner editor container
+   * fills its parent's height (`h-full`) and `min`/`max` are ignored.
+   * Use the parent-fill mode for surfaces like the worksheet
+   * `SQLEditor`, where the editor is expected to occupy the full
+   * height of an `NSplit`/flex column.
+   */
+  autoHeight?: boolean;
   className?: string;
   content: string;
   cornerPrefix?: ReactNode;
@@ -87,6 +97,7 @@ export function MonacoEditor({
   advices = [],
   autoCompleteContext,
   autoFocus = false,
+  autoHeight = true,
   className = "",
   content,
   cornerPrefix,
@@ -254,6 +265,19 @@ export function MonacoEditor({
 
       editorRef.current = editor;
       const monaco = await loadMonacoEditor();
+      // Re-apply the editor's intended theme after construction.
+      // Monaco's theme is global — when a previous editor was
+      // constructed with a different theme (e.g. CompactSQLEditor's
+      // `vs-dark` for admin mode), that theme persists across editor
+      // disposal. If the new editor's requested theme isn't
+      // registered (the custom `bb` theme is silently swallowed by
+      // the vscode-api theme service override in some runtime modes
+      // — see `initializeTheme` in core.ts), `setTheme` becomes a
+      // no-op and the dark theme stays stuck.
+      // `getResolvedTheme` returns the requested theme if it's known
+      // to be registered, otherwise falls back to the always-available
+      // built-in `vs`.
+      monaco.editor.setTheme(getResolvedTheme(optionsRef.current?.theme));
       const model = await getOrCreateTextModel(
         generatedFilename,
         contentRef.current,
@@ -359,8 +383,15 @@ export function MonacoEditor({
       modelRef.current = null;
       host.remove();
     };
+    // `autoCompleteContext` is intentionally NOT a dep here — its value
+    // is consumed by the dedicated `setMetadata` effect below. Keeping
+    // it in the dep array forced an editor dispose+recreate on every
+    // connection-state hydration, and the new editor lost its LSP
+    // metadata because the metadata effect didn't re-fire (the context
+    // reference itself was stable across the recreation). Only
+    // `shouldEnableLSP` (boolean) is needed here to drive the WS
+    // initialization at mount time.
   }, [
-    autoCompleteContext,
     autoFocus,
     dialect,
     enableDecorations,
@@ -444,14 +475,30 @@ export function MonacoEditor({
     };
   }, [lineHighlights]);
 
+  // LSP `setMetadata` — must run *after* the editor + its model are
+  // attached so the language server has a document to bind the
+  // metadata to. We gate on `ready`, which the big editor effect
+  // flips true once `editor.setModel(model)` has run. Mirrors Vue's
+  // `useAutoComplete` call site, which lives inside the post-setup
+  // path of `MonacoTextModelEditor.vue`.
+  //
+  // Skipped entirely when the caller does not opt in to SQL LSP via
+  // `autoCompleteContext`, so editors like `SchemaEditorLite` that mount
+  // a writable Monaco for plain text editing don't initialize the LSP
+  // client or send empty `setMetadata` traffic.
   useEffect(() => {
-    if (readOnly || !autoCompleteContext) return;
+    if (readOnly || !ready) return;
     const ctx = autoCompleteContext;
-    const params = {
+    if (!ctx) return;
+    const params: {
+      instanceId: string;
+      databaseName: string;
+      scene?: string;
+      schema?: string;
+    } = {
       instanceId: "",
       databaseName: "",
       scene: ctx.scene,
-      schema: ctx.schema,
     };
     const instance = extractInstanceResourceName(ctx.instance);
     if (instance && instance !== String(UNKNOWN_ID)) {
@@ -461,6 +508,9 @@ export function MonacoEditor({
     if (databaseName && databaseName !== String(UNKNOWN_ID)) {
       params.databaseName = databaseName;
     }
+    if (ctx.schema !== undefined) {
+      params.schema = ctx.schema;
+    }
     const apply = debounce(async () => {
       const client = await initializeLSPClient();
       await executeCommand(client, "setMetadata", [params]);
@@ -469,16 +519,22 @@ export function MonacoEditor({
     return () => {
       apply.cancel();
     };
-  }, [autoCompleteContext, readOnly]);
+  }, [autoCompleteContext, readOnly, ready]);
 
   const height = clampMeasuredHeight(contentHeight);
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative", autoHeight ? "" : "h-full", className)}>
       <div
         ref={containerRef}
-        className={cn("w-full overflow-clip rounded-md border text-sm")}
-        style={{ height }}
+        className={cn(
+          "w-full overflow-clip text-sm",
+          // Match Vue's `bb-monaco-editor` — flush against the host
+          // shell with no border or rounded corners. Consumers that
+          // want a chrome can wrap the component themselves.
+          autoHeight ? "" : "h-full"
+        )}
+        style={autoHeight ? { height } : undefined}
       />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
