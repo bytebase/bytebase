@@ -194,17 +194,21 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.ExternalUrl = externalURL
 
-		activatedInstanceCount, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count activated instance"))
-		}
-		serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
-
 		activeInstanceCount, err := s.store.CountActiveInstances(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count total instance"))
 		}
 		serverInfo.TotalInstanceCount = int32(activeInstanceCount)
+
+		if s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+			serverInfo.ActivatedInstanceCount = int32(activeInstanceCount)
+		} else {
+			activatedInstanceCount, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count activated instance"))
+			}
+			serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
+		}
 	}
 
 	return &serverInfo, nil

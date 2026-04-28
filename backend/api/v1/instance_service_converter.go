@@ -34,6 +34,12 @@ func convertToV1Instance(instance *store.InstanceMessage) *v1pb.Instance {
 	}
 }
 
+func convertToV1InstanceWithEffectiveActivation(instance *store.InstanceMessage, effectiveActivation bool) *v1pb.Instance {
+	result := convertToV1Instance(instance)
+	result.Activation = effectiveActivation
+	return result
+}
+
 // buildRoleName builds the role name with the given instance ID and role name.
 func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
 	b.Reset()

@@ -61,7 +61,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, err
 	}
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -112,7 +112,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 		NextPageToken: nextPageToken,
 	}
 	for _, instance := range instances {
-		ins := convertToV1Instance(instance)
+		ins := s.convertToV1Instance(ctx, instance)
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -210,12 +210,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 			}
 		}
 
-		result := convertToV1Instance(instanceMessage)
+		result := s.convertToV1Instance(ctx, instanceMessage)
 		return connect.NewResponse(result), nil
 	}
 
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-	if instanceMessage.Metadata.GetActivation() {
+	if instanceMessage.Metadata.GetActivation() && !s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
 		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -248,7 +248,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -256,6 +256,13 @@ func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Ins
 	candidate := *instance
 	candidate.Metadata = metadata
 	return &candidate
+}
+
+func (s *InstanceService) convertToV1Instance(ctx context.Context, instance *store.InstanceMessage) *v1pb.Instance {
+	if s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx)) {
+		return convertToV1InstanceWithEffectiveActivation(instance, true)
+	}
+	return convertToV1Instance(instance)
 }
 
 func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
@@ -557,8 +564,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-	if updateActivation {
+	if updateActivation && !s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
 		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -572,7 +579,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertToV1Instance(ins)
+	result := s.convertToV1Instance(ctx, ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -659,7 +666,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 	// Idempotent: if already active, return the instance
 	if !instance.Deleted {
-		result := convertToV1Instance(instance)
+		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
@@ -682,7 +689,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		}
 	}
 
-	result := convertToV1Instance(ins)
+	result := s.convertToV1Instance(ctx, ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -817,7 +824,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
+		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
@@ -834,7 +841,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -1035,7 +1042,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
+		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
@@ -1047,7 +1054,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -1094,7 +1101,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
