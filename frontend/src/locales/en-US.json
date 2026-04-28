@@ -2655,7 +2655,6 @@
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit"
     },
-    "max-instance-count": "Max Instance Count",
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
     },

@@ -2655,7 +2655,6 @@
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },
-    "max-instance-count": "最大インスタンス数",
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
     },

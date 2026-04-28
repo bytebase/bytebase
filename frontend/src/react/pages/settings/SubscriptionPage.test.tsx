@@ -46,21 +46,16 @@ vi.mock("@/react/components/ui/textarea", () => ({
   ),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: <T,>(getter: () => T) => getter(),
-}));
-
-vi.mock("@/store", () => ({
-  getWorkspaceId: () => "workspace-id",
-  pushNotification: vi.fn(),
-  useActuatorV1Store: () => ({
+vi.mock("@/react/hooks/useAppState", () => ({
+  useNotify: () => vi.fn(),
+  useServerState: () => ({
     activatedInstanceCount: 2,
     isSaaSMode: false,
     totalInstanceCount: 3,
     userCountInIam: 4,
     workspaceResourceName: "workspaces/workspace-id",
   }),
-  useSubscriptionV1Store: () => ({
+  useSubscriptionState: () => ({
     currentPlan: PlanType.ENTERPRISE,
     expireAt: "",
     hasUnifiedInstanceLicense: true,

@@ -2655,7 +2655,6 @@
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制"
     },
-    "max-instance-count": "最大实例数量",
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
     },

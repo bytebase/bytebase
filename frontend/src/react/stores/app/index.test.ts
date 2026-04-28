@@ -329,9 +329,40 @@ describe("useAppStore", () => {
     expect(store.getState().instanceCountLimit()).toBe(Number.MAX_VALUE);
     expect(store.getState().userCountLimit()).toBe(Number.MAX_VALUE);
     expect(store.getState().instanceLicenseCount()).toBe(Number.MAX_VALUE);
+    expect(store.getState().hasUnifiedInstanceLicense()).toBe(true);
     expect(store.getState().hasFeature(PlanFeature.FEATURE_DATA_MASKING)).toBe(
       true
     );
+    expect(
+      store.getState().hasInstanceFeature(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(true);
+    expect(
+      store.getState().instanceMissingLicense(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(false);
+
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        instances: 50,
+        activeInstances: 20,
+        expiresTime: timestampSeconds(
+          Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+        ),
+      }),
+    });
+    expect(store.getState().hasUnifiedInstanceLicense()).toBe(false);
     expect(
       store.getState().hasInstanceFeature(
         PlanFeature.FEATURE_DATA_MASKING,
