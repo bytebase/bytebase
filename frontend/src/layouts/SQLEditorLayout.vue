@@ -5,7 +5,7 @@
       class="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-999999"
     ></ul>
 
-    <BannersWrapper />
+    <ReactPageMount page="BannersWrapper" container-class="w-full" />
     <template v-if="ready">
       <ProvideSQLEditorContext />
     </template>
@@ -15,8 +15,8 @@
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";

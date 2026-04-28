@@ -2691,9 +2691,6 @@
     "title": "SQL Review"
   },
   "subscription": {
-    "button": {
-      "upgrade": "Upgrade"
-    },
     "contact-to-upgrade": "Contact your Workspace admin to upgrade the plan.",
     "contact-us": "Contact us",
     "current": "Current",
@@ -2718,7 +2715,6 @@
     "overuse-modal": {
       "description": "You are using features unavailable in the {plan}. Upgrade now to ensure continued access:"
     },
-    "overuse-warning": "{neededPlan} on {currentPlan} will be restricted. Upgrade now to ensure continued access.",
     "plan": {
       "enterprise": {
         "title": "Enterprise"

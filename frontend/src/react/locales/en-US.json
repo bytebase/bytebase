@@ -157,7 +157,13 @@
   },
   "auth.token-expired-title": "Token expired",
   "banner": {
-    "external-url": "Bytebase has not configured --external-url"
+    "cloud": "Cloud",
+    "deploy": "Self Host",
+    "external-url": "Bytebase has not configured --external-url",
+    "license-expired": "Your license for {{plan}} has expired on {{expireAt}}.",
+    "license-expires": "Your license for {{plan}} will expire in {{days}} days on {{expireAt}}.",
+    "request-demo": "Book a 30-minute product demo.",
+    "trial-expires": "Your free trial for {{plan}} will expire in {{days}} days on {{expireAt}}."
   },
   "bbkit": {
     "confirm-button": {
@@ -3495,6 +3501,10 @@
       "used-and-total-user": "Active / Total User Limit"
     },
     "max-instance-count": "Max instance count",
+    "overuse-modal": {
+      "description": "You are using features unavailable in the {{plan}}. Upgrade now to ensure continued access:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> on {{currentPlan}} will be restricted. Upgrade now to ensure continued access.",
     "plan": {
       "enterprise": {
         "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
@@ -3515,6 +3525,7 @@
       "try": "Start free trial"
     },
     "plan-compare": "Compare features between different plans",
+    "plan-features": "{{plan}} Features",
     "purchase": {
       "accept-terms-prefix": "I accept the",
       "and": "and",
@@ -3561,6 +3572,8 @@
         "title": "Successfully updated license"
       }
     },
+    "upgrade": "Upgrade",
+    "upgrade-now": "Upgrade Now",
     "upload-license": "Upload license",
     "usage": {
       "instance-count": {

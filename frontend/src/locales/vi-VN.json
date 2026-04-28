@@ -2691,9 +2691,6 @@
     "title": "Đánh giá SQL"
   },
   "subscription": {
-    "button": {
-      "upgrade": "Nâng cấp"
-    },
     "contact-to-upgrade": "Liên hệ với quản trị viên Không gian làm việc của bạn để nâng cấp gói.",
     "contact-us": "Liên hệ chúng tôi",
     "current": "Hiện tại",
@@ -2718,7 +2715,6 @@
     "overuse-modal": {
       "description": "Bạn đang sử dụng các tính năng không có trong {plan}. Nâng cấp ngay để đảm bảo quyền truy cập liên tục:"
     },
-    "overuse-warning": "{neededPlan} trên {currentPlan} sẽ bị hạn chế. Nâng cấp ngay để đảm bảo quyền truy cập liên tục.",
     "plan": {
       "enterprise": {
         "title": "Doanh nghiệp"
