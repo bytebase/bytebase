@@ -185,7 +185,13 @@ type plpgsqlAnalyzer struct {
 	// returnResults collects per-column source sets from all RETURN QUERY paths.
 	returnResults [][]base.SourceColumnSet
 	// cteMap holds CTE definitions for resolving column refs through CTEs.
-	cteMap map[string]*ast.SelectStmt
+	cteMap       map[string]*ast.SelectStmt
+	resolvingCTE map[cteResolveKey]bool
+}
+
+type cteResolveKey struct {
+	sel *ast.SelectStmt
+	col string
 }
 
 func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc, body string) ([]base.SourceColumnSet, error) {
@@ -621,14 +627,22 @@ func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
 // Note: funcSourceColumns only stores table-level access (via collectAccessTablesFromSQL),
 // so we don't add column-level entries to it here.
 func (a *plpgsqlAnalyzer) collectQueryPredicateColumns(q *catalog.Query) {
+	a.collectQueryPredicateColumnsWithVisited(q, make(map[*catalog.Query]bool))
+}
+
+func (a *plpgsqlAnalyzer) collectQueryPredicateColumnsWithVisited(q *catalog.Query, visited map[*catalog.Query]bool) {
 	if q == nil {
 		return
 	}
+	if visited[q] {
+		return
+	}
+	visited[q] = true
 
 	// Handle set operations recursively.
 	if q.SetOp != catalog.SetOpNone {
-		a.collectQueryPredicateColumns(q.LArg)
-		a.collectQueryPredicateColumns(q.RArg)
+		a.collectQueryPredicateColumnsWithVisited(q.LArg, visited)
+		a.collectQueryPredicateColumnsWithVisited(q.RArg, visited)
 		return
 	}
 
@@ -645,14 +659,14 @@ func (a *plpgsqlAnalyzer) collectQueryPredicateColumns(q *catalog.Query) {
 	// Recurse into CTEs.
 	for _, cte := range q.CTEList {
 		if cte.Query != nil {
-			a.collectQueryPredicateColumns(cte.Query)
+			a.collectQueryPredicateColumnsWithVisited(cte.Query, visited)
 		}
 	}
 
 	// Recurse into subqueries in FROM clause.
 	for _, rte := range q.RangeTable {
 		if rte.Kind == catalog.RTESubquery && rte.Subquery != nil {
-			a.collectQueryPredicateColumns(rte.Subquery)
+			a.collectQueryPredicateColumnsWithVisited(rte.Subquery, visited)
 		}
 	}
 }
@@ -987,6 +1001,18 @@ func (a *plpgsqlAnalyzer) resolveThroughCTE(cteSel *ast.SelectStmt, colName stri
 	if cteSel == nil || cteSel.TargetList == nil {
 		return
 	}
+	key := cteResolveKey{
+		sel: cteSel,
+		col: strings.ToLower(colName),
+	}
+	if a.resolvingCTE == nil {
+		a.resolvingCTE = make(map[cteResolveKey]bool)
+	}
+	if a.resolvingCTE[key] {
+		return
+	}
+	a.resolvingCTE[key] = true
+	defer delete(a.resolvingCTE, key)
 
 	// Build FROM tables for the CTE's query.
 	cteTables := a.collectFromTables(cteSel)
