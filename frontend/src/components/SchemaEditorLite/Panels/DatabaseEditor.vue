@@ -58,7 +58,7 @@
             :quaternary="state.selectedSubTab !== 'table-list'"
             @click="handleChangeTab('table-list')"
           >
-            <heroicons-outline:queue-list class="inline w-4 h-auto mr-1" />
+            <List class="inline w-4 h-auto mr-1" />
             {{ $t("schema-editor.tables") }}
           </NButton>
           <NTooltip :disabled="!schemaDiagramDisabled">
@@ -118,7 +118,7 @@
 
 <script lang="ts" setup>
 import { head, sumBy } from "lodash-es";
-import { PlusIcon } from "lucide-vue-next";
+import { List, PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";

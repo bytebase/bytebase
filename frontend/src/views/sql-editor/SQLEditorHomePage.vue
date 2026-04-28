@@ -13,7 +13,7 @@
         "
         @click="state.sidebarExpanded = !state.sidebarExpanded"
       >
-        <heroicons-outline:chevron-left
+        <ChevronLeft
           class="w-6 h-6 transition-transform"
           :class="[state.sidebarExpanded ? '' : '-scale-100']"
         />
@@ -65,6 +65,7 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
+import { ChevronLeft } from "lucide-vue-next";
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";

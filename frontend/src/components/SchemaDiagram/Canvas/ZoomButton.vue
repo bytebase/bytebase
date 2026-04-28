@@ -2,7 +2,7 @@
   <NButtonGroup size="tiny" class="bg-white rounded-sm">
     <NButton :disabled="zoom <= min" @click="$emit('zoom-out')">
       <template #icon>
-        <heroicons-outline:minus />
+        <Minus />
       </template>
     </NButton>
     <NButton ghost class="pointer-events-none">
@@ -10,13 +10,14 @@
     </NButton>
     <NButton :disabled="zoom >= max" @click="$emit('zoom-in')">
       <template #icon>
-        <heroicons-outline:plus />
+        <Plus />
       </template>
     </NButton>
   </NButtonGroup>
 </template>
 
 <script lang="ts" setup>
+import { Minus, Plus } from "lucide-vue-next";
 import { NButton, NButtonGroup } from "naive-ui";
 import { computed } from "vue";
 import { useSchemaDiagramContext } from "../common";

@@ -23,10 +23,10 @@
       </template>
     </InstanceV1Name>
 
-    <heroicons-outline:chevron-right class="text-control-light" />
+    <ChevronRight class="text-control-light" />
 
     <div class="flex items-center gap-x-1">
-      <heroicons-outline:database />
+      <Database />
 
       <template v-if="database">
         <EnvironmentV1Name
@@ -49,6 +49,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronRight, Database } from "lucide-vue-next";
 import { computed } from "vue";
 import {
   DatabaseV1Name,
@@ -56,12 +57,12 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Database as DatabaseProto } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    database: Database;
+    database: DatabaseProto;
     link?: boolean;
   }>(),
   {

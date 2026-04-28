@@ -54,7 +54,7 @@
               @click="DISMISS_PLACEHOLDER = false"
             >
               <template #icon>
-                <heroicons:academic-cap class="w-4 h-4" />
+                <GraduationCap class="w-4 h-4" />
               </template>
             </NButton>
           </template>
@@ -267,6 +267,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   CopyIcon,
+  GraduationCap,
   InfoIcon,
   XIcon,
 } from "lucide-vue-next";

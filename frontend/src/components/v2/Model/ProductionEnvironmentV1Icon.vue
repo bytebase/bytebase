@@ -1,7 +1,7 @@
 <template>
   <NTooltip v-if="enabled" :disabled="!tooltip" placement="top">
     <template #trigger>
-      <heroicons-solid:shield-exclamation
+      <ShieldAlert
         class="text-control inline-block shrink-0"
         :class="tooltip ? 'pointer-events-auto' : 'pointer-events-none'"
         v-bind="$attrs"
@@ -13,6 +13,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ShieldAlert } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
