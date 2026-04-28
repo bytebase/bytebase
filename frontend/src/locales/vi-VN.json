@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "Xóa chỉ mục?"
-    },
-    "select-tables-to-rollout": "Chọn bảng để triển khai",
-    "table-partition": {
-      "drop-partition-confirm": "Xóa phân vùng bảng?",
-      "drop-partition-with-subpartitions-confirm": "Cũng sẽ xóa tất cả các phân vùng con của nó."
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -1768,9 +1762,7 @@
     },
     "task-execution-errors": "Lỗi thực hiện tác vụ"
   },
-  "schema-designer": {
-    "use-tips": "Nhấp vào một bảng để bắt đầu."
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "Điều chỉnh nội dung vừa với khung nhìn",
     "self": "Sơ đồ Lược đồ"
@@ -1784,7 +1776,6 @@
       "create-table": "Bảng mới",
       "create-view": "Tạo khung nhìn",
       "drop": "Xóa",
-      "drop-column": "Xóa cột",
       "drop-schema": "Xóa lược đồ",
       "drop-table": "Xóa bảng",
       "rename": "Đổi tên",
@@ -1798,7 +1789,6 @@
       "not-null": "Không Null",
       "on-update": "Khi cập nhật",
       "primary": "Chính",
-      "select": "Chọn cột",
       "type": "Loại"
     },
     "columns": "Cột",
@@ -1811,53 +1801,29 @@
     "default": {
       "placeholder": "Nhập giá trị mặc định hoặc để trống nếu không có giá trị mặc định"
     },
-    "foreign-key": {
-      "edit": "Chỉnh sửa khóa ngoại",
-      "name-description": "Tên duy nhất của khóa ngoại"
-    },
-    "functions": "Hàm",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "Cột phụ thuộc",
-      "edit-indexes": "Chỉnh sửa chỉ mục",
       "indexes": "Chỉ mục",
       "unique": "Duy nhất"
     },
+    "insert-sql": "Chèn SQL",
     "message": {
-      "cannot-drop-the-last-column": "Không thể xóa cột cuối cùng",
-      "duplicated-function-name": "Tên hàm trùng lặp",
-      "duplicated-procedure-name": "Tên thủ tục trùng lặp",
-      "duplicated-table-name": "Tên bảng trùng lặp",
-      "duplicated-view-name": "Tên khung nhìn trùng lặp",
-      "invalid-function-name": "Tên hàm không hợp lệ",
-      "invalid-procedure-name": "Tên thủ tục không hợp lệ",
-      "invalid-schema": "Lược đồ không hợp lệ",
-      "invalid-schema-name": "Tên lược đồ không hợp lệ",
-      "invalid-table-name": "Tên bảng không hợp lệ",
-      "invalid-view-name": "Tên khung nhìn không hợp lệ"
+      "invalid-schema": "Lược đồ không hợp lệ"
     },
-    "preview-schema-text": "Xem trước văn bản lược đồ",
-    "preview-view-definition": "Xem trước định nghĩa khung nhìn",
-    "procedures": "Thủ tục",
     "raw-sql": "SQL thô",
     "schema": {
-      "name": "Tên lược đồ",
       "select": "Chọn lược đồ"
     },
-    "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
-    "table": {
-      "name": "Tên bảng",
-      "select": "Chọn bảng"
-    },
+    "self": "Trình chỉnh sửa lược đồ",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "Thêm phân vùng con",
-      "edit-partitions": "Chỉnh sửa phân vùng",
       "expression": "Biểu thức",
       "partitions": "Phân vùng",
       "type": "Loại",
       "value": "Giá trị"
     },
-    "tables": "Bảng",
-    "views": "Khung nhìn"
+    "template-database": "Cơ sở dữ liệu mẫu"
   },
   "schema-template": {
     "classification": {

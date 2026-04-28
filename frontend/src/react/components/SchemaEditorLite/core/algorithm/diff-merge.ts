@@ -21,8 +21,29 @@ import {
   keyBy,
   TinyTimer,
 } from "@/utils";
-import type { SchemaEditorContext } from "../context";
-import { keyForResourceName } from "../context/common";
+import { keyForResourceName } from "../keyForResource";
+import type { EditStatus } from "../types";
+
+/**
+ * Minimal context surface that DiffMerge depends on.
+ * Both Vue and React adapters supply an object satisfying this shape.
+ */
+export interface DiffMergeContext {
+  markEditStatusByKey: (key: string, status: EditStatus) => void;
+  markEditStatus: (
+    database: Database,
+    metadata: {
+      schema: SchemaMetadata;
+      table?: TableMetadata;
+      column?: ColumnMetadata;
+      partition?: TablePartitionMetadata;
+      procedure?: ProcedureMetadata;
+      function?: FunctionMetadata;
+      view?: ViewMetadata;
+    },
+    status: EditStatus
+  ) => void;
+}
 
 type RichSchemaMetadata = {
   database: DatabaseMetadata;
@@ -36,7 +57,7 @@ type RichColumnMetadata = RichTableMetadata & {
 };
 
 export class DiffMerge {
-  context: SchemaEditorContext;
+  context: DiffMergeContext;
   database: Database;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
@@ -69,7 +90,7 @@ export class DiffMerge {
     sourceMetadata,
     targetMetadata,
   }: {
-    context: SchemaEditorContext;
+    context: DiffMergeContext;
     database: Database;
     sourceMetadata: DatabaseMetadata;
     targetMetadata: DatabaseMetadata;

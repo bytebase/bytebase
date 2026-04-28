@@ -2,10 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  engineSupportsEditIndexes,
-  engineSupportsEditTablePartitions,
-} from "@/components/SchemaEditorLite/spec";
 import { Button } from "@/react/components/ui/button";
 import type {
   Database,
@@ -16,6 +12,10 @@ import type {
 import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
+import {
+  engineSupportsEditIndexes,
+  engineSupportsEditTablePartitions,
+} from "../core/spec";
 import { markUUID } from "./common";
 import { IndexesEditor } from "./IndexesEditor";
 import { PartitionsEditor } from "./PartitionsEditor";

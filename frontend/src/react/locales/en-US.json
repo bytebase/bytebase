@@ -2001,6 +2001,7 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Insert SQL",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2013,6 +2014,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Schema editor",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2024,7 +2026,8 @@
       "partitions": "Partitions",
       "type": "Type",
       "value": "Value"
-    }
+    },
+    "template-database": "Template database"
   },
   "schema-template": {
     "classification": {

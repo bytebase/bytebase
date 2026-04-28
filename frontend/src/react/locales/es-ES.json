@@ -1988,6 +1988,7 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Insertar SQL",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2000,6 +2001,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Editor de esquema",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2011,7 +2013,8 @@
       "partitions": "Particiones",
       "type": "Tipo",
       "value": "Valor"
-    }
+    },
+    "template-database": "Base de datos plantilla"
   },
   "schema-template": {
     "classification": {

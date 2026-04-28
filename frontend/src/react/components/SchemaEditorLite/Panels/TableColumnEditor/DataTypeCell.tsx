@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Combobox } from "@/react/components/ui/combobox";
+import { Input } from "@/react/components/ui/input";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import type { ColumnMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { getDataTypeSuggestionList } from "@/utils";
@@ -9,29 +9,49 @@ interface Props {
   engine: Engine;
   readonly: boolean;
   onUpdateValue: (value: string) => void;
+  /** Shared id for the host <datalist> element (one per engine). */
+  datalistId: string;
 }
 
 export function DataTypeCell({
   column,
-  engine,
   readonly: isReadonly,
   onUpdateValue,
+  datalistId,
 }: Props) {
-  const options = useMemo(() => {
-    return getDataTypeSuggestionList(engine).map((dataType) => ({
-      label: dataType,
-      value: dataType,
-    }));
-  }, [engine]);
-
   return (
-    <Combobox
-      value={column.type || ""}
-      onChange={(val) => onUpdateValue(val as string)}
-      options={options}
+    <Input
+      list={datalistId}
+      value={column.type ?? ""}
       disabled={isReadonly}
       placeholder="column type"
-      className="h-7"
+      size="xs"
+      className="border-none bg-transparent shadow-none focus-visible:ring-1"
+      onChange={(e) => onUpdateValue(e.target.value)}
     />
+  );
+}
+
+/**
+ * Renders the suggestion datalist that DataTypeCell rows reference via
+ * the `list` attribute. Mount once per table.
+ */
+export function DataTypeSuggestionsDatalist({
+  id,
+  engine,
+}: {
+  id: string;
+  engine: Engine;
+}) {
+  const suggestions = useMemo(
+    () => getDataTypeSuggestionList(engine),
+    [engine]
+  );
+  return (
+    <datalist id={id}>
+      {suggestions.map((dataType) => (
+        <option key={dataType} value={dataType} />
+      ))}
+    </datalist>
   );
 }

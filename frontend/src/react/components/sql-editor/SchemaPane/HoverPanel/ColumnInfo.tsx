@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Check, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/react/components/SchemaEditorLite/core/columnDefaultValue";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";

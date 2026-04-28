@@ -1988,6 +1988,7 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Chèn SQL",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2000,6 +2001,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Trình chỉnh sửa lược đồ",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2011,7 +2013,8 @@
       "partitions": "Phân vùng",
       "type": "Loại",
       "value": "Giá trị"
-    }
+    },
+    "template-database": "Cơ sở dữ liệu mẫu"
   },
   "schema-template": {
     "classification": {

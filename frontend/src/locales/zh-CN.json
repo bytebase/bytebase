@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "删除索引？"
-    },
-    "select-tables-to-rollout": "选择要发布的表",
-    "table-partition": {
-      "drop-partition-confirm": "删除表分区？",
-      "drop-partition-with-subpartitions-confirm": "将会同时删除其所有子分区。"
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -1768,9 +1762,7 @@
     },
     "task-execution-errors": "任务执行错误"
   },
-  "schema-designer": {
-    "use-tips": "选择需要设计的表"
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "自动适应视图",
     "self": "Schema 关系图"
@@ -1784,7 +1776,6 @@
       "create-table": "新建表",
       "create-view": "创建视图",
       "drop": "删除",
-      "drop-column": "删除列",
       "drop-schema": "删除 Schema",
       "drop-table": "删除表",
       "rename": "重命名",
@@ -1798,7 +1789,6 @@
       "not-null": "不可为空",
       "on-update": "更新时",
       "primary": "主键",
-      "select": "选择列",
       "type": "类型"
     },
     "columns": "列",
@@ -1811,53 +1801,29 @@
     "default": {
       "placeholder": "输入默认值或留空以不使用默认值"
     },
-    "foreign-key": {
-      "edit": "修改外键",
-      "name-description": "外键的名称应该是唯一的"
-    },
-    "functions": "函数",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "依赖列",
-      "edit-indexes": "编辑索引",
       "indexes": "索引",
       "unique": "唯一"
     },
+    "insert-sql": "插入 SQL",
     "message": {
-      "cannot-drop-the-last-column": "不能删除最后一列",
-      "duplicated-function-name": "重复的函数名称",
-      "duplicated-procedure-name": "重复的存储过程名称",
-      "duplicated-table-name": "重复的表名",
-      "duplicated-view-name": "重复的视图名称",
-      "invalid-function-name": "无效的函数名称",
-      "invalid-procedure-name": "无效的存储过程名称",
-      "invalid-schema": "无效的 Schema",
-      "invalid-schema-name": "无效的 Schema 名称",
-      "invalid-table-name": "无效的表名",
-      "invalid-view-name": "无效的视图名称"
+      "invalid-schema": "无效的 Schema"
     },
-    "preview-schema-text": "预览文本 schema",
-    "preview-view-definition": "预览视图定义",
-    "procedures": "存储过程",
     "raw-sql": "SQL 语句",
     "schema": {
-      "name": "Schema 名称",
       "select": "选择 schema"
     },
-    "search-database-and-table": "搜索数据库和表",
-    "table": {
-      "name": "表名",
-      "select": "选择表"
-    },
+    "self": "Schema 编辑器",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "添加子分区",
-      "edit-partitions": "编辑分区",
       "expression": "表达式",
       "partitions": "分区",
       "type": "类型",
       "value": "值"
     },
-    "tables": "表",
-    "views": "视图"
+    "template-database": "模板数据库"
   },
   "schema-template": {
     "classification": {

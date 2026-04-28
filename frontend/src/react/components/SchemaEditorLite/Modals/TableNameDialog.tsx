@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { upsertColumnPrimaryKey } from "@/components/SchemaEditorLite/edit";
 import { Button } from "@/react/components/ui/button";
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
+import { upsertColumnPrimaryKey } from "../core/edit";
 import { markUUID } from "../Panels/common";
 
 interface Props {

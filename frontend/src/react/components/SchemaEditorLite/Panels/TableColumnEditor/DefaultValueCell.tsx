@@ -32,7 +32,8 @@ export function DefaultValueCell({ column, disabled, onUpdate }: Props) {
       value={column.default ?? ""}
       disabled={disabled}
       placeholder={t("schema-editor.default.placeholder")}
-      className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+      size="xs"
+      className="border-none bg-transparent shadow-none focus-visible:ring-1"
       onChange={(e) => handleChange(e.target.value)}
     />
   );

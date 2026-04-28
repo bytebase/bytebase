@@ -1,6 +1,6 @@
 import { clone, create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
-import { ExternalLink, Loader2, Package, Upload } from "lucide-react";
+import { ExternalLink, Loader2, Package, Table, Upload } from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -33,6 +33,7 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
@@ -47,6 +48,7 @@ import {
   getLocalSheetByName,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
+import { SchemaEditorSheet } from "./SchemaEditorSheet";
 
 const MAX_DISPLAYED_RELEASE_FILES = 4;
 
@@ -79,6 +81,7 @@ export function PlanDetailStatementSection({
   const [isSaving, setIsSaving] = useState(false);
   const [statement, setStatement] = useState("");
   const [draftStatement, setDraftStatement] = useState("");
+  const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
@@ -91,6 +94,20 @@ export function PlanDetailStatementSection({
     }
     return (spec.config.value.targets ?? []).find(isValidDatabaseName) ?? "";
   }, [spec]);
+  // All valid database targets — used by Schema Editor to load template metadata.
+  const targetDatabaseNames = useMemo(() => {
+    if (spec.config?.case !== "changeDatabaseConfig") return [];
+    return (spec.config.value.targets ?? []).filter(isValidDatabaseName);
+  }, [spec]);
+  // Show Schema Editor only when at least one target's engine supports it.
+  const schemaEditorEligible = useMemo(() => {
+    if (targetDatabaseNames.length === 0) return false;
+    return targetDatabaseNames.some((name) => {
+      const db = databaseStore.getDatabaseByName(name);
+      if (!db) return false;
+      return engineSupportsSchemaEditor(getInstanceResource(db).engine);
+    });
+  }, [targetDatabaseNames, databaseStore]);
   const language = useMemo(() => {
     if (!targetDatabaseName) return "sql";
     const database = databaseStore.getDatabaseByName(targetDatabaseName);
@@ -254,6 +271,15 @@ export function PlanDetailStatementSection({
     setIsEditing(true);
   };
 
+  const handleSchemaEditorInsert = (nextStatement: string) => {
+    if (page.isCreating) {
+      updateLocalStatement(nextStatement);
+      return;
+    }
+    setDraftStatement(nextStatement);
+    setIsEditing(true);
+  };
+
   const patchPlanStatement = (nextSheetName: string) => {
     const planPatch = clone(PlanSchema, page.plan);
     const specToPatch = planPatch.specs.find(
@@ -378,6 +404,16 @@ export function PlanDetailStatementSection({
                 <Upload className="h-3.5 w-3.5" />
                 {t("issue.upload-sql")}
               </Button>
+              {schemaEditorEligible && (
+                <Button
+                  onClick={() => setIsSchemaEditorOpen(true)}
+                  size="xs"
+                  variant="outline"
+                >
+                  <Table className="h-3.5 w-3.5" />
+                  {t("schema-editor.self")}
+                </Button>
+              )}
               {!isEditing ? (
                 canEdit ? (
                   <Button
@@ -442,7 +478,7 @@ export function PlanDetailStatementSection({
           {t("common.loading")}
         </div>
       ) : statement || draftStatement || isEditing ? (
-        <div className="relative">
+        <div className="relative overflow-hidden rounded-sm border border-control-border">
           {isEditing ? (
             <MonacoEditor
               advices={page.isCreating ? markers : []}
@@ -471,6 +507,15 @@ export function PlanDetailStatementSection({
         <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
+      )}
+      {project && schemaEditorEligible && (
+        <SchemaEditorSheet
+          open={isSchemaEditorOpen}
+          onOpenChange={setIsSchemaEditorOpen}
+          databaseNames={targetDatabaseNames}
+          project={project}
+          onInsert={handleSchemaEditorInsert}
+        />
       )}
     </div>
   );
