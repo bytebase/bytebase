@@ -18,6 +18,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
@@ -838,7 +839,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const instanceV1Store = useInstanceV1Store();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
-  const hasUnifiedInstanceLicense = subscriptionStore.hasUnifiedInstanceLicense;
+  const hasUnifiedInstanceLicense = useVueState(
+    () => subscriptionStore.hasUnifiedInstanceLicense
+  );
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
