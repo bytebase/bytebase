@@ -1,13 +1,14 @@
 <template>
   <template v-if="node.type === 'schema'">
-    <heroicons-outline:rectangle-stack class="w-4 h-4" />
+    <Layers class="w-4 h-4" />
   </template>
   <template v-if="node.type === 'table'">
-    <heroicons-outline:table-cells class="w-4 h-4" />
+    <Table2 class="w-4 h-4" />
   </template>
 </template>
 
 <script lang="ts" setup>
+import { Layers, Table2 } from "lucide-vue-next";
 import type { TreeNode } from "../types";
 
 defineProps<{

@@ -3,5 +3,5 @@
 </template>
 
 <script setup lang="ts">
-import CheckIcon from "~icons/tabler/check";
+import { Check as CheckIcon } from "lucide-vue-next";
 </script>

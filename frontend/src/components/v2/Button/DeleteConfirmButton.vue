@@ -9,7 +9,7 @@
         @click.stop
       >
         <template #icon>
-          <heroicons:trash />
+          <Trash2 />
         </template>
         <template #default>
           {{ $t("common.delete") }}
@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { Trash2 } from "lucide-vue-next";
 import { NButton, NPopconfirm } from "naive-ui";
 
 const emit = defineEmits<{

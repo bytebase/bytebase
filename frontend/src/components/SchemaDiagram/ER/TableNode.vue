@@ -39,7 +39,7 @@
         class="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-main bg-white/70 hover:bg-gray-200 p-0.5 rounded-sm"
         @click="events.emit('edit-table', { schema, table })"
       >
-        <heroicons-outline:pencil class="w-4 h-4" />
+        <Pencil class="w-4 h-4" />
       </button>
     </h3>
 
@@ -52,11 +52,11 @@
         :class="columnClasses(column)"
       >
         <td class="w-5 py-1.5 relative">
-          <heroicons-outline:key
+          <Key
             v-if="isPrimaryKey(table, column)"
             class="w-3 h-3 mx-auto text-amber-500"
           />
-          <tabler:diamonds
+          <Diamond
             v-else-if="isIndex(table, column)"
             class="w-3 h-3 mx-auto text-gray-500"
           />
@@ -89,6 +89,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Diamond, Key, Pencil } from "lucide-vue-next";
 import { computed } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import type {

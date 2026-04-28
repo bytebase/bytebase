@@ -3,7 +3,7 @@
     <div class="min-w-0 md:min-w-100 max-w-4xl mb-2">
       <div class="flex items-start gap-x-2 mt-3">
         <div class="flex items-center">
-          <heroicons-solid:lock-closed
+          <Lock
             v-if="instanceMissingLicense"
             class="text-accent w-6 h-6"
           />
@@ -88,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import { SparklesIcon } from "lucide-vue-next";
+import { Lock, SparklesIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

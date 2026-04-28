@@ -24,7 +24,7 @@
         :style="dropdownButtonStyle(currentAction)"
         v-bind="currentAction.props"
       >
-        <heroicons-outline:chevron-down />
+        <ChevronDown />
       </NButton>
     </NPopselect>
   </NButtonGroup>
@@ -33,6 +33,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
+import { ChevronDown } from "lucide-vue-next";
 import type { ButtonGroupProps, SelectOption } from "naive-ui";
 import { NButton, NButtonGroup, NPopselect } from "naive-ui";
 import type { CSSProperties } from "vue";
