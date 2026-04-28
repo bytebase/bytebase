@@ -2651,6 +2651,7 @@
       "n-license-remain": "残り {n}",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
+      "used-and-total-instance": "アクティブ/合計インスタンス制限",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },

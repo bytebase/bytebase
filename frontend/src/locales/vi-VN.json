@@ -2651,6 +2651,7 @@
       "n-license-remain": "còn lại {n}",
       "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
+      "used-and-total-instance": "Giới hạn phiên bản đang hoạt động / Tổng số",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"
     },

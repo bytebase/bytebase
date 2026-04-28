@@ -2651,6 +2651,7 @@
       "n-license-remain": "{n} remaining",
       "require-license": "Require instance license",
       "success-notification": "Successfully update license assignment",
+      "used-and-total-instance": "Active / Total Instance Limit",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit"
     },

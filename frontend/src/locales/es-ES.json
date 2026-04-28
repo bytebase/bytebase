@@ -2651,6 +2651,7 @@
       "n-license-remain": "permanecer {n}",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
+      "used-and-total-instance": "Límite de instancias activas/totales",
       "used-and-total-license": "Licencia asignada / total",
       "used-and-total-user": "Límite de usuarios activos/totales"
     },
