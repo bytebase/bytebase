@@ -475,12 +475,391 @@ FROM t`,
 	})
 }
 
+func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
+	gCtx := newOmniTestQuerySpanContext()
+
+	t.Run("select_family_roots", func(t *testing.T) {
+		tests := []struct {
+			name          string
+			statement     string
+			wantType      base.QueryType
+			wantResults   []base.QuerySpanResult
+			wantResources []base.ColumnResource
+		}{
+			{
+				name:      "values_default",
+				statement: "VALUES ROW(DEFAULT)",
+				wantType:  base.Select,
+				wantResults: []base.QuerySpanResult{
+					{Name: "DEFAULT", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+				},
+			},
+			{
+				name:      "explain_analyze_table",
+				statement: "EXPLAIN ANALYZE TABLE t",
+				wantType:  base.Select,
+				wantResults: []base.QuerySpanResult{
+					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+					{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
+					{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "c"}}), IsPlainField: true},
+				},
+				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
+			},
+			{
+				name:      "explain_analyze_insert",
+				statement: "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
+				wantType:  base.DML,
+			},
+		}
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), tc.statement)
+				require.NoError(t, err)
+				require.Equal(t, tc.wantType, span.Type)
+				require.Equal(t, tc.wantResults, span.Results)
+				require.Equal(t, sourceColumnSetFromResources(tc.wantResources), span.SourceColumns)
+			})
+		}
+	})
+
+	t.Run("multiple_statements_are_rejected", func(t *testing.T) {
+		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT 1; SELECT 2;")
+		require.ErrorContains(t, err, "expected exactly 1 statement")
+	})
+
+	t.Run("ddl_bucket_roots", func(t *testing.T) {
+		tests := []string{
+			"CREATE DATABASE d",
+			"CREATE VIEW v AS SELECT a FROM t",
+			"ALTER TABLE t ADD COLUMN d INT",
+			"DROP TABLE t",
+			"RENAME TABLE t TO t_new",
+			"TRUNCATE TABLE t",
+		}
+		for _, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, base.DDL, span.Type, statement)
+			require.Empty(t, span.Results, statement)
+		}
+	})
+
+	t.Run("dml_bucket_roots", func(t *testing.T) {
+		tests := []string{
+			"UPDATE t SET a = 1",
+			"DELETE FROM t WHERE a = 1",
+			"BEGIN",
+			"COMMIT",
+			"ROLLBACK",
+			"SAVEPOINT s",
+			"LOCK TABLES t READ",
+			"UNLOCK TABLES",
+			"PREPARE stmt FROM 'SELECT 1'",
+			"EXECUTE stmt",
+			"DEALLOCATE PREPARE stmt",
+		}
+		for _, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, base.DML, span.Type, statement)
+			require.Empty(t, span.Results, statement)
+		}
+	})
+}
+
+func TestOmniQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
+	gCtx := newOmniTestQuerySpanContext()
+
+	t.Run("variable_refs_have_empty_lineage", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT @x AS user_var, @@version AS system_var",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "user_var", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+			{Name: "system_var", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+		}, span.Results)
+	})
+
+	t.Run("json_extract_operator_uses_object_lineage", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT product_info->'$.id' AS id FROM products",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "id", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: false},
+		}, span.Results)
+	})
+
+	t.Run("group_concat_separator_contributes_lineage", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT GROUP_CONCAT(a SEPARATOR b) AS gc FROM t",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "gc", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t", Column: "b"}}), IsPlainField: false},
+		}, span.Results)
+	})
+
+	t.Run("duplicate_output_names_are_preserved", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT a AS x, b AS x FROM t",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "x", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+			{Name: "x", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
+		}, span.Results)
+	})
+}
+
+func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
+	gCtx := newOmniTestQuerySpanContext()
+
+	t.Run("table_source_variants", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			statement string
+			want      []base.QuerySpanResult
+			wantSrc   []base.ColumnResource
+		}{
+			{
+				name:      "database_qualified_table",
+				statement: "SELECT db.t.a FROM db.t",
+				want: []base.QuerySpanResult{
+					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+				},
+				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
+			},
+			{
+				name:      "parenthesized_single_table",
+				statement: "SELECT a FROM (t)",
+				want: []base.QuerySpanResult{
+					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+				},
+				wantSrc: []base.ColumnResource{{Database: "db", Table: "t"}},
+			},
+			{
+				name:      "comma_separated_tables",
+				statement: "SELECT t1.a, t2.b FROM t1, t2",
+				want: []base.QuerySpanResult{
+					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
+				},
+				wantSrc: []base.ColumnResource{{Database: "db", Table: "t1"}, {Database: "db", Table: "t2"}},
+			},
+			{
+				name:      "dual",
+				statement: "SELECT 1 FROM DUAL",
+				want: []base.QuerySpanResult{
+					{Name: "1", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+				},
+			},
+		}
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), tc.statement)
+				require.NoError(t, err)
+				require.Equal(t, tc.want, span.Results)
+				require.Equal(t, sourceColumnSetFromResources(tc.wantSrc), span.SourceColumns)
+			})
+		}
+	})
+
+	t.Run("join_variants_expose_columns", func(t *testing.T) {
+		tests := []string{
+			"SELECT * FROM t1 STRAIGHT_JOIN t2",
+			"SELECT * FROM t1 LEFT JOIN t2 ON t1.a = t2.a",
+			"SELECT * FROM t1 RIGHT JOIN t2 ON t1.a = t2.a",
+			"SELECT * FROM t1 NATURAL LEFT JOIN t2",
+			"SELECT * FROM t1 NATURAL RIGHT JOIN t2",
+		}
+		want := []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "b"}}), IsPlainField: true},
+			{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "c"}}), IsPlainField: true},
+		}
+		wantNonNatural := append([]base.QuerySpanResult{}, want...)
+		wantNonNatural = append(wantNonNatural,
+			base.QuerySpanResult{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
+			base.QuerySpanResult{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
+			base.QuerySpanResult{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "c"}}), IsPlainField: true},
+		)
+		for i, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			if i < 3 {
+				require.Equal(t, wantNonNatural, span.Results, statement)
+			} else {
+				require.Equal(t, want, span.Results, statement)
+			}
+			require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1"}, {Database: "db", Table: "t2"}}), span.SourceColumns, statement)
+		}
+	})
+
+	t.Run("derived_table_edges", func(t *testing.T) {
+		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT * FROM (SELECT a, b FROM t) AS x(c1)",
+		)
+		require.ErrorContains(t, err, "derived table column list length")
+
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT y.c1 FROM (SELECT x.c1 FROM (SELECT a FROM t) AS x(c1)) AS y",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "c1", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
+	})
+}
+
+func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
+	gCtx := newOmniTestQuerySpanContext()
+
+	t.Run("subquery_access_locations", func(t *testing.T) {
+		tests := []string{
+			"SELECT a FROM t WHERE EXISTS (SELECT t2.a FROM t2)",
+			"SELECT a FROM t GROUP BY a HAVING EXISTS (SELECT t2.a FROM t2)",
+			"SELECT a FROM t ORDER BY (SELECT t2.a FROM t2)",
+		}
+		for _, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t"}, {Database: "db", Table: "t2"}}), span.SourceColumns, statement)
+		}
+	})
+
+	t.Run("cte_and_set_error_edges", func(t *testing.T) {
+		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"WITH c(x) AS (SELECT a, b FROM t) SELECT * FROM c",
+		)
+		require.ErrorContains(t, err, "CTE column list")
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"WITH RECURSIVE c(x) AS (SELECT a, b FROM t UNION SELECT a, b FROM t2) SELECT * FROM c",
+		)
+		require.ErrorContains(t, err, "different column counts")
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT a FROM t UNION SELECT a, b FROM t2",
+		)
+		require.ErrorContains(t, err, "UNION operator left has 1 fields, right has 2 fields")
+	})
+
+	t.Run("set_operation_in_derived_and_cte", func(t *testing.T) {
+		tests := []string{
+			"SELECT x.a FROM (SELECT a FROM t UNION SELECT a FROM t2) AS x",
+			"WITH c AS (SELECT a FROM t UNION SELECT a FROM t2) SELECT a FROM c",
+		}
+		for _, statement := range tests {
+			span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, []base.QuerySpanResult{
+				{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
+			}, span.Results, statement)
+		}
+	})
+}
+
+func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
+	t.Run("error_semantics", func(t *testing.T) {
+		gCtx := newOmniTestQuerySpanContext()
+
+		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
+		require.ErrorContains(t, err, "unsupported select statement with into")
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT FROM")
+		require.Error(t, err)
+
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "")
+		require.NoError(t, err)
+		require.Equal(t, base.Select, span.Type)
+		require.Empty(t, span.Results)
+		require.Empty(t, span.SourceColumns)
+	})
+
+	t.Run("view_lineage", func(t *testing.T) {
+		gCtx := newOmniViewTestQuerySpanContext()
+
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FROM v")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "va", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
+		}, span.Results)
+
+		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FROM v2")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "va", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
+	})
+
+	t.Run("missing_view_dependency_fails_open", func(t *testing.T) {
+		gCtx := newOmniViewTestQuerySpanContext()
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FROM broken_v")
+		require.NoError(t, err)
+		require.Equal(t, base.Select, span.Type)
+		require.Empty(t, span.Results)
+		require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
+	})
+}
+
 func sourceColumnSetFromResources(resources []base.ColumnResource) base.SourceColumnSet {
 	result := make(base.SourceColumnSet)
 	for _, resource := range resources {
 		result[resource] = true
 	}
 	return result
+}
+
+func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "t",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "a"},
+							{Name: "b"},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "v",
+						Definition: "SELECT a AS va, b FROM t",
+					},
+					{
+						Name:       "v2",
+						Definition: "SELECT va FROM v",
+					},
+					{
+						Name:       "broken_v",
+						Definition: "SELECT missing FROM t",
+					},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	return base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: databaseMetadataGetter,
+		ListDatabaseNamesFunc:   databaseNameLister,
+		Engine:                  storepb.Engine_MYSQL,
+	}
 }
 
 func newOmniTestQuerySpanContext() base.GetQuerySpanContext {

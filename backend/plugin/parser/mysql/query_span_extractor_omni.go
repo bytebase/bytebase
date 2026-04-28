@@ -89,6 +89,11 @@ func (q *omniQuerySpanExtractor) extractOmniSelectRoot(root ast.Node) (*base.Pse
 	switch n := root.(type) {
 	case *ast.SelectStmt:
 		return q.extractOmniSelectStmt(n)
+	case *ast.ExplainStmt:
+		if n.Analyze {
+			return q.extractOmniSelectRoot(n.Stmt)
+		}
+		return &base.PseudoTable{}, nil
 	case *ast.TableStmt:
 		return q.extractOmniTableStmt(n)
 	case *ast.ValuesStmt:
@@ -101,6 +106,9 @@ func (q *omniQuerySpanExtractor) extractOmniSelectRoot(root ast.Node) (*base.Pse
 func (q *omniQuerySpanExtractor) extractOmniSelectStmt(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
 	if stmt == nil {
 		return &base.PseudoTable{}, nil
+	}
+	if stmt.Into != nil {
+		return nil, errors.New("meet unsupported select statement with into")
 	}
 
 	originalTableSourceFrom := q.tableSourceFrom
@@ -302,6 +310,9 @@ func (q *omniQuerySpanExtractor) extractOmniTableSource(tableExpr ast.TableExpr)
 	case nil:
 		return nil, nil
 	case *ast.TableRef:
+		if isOmniDualTable(t) {
+			return nil, nil
+		}
 		tableSource, err := q.findTableSchema(t.Schema, t.Name)
 		if err != nil {
 			return nil, err
@@ -541,6 +552,12 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 	case *ast.StarExpr:
 		return base.QuerySpanResult{}, errors.Errorf("asterisk is not a scalar expression")
 	case *ast.IntLit, *ast.FloatLit, *ast.StringLit, *ast.BoolLit, *ast.NullLit, *ast.HexLit, *ast.BitLit, *ast.TemporalLit:
+		return base.QuerySpanResult{
+			Name:          q.omniExprName(e),
+			SourceColumns: base.SourceColumnSet{},
+			IsPlainField:  true,
+		}, nil
+	case *ast.VariableRef:
 		return base.QuerySpanResult{
 			Name:          q.omniExprName(e),
 			SourceColumns: base.SourceColumnSet{},
@@ -971,6 +988,8 @@ func omniNodeLoc(node ast.Node) (ast.Loc, bool) {
 		return n.Loc, true
 	case *ast.TemporalLit:
 		return n.Loc, true
+	case *ast.VariableRef:
+		return n.Loc, true
 	default:
 		return ast.Loc{}, false
 	}
@@ -1094,6 +1113,9 @@ func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *
 	if tableRef == nil {
 		return
 	}
+	if isOmniDualTable(tableRef) {
+		return
+	}
 	database := tableRef.Schema
 	if database == "" {
 		database = defaultDatabase
@@ -1102,6 +1124,10 @@ func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *
 		Database: database,
 		Table:    tableRef.Name,
 	}] = true
+}
+
+func isOmniDualTable(tableRef *ast.TableRef) bool {
+	return tableRef != nil && tableRef.Schema == "" && strings.EqualFold(tableRef.Name, "dual")
 }
 
 func collectOmniAccessTablesFromTableExpr(result base.SourceColumnSet, tableExpr ast.TableExpr, defaultDatabase string) {
