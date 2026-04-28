@@ -1014,19 +1014,25 @@ func classifyOmniQueryType(node ast.Node, allSystems bool) base.QueryType {
 		return base.Explain
 	case *ast.ShowStmt:
 		return base.SelectInfoSchema
-	case *ast.SetStmt, *ast.SetDefaultRoleStmt, *ast.SetPasswordStmt, *ast.SetResourceGroupStmt, *ast.SetRoleStmt, *ast.SetTransactionStmt:
+	case *ast.SetStmt, *ast.SetDefaultRoleStmt, *ast.SetResourceGroupStmt, *ast.SetRoleStmt, *ast.SetTransactionStmt:
 		return base.Select
+	case *ast.SetPasswordStmt, *ast.HelpStmt:
+		return base.QueryTypeUnknown
 	case *ast.CreateDatabaseStmt, *ast.CreateTableStmt, *ast.CreateIndexStmt, *ast.CreateViewStmt,
 		*ast.CreateEventStmt, *ast.CreateTriggerStmt, *ast.CreateFunctionStmt,
 		*ast.AlterDatabaseStmt, *ast.AlterTableStmt, *ast.AlterViewStmt, *ast.AlterEventStmt,
 		*ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.DropIndexStmt, *ast.DropViewStmt,
 		*ast.DropEventStmt, *ast.DropTriggerStmt, *ast.DropRoutineStmt,
-		*ast.RenameTableStmt, *ast.TruncateStmt:
+		*ast.RenameTableStmt, *ast.TruncateStmt, *ast.ImportTableStmt:
 		return base.DDL
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.BeginStmt, *ast.CommitStmt,
 		*ast.RollbackStmt, *ast.SavepointStmt, *ast.LockTablesStmt, *ast.UnlockTablesStmt,
 		*ast.LoadDataStmt, *ast.PrepareStmt, *ast.ExecuteStmt, *ast.DeallocateStmt,
-		*ast.CallStmt, *ast.DoStmt, *ast.HandlerOpenStmt, *ast.HandlerReadStmt, *ast.HandlerCloseStmt:
+		*ast.CallStmt, *ast.DoStmt, *ast.HandlerOpenStmt, *ast.HandlerReadStmt, *ast.HandlerCloseStmt,
+		*ast.ChangeReplicationSourceStmt, *ast.ChangeReplicationFilterStmt,
+		*ast.StartReplicaStmt, *ast.StopReplicaStmt, *ast.ResetReplicaStmt,
+		*ast.PurgeBinaryLogsStmt, *ast.ResetMasterStmt,
+		*ast.StartGroupReplicationStmt, *ast.StopGroupReplicationStmt:
 		return base.DML
 	default:
 		return base.Select

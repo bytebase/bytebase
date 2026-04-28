@@ -28,7 +28,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 
 - [x] `SHOW ...` returns `SelectInfoSchema`.
 - [x] non-password `SET ...` returns `Select`.
-- [ ] password-changing `SET PASSWORD ...` preserves legacy query type behavior.
+- [x] password-changing `SET PASSWORD ...` preserves legacy query type behavior.
 - [x] `CREATE TABLE ...` returns `DDL`.
 - [x] `CREATE DATABASE ...` returns `DDL`.
 - [x] `CREATE VIEW ...` returns `DDL`.
@@ -36,21 +36,21 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `DROP TABLE ...` returns `DDL`.
 - [x] `RENAME TABLE ...` returns `DDL`.
 - [x] `TRUNCATE TABLE ...` returns `DDL`.
-- [ ] `IMPORT TABLE ...` returns `DDL`.
+- [x] `IMPORT TABLE ...` returns `DDL`.
 - [x] `INSERT ...` returns `DML`.
-- [ ] `REPLACE ...` returns `DML`.
+- [x] `REPLACE ...` returns `DML`.
 - [x] `UPDATE ...` returns `DML`.
 - [x] `DELETE ...` returns `DML`.
-- [ ] `LOAD DATA ...` returns `DML`.
+- [x] `LOAD DATA ...` returns `DML`.
 - [x] `CALL ...` returns `DML`.
 - [x] `DO ...` returns `DML`.
 - [x] `HANDLER ... OPEN` returns `DML`.
 - [x] `HANDLER ... READ` returns `DML`.
 - [x] `HANDLER ... CLOSE` returns `DML`.
 - [x] transaction and locking statements return `DML`.
-- [ ] replication statements return `DML`.
+- [x] replication statements return `DML`.
 - [x] prepared statements return `DML`.
-- [ ] unsupported utility statements fall back to the legacy query type.
+- [x] unsupported utility statements fall back to the legacy query type.
 
 ## Phase 2: Target List And Expression Lineage
 
@@ -65,7 +65,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `SELECT t.* FROM t` expands only the qualified table columns.
 - [x] `SELECT *, a FROM t` preserves star expansion plus explicit target.
 - [x] duplicate output names preserve legacy ordering and duplicate result entries.
-- [ ] reserved-word quoted identifiers resolve like legacy identifiers.
+- [x] reserved-word quoted identifiers resolve like legacy identifiers.
 
 ### 2.2 Expression Node Coverage
 
@@ -123,9 +123,9 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] natural join merges common columns.
 - [x] natural left join merges common columns.
 - [x] natural right join merges common columns.
-- [ ] `JOIN ... ON` expression contributes access-table dependencies.
-- [ ] nested join tree preserves visible source ordering.
-- [ ] parenthesized table reference list behaves like legacy cross-join expansion.
+- [x] `JOIN ... ON` expression contributes access-table dependencies.
+- [x] nested join tree preserves visible source ordering.
+- [~] parenthesized table reference list behaves like legacy cross-join expansion — (omni parser currently rejects `FROM (t1, t2)`)
 
 ### 3.3 Derived Tables And Table Functions
 
@@ -137,7 +137,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [ ] lateral derived table preserves correlation behavior.
 - [x] `JSON_TABLE` exposes declared columns as pseudo-table columns.
 - [x] `JSON_TABLE` column lineage comes from the JSON document expression.
-- [ ] nested `JSON_TABLE` columns flatten in legacy order.
+- [x] nested `JSON_TABLE` columns flatten in legacy order.
 - [ ] `JSON_TABLE` with alias omitted uses the legacy generated table name.
 
 ## Phase 4: Subqueries, CTEs, And Set Operations
@@ -149,33 +149,33 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] subquery in `WHERE` contributes access-table dependencies.
 - [x] subquery in `HAVING` contributes access-table dependencies.
 - [x] subquery in `ORDER BY` contributes access-table dependencies.
-- [ ] nested subqueries preserve nearest-scope alias shadowing.
-- [ ] unqualified inner subquery columns follow legacy resolution order.
-- [ ] outer table alias shadowed by inner alias follows legacy resolution.
+- [x] nested subqueries preserve nearest-scope alias shadowing.
+- [x] unqualified inner subquery columns follow legacy resolution order.
+- [x] outer table alias shadowed by inner alias follows legacy resolution.
 
 ### 4.2 Common Table Expressions
 
 - [x] non-recursive CTE exposes selected columns.
 - [x] non-recursive CTE explicit column list renames output columns.
 - [x] non-recursive CTE column count mismatch returns legacy error.
-- [ ] nested CTE references resolve in legacy visibility order.
+- [x] nested CTE references resolve in legacy visibility order.
 - [x] recursive CTE merges anchor and recursive branch source columns.
 - [x] recursive CTE explicit column list count mismatch returns legacy error.
 - [ ] recursive CTE reaches a stable source-column closure.
-- [ ] CTE name shadows physical table name according to legacy behavior.
+- [x] CTE name shadows physical table name according to legacy behavior.
 - [ ] later CTE cannot be referenced by earlier CTE unless legacy allowed it.
 
 ### 4.3 Set Operations
 
 - [x] `UNION` merges left and right source columns by position.
 - [x] `UNION ALL` merges left and right source columns by position.
-- [ ] `INTERSECT` preserves legacy support or error behavior.
-- [ ] `EXCEPT` preserves legacy support or error behavior.
+- [x] `INTERSECT` preserves legacy support or error behavior.
+- [x] `EXCEPT` preserves legacy support or error behavior.
 - [x] set operation result names come from the left side.
 - [x] set operation column count mismatch returns legacy error.
 - [x] set operation inside derived table preserves derived output lineage.
 - [x] set operation inside CTE preserves CTE output lineage.
-- [ ] parenthesized set operation preserves legacy grouping behavior.
+- [x] parenthesized set operation preserves legacy grouping behavior.
 
 ## Phase 5: Access Tables, System Tables, And Errors
 
@@ -187,9 +187,9 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] CTE body tables appear in access tables.
 - [x] scalar subquery tables appear in access tables.
 - [x] correlated subquery inner tables appear in access tables.
-- [ ] function arguments containing subqueries appear in access tables.
-- [ ] `VALUES` expressions containing subqueries appear in access tables.
-- [ ] `CALL` arguments containing subqueries appear in access tables where legacy did.
+- [x] function arguments containing subqueries appear in access tables.
+- [x] `VALUES` expressions containing subqueries appear in access tables.
+- [x] `CALL` arguments containing subqueries appear in access tables where legacy did.
 - [x] `HANDLER` table appears in access tables where legacy did.
 
 ### 5.2 System Tables
@@ -197,18 +197,18 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] all-system select returns `SelectInfoSchema`.
 - [x] all-system select suppresses returned access tables.
 - [x] mixed user/system table query returns `MixUserSystemTablesError`.
-- [ ] uppercase system schema follows case-sensitive legacy behavior.
-- [ ] uppercase system schema follows case-insensitive legacy behavior.
-- [ ] `information_schema` access behaves like legacy system resource detection.
-- [ ] `performance_schema` access behaves like legacy system resource detection.
-- [ ] `mysql` schema access behaves like legacy system resource detection.
+- [x] uppercase system schema follows case-sensitive legacy behavior.
+- [x] uppercase system schema follows case-insensitive legacy behavior.
+- [x] `information_schema` access behaves like legacy system resource detection.
+- [x] `performance_schema` access behaves like legacy system resource detection.
+- [x] `mysql` schema access behaves like legacy system resource detection.
 
 ### 5.3 Error Semantics
 
 - [x] missing database maps to fail-open `NotFoundError`.
 - [x] missing table maps to fail-open `NotFoundError`.
 - [x] missing column maps to fail-open `NotFoundError`.
-- [ ] unsupported select-with-into returns the legacy hard error.
+- [x] unsupported select-with-into returns the legacy hard error.
 - [ ] unsupported table source returns a hard error instead of silent empty lineage.
 - [x] unsupported expression node cannot silently return empty source columns.
 - [x] parser failure returns the parser error and does not fabricate a query span.
@@ -223,17 +223,17 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] view recursion through nested views preserves source table lineage.
 - [x] missing view dependency maps to legacy `NotFoundError` behavior.
 - [ ] duplicate database names with case differences follow `ignoreCaseSensitive`.
-- [ ] default database is used when table reference omits database.
-- [ ] explicit database overrides default database.
+- [x] default database is used when table reference omits database.
+- [x] explicit database overrides default database.
 
 ### 6.2 Case Sensitivity
 
 - [x] case-sensitive column lookup preserves exact table/database matching rules.
 - [x] case-insensitive column lookup resolves case variants.
-- [ ] table alias matching follows legacy case-sensitivity behavior.
-- [ ] CTE name matching follows legacy case-sensitivity behavior.
-- [ ] derived table alias matching follows legacy case-sensitivity behavior.
-- [ ] quoted identifier case is preserved in result names where legacy preserves it.
+- [x] table alias matching follows legacy case-sensitivity behavior.
+- [x] CTE name matching follows legacy case-sensitivity behavior.
+- [x] derived table alias matching follows legacy case-sensitivity behavior.
+- [x] quoted identifier case is preserved in result names where legacy preserves it.
 
 ### 6.3 Engine-Specific Behavior
 
