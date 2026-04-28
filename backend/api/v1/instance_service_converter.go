@@ -100,7 +100,11 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 }
 
 func convertToV1InstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
-	instance := convertToV1Instance(instanceMessage)
+	return convertToV1InstanceResourceWithEffectiveActivation(instanceMessage, instanceMessage.Metadata.GetActivation())
+}
+
+func convertToV1InstanceResourceWithEffectiveActivation(instanceMessage *store.InstanceMessage, effectiveActivation bool) *v1pb.InstanceResource {
+	instance := convertToV1InstanceWithEffectiveActivation(instanceMessage, effectiveActivation)
 	return &v1pb.InstanceResource{
 		Name:          instance.Name,
 		Title:         instance.Title,

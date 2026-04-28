@@ -111,8 +111,9 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	response := &v1pb.ListInstancesResponse{
 		NextPageToken: nextPageToken,
 	}
+	unified := s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx))
 	for _, instance := range instances {
-		ins := s.convertToV1Instance(ctx, instance)
+		ins := convertToV1InstanceWithUnifiedMode(instance, unified)
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -259,7 +260,11 @@ func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Ins
 }
 
 func (s *InstanceService) convertToV1Instance(ctx context.Context, instance *store.InstanceMessage) *v1pb.Instance {
-	if s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx)) {
+	return convertToV1InstanceWithUnifiedMode(instance, s.licenseService.IsUnifiedInstanceLicense(ctx, common.GetWorkspaceIDFromContext(ctx)))
+}
+
+func convertToV1InstanceWithUnifiedMode(instance *store.InstanceMessage, unified bool) *v1pb.Instance {
+	if unified {
 		return convertToV1InstanceWithEffectiveActivation(instance, true)
 	}
 	return convertToV1Instance(instance)
