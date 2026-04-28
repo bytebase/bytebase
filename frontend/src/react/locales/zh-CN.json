@@ -329,6 +329,7 @@
     "pending": "待审批",
     "permissions": "权限",
     "plan": "Plan",
+    "preview": "预览",
     "previous": "上一步",
     "project": "项目",
     "projects": "项目",
@@ -2669,6 +2670,7 @@
     "save-sheet-input-placeholder": "请输入工作表名称",
     "search-history-by-statement": "搜索 SQL 语句",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-encoding": "选择编码",
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "sync-in-progress": "正在同步",
@@ -2688,6 +2690,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
     "view-database-detail": "查看数据库详情",
     "view-detail": "查看详情",

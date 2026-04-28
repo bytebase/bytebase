@@ -140,8 +140,7 @@ export function EditorAction({ onExecute }: Props) {
         {isAdminMode && (
           <Button
             variant="outline"
-            size="sm"
-            className="h-7 px-1.5 gap-1 border-dashed"
+            className="h-8 px-1.5 gap-1 border-dashed text-sm"
             onClick={(e) => {
               e.stopPropagation();
               exitAdminMode();

@@ -55,16 +55,23 @@ export function TabItem({
   } = useSortable({ id: tab.id });
 
   const isCurrentTab = tab.id === currentTabId;
-  const isAdmin = tab.mode === "ADMIN";
 
   // Derive the environment tint (used as the top border on the current tab).
-  const { database } = getConnectionForSQLEditorTab(tab);
-  const environment = database ? getDatabaseEnvironment(database) : undefined;
-  const environmentTint =
-    environment?.id === String(UNKNOWN_ID) ? undefined : environment;
+  // Wrapped in `useVueState` so the tab re-renders when the Pinia
+  // database/environment state hydrates async — without this the tab
+  // sticks on the fallback `#4f46e5` indigo even after the environment
+  // resolves, which is what made the React tabs look more saturated
+  // than the Vue version.
+  const environmentTintColor = useVueState(() => {
+    const { database } = getConnectionForSQLEditorTab(tab);
+    if (!database) return undefined;
+    const environment = getDatabaseEnvironment(database);
+    if (!environment || environment.id === String(UNKNOWN_ID)) return undefined;
+    return environment.color || undefined;
+  });
   const backgroundColorRgb = isCurrentTab
-    ? environmentTint?.color
-      ? hexToRgb(environmentTint.color).join(", ")
+    ? environmentTintColor
+      ? hexToRgb(environmentTintColor).join(", ")
       : hexToRgb("#4f46e5").join(", ")
     : "";
 
@@ -90,9 +97,8 @@ export function TabItem({
       className={cn(
         "tab-item cursor-pointer border-r bg-background relative",
         "gap-x-2",
-        isAdmin && "bg-dark-bg",
         isCurrentTab && "current",
-        hovering && !isAdmin && "bg-control-bg",
+        hovering && "bg-control-bg",
         `status-${tab.status.toLowerCase()}`
       )}
       {...attributes}
@@ -112,9 +118,7 @@ export function TabItem({
       <div
         className={cn(
           "body flex items-center justify-between gap-x-2 pl-2 pr-1 border-t h-9",
-          isCurrentTab ? "pt-0.5 border-t-[3px] bg-background" : "pt-1",
-          isAdmin && "text-matrix-green-hover",
-          isAdmin && isCurrentTab && "bg-dark-bg"
+          isCurrentTab ? "pt-0.5 border-t-[3px] bg-background" : "pt-1"
         )}
         style={bodyStyle}
       >

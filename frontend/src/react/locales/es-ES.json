@@ -329,6 +329,7 @@
     "pending": "Pendiente",
     "permissions": "Permisos",
     "plan": "Plan",
+    "preview": "Previsualización",
     "previous": "Previous",
     "project": "Proyecto",
     "projects": "Proyectos",
@@ -2669,6 +2670,7 @@
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "search-history-by-statement": "Búsqueda por enunciado",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "sync-in-progress": "Sincronización en progreso",
@@ -2688,6 +2690,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "view-database-detail": "Ver detalle de la base de datos",
     "view-detail": "Ver detalle",

@@ -10,6 +10,7 @@ import type {
 
 export interface ReadonlyMonacoProps {
   advices?: AdviceOption[];
+  autoHeight?: boolean;
   content: string;
   className?: string;
   filename?: string;
@@ -26,6 +27,7 @@ export interface ReadonlyMonacoProps {
 
 export function ReadonlyMonaco({
   advices = [],
+  autoHeight = true,
   content,
   className = "",
   filename,
@@ -39,6 +41,7 @@ export function ReadonlyMonaco({
   return (
     <MonacoEditor
       advices={advices}
+      autoHeight={autoHeight}
       className={className}
       content={content}
       filename={filename}

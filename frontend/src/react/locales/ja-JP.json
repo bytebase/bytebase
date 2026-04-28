@@ -329,6 +329,7 @@
     "pending": "保留中",
     "permissions": "権限",
     "plan": "Plan",
+    "preview": "プレビュー",
     "previous": "Previous",
     "project": "プロジェクト",
     "projects": "プロジェクト",
@@ -2669,6 +2670,7 @@
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "sync-in-progress": "同期中",
@@ -2688,6 +2690,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-database-detail": "データベースの詳細を表示する",
     "view-detail": "詳細を見る",

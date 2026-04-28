@@ -13,6 +13,7 @@ export const MonacoEditorReady = monacoEditorReadyDefer.promise;
 
 const state = {
   themeInitialized: false,
+  registeredThemes: new Set<string>(["vs", "vs-dark", "hc-black", "hc-light"]),
 };
 
 const initializeTheme = () => {
@@ -21,11 +22,33 @@ const initializeTheme = () => {
   if (!monacoModule) return;
   try {
     monacoModule.editor.defineTheme("bb", getBBTheme());
+    state.registeredThemes.add("bb");
     monacoModule.editor.defineTheme("bb-dark", getBBDarkTheme());
+    state.registeredThemes.add("bb-dark");
   } catch {
     // The VSCode theme service override owns themes in some runtime modes.
-    // Fall back to the default theme instead of failing editor creation.
+    // Whichever theme failed stays out of `state.registeredThemes`, so
+    // `getResolvedTheme` will fall back to the built-in `vs` for it.
   }
+};
+
+/**
+ * Returns the requested theme if it's known to be registered with
+ * Monaco, otherwise falls back to the always-available built-in `vs`.
+ *
+ * Use this anywhere `monaco.editor.setTheme(...)` is called from
+ * application code — calling `setTheme` with an unregistered theme
+ * name is a silent no-op, which leaves the global theme stuck on
+ * whatever was last applied (and Monaco's theme is global, not
+ * per-instance, so a stale `vs-dark` from a recently-disposed
+ * terminal editor can bleed into a freshly-mounted worksheet editor).
+ */
+export const getResolvedTheme = (requested?: string): string => {
+  const fallback = "vs";
+  if (!requested) {
+    return state.registeredThemes.has("bb") ? "bb" : fallback;
+  }
+  return state.registeredThemes.has(requested) ? requested : fallback;
 };
 
 const initialize = async () => {

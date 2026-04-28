@@ -15,28 +15,21 @@
         :data-height="queryListHeight"
       >
         <div v-for="query in queryList" :key="query.id" class="relative">
-          <Suspense>
-            <CompactSQLEditor
-              v-model:content="query.statement"
-              class="min-h-8"
-              :class="[
-                isEditableQueryItem(query)
-                  ? 'active-editor'
-                  : 'read-only-editor',
-              ]"
-              :readonly="!isEditableQueryItem(query)"
-              @execute="handleExecute"
-              @history="handleHistory"
-              @clear-screen="handleClearScreen"
-            />
-            <template #fallback>
-              <div
-                class="w-full min-h-8 flex flex-col items-center justify-center"
-              >
-                <BBSpin />
-              </div>
-            </template>
-          </Suspense>
+          <ReactPageMount
+            page="CompactSQLEditor"
+            container-class="w-full"
+            :class="
+              isEditableQueryItem(query) ? 'active-editor' : 'read-only-editor'
+            "
+            :pageProps="{
+              content: query.statement,
+              readonly: !isEditableQueryItem(query),
+              onChange: (value: string) => (query.statement = value),
+              onExecute: handleExecute,
+              onHistory: handleHistory,
+              onClearScreen: handleClearScreen,
+            }"
+          />
           <ResultViewV1
             v-if="query.params && query.resultSet"
             class="p-2"
@@ -80,14 +73,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import {
-  computed,
-  defineAsyncComponent,
-  ref,
-  unref,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, ref, unref, watch, watchEffect } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import ReactPageMount from "@/react/ReactPageMount.vue";
@@ -99,10 +85,6 @@ import {
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import { ResultViewV1 } from "../../EditorCommon";
 import { useHistory } from "./useHistory";
-
-const CompactSQLEditor = defineAsyncComponent(
-  () => import("./CompactSQLEditor.vue")
-);
 
 const tabStore = useSQLEditorTabStore();
 const webTerminalStore = useWebTerminalStore();
