@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Combobox } from "@/react/components/ui/combobox";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
@@ -100,13 +100,7 @@ export function DatabaseSelect({
         const inst = getInstanceResource(db);
         return (
           <span className="flex items-center gap-1.5 truncate">
-            {EngineIconPath[inst.engine] && (
-              <img
-                className="h-4 w-4 shrink-0"
-                src={EngineIconPath[inst.engine]}
-                alt=""
-              />
-            )}
+            <EngineIcon engine={inst.engine} className="h-4 w-4" />
             {extractDatabaseResourceName(db.name).databaseName}
           </span>
         );
@@ -122,13 +116,7 @@ export function DatabaseSelect({
               <div className="flex items-center gap-1.5">
                 {inst.title && (
                   <>
-                    {EngineIconPath[inst.engine] && (
-                      <img
-                        className="h-4 w-4 shrink-0"
-                        src={EngineIconPath[inst.engine]}
-                        alt=""
-                      />
-                    )}
+                    <EngineIcon engine={inst.engine} className="h-4 w-4" />
                     <span>{inst.title}</span>
                     <span className="text-control-placeholder">&gt;</span>
                   </>

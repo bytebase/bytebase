@@ -2,13 +2,13 @@ import { cloneDeep } from "lodash-es";
 import { ChevronDown, ChevronRight, Info, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   emptySearchParams,
   type SearchParams,
 } from "@/react/components/AdvancedSearch";
 import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Separator } from "@/react/components/ui/separator";
@@ -773,7 +773,6 @@ function SelectedDatabaseTag({
   const dbLabel = database
     ? extractDatabaseResourceName(database.name).databaseName
     : extractDatabaseResourceName(name).databaseName;
-  const iconPath = instance ? EngineIconPath[instance.engine] : undefined;
 
   return (
     <span
@@ -782,7 +781,7 @@ function SelectedDatabaseTag({
         disabled && "opacity-50"
       )}
     >
-      {iconPath && <img src={iconPath} alt="" className="size-4 shrink-0" />}
+      {instance && <EngineIcon engine={instance.engine} className="size-4" />}
       {instance && (
         <span className="truncate max-w-[8rem]">
           {instanceV1Name(instance)}

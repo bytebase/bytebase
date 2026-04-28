@@ -4,7 +4,7 @@ import { Check, FastForward, Loader2, Pause, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
-import { EngineIconPath } from "@/react/components/instance/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
@@ -613,7 +613,6 @@ function PlanDetailDatabaseTarget({ target }: { target: string }) {
       ""
   );
   const instance = database.instanceResource;
-  const engineIcon = instance ? EngineIconPath[instance.engine] : "";
   const { databaseName } = extractDatabaseResourceName(target);
   const instanceTitle =
     instance?.title ||
@@ -622,8 +621,11 @@ function PlanDetailDatabaseTarget({ target }: { target: string }) {
 
   return (
     <div className="flex min-w-0 items-center truncate text-sm">
-      {engineIcon && (
-        <img alt="" className="mr-1 inline-block h-4 w-4" src={engineIcon} />
+      {instance && (
+        <EngineIcon
+          engine={instance.engine}
+          className="mr-1 inline-block h-4 w-4"
+        />
       )}
       <span className="mr-1 truncate text-gray-400">{environment.title}</span>
       <span className="truncate text-gray-600">{instanceTitle}</span>

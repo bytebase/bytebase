@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -42,14 +42,13 @@ export function TableInfo({ database, schema, table }: Props) {
       ? ""
       : tableMetadata.collation;
   const comment = tableMetadata.comment;
-  const iconPath = EngineIconPath[instanceEngine];
 
   return (
     <div className="min-w-56 max-w-[18rem] gap-y-1">
       <InfoItem title={t("common.name")}>{tableMetadata.name}</InfoItem>
       <InfoItem title={t("database.engine")}>
         <span className="flex items-center gap-x-0.5">
-          {iconPath ? <img src={iconPath} alt="" className="size-4" /> : null}
+          <EngineIcon engine={instanceEngine} className="size-4" />
           {engineNameV1(instanceEngine)}
         </span>
       </InfoItem>

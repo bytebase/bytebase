@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { TableSchemaViewer } from "@/react/components/TableSchemaViewer";
 import {
   Dialog,
@@ -602,13 +602,10 @@ function DatabaseTitle({
   database: { name: string; project: string } & Record<string, unknown>;
 }) {
   const instance = getInstanceResource(database as never);
-  const iconPath = EngineIconPath[instance.engine];
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   return (
     <span className="inline-flex items-center gap-x-1">
-      {iconPath ? (
-        <img src={iconPath} alt="" className="size-4 shrink-0" />
-      ) : null}
+      <EngineIcon engine={instance.engine} className="size-4" />
       <span className="truncate">{instanceV1Name(instance)}</span>
       <ChevronRight className="size-3 shrink-0" />
       <span className="truncate">{databaseName}</span>
