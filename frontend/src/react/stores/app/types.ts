@@ -66,6 +66,7 @@ export type WorkspaceSlice = {
   instanceCountLimit: () => number;
   userCountLimit: () => number;
   instanceLicenseCount: () => number;
+  hasUnifiedInstanceLicense: () => boolean;
   hasFeature: (feature: PlanFeature) => boolean;
   hasInstanceFeature: (
     feature: PlanFeature,

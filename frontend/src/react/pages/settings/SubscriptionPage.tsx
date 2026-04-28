@@ -44,6 +44,7 @@ export function SubscriptionPage({
     expireAt,
     instanceCountLimit,
     instanceLicenseCount,
+    hasUnifiedInstanceLicense,
     userCountLimit,
   } = useSubscriptionState();
   const {
@@ -189,6 +190,7 @@ export function SubscriptionPage({
           <InstanceLicenseStats
             planType={planType}
             instanceCountLimit={instanceCountLimit}
+            hasUnifiedInstanceLicense={hasUnifiedInstanceLicense}
             activatedCount={activatedInstanceCount}
             totalLicenseCount={totalLicenseCount}
             onManageInstanceLicenses={onManageInstanceLicenses}
@@ -301,10 +303,12 @@ export function SubscriptionPage({
           </div>
         </div>
       )}
-      <InstanceAssignmentSheet
-        open={showInstanceAssignmentSheet}
-        onOpenChange={setShowInstanceAssignmentSheet}
-      />
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignmentSheet}
+          onOpenChange={setShowInstanceAssignmentSheet}
+        />
+      )}
     </div>
   );
 }
@@ -312,19 +316,21 @@ export function SubscriptionPage({
 function InstanceLicenseStats({
   planType,
   instanceCountLimit,
+  hasUnifiedInstanceLicense,
   activatedCount,
   totalLicenseCount,
   onManageInstanceLicenses,
 }: {
   planType: string;
   instanceCountLimit: number;
+  hasUnifiedInstanceLicense: boolean;
   activatedCount: number;
   totalLicenseCount: string;
   onManageInstanceLicenses: () => void;
 }) {
   const { t } = useTranslation();
 
-  if (planType === "FREE") {
+  if (planType === "FREE" || hasUnifiedInstanceLicense) {
     return (
       <div className="flex flex-col text-left">
         <dt className="text-main">{t("subscription.max-instance-count")}</dt>
