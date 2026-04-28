@@ -307,6 +307,9 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 	if err := s.IsFeatureEnabled(ctx, workspaceID, f); err != nil {
 		return err
 	}
+	if s.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		return nil
+	}
 	if !instance.Metadata.GetActivation() {
 		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, f.String(), instance.ResourceID)
 	}
@@ -402,6 +405,16 @@ type LicenseParams struct {
 	ExpiresAt   time.Time // zero value means no expiration
 }
 
+func newLicenseClaims(params *LicenseParams) *Claims {
+	return &Claims{
+		Plan:            params.Plan,
+		Seats:           params.Seats,
+		ActiveInstances: params.Instances,
+		Instances:       params.Instances,
+		WorkspaceID:     params.WorkspaceID,
+	}
+}
+
 // CreateLicense signs a new license JWT from business params.
 // Only available when private key is configured (SaaS mode).
 // Handles JWT plumbing (issuer, audience, kid) internally.
@@ -410,13 +423,7 @@ func (s *LicenseService) CreateLicense(params *LicenseParams) (string, error) {
 		return "", errors.New("license signing not available: private key not configured")
 	}
 
-	c := &Claims{
-		Plan:            params.Plan,
-		Seats:           params.Seats,
-		ActiveInstances: params.Instances,
-		Instances:       params.Instances,
-		WorkspaceID:     params.WorkspaceID,
-	}
+	c := newLicenseClaims(params)
 	c.Issuer = s.config.Issuer
 	c.Audience = jwt.ClaimStrings{s.config.Audience}
 	c.IssuedAt = jwt.NewNumericDate(time.Now())
