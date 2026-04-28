@@ -448,6 +448,7 @@ func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.Select
 				ctes:                append([]*base.PseudoTable{}, q.ctes...),
 				outerTableSources:   nil,
 				predicateColumns:    make(base.SourceColumnSet),
+				viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 			},
 			source: q.source,
 		}
@@ -793,6 +794,7 @@ func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
 			ctes:                append([]*base.PseudoTable{}, q.ctes...),
 			outerTableSources:   append(append([]base.TableSource{}, q.outerTableSources...), q.tableSourcesFrom...),
 			predicateColumns:    make(base.SourceColumnSet),
+			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		},
 		source: q.source,
 	}

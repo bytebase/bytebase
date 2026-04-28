@@ -104,6 +104,30 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 		}
 }
 
+func TestGetQuerySpanCyclicViewReference(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Views: []*storepb.ViewMetadata{
+					{Name: "v1", Definition: "SELECT * FROM v2"},
+					{Name: "v2", Definition: "SELECT * FROM v1"},
+				},
+			},
+		},
+	}
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+
+	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		Engine:                  storepb.Engine_MYSQL,
+	}, base.Statement{Text: "SELECT * FROM v1"}, "db", "", false)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "cyclic view reference")
+}
+
 func TestExtractTableRefs(t *testing.T) {
 	tests := []struct {
 		statement string
