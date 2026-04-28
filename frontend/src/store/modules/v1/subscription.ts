@@ -103,6 +103,10 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     return count;
   });
 
+  const hasUnifiedInstanceLicense = computed(() => {
+    return instanceCountLimit.value <= instanceLicenseCount.value;
+  });
+
   const expireAt = computed(() => {
     if (
       !subscription.value ||
@@ -196,7 +200,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     return checkInstanceFeature(
       currentPlan.value,
       feature,
-      instance.activation
+      hasUnifiedInstanceLicense.value || instance.activation
     );
   };
 
@@ -209,6 +213,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
       return false;
     }
     if (!instance) {
+      return false;
+    }
+    if (hasUnifiedInstanceLicense.value) {
       return false;
     }
     // Feature is available in plan but instance is not activated
@@ -352,6 +359,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     instanceCountLimit,
     userCountLimit,
     instanceLicenseCount,
+    hasUnifiedInstanceLicense,
     expireAt,
     isTrialing,
     isExpired,
