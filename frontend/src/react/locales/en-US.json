@@ -1696,6 +1696,7 @@
     },
     "members": {
       "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
+      "allow-ddl-all-environments": "No environment restrictions. Allow running DDL/DML statements in all environments.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
       "edit-member": "Edit member - {{member}}",

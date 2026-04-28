@@ -1688,6 +1688,7 @@
     },
     "members": {
       "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
+      "allow-ddl-all-environments": "Sin restricciones de entorno. Permitir ejecutar sentencias DDL/DML en todos los entornos.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
