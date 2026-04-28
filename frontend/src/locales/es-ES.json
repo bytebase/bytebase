@@ -2691,9 +2691,6 @@
     "title": "Revisión de SQL"
   },
   "subscription": {
-    "button": {
-      "upgrade": "Actualizar"
-    },
     "contact-to-upgrade": "Contacta al administrador de tu espacio de trabajo para actualizar el plan.",
     "contact-us": "Contáctanos",
     "current": "Actual",
@@ -2718,7 +2715,6 @@
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
-    "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "plan": {
       "enterprise": {
         "title": "Empresa"

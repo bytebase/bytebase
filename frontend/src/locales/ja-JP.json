@@ -2691,9 +2691,6 @@
     "title": "SQL レビューポリシー"
   },
   "subscription": {
-    "button": {
-      "upgrade": "アップグレード"
-    },
     "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
     "contact-us": "お問い合わせ",
     "current": "現在",
@@ -2718,7 +2715,6 @@
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
     },
-    "overuse-warning": "{neededPlan} は {currentPlan} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "plan": {
       "enterprise": {
         "title": "エンタープライズ"

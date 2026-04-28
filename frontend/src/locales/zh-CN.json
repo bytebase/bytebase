@@ -2691,9 +2691,6 @@
     "title": "SQL 审核策略"
   },
   "subscription": {
-    "button": {
-      "upgrade": "升级"
-    },
     "contact-to-upgrade": "请联系工作空间所有者来升级到试用版。",
     "contact-us": "联系我们",
     "current": "当前",
@@ -2718,7 +2715,6 @@
     "overuse-modal": {
       "description": "您正在使用当前「{plan}」不包含的功能。立即升级避免影响使用。"
     },
-    "overuse-warning": "{neededPlan}在{currentPlan}将会受限，请尽快升级以确保正常使用。",
     "plan": {
       "enterprise": {
         "title": "企业版"
