@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ComponentPropsWithoutRef } from "react";
+import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import { cn } from "@/react/lib/utils";
 
 function Table({ className, ...props }: ComponentPropsWithoutRef<"table">) {
@@ -64,6 +65,10 @@ interface TableHeadProps extends ComponentPropsWithoutRef<"th"> {
   sortDir?: TableHeadSortDirection;
   /** Called when the user clicks to toggle sort. */
   onSort?: () => void;
+  /** Render a drag-to-resize handle on the right edge. */
+  resizable?: boolean;
+  /** Called when the user starts dragging the resize handle. */
+  onResizeStart?: (e: React.MouseEvent) => void;
 }
 
 function TableHead({
@@ -73,6 +78,8 @@ function TableHead({
   sortActive,
   sortDir,
   onSort,
+  resizable,
+  onResizeStart,
   onClick,
   ...props
 }: TableHeadProps) {
@@ -81,6 +88,7 @@ function TableHead({
       className={cn(
         "h-10 px-4 py-2 text-left align-middle font-medium text-control-light",
         sortable && "cursor-pointer select-none hover:text-control",
+        resizable && "relative",
         className
       )}
       onClick={(e) => {
@@ -96,6 +104,9 @@ function TableHead({
         </span>
       ) : (
         children
+      )}
+      {resizable && onResizeStart && (
+        <ColumnResizeHandle onMouseDown={onResizeStart} />
       )}
     </th>
   );

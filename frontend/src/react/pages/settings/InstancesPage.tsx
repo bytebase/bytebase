@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
+import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +50,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -93,6 +95,18 @@ import {
 
 const ASSIGN_LICENSE_QUERY = "assignLicense";
 const ASSIGN_LICENSE_INSTANCES_QUERY = "instances";
+
+interface InstanceColumn {
+  key: string;
+  title: React.ReactNode;
+  defaultWidth: number;
+  minWidth?: number;
+  resizable?: boolean;
+  sortable?: boolean;
+  sortKey?: string;
+  cellClassName?: string;
+  render: (instance: Instance) => React.ReactNode;
+}
 
 // Shared hooks
 // ============================================================
@@ -1118,6 +1132,123 @@ export function InstancesPage() {
   }, [someSelected]);
   const pageSizeOptions = getPageSizeOptions();
 
+  const columns: InstanceColumn[] = [
+    {
+      key: "select",
+      title: (
+        <input
+          ref={headerCheckboxRef}
+          type="checkbox"
+          checked={allSelected}
+          onChange={toggleSelectAll}
+          className="rounded-xs border-control-border"
+        />
+      ),
+      defaultWidth: 48,
+      cellClassName: "px-4 py-2",
+      render: (instance) => (
+        <input
+          type="checkbox"
+          checked={selectedNames.has(instance.name)}
+          onChange={() => toggleSelection(instance.name)}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-xs border-control-border"
+        />
+      ),
+    },
+    {
+      key: "title",
+      title: t("common.name"),
+      defaultWidth: 280,
+      minWidth: 160,
+      resizable: true,
+      sortable: true,
+      render: (instance) => (
+        <div className="flex items-center gap-x-2 min-w-0">
+          <EngineIcon engine={instance.engine} className="h-5 w-5" />
+          <EllipsisText text={instance.title} />
+        </div>
+      ),
+    },
+    {
+      key: "environment",
+      title: t("common.environment"),
+      defaultWidth: 220,
+      minWidth: 120,
+      resizable: true,
+      sortable: true,
+      render: (instance) => (
+        <EnvironmentName environmentName={instance.environment ?? ""} />
+      ),
+    },
+    {
+      key: "address",
+      title: t("common.address"),
+      defaultWidth: 280,
+      minWidth: 150,
+      resizable: true,
+      render: (instance) => {
+        const isExpanded = expandedDataSources.has(instance.name);
+        const hasMultipleDS = instance.dataSources.length > 1;
+        return (
+          <div className="flex items-start gap-x-2">
+            <span className="truncate">
+              {isExpanded
+                ? instance.dataSources.map((ds, idx) => (
+                    <div key={idx}>{hostPortOfDataSource(ds)}</div>
+                  ))
+                : hostPortOfInstanceV1(instance)}
+            </span>
+            {hasMultipleDS && (
+              <button
+                className="p-0.5 hover:bg-control-bg rounded-xs shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleDataSource(instance.name);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "labels",
+      title: t("common.labels"),
+      defaultWidth: 240,
+      minWidth: 150,
+      resizable: true,
+      render: (instance) => <LabelsDisplay labels={instance.labels} />,
+    },
+    {
+      key: "license",
+      title: t("subscription.instance-assignment.license"),
+      defaultWidth: 100,
+      render: (instance) => (instance.activation ? "Y" : ""),
+    },
+    {
+      key: "actions",
+      title: "",
+      defaultWidth: 50,
+      render: (instance) => (
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <InstanceActionDropdown
+            instance={instance}
+            onAction={handleRowAction}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+
   return (
     <div className="py-4 flex flex-col">
       {/* Instance count warning */}
@@ -1179,53 +1310,49 @@ export function InstancesPage() {
       {/* Table */}
       <div className="border rounded-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table
+            className="text-sm table-fixed"
+            style={{ width: `${totalWidth}px` }}
+          >
+            <colgroup>
+              {widths.map((w, i) => (
+                <col key={columns[i].key} style={{ width: `${w}px` }} />
+              ))}
+            </colgroup>
             <thead>
               <tr className="bg-control-bg border-b border-control-border">
-                <th className="w-12 px-4 py-2">
-                  <input
-                    ref={headerCheckboxRef}
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="rounded-xs border-control-border"
-                  />
-                </th>
-                <th
-                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                  onClick={() => toggleSort("title")}
-                >
-                  <div className="flex items-center gap-x-1">
-                    {t("common.name")}
-                    {renderSortIndicator("title")}
-                  </div>
-                </th>
-                <th
-                  className="px-4 py-2 text-left font-medium min-w-[200px] cursor-pointer select-none"
-                  onClick={() => toggleSort("environment")}
-                >
-                  <div className="flex items-center gap-x-2 text-sm text-main">
-                    {t("common.environment")}
-                    {renderSortIndicator("environment")}
-                  </div>
-                </th>
-                <th className="px-4 py-2 text-left font-medium">
-                  {t("common.address")}
-                </th>
-                <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
-                  {t("common.labels")}
-                </th>
-                <th className="px-4 py-2 text-left font-medium w-[100px]">
-                  {t("subscription.instance-assignment.license")}
-                </th>
-                <th className="w-[50px]" />
+                {columns.map((col, colIdx) => (
+                  <th
+                    key={col.key}
+                    className={cn(
+                      "relative px-4 py-2 text-left font-medium",
+                      col.sortable && "cursor-pointer select-none"
+                    )}
+                    onClick={
+                      col.sortable
+                        ? () => toggleSort(col.sortKey ?? col.key)
+                        : undefined
+                    }
+                  >
+                    <div className="flex items-center gap-x-1">
+                      {col.title}
+                      {col.sortable &&
+                        renderSortIndicator(col.sortKey ?? col.key)}
+                    </div>
+                    {col.resizable && (
+                      <ColumnResizeHandle
+                        onMouseDown={(e) => onResizeStart(colIdx, e)}
+                      />
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {loading && instances.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={columns.length}
                     className="px-4 py-8 text-center text-control-placeholder"
                   >
                     <div className="flex items-center justify-center gap-x-2">
@@ -1237,98 +1364,35 @@ export function InstancesPage() {
               ) : instances.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={columns.length}
                     className="px-4 py-8 text-center text-control-placeholder"
                   >
                     {t("common.no-data")}
                   </td>
                 </tr>
               ) : (
-                instances.map((instance, i) => {
-                  const isSelected = selectedNames.has(instance.name);
-                  const isExpanded = expandedDataSources.has(instance.name);
-                  const hasMultipleDS = instance.dataSources.length > 1;
-
-                  return (
-                    <tr
-                      key={instance.name}
-                      className={cn(
-                        "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
-                        i % 2 === 1 && "bg-control-bg/50"
-                      )}
-                      onClick={(e) => handleRowClick(instance, e)}
-                    >
-                      <td className="w-12 px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelection(instance.name)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded-xs border-control-border"
-                        />
+                instances.map((instance, i) => (
+                  <tr
+                    key={instance.name}
+                    className={cn(
+                      "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
+                      i % 2 === 1 && "bg-control-bg/50"
+                    )}
+                    onClick={(e) => handleRowClick(instance, e)}
+                  >
+                    {columns.map((col) => (
+                      <td
+                        key={col.key}
+                        className={cn(
+                          "px-4 py-2 align-middle overflow-hidden",
+                          col.cellClassName
+                        )}
+                      >
+                        {col.render(instance)}
                       </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-x-2 min-w-0">
-                          <EngineIcon
-                            engine={instance.engine}
-                            className="h-5 w-5"
-                          />
-                          <EllipsisText text={instance.title} />
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">
-                        <EnvironmentName
-                          environmentName={instance.environment ?? ""}
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-start gap-x-2">
-                          <span className="truncate">
-                            {isExpanded
-                              ? instance.dataSources.map((ds, idx) => (
-                                  <div key={idx}>
-                                    {hostPortOfDataSource(ds)}
-                                  </div>
-                                ))
-                              : hostPortOfInstanceV1(instance)}
-                          </span>
-                          {hasMultipleDS && (
-                            <button
-                              className="p-0.5 hover:bg-control-bg rounded-xs shrink-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleDataSource(instance.name);
-                              }}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 hidden md:table-cell">
-                        <LabelsDisplay labels={instance.labels} />
-                      </td>
-                      <td className="px-4 py-2">
-                        {instance.activation ? "Y" : ""}
-                      </td>
-                      <td className="px-4 py-2">
-                        <div
-                          className="flex justify-end"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <InstanceActionDropdown
-                            instance={instance}
-                            onAction={handleRowAction}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                    ))}
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
