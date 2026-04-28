@@ -1,7 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/react/components/instance/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -167,17 +167,15 @@ function IssueDetailAccessGrantTarget({ target }: { target: string }) {
   );
   const instance = database.instanceResource;
   const { databaseName } = extractDatabaseResourceName(target);
-  const engineIcon = instance ? EngineIconPath[instance.engine] : "";
 
   return (
     <div className="inline-flex min-w-0 items-center gap-2 rounded-sm border px-2 py-1.5">
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center truncate text-sm">
-          {engineIcon && (
-            <img
-              alt=""
+          {instance && (
+            <EngineIcon
+              engine={instance.engine}
               className="mr-1 inline-block h-4 w-4"
-              src={engineIcon}
             />
           )}
           <span className="mr-1 truncate text-gray-400">

@@ -3,7 +3,7 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { Check, Minus } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/react/components/instance/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
@@ -321,7 +321,6 @@ function IssueDetailTaskRunDatabaseCell({ database }: { database: Database }) {
     )
   );
   const instance = database.instanceResource;
-  const engineIcon = instance ? EngineIconPath[instance.engine] : "";
   const { databaseName } = extractDatabaseResourceName(database.name);
   const instanceTitle =
     instance?.title ||
@@ -330,8 +329,11 @@ function IssueDetailTaskRunDatabaseCell({ database }: { database: Database }) {
 
   return (
     <div className="flex min-w-0 items-center truncate text-sm">
-      {engineIcon && (
-        <img alt="" className="mr-1 inline-block h-4 w-4" src={engineIcon} />
+      {instance && (
+        <EngineIcon
+          engine={instance.engine}
+          className="mr-1 inline-block h-4 w-4"
+        />
       )}
       <span className="mr-1 truncate text-gray-400">{environment.title}</span>
       <span className="truncate text-gray-600">{instanceTitle}</span>

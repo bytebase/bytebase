@@ -8,6 +8,7 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { DatabaseTable } from "@/react/components/database";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import {
   InstanceActionDropdown,
@@ -17,7 +18,6 @@ import {
   InstanceRoleTable,
   InstanceSyncButton,
 } from "@/react/components/instance";
-import { EngineIconPath } from "@/react/components/instance/constants";
 import { Alert } from "@/react/components/ui/alert";
 import {
   Tabs,
@@ -182,8 +182,6 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     }
   }, []);
 
-  const engineIconSrc = EngineIconPath[instance.engine];
-
   return (
     <div className="p-4 flex flex-col gap-y-2">
       {/* Archive banner */}
@@ -203,9 +201,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-x-2">
-          {engineIconSrc && (
-            <img src={engineIconSrc} alt="" className="h-6 w-6" />
-          )}
+          <EngineIcon engine={instance.engine} className="h-6 w-6" />
           <span className="text-lg font-medium">
             {instanceV1Name(instance)}
           </span>

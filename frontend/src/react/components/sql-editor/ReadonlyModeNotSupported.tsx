@@ -1,6 +1,6 @@
 import { ShieldAlert } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { AdminModeButton } from "./AdminModeButton";
@@ -30,13 +30,7 @@ export function ReadonlyModeNotSupported() {
           components={{
             instance: (
               <span className="inline-flex items-center gap-x-1 font-medium text-control">
-                {EngineIconPath[instance.engine] && (
-                  <img
-                    src={EngineIconPath[instance.engine]}
-                    alt=""
-                    className="size-4"
-                  />
-                )}
+                <EngineIcon engine={instance.engine} className="size-4" />
                 <span>{instance.title}</span>
               </span>
             ),

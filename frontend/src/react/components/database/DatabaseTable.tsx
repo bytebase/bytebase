@@ -1,7 +1,7 @@
 import { CheckCircle, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
 import {
@@ -312,10 +312,9 @@ export function DatabaseTable({
                       )}
                       <TableCell>
                         <div className="flex items-center gap-x-2">
-                          <img
-                            className="h-5 w-5 shrink-0"
-                            src={EngineIconPath[instanceResource.engine]}
-                            alt=""
+                          <EngineIcon
+                            engine={instanceResource.engine}
+                            className="h-5 w-5"
                           />
                           <span className="truncate">
                             {extractDatabaseResourceName(db.name).databaseName}

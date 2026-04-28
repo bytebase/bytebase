@@ -1,7 +1,7 @@
 import { Check, Copy, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { useEnvironment, usePlanFeature } from "@/react/hooks/useAppState";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
@@ -62,7 +62,6 @@ export function DatabaseDetailHeader({
   const instanceLabel = instanceV1Name(instanceResource);
   const instanceId = extractInstanceResourceName(instanceResource.name);
   const canViewInstance = hasWorkspacePermissionV2("bb.instances.get");
-  const engineIconSrc = EngineIconPath[String(instanceResource.engine)];
 
   const environment = useEnvironment(database.effectiveEnvironment ?? "");
   const hasEnvironmentTierFeature = usePlanFeature(
@@ -189,24 +188,18 @@ export function DatabaseDetailHeader({
               className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
               onClick={handleInstanceClick}
             >
-              {engineIconSrc && (
-                <img
-                  src={engineIconSrc}
-                  className="h-4 w-4 shrink-0 object-contain"
-                  alt=""
-                />
-              )}
+              <EngineIcon
+                engine={instanceResource.engine}
+                className="h-4 w-4"
+              />
               {instanceLabel}
             </a>
           ) : (
             <span className="inline-flex items-center gap-x-1">
-              {engineIconSrc && (
-                <img
-                  src={engineIconSrc}
-                  className="h-4 w-4 shrink-0 object-contain"
-                  alt=""
-                />
-              )}
+              <EngineIcon
+                engine={instanceResource.engine}
+                className="h-4 w-4"
+              />
               {instanceLabel}
             </span>
           )}

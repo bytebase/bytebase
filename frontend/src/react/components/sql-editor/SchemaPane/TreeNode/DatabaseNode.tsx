@@ -1,4 +1,4 @@
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useDatabaseV1Store } from "@/store";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
@@ -24,14 +24,13 @@ export function DatabaseNode({ node, keyword }: Props) {
 
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   const instance = getInstanceResource(database);
-  const iconPath = EngineIconPath[instance.engine];
 
   return (
     <CommonNode
       text={databaseName}
       keyword={keyword}
       highlight={true}
-      icon={iconPath ? <img src={iconPath} alt="" className="size-4" /> : null}
+      icon={<EngineIcon engine={instance.engine} className="size-4" />}
     />
   );
 }

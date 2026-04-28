@@ -16,8 +16,8 @@ import {
   instanceRoleServiceClientConnect,
   planServiceClientConnect,
 } from "@/connect";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { EngineIconPath } from "@/react/components/instance/constants";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -1486,12 +1486,8 @@ function DatabaseSelector({
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">
-                        {inst && EngineIconPath[inst.engine] && (
-                          <img
-                            className="size-4 shrink-0"
-                            src={EngineIconPath[inst.engine]}
-                            alt=""
-                          />
+                        {inst && (
+                          <EngineIcon engine={inst.engine} className="size-4" />
                         )}
                         <span>{databaseName}</span>
                       </div>
@@ -1633,11 +1629,7 @@ export function DatabaseTarget({
 
   return (
     <div className="flex min-w-0 items-center truncate text-sm">
-      <img
-        alt=""
-        className="mr-1 h-4 w-4 shrink-0"
-        src={EngineIconPath[instance.engine]}
-      />
+      <EngineIcon engine={instance.engine} className="mr-1 h-4 w-4" />
       {showEnvironment && environment?.title && (
         <span className="mr-1 truncate text-control-placeholder">
           {environment.title}

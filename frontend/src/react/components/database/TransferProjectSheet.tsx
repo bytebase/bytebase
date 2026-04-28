@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -61,10 +61,9 @@ export function TransferProjectSheet({
                 key={db.name}
                 className="px-3 py-2 text-sm border-b last:border-b-0 flex items-center gap-x-2"
               >
-                <img
+                <EngineIcon
+                  engine={getInstanceResource(db).engine}
                   className="size-4"
-                  src={EngineIconPath[getInstanceResource(db).engine]}
-                  alt=""
                 />
                 <span>{extractDatabaseResourceName(db.name).databaseName}</span>
               </div>

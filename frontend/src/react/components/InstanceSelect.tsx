@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Combobox } from "@/react/components/ui/combobox";
 import { useInstanceV1Store } from "@/store";
@@ -84,11 +84,7 @@ export function InstanceSelect({
         if (!inst) return opt.label;
         return (
           <span className="flex items-center gap-1.5 truncate">
-            <img
-              className="h-4 w-4 shrink-0"
-              src={EngineIconPath[inst.engine]}
-              alt=""
-            />
+            <EngineIcon engine={inst.engine} className="h-4 w-4" />
             {inst.title}
           </span>
         );
@@ -106,11 +102,7 @@ export function InstanceSelect({
                   <span className="text-control-placeholder">&gt;</span>
                 </>
               )}
-              <img
-                className="h-4 w-4 shrink-0"
-                src={EngineIconPath[inst.engine]}
-                alt=""
-              />
+              <EngineIcon engine={inst.engine} className="h-4 w-4" />
               <span>{inst.title}</span>
             </div>
             <span className="text-xs text-control-placeholder">
