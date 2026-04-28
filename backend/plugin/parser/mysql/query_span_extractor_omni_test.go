@@ -759,6 +759,15 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "c1", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
 		}, span.Results)
+
+		span, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT x.a FROM t, LATERAL (SELECT t.a) AS x",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
 	})
 
 	t.Run("join_dependency_edges", func(t *testing.T) {
@@ -847,6 +856,14 @@ func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 			"SELECT a FROM t UNION SELECT a, b FROM t2",
 		)
 		require.ErrorContains(t, err, "UNION operator left has 1 fields, right has 2 fields")
+
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"WITH c1 AS (SELECT a FROM c2), c2 AS (SELECT a FROM t) SELECT * FROM c1",
+		)
+		require.NoError(t, err)
+		require.Empty(t, span.Results)
+		require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
 	})
 
 	t.Run("set_operation_in_derived_and_cte", func(t *testing.T) {
@@ -951,6 +968,17 @@ func TestOmniQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 				require.Equal(t, tc.want, span.Results)
 			})
 		}
+	})
+
+	t.Run("recursive_cte_reaches_stable_source_closure", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"WITH RECURSIVE c(x) AS (SELECT a FROM t UNION SELECT t2.b FROM t2 JOIN c ON c.x = t2.a) SELECT * FROM c",
+		)
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "x", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t2", Column: "b"}}), IsPlainField: false},
+		}, span.Results)
 	})
 }
 
@@ -1165,6 +1193,65 @@ func TestOmniQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 }
 
+func TestOmniQuerySpanScenarioBatch5_StarRocksAndMetadataCoverage(t *testing.T) {
+	t.Run("starrocks_cluster_qualified_tables", func(t *testing.T) {
+		gCtx := newOmniStarRocksTestQuerySpanContext()
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT `cluster_name:db`.products.product_info FROM `cluster_name:db`.products",
+		)
+		require.NoError(t, err)
+		require.Equal(t, base.Select, span.Type)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "product_info", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products"}}), span.SourceColumns)
+	})
+
+	t.Run("starrocks_system_user_mixing_uses_normalized_database", func(t *testing.T) {
+		gCtx := newOmniStarRocksTestQuerySpanContext()
+		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT * FROM products, `cluster_name:information_schema`.tables",
+		)
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+	})
+
+	t.Run("mysql_and_starrocks_lineage_match_without_cluster_prefix", func(t *testing.T) {
+		mysqlSpan, err := newOmniQuerySpanExtractor("db", newOmniTestQuerySpanContext(), false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT product_info FROM products",
+		)
+		require.NoError(t, err)
+
+		starrocksSpan, err := newOmniQuerySpanExtractor("db", newOmniStarRocksTestQuerySpanContext(), false).getOmniQuerySpan(
+			context.Background(),
+			"SELECT product_info FROM products",
+		)
+		require.NoError(t, err)
+		require.Equal(t, mysqlSpan.Results, starrocksSpan.Results)
+		require.Equal(t, mysqlSpan.SourceColumns, starrocksSpan.SourceColumns)
+	})
+
+	t.Run("duplicate_database_case_uses_ignore_case_setting", func(t *testing.T) {
+		gCtx := newOmniCaseCollisionTestQuerySpanContext()
+
+		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT DB.t.a FROM DB.t")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "DB", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "DB", Table: "t"}}), span.SourceColumns)
+
+		span, err = newOmniQuerySpanExtractor("db", gCtx, true).getOmniQuerySpan(context.Background(), "SELECT DB.t.a FROM DB.t")
+		require.NoError(t, err)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
+		}, span.Results)
+		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "DB", Table: "t"}}), span.SourceColumns)
+	})
+}
+
 func sourceColumnSetFromResources(resources []base.ColumnResource) base.SourceColumnSet {
 	result := make(base.SourceColumnSet)
 	for _, resource := range resources {
@@ -1276,6 +1363,53 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 		},
 	}
 	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	return base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: databaseMetadataGetter,
+		ListDatabaseNamesFunc:   databaseNameLister,
+		Engine:                  storepb.Engine_MYSQL,
+	}
+}
+
+func newOmniStarRocksTestQuerySpanContext() base.GetQuerySpanContext {
+	gCtx := newOmniTestQuerySpanContext()
+	gCtx.Engine = storepb.Engine_STARROCKS
+	return gCtx
+}
+
+func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
+	dbMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "t",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "a"},
+						},
+					},
+				},
+			},
+		},
+	}
+	upperMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "DB",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "t",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "a"},
+						},
+					},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{dbMetadata, upperMetadata})
 	return base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,

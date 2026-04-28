@@ -150,7 +150,7 @@ func TestExtractTableRefs(t *testing.T) {
 		require.NoError(t, err, "failed to parse statement: %s", test.statement)
 		require.Len(t, parseResult.Items, 1, "expected one parse result for statement: %s", test.statement)
 
-		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db")
+		sourceColumns := collectOmniAccessTables(parseResult.Items[0], "db", false)
 		var resources []base.SchemaResource
 		for resource := range sourceColumns {
 			resources = append(resources, base.SchemaResource{

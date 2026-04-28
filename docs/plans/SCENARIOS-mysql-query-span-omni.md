@@ -105,7 +105,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] single table source resolves physical table columns.
 - [x] table alias changes the visible table name for column resolution.
 - [x] database-qualified table source resolves against the qualified database.
-- [ ] cluster-qualified StarRocks table source filters cluster name as before.
+- [x] cluster-qualified StarRocks table source filters cluster name as before.
 - [x] parenthesized single table source resolves like the unparenthesized table.
 - [x] comma-separated table sources expose all tables to target resolution.
 - [x] `DUAL` produces no table source and allows literal targets.
@@ -134,11 +134,11 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] derived table column alias list renames output columns.
 - [x] derived table column alias count mismatch returns legacy error.
 - [x] nested derived tables preserve lineage through each layer.
-- [ ] lateral derived table preserves correlation behavior.
+- [x] lateral derived table preserves correlation behavior.
 - [x] `JSON_TABLE` exposes declared columns as pseudo-table columns.
 - [x] `JSON_TABLE` column lineage comes from the JSON document expression.
 - [x] nested `JSON_TABLE` columns flatten in legacy order.
-- [ ] `JSON_TABLE` with alias omitted uses the legacy generated table name.
+- [~] `JSON_TABLE` with alias omitted uses the legacy generated table name — (omni parser currently rejects alias-less `JSON_TABLE`)
 
 ## Phase 4: Subqueries, CTEs, And Set Operations
 
@@ -161,9 +161,9 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] nested CTE references resolve in legacy visibility order.
 - [x] recursive CTE merges anchor and recursive branch source columns.
 - [x] recursive CTE explicit column list count mismatch returns legacy error.
-- [ ] recursive CTE reaches a stable source-column closure.
+- [x] recursive CTE reaches a stable source-column closure.
 - [x] CTE name shadows physical table name according to legacy behavior.
-- [ ] later CTE cannot be referenced by earlier CTE unless legacy allowed it.
+- [x] later CTE cannot be referenced by earlier CTE unless legacy allowed it.
 
 ### 4.3 Set Operations
 
@@ -222,7 +222,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] view output column names are applied to view-derived results.
 - [x] view recursion through nested views preserves source table lineage.
 - [x] missing view dependency maps to legacy `NotFoundError` behavior.
-- [ ] duplicate database names with case differences follow `ignoreCaseSensitive`.
+- [x] duplicate database names with case differences follow `ignoreCaseSensitive`.
 - [x] default database is used when table reference omits database.
 - [x] explicit database overrides default database.
 
@@ -238,6 +238,6 @@ Status: [ ] pending, [x] passing, [~] partial.
 ### 6.3 Engine-Specific Behavior
 
 - [x] current StarRocks fixtures keep matching golden output.
-- [ ] StarRocks cluster-qualified database names are normalized before metadata lookup.
-- [ ] StarRocks system/user table mixing follows legacy behavior.
-- [ ] MySQL and StarRocks use the same lineage rules unless a fixture proves otherwise.
+- [x] StarRocks cluster-qualified database names are normalized before metadata lookup.
+- [x] StarRocks system/user table mixing follows legacy behavior.
+- [x] MySQL and StarRocks use the same lineage rules unless a fixture proves otherwise.

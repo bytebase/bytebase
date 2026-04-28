@@ -8,6 +8,7 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -48,7 +49,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	}
 
 	root := stmts.Items[0]
-	accessTables := collectOmniAccessTables(root, q.defaultDatabase)
+	accessTables := collectOmniAccessTables(root, q.defaultDatabase, q.gCtx.Engine == storepb.Engine_STARROCKS)
 	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
@@ -427,6 +428,9 @@ func (q *omniQuerySpanExtractor) extractOmniSubquery(expr *ast.SubqueryExpr) (*b
 		return &base.PseudoTable{}, nil
 	}
 	subqueryExtractor := q.cloneOmniForSubquery()
+	if expr.Lateral {
+		subqueryExtractor.outerTableSources = append(subqueryExtractor.outerTableSources, q.priorTableInFrom...)
+	}
 	tableSource, err := subqueryExtractor.extractOmniSelectStmt(expr.Select)
 	if err != nil {
 		return nil, err
@@ -1039,13 +1043,13 @@ func classifyOmniQueryType(node ast.Node, allSystems bool) base.QueryType {
 	}
 }
 
-func collectOmniAccessTables(root ast.Node, defaultDatabase string) base.SourceColumnSet {
+func collectOmniAccessTables(root ast.Node, defaultDatabase string, normalizeStarRocksCluster bool) base.SourceColumnSet {
 	result := make(base.SourceColumnSet)
-	collectOmniAccessTablesFromNode(result, root, defaultDatabase)
+	collectOmniAccessTablesFromNode(result, root, defaultDatabase, normalizeStarRocksCluster)
 	return result
 }
 
-func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node, defaultDatabase string) {
+func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node, defaultDatabase string, normalizeStarRocksCluster bool) {
 	switch n := node.(type) {
 	case nil:
 	case *ast.SelectStmt:
@@ -1054,68 +1058,68 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		}
 		for _, cte := range n.CTEs {
 			if cte != nil {
-				collectOmniAccessTablesFromNode(result, cte.Select, defaultDatabase)
+				collectOmniAccessTablesFromNode(result, cte.Select, defaultDatabase, normalizeStarRocksCluster)
 			}
 		}
 		if n.Left != nil {
-			collectOmniAccessTablesFromNode(result, n.Left, defaultDatabase)
+			collectOmniAccessTablesFromNode(result, n.Left, defaultDatabase, normalizeStarRocksCluster)
 		}
 		if n.Right != nil {
-			collectOmniAccessTablesFromNode(result, n.Right, defaultDatabase)
+			collectOmniAccessTablesFromNode(result, n.Right, defaultDatabase, normalizeStarRocksCluster)
 		}
 		for _, target := range n.TargetList {
-			collectOmniAccessTablesFromExpr(result, target, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, target, defaultDatabase, normalizeStarRocksCluster)
 		}
 		for _, tableExpr := range n.From {
-			collectOmniAccessTablesFromTableExpr(result, tableExpr, defaultDatabase)
+			collectOmniAccessTablesFromTableExpr(result, tableExpr, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase, normalizeStarRocksCluster)
 		for _, groupBy := range n.GroupBy {
-			collectOmniAccessTablesFromExpr(result, groupBy, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, groupBy, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromExpr(result, n.Having, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, n.Having, defaultDatabase, normalizeStarRocksCluster)
 		for _, orderBy := range n.OrderBy {
 			if orderBy != nil {
-				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase)
+				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
 			}
 		}
 	case *ast.ExplainStmt:
 		if n.Analyze {
-			collectOmniAccessTablesFromNode(result, n.Stmt, defaultDatabase)
+			collectOmniAccessTablesFromNode(result, n.Stmt, defaultDatabase, normalizeStarRocksCluster)
 		}
 	case *ast.TableStmt:
-		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase)
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ValuesStmt:
 		for _, row := range n.Rows {
 			for _, expr := range row {
-				collectOmniAccessTablesFromExpr(result, expr, defaultDatabase)
+				collectOmniAccessTablesFromExpr(result, expr, defaultDatabase, normalizeStarRocksCluster)
 			}
 		}
 		for _, orderBy := range n.OrderBy {
 			if orderBy != nil {
-				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase)
+				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
 			}
 		}
 	case *ast.CallStmt:
 		for _, arg := range n.Args {
-			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase, normalizeStarRocksCluster)
 		}
 	case *ast.DoStmt:
 		for _, expr := range n.Exprs {
-			collectOmniAccessTablesFromExpr(result, expr, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, expr, defaultDatabase, normalizeStarRocksCluster)
 		}
 	case *ast.HandlerOpenStmt:
-		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase)
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.HandlerReadStmt:
-		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase)
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.HandlerCloseStmt:
-		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase)
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
 	default:
 	}
 }
 
-func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *ast.TableRef, defaultDatabase string) {
+func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *ast.TableRef, defaultDatabase string, normalizeStarRocksCluster bool) {
 	if tableRef == nil {
 		return
 	}
@@ -1125,6 +1129,8 @@ func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *
 	database := tableRef.Schema
 	if database == "" {
 		database = defaultDatabase
+	} else if normalizeStarRocksCluster {
+		database = filterStarRocksClusterName(database)
 	}
 	result[base.ColumnResource{
 		Database: database,
@@ -1136,20 +1142,20 @@ func isOmniDualTable(tableRef *ast.TableRef) bool {
 	return tableRef != nil && tableRef.Schema == "" && strings.EqualFold(tableRef.Name, "dual")
 }
 
-func collectOmniAccessTablesFromTableExpr(result base.SourceColumnSet, tableExpr ast.TableExpr, defaultDatabase string) {
+func collectOmniAccessTablesFromTableExpr(result base.SourceColumnSet, tableExpr ast.TableExpr, defaultDatabase string, normalizeStarRocksCluster bool) {
 	switch n := tableExpr.(type) {
 	case *ast.TableRef:
-		collectOmniAccessTablesFromTableRef(result, n, defaultDatabase)
+		collectOmniAccessTablesFromTableRef(result, n, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.JoinClause:
-		collectOmniAccessTablesFromTableExpr(result, n.Left, defaultDatabase)
-		collectOmniAccessTablesFromTableExpr(result, n.Right, defaultDatabase)
+		collectOmniAccessTablesFromTableExpr(result, n.Left, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromTableExpr(result, n.Right, defaultDatabase, normalizeStarRocksCluster)
 		switch condition := n.Condition.(type) {
 		case *ast.OnCondition:
-			collectOmniAccessTablesFromExpr(result, condition.Expr, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, condition.Expr, defaultDatabase, normalizeStarRocksCluster)
 		default:
 		}
 	case *ast.SubqueryExpr:
-		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase)
+		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.JsonTableExpr:
 		// JSON_TABLE itself is a table function, not a persisted table. Its
 		// expression children will be handled by lineage extraction later.
@@ -1157,85 +1163,93 @@ func collectOmniAccessTablesFromTableExpr(result base.SourceColumnSet, tableExpr
 	}
 }
 
-func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprNode, defaultDatabase string) {
+func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprNode, defaultDatabase string, normalizeStarRocksCluster bool) {
 	switch e := expr.(type) {
 	case nil:
 	case *ast.ResTarget:
-		collectOmniAccessTablesFromExpr(result, e.Val, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Val, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.BinaryExpr:
-		collectOmniAccessTablesFromExpr(result, e.Left, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Right, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Left, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.Right, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.UnaryExpr:
-		collectOmniAccessTablesFromExpr(result, e.Operand, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Operand, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.FuncCallExpr:
 		for _, arg := range e.Args {
-			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromExpr(result, e.Separator, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Separator, defaultDatabase, normalizeStarRocksCluster)
 		if e.Over != nil {
 			for _, partitionBy := range e.Over.PartitionBy {
-				collectOmniAccessTablesFromExpr(result, partitionBy, defaultDatabase)
+				collectOmniAccessTablesFromExpr(result, partitionBy, defaultDatabase, normalizeStarRocksCluster)
 			}
 			for _, orderBy := range e.Over.OrderBy {
 				if orderBy != nil {
-					collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase)
+					collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
 				}
 			}
 		}
 	case *ast.SubqueryExpr:
-		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase)
+		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.CaseExpr:
-		collectOmniAccessTablesFromExpr(result, e.Operand, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Operand, defaultDatabase, normalizeStarRocksCluster)
 		for _, when := range e.Whens {
 			if when == nil {
 				continue
 			}
-			collectOmniAccessTablesFromExpr(result, when.Cond, defaultDatabase)
-			collectOmniAccessTablesFromExpr(result, when.Result, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, when.Cond, defaultDatabase, normalizeStarRocksCluster)
+			collectOmniAccessTablesFromExpr(result, when.Result, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromExpr(result, e.Default, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Default, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.BetweenExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Low, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.High, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.Low, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.High, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.InExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 		for _, item := range e.List {
-			collectOmniAccessTablesFromExpr(result, item, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, item, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase)
+		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.LikeExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Pattern, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Escape, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.Pattern, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.Escape, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.IsExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ExistsExpr:
-		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase)
+		collectOmniAccessTablesFromNode(result, e.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.CastExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ExtractExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.IntervalExpr:
-		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.CollateExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.MatchExpr:
 		for _, column := range e.Columns {
-			collectOmniAccessTablesFromExpr(result, column, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, column, defaultDatabase, normalizeStarRocksCluster)
 		}
-		collectOmniAccessTablesFromExpr(result, e.Against, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Against, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ConvertExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.RowExpr:
 		for _, item := range e.Items {
-			collectOmniAccessTablesFromExpr(result, item, defaultDatabase)
+			collectOmniAccessTablesFromExpr(result, item, defaultDatabase, normalizeStarRocksCluster)
 		}
 	case *ast.MemberOfExpr:
-		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase)
-		collectOmniAccessTablesFromExpr(result, e.Array, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Value, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, e.Array, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ParenExpr:
-		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase)
+		collectOmniAccessTablesFromExpr(result, e.Expr, defaultDatabase, normalizeStarRocksCluster)
 	default:
 	}
+}
+
+func filterStarRocksClusterName(databaseName string) string {
+	list := strings.Split(databaseName, ":")
+	if len(list) > 1 {
+		return list[len(list)-1]
+	}
+	return databaseName
 }
