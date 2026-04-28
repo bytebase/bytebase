@@ -203,7 +203,6 @@
   "common": {
     "Default": "Mặc định",
     "access-denied": "Truy cập bị từ chối",
-    "access-expires": "Truy cập hết hạn",
     "action-required": "Cần thực hiện hành động",
     "activated": "Đã kích hoạt",
     "active": "Hoạt động",
@@ -237,7 +236,6 @@
     "collapse": "Thu gọn",
     "column": "Cột",
     "comment": "Bình luận",
-    "condition": "Điều kiện",
     "configure": "Cấu hình",
     "configure-now": "Cấu hình ngay",
     "confirm": "Xác nhận",
@@ -257,13 +255,7 @@
     "database": "Cơ sở dữ liệu",
     "database-group": "Nhóm cơ sở dữ liệu | Nhóm cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
-    "date": {
-      "days": "{days} ngày",
-      "month": "1 tháng",
-      "months": "{months} tháng",
-      "week": "1 tuần",
-      "year": "1 năm"
-    },
+    "date": {},
     "deactivate": "Hủy kích hoạt",
     "default": "Mặc định",
     "definition": "Định nghĩa",
@@ -314,13 +306,7 @@
     "go-back": "Quay lại",
     "google-chat": "Google Chat",
     "groups": "Nhóm",
-    "hard-delete": {
-      "description": "Tài nguyên này và các tài nguyên liên quan khác sẽ bị xóa cứng. Bạn không thể hoàn tác hành động này.",
-      "double-comfirm": "Để xác nhận xóa, vui lòng nhập: {name}",
-      "notification": "Xóa thành công tài nguyên '{name}'.",
-      "self": "Xóa cứng",
-      "title": "Xóa cứng {name}?"
-    },
+    "hard-delete": {},
     "history": "Lịch sử",
     "home": "Trang chủ",
     "id": "ID",
@@ -336,7 +322,6 @@
     "language": "Ngôn ngữ",
     "lark": "Lark",
     "learn-more": "Tìm hiểu thêm",
-    "leave": "Rời khỏi",
     "leave-without-saving": "Thoát mà không lưu?",
     "license": "Giấy phép",
     "line": "Dòng",
@@ -348,7 +333,6 @@
     "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
-    "mode": "Chế độ",
     "n-items-selected": "Đã chọn {n} mục",
     "n-more": "+{n} nữa",
     "name": "Tên",
@@ -409,7 +393,6 @@
     "rows-per-page": "Số dòng mỗi trang",
     "run": "Chạy",
     "save": "Lưu",
-    "schedule": "Lịch trình",
     "schema": "Lược đồ",
     "scope": "Phạm vi",
     "search": "Tìm kiếm",
@@ -434,7 +417,6 @@
     "state": "Trạng thái",
     "statement": "Câu lệnh",
     "status": "Trạng thái",
-    "stay": "Ở lại",
     "submit": "Nộp",
     "succeed": "Thành công",
     "success": "Thành công",
@@ -468,7 +450,6 @@
     "view-doc": "Xem tài liệu",
     "visibility": "Hiển thị",
     "want-help": "Cần trợ giúp",
-    "warehouse": "Kho",
     "warning": "Cảnh báo",
     "webhooks": "Webhooks",
     "wecom": "WeCom",
@@ -652,13 +633,11 @@
       "reference": "Tham chiếu"
     },
     "foreign-keys": "Khóa ngoại",
-    "foreign-table-detail": "Chi tiết bảng ngoại",
     "index-size": "Kích thước chỉ mục",
     "indexes": "Chỉ mục",
     "labels": "Nhãn cơ sở dữ liệu",
     "last-sync": "Lần đồng bộ cuối cùng",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
-    "mixed-values-for-label": "Nhãn đã chọn này có các giá trị hỗn hợp",
     "nullable": "Có thể null",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
@@ -736,23 +715,15 @@
       "select": "Chọn bảng",
       "select-tip": "Vui lòng chọn một bảng để bắt đầu."
     },
-    "table-detail": "Chi tiết bảng",
     "transfer": {
-      "errors": {
-        "select-at-least-one-database": "Chọn ít nhất một cơ sở dữ liệu",
-        "select-target-project": "Chọn dự án đích"
-      },
-      "select-databases": "Chọn cơ sở dữ liệu",
-      "select-target-project": "Chọn dự án đích"
+      "errors": {}
     },
-    "transfer-database-to": "Chuyển cơ sở dữ liệu sang dự án đích",
     "transfer-project": "Chuyển dự án",
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
     "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "unique": "Duy nhất",
-    "view-definition": "Định nghĩa khung nhìn",
     "visible": "Hiển thị"
   },
   "database-group": {
@@ -760,7 +731,6 @@
       "self": "Điều kiện"
     },
     "delete-group": "Xóa nhóm cơ sở dữ liệu {name}",
-    "deleted": "Nhóm cơ sở dữ liệu đã xóa",
     "matched-database": "Cơ sở dữ liệu phù hợp",
     "no-matched-databases": "Không có cơ sở dữ liệu phù hợp",
     "select": "Chọn nhóm cơ sở dữ liệu",
@@ -779,7 +749,6 @@
     "failed-to-sync-schema": "Không đồng bộ hóa được lược đồ",
     "failed-to-sync-schema-for-database-database-value-name": "Không đồng bộ hóa được lược đồ cho cơ sở dữ liệu '{0}'.",
     "functions": "Hàm",
-    "labels-for-resource": "Nhãn cho {resource}",
     "n-databases-had-sync-errors": "{0} cơ sở dữ liệu gặp lỗi đồng bộ",
     "packages": "Gói",
     "partitions": "Phân vùng",
@@ -1221,8 +1190,6 @@
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
-      "custom-date": "Ngày tùy chỉnh",
-      "custom-date-placeholder": "Chọn ngày và giờ hết hạn",
       "details": "Yêu cầu chi tiết",
       "expired-at": "Hết hạn vào",
       "manually-select": "Chọn thủ công",
@@ -1235,12 +1202,7 @@
       "sort": "Sắp xếp",
       "updated": "Thời gian cập nhật"
     },
-    "sql-check": {
-      "back-to-edit": "Quay lại chỉnh sửa",
-      "sql-review-violations": "Vi phạm đánh giá SQL",
-      "statement-is-required": "Câu lệnh SQL là bắt buộc",
-      "statement-is-too-large": "Vì kích thước câu lệnh hiện tại vượt quá 2MB, việc kiểm tra SQL sẽ bị bỏ qua."
-    },
+    "sql-check": {},
     "statement-from-sheet-warning": "Do kích thước SQL vượt quá, nó đã bị cắt bớt để hiển thị và chỉnh sửa bị vô hiệu hóa. Bạn có thể tải lên một tệp SQL mới để ghi đè nó.",
     "status-transition": {
       "modal": {
@@ -1274,7 +1236,6 @@
     "transaction-mode": {
       "label": "Chế độ giao dịch"
     },
-    "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Đã phê duyệt\" nhưng một số tác vụ của nó không được thực hiện thành công.",
     "upload-sql": "Tải lên SQL",
     "upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
     "waiting-approval": "Đang chờ phê duyệt"
@@ -1347,9 +1308,7 @@
       "placeholder": "Thêm mô tả"
     },
     "editor": {
-      "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục",
-      "unsaved-changes": "Những thay đổi chưa lưu",
-      "unsaved-changes-message": "Bạn chưa lưu thay đổi. Bạn có chắc chắn muốn thoát không?"
+      "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
     "isolation-level": {
@@ -1401,10 +1360,7 @@
     "spec": {
       "change": "Thay đổi",
       "type": {
-        "create-database": "Tạo cơ sở dữ liệu",
-        "database-change": "Thay đổi cơ sở dữ liệu",
-        "export-data": "Xuất dữ liệu",
-        "unknown": "Không rõ"
+        "database-change": "Thay đổi cơ sở dữ liệu"
       }
     },
     "state": {
@@ -1517,7 +1473,6 @@
       "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
       "never-expires": "Không bao giờ",
-      "role-never-expires": "Vai trò này không bao giờ hết hạn.",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc"
     },
     "overview": {
@@ -1659,11 +1614,7 @@
   "quick-action": {
     "create-db": "Tạo cơ sở dữ liệu",
     "create-project": "Tạo Dự án",
-    "from-projects": "Từ các dự án khác",
-    "from-unassigned-databases": "Cơ sở dữ liệu chưa được gán",
-    "request-export-data": "Yêu cầu Xuất",
-    "transfer-in-db-title": "Chuyển vào cơ sở dữ liệu",
-    "unassigned-db-hint": "Các cơ sở dữ liệu mới được đồng bộ hóa bắt đầu chưa được gán và phải được chuyển đến một dự án để sử dụng."
+    "request-export-data": "Yêu cầu Xuất"
   },
   "quick-start": {
     "guide": "nhấp vào bước để thử",
@@ -2185,13 +2136,11 @@
       "search-member": "Tìm kiếm thành viên",
       "select-account": "Chọn tài khoản | Chọn tài khoản",
       "select-account-hint": "Bạn có thể tìm kiếm người dùng và nhóm, hoặc nhập toàn bộ email để chọn tài khoản dịch vụ hoặc danh tính khối lượng công việc.",
-      "select-in-project": "Chọn người dùng hoặc nhóm trong {project}",
       "select-role": "Chọn vai trò | Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
       "service-accounts": "Tài khoản dịch vụ",
       "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
-      "system-bot": "Bot hệ thống",
       "table": {
         "account": "Tài khoản",
         "groups": "Nhóm",
@@ -2298,8 +2247,6 @@
       },
       "grant-access": "Cấp quyền truy cập",
       "never-expires": "Không bao giờ hết hạn",
-      "remove-classification-tips": "Xóa phân loại cho cột này?",
-      "remove-semantic-type-tips": "Xóa loại ngữ nghĩa cho cột này?",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
       "semantic-types": {
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
@@ -2636,7 +2583,6 @@
   "sql-review": {
     "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
     "add-rules": "Thêm quy tắc",
-    "all-checks-passed": "Tất cả kiểm tra đã vượt qua",
     "attach-resource": {
       "change-resources": "Thay đổi tài nguyên đính kèm",
       "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
@@ -2646,9 +2592,7 @@
       "override-warning": "Các tài nguyên sau đã được liên kết với các chính sách đánh giá SQL khác. Nhấp vào \"{button}\" sẽ ghi đè cấu hình.",
       "self": "Đính kèm vào tài nguyên"
     },
-    "category": {
-      "builtin": "Tích hợp sẵn"
-    },
+    "category": {},
     "configure-policy": "Định cấu hình chính sách",
     "create": {
       "basic-info": {
@@ -2685,7 +2629,6 @@
     "policy-removed": "Đã xóa thành công chính sách đánh giá.",
     "policy-update-failed": "Không cập nhật được chính sách đánh giá.",
     "policy-updated": "Đã cập nhật thành công chính sách đánh giá.",
-    "rule-detail": "Chi tiết quy tắc",
     "select-all": "Chọn tất cả",
     "select-review-rules": "Chọn quy tắc đánh giá SQL",
     "title": "Đánh giá SQL"
@@ -2794,9 +2737,7 @@
   "task": {
     "affected-rows": "Hàng bị ảnh hưởng",
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
-    "check-result": {
-      "title-general": "Kết quả kiểm tra"
-    },
+    "check-result": {},
     "check-type": {
       "affected-rows": {
         "description": "Ước tính theo thông tin thống kê.",
@@ -2823,12 +2764,10 @@
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "online-migration": {
-      "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến.",
       "self": "Di chuyển trực tuyến"
     },
     "only-showing-latest-n-runs": "Chỉ hiển thị các lần chạy {n} mới nhất",
     "prior-backup": "Sao lưu trước",
-    "run-checks": "Chạy kiểm tra",
     "run-history": "Lịch sử chạy",
     "run-immediately": {
       "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
