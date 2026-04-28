@@ -215,9 +215,6 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	}
 
 	if len(grants) == 0 {
-		// Operational diagnostic only. Cheap no-op unless debug logging is on.
-		// See sql_service_jit_diag.go for why this is gated and bounded.
-		s.logJITGrantMissDiagnostic(ctx, databaseFullName, database.ProjectID, user.Email, strings.TrimSpace(request.Statement))
 		return nil
 	}
 	// Pick the best grant (prefer unmask=true).
