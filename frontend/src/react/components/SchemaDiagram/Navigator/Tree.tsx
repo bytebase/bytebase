@@ -66,6 +66,10 @@ export function NavigatorTree({
     return schemaNodes;
   }, [selectedSchemas]);
 
+  // Match Vue's `default-expand-all="true"` — every schema row opens
+  // expanded so the table children are visible without manual clicking.
+  const expandedIds = useMemo(() => data.map((node) => node.id), [data]);
+
   return (
     <ArboristTree<NavigatorTreeNode>
       className={cn(
@@ -74,6 +78,7 @@ export function NavigatorTree({
       )}
       data={data}
       height={height}
+      expandedIds={expandedIds}
       searchTerm={keyword}
       searchMatch={(node, term) =>
         (node.data.data.name ?? "").toLowerCase().includes(term.toLowerCase())

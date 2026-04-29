@@ -94,12 +94,16 @@ export function SchemaDiagramProvider({
   }, [databaseMetadata, selectedSchemaNames]);
 
   const foreignKeys = useMemo<ForeignKey[]>(() => {
+    // Iterate ONLY `selectedSchemas` for both endpoints. If a user
+    // deselects a schema, FK edges that reference it are dropped — same
+    // semantics as Vue's `find()` helper. Otherwise ELK gets edges whose
+    // endpoints aren't in the node list, which destabilizes layout.
     const out: ForeignKey[] = [];
-    for (const schema of databaseMetadata.schemas) {
+    for (const schema of selectedSchemas) {
       for (const table of schema.tables) {
         for (const fk of table.foreignKeys) {
           if (fk.columns.length === 0) continue;
-          const referencedSchema = databaseMetadata.schemas.find(
+          const referencedSchema = selectedSchemas.find(
             (s) => s.name === fk.referencedSchema
           );
           if (!referencedSchema) continue;
@@ -124,7 +128,7 @@ export function SchemaDiagramProvider({
       }
     }
     return out;
-  }, [databaseMetadata]);
+  }, [selectedSchemas]);
 
   const idOfTable = useCallback((table: TableMetadata) => {
     let id = tableIdsRef.current.get(table);
