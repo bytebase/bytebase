@@ -54,12 +54,13 @@ export function TransferProjectSheet({
             {t("database.selected-n-databases", { n: databases.length })}
           </p>
 
-          {/* Table grows / shrinks to fill remaining SheetBody space and
-              becomes the scroll container when the rows exceed it. The
-              `min-h-0` is required so flex can shrink it below the
-              natural content height; without it the children's intrinsic
-              size would push the SheetBody to overflow instead. */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* Table is naturally sized — short lists stay short. When the
+              row count would push the SheetBody past its bounds, this
+              wrapper is the only flex child without `shrink-0`, so it
+              shrinks to absorb the overflow and `overflow-y-auto` engages.
+              `min-h-0` lifts the implicit `min-height: auto` floor so the
+              shrink can go below the natural content height. */}
+          <div className="min-h-0 overflow-y-auto">
             <DatabaseTableView databases={databases} />
           </div>
 
