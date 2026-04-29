@@ -30,70 +30,137 @@ func (p *fakeMetadataDBTokenProvider) BuildAuthToken(_ context.Context, endpoint
 	return p.token, p.err
 }
 
-func TestParseMetadataDBAuthConfigDisabled(t *testing.T) {
-	cleanURL, authConfig, err := parseMetadataDBAuthConfig("postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full")
+func TestMetadataDBAuthConfigFromPGXConfigDisabled(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full")
+
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
 	require.NoError(t, err)
 	require.Nil(t, authConfig)
-	require.Equal(t, "postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full", cleanURL)
 }
 
-func TestParseMetadataDBAuthConfigEnabled(t *testing.T) {
-	cleanURL, authConfig, err := parseMetadataDBAuthConfig("postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1")
+func TestMetadataDBAuthConfigFromPGXConfigEnabledURL(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1")
+
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
 	require.NoError(t, err)
-	require.Equal(t, "postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full", cleanURL)
 	require.NotNil(t, authConfig)
 	require.True(t, authConfig.enabled)
 	require.Equal(t, "us-east-1", authConfig.region)
 	require.Equal(t, "example.us-east-1.rds.amazonaws.com:5432", authConfig.endpoint)
 	require.Equal(t, "bb_meta", authConfig.user)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRDSIAMParam)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRegionParam)
 }
 
-func TestParseMetadataDBAuthConfigStripsDisabledBytebaseAWSParams(t *testing.T) {
-	cleanURL, authConfig, err := parseMetadataDBAuthConfig("postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=false&bytebase_aws_region=us-east-1&sslmode=verify-full")
+func TestMetadataDBAuthConfigFromPGXConfigEnabledKeywordValue(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "host=example.us-east-1.rds.amazonaws.com port=5432 user=bb_meta dbname=bytebase sslmode=verify-full bytebase_aws_rds_iam=true bytebase_aws_region=us-east-1")
+
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
+	require.NoError(t, err)
+	require.NotNil(t, authConfig)
+	require.True(t, authConfig.enabled)
+	require.Equal(t, "us-east-1", authConfig.region)
+	require.Equal(t, "example.us-east-1.rds.amazonaws.com:5432", authConfig.endpoint)
+	require.Equal(t, "bb_meta", authConfig.user)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRDSIAMParam)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRegionParam)
+}
+
+func TestMetadataDBAuthConfigFromPGXConfigStripsDisabledBytebaseAWSParams(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=false&bytebase_aws_region=us-east-1&sslmode=verify-full")
+
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
 	require.NoError(t, err)
 	require.Nil(t, authConfig)
-	require.Equal(t, "postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full", cleanURL)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRDSIAMParam)
+	require.NotContains(t, pgxConfig.RuntimeParams, metadataDBAWSRegionParam)
 }
 
-func TestParseMetadataDBAuthConfigRequiresFields(t *testing.T) {
+func TestMetadataDBAuthConfigFromPGXConfigRequiresFields(t *testing.T) {
 	tests := []struct {
-		name    string
-		pgURL   string
-		wantErr string
+		name      string
+		configure func(*pgx.ConnConfig)
+		wantErr   string
 	}{
 		{
-			name:    "region",
-			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true",
-			wantErr: "bytebase_aws_region is required",
+			name:      "region",
+			configure: func(config *pgx.ConnConfig) { delete(config.RuntimeParams, metadataDBAWSRegionParam) },
+			wantErr:   "bytebase_aws_region is required",
 		},
 		{
-			name:    "user",
-			pgURL:   "postgres://example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
-			wantErr: "database user is required",
+			name:      "user",
+			configure: func(config *pgx.ConnConfig) { config.User = "" },
+			wantErr:   "database user is required",
 		},
 		{
-			name:    "host",
-			pgURL:   "postgres://bb@:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
-			wantErr: "database host is required",
+			name:      "host",
+			configure: func(config *pgx.ConnConfig) { config.Host = "" },
+			wantErr:   "database host is required",
 		},
 		{
-			name:    "port",
-			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
-			wantErr: "database port is required",
+			name:      "port",
+			configure: func(config *pgx.ConnConfig) { config.Port = 0 },
+			wantErr:   "database port is required",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := parseMetadataDBAuthConfig(tt.pgURL)
+			pgxConfig := mustParseMetadataDBPGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1")
+			tt.configure(pgxConfig)
+
+			_, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
 			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestParseMetadataDBAuthConfigRejectsIAMForNonURI(t *testing.T) {
-	_, _, err := parseMetadataDBAuthConfig("host=example.us-east-1.rds.amazonaws.com port=5432 user=bb bytebase_aws_rds_iam=true bytebase_aws_region=us-east-1")
-	require.ErrorContains(t, err, "metadata database AWS RDS IAM auth requires a postgres:// or postgresql:// URL")
+func TestMetadataDBAuthConfigFromPGXConfigNonURIAllowsAWSParamNamesInValues(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "host=example.us-east-1.rds.amazonaws.com port=5432 user=bb password=bytebase_aws_region application_name=bytebase_aws_rds_iam")
+
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
+	require.NoError(t, err)
+	require.Nil(t, authConfig)
+}
+
+func TestMetadataDBAuthConfigFromPGXConfigRequiresVerifiedTLS(t *testing.T) {
+	tests := []struct {
+		name  string
+		pgURL string
+	}{
+		{
+			name:  "disable",
+			pgURL: "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=disable&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+		},
+		{
+			name:  "require",
+			pgURL: "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=require&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pgxConfig := mustParseMetadataDBPGXConfig(t, tt.pgURL)
+
+			_, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
+			require.ErrorContains(t, err, "verified TLS is required")
+		})
+	}
+}
+
+func TestMetadataDBAuthConfigFromPGXConfigRejectsFallbacks(t *testing.T) {
+	pgxConfig := mustParseMetadataDBPGXConfig(t, "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=prefer&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1")
+
+	_, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+
+	require.ErrorContains(t, err, "fallback hosts or TLS fallback")
 }
 
 func TestNewMetadataDBBeforeConnectSetsPassword(t *testing.T) {
@@ -147,4 +214,12 @@ func TestMetadataDBOpenOptions(t *testing.T) {
 	}
 
 	require.Len(t, metadataDBOpenOptions(authConfig, &fakeMetadataDBTokenProvider{}), 1)
+}
+
+func mustParseMetadataDBPGXConfig(t *testing.T, pgURL string) *pgx.ConnConfig {
+	t.Helper()
+
+	pgxConfig, err := pgx.ParseConfig(pgURL)
+	require.NoError(t, err)
+	return pgxConfig
 }

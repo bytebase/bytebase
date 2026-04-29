@@ -38,7 +38,7 @@ Standard implementations in other products follow the same general model: AWS cr
 
 Implement native metadata database IAM authentication in `backend/store`. Bytebase should generate an AWS RDS auth token whenever the metadata connection pool opens a new physical PostgreSQL connection. This keeps the operator-facing `PG_URL` model, avoids storing a static database password, and matches the way AWS-supported drivers and database tools handle RDS IAM auth.
 
-Operators enable IAM auth through reserved Bytebase query parameters in `PG_URL`:
+Operators enable IAM auth through reserved Bytebase parameters in `PG_URL`:
 
 ```text
 postgres://bb_meta@mydb.abc.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1
@@ -51,7 +51,7 @@ The initial version supports these parameters:
 
 `bytebase_aws_region` is required in v1. Region derivation from RDS endpoint hostnames can be considered later, but requiring the region avoids surprising behavior with custom endpoints, Aurora endpoints, and future proxy setups.
 
-All `bytebase_aws_*` parameters must be removed before calling `pgx.ParseConfig` so they are not sent as PostgreSQL runtime parameters. When `bytebase_aws_rds_iam` is absent or false, existing behavior is unchanged.
+Bytebase reads the `bytebase_aws_*` parameters from pgx's parsed runtime parameters and deletes them before opening the database, so they are not sent as PostgreSQL startup parameters. When IAM auth is enabled, Bytebase must require verified TLS so the generated auth token is sent only over a verified connection. When `bytebase_aws_rds_iam` is absent or false, existing behavior is unchanged.
 
 The existing `PG_URL` file watcher remains available as a generic credential rotation mechanism, but it should not be the recommended RDS IAM path. An external token refresher pushes correctness to another process and swaps the whole `sql.DB` pool whenever the file changes. Native per-connection token generation is simpler for operators and better aligned with database pooling.
 
@@ -72,19 +72,20 @@ The security model is the standard RDS IAM model:
 
 - The PostgreSQL user must exist and be granted `rds_iam`.
 - The AWS principal used by the Bytebase process must have `rds-db:connect` permission for the database resource and user.
-- The recommended SSL mode is `verify-full` with an AWS RDS CA bundle or platform trust store that validates the RDS certificate.
+- IAM auth requires verified TLS, such as `sslmode=verify-full`, with an AWS RDS CA bundle or platform trust store that validates the RDS certificate.
 - No generated token should be persisted to disk, exported to logs, stored in settings, or exposed through metrics labels.
 
 ## Implementation design
 
 Add a small private metadata database auth layer in `backend/store`.
 
-Define a parser that splits `PG_URL` into two outputs:
+Define a metadata auth extractor that runs after `pgx.ParseConfig`:
 
-- a cleaned PostgreSQL connection string that can be passed to `pgx.ParseConfig`
-- a metadata auth config used by Bytebase before opening the pool
+- it reads `bytebase_aws_rds_iam` and `bytebase_aws_region` from `pgxConfig.RuntimeParams`
+- it deletes those Bytebase parameters from `RuntimeParams` so they are not sent to PostgreSQL
+- it returns a metadata auth config used by Bytebase before opening the pool
 
-The parser should support IAM auth only for URI-style PostgreSQL URLs. Keyword/value connection strings and local socket strings continue through the existing path unless IAM auth is explicitly requested, in which case Bytebase returns a clear startup error.
+Because pgx handles the connection string parsing after Bytebase classifies the input as a direct connection string, IAM auth works with URI-style values and compact keyword/value `PG_URL` values such as `host=... port=...`. Bytebase should reject pgx fallback configs while IAM is enabled because the generated token is scoped to one host:port endpoint.
 
 The metadata auth config should contain:
 
@@ -93,9 +94,9 @@ The metadata auth config should contain:
 - host and port used to build the token endpoint
 - database username
 
-Define a token provider interface so tests can inject a fake token builder. The production provider loads AWS config with `config.LoadDefaultConfig(ctx, config.WithRegion(region))` and calls `auth.BuildAuthToken(ctx, hostPort, region, user, cfg.Credentials)`.
+Define a token provider interface so tests can inject a fake token builder. The production provider loads AWS config once during metadata DB pool creation with `config.LoadDefaultConfig(ctx, config.WithRegion(region))`, stores the resulting credential provider, and calls `auth.BuildAuthToken(ctx, hostPort, region, user, credentials)` from the `BeforeConnect` hook.
 
-In `createConnectionWithTracer`, parse the metadata auth config before `pgx.ParseConfig`. If IAM auth is enabled, open the pool with:
+In `createConnectionWithTracer`, call `pgx.ParseConfig`, extract and validate the metadata auth config, then open the pool with:
 
 ```go
 stdlib.OpenDB(*pgxConfig, stdlib.OptionBeforeConnect(...))
@@ -107,13 +108,13 @@ Keep the existing `metadataDBTracer` behavior, startup ping, and `max_connection
 
 Do not set `ConnMaxLifetime` to 15 minutes. Token expiration does not terminate established sessions, and forced churn would increase token generation pressure without improving correctness.
 
-Startup should fail with a clear message when IAM auth is enabled but region, host, port, or user is missing. Token-generation errors should include enough context to identify the endpoint, region, and user, but must not include the generated token or a full secret-bearing `PG_URL`. If PostgreSQL rejects the token, Bytebase should surface the database ping or connection error normally.
+Startup should fail with a clear message when IAM auth is enabled but region, verified TLS, host, port, or user is missing, or when pgx parsed fallback configs are present. Token-generation errors should include enough context to identify the endpoint, region, and user, but must not include the generated token or a full secret-bearing `PG_URL`. If PostgreSQL rejects the token, Bytebase should surface the database ping or connection error normally.
 
 Testing should cover:
 
 - `PG_URL` parsing and Bytebase query-parameter stripping
 - non-IAM `PG_URL` compatibility
-- required field validation for region, user, host, and port
+- required field validation for region, verified TLS, user, host, port, and unsupported fallback configs
 - `BeforeConnect` behavior with a fake token provider
 - token-generation error propagation
 - Helm rendering when `awsRdsIam.enabled` is true

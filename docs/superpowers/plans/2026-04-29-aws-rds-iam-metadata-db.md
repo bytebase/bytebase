@@ -72,22 +72,22 @@ func TestParseMetadataDBAuthConfigRequiresFields(t *testing.T) {
 	}{
 		{
 			name:    "region",
-			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true",
+			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true",
 			wantErr: "bytebase_aws_region is required",
 		},
 		{
 			name:    "user",
-			pgURL:   "postgres://example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+			pgURL:   "postgres://example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
 			wantErr: "database user is required",
 		},
 		{
 			name:    "host",
-			pgURL:   "postgres://bb@:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+			pgURL:   "postgres://bb@:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
 			wantErr: "database host is required",
 		},
 		{
 			name:    "port",
-			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+			pgURL:   "postgres://bb@example.us-east-1.rds.amazonaws.com/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
 			wantErr: "database port is required",
 		},
 	}
@@ -103,6 +103,33 @@ func TestParseMetadataDBAuthConfigRequiresFields(t *testing.T) {
 func TestParseMetadataDBAuthConfigRejectsIAMForNonURI(t *testing.T) {
 	_, _, err := parseMetadataDBAuthConfig("host=example.us-east-1.rds.amazonaws.com port=5432 user=bb bytebase_aws_rds_iam=true bytebase_aws_region=us-east-1")
 	require.ErrorContains(t, err, "metadata database AWS RDS IAM auth requires a postgres:// or postgresql:// URL")
+}
+
+func TestParseMetadataDBAuthConfigRequiresVerifyFullSSLMode(t *testing.T) {
+	tests := []struct {
+		name  string
+		pgURL string
+	}{
+		{
+			name:  "missing",
+			pgURL: "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+		},
+		{
+			name:  "disable",
+			pgURL: "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=disable&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+		},
+		{
+			name:  "require",
+			pgURL: "postgres://bb@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=require&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := parseMetadataDBAuthConfig(tt.pgURL)
+			require.ErrorContains(t, err, "sslmode=verify-full is required")
+		})
+	}
 }
 ```
 
@@ -176,6 +203,10 @@ func parseMetadataDBAuthConfig(pgURL string) (string, *metadataDBAuthConfig, err
 
 	if region == "" {
 		return "", nil, errors.Errorf("%s is required when metadata database AWS RDS IAM auth is enabled", metadataDBAWSRegionParam)
+	}
+
+	if q.Get("sslmode") != "verify-full" {
+		return "", nil, errors.New("sslmode=verify-full is required when metadata database AWS RDS IAM auth is enabled")
 	}
 
 	user := u.User.Username()
@@ -337,6 +368,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
@@ -344,17 +376,26 @@ import (
 )
 ```
 
-Append the production provider to `backend/store/metadata_db_auth.go`:
+Append the production provider to `backend/store/metadata_db_auth.go`. AWS config is loaded once while the metadata DB pool is being created; each `BeforeConnect` call reuses the cached credential provider and only builds a fresh RDS auth token:
 
 ```go
-type awsMetadataDBTokenProvider struct{}
+type awsMetadataDBTokenProvider struct {
+	credentials aws.CredentialsProvider
+}
 
-func (*awsMetadataDBTokenProvider) BuildAuthToken(ctx context.Context, endpoint, region, user string) (string, error) {
+func newAWSMetadataDBTokenProvider(ctx context.Context, region string) (*awsMetadataDBTokenProvider, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return "", errors.Wrap(err, "failed to load AWS config")
+		return nil, errors.Wrap(err, "failed to load AWS config")
 	}
-	token, err := auth.BuildAuthToken(ctx, endpoint, region, user, cfg.Credentials)
+
+	return &awsMetadataDBTokenProvider{
+		credentials: cfg.Credentials,
+	}, nil
+}
+
+func (p *awsMetadataDBTokenProvider) BuildAuthToken(ctx context.Context, endpoint, region, user string) (string, error) {
+	token, err := auth.BuildAuthToken(ctx, endpoint, region, user, p.credentials)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create authentication token")
 	}
@@ -467,7 +508,14 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, err
 	}
 
 	pgxConfig.Tracer = &metadataDBTracer{}
-	db := stdlib.OpenDB(*pgxConfig, metadataDBOpenOptions(authConfig, &awsMetadataDBTokenProvider{})...)
+	var tokenProvider metadataDBTokenProvider
+	if authConfig != nil && authConfig.enabled {
+		tokenProvider, err = newAWSMetadataDBTokenProvider(ctx, authConfig.region)
+		if err != nil {
+			return nil, err
+		}
+	}
+	db := stdlib.OpenDB(*pgxConfig, metadataDBOpenOptions(authConfig, tokenProvider)...)
 ```
 
 - [ ] **Step 5: Run focused store tests**
