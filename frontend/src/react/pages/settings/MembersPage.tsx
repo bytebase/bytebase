@@ -942,11 +942,19 @@ function EditMemberRoleDrawer({
   const isProjectCreateMode = !!projectName && !isEditMode;
   const isProjectEditMode = !!projectName && isEditMode;
 
-  // Live project role bindings for the member (reactively updated when IAM policy changes)
+  // Live project role bindings for the member (reactively updated when IAM policy changes).
+  // Active bindings come first, expired ones last; original order is preserved within each group.
   const liveProjectRoleBindings = useVueState(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
     const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
-    return policy.bindings.filter((b) => b.members.includes(member.binding));
+    const matching = policy.bindings.filter((b) =>
+      b.members.includes(member.binding)
+    );
+    return [...matching].sort((a, b) => {
+      const aExpired = isBindingPolicyExpired(a) ? 1 : 0;
+      const bExpired = isBindingPolicyExpired(b) ? 1 : 0;
+      return aExpired - bExpired;
+    });
   });
 
   const [selectedBindings, setSelectedBindings] = useState<string[]>(

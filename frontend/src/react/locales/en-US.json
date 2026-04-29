@@ -280,6 +280,7 @@
     "environments": "Environments",
     "error": "Error",
     "expiration": "Expiration",
+    "expired": "Expired",
     "export": "Export",
     "failed": "Failed",
     "file-selector": {
