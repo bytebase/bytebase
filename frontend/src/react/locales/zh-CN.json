@@ -1989,6 +1989,7 @@
     },
     "indexes": "Indexes",
     "insert-sql": "插入 SQL",
+    "no-diff": "没有需要应用的变更",
     "partition": {
       "expression": "Expression",
       "type": "Type",

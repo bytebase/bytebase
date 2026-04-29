@@ -16,7 +16,11 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
@@ -81,6 +85,11 @@ function SchemaEditorSheetBody({
   const [targets, setTargets] = useState<EditTarget[]>([]);
   const [isPreparingMetadata, setIsPreparingMetadata] = useState(false);
   const [isInserting, setIsInserting] = useState(false);
+  // Monotonic id for prepareMetadata calls. Switching template database
+  // quickly can let an older request resolve last and clobber `targets`
+  // with metadata for the wrong database; bumping the id and discarding
+  // stale resolutions is the standard last-write-wins guard.
+  const prepareIdRef = useRef(0);
 
   // Kick off hydration for any targets the store hasn't seen yet so the
   // option list below can resolve real engine + title (otherwise unhydrated
@@ -117,6 +126,7 @@ function SchemaEditorSheetBody({
   const prepareMetadata = useCallback(
     async (databaseName: string) => {
       if (!databaseName) return;
+      const id = ++prepareIdRef.current;
       setIsPreparingMetadata(true);
       setTargets([]);
       try {
@@ -128,6 +138,10 @@ function SchemaEditorSheetBody({
           }),
           databaseStore.getOrFetchDatabaseByName(databaseName),
         ]);
+        // A newer prepareMetadata call superseded us — drop this result so
+        // the user can't end up editing one database while seeing another
+        // selected in the combobox.
+        if (id !== prepareIdRef.current) return;
         setTargets([
           {
             database,
@@ -136,7 +150,9 @@ function SchemaEditorSheetBody({
           },
         ]);
       } finally {
-        setIsPreparingMetadata(false);
+        if (id === prepareIdRef.current) {
+          setIsPreparingMetadata(false);
+        }
       }
     },
     [dbSchemaStore, databaseStore]
@@ -162,14 +178,34 @@ function SchemaEditorSheetBody({
         sourceMetadata: target.baselineMetadata,
         targetMetadata: metadata,
       });
-      if (result.statement) {
-        onInsert(result.statement);
-        onCancel();
+      // Surface diff failures (RPC error, schema validation) instead of
+      // letting the spinner stop with no feedback — that "silent no-op"
+      // is indistinguishable from "no changes" and blocks recovery.
+      if (result.errors.length > 0) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.error"),
+          description: result.errors.join("\n"),
+        });
+        return;
       }
+      if (!result.statement) {
+        // No errors and no diff = the edits cancel out. Tell the user so
+        // they don't think the button is broken.
+        pushNotification({
+          module: "bytebase",
+          style: "INFO",
+          title: t("schema-editor.no-diff"),
+        });
+        return;
+      }
+      onInsert(result.statement);
+      onCancel();
     } finally {
       setIsInserting(false);
     }
-  }, [targets, onInsert, onCancel]);
+  }, [targets, onInsert, onCancel, t]);
 
   return (
     <>

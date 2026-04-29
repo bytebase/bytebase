@@ -1808,9 +1808,6 @@
       "unique": "Unique"
     },
     "insert-sql": "Insert SQL",
-    "message": {
-      "invalid-schema": "Invalid schema"
-    },
     "raw-sql": "Raw SQL",
     "schema": {
       "select": "Select schema"

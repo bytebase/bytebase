@@ -1808,9 +1808,6 @@
       "unique": "Duy nhất"
     },
     "insert-sql": "Chèn SQL",
-    "message": {
-      "invalid-schema": "Lược đồ không hợp lệ"
-    },
     "raw-sql": "SQL thô",
     "schema": {
       "select": "Chọn lược đồ"

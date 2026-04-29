@@ -1989,6 +1989,7 @@
     },
     "indexes": "Indexes",
     "insert-sql": "SQL を挿入",
+    "no-diff": "適用する変更はありません",
     "partition": {
       "expression": "Expression",
       "type": "Type",

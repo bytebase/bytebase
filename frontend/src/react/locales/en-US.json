@@ -2002,6 +2002,7 @@
     },
     "indexes": "Indexes",
     "insert-sql": "Insert SQL",
+    "no-diff": "No changes to apply",
     "partition": {
       "expression": "Expression",
       "type": "Type",

@@ -1989,6 +1989,7 @@
     },
     "indexes": "Indexes",
     "insert-sql": "Chèn SQL",
+    "no-diff": "Không có thay đổi nào để áp dụng",
     "partition": {
       "expression": "Expression",
       "type": "Type",

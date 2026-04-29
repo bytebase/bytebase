@@ -1808,9 +1808,6 @@
       "unique": "唯一"
     },
     "insert-sql": "SQL を挿入",
-    "message": {
-      "invalid-schema": "無効なスキーマ"
-    },
     "raw-sql": "SQL文",
     "schema": {
       "select": "スキーマの選択"
