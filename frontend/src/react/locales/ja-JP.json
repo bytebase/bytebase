@@ -1937,6 +1937,7 @@
   "rollout.task.selected-count": "{{count}} 件のタスクを選択中",
   "rollout.task.statement-truncated-hint": "サイズが大きいため、ステートメントは切り捨てられました。",
   "schema-diagram": {
+    "fit-content-with-view": "ビューに自動的に適応します",
     "self": "スキーマ図"
   },
   "schema-editor": {
@@ -2005,7 +2006,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "スキーマの選択"
     },
     "self": "スキーマエディタ",
     "table": {

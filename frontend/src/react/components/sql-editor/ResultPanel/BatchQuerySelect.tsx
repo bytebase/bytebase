@@ -345,7 +345,7 @@ type TabButtonProps = {
   onClose: () => void;
   isFailed: boolean;
   isEmpty: boolean;
-};
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick">;
 
 function TabButton({
   item,
@@ -354,7 +354,11 @@ function TabButton({
   onClose,
   isFailed,
   isEmpty,
-}: TabButtonProps) {
+  ref,
+  className,
+  style: styleProp,
+  ...rest
+}: TabButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
   const { t } = useTranslation();
   const environment = getDatabaseEnvironment(item.database);
   const colorRgb = hexToRgb(environment.color || "#4f46e5").join(", ");
@@ -363,18 +367,22 @@ function TabButton({
     borderTopColor: `rgb(${colorRgb})`,
     color: `rgb(${colorRgb})`,
     borderTop: isSelected ? "3px solid" : "",
+    ...styleProp,
   };
   const instance = getInstanceResource(item.database);
 
   return (
     <button
       type="button"
+      ref={ref}
       style={style}
       onClick={onSelect}
       className={cn(
         "inline-flex items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
-        "border border-control-border cursor-pointer whitespace-nowrap"
+        "border border-control-border cursor-pointer whitespace-nowrap",
+        className
       )}
+      {...rest}
     >
       {EngineIconPath[instance.engine] && (
         <img

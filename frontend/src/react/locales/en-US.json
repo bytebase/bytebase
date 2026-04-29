@@ -1950,6 +1950,7 @@
   "rollout.task.selected-count": "{{count}} task selected",
   "rollout.task.statement-truncated-hint": "Statement truncated due to large size.",
   "schema-diagram": {
+    "fit-content-with-view": "Fit content within view",
     "self": "Schema Diagram"
   },
   "schema-editor": {
@@ -2018,7 +2019,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "Select schema"
     },
     "self": "Schema editor",
     "table": {

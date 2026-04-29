@@ -424,3 +424,12 @@
 .n-input__input-el:focus {
   box-shadow: 0 0 0 0;
 }
+
+/* SchemaDiagram screenshot capture: while `useScreenshot` flips this
+   attribute on <body>, any element marked `data-screenshot-hide` is
+   omitted from the html-to-image pass. Used for chrome affordances
+   (zoom buttons, schema selector, etc.) that shouldn't appear in
+   the exported PNG. */
+body[data-bb-screenshot-active] [data-screenshot-hide] {
+  display: none !important;
+}
