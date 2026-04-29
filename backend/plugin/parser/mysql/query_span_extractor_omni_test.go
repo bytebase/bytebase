@@ -506,6 +506,15 @@ func TestOmniQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 				wantResources: []base.ColumnResource{{Database: "db", Table: "t"}},
 			},
 			{
+				name:      "explain_analyze_values",
+				statement: "EXPLAIN ANALYZE VALUES ROW(1, 2 + 3)",
+				wantType:  base.Select,
+				wantResults: []base.QuerySpanResult{
+					{Name: "1", SourceColumns: base.SourceColumnSet{}, IsPlainField: true},
+					{Name: "2+3", SourceColumns: base.SourceColumnSet{}, IsPlainField: false},
+				},
+			},
+			{
 				name:      "explain_analyze_insert",
 				statement: "EXPLAIN ANALYZE INSERT INTO t VALUES(1, 2, 3)",
 				wantType:  base.DML,
@@ -807,6 +816,18 @@ func TestOmniQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 					{Database: "db", Table: "t1"},
 					{Database: "db", Table: "t2"},
 					{Database: "db", Table: "t"},
+				},
+			},
+			{
+				name:      "parenthesized_table_reference_list",
+				statement: "SELECT t1.a, t2.b FROM (t1, t2)",
+				want: []base.QuerySpanResult{
+					{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t1", Column: "a"}}), IsPlainField: true},
+					{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "b"}}), IsPlainField: true},
+				},
+				wantSrc: []base.ColumnResource{
+					{Database: "db", Table: "t1"},
+					{Database: "db", Table: "t2"},
 				},
 			},
 		}
