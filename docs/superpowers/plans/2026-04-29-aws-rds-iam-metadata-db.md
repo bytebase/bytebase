@@ -523,7 +523,7 @@ Modify the constructed `PG_URL` branch in `helm-charts/bytebase/templates/statef
 ```gotemplate
           {{- if $externalPgAWSRDSIAMEnabled }}
           - name: PG_URL
-            value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
+            value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
           {{- else if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
 ```
 
@@ -544,7 +544,7 @@ This affects the init container block and the shell `export PG_URL=...` block. I
 Add these rows to the parameters table in `helm-charts/bytebase/README.md` after `bytebase.option.externalPg.escapePassword`:
 
 ```markdown
-|    `bytebase.option.externalPg.awsRdsIam.enabled`    | Enables AWS RDS IAM authentication for the Bytebase metadata PostgreSQL database when the chart constructs `PG_URL` from externalPg fields.                                      | false |
+|    `bytebase.option.externalPg.awsRdsIam.enabled`    | Enables AWS RDS IAM authentication for the Bytebase metadata PostgreSQL database when the chart constructs `PG_URL` from externalPg fields, including `sslmode=verify-full`.                                      | false |
 |     `bytebase.option.externalPg.awsRdsIam.region`    | AWS region used to sign RDS IAM authentication tokens for the Bytebase metadata PostgreSQL database. Required when `awsRdsIam.enabled` is true.                                  | ""    |
 ```
 
@@ -568,7 +568,7 @@ Expected output includes:
 
 ```text
 - name: PG_URL
-value: postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1
+value: postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1
 ```
 
 Expected output does not include `PG_PASSWORD` or `init-container`.
@@ -719,7 +719,7 @@ helm template bytebase-release helm-charts/bytebase \
   --set bytebase.option.externalPg.awsRdsIam.region=us-east-1 \
   >/tmp/bytebase-iam-rendered.yaml
 
-rg 'postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase\\?bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1' /tmp/bytebase-iam-rendered.yaml
+rg 'postgres://bb_meta@example.us-east-1.rds.amazonaws.com:5432/bytebase\\?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1' /tmp/bytebase-iam-rendered.yaml
 ```
 
 Expected: `rg` finds exactly the rendered IAM `PG_URL`.

@@ -162,7 +162,7 @@ spec:
           # Otherwise, we should construct the external pg connection string from the specified parameters.
           {{- if $externalPgAWSRDSIAMEnabled }}
           - name: PG_URL
-            value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
+            value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
           {{- else if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
           # If user specifies an existing secret, we should read the external pg password in that secret.
           - name: PG_PASSWORD
