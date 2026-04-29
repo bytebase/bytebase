@@ -65,7 +65,12 @@ export function SchemaDiagramProvider({
   // Stable singletons for this instance.
   const events = useMemo(() => new Emittery<SchemaDiagramEvents>(), []);
   const geometriesRef = useRef<Set<Geometry>>(new Set());
-  const tableIdsRef = useRef<Map<TableMetadata, string>>(new Map());
+  // `WeakMap` (not `Map`) so old `TableMetadata` objects can be garbage
+  // collected when the user switches databases or refreshes metadata.
+  // A regular `Map` would pin every table object ever seen for the
+  // lifetime of the page, leaking memory in long SQL editor sessions.
+  // Matches the Vue implementation.
+  const tableIdsRef = useRef<WeakMap<TableMetadata, string>>(new WeakMap());
 
   // Reactive state.
   const [zoom, setZoom] = useState(1);
