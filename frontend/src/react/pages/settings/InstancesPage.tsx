@@ -820,12 +820,7 @@ export function InstancesPage() {
     const currentQuery = router.currentRoute.value.query;
     const currentQueryString = currentQuery.q as string;
     if (queryString !== (currentQueryString ?? "")) {
-      const nextQuery = { ...currentQuery };
-      if (queryString) {
-        nextQuery.q = queryString;
-      } else {
-        delete nextQuery.q;
-      }
+      const nextQuery = { ...currentQuery, q: queryString };
       router.replace({ query: nextQuery });
     }
   }, [searchParams]);

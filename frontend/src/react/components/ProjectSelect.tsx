@@ -20,6 +20,10 @@ export interface ProjectSelectProps {
    *  of any projects" + "go to create" prompt). Falls back to the
    *  generic "no data" string when omitted. */
   emptyContent?: ReactNode;
+  /** Render the dropdown via a portal so it isn't clipped by an
+   *  `overflow:hidden` ancestor (e.g. inside a Sheet body that scopes
+   *  its own scroll region). */
+  portal?: boolean;
 }
 
 export function ProjectSelect({
@@ -30,6 +34,7 @@ export function ProjectSelect({
   className,
   excludeDefault = true,
   emptyContent,
+  portal,
 }: ProjectSelectProps) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
@@ -104,6 +109,7 @@ export function ProjectSelect({
       onSearch={fetchProjects}
       disabled={disabled}
       className={className}
+      portal={portal}
       options={allProjects.map((p) => ({
         value: p.name,
         label: p.title,

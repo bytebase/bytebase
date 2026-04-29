@@ -527,7 +527,7 @@ export function ProjectsPage() {
     const queryString = parts.join(" ");
     const currentQuery = router.currentRoute.value.query.q as string;
     if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: queryString ? { q: queryString } : {} });
+      router.replace({ query: { q: queryString } });
     }
   }, [searchParams]);
 

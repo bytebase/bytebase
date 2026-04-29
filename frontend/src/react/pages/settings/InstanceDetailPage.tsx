@@ -1,3 +1,5 @@
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,7 +9,13 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
-import { DatabaseTable } from "@/react/components/database";
+import {
+  DatabaseBatchOperationsBar,
+  DatabaseTable,
+  LabelEditorSheet,
+  TransferProjectSheet,
+} from "@/react/components/database";
+import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import {
@@ -27,7 +35,9 @@ import {
 } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
+  pushNotification,
   useDatabaseV1Store,
+  useDBSchemaV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -38,8 +48,17 @@ import {
   projectNamePrefix,
 } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
-import { UNKNOWN_ENVIRONMENT_NAME, unknownEnvironment } from "@/types";
+import {
+  isValidDatabaseName,
+  UNKNOWN_ENVIRONMENT_NAME,
+  unknownEnvironment,
+} from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  BatchUpdateDatabasesRequestSchema,
+  DatabaseSchema$,
+  UpdateDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   extractProjectResourceName,
   getDefaultPagination,
@@ -56,6 +75,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   const { t } = useTranslation();
   const instanceStore = useInstanceV1Store();
   const databaseStore = useDatabaseV1Store();
+  const dbSchemaStore = useDBSchemaV1Store();
   const instanceName = `${instanceNamePrefix}${instanceId}`;
   const instance = useVueState(() =>
     instanceStore.getInstanceByName(instanceName)
@@ -66,6 +86,167 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
     query: "",
     scopes: [{ id: "instance", value: instanceId, readonly: true }],
   });
+
+  // Selection / batch operations
+  const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [showLabelEditor, setShowLabelEditor] = useState(false);
+  const [showEditEnvDrawer, setShowEditEnvDrawer] = useState(false);
+  const [showTransferDrawer, setShowTransferDrawer] = useState(false);
+
+  const selectedDatabases = useMemo(() => {
+    if (selectedNames.size === 0) return [];
+    return Array.from(selectedNames)
+      .filter((name) => isValidDatabaseName(name))
+      .map((name) => databaseStore.getDatabaseByName(name));
+  }, [selectedNames, databaseStore]);
+
+  const refresh = useCallback(() => {
+    setRefreshToken((prev) => prev + 1);
+    setSelectedNames(new Set());
+  }, []);
+
+  const handleSyncSchema = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("db.start-to-sync-schema"),
+    });
+    try {
+      await databaseStore.batchSyncDatabases(Array.from(selectedNames));
+      for (const name of selectedNames) {
+        dbSchemaStore.removeCache(name);
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("db.successfully-synced-schema"),
+      });
+      setSelectedNames(new Set());
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("db.failed-to-sync-schema"),
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [syncing, selectedNames, databaseStore, dbSchemaStore, t]);
+
+  const handleLabelsApply = useCallback(
+    async (labelsList: { [key: string]: string }[]) => {
+      try {
+        await databaseStore.batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabases.map((database, i) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  ...database,
+                  labels: labelsList[i],
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["labels"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [selectedDatabases, databaseStore, refresh, t]
+  );
+
+  const handleEnvironmentUpdate = useCallback(
+    async (environment: string) => {
+      try {
+        await databaseStore.batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabases.map((database) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  name: database.name,
+                  environment,
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["environment"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [selectedDatabases, databaseStore, refresh, t]
+  );
+
+  const handleTransferProject = useCallback(
+    async (projectName: string) => {
+      try {
+        await databaseStore.batchUpdateDatabases(
+          create(BatchUpdateDatabasesRequestSchema, {
+            parent: "-",
+            requests: selectedDatabases.map((database) =>
+              create(UpdateDatabaseRequestSchema, {
+                database: create(DatabaseSchema$, {
+                  name: database.name,
+                  project: projectName,
+                }),
+                updateMask: create(FieldMaskSchema, { paths: ["project"] }),
+              })
+            ),
+          })
+        );
+        refresh();
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("database.successfully-transferred-databases"),
+        });
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+        });
+      }
+    },
+    [selectedDatabases, databaseStore, refresh, t]
+  );
+  // Trigger a Pinia-side fetch on mount. The parent `InstanceRouteShell`
+  // populates the React-side `useAppStore` cache, but this page reads
+  // from the Pinia v1 store (`useInstanceV1Store`) — they're separate
+  // caches. Without this, hard-refreshing the page shows "Unknown
+  // instance" because the Pinia cache hasn't been hydrated.
+  useEffect(() => {
+    void instanceStore.getOrFetchInstanceByName(instanceName);
+  }, [instanceStore, instanceName]);
+
   // Sync tab with URL hash
   useEffect(() => {
     const hash = window.location.hash.replace(/^#?/, "");
@@ -241,7 +422,38 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               placeholder={t("database.filter-database")}
               scopeOptions={scopeOptions}
             />
-            <DatabaseTable filter={filter} parent={instance.name} mode="ALL" />
+            <DatabaseBatchOperationsBar
+              databases={selectedDatabases}
+              onSyncSchema={handleSyncSchema}
+              onEditLabels={() => setShowLabelEditor(true)}
+              onEditEnvironment={() => setShowEditEnvDrawer(true)}
+              onTransferProject={() => setShowTransferDrawer(true)}
+            />
+            <EditEnvironmentSheet
+              open={showEditEnvDrawer}
+              onClose={() => setShowEditEnvDrawer(false)}
+              onUpdate={handleEnvironmentUpdate}
+            />
+            <LabelEditorSheet
+              open={showLabelEditor}
+              databases={selectedDatabases}
+              onClose={() => setShowLabelEditor(false)}
+              onApply={handleLabelsApply}
+            />
+            <TransferProjectSheet
+              open={showTransferDrawer}
+              databases={selectedDatabases}
+              onClose={() => setShowTransferDrawer(false)}
+              onTransfer={handleTransferProject}
+            />
+            <DatabaseTable
+              filter={filter}
+              parent={instance.name}
+              mode="ALL"
+              selectedNames={selectedNames}
+              onSelectedNamesChange={setSelectedNames}
+              refreshToken={refreshToken}
+            />
           </div>
         </TabsPanel>
 

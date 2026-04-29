@@ -9,6 +9,7 @@ import {
 } from "vscode-ws-jsonrpc";
 import { refreshTokens } from "@/connect/refreshToken";
 import { sleep } from "@/utils";
+import { initializeMonacoServices } from "./services";
 import {
   createUrl,
   errorNotification,
@@ -214,6 +215,16 @@ const reconnect = async () => {
 };
 
 const createLanguageClient = async (): Promise<MonacoLanguageClient> => {
+  // `monaco-languageclient` v9+ requires `@codingame/monaco-vscode-api`'s
+  // `initialize()` to have completed before `new MonacoLanguageClient(...)`,
+  // otherwise the constructor throws "Default api is not ready yet, do not
+  // forget to import 'vscode/localExtensionHost' and wait for services
+  // initialization". `MonacoEditor.tsx` kicks off `initializeLSPClient()`
+  // *before* awaiting `createMonacoEditor()` so the LSP WebSocket connects
+  // in parallel with Monaco loading — that means we can't rely on the
+  // caller to have initialized services first. Await it here so callers
+  // can fire-and-forget safely.
+  await initializeMonacoServices();
   const ws = await connectWebSocket();
   const socket = toSocket(ws);
   const reader = new WebSocketMessageReader(socket);
