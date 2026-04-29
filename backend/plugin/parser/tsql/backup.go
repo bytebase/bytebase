@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -219,6 +220,12 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		}
 		if table == nil {
 			return nil, errors.Errorf("failed to resolve DML target table")
+		}
+		if strings.HasPrefix(table.Table, "#") {
+			slog.Info("prior backup: skipping DML targeting temp table",
+				"table", table.Table,
+				"statementType", statementType)
+			continue
 		}
 		table.StatementType = statementType
 		loc := dmlNodeLoc(node)
