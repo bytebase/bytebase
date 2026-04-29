@@ -161,6 +161,18 @@ function MemberTable({
     [visibleBindings, scope]
   );
 
+  // Drop selections that are no longer visible (e.g. a member was selected
+  // while showExpiredRoles=true, then the toggle was turned off and the
+  // member's only bindings are expired). Without this, the bulk Revoke
+  // action could destructively act on hidden rows.
+  useEffect(() => {
+    const visibleNames = new Set(visibleBindings.map((b) => b.binding));
+    const next = selectedBindings.filter((b) => visibleNames.has(b));
+    if (next.length !== selectedBindings.length) {
+      onSelectionChange(next);
+    }
+  }, [visibleBindings, selectedBindings, onSelectionChange]);
+
   const allSelected =
     selectableBindings.length > 0 &&
     selectableBindings.every((b) => selectedBindings.includes(b.binding));
@@ -405,6 +417,11 @@ function MemberTableByRole({
   type RoleMember = { member: MemberBinding; allExpired: boolean };
   const roleToBindings = useMemo(() => {
     const map = new Map<string, RoleMember[]>();
+    const appendToRole = (role: string, entry: RoleMember) => {
+      const arr = map.get(role) ?? [];
+      arr.push(entry);
+      map.set(role, arr);
+    };
     for (const mb of bindings) {
       if (scope === "project") {
         const visibleBindings = showExpiredRoles
@@ -414,20 +431,19 @@ function MemberTableByRole({
         // expired only when ALL of its bindings for that role are expired.
         const bindingsByRole = new Map<string, Binding[]>();
         for (const b of visibleBindings) {
-          if (!bindingsByRole.has(b.role)) bindingsByRole.set(b.role, []);
-          bindingsByRole.get(b.role)!.push(b);
+          const arr = bindingsByRole.get(b.role) ?? [];
+          arr.push(b);
+          bindingsByRole.set(b.role, arr);
         }
         for (const [role, roleBindings] of bindingsByRole) {
           const allExpired = roleBindings.every((b) =>
             isBindingPolicyExpired(b)
           );
-          if (!map.has(role)) map.set(role, []);
-          map.get(role)!.push({ member: mb, allExpired });
+          appendToRole(role, { member: mb, allExpired });
         }
       } else {
         for (const role of mb.workspaceLevelRoles) {
-          if (!map.has(role)) map.set(role, []);
-          map.get(role)!.push({ member: mb, allExpired: false });
+          appendToRole(role, { member: mb, allExpired: false });
         }
       }
     }
