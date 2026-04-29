@@ -1680,12 +1680,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     })
   );
 
+  // Derived from the unfiltered IAM policy, not memberBindings (which is
+  // already filtered by the search box). Otherwise the toggle would vanish
+  // whenever a search happens to exclude members with expired bindings.
   const hasExpiredProjectRoles = useMemo(() => {
-    if (!projectName) return false;
-    return memberBindings.some((mb) =>
-      mb.projectRoleBindings.some((b) => isBindingPolicyExpired(b))
-    );
-  }, [memberBindings, projectName]);
+    if (!projectName || !projectIamPolicy) return false;
+    return projectIamPolicy.bindings.some((b) => isBindingPolicyExpired(b));
+  }, [projectIamPolicy, projectName]);
 
   const canSetIamPolicy = project
     ? !isDefaultProject(project.name) &&
