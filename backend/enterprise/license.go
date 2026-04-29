@@ -350,9 +350,6 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context, workspaceID strin
 	limit := instanceLimitValues[subscription.Plan]
 	if limit == -1 {
 		// Enterprise license.
-		if subscription.Instances > 0 {
-			return int(subscription.Instances)
-		}
 		limit = math.MaxInt
 	}
 	return limit
