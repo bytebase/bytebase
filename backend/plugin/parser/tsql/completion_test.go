@@ -106,6 +106,23 @@ func TestCompletion(t *testing.T) {
 	}
 }
 
+func TestCompletionOmniTableRefRule(t *testing.T) {
+	statement, caretLine, caretPosition := getCaretPosition("TRUNCATE TABLE |")
+	getter, lister := buildMockDatabaseMetadataGetterLister()
+	results, err := Completion(context.Background(), base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "Company",
+		Metadata:          getter,
+		ListDatabaseNames: lister,
+	}, statement, caretLine, caretPosition)
+	require.NoError(t, err)
+
+	require.Contains(t, results, base.Candidate{
+		Text: "Employees",
+		Type: base.CandidateTypeTable,
+	})
+}
+
 func getCaretPosition(statement string) (string, int, int) {
 	lines := strings.Split(statement, "\n")
 	for i, line := range lines {
@@ -160,6 +177,11 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						Name: "OrderSeq",
 					},
 				},
+				Procedures: []*storepb.ProcedureMetadata{
+					{
+						Name: "SyncEmployees",
+					},
+				},
 			},
 			{
 				Name: "MySchema",
@@ -176,6 +198,21 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 								Type: "int",
 							},
 						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name: "SalaryView",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "SalarySeq",
+					},
+				},
+				Procedures: []*storepb.ProcedureMetadata{
+					{
+						Name: "SyncSalary",
 					},
 				},
 			},
@@ -199,6 +236,16 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 								Type: "varchar",
 							},
 						},
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "StudentSeq",
+					},
+				},
+				Procedures: []*storepb.ProcedureMetadata{
+					{
+						Name: "SyncStudents",
 					},
 				},
 			},

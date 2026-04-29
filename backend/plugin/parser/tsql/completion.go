@@ -3,16 +3,20 @@ package tsql
 import (
 	"context"
 	"fmt"
+	"maps"
+	"regexp"
 	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
+	mssqlparser "github.com/bytebase/omni/mssql/parser"
 	tsqlparser "github.com/bytebase/parser/tsql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -20,112 +24,35 @@ func init() {
 }
 
 var (
-
 	// Check tableRefListener is implementing the TSqlParserListener interface.
 	_ tsqlparser.TSqlParserListener = &tableRefListener{}
 	_ tsqlparser.TSqlParserListener = &cteExtractor{}
 
-	globalFellowSetsByState = base.NewFollowSetsByState()
-	ignoredTokens           = map[int]bool{
-		// Common EOF
-		tsqlparser.TSqlParserEOF: true,
-
-		// Token with EBNF symbol
-		tsqlparser.TSqlParserBACKSLASH:            true,
-		tsqlparser.TSqlParserCONVERT:              true, // 'TRY_'? 'CONVERT'
-		tsqlparser.TSqlParserDEFAULT_DOUBLE_QUOTE: true, // ["]'DEFAULT'["]
-		tsqlparser.TSqlParserDOUBLE_BACK_SLASH:    true, // '\\\\'
-		tsqlparser.TSqlParserDOUBLE_FORWARD_SLASH: true, // '//'
-		tsqlparser.TSqlParserEXECUTE:              true, // 'EXE CUTE?' // TODO(zp): Find a way to improve this because it is a common keyword.
-		tsqlparser.TSqlParserNULL_DOUBLE_QUOTE:    true, // ["]'NULL'["]
-		tsqlparser.TSqlParserPARSE:                true, // 'TRY_'? 'PARSE'
-
-		// Abbreviation
-		tsqlparser.TSqlParserYEAR_ABBR:        true, // 'yy' | 'yyyy'
-		tsqlparser.TSqlParserQUARTER_ABBR:     true, // 'qq' | 'q'
-		tsqlparser.TSqlParserMONTH_ABBR:       true, // 'mm' | 'm'
-		tsqlparser.TSqlParserDAYOFYEAR_ABBR:   true, // 'dy' | 'y'
-		tsqlparser.TSqlParserWEEK_ABBR:        true, // 'wk' | 'ww'
-		tsqlparser.TSqlParserDAY_ABBR:         true, // 'dd' | 'd'
-		tsqlparser.TSqlParserHOUR_ABBR:        true, // 'hh'
-		tsqlparser.TSqlParserMINUTE_ABBR:      true, // 'mi' | 'n'
-		tsqlparser.TSqlParserSECOND_ABBR:      true, // 'ss' | 's'
-		tsqlparser.TSqlParserMILLISECOND_ABBR: true, // 'ms'
-		tsqlparser.TSqlParserMICROSECOND_ABBR: true, // 'mcs'
-		tsqlparser.TSqlParserNANOSECOND_ABBR:  true, // 'ns'
-		tsqlparser.TSqlParserTZOFFSET_ABBR:    true, // 'tz'
-		tsqlparser.TSqlParserISO_WEEK_ABBR:    true, // 'isowk' | 'isoww'
-		tsqlparser.TSqlParserWEEKDAY_ABBR:     true, // 'dw'
-
-		tsqlparser.TSqlParserDISK_DRIVE:   true, // [A-Z][:];
-		tsqlparser.TSqlParserIPV4_ADDR:    true, // DEC_DIGIT+ '.' DEC_DIGIT+ '.' DEC_DIGIT+ '.' DEC_DIGIT+;
-		tsqlparser.TSqlParserSPACE:        true,
-		tsqlparser.TSqlParserCOMMENT:      true,
-		tsqlparser.TSqlParserLINE_COMMENT: true,
-
-		tsqlparser.TSqlParserDOUBLE_QUOTE_ID:    true,
-		tsqlparser.TSqlParserDOUBLE_QUOTE_BLANK: true,
-		tsqlparser.TSqlParserSINGLE_QUOTE:       true,
-		tsqlparser.TSqlParserSQUARE_BRACKET_ID:  true,
-		tsqlparser.TSqlParserLOCAL_ID:           true,
-		tsqlparser.TSqlParserDECIMAL:            true,
-		tsqlparser.TSqlParserID:                 true,
-		tsqlparser.TSqlParserSTRING:             true,
-		tsqlparser.TSqlParserBINARY:             true,
-		tsqlparser.TSqlParserFLOAT:              true,
-		tsqlparser.TSqlParserREAL:               true,
-
-		tsqlparser.TSqlParserEQUAL:        true,
-		tsqlparser.TSqlParserGREATER:      true,
-		tsqlparser.TSqlParserLESS:         true,
-		tsqlparser.TSqlParserEXCLAMATION:  true,
-		tsqlparser.TSqlParserPLUS_ASSIGN:  true,
-		tsqlparser.TSqlParserMINUS_ASSIGN: true,
-		tsqlparser.TSqlParserMULT_ASSIGN:  true,
-		tsqlparser.TSqlParserDIV_ASSIGN:   true,
-		tsqlparser.TSqlParserMOD_ASSIGN:   true,
-		tsqlparser.TSqlParserAND_ASSIGN:   true,
-		tsqlparser.TSqlParserXOR_ASSIGN:   true,
-		tsqlparser.TSqlParserOR_ASSIGN:    true,
-
-		tsqlparser.TSqlParserDOUBLE_BAR:   true,
-		tsqlparser.TSqlParserDOT:          true,
-		tsqlparser.TSqlParserUNDERLINE:    true,
-		tsqlparser.TSqlParserAT:           true,
-		tsqlparser.TSqlParserSHARP:        true,
-		tsqlparser.TSqlParserDOLLAR:       true,
-		tsqlparser.TSqlParserLR_BRACKET:   true,
-		tsqlparser.TSqlParserRR_BRACKET:   true,
-		tsqlparser.TSqlParserCOMMA:        true,
-		tsqlparser.TSqlParserSEMI:         true,
-		tsqlparser.TSqlParserCOLON:        true,
-		tsqlparser.TSqlParserDOUBLE_COLON: true,
-		tsqlparser.TSqlParserSTAR:         true,
-		tsqlparser.TSqlParserDIVIDE:       true,
-		tsqlparser.TSqlParserMODULE:       true,
-		tsqlparser.TSqlParserPLUS:         true,
-		tsqlparser.TSqlParserMINUS:        true,
-		tsqlparser.TSqlParserBIT_NOT:      true,
-		tsqlparser.TSqlParserBIT_OR:       true,
-		tsqlparser.TSqlParserBIT_AND:      true,
-		tsqlparser.TSqlParserBIT_XOR:      true,
-		tsqlparser.TSqlParserPLACEHOLDER:  true,
+	tsqlDataTypes = []string{
+		"INT", "BIGINT", "SMALLINT", "TINYINT",
+		"VARCHAR", "NVARCHAR", "CHAR", "NCHAR",
+		"TEXT", "NTEXT",
+		"DATETIME", "DATETIME2", "DATE", "TIME",
+		"DECIMAL", "NUMERIC", "FLOAT", "REAL",
+		"BIT",
+		"MONEY", "SMALLMONEY",
+		"UNIQUEIDENTIFIER",
+		"XML",
+		"VARBINARY", "IMAGE",
+		"SQL_VARIANT",
 	}
-	preferredRules = map[int]bool{
-		tsqlparser.TSqlParserRULE_built_in_functions: true,
-		// full_table_name appears in the rule stack:
-		// table_sources -> table_source -> table_source_item_joined -> table_source_item -> full_table_name
-		tsqlparser.TSqlParserRULE_full_table_name:  true,
-		tsqlparser.TSqlParserRULE_asterisk:         true,
-		tsqlparser.TSqlParserRULE_full_column_name: true,
-
-		// The following rules are not used in the completion, we add them to the preferred rules to avoid deep recursion.
-		// Ignore xml_data_type_methods to avoid column completion in FROM clause.
-		tsqlparser.TSqlParserRULE_xml_data_type_methods: true,
-		// Ignore nodes_method to avoid column completion in FROM clause.
-		tsqlparser.TSqlParserRULE_nodes_method: true,
+	tsqlTableHints = []string{
+		"NOLOCK", "READUNCOMMITTED", "READCOMMITTED", "REPEATABLEREAD",
+		"SERIALIZABLE", "HOLDLOCK", "UPDLOCK", "TABLOCK", "TABLOCKX",
+		"ROWLOCK", "PAGLOCK", "INDEX", "FORCESEEK",
+	}
+	tsqlQueryHints = []string{
+		"RECOMPILE", "OPTIMIZE", "MAXDOP", "HASH JOIN", "MERGE JOIN",
+		"LOOP JOIN", "FORCE ORDER",
 	}
 )
+
+const asciiWhitespace = " \t\r\n"
 
 type CompletionMap map[string]base.Candidate
 
@@ -134,26 +61,23 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) toSlice() []base.Candidate {
-	var result []base.Candidate
-	for _, candidate := range m {
-		result = append(result, candidate)
-	}
-	slices.SortFunc(result, func(a, b base.Candidate) int {
-		if a.Type != b.Type {
-			if a.Type < b.Type {
-				return -1
-			}
-			return 1
-		}
-		if a.Text < b.Text {
+	return slices.SortedFunc(maps.Values(m), compareCandidates)
+}
+
+func compareCandidates(a, b base.Candidate) int {
+	if a.Type != b.Type {
+		if a.Type < b.Type {
 			return -1
 		}
-		if a.Text > b.Text {
-			return 1
-		}
-		return 0
-	})
-	return result
+		return 1
+	}
+	if a.Text < b.Text {
+		return -1
+	}
+	if a.Text > b.Text {
+		return 1
+	}
+	return 0
 }
 
 // insertFunctions inserts the built-in functions into the completion map.
@@ -233,47 +157,11 @@ func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, 
 }
 
 func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, database string, schema string) {
-	if linkedServer != "" {
-		return
-	}
-
-	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
-	if database != "" {
-		databaseName = database
-	}
-	if schema != "" {
-		schemaName = schema
-	}
-	if databaseName == "" || schemaName == "" {
-		return
-	}
-
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
-	if err != nil {
-		return
-	}
-	if databaseMetadata == nil {
-		return
-	}
-	for _, schema := range databaseMetadata.ListSchemaNames() {
-		if strings.EqualFold(schema, schemaName) {
-			schemaName = schema
-			break
-		}
-	}
-
-	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
+	schemaMetadata := c.lookupMetadataSchema(linkedServer, database, schema)
 	if schemaMetadata == nil {
 		return
 	}
-	for _, table := range schemaMetadata.ListTableNames() {
-		if _, ok := m[table]; !ok {
-			m[table] = base.Candidate{
-				Type: base.CandidateTypeTable,
-				Text: c.quotedIdentifierIfNeeded(table),
-			}
-		}
-	}
+	m.insertNamedCandidates(c, schemaMetadata.ListTableNames(), base.CandidateTypeTable)
 }
 
 func (m CompletionMap) insertAllColumns(c *Completer) {
@@ -402,6 +290,59 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 	}
 }
 
+func (m CompletionMap) insertMetadataColumnsExcept(c *Completer, linkedServer string, database string, schema string, table string, excluded map[string]bool) {
+	columns := make(CompletionMap)
+	columns.insertMetadataColumns(c, linkedServer, database, schema, table)
+	if len(columns) == 0 {
+		return
+	}
+	if len(excluded) == 0 {
+		m.replaceColumns(columns)
+		return
+	}
+	for key, candidate := range columns {
+		original, _ := NormalizeTSQLIdentifierText(candidate.Text)
+		if excluded[strings.ToLower(original)] {
+			delete(columns, key)
+		}
+	}
+	m.replaceColumns(columns)
+}
+
+func (m CompletionMap) replaceWithMetadataColumns(c *Completer, linkedServer string, database string, schema string, table string) {
+	columns := make(CompletionMap)
+	columns.insertMetadataColumns(c, linkedServer, database, schema, table)
+	if len(columns) == 0 {
+		return
+	}
+	m.replaceColumns(columns)
+}
+
+func (m CompletionMap) replaceWithLocalColumns(c *Completer, columns []string) {
+	if len(columns) == 0 {
+		return
+	}
+	entries := make(CompletionMap)
+	for _, column := range columns {
+		entries.Insert(base.Candidate{
+			Type: base.CandidateTypeColumn,
+			Text: c.quotedIdentifierIfNeeded(column),
+		})
+	}
+	m.replaceColumns(entries)
+}
+
+func (m CompletionMap) replaceColumns(columns CompletionMap) {
+	for key, candidate := range m {
+		if candidate.Type == base.CandidateTypeColumn {
+			delete(m, key)
+		}
+	}
+	for _, candidate := range columns {
+		m.Insert(candidate)
+	}
+}
+
 func getColumnID(databaseName, schemaName, tableName, columnName string) string {
 	return fmt.Sprintf("%s.%s.%s.%s", databaseName, schemaName, tableName, columnName)
 }
@@ -418,68 +359,34 @@ func (m CompletionMap) insertCTEs(c *Completer) {
 }
 
 func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, database string, schema string) {
-	if linkedServer != "" {
-		return
-	}
-
-	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
-	if database != "" {
-		databaseName = database
-	}
-	if schema == "" {
-		schemaName = schema
-	}
-	if databaseName == "" || schemaName == "" {
-		return
-	}
-
-	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
-	if err != nil {
-		return
-	}
-	if databaseMetadata == nil {
-		return
-	}
-	for _, schema := range databaseMetadata.ListSchemaNames() {
-		if strings.EqualFold(schema, schemaName) {
-			schemaName = schema
-			break
-		}
-	}
-
-	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
+	schemaMetadata := c.lookupMetadataSchema(linkedServer, database, schema)
 	if schemaMetadata == nil {
 		return
 	}
-	for _, view := range schemaMetadata.ListViewNames() {
-		if _, ok := m[view]; !ok {
-			m[view] = base.Candidate{
-				Type: base.CandidateTypeView,
-				Text: c.quotedIdentifierIfNeeded(view),
-			}
-		}
-	}
-	for _, materializeView := range schemaMetadata.ListMaterializedViewNames() {
-		if _, ok := m[materializeView]; !ok {
-			m[materializeView] = base.Candidate{
-				Type: base.CandidateTypeView,
-				Text: c.quotedIdentifierIfNeeded(materializeView),
-			}
-		}
-	}
-	for _, foreignTable := range schemaMetadata.ListForeignTableNames() {
-		if _, ok := m[foreignTable]; !ok {
-			m[foreignTable] = base.Candidate{
-				Type: base.CandidateTypeView,
-				Text: c.quotedIdentifierIfNeeded(foreignTable),
-			}
-		}
-	}
+	m.insertNamedCandidates(c, schemaMetadata.ListViewNames(), base.CandidateTypeView)
+	m.insertNamedCandidates(c, schemaMetadata.ListMaterializedViewNames(), base.CandidateTypeView)
+	m.insertNamedCandidates(c, schemaMetadata.ListForeignTableNames(), base.CandidateTypeView)
 }
 
 func (m CompletionMap) insertMetadataSequences(c *Completer, linkedServer string, database string, schema string) {
-	if linkedServer != "" {
+	schemaMetadata := c.lookupMetadataSchema(linkedServer, database, schema)
+	if schemaMetadata == nil {
 		return
+	}
+	m.insertNamedCandidates(c, schemaMetadata.ListSequenceNames(), base.CandidateTypeSequence)
+}
+
+func (m CompletionMap) insertMetadataProcedures(c *Completer, linkedServer string, database string, schema string) {
+	schemaMetadata := c.lookupMetadataSchema(linkedServer, database, schema)
+	if schemaMetadata == nil {
+		return
+	}
+	m.insertNamedCandidates(c, schemaMetadata.ListProcedureNames(), base.CandidateTypeRoutine)
+}
+
+func (c *Completer) lookupMetadataSchema(linkedServer, database, schema string) *model.SchemaMetadata {
+	if linkedServer != "" {
+		return nil
 	}
 
 	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
@@ -490,33 +397,31 @@ func (m CompletionMap) insertMetadataSequences(c *Completer, linkedServer string
 		schemaName = schema
 	}
 	if databaseName == "" || schemaName == "" {
-		return
+		return nil
 	}
 
 	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
-	if err != nil {
-		return
+	if err != nil || databaseMetadata == nil {
+		return nil
 	}
-	if databaseMetadata == nil {
-		return
-	}
-	for _, schema := range databaseMetadata.ListSchemaNames() {
-		if strings.EqualFold(schema, schemaName) {
-			schemaName = schema
+	for _, candidate := range databaseMetadata.ListSchemaNames() {
+		if strings.EqualFold(candidate, schemaName) {
+			schemaName = candidate
 			break
 		}
 	}
 
-	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
-	if schemaMetadata == nil {
-		return
-	}
-	for _, seq := range schemaMetadata.ListSequenceNames() {
-		if _, ok := m[seq]; !ok {
-			m[seq] = base.Candidate{
-				Type: base.CandidateTypeSequence,
-				Text: c.quotedIdentifierIfNeeded(seq),
-			}
+	return databaseMetadata.GetSchemaMetadata(schemaName)
+}
+
+func (m CompletionMap) insertNamedCandidates(c *Completer, names []string, candidateType base.CandidateType) {
+	for _, name := range names {
+		if _, ok := m[name]; ok {
+			continue
+		}
+		m[name] = base.Candidate{
+			Type: candidateType,
+			Text: c.quotedIdentifierIfNeeded(name),
 		}
 	}
 }
@@ -533,11 +438,15 @@ const (
 
 type Completer struct {
 	ctx     context.Context
-	core    *base.CodeCompletionCore
 	scene   base.SceneType
 	parser  *tsqlparser.TSqlParser
 	lexer   *tsqlparser.TSqlLexer
 	scanner *base.Scanner
+
+	sql              string
+	cursorByteOffset int
+	tokens           []mssqlparser.Token
+	caretTokenIndex  int
 
 	instanceID          string
 	defaultDatabase     string
@@ -545,17 +454,17 @@ type Completer struct {
 	metadataGetter      base.GetDatabaseMetadataFunc
 	databaseNamesLister base.ListDatabaseNamesFunc
 
-	noSeparatorRequired map[int]bool
+	cteCache map[int][]*base.VirtualTableReference
 	// referencesStack is a hierarchical stack of table references.
 	// We'll update the stack when we encounter a new FROM clauses.
 	referencesStack [][]base.TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references         []base.TableReference
-	referenceMap       map[string]bool
-	cteCache           map[int][]*base.VirtualTableReference
-	cteTables          []*base.VirtualTableReference
-	caretTokenIsQuoted quotedType
+	references          []base.TableReference
+	referenceMap        map[string]bool
+	cteTables           []*base.VirtualTableReference
+	caretTokenIsQuoted  quotedType
+	noSeparatorRequired map[int]bool
 }
 
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
@@ -577,65 +486,74 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		ignoredTokens,  /* IgnoredTokens */
-		preferredRules, /* PreferredRules */
-		&globalFellowSetsByState,
-		tsqlparser.TSqlParserRULE_select_statement,            /* queryRule */
-		tsqlparser.TSqlParserRULE_select_statement_standalone, /* shadowQueryRule */
-		tsqlparser.TSqlParserRULE_as_column_alias,             /* selectItemAliasRule */
-		-1, /* cteRule */
-	)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
+	return newCompleter(ctx, cCtx, parser, lexer, scanner, sql, byteOffset)
+}
+
+func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
+	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
+	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, true /* tricky */)
+	return newCompleter(ctx, cCtx, parser, lexer, scanner, sql, byteOffset)
+}
+
+func newCompleter(ctx context.Context, cCtx base.CompletionContext, parser *tsqlparser.TSqlParser, lexer *tsqlparser.TSqlLexer, scanner *base.Scanner, sql string, byteOffset int) *Completer {
+	tokens := mssqlparser.Tokenize(sql)
 
 	return &Completer{
 		ctx:                 ctx,
-		core:                core,
 		scene:               cCtx.Scene,
 		parser:              parser,
 		lexer:               lexer,
 		scanner:             scanner,
+		sql:                 sql,
+		cursorByteOffset:    byteOffset,
+		tokens:              tokens,
+		caretTokenIndex:     findCaretTokenIndex(tokens, byteOffset),
 		instanceID:          cCtx.InstanceID,
 		defaultDatabase:     cCtx.DefaultDatabase,
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
 		databaseNamesLister: cCtx.ListDatabaseNames,
-		noSeparatorRequired: nil,
 		cteCache:            nil,
 	}
 }
 
-func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
-	core := base.NewCodeCompletionCore(
-		ctx,
-		parser,
-		ignoredTokens,  /* IgnoredTokens */
-		preferredRules, /* PreferredRules */
-		&globalFellowSetsByState,
-		tsqlparser.TSqlParserRULE_select_statement,            /* queryRule */
-		tsqlparser.TSqlParserRULE_select_statement_standalone, /* shadowQueryRule */
-		tsqlparser.TSqlParserRULE_as_column_alias,             /* selectItemAliasRule */
-		-1, /* cteRule */
-	)
-
-	return &Completer{
-		ctx:             ctx,
-		core:            core,
-		scene:           cCtx.Scene,
-		parser:          parser,
-		lexer:           lexer,
-		scanner:         scanner,
-		instanceID:      cCtx.InstanceID,
-		defaultDatabase: cCtx.DefaultDatabase,
-		// SQL Server does not support specifying schema in the frontend, so we always use dbo as the default schema.
-		defaultSchema:       "dbo",
-		metadataGetter:      cCtx.Metadata,
-		databaseNamesLister: cCtx.ListDatabaseNames,
-		noSeparatorRequired: nil,
-		cteCache:            nil,
+func computeSQLAndByteOffset(statement string, caretLine int, caretOffset int, tricky bool) (string, int) {
+	sql, newLine, newOffset := skipHeadingSQLs(statement, caretLine, caretOffset)
+	if tricky {
+		sql, newLine, newOffset = skipHeadingSQLWithoutSemicolon(sql, newLine, newOffset)
 	}
+	return sql, lineColumnToByteOffset(sql, newLine, newOffset)
+}
+
+func lineColumnToByteOffset(sql string, line, column int) int {
+	currentLine := 1
+	for i := 0; i < len(sql); i++ {
+		if currentLine == line {
+			pos := i
+			for c := 0; c < column && pos < len(sql); c++ {
+				_, size := utf8.DecodeRuneInString(sql[pos:])
+				pos += size
+			}
+			if pos > len(sql) {
+				return len(sql)
+			}
+			return pos
+		}
+		if sql[i] == '\n' {
+			currentLine++
+		}
+	}
+	return len(sql)
+}
+
+func findCaretTokenIndex(tokens []mssqlparser.Token, byteOffset int) int {
+	for i, tok := range tokens {
+		if tok.Loc >= byteOffset {
+			return i
+		}
+	}
+	return len(tokens)
 }
 
 func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
@@ -700,27 +618,49 @@ func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset
 }
 
 func (c *Completer) complete() ([]base.Candidate, error) {
-	if c.scanner.IsTokenType(tsqlparser.TSqlLexerDOUBLE_QUOTE_ID) {
-		c.caretTokenIsQuoted = quotedTypeDoubleQuote
-	} else if c.scanner.IsTokenType(tsqlparser.TSqlLexerSQUARE_BRACKET_ID) {
-		c.caretTokenIsQuoted = quotedTypeSquareBracket
+	checkTokenQuoted := func(idx int) quotedType {
+		if idx < 0 || idx >= len(c.tokens) {
+			return quotedTypeNone
+		}
+		tok := c.tokens[idx]
+		if !mssqlparser.IsIdentTokenType(tok.Type) || tok.Loc >= len(c.sql) {
+			return quotedTypeNone
+		}
+		switch c.sql[tok.Loc] {
+		case '"':
+			return quotedTypeDoubleQuote
+		case '[':
+			return quotedTypeSquareBracket
+		default:
+			return quotedTypeNone
+		}
 	}
+	if typ := checkTokenQuoted(c.caretTokenIndex); typ != quotedTypeNone {
+		c.caretTokenIsQuoted = typ
+	} else if c.caretTokenIndex > 0 {
+		prev := c.tokens[c.caretTokenIndex-1]
+		if prev.End >= c.cursorByteOffset {
+			c.caretTokenIsQuoted = checkTokenQuoted(c.caretTokenIndex - 1)
+		}
+	}
+
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
 		caretIndex--
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-	c.parser.Reset()
-	var context antlr.ParserRuleContext
-	if c.scene == base.SceneTypeQuery {
-		context = c.parser.Select_statement_standalone()
-	} else {
-		context = c.parser.Tsql_file()
-	}
-	candidates := c.core.CollectCandidates(caretIndex, context)
 
-	for ruleName := range candidates.Rules {
-		if ruleName == tsqlparser.TSqlParserRULE_asterisk || ruleName == tsqlparser.TSqlParserRULE_full_column_name {
+	completionOffset := c.cursorByteOffset
+	candidates := mssqlparser.Collect(c.sql, completionOffset)
+	if len(candidates.Rules) == 0 {
+		if prefixTok, ok := c.prefixToken(); ok {
+			completionOffset = prefixTok.Loc
+			candidates = mssqlparser.Collect(c.sql, completionOffset)
+		}
+	}
+
+	for _, rc := range candidates.Rules {
+		if rc.Rule == "columnref" {
 			c.collectLeadingTableReferences(caretIndex)
 			c.takeReferencesSnapshot()
 			c.collectRemainingTableReferences()
@@ -731,7 +671,24 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	return c.convertCandidates(candidates)
 }
 
-func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+func (c *Completer) prefixToken() (mssqlparser.Token, bool) {
+	idx := c.caretTokenIndex
+	if idx < len(c.tokens) {
+		tok := c.tokens[idx]
+		if tok.Loc < c.cursorByteOffset && c.cursorByteOffset <= tok.End && mssqlparser.IsIdentTokenType(tok.Type) {
+			return tok, true
+		}
+	}
+	if idx > 0 {
+		tok := c.tokens[idx-1]
+		if tok.End == c.cursorByteOffset && mssqlparser.IsIdentTokenType(tok.Type) {
+			return tok, true
+		}
+	}
+	return mssqlparser.Token{}, false
+}
+
+func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]base.Candidate, error) {
 	keywordEntries := make(CompletionMap)
 	functionEntries := make(CompletionMap)
 	databaseEntries := make(CompletionMap)
@@ -740,19 +697,12 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
 	sequenceEntries := make(CompletionMap)
+	routineEntries := make(CompletionMap)
 
-	for tokenCandidate, continuous := range candidates.Tokens {
-		if tokenCandidate < 0 || tokenCandidate >= len(c.parser.SymbolicNames) {
+	for _, tokenCandidate := range candidates.Tokens {
+		candidateText := mssqlparser.TokenName(tokenCandidate)
+		if candidateText == "" {
 			continue
-		}
-
-		candidateText := c.parser.SymbolicNames[tokenCandidate]
-		for _, continuous := range continuous {
-			if continuous < 0 || continuous >= len(c.parser.SymbolicNames) {
-				continue
-			}
-			continuousText := c.parser.SymbolicNames[continuous]
-			candidateText += " " + continuousText
 		}
 		keywordEntries.Insert(base.Candidate{
 			Type: base.CandidateTypeKeyword,
@@ -760,68 +710,51 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		})
 	}
 
-	for ruleCandidate, ruleStack := range candidates.Rules {
+	for _, ruleCandidate := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
-		switch ruleCandidate {
-		case tsqlparser.TSqlParserRULE_built_in_functions:
+		switch ruleCandidate.Rule {
+		case "func_name":
 			functionEntries.insertBuiltinFunctions()
-		case tsqlparser.TSqlParserRULE_full_table_name:
-			// full_table_name also appears in the full_column_name rule, we would handle it in the full_column_name rule in this case.
-			if len(ruleStack) > 0 && ruleStack[len(ruleStack)-1].ID == tsqlparser.TSqlParserRULE_full_column_name {
-				continue
+		case "database_ref":
+			databaseEntries.insertMetadataDatabases(c, "")
+		case "schema_ref":
+			schemaEntries.insertMetadataSchemas(c, "", "")
+		case "proc_ref":
+			for _, context := range c.determineFullTableNameContext() {
+				if context.flags&objectFlagShowObject != 0 {
+					routineEntries.insertMetadataProcedures(c, context.linkedServer, context.database, context.schema)
+				}
 			}
+		case "sequence_ref":
+			for _, context := range c.determineFullTableNameContext() {
+				if context.flags&objectFlagShowObject != 0 {
+					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
+				}
+			}
+		case "type_name":
+			for _, typ := range tsqlDataTypes {
+				keywordEntries.Insert(base.Candidate{
+					Type: base.CandidateTypeKeyword,
+					Text: typ,
+				})
+			}
+		case "table_ref":
 			completionContexts := c.determineFullTableNameContext()
 			for _, context := range completionContexts {
-				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
-				}
-				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
-				}
-				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
-					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
-				}
-				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
-					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
-					tableEntries.insertCTEs(c)
-				}
+				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			}
-		case tsqlparser.TSqlParserRULE_asterisk:
+		case "asterisk":
 			completionContexts := c.determineAsteriskContext()
 			for _, context := range completionContexts {
-				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
-				}
-				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
-				}
-				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
-					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
-				}
-				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
-					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
-					tableEntries.insertCTEs(c)
-				}
+				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			}
-		case tsqlparser.TSqlParserRULE_full_column_name:
+		case "columnref":
 			completionContexts := c.determineFullColumnName()
 			for _, context := range completionContexts {
-				if context.flags&objectFlagShowDatabase != 0 {
-					databaseEntries.insertMetadataDatabases(c, context.linkedServer)
-				}
-				if context.flags&objectFlagShowSchema != 0 {
-					schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
-				}
+				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 				if context.flags&objectFlagShowObject != 0 {
-					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
-					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
-					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
@@ -849,18 +782,16 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						default:
 						}
 					}
-					if context.linkedServer == "" && context.database == "" && context.schema == "" {
-						// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
-						tableEntries.insertCTEs(c)
-					}
 				}
 				if context.flags&objectFlagShowColumn != 0 {
-					list := c.fetchSelectItemAliases(ruleStack)
-					for _, alias := range list {
-						columnEntries.Insert(base.Candidate{
-							Type: base.CandidateTypeColumn,
-							Text: c.quotedIdentifierIfNeeded(alias),
-						})
+					if aliasStartOffset, ok := c.selectItemAliasStartOffset(); ok {
+						list := c.fetchSelectItemAliases(candidates.SelectAliasPositions, aliasStartOffset)
+						for _, alias := range list {
+							columnEntries.Insert(base.Candidate{
+								Type: base.CandidateTypeColumn,
+								Text: c.quotedIdentifierIfNeeded(alias),
+							})
+						}
 					}
 					columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
 					for _, reference := range c.references {
@@ -934,6 +865,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			// Handle other candidates
 		}
 	}
+	c.insertContextualMSSQLKeywords(keywordEntries)
+	c.insertContextualMSSQLCandidates(columnEntries)
 
 	c.scanner.PopAndRestore()
 	var result []base.Candidate
@@ -945,7 +878,477 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
 	result = append(result, sequenceEntries.toSlice()...)
+	result = append(result, routineEntries.toSlice()...)
 	return result, nil
+}
+
+func (c *Completer) insertObjectCandidates(context *objectRefContext, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries CompletionMap) {
+	if context.flags&objectFlagShowDatabase != 0 {
+		databaseEntries.insertMetadataDatabases(c, context.linkedServer)
+	}
+	if context.flags&objectFlagShowSchema != 0 {
+		schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
+	}
+	if context.flags&objectFlagShowObject == 0 {
+		return
+	}
+	tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
+	viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+	sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
+	if context.linkedServer == "" && context.database == "" && context.schema == "" {
+		tableEntries.insertCTEs(c)
+	}
+}
+
+func (c *Completer) insertContextualMSSQLKeywords(entries CompletionMap) {
+	before := strings.ToUpper(strings.TrimSpace(c.sql[:min(c.cursorByteOffset, len(c.sql))]))
+	insertKeywords := func(keywords ...string) {
+		for _, keyword := range keywords {
+			entries.Insert(base.Candidate{
+				Type: base.CandidateTypeKeyword,
+				Text: keyword,
+			})
+		}
+	}
+
+	if hasUnclosedKeywordParen(before, "WITH") {
+		insertKeywords(tsqlTableHints...)
+	}
+	if hasUnclosedKeywordParen(before, "OPTION") {
+		insertKeywords(tsqlQueryHints...)
+	}
+	if strings.HasSuffix(before, "FOR XML") {
+		insertKeywords("PATH", "RAW", "AUTO", "EXPLICIT")
+	}
+	if strings.HasSuffix(before, "FOR JSON") {
+		insertKeywords("PATH", "AUTO")
+	}
+	if strings.HasSuffix(before, " WHEN") || strings.HasSuffix(before, "WHEN") {
+		insertKeywords("MATCHED", "NOT")
+	}
+}
+
+func (c *Completer) insertContextualMSSQLCandidates(columnEntries CompletionMap) {
+	if database, schema, table, usedColumns, ok := c.insertColumnListContext(); ok {
+		columnEntries.insertMetadataColumnsExcept(c, "", database, schema, table, usedColumns)
+	}
+	if database, schema, table, ok := c.createIndexColumnListContext(); ok {
+		columnEntries.replaceWithMetadataColumns(c, "", database, schema, table)
+	}
+	if columns := c.createTableForeignKeySourceColumns(); len(columns) > 0 {
+		columnEntries.replaceWithLocalColumns(c, columns)
+	}
+	if database, schema, table, ok := c.referencesColumnListContext(); ok {
+		columnEntries.replaceWithMetadataColumns(c, "", database, schema, table)
+	}
+	if alias, ok := c.qualifiedObjectBeforeCaret(); ok {
+		columnEntries.insertDerivedTableColumns(c, alias)
+	}
+}
+
+func hasUnclosedKeywordParen(before, keyword string) bool {
+	start := strings.LastIndex(before, keyword+" (")
+	if start < 0 {
+		return false
+	}
+	return strings.LastIndex(before[start:], ")") < 0
+}
+
+func (c *Completer) insertColumnListContext() (string, string, string, map[string]bool, bool) {
+	before := c.sql[:min(c.cursorByteOffset, len(c.sql))]
+	re := regexp.MustCompile(`(?is)\bINSERT\s+INTO\s+([^\s(]+)\s*\(([^()]*)$`)
+	matches := re.FindAllStringSubmatch(before, -1)
+	if len(matches) == 0 {
+		return "", "", "", nil, false
+	}
+	database, schema, table := parseMultipartIdentifier(matches[len(matches)-1][1])
+	if table == "" {
+		return "", "", "", nil, false
+	}
+	excluded := make(map[string]bool)
+	for _, column := range splitTopLevelCSV(matches[len(matches)-1][2]) {
+		column = strings.TrimSpace(column)
+		if column == "" {
+			continue
+		}
+		original, _ := NormalizeTSQLIdentifierText(column)
+		excluded[strings.ToLower(original)] = true
+	}
+	return database, schema, table, excluded, true
+}
+
+func (c *Completer) createIndexColumnListContext() (string, string, string, bool) {
+	before := c.sql[:min(c.cursorByteOffset, len(c.sql))]
+	re := regexp.MustCompile(`(?is)\bCREATE\s+(?:UNIQUE\s+)?(?:(?:CLUSTERED|NONCLUSTERED)\s+)?INDEX\s+[^\s]+\s+ON\s+([^\s(]+)\s*\([^)]*$`)
+	matches := re.FindAllStringSubmatch(before, -1)
+	if len(matches) == 0 {
+		return "", "", "", false
+	}
+	database, schema, table := parseMultipartIdentifier(matches[len(matches)-1][1])
+	return database, schema, table, table != ""
+}
+
+func (c *Completer) createTableForeignKeySourceColumns() []string {
+	before := c.sql[:min(c.cursorByteOffset, len(c.sql))]
+	re := regexp.MustCompile(`(?is)\bCREATE\s+TABLE\s+[^\s(]+\s*\((.*)\bFOREIGN\s+KEY\s*\([^)]*$`)
+	matches := re.FindAllStringSubmatch(before, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	var columns []string
+	for _, item := range splitTopLevelCSV(matches[len(matches)-1][1]) {
+		fields := strings.Fields(strings.TrimSpace(item))
+		if len(fields) < 2 {
+			continue
+		}
+		keyword := strings.ToUpper(fields[0])
+		if keyword == "CONSTRAINT" || keyword == "PRIMARY" || keyword == "FOREIGN" || keyword == "CHECK" || keyword == "UNIQUE" {
+			continue
+		}
+		original, _ := NormalizeTSQLIdentifierText(fields[0])
+		columns = append(columns, original)
+	}
+	return columns
+}
+
+func (c *Completer) referencesColumnListContext() (string, string, string, bool) {
+	before := c.sql[:min(c.cursorByteOffset, len(c.sql))]
+	re := regexp.MustCompile(`(?is)\bREFERENCES\s+([^\s(]+)\s*\([^)]*$`)
+	matches := re.FindAllStringSubmatch(before, -1)
+	if len(matches) == 0 {
+		return "", "", "", false
+	}
+	database, schema, table := parseMultipartIdentifier(matches[len(matches)-1][1])
+	return database, schema, table, table != ""
+}
+
+func (c *Completer) qualifiedObjectBeforeCaret() (string, bool) {
+	idx := c.previousTokenIndex()
+	if idx < 1 || c.tokenText(idx) != "." {
+		return "", false
+	}
+	original, _ := NormalizeTSQLIdentifierText(c.tokenText(idx - 1))
+	if original == "" {
+		return "", false
+	}
+	return unquoteDoubleQuoted(original), true
+}
+
+type selectAliasScope struct {
+	clause      string
+	selectStart int
+	blocked     bool
+}
+
+func (c *Completer) selectItemAliasStartOffset() (int, bool) {
+	scopes := []selectAliasScope{{selectStart: -1}}
+	previous := ""
+	for idx, token := range c.tokens {
+		if token.Loc >= c.cursorByteOffset {
+			break
+		}
+		text := c.tokenText(idx)
+		upper := strings.ToUpper(text)
+		switch text {
+		case "(":
+			scopes = append(scopes, selectAliasScope{
+				selectStart: -1,
+				blocked:     previous == "OVER" || previous == "GROUP",
+			})
+		case ")":
+			if len(scopes) > 1 {
+				scopes = scopes[:len(scopes)-1]
+			}
+		default:
+			scope := &scopes[len(scopes)-1]
+			if !scope.blocked {
+				switch upper {
+				case "SELECT":
+					scope.clause = "SELECT"
+					scope.selectStart = token.Loc
+				case "FROM", "WHERE", "GROUP", "HAVING", "ORDER", "ON":
+					scope.clause = upper
+				case "UNION", "EXCEPT", "INTERSECT":
+					scope.clause = ""
+					scope.selectStart = -1
+				default:
+				}
+			}
+		}
+		if upper != "" {
+			previous = upper
+		}
+	}
+
+	scope := scopes[len(scopes)-1]
+	if scope.blocked || scope.selectStart < 0 {
+		return 0, false
+	}
+	switch scope.clause {
+	case "GROUP", "HAVING", "ORDER":
+		return scope.selectStart, true
+	default:
+		return 0, false
+	}
+}
+
+func (m CompletionMap) insertDerivedTableColumns(c *Completer, alias string) {
+	for _, derived := range extractDerivedTables(c.sql) {
+		if !strings.EqualFold(derived.alias, alias) {
+			continue
+		}
+		span, err := GetQuerySpan(
+			c.ctx,
+			base.GetQuerySpanContext{
+				InstanceID:              c.instanceID,
+				GetDatabaseMetadataFunc: c.metadataGetter,
+				ListDatabaseNamesFunc:   c.databaseNamesLister,
+			},
+			base.Statement{Text: derived.query},
+			c.defaultDatabase,
+			c.defaultSchema,
+			true,
+		)
+		if err != nil || span.NotFoundError != nil {
+			continue
+		}
+		for _, column := range span.Results {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeColumn,
+				Text: c.quotedIdentifierIfNeeded(column.Name),
+			})
+		}
+	}
+}
+
+func (c *Completer) previousTokenIndex() int {
+	idx := c.caretTokenIndex - 1
+	for idx >= 0 && c.tokens[idx].End > c.cursorByteOffset {
+		idx--
+	}
+	return idx
+}
+
+func (c *Completer) tokenText(idx int) string {
+	if idx < 0 || idx >= len(c.tokens) {
+		return ""
+	}
+	token := c.tokens[idx]
+	if token.Loc < 0 || token.End > len(c.sql) || token.Loc > token.End {
+		return ""
+	}
+	return c.sql[token.Loc:token.End]
+}
+
+func parseMultipartIdentifier(text string) (string, string, string) {
+	parts := splitMultipartIdentifier(text)
+	for i, part := range parts {
+		original, _ := NormalizeTSQLIdentifierText(unquoteDoubleQuoted(strings.TrimSpace(part)))
+		parts[i] = original
+	}
+	switch len(parts) {
+	case 0:
+		return "", "", ""
+	case 1:
+		return "", "", parts[0]
+	case 2:
+		return "", parts[0], parts[1]
+	default:
+		return parts[len(parts)-3], parts[len(parts)-2], parts[len(parts)-1]
+	}
+}
+
+func splitMultipartIdentifier(text string) []string {
+	var parts []string
+	var buf strings.Builder
+	var bracket, quote bool
+	for _, r := range text {
+		switch r {
+		case '[':
+			bracket = true
+		case ']':
+			bracket = false
+		case '"':
+			quote = !quote
+		case '.':
+			if !bracket && !quote {
+				parts = append(parts, buf.String())
+				buf.Reset()
+				continue
+			}
+		default:
+		}
+		buf.WriteRune(r)
+	}
+	if buf.Len() > 0 {
+		parts = append(parts, buf.String())
+	}
+	return parts
+}
+
+func splitTopLevelCSV(text string) []string {
+	var parts []string
+	var buf strings.Builder
+	var bracket, quote bool
+	level := 0
+	for _, r := range text {
+		switch r {
+		case '[':
+			bracket = true
+		case ']':
+			bracket = false
+		case '"':
+			quote = !quote
+		case '(':
+			if !bracket && !quote {
+				level++
+			}
+		case ')':
+			if !bracket && !quote && level > 0 {
+				level--
+			}
+		case ',':
+			if !bracket && !quote && level == 0 {
+				parts = append(parts, buf.String())
+				buf.Reset()
+				continue
+			}
+		default:
+		}
+		buf.WriteRune(r)
+	}
+	parts = append(parts, buf.String())
+	return parts
+}
+
+type derivedTable struct {
+	query string
+	alias string
+}
+
+func extractDerivedTables(sql string) []derivedTable {
+	var result []derivedTable
+	upperSQL := strings.ToUpper(sql)
+	for idx := 0; idx < len(sql); idx++ {
+		if sql[idx] != '(' {
+			continue
+		}
+		if !isDerivedTableOpen(upperSQL, idx) {
+			continue
+		}
+		end := matchingParen(sql, idx)
+		if end < 0 {
+			continue
+		}
+		alias, ok := readAliasAfter(sql, end+1)
+		if ok {
+			result = append(result, derivedTable{
+				query: sql[idx+1 : end],
+				alias: alias,
+			})
+		}
+		idx = end
+	}
+	return result
+}
+
+func isDerivedTableOpen(upperSQL string, idx int) bool {
+	after := strings.TrimLeft(upperSQL[idx+1:], asciiWhitespace)
+	if !strings.HasPrefix(after, "SELECT") && !strings.HasPrefix(after, "WITH") {
+		return false
+	}
+	before := strings.TrimRight(upperSQL[:idx], asciiWhitespace)
+	for _, keyword := range []string{"FROM", "JOIN", "APPLY"} {
+		if strings.HasSuffix(before, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchingParen(sql string, open int) int {
+	level := 0
+	var bracket, doubleQuote, singleQuote bool
+	for i := open; i < len(sql); i++ {
+		switch sql[i] {
+		case '\'':
+			if !bracket && !doubleQuote {
+				singleQuote = !singleQuote
+			}
+		case '"':
+			if !bracket && !singleQuote {
+				doubleQuote = !doubleQuote
+			}
+		case '[':
+			if !singleQuote && !doubleQuote {
+				bracket = true
+			}
+		case ']':
+			if bracket {
+				bracket = false
+			}
+		case '(':
+			if !bracket && !singleQuote && !doubleQuote {
+				level++
+			}
+		case ')':
+			if !bracket && !singleQuote && !doubleQuote {
+				level--
+				if level == 0 {
+					return i
+				}
+			}
+		default:
+		}
+	}
+	return -1
+}
+
+func readAliasAfter(sql string, start int) (string, bool) {
+	rest := strings.TrimLeft(sql[start:], asciiWhitespace)
+	upperRest := strings.ToUpper(rest)
+	if strings.HasPrefix(upperRest, "AS ") {
+		rest = strings.TrimLeft(rest[2:], asciiWhitespace)
+	}
+	if rest == "" {
+		return "", false
+	}
+	var alias string
+	switch rest[0] {
+	case '[':
+		end := strings.IndexByte(rest, ']')
+		if end <= 0 {
+			return "", false
+		}
+		alias = rest[1:end]
+	case '"':
+		end := strings.IndexByte(rest[1:], '"')
+		if end < 0 {
+			return "", false
+		}
+		alias = rest[1 : end+1]
+	default:
+		end := 0
+		for end < len(rest) {
+			r, size := utf8.DecodeRuneInString(rest[end:])
+			if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '@' && r != '#' && r != '$' {
+				break
+			}
+			end += size
+		}
+		if end == 0 {
+			return "", false
+		}
+		alias = rest[:end]
+	}
+	return alias, true
+}
+
+func unquoteDoubleQuoted(identifier string) string {
+	if len(identifier) >= 2 && identifier[0] == '"' && identifier[len(identifier)-1] == '"' {
+		return identifier[1 : len(identifier)-1]
+	}
+	return identifier
 }
 
 type objectFlag int
@@ -1297,80 +1700,102 @@ func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedSer
 // skipHeadingSQLs skips the SQL statements which before the caret position.
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
-	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQL(statement)
-	if err != nil || notEmptySQLCount(list) <= 1 {
+	if err != nil {
+		return statement, caretLine, caretOffset
+	}
+	if !hasMultipleNonEmptyStatements(list) {
 		return statement, caretLine, caretOffset
 	}
 
-	caretLine-- // Convert to 0-based.
-
-	start := 0
-	for i, sql := range list {
-		// End.Line is 1-based per proto spec, convert to 0-based for comparison with caretLine
-		sqlEndLine := int(sql.End.GetLine()) - 1
-		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
-			start = i
-			if i == 0 {
-				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
-				break
-			}
-			// End.Line is 1-based per proto spec, convert to 0-based
-			previousSQLEndLine := int(list[i-1].End.GetLine()) - 1
-			previousSQLEndColumn := int(list[i-1].End.GetColumn())
-			newCaretLine = caretLine - previousSQLEndLine + 1 // Convert to 1-based.
-			if caretLine == previousSQLEndLine {
-				// The caret is in the same line as the last line of the previous SQL statement.
-				// End.Column is 1-based exclusive, so (End.Column - 1) gives 0-based start of next statement.
-				// newCaretOffset = caretOffset - (previousSQLEndColumn - 1)
-				newCaretOffset = caretOffset - previousSQLEndColumn + 1
-			}
-			break
-		}
+	caretLineZeroBased := caretLine - 1
+	start := statementIndexAtCaret(list, caretLineZeroBased, caretOffset)
+	if start == 0 {
+		return statement, caretLine, caretOffset
 	}
 
-	var buf strings.Builder
-	for i := start; i < len(list); i++ {
-		if _, err := buf.WriteString(list[i].Text); err != nil {
-			return statement, caretLine, caretOffset
-		}
-	}
-
-	return buf.String(), newCaretLine, newCaretOffset
+	newCaretLine, newCaretOffset := rebaseCaretAfterSkippedStatement(list[start-1], caretLineZeroBased, caretOffset)
+	return joinStatementTexts(list[start:]), newCaretLine, newCaretOffset
 }
 
-func notEmptySQLCount(list []base.Statement) int {
-	count := 0
-	for _, sql := range list {
-		if !sql.Empty {
-			count++
+func statementIndexAtCaret(list []base.Statement, caretLine int, caretOffset int) int {
+	for i, statement := range list {
+		endLine := int(statement.End.GetLine()) - 1
+		endColumn := int(statement.End.GetColumn())
+		if endLine > caretLine || (endLine == caretLine && endColumn >= caretOffset) {
+			return i
 		}
 	}
-	return count
+	return 0
+}
+
+func rebaseCaretAfterSkippedStatement(previous base.Statement, caretLine int, caretOffset int) (int, int) {
+	previousEndLine := int(previous.End.GetLine()) - 1
+	previousEndColumn := int(previous.End.GetColumn())
+	newCaretLine := caretLine - previousEndLine + 1
+	newCaretOffset := caretOffset
+	if caretLine == previousEndLine {
+		newCaretOffset = caretOffset - previousEndColumn + 1
+	}
+	return newCaretLine, newCaretOffset
+}
+
+func joinStatementTexts(list []base.Statement) string {
+	parts := make([]string, 0, len(list))
+	for _, statement := range list {
+		parts = append(parts, statement.Text)
+	}
+	return strings.Join(parts, "")
+}
+
+func hasMultipleNonEmptyStatements(statements []base.Statement) bool {
+	seenNonEmpty := false
+	for _, statement := range statements {
+		if statement.Empty {
+			continue
+		}
+		if seenNonEmpty {
+			return true
+		}
+		seenNonEmpty = true
+	}
+	return false
 }
 
 func (c *Completer) takeReferencesSnapshot() {
+	c.ensureReferenceMap()
+	for _, references := range c.referencesStack {
+		c.rememberReferences(references)
+	}
+}
+
+func (c *Completer) ensureReferenceMap() {
 	if c.referenceMap == nil {
 		c.referenceMap = make(map[string]bool)
 	}
-	for _, references := range c.referencesStack {
-		c.references = append(c.references, references...)
-		for _, reference := range references {
-			if r, ok := reference.(*base.PhysicalTableReference); ok {
-				database := r.Database
-				if database == "" {
-					database = c.defaultDatabase
-				}
-				schema := r.Schema
-				if schema == "" {
-					schema = c.defaultSchema
-				}
-				tableID := fmt.Sprintf("%s.%s.%s", database, schema, r.Table)
-				c.referenceMap[tableID] = true
-			}
+}
+
+func (c *Completer) rememberReferences(references []base.TableReference) {
+	c.references = append(c.references, references...)
+	for _, reference := range references {
+		physical, ok := reference.(*base.PhysicalTableReference)
+		if !ok {
+			continue
 		}
+		c.referenceMap[c.physicalReferenceKey(physical)] = true
 	}
+}
+
+func (c *Completer) physicalReferenceKey(reference *base.PhysicalTableReference) string {
+	database := reference.Database
+	if database == "" {
+		database = c.defaultDatabase
+	}
+	schema := reference.Schema
+	if schema == "" {
+		schema = c.defaultSchema
+	}
+	return fmt.Sprintf("%s.%s.%s", database, schema, reference.Table)
 }
 
 func (c *Completer) collectLeadingTableReferences(caretIndex int) {
@@ -1722,39 +2147,30 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 	}
 }
 
-func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
-	canUseAliases := false
-	for i := len(ruleStack) - 1; i >= 0; i-- {
-		switch ruleStack[i].ID {
-		case tsqlparser.TSqlParserRULE_select_statement, tsqlparser.TSqlParserRULE_select_statement_standalone:
-			if !canUseAliases {
-				return nil
-			}
-			aliasMap := make(map[string]bool)
-			for pos := range ruleStack[i].SelectItemAliases {
-				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
-					aliasMap[aliasText] = true
-				}
-			}
-
-			var result []string
-			for alias := range aliasMap {
-				result = append(result, alias)
-			}
-			slices.Sort(result)
-			return result
-		case tsqlparser.TSqlParserRULE_group_by_clause, tsqlparser.TSqlParserRULE_order_by_clause, tsqlparser.TSqlParserRULE_having_clause:
-			canUseAliases = true
-		default:
-			// Other cases
+func (c *Completer) fetchSelectItemAliases(aliasPositions []int, startOffset int) []string {
+	aliasMap := make(map[string]bool)
+	for _, pos := range aliasPositions {
+		if pos < startOffset || pos >= c.cursorByteOffset {
+			continue
+		}
+		if aliasText := c.extractAliasText(pos); aliasText != "" {
+			aliasMap[aliasText] = true
 		}
 	}
 
-	return nil
+	var result []string
+	for alias := range aliasMap {
+		result = append(result, alias)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *Completer) extractAliasText(pos int) string {
-	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if pos < 0 || pos >= len(c.sql) {
+		return ""
+	}
+	followingText := c.sql[pos:]
 	if len(followingText) == 0 {
 		return ""
 	}

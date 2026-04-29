@@ -301,8 +301,18 @@
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
+    - text: SalarySeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: SalaryLevel
       type: TABLE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: SalaryView
+      type: VIEW
       definition: ""
       comment: ""
       priority: 0
