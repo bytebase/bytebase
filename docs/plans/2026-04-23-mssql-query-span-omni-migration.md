@@ -179,10 +179,10 @@ Tests: simple CTE; CTE with explicit column list; chain of CTEs where CTE2 uses 
 
 ### Phase 7 — Special table sources
 
-- **PIVOT**: `*ast.PivotExpr{Source, AggFunc, ForCol, InValues, Alias}` — result columns = source's non-pivot columns (need to subtract the FOR column) + one column per IN value, each pivoted aggregate. Source columns for pivoted columns = the AggFunc's source columns. This is new semantic work; ANTLR currently returns "not supported yet" — so this is an upgrade from current behavior. Start by emulating ANTLR: return errOmniUnsupported, and add a TODO. Real PIVOT support is a separate follow-up.
+- **PIVOT**: `*ast.PivotExpr{Source, AggFunc, ForCol, InValues, Alias}` — result columns = source's non-pivot columns (need to subtract the FOR column) + one column per IN value, each pivoted aggregate. Source columns for pivoted columns = the AggFunc's source columns. This is new semantic work; ANTLR returned "not supported yet", so the omni extractor preserves that behavior with a typed unsupported error. Real PIVOT support is a separate follow-up.
 - **UNPIVOT**: similar — emulate current ANTLR (unsupported).
 - **CROSS APPLY / OUTER APPLY**: `*JoinClause{Type: CrossApply|OuterApply}`. The Right is a table expression (often a TVF or subquery) that can reference Left columns (correlated). Treat as a join where Right is evaluated in a scope that includes Left. Contribution to tableSourcesFrom: both sides.
-- **Table-valued function call (TVF)**: `*FuncCallExpr` appearing in FROM position. Look up return signature — complicated, requires schema metadata for user TVFs. For system TVFs (e.g. `OPENJSON`, `STRING_SPLIT`): hardcode return shape. For unknown: `errOmniUnsupported` (ANTLR does the same for most).
+- **Table-valued function call (TVF)**: `*FuncCallExpr` appearing in FROM position. Look up return signature — complicated, requires schema metadata for user TVFs. The omni extractor hardcodes common system TVFs (`OPENJSON`, `STRING_SPLIT`) and returns a typed unsupported error for unknown TVFs.
 - **Temp tables**: `#t` → PseudoTable from gCtx.TempTables; `@t` (TableVarRef) → same lookup.
 - **TableVarMethodCallRef** (XML `.nodes()`): emits a table of XML fragments; columns named after the method's alias columns; no physical source.
 - **CHANGETABLE**: return PseudoTable (stats only, no sensitive data flow). Matches ANTLR behavior.
@@ -230,12 +230,12 @@ Tests: SELECT INTO #tmp FROM t (temp destination); FOR XML AUTO (ensure no crash
 5. Remove unused ANTLR-only helpers: `normalizeFullTableNameFallback`, `splitTableNameIntoNormalizedParts`, `unquote`, `getSelectBodyFromCreateView`, `NormalizeTSQLIdentifier` (if only used here — grep).
 6. `omni.go`'s `AsANTLRAST()` lazy ANTLR fallback: check if any other tsql file still uses it; drop if not.
 
-All 29 YAML fixtures must pass. The probe tests (`TestOmniMigrationProbe`) must still pass. New extractor tests all green. Lint clean. Build clean.
+All YAML fixtures must pass. Parser invariant tests (`TestOmniQuerySpanParserInvariants`) must still pass. New extractor tests all green. Lint clean. Build clean.
 
 ### Phase 12 — Cleanup
 
 - Delete the now-unused `query_span_extractor.go` ANTLR code (once fully replaced)
-- Remove `query_span_omni_probe_test.go` if it's now redundant with Phase 1-10 tests (or keep as a regression net — decide on cutover)
+- Keep parser AST shape coverage as `query_span_parser_invariant_test.go`.
 - Update `AGENTS.md` / skill docs if they still reference the old file layout
 - Open follow-up tickets for items deferred: PIVOT/UNPIVOT result-column inference, TVF metadata, SELECT INTO target marking, FOR XML single-column collapse
 
@@ -272,9 +272,9 @@ Validation of omni progress during development:
 1. **Unit tests** (`TestOmniQuerySpan_*`) — direct calls into `newOmniQuerySpanExtractor(...).getOmniQuerySpan()`, bypassing `GetQuerySpan`. This is where every phase's coverage is proven.
 2. **Parity harness** (`TestQuerySpan_AntlrOmniParity`, dev-only) — table-driven over the YAML corpus; calls both ANTLR via `GetQuerySpan` and omni directly; reports diffs. Useful as a thermometer; not wired to CI until cutover.
 
-`errOmniUnsupported` remains as a development signal (so unit tests can distinguish "not yet implemented" from "real bug") but is never observable from outside the package. After Phase 10 it should stop appearing for every supported shape, at which point the cutover is safe.
+Unsupported omni constructs return typed unsupported errors from the production path.
 
-At Phase 11, `GetQuerySpan` is rewritten to call the omni extractor directly (no fallback). `errOmniUnsupported` is deleted along with all ANTLR extraction code.
+At Phase 11, `GetQuerySpan` is rewritten to call the omni extractor directly (no fallback). The development-only unsupported sentinel is deleted along with the ANTLR extraction code.
 
 ## Risk register
 
@@ -312,7 +312,7 @@ Total: ~8 engineer-days. Parity test fixed after each phase, keeping CI green.
 
 ## Open questions
 
-1. **Should `query_span_omni_probe_test.go` stay?** It duplicates some checks. Recommend: keep through cutover for parse-coverage gating; delete in Phase 12 if the per-phase tests cover everything.
+1. **Should parser AST shape coverage stay?** Resolved: keep the useful parser AST coverage as `query_span_parser_invariant_test.go`.
 2. **PIVOT full support in this migration or later?** Current ANTLR is a no-op ("not supported"). Recommend: keep no-op parity in Phase 7; real PIVOT support = new project.
 3. **TVF return-shape metadata**: do we add a gCtx function for it (similar to ListDatabaseNamesFunc)? Recommend: yes, but defer to a separate ticket; the migration uses an empty fallback meanwhile.
 4. **Order of `tableSourcesFrom` across comma-join vs JOIN**: ANTLR current code `append`s as it walks left-to-right, JOIN unwraps from inside. Match exactly.
