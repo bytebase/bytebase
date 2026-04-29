@@ -277,6 +277,7 @@
     "environments": "环境",
     "error": "错误",
     "expiration": "过期时间",
+    "expired": "已过期",
     "export": "导出",
     "failed": "失败",
     "file-selector": {
@@ -1715,7 +1716,8 @@
         },
         "max-expiration-hint": "工作空间策略允许的最大值：{{days}} 天。"
       },
-      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
+      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？",
+      "show-expired-roles": "显示已过期角色"
     },
     "overview": {
       "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"

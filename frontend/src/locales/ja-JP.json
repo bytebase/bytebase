@@ -280,6 +280,7 @@
     "environments": "環境",
     "error": "間違い",
     "expiration": "有効期限",
+    "expired": "期限切れ",
     "export": "出力",
     "failed": "失敗",
     "feishu": "Feishu",

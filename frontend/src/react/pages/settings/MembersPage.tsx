@@ -91,6 +91,7 @@ import {
   formatAbsoluteDateTime,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
+  isBindingPolicyExpired,
   sortRoles,
 } from "@/utils";
 import {
@@ -941,11 +942,19 @@ function EditMemberRoleDrawer({
   const isProjectCreateMode = !!projectName && !isEditMode;
   const isProjectEditMode = !!projectName && isEditMode;
 
-  // Live project role bindings for the member (reactively updated when IAM policy changes)
+  // Live project role bindings for the member (reactively updated when IAM policy changes).
+  // Active bindings come first, expired ones last; original order is preserved within each group.
   const liveProjectRoleBindings = useVueState(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
     const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
-    return policy.bindings.filter((b) => b.members.includes(member.binding));
+    const matching = policy.bindings.filter((b) =>
+      b.members.includes(member.binding)
+    );
+    return [...matching].sort((a, b) => {
+      const aExpired = isBindingPolicyExpired(a) ? 1 : 0;
+      const bExpired = isBindingPolicyExpired(b) ? 1 : 0;
+      return aExpired - bExpired;
+    });
   });
 
   const [selectedBindings, setSelectedBindings] = useState<string[]>(
@@ -958,6 +967,20 @@ function EditMemberRoleDrawer({
   });
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
+  const [showExpiredRoles, setShowExpiredRoles] = useState(false);
+
+  const hasExpiredRoles = useMemo(
+    () => liveProjectRoleBindings.some((b) => isBindingPolicyExpired(b)),
+    [liveProjectRoleBindings]
+  );
+
+  const visibleProjectRoleBindings = useMemo(
+    () =>
+      showExpiredRoles
+        ? liveProjectRoleBindings
+        : liveProjectRoleBindings.filter((b) => !isBindingPolicyExpired(b)),
+    [liveProjectRoleBindings, showExpiredRoles]
+  );
 
   const [form, setForm] = useState<RoleBindingFormState>(() => ({
     id: crypto.randomUUID(),
@@ -1291,25 +1314,51 @@ function EditMemberRoleDrawer({
             {/* Body — Role Bindings */}
             <SheetBody className="px-6 py-6">
               <div className="flex flex-col gap-y-6">
-                {liveProjectRoleBindings.length === 0 && (
+                {hasExpiredRoles && (
+                  <label className="flex items-center gap-x-2 text-sm cursor-pointer self-start">
+                    <input
+                      type="checkbox"
+                      checked={showExpiredRoles}
+                      onChange={(e) => setShowExpiredRoles(e.target.checked)}
+                    />
+                    {t("project.members.show-expired-roles")}
+                  </label>
+                )}
+                {visibleProjectRoleBindings.length === 0 && (
                   <div className="text-center text-control-light py-8">
                     {t("common.no-data")}
                   </div>
                 )}
-                {liveProjectRoleBindings.map((binding, idx) => {
+                {visibleProjectRoleBindings.map((binding, idx) => {
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
+                  const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
                       key={`${binding.role}-${idx}`}
-                      className="border rounded-sm"
+                      className={cn(
+                        "border rounded-sm",
+                        isExpired && "opacity-60"
+                      )}
                     >
                       {/* Role header */}
                       <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                        <span className="font-medium text-sm">
-                          {displayRoleTitle(binding.role)}
-                        </span>
+                        <div className="flex items-center gap-x-2">
+                          <span
+                            className={cn(
+                              "font-medium text-sm",
+                              isExpired && "line-through"
+                            )}
+                          >
+                            {displayRoleTitle(binding.role)}
+                          </span>
+                          {isExpired && (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("common.expired")}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-x-1">
                           <Button
                             variant="ghost"

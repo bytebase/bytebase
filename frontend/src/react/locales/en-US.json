@@ -280,6 +280,7 @@
     "environments": "Environments",
     "error": "Error",
     "expiration": "Expiration",
+    "expired": "Expired",
     "export": "Export",
     "failed": "Failed",
     "file-selector": {
@@ -1723,7 +1724,8 @@
         },
         "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
       },
-      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
+      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?",
+      "show-expired-roles": "Show expired roles"
     },
     "overview": {
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
