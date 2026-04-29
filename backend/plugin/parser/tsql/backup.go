@@ -519,10 +519,7 @@ func sourceFromLoc(source string, loc ast.Loc) string {
 	if loc.Start < 0 || loc.End < 0 || loc.Start >= len(source) {
 		return ""
 	}
-	end := loc.End
-	if end > len(source) {
-		end = len(source)
-	}
+	end := min(loc.End, len(source))
 	return strings.TrimSpace(source[loc.Start:end])
 }
 
