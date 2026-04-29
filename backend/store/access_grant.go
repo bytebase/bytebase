@@ -366,7 +366,26 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 					if !ok {
 						return nil, errors.Errorf("query value must be a string")
 					}
-					return qb.Q().Space("btrim(access_grant.payload->>'query') = ?", strings.TrimSpace(queryStr)), nil
+					// Trim the same whitespace set on both sides (boundary
+					// only) so the run-time JIT match in preCheckAccess
+					// survives invisible boundary differences — most
+					// commonly a trailing \n that Monaco's getValue() emits
+					// in the request drawer but that the editor's
+					// getActiveStatement() doesn't.
+					//
+					// We deliberately do NOT collapse internal whitespace.
+					// Doing so would let "SELECT * FROM t --\nWHERE x=1"
+					// compare equal to "SELECT * FROM t -- WHERE x=1",
+					// silently authorizing a query with the WHERE clause
+					// commented out — a privilege escalation, not a
+					// usability nit. Internal whitespace differences
+					// (reformatting, CRLF↔LF in the body) intentionally
+					// fall through to the IAM check; users can re-request.
+					//
+					// The contains branch below collapses internal
+					// whitespace; that's safe there because it's used for
+					// search/listing, not authorization.
+					return qb.Q().Space("btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = ?", strings.TrimSpace(queryStr)), nil
 				case "issue":
 					issueStr, ok := value.(string)
 					if !ok {
