@@ -90,7 +90,7 @@ export function NavigatorTree({
             ref={dragHandle}
             style={style}
             className={cn(
-              "flex items-center gap-x-1 px-1 cursor-pointer hover:bg-control-bg"
+              "group flex items-center gap-x-1 px-1 cursor-pointer hover:bg-control-bg"
             )}
             onClick={() => {
               if (isTypedNode(treeNode, "schema")) {

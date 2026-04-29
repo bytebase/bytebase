@@ -39,12 +39,14 @@ export function Canvas({
   const { zoom, position } = ctx;
 
   const [canvas, setCanvas] = useState<HTMLDivElement | null>(null);
+  const [desktop, setDesktop] = useState<HTMLDivElement | null>(null);
   const handleFitView = useFitView(canvas);
   const { handleZoom } = useDragCanvas(canvas);
   useSetCenter(canvas);
-  const { capture, capturing } = useScreenshot(canvas, {
-    filename: screenshotFilename ?? (() => "schema-diagram.png"),
-  });
+  const { capture, capturing } = useScreenshot(
+    { canvas, desktop },
+    { filename: screenshotFilename ?? (() => "schema-diagram.png") }
+  );
 
   return (
     <div
@@ -52,6 +54,7 @@ export function Canvas({
       className="w-full h-full relative bg-control-bg overflow-hidden"
     >
       <div
+        ref={setDesktop}
         className="absolute overflow-visible"
         style={{
           transformOrigin: "0 0 0",
