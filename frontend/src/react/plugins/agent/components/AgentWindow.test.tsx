@@ -148,6 +148,42 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("keeps chat status and token usage out of the window header", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId
+            ? { ...chat, status: "running", totalTokensUsed: 1234 }
+            : chat
+        ),
+    });
+
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, values?: Record<string, unknown>) =>
+        key === "agent.chat-total-tokens"
+          ? `Tokens used: ${values?.count ?? ""}`
+          : key,
+      i18n: { language: "en-US" },
+    });
+
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+
+    render();
+
+    const header = document.body.querySelector(
+      "[data-agent-window-header]"
+    ) as HTMLDivElement | null;
+
+    expect(header).toBeInstanceOf(HTMLDivElement);
+    expect(header?.textContent).toContain("agent.assistant-title");
+    expect(header?.textContent).not.toContain("agent.chat-status-running");
+    expect(header?.textContent).not.toContain("Tokens used");
+
+    unmount();
+  });
+
   test("mounts agent menu and delete dialog into the agent layer root", async () => {
     const archivedChat = useAgentStore.getState().createChat({
       title: "Archived chat",

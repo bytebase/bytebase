@@ -2,6 +2,11 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import enUS from "@/react/locales/en-US.json";
+import esES from "@/react/locales/es-ES.json";
+import jaJP from "@/react/locales/ja-JP.json";
+import viVN from "@/react/locales/vi-VN.json";
+import zhCN from "@/react/locales/zh-CN.json";
 import type { DomRefSuggestion } from "../dom";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
@@ -179,6 +184,12 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("React locale token usage labels include the token count", () => {
+    for (const locale of [enUS, esES, jaJP, viVN, zhCN]) {
+      expect(locale.agent["chat-total-tokens"]).toContain("{{count}}");
+    }
+  });
+
   test("mounts mention suggestions into the agent layer root", async () => {
     const suggestions: DomRefSuggestion[] = [
       {
@@ -206,6 +217,70 @@ describe("AgentInput", () => {
 
     const agentRoot = document.getElementById("bb-react-layer-agent");
     expect(agentRoot?.querySelector("[data-agent-mention-list]")).toBeTruthy();
+
+    unmount();
+  });
+
+  test("shows token usage near the textarea", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId ? { ...chat, totalTokensUsed: 1234 } : chat
+        ),
+    });
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, values?: Record<string, unknown>) =>
+        key === "agent.chat-total-tokens"
+          ? `Tokens used: ${values?.count ?? ""}`
+          : key,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const inputFooter = container.querySelector("[data-agent-input-footer]");
+    expect(inputFooter).toBeInstanceOf(HTMLDivElement);
+    expect(inputFooter?.textContent).toContain("Tokens used: 1,234");
+
+    unmount();
+  });
+
+  test("keeps token usage visible while awaiting confirmation", () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    useAgentStore.setState({
+      chats: useAgentStore
+        .getState()
+        .chats.map((chat) =>
+          chat.id === chatId
+            ? { ...chat, status: "awaiting_user", totalTokensUsed: 5678 }
+            : chat
+        ),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "tool-call-confirm",
+          prompt: "Continue?",
+          kind: "confirm",
+        },
+      },
+    });
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, values?: Record<string, unknown>) =>
+        key === "agent.chat-total-tokens"
+          ? `Tokens used: ${values?.count ?? ""}`
+          : key,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(<AgentInput />);
+
+    render();
+
+    const inputFooter = container.querySelector("[data-agent-input-footer]");
+    expect(inputFooter).toBeInstanceOf(HTMLDivElement);
+    expect(inputFooter?.textContent).toContain("Tokens used: 5,678");
+    expect(container.textContent).toContain("Continue?");
 
     unmount();
   });
