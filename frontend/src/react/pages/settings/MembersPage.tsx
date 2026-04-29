@@ -91,6 +91,7 @@ import {
   formatAbsoluteDateTime,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
+  isBindingPolicyExpired,
   sortRoles,
 } from "@/utils";
 import {
@@ -1300,16 +1301,32 @@ function EditMemberRoleDrawer({
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
+                  const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
                       key={`${binding.role}-${idx}`}
-                      className="border rounded-sm"
+                      className={cn(
+                        "border rounded-sm",
+                        isExpired && "opacity-60"
+                      )}
                     >
                       {/* Role header */}
                       <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                        <span className="font-medium text-sm">
-                          {displayRoleTitle(binding.role)}
-                        </span>
+                        <div className="flex items-center gap-x-2">
+                          <span
+                            className={cn(
+                              "font-medium text-sm",
+                              isExpired && "line-through"
+                            )}
+                          >
+                            {displayRoleTitle(binding.role)}
+                          </span>
+                          {isExpired && (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("common.expired")}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-x-1">
                           <Button
                             variant="ghost"
