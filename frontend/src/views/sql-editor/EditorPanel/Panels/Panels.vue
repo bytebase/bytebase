@@ -73,9 +73,10 @@
                 :key="`external-tables-${tab?.id}`"
                 page="ExternalTablesPanel"
               />
-              <DiagramPanel
+              <ReactPageMount
                 v-if="viewState.view === 'DIAGRAM'"
-                :key="tab?.id"
+                :key="`diagram-${tab?.id}`"
+                page="DiagramPanel"
               />
             </template>
             <template v-if="showAIPaneAlongsidePanel" #2>
@@ -127,7 +128,6 @@ import {
   type VueClass,
 } from "@/utils";
 import { useCurrentTabViewStateContext } from "../context/viewState.tsx";
-import DiagramPanel from "./DiagramPanel";
 
 defineProps<{
   contentClass?: VueClass;

@@ -1937,6 +1937,7 @@
   "rollout.task.selected-count": "已选择 {{count}} 个任务",
   "rollout.task.statement-truncated-hint": "由于语句过长，已被截断。",
   "schema-diagram": {
+    "fit-content-with-view": "自动适应视图",
     "self": "Schema 关系图"
   },
   "schema-editor": {
@@ -2003,7 +2004,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "选择 schema"
     },
     "table": {
       "duplicate-name": "Table name already exists",

@@ -1937,6 +1937,7 @@
   "rollout.task.selected-count": "{{count}} tarea seleccionada",
   "rollout.task.statement-truncated-hint": "Declaración truncada debido al gran tamaño.",
   "schema-diagram": {
+    "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
   },
   "schema-editor": {
@@ -2003,7 +2004,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "Seleccionar esquema"
     },
     "table": {
       "duplicate-name": "Table name already exists",

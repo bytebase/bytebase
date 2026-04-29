@@ -1937,6 +1937,7 @@
   "rollout.task.selected-count": "Đã chọn {{count}} tác vụ",
   "rollout.task.statement-truncated-hint": "Câu lệnh bị cắt bớt do kích thước lớn.",
   "schema-diagram": {
+    "fit-content-with-view": "Điều chỉnh nội dung vừa với khung nhìn",
     "self": "Sơ đồ Lược đồ"
   },
   "schema-editor": {
@@ -2003,7 +2004,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "Chọn lược đồ"
     },
     "table": {
       "duplicate-name": "Table name already exists",

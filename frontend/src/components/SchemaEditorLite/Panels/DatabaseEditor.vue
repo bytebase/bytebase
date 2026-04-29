@@ -95,12 +95,15 @@
       </template>
       <template v-else-if="state.selectedSubTab === 'schema-diagram'">
         <!-- TODO: bring status coloring back -->
-        <SchemaDiagram
-          :database="db"
-          :database-metadata="database"
-          :editable="true"
-          @edit-table="tryEditTable"
-          @edit-column="tryEditColumn"
+        <ReactPageMount
+          page="SchemaDiagramPage"
+          :page-props="{
+            database: db,
+            databaseMetadata: database,
+            editable: true,
+            onEditTable: tryEditTable,
+            onEditColumn: tryEditColumn,
+          }"
         />
       </template>
     </div>
@@ -121,7 +124,8 @@ import { head, sumBy } from "lodash-es";
 import { List, PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
-import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   ColumnMetadata,
