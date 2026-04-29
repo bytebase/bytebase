@@ -1716,7 +1716,8 @@
         },
         "max-expiration-hint": "Tối đa được phép theo chính sách không gian làm việc: {{days}} ngày."
       },
-      "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
+      "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?",
+      "show-expired-roles": "Hiển thị vai trò đã hết hạn"
     },
     "overview": {
       "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."

@@ -1716,7 +1716,8 @@
         },
         "max-expiration-hint": "ワークスペースポリシーで許可される最大値：{{days}} 日。"
       },
-      "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
+      "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？",
+      "show-expired-roles": "期限切れのロールを表示"
     },
     "overview": {
       "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"

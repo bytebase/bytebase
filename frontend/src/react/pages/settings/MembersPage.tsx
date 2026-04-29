@@ -967,6 +967,20 @@ function EditMemberRoleDrawer({
   });
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
+  const [showExpiredRoles, setShowExpiredRoles] = useState(false);
+
+  const hasExpiredRoles = useMemo(
+    () => liveProjectRoleBindings.some((b) => isBindingPolicyExpired(b)),
+    [liveProjectRoleBindings]
+  );
+
+  const visibleProjectRoleBindings = useMemo(
+    () =>
+      showExpiredRoles
+        ? liveProjectRoleBindings
+        : liveProjectRoleBindings.filter((b) => !isBindingPolicyExpired(b)),
+    [liveProjectRoleBindings, showExpiredRoles]
+  );
 
   const [form, setForm] = useState<RoleBindingFormState>(() => ({
     id: crypto.randomUUID(),
@@ -1300,12 +1314,22 @@ function EditMemberRoleDrawer({
             {/* Body — Role Bindings */}
             <SheetBody className="px-6 py-6">
               <div className="flex flex-col gap-y-6">
-                {liveProjectRoleBindings.length === 0 && (
+                {hasExpiredRoles && (
+                  <label className="flex items-center gap-x-2 text-sm cursor-pointer self-start">
+                    <input
+                      type="checkbox"
+                      checked={showExpiredRoles}
+                      onChange={(e) => setShowExpiredRoles(e.target.checked)}
+                    />
+                    {t("project.members.show-expired-roles")}
+                  </label>
+                )}
+                {visibleProjectRoleBindings.length === 0 && (
                   <div className="text-center text-control-light py-8">
                     {t("common.no-data")}
                   </div>
                 )}
-                {liveProjectRoleBindings.map((binding, idx) => {
+                {visibleProjectRoleBindings.map((binding, idx) => {
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
