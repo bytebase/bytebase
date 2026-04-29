@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "エクスポートが完了しました",
     "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
     "table": {
       "actor": "操作者",
@@ -393,6 +394,7 @@
     "statement": "ステートメント",
     "status": "ステータス",
     "submit": "Submit",
+    "succeed": "成功する",
     "system": "システム",
     "table": "テーブル",
     "title": "タイトル",
@@ -906,6 +908,9 @@
     "data-export": "データエクスポート"
   },
   "export-data": {
+    "export-format": "エクスポート形式",
+    "export-rows": "エクスポート行数",
+    "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
   "export-data.password-optional": "パスワード（任意）",
@@ -2595,6 +2600,11 @@
     },
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "{db} のデータのエクスポートに失敗しました",
+      "self": "一括エクスポート",
+      "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {max} 個のデータベースを選択してください"
+    },
     "batch-query": {
       "batch": "バッチ",
       "description": "{{project}} の下の {{database}} 個の追加データベースと {{group}} 個のデータベース グループに対してバッチ クエリを実行します。",
@@ -2603,7 +2613,8 @@
         "readonly": "読み取り専用",
         "self": "バッチのデータソースを選択",
         "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。"
-      }
+      },
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
@@ -2615,6 +2626,7 @@
     "copy-name": "名前をコピーする",
     "copy-url": "URLをコピー",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
+    "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

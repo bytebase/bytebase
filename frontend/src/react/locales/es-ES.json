@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "Exportación finalizada",
     "export-tooltip": "Debe seleccionar hora de inicio y fin dentro de 30 días",
     "table": {
       "actor": "Actor",
@@ -393,6 +394,7 @@
     "statement": "Declaración",
     "status": "Estado",
     "submit": "Submit",
+    "succeed": "Tener éxito",
     "system": "Sistema",
     "table": "Tabla",
     "title": "Título",
@@ -906,6 +908,9 @@
     "data-export": "Exportación de datos"
   },
   "export-data": {
+    "export-format": "Formato de exportación",
+    "export-rows": "Exportar filas",
+    "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
     "password-optional": "Cifrar con contraseña (opcional)"
   },
   "export-data.password-optional": "Contraseña (opcional)",
@@ -2595,6 +2600,11 @@
     },
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "No se pudieron exportar los datos de {db}",
+      "self": "Exportación por lotes",
+      "tooltip": "Seleccione como máximo {max} bases de datos para exportar por lotes los resultados de las últimas consultas"
+    },
     "batch-query": {
       "batch": "Lote",
       "description": "Consulta por lotes {{database}} bases de datos adicionales y {{group}} grupos de bases de datos bajo {{project}}.",
@@ -2603,7 +2613,8 @@
         "readonly": "Sólo lectura",
         "self": "Seleccionar la fuente de datos para el lote",
         "tooltip": "Encontrará fuentes de datos disponibles con política de restricción y luego aplicará la selección."
-      }
+      },
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
@@ -2615,6 +2626,7 @@
     "copy-name": "Copiar nombre",
     "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
+    "download-as-file": "Descargar como {file}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

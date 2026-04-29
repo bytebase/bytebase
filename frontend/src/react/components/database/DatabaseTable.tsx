@@ -1,17 +1,4 @@
-import { CheckCircle, XCircle } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { EngineIcon } from "@/react/components/EngineIcon";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { LabelsDisplay } from "@/react/components/LabelsDisplay";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/react/components/ui/table";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
@@ -22,19 +9,14 @@ import { router } from "@/router";
 import { useActuatorV1Store, useDatabaseV1Store } from "@/store";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
+import { autoDatabaseRoute } from "@/utils";
 import {
-  autoDatabaseRoute,
-  extractDatabaseResourceName,
-  extractProjectResourceName,
-  getDatabaseEnvironment,
-  getDatabaseProject,
-  getInstanceResource,
-  hostPortOfInstanceV1,
-} from "@/utils";
-import { extractReleaseUID } from "@/utils/v1/release";
+  type DatabaseTableMode,
+  type DatabaseTableSort,
+  DatabaseTableView,
+} from "./DatabaseTableView";
 
-export type DatabaseTableMode = "ALL" | "PROJECT";
+export type { DatabaseTableMode } from "./DatabaseTableView";
 
 export interface DatabaseTableProps {
   filter: DatabaseFilter;
@@ -45,6 +27,13 @@ export interface DatabaseTableProps {
   refreshToken?: number;
 }
 
+/**
+ * Server-fetching wrapper around `DatabaseTableView`. Owns paging,
+ * filter, sort, and the workspace-resource scope; renders the pure view
+ * for layout. Used by settings/project pages that don't already have a
+ * pre-fetched database list — callers that do should compose
+ * `DatabaseTableView` directly.
+ */
 export function DatabaseTable({
   filter,
   parent,
@@ -53,7 +42,6 @@ export function DatabaseTable({
   onSelectedNamesChange,
   refreshToken,
 }: DatabaseTableProps) {
-  const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
   const actuatorStore = useActuatorV1Store();
 
@@ -65,26 +53,8 @@ export function DatabaseTable({
   const [pageSize, setPageSize] = useSessionPageSize("bb.databases-table");
   const fetchIdRef = useRef(0);
 
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
-  const orderBy = sortKey ? `${sortKey} ${sortOrder}` : "";
-
-  const toggleSort = useCallback(
-    (key: string) => {
-      if (sortKey === key) {
-        if (sortOrder === "asc") setSortOrder("desc");
-        else {
-          setSortKey(null);
-          setSortOrder("asc");
-        }
-      } else {
-        setSortKey(key);
-        setSortOrder("asc");
-      }
-    },
-    [sortKey, sortOrder]
-  );
+  const [sort, setSort] = useState<DatabaseTableSort | null>(null);
+  const orderBy = sort ? `${sort.key} ${sort.order}` : "";
 
   const workspaceResourceName = useVueState(
     () => actuatorStore.workspaceResourceName
@@ -162,28 +132,6 @@ export function DatabaseTable({
     }
   }, [isFetchingMore, fetchDatabases]);
 
-  const showSelection = !!selectedNames && !!onSelectedNamesChange;
-
-  const toggleSelection = useCallback(
-    (name: string) => {
-      if (!selectedNames || !onSelectedNamesChange) return;
-      const next = new Set(selectedNames);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      onSelectedNamesChange(next);
-    },
-    [selectedNames, onSelectedNamesChange]
-  );
-
-  const toggleSelectAll = useCallback(() => {
-    if (!selectedNames || !onSelectedNamesChange) return;
-    if (selectedNames.size === databases.length) {
-      onSelectedNamesChange(new Set());
-    } else {
-      onSelectedNamesChange(new Set(databases.map((db) => db.name)));
-    }
-  }, [databases, selectedNames, onSelectedNamesChange]);
-
   const handleRowClick = useCallback((db: Database, e: React.MouseEvent) => {
     const url = router.resolve(autoDatabaseRoute(db)).fullPath;
     if (e.ctrlKey || e.metaKey) {
@@ -193,190 +141,20 @@ export function DatabaseTable({
     }
   }, []);
 
-  const allSelected =
-    databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
-  const someSelected =
-    (selectedNames?.size ?? 0) > 0 &&
-    (selectedNames?.size ?? 0) < databases.length;
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someSelected;
-    }
-  }, [someSelected]);
-
   const pageSizeOptions = getPageSizeOptions();
-  const showProjectColumn = mode === "ALL";
 
   return (
     <>
-      <div className="border rounded-sm">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[800px]">
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                {showSelection && (
-                  <TableHead className="w-12">
-                    <input
-                      ref={headerCheckboxRef}
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleSelectAll}
-                      className="rounded-xs border-control-border"
-                    />
-                  </TableHead>
-                )}
-                <TableHead
-                  sortable
-                  sortActive={sortKey === "name"}
-                  sortDir={sortOrder}
-                  onSort={() => toggleSort("name")}
-                >
-                  {t("common.name")}
-                </TableHead>
-                <TableHead>{t("common.environment")}</TableHead>
-                {!showProjectColumn && (
-                  <TableHead>{t("common.release")}</TableHead>
-                )}
-                {showProjectColumn && (
-                  <TableHead
-                    sortable
-                    sortActive={sortKey === "project"}
-                    sortDir={sortOrder}
-                    onSort={() => toggleSort("project")}
-                  >
-                    {t("common.project")}
-                  </TableHead>
-                )}
-                <TableHead
-                  sortable
-                  sortActive={sortKey === "instance"}
-                  sortDir={sortOrder}
-                  onSort={() => toggleSort("instance")}
-                >
-                  {t("common.instance")}
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("common.address")}
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("common.labels")}
-                </TableHead>
-                <TableHead className="whitespace-nowrap">
-                  {t("common.status")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && databases.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="py-8 text-center text-control-placeholder"
-                  >
-                    <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                      {t("common.loading")}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : databases.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="py-8 text-center text-control-placeholder"
-                  >
-                    {t("common.no-data")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                databases.map((db) => {
-                  const isSelected = selectedNames?.has(db.name) ?? false;
-                  const instanceResource = getInstanceResource(db);
-                  return (
-                    <TableRow
-                      key={db.name}
-                      className="cursor-pointer"
-                      onClick={(e) => handleRowClick(db, e)}
-                    >
-                      {showSelection && (
-                        <TableCell className="w-12">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelection(db.name)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="rounded-xs border-control-border"
-                          />
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <div className="flex items-center gap-x-2">
-                          <EngineIcon
-                            engine={instanceResource.engine}
-                            className="h-5 w-5"
-                          />
-                          <span className="truncate">
-                            {extractDatabaseResourceName(db.name).databaseName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <EnvironmentLabel
-                          environmentName={getDatabaseEnvironment(db).name}
-                        />
-                      </TableCell>
-                      {!showProjectColumn && (
-                        <TableCell>
-                          <span className="truncate">
-                            {db.release ? extractReleaseUID(db.release) : "-"}
-                          </span>
-                        </TableCell>
-                      )}
-                      {showProjectColumn && (
-                        <TableCell>
-                          <span className="truncate">
-                            {extractProjectResourceName(
-                              getDatabaseProject(db).name
-                            )}
-                          </span>
-                        </TableCell>
-                      )}
-                      <TableCell className="max-w-[200px]">
-                        <span className="block truncate">
-                          {instanceResource.title}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <span className="truncate">
-                          {hostPortOfInstanceV1(instanceResource)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <LabelsDisplay labels={db.labels} />
-                      </TableCell>
-                      <TableCell>
-                        {db.syncStatus === SyncStatus.FAILED ? (
-                          <span
-                            title={
-                              db.syncError || t("database.sync-status-failed")
-                            }
-                          >
-                            <XCircle className="w-4 h-4 text-error" />
-                          </span>
-                        ) : (
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
+      <DatabaseTableView
+        databases={databases}
+        mode={mode}
+        loading={loading}
+        selectedNames={selectedNames}
+        onSelectedNamesChange={onSelectedNamesChange}
+        sort={sort}
+        onSortChange={setSort}
+        onRowClick={handleRowClick}
+      />
       <div className="mx-2">
         <PagedTableFooter
           pageSize={pageSize}

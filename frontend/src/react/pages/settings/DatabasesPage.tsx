@@ -78,8 +78,11 @@ export function DatabasesPage() {
   // Search state — default to showing unassigned databases from default project
   const [searchParams, setSearchParams] = useState<SearchParams>(() => {
     const currentRoute = router.currentRoute.value;
-    const queryString = currentRoute.query.q as string;
-    if (queryString) {
+    const hasQ = "q" in (currentRoute.query ?? {});
+    const queryString = (currentRoute.query.q as string) ?? "";
+    if (hasQ) {
+      // URL has an explicit `q` param (may be empty if the user cleared all
+      // filters) — parse it and do NOT re-apply the default project scope.
       const scopes: { id: string; value: string }[] = [];
       const queryParts: string[] = [];
       for (const token of queryString.split(/\s+/).filter(Boolean)) {
@@ -101,6 +104,7 @@ export function DatabasesPage() {
       }
       return { query: queryParts.join(" "), scopes };
     }
+    // First visit (no `q` in URL) — default to the unassigned project.
     return {
       query: "",
       scopes: [
@@ -294,7 +298,7 @@ export function DatabasesPage() {
     const queryString = parts.join(" ");
     const currentQuery = router.currentRoute.value.query.q as string;
     if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: queryString ? { q: queryString } : {} });
+      router.replace({ query: { q: queryString } });
     }
   }, [searchParams]);
 

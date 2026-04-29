@@ -88,6 +88,7 @@
         }
       }
     },
+    "export-finished": "Export finished",
     "export-tooltip": "Must select start time and end time within 30 days",
     "table": {
       "actor": "Actor",
@@ -399,6 +400,7 @@
     "statement": "Statement",
     "status": "Status",
     "submit": "Submit",
+    "succeed": "Succeed",
     "system": "System",
     "table": "Table",
     "title": "Title",
@@ -913,6 +915,9 @@
     "data-export": "Data Export"
   },
   "export-data": {
+    "export-format": "Export format",
+    "export-rows": "Export rows",
+    "password-info": "Provide a password to encrypt the export file.",
     "password-optional": "Encrypt with password (Optional)"
   },
   "export-data.password-optional": "Password (optional)",
@@ -2609,6 +2614,11 @@
     },
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "Failed to export data for {db}",
+      "self": "Batch export",
+      "tooltip": "Select at most {max} databases to batch export latest query results"
+    },
     "batch-query": {
       "batch": "Batch",
       "description": "Batch query {{database}} additional databases and {{group}} database groups under {{project}}.",
@@ -2617,7 +2627,8 @@
         "readonly": "Read-only",
         "self": "Select data source for batch",
         "tooltip": "Will find available data sources with restriction policy, then apply the selection."
-      }
+      },
+      "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
@@ -2629,6 +2640,7 @@
     "copy-name": "Copy name",
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
+    "download-as-file": "Download as {file}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
     "table": {
       "actor": "Người thực hiện",
@@ -393,6 +394,7 @@
     "statement": "Câu lệnh",
     "status": "Trạng thái",
     "submit": "Submit",
+    "succeed": "Thành công",
     "system": "Hệ thống",
     "table": "Bảng",
     "title": "Tiêu đề",
@@ -906,6 +908,9 @@
     "data-export": "Xuất dữ liệu"
   },
   "export-data": {
+    "export-format": "Định dạng xuất",
+    "export-rows": "Xuất số dòng",
+    "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
   },
   "export-data.password-optional": "Mật khẩu (không bắt buộc)",
@@ -2595,6 +2600,11 @@
     },
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "Không xuất được dữ liệu cho {db}",
+      "self": "Xuất hàng loạt",
+      "tooltip": "Chọn tối đa {max} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
+    },
     "batch-query": {
       "batch": "Hàng loạt",
       "description": "Truy vấn hàng loạt {{database}} cơ sở dữ liệu bổ sung và {{group}} nhóm cơ sở dữ liệu trong {{project}}.",
@@ -2603,7 +2613,8 @@
         "readonly": "Chỉ đọc",
         "self": "Chọn nguồn dữ liệu cho lô",
         "tooltip": "Sẽ tìm các nguồn dữ liệu có sẵn với chính sách hạn chế, sau đó áp dụng lựa chọn."
-      }
+      },
+      "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
@@ -2615,6 +2626,7 @@
     "copy-name": "Sao chép tên",
     "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
+    "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
