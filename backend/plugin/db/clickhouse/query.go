@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkt"
+	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -26,6 +27,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
+
+const aggregateFunctionErrMarker = `unsupported column type "AggregateFunction(`
 
 // QueryConn queries a SQL statement in a given connection.
 func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
@@ -81,6 +84,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		}()
 		stop := false
 		if err != nil {
+			err = translateAggregateFunctionError(err)
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
@@ -100,6 +104,20 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
+}
+
+// translateAggregateFunctionError rewrites the clickhouse-go driver's opaque
+// "unsupported column type \"AggregateFunction(...)\"" error into actionable
+// guidance pointing the user at -Merge combinators or finalizeAggregation(),
+// since the driver cannot decode AggregateFunction intermediate state directly.
+func translateAggregateFunctionError(err error) error {
+	if err == nil || !strings.Contains(err.Error(), aggregateFunctionErrMarker) {
+		return err
+	}
+	return errors.Wrap(err,
+		"this query selects an AggregateFunction column, which stores aggregator intermediate state and cannot be decoded directly. "+
+			"Wrap each AggregateFunction column with its -Merge combinator under GROUP BY (for example, maxMerge(col)), or with "+
+			"finalizeAggregation(col) for per-row finalization")
 }
 
 func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
