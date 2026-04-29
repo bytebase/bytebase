@@ -11,6 +11,7 @@ import {
 import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { pushNotification, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import {
@@ -99,15 +100,25 @@ export function PlanDetailStatementSection({
     if (spec.config?.case !== "changeDatabaseConfig") return [];
     return (spec.config.value.targets ?? []).filter(isValidDatabaseName);
   }, [spec]);
+  // Hydrate target databases so the engine check below isn't flying blind on
+  // the unknownDatabase() stub returned for cache misses.
+  useEffect(() => {
+    if (targetDatabaseNames.length > 0) {
+      void databaseStore.batchGetOrFetchDatabases(targetDatabaseNames);
+    }
+  }, [targetDatabaseNames, databaseStore]);
   // Show Schema Editor only when at least one target's engine supports it.
-  const schemaEditorEligible = useMemo(() => {
+  // Wrapped in useVueState so the eligibility flips back on once the Pinia
+  // store hydrates the targets — otherwise a Plan opened before its targets
+  // are cached would render with the button perpetually hidden.
+  const schemaEditorEligible = useVueState(() => {
     if (targetDatabaseNames.length === 0) return false;
     return targetDatabaseNames.some((name) => {
       const db = databaseStore.getDatabaseByName(name);
-      if (!db) return false;
+      if (!db || !isValidDatabaseName(db.name)) return false;
       return engineSupportsSchemaEditor(getInstanceResource(db).engine);
     });
-  }, [targetDatabaseNames, databaseStore]);
+  });
   const language = useMemo(() => {
     if (!targetDatabaseName) return "sql";
     const database = databaseStore.getDatabaseByName(targetDatabaseName);

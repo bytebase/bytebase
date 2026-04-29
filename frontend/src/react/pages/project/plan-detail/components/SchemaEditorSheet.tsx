@@ -1,6 +1,6 @@
 import { cloneDeep } from "lodash-es";
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SchemaEditorLite } from "@/react/components/SchemaEditorLite";
 import { generateDiffDDL } from "@/react/components/SchemaEditorLite/core/generateDiffDDL";
@@ -15,7 +15,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useVueState } from "@/react/hooks/useVueState";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { isValidDatabaseName } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
@@ -80,10 +82,23 @@ function SchemaEditorSheetBody({
   const [isPreparingMetadata, setIsPreparingMetadata] = useState(false);
   const [isInserting, setIsInserting] = useState(false);
 
-  const databaseOptions = useMemo(() => {
-    return databaseNames.map((name) => {
+  // Kick off hydration for any targets the store hasn't seen yet so the
+  // option list below can resolve real engine + title (otherwise unhydrated
+  // entries fall back to the raw resource name and stay disabled).
+  useEffect(() => {
+    if (databaseNames.length > 0) {
+      void databaseStore.batchGetOrFetchDatabases(databaseNames);
+    }
+  }, [databaseNames, databaseStore]);
+
+  // Subscribed to the Pinia store via useVueState — re-derives once the
+  // hydration above completes so newly-fetched targets switch from the
+  // bare-name placeholder to a real "<db> (<instance>)" label.
+  const databaseOptions = useVueState(() =>
+    databaseNames.map((name) => {
       const db = databaseStore.getDatabaseByName(name);
-      const instance = db ? getInstanceResource(db) : undefined;
+      const hydrated = db && isValidDatabaseName(db.name);
+      const instance = hydrated ? getInstanceResource(db) : undefined;
       const databaseLabel = extractDatabaseResourceName(name).databaseName;
       const label = instance
         ? `${databaseLabel} (${instance.title})`
@@ -91,12 +106,13 @@ function SchemaEditorSheetBody({
       return {
         value: name,
         label,
-        disabled: instance
-          ? !engineSupportsSchemaEditor(instance.engine)
-          : false,
+        // Until a target is hydrated we don't know its engine yet; keep it
+        // disabled rather than rendering it as supported and letting the
+        // user pick something we'd then have to reject.
+        disabled: !instance || !engineSupportsSchemaEditor(instance.engine),
       };
-    });
-  }, [databaseNames, databaseStore]);
+    })
+  );
 
   const prepareMetadata = useCallback(
     async (databaseName: string) => {
