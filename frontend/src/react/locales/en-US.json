@@ -2615,9 +2615,9 @@
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
-      "failed-for-db": "Failed to export data for {db}",
+      "failed-for-db": "Failed to export data for {{db}}",
       "self": "Batch export",
-      "tooltip": "Select at most {max} databases to batch export latest query results"
+      "tooltip": "Select at most {{max}} databases to batch export latest query results"
     },
     "batch-query": {
       "batch": "Batch",
@@ -2640,7 +2640,7 @@
     "copy-name": "Copy name",
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
-    "download-as-file": "Download as {file}",
+    "download-as-file": "Download as {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

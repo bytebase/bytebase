@@ -268,7 +268,6 @@ export function DatabaseTableView({
     // toggleSelection / toggleSelectAll close over selectedNames /
     // onSelectedNamesChange but they're stable callbacks within a single
     // render and the cell handlers re-bind on every render anyway.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSelection, showProjectColumn, allSelected, selectedNames, t]);
 
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);

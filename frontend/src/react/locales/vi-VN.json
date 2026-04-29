@@ -2601,9 +2601,9 @@
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
-      "failed-for-db": "Không xuất được dữ liệu cho {db}",
+      "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
       "self": "Xuất hàng loạt",
-      "tooltip": "Chọn tối đa {max} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
+      "tooltip": "Chọn tối đa {{max}} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
     },
     "batch-query": {
       "batch": "Hàng loạt",
@@ -2626,7 +2626,7 @@
     "copy-name": "Sao chép tên",
     "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
-    "download-as-file": "Tải xuống dưới dạng {file}",
+    "download-as-file": "Tải xuống dưới dạng {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",

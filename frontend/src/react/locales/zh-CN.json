@@ -2601,9 +2601,9 @@
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
-      "failed-for-db": "无法导出 {db} 的数据",
+      "failed-for-db": "无法导出 {{db}} 的数据",
       "self": "批量导出",
-      "tooltip": "最多选择 {max} 个数据库，批量导出最后一次执行的查询结果"
+      "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
     "batch-query": {
       "batch": "批量",
@@ -2626,7 +2626,7 @@
     "copy-name": "复制名称",
     "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
-    "download-as-file": "下载为 {file} 格式",
+    "download-as-file": "下载为 {{file}} 格式",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hours": "{{hours}} 小时",
