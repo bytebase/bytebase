@@ -55,6 +55,28 @@ export const getCenteredAgentWindowPosition = (
   };
 };
 
+export const clampAgentWindowPosition = (
+  viewportWidth: number,
+  viewportHeight: number,
+  windowWidth: number,
+  windowHeight: number,
+  position: { x: number; y: number }
+) => {
+  const width = clampDisplayDimension(windowWidth, viewportWidth, MIN_WIDTH);
+  const height = clampDisplayDimension(
+    windowHeight,
+    viewportHeight,
+    MIN_HEIGHT
+  );
+  const maxX = Math.max(WINDOW_MARGIN, viewportWidth - width - WINDOW_MARGIN);
+  const maxY = Math.max(WINDOW_MARGIN, viewportHeight - height - WINDOW_MARGIN);
+
+  return {
+    x: Math.min(maxX, Math.max(WINDOW_MARGIN, Math.round(position.x))),
+    y: Math.min(maxY, Math.max(WINDOW_MARGIN, Math.round(position.y))),
+  };
+};
+
 export const getDefaultAgentWindowState = (
   viewportWidth: number,
   viewportHeight: number
