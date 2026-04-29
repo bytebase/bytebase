@@ -352,6 +352,22 @@ func TestOmniQuerySpan_SystemTableValuedFunctions(t *testing.T) {
 				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
 			},
 		},
+		{
+			name:     "string_split_third_arg_zero_has_no_ordinal",
+			sql:      "SELECT s.value FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',', 0) AS s(value)",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+		{
+			name:     "string_split_third_arg_null_has_no_ordinal",
+			sql:      "SELECT s.value FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',', NULL) AS s(value)",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -379,6 +395,26 @@ func TestOmniQuerySpan_TempTableDefinitions(t *testing.T) {
 	require.Equal(t, base.DDL, span1.Type)
 	require.Contains(t, gCtx.TempTables, "#tmp")
 	require.Equal(t, []string{"id", "name"}, gCtx.TempTables["#tmp"].Columns)
+
+	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT id, name FROM #tmp")
+	require.NoError(t, err)
+	require.Len(t, span2.Results, 2)
+	require.Equal(t, "id", span2.Results[0].Name)
+	require.Equal(t, "name", span2.Results[1].Name)
+}
+
+func TestOmniQuerySpan_TempTableDefinitionsCaseInsensitive(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		TempTables:              make(map[string]*base.PhysicalTable),
+	}
+
+	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	_, err := q1.getOmniQuerySpan(context.Background(), "CREATE TABLE #Tmp(id INT, name NVARCHAR(50))")
+	require.NoError(t, err)
 
 	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
 	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT id, name FROM #tmp")

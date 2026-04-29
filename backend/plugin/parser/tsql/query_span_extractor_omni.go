@@ -659,7 +659,11 @@ func (q *omniQuerySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr
 	switch strings.ToUpper(fn.Name.Object) {
 	case "STRING_SPLIT":
 		columnNames = []string{"value"}
-		if fn.Args != nil && fn.Args.Len() >= 3 {
+		hasOrdinal, err := stringSplitHasOrdinalColumn(fn.Args)
+		if err != nil {
+			return nil, err
+		}
+		if hasOrdinal {
 			columnNames = append(columnNames, "ordinal")
 		}
 	case "OPENJSON":
@@ -686,6 +690,39 @@ func (q *omniQuerySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr
 		return nil, err
 	}
 	return &base.PseudoTable{Name: normIdent(alias), Columns: columns}, nil
+}
+
+func stringSplitHasOrdinalColumn(args *ast.List) (bool, error) {
+	if args == nil || args.Len() < 3 {
+		return false, nil
+	}
+	arg := args.Items[2]
+	for {
+		paren, ok := arg.(*ast.ParenExpr)
+		if !ok {
+			break
+		}
+		arg = paren.Expr
+	}
+	literal, ok := arg.(*ast.Literal)
+	if !ok {
+		return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be a constant 0, 1, or NULL", arg)
+	}
+	switch literal.Type {
+	case ast.LitInteger:
+		switch literal.Ival {
+		case 0:
+			return false, nil
+		case 1:
+			return true, nil
+		default:
+			return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be 0 or 1", arg)
+		}
+	case ast.LitNull:
+		return false, nil
+	default:
+		return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be a constant 0, 1, or NULL", arg)
+	}
 }
 
 func (q *omniQuerySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, alias string, columnAliases ...string) (base.TableSource, error) {
@@ -754,7 +791,7 @@ func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias stri
 		return nil, nil
 	}
 	name := tv.Name
-	if temp, ok := q.gCtx.TempTables[name]; ok {
+	if temp, ok := q.findTempTable(name); ok {
 		tableName := name
 		if alias != "" {
 			tableName = alias
