@@ -1,21 +1,15 @@
 import { cloneDeep } from "lodash-es";
 import { useCallback } from "react";
-import { DiffMerge } from "@/components/SchemaEditorLite/algorithm/diff-merge";
-import type { RebuildMetadataEditReset } from "@/components/SchemaEditorLite/algorithm/rebuild";
-import type { EditStatus } from "@/components/SchemaEditorLite/types";
 import type {
   Database,
   DatabaseMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import {
+  DiffMerge,
+  type DiffMergeContext,
+  type RebuildMetadataEditReset,
+} from "./core/algorithm";
 import type { EditStatusContext, EditTarget } from "./types";
-
-/**
- * Adapter interface that DiffMerge needs from context.
- * DiffMerge only calls `markEditStatusByKey` on the context object.
- */
-interface DiffMergeAdapter {
-  markEditStatusByKey: (key: string, status: EditStatus) => void;
-}
 
 export function useAlgorithm(
   editStatus: EditStatusContext,
@@ -29,16 +23,13 @@ export function useAlgorithm(
       editStatus.clearEditStatus();
 
       const { database, metadata, baselineMetadata } = target;
-      const adapter: DiffMergeAdapter = {
+      const adapter: DiffMergeContext = {
         markEditStatusByKey: editStatus.markEditStatusByKey,
+        markEditStatus: editStatus.markEditStatus,
       };
-      // DiffMerge expects a context with markEditStatusByKey.
-      // We cast the adapter since DiffMerge only uses this one method at runtime.
 
       const dm = new DiffMerge({
-        context: adapter as unknown as ConstructorParameters<
-          typeof DiffMerge
-        >[0]["context"],
+        context: adapter,
         database,
         sourceMetadata: baselineMetadata,
         targetMetadata: metadata,

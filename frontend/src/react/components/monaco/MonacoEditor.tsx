@@ -407,7 +407,17 @@ export function MonacoEditor({
     if (!editor || !model) return;
     if (model.getValue() !== contentRef.current) {
       isApplyingExternalChangeRef.current = true;
-      trySetContentWithUndo(editor, contentRef.current, "sync-content");
+      // `executeEdits` (used by trySetContentWithUndo) is a no-op when the
+      // editor is in readOnly mode — Monaco silently rejects edits regardless
+      // of source. ReadonlyMonaco surfaces async data via prop changes, so we
+      // must use `editor.setValue` (which bypasses the readOnly gate) for the
+      // content sync to actually take effect. Editable editors keep the
+      // undo-history-friendly path.
+      if (readOnlyRef.current) {
+        editor.setValue(contentRef.current);
+      } else {
+        trySetContentWithUndo(editor, contentRef.current, "sync-content");
+      }
       isApplyingExternalChangeRef.current = false;
     }
     setContentHeight(editor.getContentHeight());

@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "インデックスを削除しますか?"
-    },
-    "select-tables-to-rollout": "公開するテーブルを選択してください",
-    "table-partition": {
-      "drop-partition-confirm": "テーブルパーティションを削除しますか?",
-      "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -1768,9 +1762,7 @@
     },
     "task-execution-errors": "タスク実行エラー"
   },
-  "schema-designer": {
-    "use-tips": "デザインするテーブルを選択してください"
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "ビューに自動的に適応します",
     "self": "スキーマ図"
@@ -1784,7 +1776,6 @@
       "create-table": "新しいテーブルを作成する",
       "create-view": "ビューの作成",
       "drop": "落とす",
-      "drop-column": "列の削除",
       "drop-schema": "スキーマの削除",
       "drop-table": "テーブルの削除",
       "rename": "名前の変更",
@@ -1798,7 +1789,6 @@
       "not-null": "空にすることはできません",
       "on-update": "アップデート時",
       "primary": "主キー",
-      "select": "列を選択",
       "type": "タイプ"
     },
     "columns": "カラム",
@@ -1811,53 +1801,26 @@
     "default": {
       "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
-    "foreign-key": {
-      "edit": "外部キーを編集",
-      "name-description": "外部キーの一意の名前"
-    },
-    "functions": "関数",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "従属列",
-      "edit-indexes": "インデックスの編集",
       "indexes": "索引",
       "unique": "唯一"
     },
-    "message": {
-      "cannot-drop-the-last-column": "最後の列は削除できません",
-      "duplicated-function-name": "関数名が重複しています",
-      "duplicated-procedure-name": "重複したプロシージャ名",
-      "duplicated-table-name": "テーブル名が重複しています",
-      "duplicated-view-name": "重複したビュー名",
-      "invalid-function-name": "無効な関数名です",
-      "invalid-procedure-name": "無効なプロシージャ名です",
-      "invalid-schema": "無効なスキーマ",
-      "invalid-schema-name": "無効なスキーマ名",
-      "invalid-table-name": "無効なテーブル名です",
-      "invalid-view-name": "無効なビュー名です"
-    },
-    "preview-schema-text": "スキーマテキストのプレビュー",
-    "preview-view-definition": "プレビュービューの定義",
-    "procedures": "手順",
+    "insert-sql": "SQL を挿入",
     "raw-sql": "SQL文",
     "schema": {
-      "name": "スキーマ名",
       "select": "スキーマの選択"
     },
-    "search-database-and-table": "データベースとテーブルを検索する",
-    "table": {
-      "name": "テーブル名",
-      "select": "テーブルの選択"
-    },
+    "self": "スキーマエディタ",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "サブパーティションの追加",
-      "edit-partitions": "パーティションの編集",
       "expression": "表現",
       "partitions": "パーティション",
       "type": "タイプ",
       "value": "値"
     },
-    "tables": "テーブル",
-    "views": "ビュー"
+    "template-database": "テンプレートデータベース"
   },
   "schema-template": {
     "classification": {

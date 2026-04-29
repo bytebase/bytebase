@@ -1,9 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { v1 as uuidv1 } from "uuid";
-import type {
-  CoreTabContext,
-  TabContext,
-} from "@/components/SchemaEditorLite/types";
+import type { CoreTabContext, TabContext } from "./core/types";
 import type { TabsContext } from "./types";
 
 export function useTabs(): TabsContext {

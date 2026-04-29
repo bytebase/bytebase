@@ -1,7 +1,5 @@
 import { pick } from "lodash-es";
 import { useCallback, useMemo } from "react";
-import { keyForResource } from "@/components/SchemaEditorLite/context/common";
-import type { RolloutObject } from "@/components/SchemaEditorLite/types";
 import type {
   ColumnMetadata,
   Database,
@@ -12,6 +10,8 @@ import type {
   TableMetadata,
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { keyForResource } from "./core/keyForResource";
+import type { RolloutObject } from "./core/types";
 import type { SelectionContext, SelectionState } from "./types";
 
 const EMPTY_STATE: SelectionState = { checked: false, indeterminate: false };

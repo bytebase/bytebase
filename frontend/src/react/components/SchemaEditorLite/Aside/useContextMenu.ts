@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { engineSupportsMultiSchema } from "@/components/SchemaEditorLite/spec";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine } from "@/utils";
+import { engineSupportsMultiSchema } from "../core/spec";
 import type { EditStatusContext } from "../types";
 import type { TreeNode } from "./tree-builder";
 

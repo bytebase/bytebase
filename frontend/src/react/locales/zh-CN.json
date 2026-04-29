@@ -1993,6 +1993,8 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "插入 SQL",
+    "no-diff": "没有需要应用的变更",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2005,6 +2007,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Schema 编辑器",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2016,7 +2019,8 @@
       "partitions": "分区",
       "type": "类型",
       "value": "值"
-    }
+    },
+    "template-database": "模板数据库"
   },
   "schema-template": {
     "classification": {

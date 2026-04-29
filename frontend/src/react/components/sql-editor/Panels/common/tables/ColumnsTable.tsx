@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { engineSupportsMultiSchema } from "@/components/SchemaEditorLite/spec";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { engineSupportsMultiSchema } from "@/react/components/SchemaEditorLite/core/spec";
 import {
   Table,
   TableBody,

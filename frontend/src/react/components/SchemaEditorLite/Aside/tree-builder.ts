@@ -1,9 +1,3 @@
-import { keyForResource } from "@/components/SchemaEditorLite/context/common";
-import {
-  engineSupportsEditFunctions,
-  engineSupportsEditProcedures,
-  engineSupportsEditViews,
-} from "@/components/SchemaEditorLite/spec";
 import type {
   ColumnMetadata,
   Database,
@@ -21,6 +15,12 @@ import {
   getInstanceResource,
   groupBy,
 } from "@/utils";
+import { keyForResource } from "../core/keyForResource";
+import {
+  engineSupportsEditFunctions,
+  engineSupportsEditProcedures,
+  engineSupportsEditViews,
+} from "../core/spec";
 import type { EditTarget } from "../types";
 
 // Tree node types — framework-agnostic (no naive-ui TreeOption dependency).
