@@ -16,7 +16,7 @@
           :placeholder="$t('common.search')"
         >
           <template #prefix>
-            <heroicons-outline:search class="h-5 w-5 text-gray-300" />
+            <Search class="h-5 w-5 text-gray-300" />
           </template>
         </NInput>
       </div>
@@ -30,7 +30,7 @@
       :class="[state.expand ? 'left-full -translate-x-3' : '-left-3']"
       @click="state.expand = !state.expand"
     >
-      <heroicons-outline:chevron-left
+      <ChevronLeft
         class="w-4 h-4 transition-transform"
         :class="[state.expand ? '' : '-scale-100 translate-x-[3px]']"
       />
@@ -39,6 +39,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronLeft, Search } from "lucide-vue-next";
 import { NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { getInstanceResource, hasSchemaProperty } from "@/utils";

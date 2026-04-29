@@ -6,13 +6,12 @@ import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
-  getWorkspaceId,
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+  useNotify,
+  useServerState,
+  useSubscriptionState,
+} from "@/react/hooks/useAppState";
+import { getResourceId, workspaceNamePrefix } from "@/react/lib/resourceName";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -28,39 +27,36 @@ export function SubscriptionPage({
   onManageInstanceLicenses: onManageInstanceLicensesProp,
 }: SubscriptionPageProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
+  const notify = useNotify();
 
   const allowManage = hasWorkspacePermissionV2("bb.subscription.manage");
   const allowManageInstanceLicenses =
     allowManage && hasWorkspacePermissionV2("bb.instances.list");
 
-  // Subscribe to Vue reactive state
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
-  const isTrialing = useVueState(() => subscriptionStore.isTrialing);
-  const isExpired = useVueState(() => subscriptionStore.isExpired);
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const isSelfHostLicense = useVueState(
-    () => subscriptionStore.isSelfHostLicense
-  );
-  const showTrial = useVueState(() => subscriptionStore.showTrial);
-  const trialingDays = useVueState(() => subscriptionStore.trialingDays);
-  const expireAt = useVueState(() => subscriptionStore.expireAt);
-  const instanceCountLimit = useVueState(
-    () => subscriptionStore.instanceCountLimit
-  );
-  const instanceLicenseCount = useVueState(
-    () => subscriptionStore.instanceLicenseCount
-  );
-  const userCountLimit = useVueState(() => subscriptionStore.userCountLimit);
-  const userCountInIam = useVueState(() => actuatorStore.userCountInIam);
-  const activatedInstanceCount = useVueState(
-    () => actuatorStore.activatedInstanceCount
-  );
-  const workspaceId = useVueState(() =>
-    getWorkspaceId(actuatorStore.workspaceResourceName)
-  );
+  const {
+    uploadLicense,
+    currentPlan,
+    isFreePlan,
+    isTrialing,
+    isExpired,
+    showTrial,
+    trialingDays,
+    expireAt,
+    instanceCountLimit,
+    instanceLicenseCount,
+    hasUnifiedInstanceLicense,
+    userCountLimit,
+  } = useSubscriptionState();
+  const {
+    isSaaSMode,
+    userCountInIam,
+    totalInstanceCount,
+    activatedInstanceCount,
+    workspaceResourceName,
+  } = useServerState();
+  const isSelfHostLicense =
+    import.meta.env.MODE.toLowerCase() !== "release-aws";
+  const workspaceId = getResourceId(workspaceResourceName, workspaceNamePrefix);
 
   const [license, setLicense] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,8 +96,8 @@ export function SubscriptionPage({
     if (disabled) return;
     setLoading(true);
     try {
-      await subscriptionStore.uploadLicense(license);
-      pushNotification({
+      await uploadLicense(license);
+      notify({
         module: "bytebase",
         style: "SUCCESS",
         title: t("subscription.update.success.title"),
@@ -109,7 +105,7 @@ export function SubscriptionPage({
       });
       setLicense("");
     } catch {
-      pushNotification({
+      notify({
         module: "bytebase",
         style: "CRITICAL",
         title: t("subscription.update.failure.title"),
@@ -195,6 +191,8 @@ export function SubscriptionPage({
           <InstanceLicenseStats
             planType={planType}
             instanceCountLimit={instanceCountLimit}
+            totalInstanceCount={totalInstanceCount}
+            hasUnifiedInstanceLicense={hasUnifiedInstanceLicense}
             activatedCount={activatedInstanceCount}
             totalLicenseCount={totalLicenseCount}
             onManageInstanceLicenses={onManageInstanceLicenses}
@@ -307,10 +305,12 @@ export function SubscriptionPage({
           </div>
         </div>
       )}
-      <InstanceAssignmentSheet
-        open={showInstanceAssignmentSheet}
-        onOpenChange={setShowInstanceAssignmentSheet}
-      />
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignmentSheet}
+          onOpenChange={setShowInstanceAssignmentSheet}
+        />
+      )}
     </div>
   );
 }
@@ -318,23 +318,37 @@ export function SubscriptionPage({
 function InstanceLicenseStats({
   planType,
   instanceCountLimit,
+  totalInstanceCount,
+  hasUnifiedInstanceLicense,
   activatedCount,
   totalLicenseCount,
   onManageInstanceLicenses,
 }: {
   planType: string;
   instanceCountLimit: number;
+  totalInstanceCount: number;
+  hasUnifiedInstanceLicense: boolean;
   activatedCount: number;
   totalLicenseCount: string;
   onManageInstanceLicenses: () => void;
 }) {
   const { t } = useTranslation();
+  const instanceLimit =
+    instanceCountLimit === Number.MAX_VALUE
+      ? t("common.unlimited")
+      : `${instanceCountLimit}`;
 
-  if (planType === "FREE") {
+  if (planType === "FREE" || hasUnifiedInstanceLicense) {
     return (
       <div className="flex flex-col text-left">
-        <dt className="text-main">{t("subscription.max-instance-count")}</dt>
-        <div className="mt-1 text-4xl">{instanceCountLimit}</div>
+        <dt className="text-main">
+          {t("subscription.instance-assignment.used-and-total-instance")}
+        </dt>
+        <div className="mt-1 text-4xl flex items-center gap-2">
+          {totalInstanceCount}
+          <span className="font-mono text-control-light">/</span>
+          {instanceLimit}
+        </div>
       </div>
     );
   }

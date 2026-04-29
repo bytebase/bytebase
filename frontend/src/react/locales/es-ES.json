@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "Exportación finalizada",
     "export-tooltip": "Debe seleccionar hora de inicio y fin dentro de 30 días",
     "table": {
       "actor": "Actor",
@@ -156,7 +157,13 @@
   },
   "auth.token-expired-title": "Token expirado",
   "banner": {
-    "external-url": "Bytebase no ha configurado --external-url"
+    "cloud": "Cloud",
+    "deploy": "Auto Hospedaje",
+    "external-url": "Bytebase no ha configurado --external-url",
+    "license-expired": "Su licencia para {{plan}} ha expirado el {{expireAt}}.",
+    "license-expires": "Su licencia para {{plan}} ha caducado el {{expireAt}}.",
+    "request-demo": "Reserva una demo de producto de 30 minutos.",
+    "trial-expires": "Su prueba gratuita para {{plan}} caducará en {{days}} días el {{expireAt}}."
   },
   "bbkit": {
     "confirm-button": {
@@ -329,6 +336,7 @@
     "pending": "Pendiente",
     "permissions": "Permisos",
     "plan": "Plan",
+    "preview": "Previsualización",
     "previous": "Previous",
     "project": "Proyecto",
     "projects": "Proyectos",
@@ -386,6 +394,7 @@
     "statement": "Declaración",
     "status": "Estado",
     "submit": "Submit",
+    "succeed": "Tener éxito",
     "system": "Sistema",
     "table": "Tabla",
     "title": "Título",
@@ -720,6 +729,9 @@
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
     "filter-database": "Filtrar base de datos",
+    "foreign-key": {
+      "reference": "Referencia"
+    },
     "foreign-keys": "claves foráneas",
     "index-size": "Tamaño del índice",
     "indexes": "Índices",
@@ -849,6 +861,16 @@
     "schema": {
       "default": "Esquema predeterminado"
     },
+    "sequence": {
+      "cacheSize": "Tamaño de caché",
+      "cycle": "Ciclo",
+      "data-type": "tipo de datos",
+      "increment": "Incremento",
+      "lastValue": "Último valor",
+      "max-value": "valor máximo",
+      "min-value": "valor mínimo",
+      "start": "Valor inicial"
+    },
     "sequences": "Secuencias",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "streams": "Streams",
@@ -886,6 +908,9 @@
     "data-export": "Exportación de datos"
   },
   "export-data": {
+    "export-format": "Formato de exportación",
+    "export-rows": "Exportar filas",
+    "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
     "password-optional": "Cifrar con contraseña (opcional)"
   },
   "export-data.password-optional": "Contraseña (opcional)",
@@ -1675,6 +1700,7 @@
     },
     "members": {
       "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
+      "allow-ddl-all-environments": "Sin restricciones de entorno. Permitir ejecutar sentencias DDL/DML en todos los entornos.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
@@ -1933,16 +1959,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Clave foránea",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "En actualización",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Colación",
+      "comment": "Comentario",
+      "engine": "Motor",
+      "name": "Nombre"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,10 +1987,14 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Columnas dependientes",
+      "indexes": "Índices",
       "primary": "Primary",
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Insertar SQL",
+    "no-diff": "No hay cambios para aplicar",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -1969,6 +2007,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Editor de esquema",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -1977,9 +2016,11 @@
     },
     "table-partition": {
       "expression": "Expresión",
+      "partitions": "Particiones",
       "type": "Tipo",
       "value": "Valor"
-    }
+    },
+    "template-database": "Base de datos plantilla"
   },
   "schema-template": {
     "classification": {
@@ -2563,6 +2604,11 @@
     },
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "No se pudieron exportar los datos de {{db}}",
+      "self": "Exportación por lotes",
+      "tooltip": "Seleccione como máximo {{max}} bases de datos para exportar por lotes los resultados de las últimas consultas"
+    },
     "batch-query": {
       "batch": "Lote",
       "description": "Consulta por lotes {{database}} bases de datos adicionales y {{group}} grupos de bases de datos bajo {{project}}.",
@@ -2571,7 +2617,8 @@
         "readonly": "Sólo lectura",
         "self": "Seleccionar la fuente de datos para el lote",
         "tooltip": "Encontrará fuentes de datos disponibles con política de restricción y luego aplicará la selección."
-      }
+      },
+      "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
@@ -2583,12 +2630,14 @@
     "copy-name": "Copiar nombre",
     "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
+    "download-as-file": "Descargar como {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Formato",
     "format-sql": "Format SQL",
     "generate-sql": "Generar SQL",
     "grant-type-unmask": "Unmask",
@@ -2644,6 +2693,7 @@
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
     "search-history-by-statement": "Búsqueda por enunciado",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "sync-in-progress": "Sincronización en progreso",
@@ -2663,6 +2713,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
     "view-database-detail": "Ver detalle de la base de datos",
     "view-detail": "Ver detalle",
@@ -3451,10 +3502,14 @@
       "n-license-remain": "permanecer {{n}}",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
+      "used-and-total-instance": "Límite de instancias activas/totales",
       "used-and-total-license": "Licencia asignada / total",
       "used-and-total-user": "Límite de usuarios activos/totales"
     },
-    "max-instance-count": "Recuento máximo de instancias",
+    "overuse-modal": {
+      "description": "Está utilizando funciones no disponibles en {{plan}}. Actualice ahora para garantizar el acceso continuo:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> puede estar restringido en {{currentPlan}}, actualice ahora para asegurar un uso adecuado.",
     "plan": {
       "enterprise": {
         "desc": "Funciones adicionales de seguridad, cumplimiento y permisos. Soporte dedicado con SLA.",
@@ -3475,6 +3530,7 @@
       "try": "Empezar la prueba gratuita"
     },
     "plan-compare": "Compara características entre los diferentes planes",
+    "plan-features": "{{plan}} función",
     "purchase": {
       "accept-terms-prefix": "Acepto los",
       "and": "y",
@@ -3521,6 +3577,8 @@
         "title": "Licencia actualizada con éxito"
       }
     },
+    "upgrade": "Actualizar",
+    "upgrade-now": "Actualizar ahora",
     "upload-license": "Subir licencia",
     "usage": {
       "instance-count": {

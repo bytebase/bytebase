@@ -1,10 +1,6 @@
 import { RotateCcw, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  removeColumnPrimaryKey,
-  upsertColumnPrimaryKey,
-} from "@/components/SchemaEditorLite/edit";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -25,8 +21,12 @@ import type {
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../../context";
+import {
+  removeColumnPrimaryKey,
+  upsertColumnPrimaryKey,
+} from "../../core/edit";
 import { markUUID } from "../common";
-import { DataTypeCell } from "./DataTypeCell";
+import { DataTypeCell, DataTypeSuggestionsDatalist } from "./DataTypeCell";
 import { DefaultValueCell } from "./DefaultValueCell";
 
 interface Props {
@@ -196,31 +196,38 @@ export function TableColumnEditor({
     [editStatus, db, schema, table]
   );
 
+  const datalistId = `schema-editor-types-${engine}`;
+  // Compact override for table cells: reduce default px-4 py-3 padding so each
+  // row hugs the inline editor heights instead of doubling them.
+  const cellClass = "px-2 py-1";
+  const headClass = "h-8 px-2 py-1 whitespace-nowrap";
+
   return (
     <div className="size-full overflow-auto">
+      <DataTypeSuggestionsDatalist id={datalistId} engine={engine} />
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[180px]">
+            <TableHead className={cn(headClass, "w-[160px]")}>
               {t("schema-editor.column.name")}
             </TableHead>
-            <TableHead className="w-[160px]">
+            <TableHead className={cn(headClass, "w-[180px]")}>
               {t("schema-editor.column.type")}
             </TableHead>
-            <TableHead className="w-[140px]">
+            <TableHead className={cn(headClass, "w-[200px]")}>
               {t("schema-editor.column.default")}
             </TableHead>
-            <TableHead className="w-[160px]">
+            <TableHead className={cn(headClass)}>
               {t("schema-editor.column.comment")}
             </TableHead>
-            <TableHead className="w-16 text-center">
+            <TableHead className={cn(headClass, "w-[72px] text-center")}>
               {t("schema-editor.column.not-null")}
             </TableHead>
-            <TableHead className="w-16 text-center">
+            <TableHead className={cn(headClass, "w-[72px] text-center")}>
               {t("schema-editor.column.primary")}
             </TableHead>
             {!isReadonly && (
-              <TableHead className="w-16 text-right">
+              <TableHead className={cn(headClass, "w-[60px] text-right")}>
                 {t("schema-editor.column.operations")}
               </TableHead>
             )}
@@ -243,42 +250,45 @@ export function TableColumnEditor({
                   status === "dropped" && "text-error line-through"
                 )}
               >
-                <TableCell>
+                <TableCell className={cellClass}>
                   <Input
                     value={column.name}
                     disabled={disabled}
-                    className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                    size="xs"
+                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
                     onChange={(e) =>
                       handleColumnNameChange(column, e.target.value)
                     }
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className={cellClass}>
                   <DataTypeCell
                     column={column}
                     engine={engine}
                     readonly={disabled}
+                    datalistId={datalistId}
                     onUpdateValue={(val) => handleColumnTypeChange(column, val)}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className={cellClass}>
                   <DefaultValueCell
                     column={column}
                     disabled={disabled}
                     onUpdate={(val) => handleDefaultChange(column, val)}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell className={cellClass}>
                   <Input
                     value={column.comment}
                     disabled={disabled}
-                    className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                    size="xs"
+                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
                     onChange={(e) =>
                       handleCommentChange(column, e.target.value)
                     }
                   />
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className={cn(cellClass, "text-center")}>
                   <input
                     type="checkbox"
                     checked={!column.nullable}
@@ -288,7 +298,7 @@ export function TableColumnEditor({
                     }
                   />
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className={cn(cellClass, "text-center")}>
                   <input
                     type="checkbox"
                     checked={isPK}
@@ -299,7 +309,7 @@ export function TableColumnEditor({
                   />
                 </TableCell>
                 {!isReadonly && (
-                  <TableCell className="text-right">
+                  <TableCell className={cn(cellClass, "text-right")}>
                     {status === "dropped" ? (
                       <Button
                         variant="ghost"

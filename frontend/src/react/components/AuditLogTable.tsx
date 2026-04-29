@@ -22,24 +22,22 @@ import {
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
+import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import { usePlanFeature } from "@/react/hooks/useAppState";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
   getPageSizeOptions,
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useSubscriptionV1Store,
-  useUserStore,
-} from "@/store";
+import { pushNotification, useUserStore } from "@/store";
 import {
   extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
@@ -447,61 +445,6 @@ function useColumnDefs(): ColumnDef[] {
 }
 
 // ============================================================
-// useColumnWidths
-// ============================================================
-
-function useColumnWidths(columns: ColumnDef[]) {
-  const [widths, setWidths] = useState<number[]>(() =>
-    columns.map((c) => c.defaultWidth)
-  );
-  const dragRef = useRef<{
-    colIndex: number;
-    startX: number;
-    startWidth: number;
-  } | null>(null);
-
-  const onMouseDown = useCallback(
-    (colIndex: number, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragRef.current = {
-        colIndex,
-        startX: e.clientX,
-        startWidth: widths[colIndex],
-      };
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!dragRef.current) return;
-        const delta = ev.clientX - dragRef.current.startX;
-        const min = columns[dragRef.current.colIndex].minWidth ?? 40;
-        const newWidth = Math.max(min, dragRef.current.startWidth + delta);
-        setWidths((prev) => {
-          const next = [...prev];
-          next[dragRef.current!.colIndex] = newWidth;
-          return next;
-        });
-      };
-      const onMouseUp = () => {
-        dragRef.current = null;
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    },
-    [widths, columns]
-  );
-
-  const totalWidth = widths.reduce((sum, w) => sum + w, 0);
-
-  return { widths, totalWidth, onResizeStart: onMouseDown };
-}
-
-// ============================================================
 // AuditLogTable — shared component
 // ============================================================
 
@@ -520,10 +463,7 @@ export function AuditLogTable({
   readonlyScopes,
 }: AuditLogTableProps) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const hasAuditLogFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_AUDIT_LOG)
-  );
+  const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
@@ -820,8 +760,7 @@ export function AuditLogTable({
                         {col.sortable && renderSortIndicator(col.key)}
                       </div>
                       {col.resizable && (
-                        <div
-                          className="absolute right-0 top-1/4 h-1/2 w-[3px] cursor-col-resize rounded-full bg-control-bg-hover hover:bg-accent/60 active:bg-accent transition-colors"
+                        <ColumnResizeHandle
                           onMouseDown={(e) => onResizeStart(colIdx, e)}
                         />
                       )}

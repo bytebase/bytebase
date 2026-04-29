@@ -1,0 +1,65 @@
+import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
+import { isEqual } from "lodash-es";
+import { sqlServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
+import type {
+  Database,
+  DatabaseMetadata,
+} from "@/types/proto-es/v1/database_service_pb";
+import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
+import { getDatabaseEngine } from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
+import { validateDatabaseMetadata } from "./metadata";
+
+export type GenerateDiffDDLResult = {
+  statement: string;
+  errors: string[];
+};
+
+export const generateDiffDDL = async ({
+  database,
+  sourceMetadata,
+  targetMetadata,
+}: {
+  database: Database;
+  sourceMetadata: DatabaseMetadata;
+  targetMetadata: DatabaseMetadata;
+}): Promise<GenerateDiffDDLResult> => {
+  const finish = (statement: string, errors: string[]) => {
+    return {
+      statement,
+      errors,
+    };
+  };
+
+  if (isEqual(sourceMetadata, targetMetadata)) {
+    return finish("", []);
+  }
+
+  const validationMessages = validateDatabaseMetadata(targetMetadata);
+  if (validationMessages.length > 0) {
+    return finish("", ["Invalid schema", ...validationMessages]);
+  }
+  try {
+    const newRequest = create(DiffMetadataRequestSchema, {
+      sourceMetadata: sourceMetadata,
+      targetMetadata: targetMetadata,
+      engine: getDatabaseEngine(database),
+    });
+    const diffResponse = await sqlServiceClientConnect.diffMetadata(
+      newRequest,
+      {
+        contextValues: createContextValues().set(silentContextKey, true),
+      }
+    );
+    const { diff } = diffResponse;
+    if (diff.length === 0) {
+      return finish("", []);
+    }
+    return finish(diff, []);
+  } catch (ex) {
+    console.warn("[generateDiffDDL]", ex);
+    return finish("", [extractGrpcErrorMessage(ex)]);
+  }
+};

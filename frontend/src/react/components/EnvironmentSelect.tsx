@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Combobox } from "@/react/components/ui/combobox";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useEnvironmentV1Store } from "@/store";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 
@@ -27,11 +26,7 @@ export function EnvironmentSelect({
   renderSuffix,
 }: EnvironmentSelectProps) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-
-  const environments = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environments = useEnvironmentList();
 
   const options = useMemo(
     () =>

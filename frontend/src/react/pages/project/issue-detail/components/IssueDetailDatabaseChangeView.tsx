@@ -3,7 +3,7 @@ import { ChevronRight, ExternalLink, FolderTree, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { instanceRoleServiceClientConnect } from "@/connect";
-import { EngineIconPath } from "@/react/components/instance/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import {
   Dialog,
   DialogClose,
@@ -783,7 +783,6 @@ function IssueDetailDatabaseTarget({
     )
   );
   const instance = database.instanceResource;
-  const engineIcon = instance ? EngineIconPath[instance.engine] : "";
   const { databaseName } = extractDatabaseResourceName(target);
   const instanceTitle =
     instance?.title ||
@@ -792,8 +791,11 @@ function IssueDetailDatabaseTarget({
 
   return (
     <div className="flex min-w-0 items-center truncate text-sm">
-      {engineIcon && (
-        <img alt="" className="mr-1 inline-block h-4 w-4" src={engineIcon} />
+      {instance && (
+        <EngineIcon
+          engine={instance.engine}
+          className="mr-1 inline-block h-4 w-4"
+        />
       )}
       {showEnvironment && (
         <span className="mr-1 truncate text-gray-400">{environment.title}</span>

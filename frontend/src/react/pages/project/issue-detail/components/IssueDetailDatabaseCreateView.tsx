@@ -1,7 +1,7 @@
 import { Check, FastForward, Minus, Pause, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/react/components/instance/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -237,7 +237,6 @@ function IssueDetailDatabaseCreateInstance({
   const instance = useVueState(() =>
     instanceStore.getInstanceByName(instanceName)
   );
-  const engineIcon = EngineIconPath[instance.engine];
 
   if (!instanceHref) {
     return <span className="text-gray-900">{children}</span>;
@@ -251,9 +250,7 @@ function IssueDetailDatabaseCreateInstance({
         event.stopPropagation();
       }}
     >
-      {engineIcon && (
-        <img alt="" className="h-4 w-4 shrink-0" src={engineIcon} />
-      )}
+      <EngineIcon engine={instance.engine} className="h-4 w-4" />
       <span className="truncate">{children}</span>
     </a>
   );

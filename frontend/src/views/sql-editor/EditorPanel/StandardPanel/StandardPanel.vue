@@ -7,7 +7,36 @@
       :resize-trigger-size="3"
     >
       <template #1>
-        <EditorMain />
+        <NSplit
+          :disabled="!showAIPanel || !tab"
+          :size="editorPanelSize.size"
+          :min="editorPanelSize.min"
+          :max="editorPanelSize.max"
+          :resize-trigger-size="3"
+          @update:size="handleEditorPanelResize"
+        >
+          <template #1>
+            <ReactPageMount
+              page="EditorMain"
+              container-class="h-full"
+              :page-props="{ onChangeConnection: handleChangeConnection }"
+            />
+          </template>
+          <template v-if="showAIPanel && tab" #2>
+            <div class="h-full overflow-hidden flex flex-col">
+              <Suspense>
+                <AIChatToSQL key="ai-chat-to-sql" />
+                <template #fallback>
+                  <div
+                    class="w-full h-full grow flex flex-col items-center justify-center"
+                  >
+                    <BBSpin />
+                  </div>
+                </template>
+              </Suspense>
+            </div>
+          </template>
+        </NSplit>
       </template>
       <template #2>
         <div class="relative h-full">
@@ -15,7 +44,38 @@
         </div>
       </template>
     </NSplit>
-    <EditorMain v-else class="h-full" />
+    <NSplit
+      v-else
+      class="h-full"
+      :disabled="!showAIPanel || !tab"
+      :size="editorPanelSize.size"
+      :min="editorPanelSize.min"
+      :max="editorPanelSize.max"
+      :resize-trigger-size="3"
+      @update:size="handleEditorPanelResize"
+    >
+      <template #1>
+        <ReactPageMount
+          page="EditorMain"
+          container-class="h-full"
+          :page-props="{ onChangeConnection: handleChangeConnection }"
+        />
+      </template>
+      <template v-if="showAIPanel && tab" #2>
+        <div class="h-full overflow-hidden flex flex-col">
+          <Suspense>
+            <AIChatToSQL key="ai-chat-to-sql" />
+            <template #fallback>
+              <div
+                class="w-full h-full grow flex flex-col items-center justify-center"
+              >
+                <BBSpin />
+              </div>
+            </template>
+          </Suspense>
+        </div>
+      </template>
+    </NSplit>
   </template>
 </template>
 
@@ -23,13 +83,17 @@
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import { BBSpin } from "@/bbkit";
+import { AIChatToSQL } from "@/plugins/ai";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
+  useSQLEditorUIStore,
 } from "@/store";
 import { instanceV1HasReadonlyMode } from "@/utils";
+import { useSQLEditorContext } from "../../context";
 import ResultPanel from "../ResultPanel";
-import EditorMain from "./EditorMain.vue";
 
 const { currentTab: tab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { instance } = useConnectionOfCurrentSQLEditorTab();
@@ -41,4 +105,16 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 const showResultPanel = computed(
   () => !isDisconnected.value && instanceV1HasReadonlyMode(instance.value)
 );
+
+// AI side pane is hosted here (Vue) instead of inside the React
+// `EditorMain` because `AIChatToSQL` is Vue-only.
+const uiStore = useSQLEditorUIStore();
+const { showAIPanel, editorPanelSize } = storeToRefs(uiStore);
+const handleEditorPanelResize = uiStore.handleEditorPanelResize;
+
+const { showConnectionPanel, asidePanelTab } = useSQLEditorContext();
+const handleChangeConnection = () => {
+  asidePanelTab.value = "SCHEMA";
+  showConnectionPanel.value = true;
+};
 </script>

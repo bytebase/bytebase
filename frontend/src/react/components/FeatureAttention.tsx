@@ -7,8 +7,12 @@ import {
   AlertTitle,
 } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import {
+  useServerState,
+  useSubscriptionState,
+} from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK, instanceLimitFeature } from "@/types";
 import type {
   Instance,
@@ -19,7 +23,6 @@ import {
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
-import { useVueState } from "../hooks/useVueState";
 import { InstanceAssignmentSheet } from "./InstanceAssignmentSheet";
 
 export function FeatureAttention({
@@ -32,21 +35,27 @@ export function FeatureAttention({
   instance?: Instance | InstanceResource;
 }) {
   const { t } = useTranslation();
-  const subscriptionStore = useSubscriptionV1Store();
-  const actuatorStore = useActuatorV1Store();
+  const { trialingDays, isTrialing } = useSubscriptionState();
+  const { totalInstanceCount, activatedInstanceCount } = useServerState();
   const [showInstanceAssignment, setShowInstanceAssignment] = useState(false);
 
-  const hasFeature = useVueState(() =>
-    subscriptionStore.hasInstanceFeature(feature)
+  const hasFeature = useAppStore((state) => state.hasInstanceFeature(feature));
+  const instanceMissingLicense = useAppStore((state) =>
+    state.instanceMissingLicense(feature, instance)
   );
-  const instanceMissingLicense = useVueState(() =>
-    subscriptionStore.instanceMissingLicense(feature, instance)
+  const hasUnifiedInstanceLicense = useAppStore((state) =>
+    state.hasUnifiedInstanceLicense()
   );
-  const existInstanceWithoutLicense = useVueState(
-    () =>
-      actuatorStore.totalInstanceCount > actuatorStore.activatedInstanceCount &&
-      instanceLimitFeature.has(feature)
+  const requiredPlan = useAppStore((state) =>
+    state.getMinimumRequiredPlan(feature)
   );
+  const featureIncludedInPlan = useAppStore((state) =>
+    state.hasFeature(feature)
+  );
+  const existInstanceWithoutLicense =
+    !hasUnifiedInstanceLicense &&
+    totalInstanceCount > activatedInstanceCount &&
+    instanceLimitFeature.has(feature);
 
   const show =
     !hasFeature ||
@@ -64,16 +73,12 @@ export function FeatureAttention({
 
   let descriptionText: string;
   if (!hasFeature) {
-    const startTrial = subscriptionStore.isTrialing
+    const startTrial = isTrialing
       ? ""
       : t("subscription.trial-for-days", {
-          days: subscriptionStore.trialingDays,
+          days: trialingDays,
         });
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
-    if (
-      requiredPlan === PlanType.FREE &&
-      subscriptionStore.hasFeature(feature)
-    ) {
+    if (requiredPlan === PlanType.FREE && featureIncludedInPlan) {
       descriptionText = `${featureDesc}\n${startTrial}`;
     } else {
       const trialText = t("subscription.required-plan-with-trial", {
@@ -97,9 +102,12 @@ export function FeatureAttention({
   if (hasPermission) {
     if (!hasFeature) {
       actionText = t("subscription.request-n-days-trial", {
-        days: subscriptionStore.trialingDays,
+        days: trialingDays,
       });
-    } else if (hasWorkspacePermissionV2("bb.instances.update")) {
+    } else if (
+      !hasUnifiedInstanceLicense &&
+      hasWorkspacePermissionV2("bb.instances.update")
+    ) {
       actionText = t("subscription.instance-assignment.assign-license");
     }
   }
@@ -143,11 +151,13 @@ export function FeatureAttention({
           )}
         </div>
       </Alert>
-      <InstanceAssignmentSheet
-        open={showInstanceAssignment}
-        selectedInstanceList={instance ? [instance.name] : []}
-        onOpenChange={setShowInstanceAssignment}
-      />
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignment}
+          selectedInstanceList={instance ? [instance.name] : []}
+          onOpenChange={setShowInstanceAssignment}
+        />
+      )}
     </>
   );
 }

@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import type {
   ScopeOption,
   ValueOption,
 } from "@/react/components/AdvancedSearch";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { useInstanceV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -45,13 +45,7 @@ export function useCommonSearchScopeOptions(
           keywords: [name, ins.title, String(ins.engine), env],
           render: () => (
             <span className="flex items-center gap-x-1">
-              {EngineIconPath[ins.engine] && (
-                <img
-                  src={EngineIconPath[ins.engine]}
-                  alt=""
-                  className="size-4 shrink-0"
-                />
-              )}
+              <EngineIcon engine={ins.engine} className="size-4" />
               <span className="truncate">{ins.title}</span>
               {env && (
                 <span className="text-control-light text-xs">({env})</span>

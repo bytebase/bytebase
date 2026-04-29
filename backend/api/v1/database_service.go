@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -30,19 +31,21 @@ import (
 // DatabaseService implements the database service.
 type DatabaseService struct {
 	v1connect.UnimplementedDatabaseServiceHandler
-	store        *store.Store
-	schemaSyncer *schemasync.Syncer
-	profile      *config.Profile
-	iamManager   *iam.Manager
+	store          *store.Store
+	schemaSyncer   *schemasync.Syncer
+	profile        *config.Profile
+	iamManager     *iam.Manager
+	licenseService *enterprise.LicenseService
 }
 
 // NewDatabaseService creates a new DatabaseService.
-func NewDatabaseService(store *store.Store, schemaSyncer *schemasync.Syncer, profile *config.Profile, iamManager *iam.Manager) *DatabaseService {
+func NewDatabaseService(store *store.Store, schemaSyncer *schemasync.Syncer, profile *config.Profile, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *DatabaseService {
 	return &DatabaseService{
-		store:        store,
-		schemaSyncer: schemaSyncer,
-		profile:      profile,
-		iamManager:   iamManager,
+		store:          store,
+		schemaSyncer:   schemaSyncer,
+		profile:        profile,
+		iamManager:     iamManager,
+		licenseService: licenseService,
 	}
 }
 
@@ -995,7 +998,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	if database.EffectiveEnvironmentID != nil && *database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = new(common.FormatEnvironment(*database.EffectiveEnvironmentID))
 	}
-	instanceResource := convertToV1InstanceResource(instance)
+	instanceResource := convertToV1InstanceResource(
+		instance,
+		s.licenseService.IsInstanceEffectivelyActivated(ctx, common.GetWorkspaceIDFromContext(ctx), instance),
+	)
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		State:                convertDeletedToState(database.Deleted),

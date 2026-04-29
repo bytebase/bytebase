@@ -1,4 +1,4 @@
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import type { SQLEditorTreeNode } from "@/types";
 import { instanceV1Name } from "@/utils";
@@ -21,13 +21,10 @@ export function InstanceNode({ node, keyword }: Props) {
     ...target,
     $typeName: "bytebase.v1.InstanceResource" as const,
   };
-  const iconPath = EngineIconPath[instance.engine];
   return (
     <div className="flex items-center max-w-full overflow-hidden gap-x-1">
       <span className="inline-flex items-center gap-x-1">
-        {iconPath ? (
-          <img src={iconPath} alt="" className="size-4 shrink-0" />
-        ) : null}
+        <EngineIcon engine={instance.engine} className="size-4" />
         <span className="truncate">
           <HighlightLabelText
             text={instanceV1Name(instance)}

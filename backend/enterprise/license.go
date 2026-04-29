@@ -307,19 +307,14 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 	if err := s.IsFeatureEnabled(ctx, workspaceID, f); err != nil {
 		return err
 	}
-	if !instance.Metadata.GetActivation() {
-		return errors.Errorf(`feature "%s" is not available for instance %s, please assign license to the instance to enable it`, f.String(), instance.ResourceID)
+	if !s.IsInstanceEffectivelyActivated(ctx, workspaceID, instance) {
+		instanceID := ""
+		if instance != nil {
+			instanceID = instance.ResourceID
+		}
+		return errors.Errorf(`feature "%s" requires an activated instance under the current license: %s`, f.String(), instanceID)
 	}
 	return nil
-}
-
-// GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
-func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspaceID string) int {
-	limit := s.LoadSubscription(ctx, workspaceID).ActiveInstances
-	if limit < 0 {
-		return math.MaxInt
-	}
-	return int(limit)
 }
 
 // GetUserLimit gets the user limit value for the plan.
@@ -363,6 +358,35 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context, workspaceID strin
 	return limit
 }
 
+// GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
+func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspaceID string) int {
+	limit := s.LoadSubscription(ctx, workspaceID).ActiveInstances
+	if limit < 0 {
+		return math.MaxInt
+	}
+	return int(limit)
+}
+
+func isUnifiedInstanceLimit(instanceLimit, activatedInstanceLimit int) bool {
+	return instanceLimit <= activatedInstanceLimit
+}
+
+// IsUnifiedInstanceLicense returns whether every registrable instance is effectively activated.
+func (s *LicenseService) IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool {
+	return isUnifiedInstanceLimit(
+		s.GetInstanceLimit(ctx, workspaceID),
+		s.GetActivatedInstanceLimit(ctx, workspaceID),
+	)
+}
+
+// IsInstanceEffectivelyActivated returns whether the instance can use instance-gated features.
+func (s *LicenseService) IsInstanceEffectivelyActivated(ctx context.Context, workspaceID string, instance *store.InstanceMessage) bool {
+	if instance == nil {
+		return false
+	}
+	return instance.Metadata.GetActivation() || s.IsUnifiedInstanceLicense(ctx, workspaceID)
+}
+
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, workspaceID string, license string) error {
 	if license != "" {
@@ -390,6 +414,16 @@ type LicenseParams struct {
 	ExpiresAt   time.Time // zero value means no expiration
 }
 
+func newLicenseClaims(params *LicenseParams) *Claims {
+	return &Claims{
+		Plan:            params.Plan,
+		Seats:           params.Seats,
+		ActiveInstances: params.Instances,
+		Instances:       params.Instances,
+		WorkspaceID:     params.WorkspaceID,
+	}
+}
+
 // CreateLicense signs a new license JWT from business params.
 // Only available when private key is configured (SaaS mode).
 // Handles JWT plumbing (issuer, audience, kid) internally.
@@ -398,13 +432,7 @@ func (s *LicenseService) CreateLicense(params *LicenseParams) (string, error) {
 		return "", errors.New("license signing not available: private key not configured")
 	}
 
-	c := &Claims{
-		Plan:            params.Plan,
-		Seats:           params.Seats,
-		ActiveInstances: params.Instances,
-		Instances:       params.Instances,
-		WorkspaceID:     params.WorkspaceID,
-	}
+	c := newLicenseClaims(params)
 	c.Issuer = s.config.Issuer
 	c.Audience = jwt.ClaimStrings{s.config.Audience}
 	c.IssuedAt = jwt.NewNumericDate(time.Now())

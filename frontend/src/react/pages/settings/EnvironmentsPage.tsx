@@ -54,8 +54,10 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -639,6 +641,9 @@ function EnvironmentDetail({
   const environmentStore = useEnvironmentV1Store();
   const policyStore = usePolicyV1Store();
   const subscriptionStore = useSubscriptionV1Store();
+  const refreshEnvironmentList = useAppStore(
+    (state) => state.refreshEnvironmentList
+  );
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
   const canGetPolicy = hasWorkspacePermissionV2("bb.policies.get");
@@ -663,9 +668,7 @@ function EnvironmentDetail({
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_ENVIRONMENT_TIERS)
   );
 
-  const environmentList = useVueState(() => [
-    ...environmentStore.environmentList,
-  ]);
+  const environmentList = useEnvironmentList();
 
   // Reset state when environment changes
   useEffect(() => {
@@ -789,6 +792,7 @@ function EnvironmentDetail({
       setEditTitle(updated.title);
       setEditColor(updated.color || "#4f46e5");
       setEditProtected(updated.tags?.protected === "protected");
+      await refreshEnvironmentList();
     }
 
     // Update rollout policy if changed
@@ -1437,10 +1441,11 @@ export function EnvironmentsPage() {
   const environmentStore = useEnvironmentV1Store();
   const policyStore = usePolicyV1Store();
   const uiStateStore = useUIStateStore();
+  const refreshEnvironmentList = useAppStore(
+    (state) => state.refreshEnvironmentList
+  );
 
-  const environmentList = useVueState(() => [
-    ...environmentStore.environmentList,
-  ]);
+  const environmentList = useEnvironmentList();
   const environmentListKey = getEnvironmentListKey(environmentList);
 
   const [selectedId, setSelectedId] = useState("");
@@ -1452,6 +1457,10 @@ export function EnvironmentsPage() {
   detailDirtyRef.current = detailDirty;
 
   const canEdit = hasWorkspacePermissionV2("bb.settings.setEnvironment");
+
+  useEffect(() => {
+    void environmentStore.fetchEnvironments();
+  }, [environmentStore]);
 
   // Initialize selected tab and intro state
   useEffect(() => {
@@ -1560,6 +1569,7 @@ export function EnvironmentsPage() {
     }
 
     setShowCreate(false);
+    await refreshEnvironmentList();
     selectTab(createdEnvironment.id);
   };
 
@@ -1572,8 +1582,8 @@ export function EnvironmentsPage() {
       style: "SUCCESS",
       title: t("common.deleted"),
     });
+    const remaining = await refreshEnvironmentList();
     // Select first remaining environment
-    const remaining = environmentStore.environmentList;
     if (remaining.length > 0) {
       selectTab(remaining[0].id);
     }
@@ -1581,6 +1591,7 @@ export function EnvironmentsPage() {
 
   const handleReorder = async (reordered: Environment[]) => {
     await environmentStore.reorderEnvironmentList(reordered);
+    await refreshEnvironmentList();
     setShowReorder(false);
     pushNotification({
       module: "bytebase",

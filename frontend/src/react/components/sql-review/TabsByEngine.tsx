@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import {
   Tabs,
   TabsList,
@@ -69,11 +69,7 @@ export function TabsByEngine({ ruleMapByEngine, children }: TabsByEngineProps) {
         {sortedData.map(([engine, ruleMap]) => (
           <TabsTrigger key={engine} value={String(engine)}>
             <div className="flex items-center gap-x-1">
-              <img
-                src={EngineIconPath[engine]}
-                alt=""
-                className="h-4 w-auto object-contain"
-              />
+              <EngineIcon engine={engine} className="h-4 w-4" />
               <span className="text-sm">{engineParts(engine).title}</span>
               {engineParts(engine).subtitle && (
                 <span className="text-xs text-control-light">

@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   emptySearchParams,
@@ -9,6 +8,7 @@ import {
   type ValueOption,
 } from "@/react/components/AdvancedSearch";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Badge } from "@/react/components/ui/badge";
@@ -103,7 +103,7 @@ function mapDatabase(db: Database) {
     dbName,
     instanceTitle: inst?.title ?? "",
     envId: envId ?? "",
-    engineIcon: inst ? (EngineIconPath[inst.engine] ?? "") : "",
+    engine: inst?.engine,
   };
 }
 
@@ -178,12 +178,8 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
           custom: true,
           render: () => (
             <span className="inline-flex items-center gap-x-1">
-              {mapped.engineIcon && (
-                <img
-                  className="h-4 w-4 shrink-0"
-                  src={mapped.engineIcon}
-                  alt=""
-                />
+              {mapped.engine && (
+                <EngineIcon engine={mapped.engine} className="h-4 w-4" />
               )}
               <span>{mapped.instanceTitle}</span>
               <span className="text-control-placeholder">&gt;</span>

@@ -13,9 +13,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import {
@@ -1105,13 +1105,7 @@ function SourceSchemaInfo({
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
-            {EngineIconPath[sourceEngine] && (
-              <img
-                src={EngineIconPath[sourceEngine]}
-                className="w-4 h-auto"
-                alt=""
-              />
-            )}
+            <EngineIcon engine={sourceEngine} className="w-4 h-4" />
             <span>
               {
                 extractDatabaseResourceName(databaseFromChangelog.name)
@@ -1134,13 +1128,7 @@ function SourceSchemaInfo({
           </span>
           <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
             <span className="opacity-60 mr-1">{t("database.engine")}</span>
-            {EngineIconPath[sourceEngine] && (
-              <img
-                src={EngineIconPath[sourceEngine]}
-                className="w-4 h-auto"
-                alt=""
-              />
-            )}
+            <EngineIcon engine={sourceEngine} className="w-4 h-4" />
             <span>{engineNameV1(sourceEngine)}</span>
           </span>
         </>
@@ -1502,13 +1490,10 @@ function SelectTargetDatabasesView({
                   )}
                   onClick={() => onSelectedDatabaseNameChange(database.name)}
                 >
-                  {EngineIconPath[getInstanceResource(database).engine] && (
-                    <img
-                      src={EngineIconPath[getInstanceResource(database).engine]}
-                      className="w-4 h-auto shrink-0"
-                      alt=""
-                    />
-                  )}
+                  <EngineIcon
+                    engine={getInstanceResource(database).engine}
+                    className="w-4 h-4"
+                  />
                   <span className="truncate ml-1">
                     <span className="mx-0.5 text-control-placeholder">
                       ({getDatabaseEnvironment(database).title})
@@ -2156,15 +2141,10 @@ function TargetDatabasesSelectPanel({
                       </td>
                       <td className="py-2 px-2">
                         <div className="flex items-center gap-x-1">
-                          {EngineIconPath[getInstanceResource(db).engine] && (
-                            <img
-                              src={
-                                EngineIconPath[getInstanceResource(db).engine]
-                              }
-                              className="w-4 h-auto"
-                              alt=""
-                            />
-                          )}
+                          <EngineIcon
+                            engine={getInstanceResource(db).engine}
+                            className="w-4 h-4"
+                          />
                           {extractDatabaseResourceName(db.name).databaseName}
                         </div>
                       </td>

@@ -8,6 +8,13 @@ import {
 import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  isValidEnvironmentName,
+  NULL_ENVIRONMENT_NAME,
+  nullEnvironment,
+  unknownEnvironment,
+} from "@/types/v1/environment";
 import { storageKeyRecentProjects } from "@/utils/storage-keys";
 
 export { isConnectAlreadyExists };
@@ -40,6 +47,47 @@ export function useSubscription() {
   return { subscription, uploadLicense };
 }
 
+export function useSubscriptionState() {
+  const subscription = useAppStore((state) => state.subscription);
+  const loadSubscription = useAppStore((state) => state.loadSubscription);
+  const uploadLicense = useAppStore((state) => state.uploadLicense);
+  const currentPlan = useAppStore((state) => state.currentPlan());
+  const isFreePlan = useAppStore((state) => state.isFreePlan());
+  const isTrialing = useAppStore((state) => state.isTrialing());
+  const isExpired = useAppStore((state) => state.isExpired());
+  const daysBeforeExpire = useAppStore((state) => state.daysBeforeExpire());
+  const trialingDays = useAppStore((state) => state.trialingDays());
+  const showTrial = useAppStore((state) => state.showTrial());
+  const expireAt = useAppStore((state) => state.expireAt());
+  const instanceCountLimit = useAppStore((state) => state.instanceCountLimit());
+  const userCountLimit = useAppStore((state) => state.userCountLimit());
+  const instanceLicenseCount = useAppStore((state) =>
+    state.instanceLicenseCount()
+  );
+  const hasUnifiedInstanceLicense = useAppStore((state) =>
+    state.hasUnifiedInstanceLicense()
+  );
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
+  return {
+    subscription,
+    uploadLicense,
+    currentPlan,
+    isFreePlan,
+    isTrialing,
+    isExpired,
+    daysBeforeExpire,
+    trialingDays,
+    showTrial,
+    expireAt,
+    instanceCountLimit,
+    userCountLimit,
+    instanceLicenseCount,
+    hasUnifiedInstanceLicense,
+  };
+}
+
 export function useServerInfo() {
   const serverInfo = useAppStore((state) => state.serverInfo);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
@@ -47,6 +95,45 @@ export function useServerInfo() {
     void loadServerInfo();
   }, [loadServerInfo]);
   return serverInfo;
+}
+
+export function useServerState() {
+  const serverInfo = useAppStore((state) => state.serverInfo);
+  const loadServerInfo = useAppStore((state) => state.loadServerInfo);
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const workspaceResourceName = useAppStore((state) =>
+    state.workspaceResourceName()
+  );
+  const externalUrl = useAppStore((state) => state.externalUrl());
+  const needConfigureExternalUrl = useAppStore((state) =>
+    state.needConfigureExternalUrl()
+  );
+  const version = useAppStore((state) => state.version());
+  const changelogURL = useAppStore((state) => state.changelogURL());
+  const activatedInstanceCount = useAppStore((state) =>
+    state.activatedInstanceCount()
+  );
+  const totalInstanceCount = useAppStore((state) => state.totalInstanceCount());
+  const userCountInIam = useAppStore((state) => state.userCountInIam());
+  useEffect(() => {
+    void loadServerInfo();
+  }, [loadServerInfo]);
+  return {
+    serverInfo,
+    isSaaSMode,
+    workspaceResourceName,
+    externalUrl,
+    needConfigureExternalUrl,
+    version,
+    changelogURL,
+    activatedInstanceCount,
+    totalInstanceCount,
+    userCountInIam,
+  };
+}
+
+export function useWorkspaceResourceName() {
+  return useServerState().workspaceResourceName;
 }
 
 export function useIsSaaSMode() {
@@ -62,6 +149,58 @@ export function useAppFeature<T extends keyof AppFeatures>(feature: T) {
     void loadWorkspaceProfile();
   }, [loadWorkspaceProfile]);
   return value;
+}
+
+export function useWorkspaceProfile() {
+  const workspaceProfile = useAppStore((state) => state.workspaceProfile);
+  const loadWorkspaceProfile = useAppStore(
+    (state) => state.loadWorkspaceProfile
+  );
+  useEffect(() => {
+    void loadWorkspaceProfile();
+  }, [loadWorkspaceProfile]);
+  return workspaceProfile;
+}
+
+export function useEnvironmentList() {
+  const environmentList = useAppStore((state) => state.environmentList);
+  const loadEnvironmentList = useAppStore((state) => state.loadEnvironmentList);
+  useEffect(() => {
+    void loadEnvironmentList();
+  }, [loadEnvironmentList]);
+  return environmentList;
+}
+
+export function useEnvironment(name: string | undefined) {
+  const environmentList = useEnvironmentList();
+  return useMemo(() => {
+    if (!name || name === NULL_ENVIRONMENT_NAME) {
+      return nullEnvironment();
+    }
+    const environment = environmentList.find((env) => env.name === name);
+    if (environment) {
+      return environment;
+    }
+    if (!isValidEnvironmentName(name)) {
+      return unknownEnvironment();
+    }
+    const id = name.replace(/^environments\//, "");
+    return {
+      ...unknownEnvironment(),
+      id,
+      name,
+      title: id,
+    };
+  }, [environmentList, name]);
+}
+
+export function usePlanFeature(feature: PlanFeature) {
+  const loadSubscription = useAppStore((state) => state.loadSubscription);
+  const hasFeature = useAppStore((state) => state.hasFeature(feature));
+  useEffect(() => {
+    void loadSubscription();
+  }, [loadSubscription]);
+  return hasFeature;
 }
 
 export function useWorkspacePermission(permission: Permission) {

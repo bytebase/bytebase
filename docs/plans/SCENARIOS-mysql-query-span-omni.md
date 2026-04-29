@@ -20,8 +20,9 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `EXPLAIN SELECT ...` returns `Explain` without result columns.
 - [x] `EXPLAIN ANALYZE SELECT ...` returns `Select` and preserves select access tables.
 - [x] `EXPLAIN ANALYZE TABLE t` returns `Select` and preserves table access.
-- [x] `EXPLAIN ANALYZE VALUES ROW(...)` returns `Select` and preserves values results.
+- [x] `EXPLAIN ANALYZE VALUES ROW(...)` returns `Select` without result lineage extraction.
 - [x] `EXPLAIN ANALYZE INSERT ...` returns `DML` and no result columns.
+- [x] `DESCRIBE ...` returns `SelectInfoSchema` like legacy metadata reads.
 - [x] Multiple statements in one query return the legacy single-statement error.
 
 ### 1.2 Query Type Buckets
@@ -32,6 +33,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `CREATE TABLE ...` returns `DDL`.
 - [x] `CREATE DATABASE ...` returns `DDL`.
 - [x] `CREATE VIEW ...` returns `DDL`.
+- [x] user/role administration statements such as `CREATE USER`, `ALTER USER`, `DROP USER`, `GRANT`, and `REVOKE` return non-select query types.
 - [x] `ALTER TABLE ...` returns `DDL`.
 - [x] `DROP TABLE ...` returns `DDL`.
 - [x] `RENAME TABLE ...` returns `DDL`.
@@ -50,7 +52,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] transaction and locking statements return `DML`.
 - [x] replication statements return `DML`.
 - [x] prepared statements return `DML`.
-- [x] unsupported utility statements fall back to the legacy query type.
+- [x] unhandled omni statement roots fail closed instead of falling through to `Select`.
 
 ## Phase 2: Target List And Expression Lineage
 
@@ -77,6 +79,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] aggregate function merges argument source columns.
 - [x] window function merges argument, partition, and order source columns.
 - [x] function separator expression contributes lineage where applicable.
+- [x] function-level `ORDER BY` expressions contribute lineage where applicable.
 - [x] scalar subquery result merges selected result source columns.
 - [x] `EXISTS (SELECT ...)` returns subquery result lineage and is not a plain field.
 - [x] `CASE` expression merges operand, condition, result, and default sources.
@@ -109,6 +112,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] parenthesized single table source resolves like the unparenthesized table.
 - [x] comma-separated table sources expose all tables to target resolution.
 - [x] `DUAL` produces no table source and allows literal targets.
+- [x] `DUAL` join operands remain non-nil empty table sources and do not panic.
 - [x] missing table maps to `NotFoundError` fail-open behavior.
 - [x] missing column maps to `NotFoundError` fail-open behavior.
 
@@ -138,6 +142,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `JSON_TABLE` exposes declared columns as pseudo-table columns.
 - [x] `JSON_TABLE` column lineage comes from the JSON document expression.
 - [x] nested `JSON_TABLE` columns flatten in legacy order.
+- [x] `JSON_TABLE` document expressions contribute access-table dependencies.
 - [x] `JSON_TABLE` with alias omitted is rejected because MySQL requires a table-function alias.
 
 ## Phase 4: Subqueries, CTEs, And Set Operations
@@ -162,6 +167,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] recursive CTE merges anchor and recursive branch source columns.
 - [x] recursive CTE explicit column list count mismatch returns legacy error.
 - [x] recursive CTE reaches a stable source-column closure.
+- [x] left-deep recursive CTE set operations register the recursive CTE before resolving recursive left branches.
 - [x] CTE name shadows physical table name according to legacy behavior.
 - [x] later CTE cannot be referenced by earlier CTE unless legacy allowed it.
 
@@ -188,8 +194,11 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] scalar subquery tables appear in access tables.
 - [x] correlated subquery inner tables appear in access tables.
 - [x] function arguments containing subqueries appear in access tables.
+- [x] function-level `ORDER BY` subqueries appear in access tables.
 - [x] `VALUES` expressions containing subqueries appear in access tables.
-- [x] `CALL` arguments containing subqueries appear in access tables where legacy did.
+- [x] `CALL` arguments containing subqueries participate in mixed user/system table detection.
+- [x] DML/DDL roots such as `INSERT ... SELECT` and `CREATE TABLE ... AS SELECT` participate in mixed user/system table detection.
+- [x] plain `EXPLAIN` payload tables participate in mixed user/system table detection.
 - [x] `HANDLER` table appears in access tables where legacy did.
 
 ### 5.2 System Tables
@@ -209,6 +218,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] missing table maps to fail-open `NotFoundError`.
 - [x] missing column maps to fail-open `NotFoundError`.
 - [x] unsupported select-with-into returns the legacy hard error.
+- [x] `EXPLAIN ANALYZE` does not require output lineage schema lookups for stale metadata.
 - [ ] unsupported table source returns a hard error instead of silent empty lineage.
 - [x] unsupported expression node cannot silently return empty source columns.
 - [x] parser failure returns the parser error and does not fabricate a query span.

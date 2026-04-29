@@ -1,3 +1,4 @@
+export { EngineIcon } from "../EngineIcon";
 export { CreateDataSourceExample } from "./CreateDataSourceExample";
 export { CredentialSourceForm } from "./CredentialSourceForm";
 export type { BasicInfo, DataSourceEditState, EditDataSource } from "./common";

@@ -17,6 +17,7 @@ import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { AsideTree } from "./Aside/AsideTree";
 import { SchemaEditorProvider } from "./context";
 import { EditorPanel } from "./EditorPanel";
+import { resizeHandleClass } from "./resize";
 import type {
   RebuildMetadataEditReset,
   SchemaEditorContextValue,
@@ -180,13 +181,13 @@ export const SchemaEditorLite = forwardRef<
         )}
         {ready && (
           <PanelGroup id="schema-editor" orientation="horizontal">
-            <Panel defaultSize={25} minSize={15} maxSize={40}>
+            <Panel defaultSize="25%" minSize="15%" maxSize="40%">
               <div className="size-full overflow-hidden">
                 <AsideTree />
               </div>
             </Panel>
-            <PanelResizeHandle className="w-[3px] bg-control-border transition-colors hover:bg-accent data-[resize-handle-active]:bg-accent" />
-            <Panel defaultSize={75}>
+            <PanelResizeHandle className={resizeHandleClass("vertical")} />
+            <Panel defaultSize="75%">
               <div className="size-full overflow-hidden">
                 <EditorPanel />
               </div>

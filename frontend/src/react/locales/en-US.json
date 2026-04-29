@@ -88,6 +88,7 @@
         }
       }
     },
+    "export-finished": "Export finished",
     "export-tooltip": "Must select start time and end time within 30 days",
     "table": {
       "actor": "Actor",
@@ -157,7 +158,13 @@
   },
   "auth.token-expired-title": "Token expired",
   "banner": {
-    "external-url": "Bytebase has not configured --external-url"
+    "cloud": "Cloud",
+    "deploy": "Self Host",
+    "external-url": "Bytebase has not configured --external-url",
+    "license-expired": "Your license for {{plan}} has expired on {{expireAt}}.",
+    "license-expires": "Your license for {{plan}} will expire in {{days}} days on {{expireAt}}.",
+    "request-demo": "Book a 30-minute product demo.",
+    "trial-expires": "Your free trial for {{plan}} will expire in {{days}} days on {{expireAt}}."
   },
   "bbkit": {
     "confirm-button": {
@@ -334,6 +341,7 @@
     "pending": "Pending",
     "permissions": "Permissions",
     "plan": "Plan",
+    "preview": "Preview",
     "previous": "Previous",
     "project": "Project",
     "projects": "Projects",
@@ -392,6 +400,7 @@
     "statement": "Statement",
     "status": "Status",
     "submit": "Submit",
+    "succeed": "Succeed",
     "system": "System",
     "table": "Table",
     "title": "Title",
@@ -727,6 +736,9 @@
     "external-database-name": "External Database Name",
     "external-server-name": "External Server Name",
     "filter-database": "Filter database",
+    "foreign-key": {
+      "reference": "Reference"
+    },
     "foreign-keys": "Foreign keys",
     "index-size": "Index size",
     "indexes": "Indexes",
@@ -856,6 +868,16 @@
     "schema": {
       "default": "Default schema"
     },
+    "sequence": {
+      "cacheSize": "Cache size",
+      "cycle": "Cycle",
+      "data-type": "Data type",
+      "increment": "Increment",
+      "lastValue": "Last value",
+      "max-value": "Max value",
+      "min-value": "Min value",
+      "start": "Start value"
+    },
     "sequences": "Sequences",
     "start-to-sync-schema": "Start to sync schema",
     "streams": "Streams",
@@ -893,6 +915,9 @@
     "data-export": "Data Export"
   },
   "export-data": {
+    "export-format": "Export format",
+    "export-rows": "Export rows",
+    "password-info": "Provide a password to encrypt the export file.",
     "password-optional": "Encrypt with password (Optional)"
   },
   "export-data.password-optional": "Password (optional)",
@@ -1683,6 +1708,7 @@
     },
     "members": {
       "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
+      "allow-ddl-all-environments": "No environment restrictions. Allow running DDL/DML statements in all environments.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
       "edit-member": "Edit member - {{member}}",
@@ -1946,16 +1972,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Foreign Key",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "On Update",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Collation",
+      "comment": "Comment",
+      "engine": "Engine",
+      "name": "Name"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Enter default value or leave empty for no default"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1966,10 +2000,14 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Depenedent columns",
+      "indexes": "Indexes",
       "primary": "Primary",
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Insert SQL",
+    "no-diff": "No changes to apply",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -1982,6 +2020,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Schema editor",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -1990,9 +2029,11 @@
     },
     "table-partition": {
       "expression": "Expression",
+      "partitions": "Partitions",
       "type": "Type",
       "value": "Value"
-    }
+    },
+    "template-database": "Template database"
   },
   "schema-template": {
     "classification": {
@@ -2577,6 +2618,11 @@
     },
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "Failed to export data for {{db}}",
+      "self": "Batch export",
+      "tooltip": "Select at most {{max}} databases to batch export latest query results"
+    },
     "batch-query": {
       "batch": "Batch",
       "description": "Batch query {{database}} additional databases and {{group}} database groups under {{project}}.",
@@ -2585,7 +2631,8 @@
         "readonly": "Read-only",
         "self": "Select data source for batch",
         "tooltip": "Will find available data sources with restriction policy, then apply the selection."
-      }
+      },
+      "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
@@ -2597,12 +2644,14 @@
     "copy-name": "Copy name",
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
+    "download-as-file": "Download as {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Format",
     "format-sql": "Format SQL",
     "generate-sql": "Generate SQL",
     "grant-type-unmask": "Unmask",
@@ -2658,6 +2707,7 @@
     "save-sheet-input-placeholder": "Please input a sheet name",
     "search-history-by-statement": "Search by statement",
     "select-a-database-to-start": "Select a database to start",
+    "select-encoding": "Select encoding",
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "sync-in-progress": "Sync in progress",
@@ -2677,6 +2727,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
     "view-database-detail": "View database detail",
     "view-detail": "View detail",
@@ -3465,10 +3516,14 @@
       "n-license-remain": "{{n}} remaining",
       "require-license": "Require instance license",
       "success-notification": "Successfully update license assignment",
+      "used-and-total-instance": "Active / Total Instance Limit",
       "used-and-total-license": "Assigned / Total Instance License",
       "used-and-total-user": "Active / Total User Limit"
     },
-    "max-instance-count": "Max instance count",
+    "overuse-modal": {
+      "description": "You are using features unavailable in the {{plan}}. Upgrade now to ensure continued access:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> on {{currentPlan}} will be restricted. Upgrade now to ensure continued access.",
     "plan": {
       "enterprise": {
         "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
@@ -3489,6 +3544,7 @@
       "try": "Start free trial"
     },
     "plan-compare": "Compare features between different plans",
+    "plan-features": "{{plan}} Features",
     "purchase": {
       "accept-terms-prefix": "I accept the",
       "and": "and",
@@ -3535,6 +3591,8 @@
         "title": "Successfully updated license"
       }
     },
+    "upgrade": "Upgrade",
+    "upgrade-now": "Upgrade Now",
     "upload-license": "Upload license",
     "usage": {
       "instance-count": {

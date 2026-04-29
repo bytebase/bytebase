@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { useSubscriptionState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { pushNotification, useSubscriptionV1Store } from "@/store";
 import type { PurchasePlanAdditional } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -82,11 +84,10 @@ const planPrefix: Record<number, string> = {
 export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
+  const refreshSubscription = useAppStore((state) => state.refreshSubscription);
 
-  const currentPlan = useVueState(() => subscriptionStore.currentPlan);
-  const isFreePlan = useVueState(() => subscriptionStore.isFreePlan);
-  const isExpired = useVueState(() => subscriptionStore.isExpired);
-  const subscription = useVueState(() => subscriptionStore.subscription);
+  const { currentPlan, isFreePlan, isExpired, subscription } =
+    useSubscriptionState();
   const paymentInfo = useVueState(() => subscriptionStore.paymentInfo);
   const purchasePlans = useVueState(() => subscriptionStore.purchasePlans);
 
@@ -129,6 +130,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
           { signal: controller.signal }
         );
         if (!controller.signal.aborted) {
+          await refreshSubscription();
           setPendingPayment(false);
         }
       } catch (e) {
@@ -141,14 +143,14 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [allowManage, refreshSubscription, subscriptionStore]);
 
   // Fetch payment info for active subscriptions.
   useEffect(() => {
     if (!isFreePlan && !isExpired) {
       subscriptionStore.fetchPaymentInfo();
     }
-  }, [isFreePlan, isExpired]);
+  }, [isFreePlan, isExpired, subscriptionStore]);
 
   const isCurrentPlan = useCallback(
     (plan: PlanType) => currentPlan === plan && !isExpired,
@@ -305,6 +307,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
         await subscriptionStore.pollSubscriptionUntil(
           (sub) => sub.plan !== PlanType.FREE && sub.seats === seats
         );
+        await refreshSubscription();
         setPendingPayment(false);
       }
     } catch (e) {
@@ -324,6 +327,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       await subscriptionStore.pollSubscriptionUntil(
         (sub) => sub.plan === PlanType.FREE
       );
+      await refreshSubscription();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
@@ -17,6 +18,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
@@ -52,7 +54,6 @@ import {
 import type { EditDataSource } from "./common";
 import { hasSslConfig } from "./common";
 import {
-  EngineIconPath,
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
   SnowflakeExtraLinkPlaceHolder,
@@ -247,9 +248,7 @@ function InstanceEngineRadioGrid({
           }`}
           onClick={() => onEngineChange(eng)}
         >
-          {EngineIconPath[eng] && (
-            <img src={EngineIconPath[eng]} alt="" className="size-5 shrink-0" />
-          )}
+          <EngineIcon engine={eng} className="size-5" />
           <span className="truncate">{engineNameV1(eng)}</span>
           {isEngineBeta(eng) && (
             <span className="ml-auto shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
@@ -840,6 +839,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const instanceV1Store = useInstanceV1Store();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
+  const hasUnifiedInstanceLicense = useVueState(
+    () => subscriptionStore.hasUnifiedInstanceLicense
+  );
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
@@ -1283,13 +1285,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   {t("database.engine")}
                 </p>
                 <div className="mt-1 flex items-center gap-x-1.5">
-                  {EngineIconPath[basicInfo.engine] && (
-                    <img
-                      src={EngineIconPath[basicInfo.engine]}
-                      alt=""
-                      className="size-4"
-                    />
-                  )}
+                  <EngineIcon engine={basicInfo.engine} className="size-4" />
                   <span className="text-sm font-medium text-main">
                     {engineNameV1(basicInfo.engine)}
                   </span>
@@ -1351,13 +1347,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 <span className="ml-0.5 text-error">*</span>
                 {instance && (
                   <div className="ml-2 flex items-center">
-                    {EngineIconPath[instance.engine] && (
-                      <img
-                        src={EngineIconPath[instance.engine]}
-                        alt=""
-                        className="size-4"
-                      />
-                    )}
+                    <EngineIcon engine={instance.engine} className="size-4" />
                     <span className="ml-1">{instance.engineVersion}</span>
                   </div>
                 )}
@@ -1373,35 +1363,37 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             </div>
 
             {/* Activation toggle */}
-            {subscriptionStore.currentPlan !== PlanType.FREE && allowEdit && (
-              <div className="sm:col-span-2 ml-0 sm:ml-3">
-                <label htmlFor="activation" className="textlabel block">
-                  {t("subscription.instance-assignment.assign-license")} (
-                  <a href="/setting/subscription" className="accent-link">
-                    {t("subscription.instance-assignment.n-license-remain", {
-                      n: availableLicenseCountText,
-                    })}
-                  </a>
-                  )
-                </label>
-                <div className="h-8.5 flex flex-row items-center mt-1">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={basicInfo.activation}
-                      disabled={
-                        !basicInfo.activation && availableLicenseCount === 0
-                      }
-                      onChange={(e) =>
-                        changeInstanceActivation(e.target.checked)
-                      }
-                    />
-                    <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            {subscriptionStore.currentPlan !== PlanType.FREE &&
+              !hasUnifiedInstanceLicense &&
+              allowEdit && (
+                <div className="sm:col-span-2 ml-0 sm:ml-3">
+                  <label htmlFor="activation" className="textlabel block">
+                    {t("subscription.instance-assignment.assign-license")} (
+                    <a href="/setting/subscription" className="accent-link">
+                      {t("subscription.instance-assignment.n-license-remain", {
+                        n: availableLicenseCountText,
+                      })}
+                    </a>
+                    )
                   </label>
+                  <div className="h-8.5 flex flex-row items-center mt-1">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={basicInfo.activation}
+                        disabled={
+                          !basicInfo.activation && availableLicenseCount === 0
+                        }
+                        onChange={(e) =>
+                          changeInstanceActivation(e.target.checked)
+                        }
+                      />
+                      <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Resource ID */}
             <div className="sm:col-span-3 sm:col-start-1 -mt-4">

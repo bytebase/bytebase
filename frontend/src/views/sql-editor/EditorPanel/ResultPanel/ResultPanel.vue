@@ -2,7 +2,14 @@
   <div
     class="relative w-full h-full flex flex-col justify-start items-start z-10 overflow-x-hidden"
   >
-    <BatchQuerySelect v-model:selected-database="selectedDatabase" />
+    <ReactPageMount
+      page="BatchQuerySelect"
+      container-class="w-full shrink-0"
+      :page-props="{
+        selectedDatabase,
+        onSelectedDatabaseChange: handleSelectedDatabaseChange,
+      }"
+    />
     <NTabs
       v-if="selectedDatabase && queryContexts"
       type="card"
@@ -94,15 +101,18 @@ import { NDropdown, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBSpin } from "@/bbkit";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { getDataSourceTypeI18n } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { formatAbsoluteDateTime, getInstanceResource } from "@/utils";
-import BatchQuerySelect from "./BatchQuerySelect.vue";
 import DatabaseQueryContext from "./DatabaseQueryContext.vue";
 
 const selectedDatabase = ref<Database>();
+const handleSelectedDatabaseChange = (db: Database | undefined) => {
+  selectedDatabase.value = db;
+};
 const tabStore = useSQLEditorTabStore();
 const selectedTab = ref<string>();
 const { t } = useI18n();

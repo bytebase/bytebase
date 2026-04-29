@@ -55,9 +55,13 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryType := classifyOmniQueryType(root, allSystems)
+	queryType := classifyOmniQueryType(root, allSystems, q.source)
 	if allSystems {
 		accessTables = base.SourceColumnSet{}
+	}
+	resultSourceColumns := accessTables
+	if queryType != base.Select {
+		resultSourceColumns = base.SourceColumnSet{}
 	}
 
 	var results []base.QuerySpanResult
@@ -80,7 +84,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	}
 	return &base.QuerySpan{
 		Type:             queryType,
-		SourceColumns:    accessTables,
+		SourceColumns:    resultSourceColumns,
 		Results:          results,
 		PredicateColumns: base.SourceColumnSet{},
 	}, nil
@@ -91,9 +95,6 @@ func (q *omniQuerySpanExtractor) extractOmniSelectRoot(root ast.Node) (*base.Pse
 	case *ast.SelectStmt:
 		return q.extractOmniSelectStmt(n)
 	case *ast.ExplainStmt:
-		if n.Analyze {
-			return q.extractOmniSelectRoot(n.Stmt)
-		}
 		return &base.PseudoTable{}, nil
 	case *ast.TableStmt:
 		return q.extractOmniTableStmt(n)
@@ -242,7 +243,7 @@ func (q *omniQuerySpanExtractor) extractOmniRecursiveCTE(cte *ast.CommonTableExp
 	if cte.Select == nil || cte.Select.SetOp == ast.SetOpNone {
 		return q.extractOmniNonRecursiveCTE(cte)
 	}
-	initialTable, err := q.extractOmniSelectStmt(cte.Select.Left)
+	initialTable, err := q.extractOmniRecursiveCTEAnchor(cte.Select)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +263,7 @@ func (q *omniQuerySpanExtractor) extractOmniRecursiveCTE(cte *ast.CommonTableExp
 	}()
 
 	for {
-		recursiveTable, err := q.extractOmniSelectStmt(cte.Select.Right)
+		recursiveTable, err := q.extractOmniSelectStmt(cte.Select)
 		if err != nil {
 			return nil, err
 		}
@@ -282,6 +283,16 @@ func (q *omniQuerySpanExtractor) extractOmniRecursiveCTE(cte *ast.CommonTableExp
 		}
 	}
 	return cteInfo, nil
+}
+
+func (q *omniQuerySpanExtractor) extractOmniRecursiveCTEAnchor(stmt *ast.SelectStmt) (*base.PseudoTable, error) {
+	if stmt == nil || stmt.SetOp == ast.SetOpNone {
+		return q.extractOmniSelectStmt(stmt)
+	}
+	if stmt.Left != nil {
+		return q.extractOmniRecursiveCTEAnchor(stmt.Left)
+	}
+	return q.extractOmniRecursiveCTEAnchor(stmt.Right)
 }
 
 func cloneOmniQuerySpanResults(results []base.QuerySpanResult) []base.QuerySpanResult {
@@ -312,7 +323,7 @@ func (q *omniQuerySpanExtractor) extractOmniTableSource(tableExpr ast.TableExpr)
 		return nil, nil
 	case *ast.TableRef:
 		if isOmniDualTable(t) {
-			return nil, nil
+			return &base.PseudoTable{Name: t.Name}, nil
 		}
 		tableSource, err := q.findTableSchema(t.Schema, t.Name)
 		if err != nil {
@@ -463,6 +474,7 @@ func (q *omniQuerySpanExtractor) cloneOmniForSubquery() *omniQuerySpanExtractor 
 			outerTableSources:   append(q.outerTableSources, q.tableSourceFrom...),
 			tableSourceFrom:     []base.TableSource{},
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
+			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		},
 		source: q.source,
 	}
@@ -590,6 +602,11 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr ast.ExprNode) (base.QueryS
 	case *ast.FuncCallExpr:
 		exprs := append([]ast.ExprNode{}, e.Args...)
 		exprs = append(exprs, e.Separator)
+		for _, item := range e.OrderBy {
+			if item != nil {
+				exprs = append(exprs, item.Expr)
+			}
+		}
 		if e.Over != nil {
 			exprs = append(exprs, e.Over.PartitionBy...)
 			for _, item := range e.Over.OrderBy {
@@ -858,67 +875,43 @@ func (q *omniQuerySpanExtractor) omniExprName(expr ast.ExprNode) string {
 }
 
 func omniBinaryOpName(expr *ast.BinaryExpr) string {
-	if expr != nil && expr.OriginalOp != "" {
-		return expr.OriginalOp
-	}
-	switch expr.Op {
-	case ast.BinOpAdd:
-		return "+"
-	case ast.BinOpSub:
-		return "-"
-	case ast.BinOpMul:
-		return "*"
-	case ast.BinOpDiv:
-		return "/"
-	case ast.BinOpMod:
-		return "%"
-	case ast.BinOpEq:
-		return "="
-	case ast.BinOpNe:
-		return "!="
-	case ast.BinOpLt:
-		return "<"
-	case ast.BinOpGt:
-		return ">"
-	case ast.BinOpLe:
-		return "<="
-	case ast.BinOpGe:
-		return ">="
-	case ast.BinOpAnd:
-		return " and "
-	case ast.BinOpOr:
-		return " or "
-	case ast.BinOpXor:
-		return " xor "
-	case ast.BinOpBitAnd:
-		return "&"
-	case ast.BinOpBitOr:
-		return "|"
-	case ast.BinOpBitXor:
-		return "^"
-	case ast.BinOpShiftLeft:
-		return "<<"
-	case ast.BinOpShiftRight:
-		return ">>"
-	case ast.BinOpDivInt:
-		return " div "
-	case ast.BinOpRegexp:
-		return " regexp "
-	case ast.BinOpLikeEscape:
-		return " like "
-	case ast.BinOpNullSafeEq:
-		return "<=>"
-	case ast.BinOpAssign:
-		return ":="
-	case ast.BinOpJsonExtract:
-		return "->"
-	case ast.BinOpJsonUnquote:
-		return "->>"
-	case ast.BinOpSoundsLike:
-		return " sounds like "
-	default:
+	if expr == nil {
 		return ""
 	}
+	if expr.OriginalOp != "" {
+		return expr.OriginalOp
+	}
+	return omniBinaryOpNames[expr.Op]
+}
+
+var omniBinaryOpNames = map[ast.BinaryOp]string{
+	ast.BinOpAdd:         "+",
+	ast.BinOpSub:         "-",
+	ast.BinOpMul:         "*",
+	ast.BinOpDiv:         "/",
+	ast.BinOpMod:         "%",
+	ast.BinOpEq:          "=",
+	ast.BinOpNe:          "!=",
+	ast.BinOpLt:          "<",
+	ast.BinOpGt:          ">",
+	ast.BinOpLe:          "<=",
+	ast.BinOpGe:          ">=",
+	ast.BinOpAnd:         " and ",
+	ast.BinOpOr:          " or ",
+	ast.BinOpXor:         " xor ",
+	ast.BinOpBitAnd:      "&",
+	ast.BinOpBitOr:       "|",
+	ast.BinOpBitXor:      "^",
+	ast.BinOpShiftLeft:   "<<",
+	ast.BinOpShiftRight:  ">>",
+	ast.BinOpDivInt:      " div ",
+	ast.BinOpRegexp:      " regexp ",
+	ast.BinOpLikeEscape:  " like ",
+	ast.BinOpNullSafeEq:  "<=>",
+	ast.BinOpAssign:      ":=",
+	ast.BinOpJsonExtract: "->",
+	ast.BinOpJsonUnquote: "->>",
+	ast.BinOpSoundsLike:  " sounds like ",
 }
 
 func (q *omniQuerySpanExtractor) omniSlice(loc ast.Loc) string {
@@ -929,6 +922,13 @@ func (q *omniQuerySpanExtractor) omniSlice(loc ast.Loc) string {
 }
 
 func omniNodeLoc(node ast.Node) (ast.Loc, bool) {
+	if loc, ok := omniExprNodeLoc(node); ok {
+		return loc, true
+	}
+	return omniLiteralNodeLoc(node)
+}
+
+func omniExprNodeLoc(node ast.Node) (ast.Loc, bool) {
 	switch n := node.(type) {
 	case *ast.ResTarget:
 		return n.Loc, true
@@ -976,6 +976,13 @@ func omniNodeLoc(node ast.Node) (ast.Loc, bool) {
 		return n.Loc, true
 	case *ast.StarExpr:
 		return n.Loc, true
+	default:
+		return ast.Loc{}, false
+	}
+}
+
+func omniLiteralNodeLoc(node ast.Node) (ast.Loc, bool) {
+	switch n := node.(type) {
 	case *ast.IntLit:
 		return n.Loc, true
 	case *ast.FloatLit:
@@ -999,7 +1006,7 @@ func omniNodeLoc(node ast.Node) (ast.Loc, bool) {
 	}
 }
 
-func classifyOmniQueryType(node ast.Node, allSystems bool) base.QueryType {
+func classifyOmniQueryType(node ast.Node, allSystems bool, source string) base.QueryType {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.TableStmt, *ast.ValuesStmt:
 		if allSystems {
@@ -1007,6 +1014,9 @@ func classifyOmniQueryType(node ast.Node, allSystems bool) base.QueryType {
 		}
 		return base.Select
 	case *ast.ExplainStmt:
+		if isOmniDescribeStatement(source, n.Loc) {
+			return base.SelectInfoSchema
+		}
 		if n.Analyze {
 			switch n.Stmt.(type) {
 			case *ast.SelectStmt, *ast.TableStmt, *ast.ValuesStmt:
@@ -1024,23 +1034,49 @@ func classifyOmniQueryType(node ast.Node, allSystems bool) base.QueryType {
 		return base.QueryTypeUnknown
 	case *ast.CreateDatabaseStmt, *ast.CreateTableStmt, *ast.CreateIndexStmt, *ast.CreateViewStmt,
 		*ast.CreateEventStmt, *ast.CreateTriggerStmt, *ast.CreateFunctionStmt,
+		*ast.CreateUserStmt, *ast.CreateRoleStmt, *ast.CreateTablespaceStmt, *ast.CreateServerStmt,
+		*ast.CreateLogfileGroupStmt, *ast.CreateSpatialRefSysStmt, *ast.CreateResourceGroupStmt,
 		*ast.AlterDatabaseStmt, *ast.AlterTableStmt, *ast.AlterViewStmt, *ast.AlterEventStmt,
+		*ast.AlterUserStmt, *ast.AlterRoutineStmt, *ast.AlterTablespaceStmt, *ast.AlterServerStmt,
+		*ast.AlterLogfileGroupStmt, *ast.AlterResourceGroupStmt, *ast.AlterInstanceStmt,
 		*ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.DropIndexStmt, *ast.DropViewStmt,
 		*ast.DropEventStmt, *ast.DropTriggerStmt, *ast.DropRoutineStmt,
-		*ast.RenameTableStmt, *ast.TruncateStmt, *ast.ImportTableStmt:
+		*ast.DropUserStmt, *ast.DropRoleStmt, *ast.DropTablespaceStmt, *ast.DropServerStmt,
+		*ast.DropLogfileGroupStmt, *ast.DropSpatialRefSysStmt, *ast.DropResourceGroupStmt,
+		*ast.RenameTableStmt, *ast.RenameUserStmt, *ast.TruncateStmt, *ast.ImportTableStmt,
+		*ast.GrantStmt, *ast.RevokeStmt, *ast.GrantRoleStmt, *ast.RevokeRoleStmt,
+		*ast.InstallPluginStmt, *ast.UninstallPluginStmt, *ast.InstallComponentStmt,
+		*ast.UninstallComponentStmt, *ast.CloneStmt:
 		return base.DDL
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.BeginStmt, *ast.CommitStmt,
 		*ast.RollbackStmt, *ast.SavepointStmt, *ast.LockTablesStmt, *ast.UnlockTablesStmt,
 		*ast.LoadDataStmt, *ast.PrepareStmt, *ast.ExecuteStmt, *ast.DeallocateStmt,
 		*ast.CallStmt, *ast.DoStmt, *ast.HandlerOpenStmt, *ast.HandlerReadStmt, *ast.HandlerCloseStmt,
+		*ast.AnalyzeTableStmt, *ast.OptimizeTableStmt, *ast.CheckTableStmt, *ast.RepairTableStmt,
+		*ast.FlushStmt, *ast.KillStmt, *ast.ShutdownStmt, *ast.RestartStmt, *ast.XAStmt,
+		*ast.SignalStmt, *ast.ResignalStmt, *ast.GetDiagnosticsStmt, *ast.DeclareVarStmt,
+		*ast.DeclareConditionStmt, *ast.DeclareHandlerStmt, *ast.DeclareCursorStmt,
+		*ast.IfStmt, *ast.WhileStmt, *ast.RepeatStmt, *ast.LoopStmt, *ast.LeaveStmt,
+		*ast.IterateStmt, *ast.ReturnStmt, *ast.OpenCursorStmt, *ast.FetchCursorStmt,
+		*ast.CloseCursorStmt, *ast.LockInstanceStmt, *ast.UnlockInstanceStmt, *ast.BinlogStmt,
+		*ast.CacheIndexStmt, *ast.LoadIndexIntoCacheStmt, *ast.ResetPersistStmt,
 		*ast.ChangeReplicationSourceStmt, *ast.ChangeReplicationFilterStmt,
 		*ast.StartReplicaStmt, *ast.StopReplicaStmt, *ast.ResetReplicaStmt,
 		*ast.PurgeBinaryLogsStmt, *ast.ResetMasterStmt,
 		*ast.StartGroupReplicationStmt, *ast.StopGroupReplicationStmt:
 		return base.DML
 	default:
-		return base.Select
+		return base.QueryTypeUnknown
 	}
+}
+
+func isOmniDescribeStatement(source string, loc ast.Loc) bool {
+	statement := strings.TrimSpace(source)
+	if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(source) {
+		statement = strings.TrimSpace(source[loc.Start:loc.End])
+	}
+	upper := strings.ToUpper(statement)
+	return strings.HasPrefix(upper, "DESCRIBE") || strings.HasPrefix(upper, "DESC ")
 }
 
 func collectOmniAccessTables(root ast.Node, defaultDatabase string, normalizeStarRocksCluster bool) base.SourceColumnSet {
@@ -1084,10 +1120,62 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 			}
 		}
 	case *ast.ExplainStmt:
-		if n.Analyze {
-			collectOmniAccessTablesFromNode(result, n.Stmt, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromNode(result, n.Stmt, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.InsertStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		for _, row := range n.Values {
+			for _, expr := range row {
+				collectOmniAccessTablesFromExpr(result, expr, defaultDatabase, normalizeStarRocksCluster)
+			}
 		}
+		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromNode(result, n.TableSource, defaultDatabase, normalizeStarRocksCluster)
+		for _, assignment := range n.SetList {
+			if assignment != nil {
+				collectOmniAccessTablesFromExpr(result, assignment.Value, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+		for _, assignment := range n.OnDuplicateKey {
+			if assignment != nil {
+				collectOmniAccessTablesFromExpr(result, assignment.Value, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+	case *ast.UpdateStmt:
+		for _, tableExpr := range n.Tables {
+			collectOmniAccessTablesFromTableExpr(result, tableExpr, defaultDatabase, normalizeStarRocksCluster)
+		}
+		for _, assignment := range n.SetList {
+			if assignment != nil {
+				collectOmniAccessTablesFromExpr(result, assignment.Value, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase, normalizeStarRocksCluster)
+		for _, orderBy := range n.OrderBy {
+			if orderBy != nil {
+				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+	case *ast.DeleteStmt:
+		for _, tableExpr := range n.Tables {
+			collectOmniAccessTablesFromTableExpr(result, tableExpr, defaultDatabase, normalizeStarRocksCluster)
+		}
+		for _, tableExpr := range n.Using {
+			collectOmniAccessTablesFromTableExpr(result, tableExpr, defaultDatabase, normalizeStarRocksCluster)
+		}
+		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase, normalizeStarRocksCluster)
+		for _, orderBy := range n.OrderBy {
+			if orderBy != nil {
+				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+	case *ast.CreateTableStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromTableRef(result, n.Like, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.TableStmt:
+		if n == nil {
+			return
+		}
 		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ValuesStmt:
 		for _, row := range n.Rows {
@@ -1157,8 +1245,8 @@ func collectOmniAccessTablesFromTableExpr(result base.SourceColumnSet, tableExpr
 	case *ast.SubqueryExpr:
 		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.JsonTableExpr:
-		// JSON_TABLE itself is a table function, not a persisted table. Its
-		// expression children will be handled by lineage extraction later.
+		collectOmniAccessTablesFromExpr(result, n.Expr, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromExpr(result, n.Path, defaultDatabase, normalizeStarRocksCluster)
 	default:
 	}
 }
@@ -1178,6 +1266,11 @@ func collectOmniAccessTablesFromExpr(result base.SourceColumnSet, expr ast.ExprN
 			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase, normalizeStarRocksCluster)
 		}
 		collectOmniAccessTablesFromExpr(result, e.Separator, defaultDatabase, normalizeStarRocksCluster)
+		for _, orderBy := range e.OrderBy {
+			if orderBy != nil {
+				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
 		if e.Over != nil {
 			for _, partitionBy := range e.Over.PartitionBy {
 				collectOmniAccessTablesFromExpr(result, partitionBy, defaultDatabase, normalizeStarRocksCluster)

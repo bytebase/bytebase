@@ -2,7 +2,13 @@ package pg
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"runtime/debug"
 	"testing"
+
+	"github.com/bytebase/omni/pg/ast"
+	"github.com/bytebase/omni/pg/catalog"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -238,6 +244,224 @@ func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 	}
 	mustHaveExactSource(t, span.Results[0], "tasks", "id")
 	mustHaveExactSource(t, span.Results[1], "tasks", "status")
+}
+
+func TestLoaderIntegration_CorrelatedRangeFunctionSubquery(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{
+				{
+					Name: "compliance_case_record_audits",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "case_id", Type: "text"},
+						{Name: "entity_id", Type: "text"},
+						{Name: "reason", Type: "text"},
+						{Name: "remark", Type: "text"},
+						{Name: "case_record", Type: "jsonb"},
+						{Name: "reviewer_by", Type: "text"},
+						{Name: "deleted_at", Type: "timestamptz"},
+					},
+				},
+				{
+					Name: "compliance_cases",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "case_id", Type: "text"},
+						{Name: "case_info", Type: "jsonb"},
+						{Name: "deleted_at", Type: "timestamptz"},
+					},
+				},
+			},
+		}},
+	}
+	sql := `
+select
+  a.case_id,
+  -- c.member_id,
+  a.entity_id as uid,
+  a.reason,
+  a.remark,
+  (
+    select elem->>'matchedDateTimeValue'
+    from jsonb_array_elements(a.case_record::jsonb->'secondaryFieldResults') elem
+    where elem->>'typeId' = '******'
+    limit 1
+  ) as wc_dob,
+  (
+    select elem->>'matchedValue'
+    from jsonb_array_elements(a.case_record::jsonb->'secondaryFieldResults') elem
+    where elem->>'typeId' = '******'
+    limit 1
+  ) as wc_citizenship,
+  c.case_info->>'birth_date' as kyc_dob,
+  c.case_info->>'nationality' as kyc_citizenship,
+  a.reviewer_by as review_by
+from compliance_case_record_audits a
+inner join compliance_cases c
+  on c.case_id = a.case_id and c.deleted_at is null
+where a.reviewer_by in ('****** ', '******')
+  and a.deleted_at is null;
+`
+	span := mustGetQuerySpan(t, meta, sql)
+	if len(span.Results) != 9 {
+		t.Fatalf("got %d results, want 9", len(span.Results))
+	}
+	mustHaveExactSource(t, span.Results[4], "compliance_case_record_audits", "case_record")
+	mustHaveExactSource(t, span.Results[5], "compliance_case_record_audits", "case_record")
+	mustHaveExactSource(t, span.Results[6], "compliance_cases", "case_info")
+	mustHaveExactSource(t, span.Results[7], "compliance_cases", "case_info")
+}
+
+func TestAppendQueryDoesNotMutateSharedStack(t *testing.T) {
+	outer := &catalog.Query{}
+	parent := &catalog.Query{}
+	current := &catalog.Query{}
+	nested := &catalog.Query{}
+	queryStack := []*catalog.Query{outer, parent, current}
+
+	nextStack := appendQuery(queryStack[:2], nested)
+
+	if queryStack[2] != current {
+		t.Fatalf("appendQuery mutated caller stack: got %p, want %p", queryStack[2], current)
+	}
+	if len(nextStack) != 3 || nextStack[2] != nested {
+		t.Fatalf("appendQuery returned unexpected stack: %+v", nextStack)
+	}
+}
+
+func TestLoaderIntegration_BuiltinFunctionSelfReferenceDoesNotOverflow(t *testing.T) {
+	if os.Getenv("BYTEBASE_TEST_FUNCTION_SELF_REFERENCE") == "1" {
+		debug.SetMaxStack(1 << 20)
+		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
+		q := &catalog.Query{
+			TargetList: []*catalog.TargetEntry{{
+				Expr: varExpr,
+			}},
+			RangeTable: []*catalog.RangeTableEntry{{
+				Kind: catalog.RTEFunction,
+				FuncExprs: []catalog.AnalyzedExpr{&catalog.FuncCallExpr{
+					Args: []catalog.AnalyzedExpr{&catalog.OpExpr{
+						Left: varExpr,
+						Right: &catalog.ConstExpr{
+							Value: "items",
+						},
+					}},
+				}},
+			}},
+		}
+		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor.cat = catalog.New()
+		extractor.walkExpr(q, q.TargetList[0].Expr, make(base.SourceColumnSet))
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_BuiltinFunctionSelfReferenceDoesNotOverflow$")
+	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_FUNCTION_SELF_REFERENCE=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("walkExpr overflowed on self-referential function RTE: %v\n%s", err, output)
+	}
+}
+
+func TestLoaderIntegration_PlainColumnCycleDoesNotOverflow(t *testing.T) {
+	if os.Getenv("BYTEBASE_TEST_PLAIN_COLUMN_CYCLE") == "1" {
+		debug.SetMaxStack(1 << 20)
+		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
+		q := &catalog.Query{
+			TargetList: []*catalog.TargetEntry{{
+				Expr: varExpr,
+			}},
+			RangeTable: []*catalog.RangeTableEntry{{
+				Kind: catalog.RTESubquery,
+			}},
+		}
+		q.RangeTable[0].Subquery = q
+		_ = isUltimatelyPlainColumn(q, varExpr)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_PlainColumnCycleDoesNotOverflow$")
+	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_PLAIN_COLUMN_CYCLE=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("isUltimatelyPlainColumn overflowed on cyclic subquery RTE: %v\n%s", err, output)
+	}
+}
+
+func TestLoaderIntegration_PredicateQueryCycleDoesNotOverflow(t *testing.T) {
+	if os.Getenv("BYTEBASE_TEST_PREDICATE_QUERY_CYCLE") == "1" {
+		debug.SetMaxStack(1 << 20)
+		q := &catalog.Query{}
+		q.CTEList = []*catalog.CommonTableExprQ{{Query: q}}
+		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		analyzer := &plpgsqlAnalyzer{
+			extractor: extractor,
+			scope:     newVariableScope(nil),
+		}
+		analyzer.collectQueryPredicateColumns(q)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_PredicateQueryCycleDoesNotOverflow$")
+	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_PREDICATE_QUERY_CYCLE=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("collectQueryPredicateColumns overflowed on cyclic query graph: %v\n%s", err, output)
+	}
+}
+
+func TestLoaderIntegration_SetOpQueryCycleDoesNotOverflow(t *testing.T) {
+	if os.Getenv("BYTEBASE_TEST_SET_OP_QUERY_CYCLE") == "1" {
+		debug.SetMaxStack(1 << 20)
+		q := &catalog.Query{SetOp: catalog.SetOpUnion}
+		q.LArg = q
+		q.RArg = &catalog.Query{TargetList: []*catalog.TargetEntry{{
+			Expr: &catalog.ConstExpr{
+				Value: "1",
+			},
+		}}}
+		selStmt := &ast.SelectStmt{}
+		selStmt.Larg = selStmt
+		selStmt.Rarg = &ast.SelectStmt{}
+		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor.extractLineage(q, selStmt)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_SetOpQueryCycleDoesNotOverflow$")
+	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_SET_OP_QUERY_CYCLE=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("extractLineage overflowed on cyclic set-op query graph: %v\n%s", err, output)
+	}
+}
+
+func TestLoaderIntegration_FallbackCTECycleDoesNotOverflow(t *testing.T) {
+	if os.Getenv("BYTEBASE_TEST_FALLBACK_CTE_CYCLE") == "1" {
+		debug.SetMaxStack(1 << 20)
+		cteSel := &ast.SelectStmt{
+			TargetList: &ast.List{Items: []ast.Node{&ast.ResTarget{
+				Name: "x",
+				Val: &ast.ColumnRef{Fields: &ast.List{Items: []ast.Node{
+					&ast.String{Str: "c"},
+					&ast.String{Str: "x"},
+				}}},
+			}}},
+			FromClause: &ast.List{Items: []ast.Node{&ast.RangeVar{Relname: "c"}}},
+		}
+		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor.cat = catalog.New()
+		analyzer := &plpgsqlAnalyzer{
+			extractor: extractor,
+			scope:     newVariableScope(nil),
+			cteMap:    map[string]*ast.SelectStmt{"c": cteSel},
+		}
+		analyzer.resolveThroughCTE(cteSel, "x", nil, make(base.SourceColumnSet))
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_FallbackCTECycleDoesNotOverflow$")
+	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_FALLBACK_CTE_CYCLE=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("resolveThroughCTE overflowed on cyclic fallback CTE: %v\n%s", err, output)
+	}
 }
 
 // ---------- helpers ----------

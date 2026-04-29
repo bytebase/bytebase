@@ -1,6 +1,6 @@
 import { ChevronRight, Database, SquareStack } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -79,11 +79,7 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
           <EnvironmentLabel environmentName={environment.name} />
           <ChevronRight className="size-4 shrink-0 text-control-light" />
           <div className="flex items-center gap-1">
-            <img
-              className="size-4 shrink-0"
-              src={EngineIconPath[instance.engine]}
-              alt=""
-            />
+            <EngineIcon engine={instance.engine} className="size-4" />
             <span className="truncate">{instance.title}</span>
           </div>
           <ChevronRight className="size-4 shrink-0 text-control-light" />

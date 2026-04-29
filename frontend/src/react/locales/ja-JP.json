@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "エクスポートが完了しました",
     "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
     "table": {
       "actor": "操作者",
@@ -156,7 +157,13 @@
   },
   "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
-    "external-url": "Bytebase は --extern-url を設定していません"
+    "cloud": "クラウドサービス",
+    "deploy": "ローカル展開",
+    "external-url": "Bytebase は --extern-url を設定していません",
+    "license-expired": "{{plan}} のライセンスは {{expireAt}} に期限切れになりました。",
+    "license-expires": "{{plan}} ライセンスは {{expireAt}} に期限切れになりました",
+    "request-demo": "30 分間の製品デモを予約してください。",
+    "trial-expires": "{{plan}} トライアルは {{days}} 日後に期限切れになります"
   },
   "bbkit": {
     "confirm-button": {
@@ -329,6 +336,7 @@
     "pending": "保留中",
     "permissions": "権限",
     "plan": "Plan",
+    "preview": "プレビュー",
     "previous": "Previous",
     "project": "プロジェクト",
     "projects": "プロジェクト",
@@ -386,6 +394,7 @@
     "statement": "ステートメント",
     "status": "ステータス",
     "submit": "Submit",
+    "succeed": "成功する",
     "system": "システム",
     "table": "テーブル",
     "title": "タイトル",
@@ -720,6 +729,9 @@
     "external-database-name": "外部データベース名",
     "external-server-name": "外部サーバー名",
     "filter-database": "データベースをフィルター",
+    "foreign-key": {
+      "reference": "参照"
+    },
     "foreign-keys": "外部キー",
     "index-size": "インデックスサイズ",
     "indexes": "索引",
@@ -849,6 +861,16 @@
     "schema": {
       "default": "デフォルトスキーマ"
     },
+    "sequence": {
+      "cacheSize": "キャッシュサイズ",
+      "cycle": "サイクル",
+      "data-type": "データ型",
+      "increment": "インクリメント",
+      "lastValue": "最後の値",
+      "max-value": "最大値",
+      "min-value": "最小値",
+      "start": "開始値"
+    },
     "sequences": "シーケンス",
     "start-to-sync-schema": "スキーマの同期を開始します",
     "streams": "ストリーム",
@@ -886,6 +908,9 @@
     "data-export": "データエクスポート"
   },
   "export-data": {
+    "export-format": "エクスポート形式",
+    "export-rows": "エクスポート行数",
+    "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
     "password-optional": "パスワード暗号化の設定 (オプション)"
   },
   "export-data.password-optional": "パスワード（任意）",
@@ -1675,6 +1700,7 @@
     },
     "members": {
       "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
+      "allow-ddl-all-environments": "環境制限はありません。すべての環境で DDL/DML ステートメントの実行を許可する。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
@@ -1933,16 +1959,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "外部キー",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "アップデート時",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "文字の並べ替え規則",
+      "comment": "コメント",
+      "engine": "エンジン",
+      "name": "名前"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,10 +1987,14 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "従属列",
+      "indexes": "索引",
       "primary": "Primary",
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "SQL を挿入",
+    "no-diff": "適用する変更はありません",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -1969,6 +2007,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "スキーマエディタ",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -1977,9 +2016,11 @@
     },
     "table-partition": {
       "expression": "表現",
+      "partitions": "パーティション",
       "type": "タイプ",
       "value": "値"
-    }
+    },
+    "template-database": "テンプレートデータベース"
   },
   "schema-template": {
     "classification": {
@@ -2563,6 +2604,11 @@
     },
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
+      "self": "一括エクスポート",
+      "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {{max}} 個のデータベースを選択してください"
+    },
     "batch-query": {
       "batch": "バッチ",
       "description": "{{project}} の下の {{database}} 個の追加データベースと {{group}} 個のデータベース グループに対してバッチ クエリを実行します。",
@@ -2571,7 +2617,8 @@
         "readonly": "読み取り専用",
         "self": "バッチのデータソースを選択",
         "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。"
-      }
+      },
+      "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
@@ -2583,12 +2630,14 @@
     "copy-name": "名前をコピーする",
     "copy-url": "URLをコピー",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
+    "download-as-file": "{{file}} 形式でダウンロード",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "フォーマット",
     "format-sql": "Format SQL",
     "generate-sql": "SQLの生成",
     "grant-type-unmask": "Unmask",
@@ -2644,6 +2693,7 @@
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
     "search-history-by-statement": "ステートメントで検索",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "sync-in-progress": "同期中",
@@ -2663,6 +2713,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
     "view-database-detail": "データベースの詳細を表示する",
     "view-detail": "詳細を見る",
@@ -3451,10 +3502,14 @@
       "n-license-remain": "残り {{n}}",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
+      "used-and-total-instance": "アクティブ/合計インスタンス制限",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },
-    "max-instance-count": "最大インスタンス数",
+    "overuse-modal": {
+      "description": "{{plan}} では使用できない機能を使用しています。通常どおり使用できるように、できるだけ早くアップグレードしてください："
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> は {{currentPlan}} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "plan": {
       "enterprise": {
         "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。",
@@ -3475,6 +3530,7 @@
       "try": "無料トライアルを開始する"
     },
     "plan-compare": "異なるプラン間の機能を比較する",
+    "plan-features": "{{plan}} の機能",
     "purchase": {
       "accept-terms-prefix": "以下に同意します：",
       "and": "および",
@@ -3521,6 +3577,8 @@
         "title": "ライセンスが正常に更新されました"
       }
     },
+    "upgrade": "アップグレード",
+    "upgrade-now": "今すぐアップグレード",
     "upload-license": "ライセンスのアップロード",
     "usage": {
       "instance-count": {

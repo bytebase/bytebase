@@ -5,5 +5,5 @@
 </template>
 
 <script setup lang="ts">
-import KeyIcon from "~icons/heroicons-outline/key";
+import { Key as KeyIcon } from "lucide-vue-next";
 </script>

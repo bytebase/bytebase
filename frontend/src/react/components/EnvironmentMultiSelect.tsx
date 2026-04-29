@@ -7,9 +7,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
-import { useEnvironmentV1Store } from "@/store";
 
 export function EnvironmentMultiSelect({
   value,
@@ -19,10 +18,7 @@ export function EnvironmentMultiSelect({
   onChange: (envs: string[]) => void;
 }>) {
   const { t } = useTranslation();
-  const environmentStore = useEnvironmentV1Store();
-  const environmentList = useVueState(
-    () => environmentStore.environmentList ?? []
-  );
+  const environmentList = useEnvironmentList();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

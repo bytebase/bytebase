@@ -2,6 +2,7 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   BindingSchema,
@@ -12,10 +13,17 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import {
   DatabaseChangeMode,
+  EnvironmentSetting_EnvironmentSchema,
+  EnvironmentSettingSchema,
   SettingSchema,
   SettingValueSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+  SubscriptionSchema,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import {
   storageKeyIntroState,
@@ -25,6 +33,19 @@ import {
 import { createAppStore } from ".";
 
 const mocks = vi.hoisted(() => ({
+  localStorage: (() => {
+    const storage = new Map<string, string>();
+    const localStorage = {
+      clear: vi.fn(() => storage.clear()),
+      getItem: vi.fn((key: string) => storage.get(key) ?? null),
+      removeItem: vi.fn((key: string) => storage.delete(key)),
+      setItem: vi.fn((key: string, value: string) => {
+        storage.set(key, value);
+      }),
+    };
+    vi.stubGlobal("localStorage", localStorage);
+    return localStorage;
+  })(),
   getCurrentUser: vi.fn(),
   logout: vi.fn(),
   getActuatorInfo: vi.fn(),
@@ -95,6 +116,11 @@ const projectB = createProto(ProjectSchema, {
   name: "projects/b",
   title: "B",
   state: State.ACTIVE,
+});
+
+const timestampSeconds = (seconds: number) => ({
+  seconds: BigInt(seconds),
+  nanos: 0,
 });
 
 beforeEach(() => {
@@ -255,6 +281,232 @@ describe("useAppStore", () => {
       false
     );
     expect(store.getState().appFeatures["bb.feature.hide-trial"]).toBe(false);
+  });
+
+  test("derives actuator state for React consumers", () => {
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        workspace: "workspaces/default",
+        version: "3.10.2",
+        externalUrl: "",
+        saas: true,
+        activatedInstanceCount: 2,
+        totalInstanceCount: 3,
+        userCountInIam: 7,
+      }),
+    });
+
+    expect(store.getState().isSaaSMode()).toBe(true);
+    expect(store.getState().workspaceResourceName()).toBe("workspaces/default");
+    expect(store.getState().needConfigureExternalUrl()).toBe(true);
+    expect(store.getState().changelogURL()).toBe(
+      "https://docs.bytebase.com/changelog/bytebase-3-10-2/"
+    );
+    expect(store.getState().activatedInstanceCount()).toBe(2);
+    expect(store.getState().totalInstanceCount()).toBe(3);
+    expect(store.getState().userCountInIam()).toBe(7);
+  });
+
+  test("derives subscription limits and feature state", () => {
+    const store = createAppStore();
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        seats: -1,
+        instances: -1,
+        activeInstances: -1,
+        expiresTime: timestampSeconds(
+          Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+        ),
+      }),
+    });
+
+    expect(store.getState().currentPlan()).toBe(PlanType.ENTERPRISE);
+    expect(store.getState().isFreePlan()).toBe(false);
+    expect(store.getState().isExpired()).toBe(false);
+    expect(store.getState().showTrial()).toBe(false);
+    expect(store.getState().instanceCountLimit()).toBe(Number.MAX_VALUE);
+    expect(store.getState().userCountLimit()).toBe(Number.MAX_VALUE);
+    expect(store.getState().instanceLicenseCount()).toBe(Number.MAX_VALUE);
+    expect(store.getState().hasUnifiedInstanceLicense()).toBe(true);
+    expect(store.getState().hasFeature(PlanFeature.FEATURE_DATA_MASKING)).toBe(
+      true
+    );
+    expect(
+      store.getState().hasInstanceFeature(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(true);
+    expect(
+      store.getState().instanceMissingLicense(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(false);
+
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        instances: 50,
+        activeInstances: 20,
+        expiresTime: timestampSeconds(
+          Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+        ),
+      }),
+    });
+    expect(store.getState().hasUnifiedInstanceLicense()).toBe(false);
+    expect(
+      store.getState().hasInstanceFeature(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(false);
+    expect(
+      store.getState().instanceMissingLicense(
+        PlanFeature.FEATURE_DATA_MASKING,
+        createProto(InstanceSchema, {
+          name: "instances/prod",
+          activation: false,
+        })
+      )
+    ).toBe(true);
+  });
+
+  test("treats expired subscriptions as feature unavailable", () => {
+    const store = createAppStore();
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        expiresTime: timestampSeconds(
+          Math.floor(Date.now() / 1000) - 60 * 60 * 24
+        ),
+      }),
+    });
+
+    expect(store.getState().isExpired()).toBe(true);
+    expect(store.getState().hasFeature(PlanFeature.FEATURE_DATA_MASKING)).toBe(
+      false
+    );
+  });
+
+  test("refreshes subscription state after external mutations", async () => {
+    mocks.getSubscription.mockResolvedValue(
+      createProto(SubscriptionSchema, {
+        plan: PlanType.TEAM,
+        seats: 12,
+      })
+    );
+    const store = createAppStore();
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.FREE,
+        seats: 0,
+      }),
+    });
+
+    const subscription = await store.getState().refreshSubscription();
+
+    expect(subscription?.plan).toBe(PlanType.TEAM);
+    expect(store.getState().currentPlan()).toBe(PlanType.TEAM);
+    expect(store.getState().userCountLimit()).toBe(12);
+  });
+
+  test("loads environment settings into React state", async () => {
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "environment",
+            value: createProto(EnvironmentSettingSchema, {
+              environments: [
+                createProto(EnvironmentSetting_EnvironmentSchema, {
+                  id: "dev",
+                  title: "Development",
+                  color: "#00aa00",
+                }),
+                createProto(EnvironmentSetting_EnvironmentSchema, {
+                  id: "prod",
+                  title: "Production",
+                  tags: { protected: "protected" },
+                }),
+              ],
+            }),
+          },
+        }),
+      })
+    );
+    const store = createAppStore();
+
+    const environments = await store.getState().loadEnvironmentList();
+
+    expect(environments.map((env) => env.name)).toEqual([
+      "environments/dev",
+      "environments/prod",
+    ]);
+    expect(store.getState().environmentList[1]).toMatchObject({
+      id: "prod",
+      order: 1,
+      tags: { protected: "protected" },
+    });
+  });
+
+  test("refreshes environment settings after cache warm-up", async () => {
+    mocks.getSetting
+      .mockResolvedValueOnce(
+        createProto(SettingSchema, {
+          value: createProto(SettingValueSchema, {
+            value: {
+              case: "environment",
+              value: createProto(EnvironmentSettingSchema, {
+                environments: [
+                  createProto(EnvironmentSetting_EnvironmentSchema, {
+                    id: "dev",
+                    title: "Development",
+                  }),
+                ],
+              }),
+            },
+          }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createProto(SettingSchema, {
+          value: createProto(SettingValueSchema, {
+            value: {
+              case: "environment",
+              value: createProto(EnvironmentSettingSchema, {
+                environments: [
+                  createProto(EnvironmentSetting_EnvironmentSchema, {
+                    id: "prod",
+                    title: "Production",
+                  }),
+                ],
+              }),
+            },
+          }),
+        })
+      );
+    const store = createAppStore();
+
+    await store.getState().loadEnvironmentList();
+    await store.getState().loadEnvironmentList();
+    expect(mocks.getSetting).toHaveBeenCalledTimes(1);
+
+    const environments = await store.getState().refreshEnvironmentList();
+
+    expect(mocks.getSetting).toHaveBeenCalledTimes(2);
+    expect(environments.map((env) => env.name)).toEqual(["environments/prod"]);
   });
 
   test("loads project IAM policy and checks project permissions", async () => {

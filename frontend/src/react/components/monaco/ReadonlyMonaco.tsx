@@ -1,3 +1,5 @@
+import type * as monaco from "monaco-editor";
+import type { MonacoModule } from "@/components/MonacoEditor";
 import type { Language } from "@/types";
 import { MonacoEditor } from "./MonacoEditor";
 import type {
@@ -8,6 +10,7 @@ import type {
 
 export interface ReadonlyMonacoProps {
   advices?: AdviceOption[];
+  autoHeight?: boolean;
   content: string;
   className?: string;
   filename?: string;
@@ -16,10 +19,15 @@ export interface ReadonlyMonacoProps {
   max?: number;
   min?: number;
   options?: IStandaloneEditorConstructionOptions;
+  onReady?: (
+    monaco: MonacoModule,
+    editor: monaco.editor.IStandaloneCodeEditor
+  ) => void;
 }
 
 export function ReadonlyMonaco({
   advices = [],
+  autoHeight = true,
   content,
   className = "",
   filename,
@@ -28,10 +36,12 @@ export function ReadonlyMonaco({
   max = 600,
   min = 120,
   options,
+  onReady,
 }: ReadonlyMonacoProps) {
   return (
     <MonacoEditor
       advices={advices}
+      autoHeight={autoHeight}
       className={className}
       content={content}
       filename={filename}
@@ -40,6 +50,7 @@ export function ReadonlyMonaco({
       max={max}
       min={min}
       options={options}
+      onReady={onReady}
       readOnly
     />
   );

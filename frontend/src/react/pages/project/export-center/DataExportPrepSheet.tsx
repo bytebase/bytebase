@@ -3,7 +3,7 @@ import { Database as DatabaseIcon, FolderTree, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { Button } from "@/react/components/ui/button";
@@ -570,13 +570,7 @@ function TargetBadge({ target }: { target: string }) {
     const { databaseName } = extractDatabaseResourceName(target);
     return (
       <div className="inline-flex items-center gap-2 px-2 py-1.5 border rounded-sm min-w-0">
-        {inst && EngineIconPath[inst.engine] && (
-          <img
-            className="size-4 shrink-0"
-            src={EngineIconPath[inst.engine]}
-            alt=""
-          />
-        )}
+        {inst && <EngineIcon engine={inst.engine} className="size-4" />}
         {env && <EnvironmentLabel environmentName={env.name} />}
         <span className="text-sm truncate">{databaseName}</span>
       </div>
@@ -834,12 +828,8 @@ function DatabaseSelector({
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">
-                        {inst && EngineIconPath[inst.engine] && (
-                          <img
-                            className="size-4 shrink-0"
-                            src={EngineIconPath[inst.engine]}
-                            alt=""
-                          />
+                        {inst && (
+                          <EngineIcon engine={inst.engine} className="size-4" />
                         )}
                         <span>{databaseName}</span>
                       </div>

@@ -61,7 +61,7 @@ func (s *InstanceService) GetInstance(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, err
 	}
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -111,8 +111,9 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 	response := &v1pb.ListInstancesResponse{
 		NextPageToken: nextPageToken,
 	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	for _, instance := range instances {
-		ins := convertToV1Instance(instance)
+		ins := convertToV1Instance(instance, s.licenseService.IsInstanceEffectivelyActivated(ctx, workspaceID, instance))
 		response.Instances = append(response.Instances, ins)
 	}
 	return connect.NewResponse(response), nil
@@ -210,19 +211,12 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 			}
 		}
 
-		result := convertToV1Instance(instanceMessage)
+		result := s.convertToV1Instance(ctx, instanceMessage)
 		return connect.NewResponse(result), nil
 	}
 
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-	if instanceMessage.Metadata.GetActivation() {
-		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if count >= activatedInstanceLimit {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
-		}
+	if err := s.checkActivationLimit(ctx, workspaceID, instanceMessage.Metadata.GetActivation()); err != nil {
+		return nil, err
 	}
 
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
@@ -248,7 +242,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -256,6 +250,10 @@ func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Ins
 	candidate := *instance
 	candidate.Metadata = metadata
 	return &candidate
+}
+
+func (s *InstanceService) convertToV1Instance(ctx context.Context, instance *store.InstanceMessage) *v1pb.Instance {
+	return convertToV1Instance(instance, s.licenseService.IsInstanceEffectivelyActivated(ctx, common.GetWorkspaceIDFromContext(ctx), instance))
 }
 
 func (s *InstanceService) checkInstanceDataSources(ctx context.Context, instance *store.InstanceMessage, dataSources []*storepb.DataSource) error {
@@ -397,6 +395,21 @@ func parseInlinePrivateKey(der []byte) (any, error) {
 }
 
 const instanceExceededError = "activation instance count has reached the limit (%v)"
+
+func (s *InstanceService) checkActivationLimit(ctx context.Context, workspaceID string, activating bool) error {
+	if !activating || s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		return nil
+	}
+	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
+	count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if count >= activatedInstanceLimit {
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
+	}
+	return nil
+}
 
 func (s *InstanceService) checkDataSource(ctx context.Context, instance *store.InstanceMessage, dataSource *storepb.DataSource) error {
 	if dataSource.GetId() == "" {
@@ -557,22 +570,15 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	activatedInstanceLimit := s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID)
-	if updateActivation {
-		count, err := s.store.GetActivatedInstanceCount(ctx, workspaceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if count >= activatedInstanceLimit {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf(instanceExceededError, activatedInstanceLimit))
-		}
+	if err := s.checkActivationLimit(ctx, workspaceID, updateActivation); err != nil {
+		return nil, err
 	}
 
 	ins, err := s.store.UpdateInstance(ctx, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertToV1Instance(ins)
+	result := s.convertToV1Instance(ctx, ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -659,7 +665,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 	// Idempotent: if already active, return the instance
 	if !instance.Deleted {
-		result := convertToV1Instance(instance)
+		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
 	}
 	if err := s.instanceCountGuard(ctx); err != nil {
@@ -682,7 +688,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		}
 	}
 
-	result := convertToV1Instance(ins)
+	result := s.convertToV1Instance(ctx, ins)
 	return connect.NewResponse(result), nil
 }
 
@@ -817,7 +823,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
+		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
@@ -834,7 +840,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -1035,7 +1041,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		if err != nil {
 			return nil, err
 		}
-		result := convertToV1Instance(instanceWithMetadata(instance, metadata))
+		result := s.convertToV1Instance(ctx, instanceWithMetadata(instance, metadata))
 		return connect.NewResponse(result), nil
 	}
 
@@ -1047,7 +1053,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 
@@ -1094,7 +1100,7 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	result := convertToV1Instance(instance)
+	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
 }
 

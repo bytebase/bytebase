@@ -140,8 +140,7 @@ export function EditorAction({ onExecute }: Props) {
         {isAdminMode && (
           <Button
             variant="outline"
-            size="sm"
-            className="h-7 px-1.5 gap-1 border-dashed"
+            className="h-8 px-1.5 gap-1 border-dashed text-sm"
             onClick={(e) => {
               e.stopPropagation();
               exitAdminMode();
@@ -154,26 +153,11 @@ export function EditorAction({ onExecute }: Props) {
 
         {!isAdminMode && (
           <div className="inline-flex">
-            {queryTip ? (
-              <Tooltip content={queryTip} side="bottom">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className={cn("h-7 px-1.5 gap-1 rounded-r-none")}
-                  disabled={!allowQuery}
-                  onClick={handleRunQuery}
-                >
-                  <Play className="size-4 fill-current" />
-                  <span className="inline-flex items-center">
-                    (limit&nbsp;{resultRowsLimit})
-                  </span>
-                </Button>
-              </Tooltip>
-            ) : (
+            <Tooltip content={queryTip} side="bottom">
               <Button
                 variant="default"
                 size="sm"
-                className={cn("h-7 px-1.5 gap-1 rounded-r-none")}
+                className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
                 disabled={!allowQuery}
                 onClick={handleRunQuery}
               >
@@ -182,7 +166,7 @@ export function EditorAction({ onExecute }: Props) {
                   (limit&nbsp;{resultRowsLimit})
                 </span>
               </Button>
-            )}
+            </Tooltip>
             <QueryContextSettingPopover
               disabled={!showQueryContextSettingPopover || !allowQuery}
             />

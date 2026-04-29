@@ -16,9 +16,9 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
   })),
-  useVueState: vi.fn((getter: () => unknown) => getter()),
-  useSubscriptionV1Store: vi.fn(),
-  useActuatorV1Store: vi.fn(),
+  useSubscriptionState: vi.fn(),
+  useServerState: vi.fn(),
+  useAppStore: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
   autoSubscriptionRoute: vi.fn(() => "/subscription"),
   routerPush: vi.fn(),
@@ -30,8 +30,9 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/useAppState", () => ({
+  useSubscriptionState: mocks.useSubscriptionState,
+  useServerState: mocks.useServerState,
 }));
 
 vi.mock("@/react/components/InstanceAssignmentSheet", () => ({
@@ -44,14 +45,15 @@ vi.mock("@/router", () => ({
   },
 }));
 
-vi.mock("@/store", () => ({
-  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
-  useActuatorV1Store: mocks.useActuatorV1Store,
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: mocks.useAppStore,
 }));
 
 vi.mock("@/types", () => ({
   ENTERPRISE_INQUIRE_LINK,
-  instanceLimitFeature: new Set<PlanFeature>(),
+  instanceLimitFeature: new Set<PlanFeature>([
+    PlanFeature.FEATURE_DATA_MASKING,
+  ]),
 }));
 
 vi.mock("@/utils", () => ({
@@ -82,21 +84,27 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
-  mocks.useVueState.mockReset();
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
-  mocks.useSubscriptionV1Store.mockReset();
-  mocks.useSubscriptionV1Store.mockReturnValue({
-    hasInstanceFeature: vi.fn(() => false),
-    instanceMissingLicense: vi.fn(() => false),
+  mocks.useSubscriptionState.mockReset();
+  mocks.useSubscriptionState.mockReturnValue({
     isTrialing: false,
     trialingDays: 14,
-    getMinimumRequiredPlan: vi.fn(() => PlanType.TEAM),
   });
-  mocks.useActuatorV1Store.mockReset();
-  mocks.useActuatorV1Store.mockReturnValue({
+  mocks.useServerState.mockReset();
+  mocks.useServerState.mockReturnValue({
     totalInstanceCount: 0,
     activatedInstanceCount: 0,
   });
+  mocks.useAppStore.mockReset();
+  mocks.useAppStore.mockImplementation(
+    (selector: (state: Record<string, unknown>) => unknown) =>
+      selector({
+        hasInstanceFeature: () => false,
+        instanceMissingLicense: () => false,
+        hasUnifiedInstanceLicense: () => false,
+        getMinimumRequiredPlan: () => PlanType.TEAM,
+        hasFeature: () => false,
+      })
+  );
   mocks.hasWorkspacePermissionV2.mockReset();
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.autoSubscriptionRoute.mockReset();
@@ -133,6 +141,43 @@ describe("FeatureAttention", () => {
     expect(openSpy).toHaveBeenCalledWith(ENTERPRISE_INQUIRE_LINK, "_blank");
 
     openSpy.mockRestore();
+    unmount();
+  });
+
+  test("does not show assignment attention in unified instance license mode", () => {
+    mocks.useSubscriptionState.mockReturnValue({
+      isTrialing: false,
+      trialingDays: 14,
+    });
+    mocks.useServerState.mockReturnValue({
+      totalInstanceCount: 2,
+      activatedInstanceCount: 1,
+    });
+    mocks.useAppStore.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({
+          hasInstanceFeature: () => true,
+          instanceMissingLicense: () => false,
+          hasUnifiedInstanceLicense: () => true,
+          getMinimumRequiredPlan: () => PlanType.TEAM,
+          hasFeature: () => true,
+        })
+    );
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+
+    render();
+
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(
+      [...container.querySelectorAll("button")].some((button) =>
+        button.textContent?.includes(
+          "subscription.instance-assignment.assign-license"
+        )
+      )
+    ).toBe(false);
+
     unmount();
   });
 });

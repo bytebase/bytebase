@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  removeColumnFromForeignKey,
-  upsertColumnFromForeignKey,
-} from "@/components/SchemaEditorLite/edit";
 import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import { Input } from "@/react/components/ui/input";
@@ -24,6 +20,10 @@ import type {
 } from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine, hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";
+import {
+  removeColumnFromForeignKey,
+  upsertColumnFromForeignKey,
+} from "../core/edit";
 
 interface Props {
   open: boolean;

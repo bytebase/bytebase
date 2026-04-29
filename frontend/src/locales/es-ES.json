@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "¿Eliminar índice?"
-    },
-    "select-tables-to-rollout": "Seleccionar tablas para implementar",
-    "table-partition": {
-      "drop-partition-confirm": "¿Eliminar partición de tabla?",
-      "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -203,7 +197,6 @@
   "common": {
     "Default": "Predeterminado",
     "access-denied": "Acceso denegado",
-    "access-expires": "El acceso expira",
     "action-required": "Acción requerida",
     "activated": "Activado",
     "active": "Activo",
@@ -237,7 +230,6 @@
     "collapse": "Colapsar",
     "column": "Columna",
     "comment": "Comentario",
-    "condition": "Condición",
     "configure": "Configurar",
     "configure-now": "Configurar ahora",
     "confirm": "Confirmar",
@@ -257,13 +249,7 @@
     "database": "Base de datos",
     "database-group": "Grupo de bases de datos | Grupos de bases de datos",
     "databases": "Bases de datos",
-    "date": {
-      "days": "{days} días",
-      "month": "1 mes",
-      "months": "{months} meses",
-      "week": "1 semana",
-      "year": "1 año"
-    },
+    "date": {},
     "deactivate": "Desactivar",
     "default": "predeterminado",
     "definition": "Definición",
@@ -314,13 +300,7 @@
     "go-back": "Volver",
     "google-chat": "Google Chat",
     "groups": "Grupos",
-    "hard-delete": {
-      "description": "Este recurso y otros recursos relacionados se eliminarán definitivamente. No se puede deshacer esta acción",
-      "double-comfirm": "Para confirmar la eliminación, escriba: {name}",
-      "notification": "Se eliminó exitosamente el recurso '{name}'.",
-      "self": "Eliminación permanente",
-      "title": "¿Eliminar definitivamente {name}?"
-    },
+    "hard-delete": {},
     "history": "Historial",
     "home": "Inicio",
     "id": "ID",
@@ -336,7 +316,6 @@
     "language": "Idioma",
     "lark": "Lark",
     "learn-more": "Aprender más",
-    "leave": "Dejar",
     "leave-without-saving": "¿Salir sin guardar?",
     "license": "Licencia",
     "line": "Línea",
@@ -348,7 +327,6 @@
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
-    "mode": "Modo",
     "n-items-selected": "{n} elementos seleccionados",
     "n-more": "+{n} más",
     "name": "Nombre",
@@ -409,7 +387,6 @@
     "rows-per-page": "Filas por página",
     "run": "Ejecutar",
     "save": "Guardar",
-    "schedule": "Horario",
     "schema": "Esquema",
     "scope": "Alcance",
     "search": "Buscar",
@@ -434,7 +411,6 @@
     "state": "Estado",
     "statement": "Declaración",
     "status": "Estado",
-    "stay": "Permanecer",
     "submit": "Enviar",
     "succeed": "Tener éxito",
     "success": "Éxito",
@@ -468,7 +444,6 @@
     "view-doc": "Ver doc",
     "visibility": "Visibilidad",
     "want-help": "Buscar Ayuda",
-    "warehouse": "Almacén",
     "warning": "Advertencia",
     "webhooks": "Webhooks",
     "wecom": "WeCom",
@@ -652,13 +627,11 @@
       "reference": "Referencia"
     },
     "foreign-keys": "claves foráneas",
-    "foreign-table-detail": "Detalle de la tabla externa",
     "index-size": "Tamaño del índice",
     "indexes": "Índices",
     "labels": "Etiquetas de base de datos",
     "last-sync": "Última sincronización",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
-    "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "nullable": "Anulable",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
@@ -736,23 +709,15 @@
       "select": "Seleccionar tabla",
       "select-tip": "Seleccione una mesa para comenzar."
     },
-    "table-detail": "Detalle de la tabla",
     "transfer": {
-      "errors": {
-        "select-at-least-one-database": "Seleccione al menos una base de datos",
-        "select-target-project": "Seleccionar proyecto de destino"
-      },
-      "select-databases": "Seleccionar bases de datos",
-      "select-target-project": "Seleccionar proyecto de destino"
+      "errors": {}
     },
-    "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "unassign-alert-title": "Desasignar bases de datos",
     "unassigned-databases": "Bases de datos no asignadas",
     "unique": "Único",
-    "view-definition": "Ver definición",
     "visible": "Visible"
   },
   "database-group": {
@@ -760,7 +725,6 @@
       "self": "Condición"
     },
     "delete-group": "Eliminar el grupo de bases de datos {name}",
-    "deleted": "Grupo de bases de datos eliminado",
     "matched-database": "Base de datos coincidente",
     "no-matched-databases": "No hay bases de datos coincidentes",
     "select": "Seleccionar grupo de bases de datos",
@@ -779,7 +743,6 @@
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{0}'.",
     "functions": "Funciones",
-    "labels-for-resource": "Etiquetas para {resource}",
     "n-databases-had-sync-errors": "{0} base(s) de datos tuvieron errores de sincronización",
     "packages": "Paquetes",
     "partitions": "Particiones",
@@ -1221,8 +1184,6 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
-      "custom-date": "Fecha personalizada",
-      "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento",
       "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "manually-select": "selección manual",
@@ -1235,12 +1196,7 @@
       "sort": "Ordenar",
       "updated": "Fecha de actualización"
     },
-    "sql-check": {
-      "back-to-edit": "Volver a editar",
-      "sql-review-violations": "Infracciones de revisión de SQL",
-      "statement-is-required": "Se requiere una declaración SQL",
-      "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL."
-    },
+    "sql-check": {},
     "statement-from-sheet-warning": "Debido a que el SQL es demasiado grande, se ha truncado para mostrarlo y la edición está deshabilitada. Puede cargar un nuevo archivo SQL para sobrescribirlo.",
     "status-transition": {
       "modal": {
@@ -1274,7 +1230,6 @@
     "transaction-mode": {
       "label": "Modo de transacción"
     },
-    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Aprobado\", pero algunas de sus tareas no se ejecutan correctamente.",
     "upload-sql": "Cargar SQL",
     "upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
     "waiting-approval": "A la espera de la aprobación"
@@ -1347,9 +1302,7 @@
       "placeholder": "Añadir descripción"
     },
     "editor": {
-      "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar.",
-      "unsaved-changes": "Cambios no guardados",
-      "unsaved-changes-message": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
+      "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
     "go-to-plan-page": "Ir a la página del plan",
     "isolation-level": {
@@ -1401,10 +1354,7 @@
     "spec": {
       "change": "Cambiar",
       "type": {
-        "create-database": "Crear base de datos",
-        "database-change": "Cambio de base de datos",
-        "export-data": "Exportar datos",
-        "unknown": "Desconocido"
+        "database-change": "Cambio de base de datos"
       }
     },
     "state": {
@@ -1517,7 +1467,6 @@
       "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "never-expires": "Nunca caduca",
-      "role-never-expires": "Este rol nunca expira.",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo"
     },
     "overview": {
@@ -1659,11 +1608,7 @@
   "quick-action": {
     "create-db": "Crear base de datos",
     "create-project": "Crear Proyecto",
-    "from-projects": "De otro proyecto",
-    "from-unassigned-databases": "Bases de datos no asignadas",
-    "request-export-data": "Solicitar exportación",
-    "transfer-in-db-title": "Transferir base de datos",
-    "unassigned-db-hint": "Las bases de datos recién sincronizadas comienzan sin asignar y deben ser asignadas a un proyecto para su uso."
+    "request-export-data": "Solicitar exportación"
   },
   "quick-start": {
     "guide": "haga clic en el paso para probarlo",
@@ -1817,9 +1762,7 @@
     },
     "task-execution-errors": "Errores de ejecución de tareas"
   },
-  "schema-designer": {
-    "use-tips": "Selecciona las tablas a diseñar"
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
@@ -1833,7 +1776,6 @@
       "create-table": "Nueva tabla",
       "create-view": "Crear vista",
       "drop": "Eliminar",
-      "drop-column": "Eliminar columna",
       "drop-schema": "Eliminar esquema",
       "drop-table": "Eliminar tabla",
       "rename": "Renombrar",
@@ -1847,7 +1789,6 @@
       "not-null": "No nulo",
       "on-update": "En actualización",
       "primary": "Primaria",
-      "select": "Seleccionar columna",
       "type": "Tipo"
     },
     "columns": "Columnas",
@@ -1860,53 +1801,26 @@
     "default": {
       "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
-    "foreign-key": {
-      "edit": "Editar clave externa",
-      "name-description": "El nombre único de la clave externa"
-    },
-    "functions": "Funciones",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "Columnas dependientes",
-      "edit-indexes": "Editar índices",
       "indexes": "Índices",
       "unique": "Único"
     },
-    "message": {
-      "cannot-drop-the-last-column": "No se puede eliminar la última columna",
-      "duplicated-function-name": "Nombre de función duplicado",
-      "duplicated-procedure-name": "Nombre del procedimiento duplicado",
-      "duplicated-table-name": "Nombre de tabla duplicado",
-      "duplicated-view-name": "Nombre de vista duplicado",
-      "invalid-function-name": "Nombre de función no válido",
-      "invalid-procedure-name": "Nombre de procedimiento no válido",
-      "invalid-schema": "Esquema no válido",
-      "invalid-schema-name": "Nombre de esquema inválido",
-      "invalid-table-name": "Nombre de tabla inválido",
-      "invalid-view-name": "Nombre de vista no válido"
-    },
-    "preview-schema-text": "Vista previa del texto del esquema",
-    "preview-view-definition": "Definición de vista previa",
-    "procedures": "Procedimientos",
+    "insert-sql": "Insertar SQL",
     "raw-sql": "SQL sin procesar",
     "schema": {
-      "name": "Nombre del Esquema",
       "select": "Seleccionar esquema"
     },
-    "search-database-and-table": "Buscar base de datos y tabla",
-    "table": {
-      "name": "Nombre de la tabla",
-      "select": "Seleccionar tabla"
-    },
+    "self": "Editor de esquema",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "Agregar subpartición",
-      "edit-partitions": "Editar particiones",
       "expression": "Expresión",
       "partitions": "Particiones",
       "type": "Tipo",
       "value": "Valor"
     },
-    "tables": "Tablas",
-    "views": "Vistas"
+    "template-database": "Base de datos plantilla"
   },
   "schema-template": {
     "classification": {
@@ -2185,13 +2099,11 @@
       "search-member": "Buscar miembro",
       "select-account": "Seleccionar cuenta | Seleccionar cuentas",
       "select-account-hint": "Puede buscar usuarios y grupos, o introducir el correo electrónico completo para seleccionar la cuenta de servicio o identidad de carga de trabajo.",
-      "select-in-project": "Seleccione usuarios o grupos en {project}",
       "select-role": "Seleccionar rol | Seleccionar roles",
       "service-account": "Cuenta de Servicio",
       "service-accounts": "Cuentas de Servicio",
       "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
       "show-inactive": "Mostrar cuentas inactivas",
-      "system-bot": "Bot del Sistema",
       "table": {
         "account": "Cuenta",
         "groups": "Grupos",
@@ -2298,8 +2210,6 @@
       },
       "grant-access": "Autorizará el acceso",
       "never-expires": "Nunca expira",
-      "remove-classification-tips": "¿Eliminar la clasificación de esta columna?",
-      "remove-semantic-type-tips": "¿Eliminar el tipo semántico de esta columna?",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "semantic-types": {
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
@@ -2636,7 +2546,6 @@
   "sql-review": {
     "add-or-remove-rules": "Agregar o eliminar reglas",
     "add-rules": "Agregar reglas",
-    "all-checks-passed": "Todas las comprobaciones pasaron",
     "attach-resource": {
       "change-resources": "Cambiar recursos adjuntos",
       "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
@@ -2646,9 +2555,7 @@
       "override-warning": "Siguiendo los recursos ya vinculados con otras políticas de revisión de SQL. Haga clic en \"{button}\" para anular la configuración.",
       "self": "Adjuntar a recursos"
     },
-    "category": {
-      "builtin": "Integrado"
-    },
+    "category": {},
     "configure-policy": "Configurar política",
     "create": {
       "basic-info": {
@@ -2685,15 +2592,11 @@
     "policy-removed": "La política de revisión se eliminó correctamente.",
     "policy-update-failed": "No se pudo actualizar la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
-    "rule-detail": "Detalle de la regla",
     "select-all": "Seleccionar todo",
     "select-review-rules": "Seleccionar reglas de revisión de SQL",
     "title": "Revisión de SQL"
   },
   "subscription": {
-    "button": {
-      "upgrade": "Actualizar"
-    },
     "contact-to-upgrade": "Contacta al administrador de tu espacio de trabajo para actualizar el plan.",
     "contact-us": "Contáctanos",
     "current": "Actual",
@@ -2711,14 +2614,13 @@
       "n-license-remain": "permanecer {n}",
       "require-license": "Requerir licencia de instancia",
       "success-notification": "Actualizar correctamente la asignación de licencia",
+      "used-and-total-instance": "Límite de instancias activas/totales",
       "used-and-total-license": "Licencia asignada / total",
       "used-and-total-user": "Límite de usuarios activos/totales"
     },
-    "max-instance-count": "Cantidad máxima de instancias",
     "overuse-modal": {
       "description": "Está utilizando una función que actualmente no está incluida en {plan}. Actualice ahora para evitar interrupciones:"
     },
-    "overuse-warning": "{neededPlan} puede estar restringido en {currentPlan}, actualice ahora para asegurar un uso adecuado.",
     "plan": {
       "enterprise": {
         "title": "Empresa"
@@ -2798,9 +2700,7 @@
   "task": {
     "affected-rows": "Filas afectadas",
     "cancel-task": "Cancelar tarea | Cancelar tareas",
-    "check-result": {
-      "title-general": "Comprobar resultado"
-    },
+    "check-result": {},
     "check-type": {
       "affected-rows": {
         "description": "Estimado por información estadística.",
@@ -2827,12 +2727,10 @@
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
     "no-tasks-selected": "No hay tareas seleccionadas",
     "online-migration": {
-      "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea.",
       "self": "Migración en línea"
     },
     "only-showing-latest-n-runs": "Solo se muestran las últimas {n} ejecuciones",
     "prior-backup": "Respaldo previo",
-    "run-checks": "Ejecutar comprobaciones",
     "run-history": "Historial de ejecución",
     "run-immediately": {
       "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación.",

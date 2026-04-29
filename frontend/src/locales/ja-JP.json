@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "インデックスを削除しますか?"
-    },
-    "select-tables-to-rollout": "公開するテーブルを選択してください",
-    "table-partition": {
-      "drop-partition-confirm": "テーブルパーティションを削除しますか?",
-      "drop-partition-with-subpartitions-confirm": "すべてのサブパーティションが同時に削除されます。"
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -203,7 +197,6 @@
   "common": {
     "Default": "デフォルト",
     "access-denied": "アクセスが拒否されました",
-    "access-expires": "アクセスは期限切れです",
     "action-required": "対応が必要",
     "activated": "有効化しました",
     "active": "アクティブ",
@@ -237,7 +230,6 @@
     "collapse": "閉じる",
     "column": "列",
     "comment": "コメント",
-    "condition": "状態",
     "configure": "設定",
     "configure-now": "今すぐ設定する",
     "confirm": "確認する",
@@ -257,13 +249,7 @@
     "database": "データベース",
     "database-group": "データベースグループ | データベースグループ",
     "databases": "データベース",
-    "date": {
-      "days": "{days} 日",
-      "month": "1 か月",
-      "months": "{months} 月",
-      "week": "1 週間",
-      "year": "1 年"
-    },
+    "date": {},
     "deactivate": "無効化",
     "default": "デフォルト",
     "definition": "意味",
@@ -314,13 +300,7 @@
     "go-back": "戻る",
     "google-chat": "Google Chat",
     "groups": "グループ",
-    "hard-delete": {
-      "description": "このリソースとその他の関連リソースは物理的に削除されます。この操作は元に戻せません",
-      "double-comfirm": "削除を確認するには、{name} と入力してください。",
-      "notification": "リソース '{name}' を正常に削除しました。",
-      "self": "ハード削除",
-      "title": "{name} を物理的に削除しますか?"
-    },
+    "hard-delete": {},
     "history": "履歴",
     "home": "ホームページ",
     "id": "ID",
@@ -336,7 +316,6 @@
     "language": "言語",
     "lark": "Lark",
     "learn-more": "もっと詳しく知る",
-    "leave": "離れる",
     "leave-without-saving": "変更を保存していませんか?",
     "license": "ライセンス",
     "line": "行",
@@ -348,7 +327,6 @@
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {permissions}",
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
-    "mode": "モデル",
     "n-items-selected": "{n} 件選択済み",
     "n-more": "+{n} もっと",
     "name": "名前",
@@ -409,7 +387,6 @@
     "rows-per-page": "ページあたりの行数",
     "run": "実行",
     "save": "保存",
-    "schedule": "プラン",
     "schema": "スキーマ",
     "scope": "スコープ",
     "search": "検索",
@@ -434,7 +411,6 @@
     "state": "ステート",
     "statement": "ステートメント",
     "status": "ステータス",
-    "stay": "滞在する",
     "submit": "提出する",
     "succeed": "成功する",
     "success": "成功",
@@ -468,7 +444,6 @@
     "view-doc": "ドキュメントを見る",
     "visibility": "可視性",
     "want-help": "ユーザーグループに参加する",
-    "warehouse": "倉庫",
     "warning": "警告する",
     "webhooks": "Webhook",
     "wecom": "WeCom",
@@ -652,13 +627,11 @@
       "reference": "参照"
     },
     "foreign-keys": "外部キー",
-    "foreign-table-detail": "外部テーブルの詳細",
     "index-size": "インデックスサイズ",
     "indexes": "索引",
     "labels": "データベースラベル",
     "last-sync": "最後の同期",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
-    "mixed-values-for-label": "タグの値が異なります",
     "nullable": "null も可能",
     "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
@@ -736,23 +709,15 @@
       "select": "テーブルを選択",
       "select-tip": "開始するにはテーブルを選択してください。"
     },
-    "table-detail": "テーブルの詳細",
     "transfer": {
-      "errors": {
-        "select-at-least-one-database": "少なくとも 1 つのデータベースを選択してください",
-        "select-target-project": "対象プロジェクトを選択"
-      },
-      "select-databases": "データベースの選択",
-      "select-target-project": "対象プロジェクトを選択"
+      "errors": {}
     },
-    "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "unassign-alert-title": "データベースの割り当てを解除する",
     "unassigned-databases": "未割り当てのデータベース",
     "unique": "個性的",
-    "view-definition": "ビューの定義",
     "visible": "見える"
   },
   "database-group": {
@@ -760,7 +725,6 @@
       "self": "状態"
     },
     "delete-group": "データベースグループを削除する",
-    "deleted": "削除されたデータベースグループ",
     "matched-database": "マッチングデータベース",
     "no-matched-databases": "一致するデータベースはありません",
     "select": "データベースグループを選択",
@@ -779,7 +743,6 @@
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
     "failed-to-sync-schema-for-database-database-value-name": "データベース '{0}' のスキーマを同期できませんでした。",
     "functions": "関数",
-    "labels-for-resource": "{resource} のタグ",
     "n-databases-had-sync-errors": "{0} 個のデータベースで同期エラーが発生しました",
     "packages": "パッケージ",
     "partitions": "パーティション",
@@ -1221,8 +1184,6 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
-      "custom-date": "カスタム日付",
-      "custom-date-placeholder": "有効期限と時刻を選択します",
       "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "manually-select": "手動選択",
@@ -1235,12 +1196,7 @@
       "sort": "並べ替え",
       "updated": "更新日時"
     },
-    "sql-check": {
-      "back-to-edit": "編集に戻る",
-      "sql-review-violations": "SQL レビュールール違反",
-      "statement-is-required": "SQL文が必要です",
-      "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。"
-    },
+    "sql-check": {},
     "statement-from-sheet-warning": "SQL が大きすぎるため、表示時に切り捨てられ、編集が無効になっています。新しい SQL ファイルをアップロードして上書きすることができます。",
     "status-transition": {
       "modal": {
@@ -1274,7 +1230,6 @@
     "transaction-mode": {
       "label": "トランザクションモード"
     },
-    "unfinished-resolved-issue-tips": "イシューは「承認済み」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "upload-sql": "SQLのアップロード",
     "upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
     "waiting-approval": "承認待ち"
@@ -1347,9 +1302,7 @@
       "placeholder": "説明を追加"
     },
     "editor": {
-      "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください",
-      "unsaved-changes": "保存されていない変更",
-      "unsaved-changes-message": "保存されていない変更があります。終了してもよろしいですか?"
+      "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
     "go-to-plan-page": "プランページへ移動",
     "isolation-level": {
@@ -1401,10 +1354,7 @@
     "spec": {
       "change": "変化",
       "type": {
-        "create-database": "データベースの作成",
-        "database-change": "データベースの変更",
-        "export-data": "データのエクスポート",
-        "unknown": "未知"
+        "database-change": "データベースの変更"
       }
     },
     "state": {
@@ -1517,7 +1467,6 @@
       "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "never-expires": "有効期限が切れることはありません",
-      "role-never-expires": "このロールには有効期限はありません。",
       "workspace-level-roles": "ワークスペースレベルのロール"
     },
     "overview": {
@@ -1659,11 +1608,7 @@
   "quick-action": {
     "create-db": "データベースの作成",
     "create-project": "作成するプロジェクト",
-    "from-projects": "他のプロジェクトから",
-    "from-unassigned-databases": "割り当てられていないデータベース",
-    "request-export-data": "データ出力を申請する",
-    "transfer-in-db-title": "データベースへの転送",
-    "unassigned-db-hint": "新しく同期されたデータベースは最初は割り当てられていないため、使用するにはプロジェクトに移動する必要があります。"
+    "request-export-data": "データ出力を申請する"
   },
   "quick-start": {
     "guide": "クリックしてステップを試してみましょう",
@@ -1817,9 +1762,7 @@
     },
     "task-execution-errors": "タスク実行エラー"
   },
-  "schema-designer": {
-    "use-tips": "デザインするテーブルを選択してください"
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "ビューに自動的に適応します",
     "self": "スキーマ図"
@@ -1833,7 +1776,6 @@
       "create-table": "新しいテーブルを作成する",
       "create-view": "ビューの作成",
       "drop": "落とす",
-      "drop-column": "列の削除",
       "drop-schema": "スキーマの削除",
       "drop-table": "テーブルの削除",
       "rename": "名前の変更",
@@ -1847,7 +1789,6 @@
       "not-null": "空にすることはできません",
       "on-update": "アップデート時",
       "primary": "主キー",
-      "select": "列を選択",
       "type": "タイプ"
     },
     "columns": "カラム",
@@ -1860,53 +1801,26 @@
     "default": {
       "placeholder": "デフォルト値を入力するか、デフォルト値がない場合は空白のままにします"
     },
-    "foreign-key": {
-      "edit": "外部キーを編集",
-      "name-description": "外部キーの一意の名前"
-    },
-    "functions": "関数",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "従属列",
-      "edit-indexes": "インデックスの編集",
       "indexes": "索引",
       "unique": "唯一"
     },
-    "message": {
-      "cannot-drop-the-last-column": "最後の列は削除できません",
-      "duplicated-function-name": "関数名が重複しています",
-      "duplicated-procedure-name": "重複したプロシージャ名",
-      "duplicated-table-name": "テーブル名が重複しています",
-      "duplicated-view-name": "重複したビュー名",
-      "invalid-function-name": "無効な関数名です",
-      "invalid-procedure-name": "無効なプロシージャ名です",
-      "invalid-schema": "無効なスキーマ",
-      "invalid-schema-name": "無効なスキーマ名",
-      "invalid-table-name": "無効なテーブル名です",
-      "invalid-view-name": "無効なビュー名です"
-    },
-    "preview-schema-text": "スキーマテキストのプレビュー",
-    "preview-view-definition": "プレビュービューの定義",
-    "procedures": "手順",
+    "insert-sql": "SQL を挿入",
     "raw-sql": "SQL文",
     "schema": {
-      "name": "スキーマ名",
       "select": "スキーマの選択"
     },
-    "search-database-and-table": "データベースとテーブルを検索する",
-    "table": {
-      "name": "テーブル名",
-      "select": "テーブルの選択"
-    },
+    "self": "スキーマエディタ",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "サブパーティションの追加",
-      "edit-partitions": "パーティションの編集",
       "expression": "表現",
       "partitions": "パーティション",
       "type": "タイプ",
       "value": "値"
     },
-    "tables": "テーブル",
-    "views": "ビュー"
+    "template-database": "テンプレートデータベース"
   },
   "schema-template": {
     "classification": {
@@ -2185,13 +2099,11 @@
       "search-member": "メンバーを検索",
       "select-account": "アカウントを選択 | アカウントを選択",
       "select-account-hint": "ユーザーやグループを検索するか、完全なメールアドレスを入力してサービスアカウントまたはワークロードアイデンティティを選択できます。",
-      "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
       "select-role": "ロールを選択 | ロールを選択",
       "service-account": "サービスアカウント",
       "service-accounts": "サービスアカウント",
       "service-key-copied": "サービスキーはコピーされています。公開しないでください",
       "show-inactive": "非アクティブなアカウントを表示",
-      "system-bot": "ロボットアシスタント",
       "table": {
         "account": "アカウント",
         "groups": "グループ",
@@ -2298,8 +2210,6 @@
       },
       "grant-access": "許可されたアクセス",
       "never-expires": "有効期限なし",
-      "remove-classification-tips": "この列の分類を削除しますか?",
-      "remove-semantic-type-tips": "この列のセマンティック タイプを削除しますか?",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
       "semantic-types": {
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
@@ -2636,7 +2546,6 @@
   "sql-review": {
     "add-or-remove-rules": "ルールを追加または削除する",
     "add-rules": "ルールを追加する",
-    "all-checks-passed": "すべてのチェックに合格しました",
     "attach-resource": {
       "change-resources": "バインドされたリソースを変更する",
       "label": "SQL レビューポリシーは環境リソースまたはプロジェクト リソースにバインドする必要があり、対応するリソースの下にあるすべてのデータベースに影響します。データベースがプロジェクト レベルと環境レベルの両方のポリシーの影響を受ける場合、プロジェクト レベルのポリシーのみが有効になります。",
@@ -2646,9 +2555,7 @@
       "override-warning": "次のリソースは、他の SQL レビューポリシーにバインドされています。 \"{button}\" をクリックすると設定が上書きされます。",
       "self": "リソースにバインドする"
     },
-    "category": {
-      "builtin": "ビルトイン"
-    },
+    "category": {},
     "configure-policy": "SQL レビューポリシーを設定する",
     "create": {
       "basic-info": {
@@ -2685,15 +2592,11 @@
     "policy-removed": "SQL レビューポリシーが削除されました",
     "policy-update-failed": "レビューポリシーの更新に失敗しました。",
     "policy-updated": "SQL レビューポリシーが更新されました",
-    "rule-detail": "ルールの詳細",
     "select-all": "すべて選択",
     "select-review-rules": "SQL レビュールールを選択",
     "title": "SQL レビューポリシー"
   },
   "subscription": {
-    "button": {
-      "upgrade": "アップグレード"
-    },
     "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
     "contact-us": "お問い合わせ",
     "current": "現在",
@@ -2711,14 +2614,13 @@
       "n-license-remain": "残り {n}",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
+      "used-and-total-instance": "アクティブ/合計インスタンス制限",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },
-    "max-instance-count": "最大インスタンス数",
     "overuse-modal": {
       "description": "現在「{plan}」に含まれていない機能を使用しています。使用に影響を与えないように、すぐにアップグレードしてください。"
     },
-    "overuse-warning": "{neededPlan} は {currentPlan} で制限されます。通常どおり使用できるように、できるだけ早くアップグレードしてください。",
     "plan": {
       "enterprise": {
         "title": "エンタープライズ"
@@ -2798,9 +2700,7 @@
   "task": {
     "affected-rows": "影響を受けた行数",
     "cancel-task": "タスクをキャンセルする",
-    "check-result": {
-      "title-general": "テスト結果"
-    },
+    "check-result": {},
     "check-type": {
       "affected-rows": {
         "description": "統計情報から推定。",
@@ -2827,12 +2727,10 @@
     "no-skippable-tasks": "スキップ可能なタスクはありません",
     "no-tasks-selected": "タスクが選択されていません",
     "online-migration": {
-      "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行イシューに分割することをアドバイスします。",
       "self": "オンラインでの大規模なテーブル変更"
     },
     "only-showing-latest-n-runs": "最新の {n} 実行のみを表示",
     "prior-backup": "影響を受けるデータの事前バックアップ",
-    "run-checks": "実行チェック",
     "run-history": "実行履歴",
     "run-immediately": {
       "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。",

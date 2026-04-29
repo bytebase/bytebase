@@ -87,6 +87,7 @@
         }
       }
     },
+    "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
     "table": {
       "actor": "Người thực hiện",
@@ -156,7 +157,13 @@
   },
   "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
-    "external-url": "Bytebase chưa được cấu hình --external-url"
+    "cloud": "Đám mây",
+    "deploy": "Tự lưu trữ",
+    "external-url": "Bytebase chưa được cấu hình --external-url",
+    "license-expired": "Giấy phép {{plan}} của bạn đã hết hạn vào {{expireAt}}.",
+    "license-expires": "Giấy phép {{plan}} của bạn sẽ hết hạn sau {{days}} ngày vào {{expireAt}}.",
+    "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
+    "trial-expires": "Bản dùng thử miễn phí {{plan}} của bạn sẽ hết hạn trong {{days}} ngày nữa vào {{expireAt}}."
   },
   "bbkit": {
     "confirm-button": {
@@ -329,6 +336,7 @@
     "pending": "Đang chờ",
     "permissions": "Quyền",
     "plan": "Plan",
+    "preview": "Xem trước",
     "previous": "Previous",
     "project": "Dự án",
     "projects": "Dự án",
@@ -386,6 +394,7 @@
     "statement": "Câu lệnh",
     "status": "Trạng thái",
     "submit": "Submit",
+    "succeed": "Thành công",
     "system": "Hệ thống",
     "table": "Bảng",
     "title": "Tiêu đề",
@@ -720,6 +729,9 @@
     "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
     "external-server-name": "Tên máy chủ bên ngoài",
     "filter-database": "Lọc cơ sở dữ liệu",
+    "foreign-key": {
+      "reference": "Tham chiếu"
+    },
     "foreign-keys": "Khóa ngoại",
     "index-size": "Kích thước chỉ mục",
     "indexes": "Chỉ mục",
@@ -849,6 +861,16 @@
     "schema": {
       "default": "Schema mặc định"
     },
+    "sequence": {
+      "cacheSize": "Kích thước bộ nhớ cache",
+      "cycle": "Vòng lặp",
+      "data-type": "Loại dữ liệu",
+      "increment": "Bước nhảy",
+      "lastValue": "Giá trị cuối cùng",
+      "max-value": "Giá trị lớn nhất",
+      "min-value": "Giá trị nhỏ nhất",
+      "start": "Giá trị bắt đầu"
+    },
     "sequences": "Chuỗi",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "streams": "Luồng",
@@ -886,6 +908,9 @@
     "data-export": "Xuất dữ liệu"
   },
   "export-data": {
+    "export-format": "Định dạng xuất",
+    "export-rows": "Xuất số dòng",
+    "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
     "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)"
   },
   "export-data.password-optional": "Mật khẩu (không bắt buộc)",
@@ -1675,6 +1700,7 @@
     },
     "members": {
       "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
+      "allow-ddl-all-environments": "Không có giới hạn môi trường. Cho phép chạy câu lệnh DDL/DML trong tất cả môi trường.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
       "disallow-ddl-all-environments": "Không cho phép chạy câu lệnh DDL/DML cho tất cả các môi trường.",
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
@@ -1933,16 +1959,24 @@
     "column": {
       "comment": "Comment",
       "default": "Default",
+      "foreign-key": "Khóa ngoại",
       "name": "Name",
       "not-null": "Not Null",
+      "on-update": "Khi cập nhật",
       "operations": "Operations",
       "primary": "Primary",
       "type": "Type"
     },
     "columns": "Columns",
     "create-foreign-key": "Create Foreign Key",
+    "database": {
+      "collation": "Đối chiếu",
+      "comment": "Bình luận",
+      "engine": "Engine",
+      "name": "Tên"
+    },
     "default": {
-      "placeholder": "Default value"
+      "placeholder": "Nhập giá trị mặc định hoặc để trống nếu không có giá trị mặc định"
     },
     "edit-foreign-key": "Edit Foreign Key",
     "foreign-key": {
@@ -1953,10 +1987,14 @@
     },
     "index": {
       "columns": "Columns",
+      "dependency-columns": "Cột phụ thuộc",
+      "indexes": "Chỉ mục",
       "primary": "Primary",
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Chèn SQL",
+    "no-diff": "Không có thay đổi nào để áp dụng",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -1969,6 +2007,7 @@
       "duplicate-name": "Schema name already exists",
       "name-placeholder": "Schema name"
     },
+    "self": "Trình chỉnh sửa lược đồ",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -1977,9 +2016,11 @@
     },
     "table-partition": {
       "expression": "Biểu thức",
+      "partitions": "Phân vùng",
       "type": "Loại",
       "value": "Giá trị"
-    }
+    },
+    "template-database": "Cơ sở dữ liệu mẫu"
   },
   "schema-template": {
     "classification": {
@@ -2563,6 +2604,11 @@
     },
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
+    "batch-export": {
+      "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
+      "self": "Xuất hàng loạt",
+      "tooltip": "Chọn tối đa {{max}} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
+    },
     "batch-query": {
       "batch": "Hàng loạt",
       "description": "Truy vấn hàng loạt {{database}} cơ sở dữ liệu bổ sung và {{group}} nhóm cơ sở dữ liệu trong {{project}}.",
@@ -2571,7 +2617,8 @@
         "readonly": "Chỉ đọc",
         "self": "Chọn nguồn dữ liệu cho lô",
         "tooltip": "Sẽ tìm các nguồn dữ liệu có sẵn với chính sách hạn chế, sau đó áp dụng lựa chọn."
-      }
+      },
+      "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
@@ -2583,12 +2630,14 @@
     "copy-name": "Sao chép tên",
     "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
+    "download-as-file": "Tải xuống dưới dạng {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "format": "Định dạng",
     "format-sql": "Format SQL",
     "generate-sql": "Tạo SQL",
     "grant-type-unmask": "Unmask",
@@ -2644,6 +2693,7 @@
     "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
+    "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "sync-in-progress": "Đang đồng bộ",
@@ -2663,6 +2713,7 @@
       }
     },
     "unmask-warning": "The query result may include unmasked sensitive data.",
+    "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "view-detail": "Xem chi tiết",
@@ -3451,10 +3502,14 @@
       "n-license-remain": "còn lại {{n}}",
       "require-license": "Yêu cầu giấy phép phiên bản",
       "success-notification": "Đã cập nhật thành công gán giấy phép",
+      "used-and-total-instance": "Giới hạn phiên bản đang hoạt động / Tổng số",
       "used-and-total-license": "Giấy phép phiên bản đã gán / Tổng số",
       "used-and-total-user": "Giới hạn người dùng đang hoạt động / Tổng số"
     },
-    "max-instance-count": "Số lượng phiên bản tối đa",
+    "overuse-modal": {
+      "description": "Bạn đang sử dụng các tính năng không có trong {{plan}}. Nâng cấp ngay để đảm bảo quyền truy cập liên tục:"
+    },
+    "overuse-warning": "<neededPlan>{{neededPlan}}</neededPlan> trên {{currentPlan}} sẽ bị hạn chế. Nâng cấp ngay để đảm bảo quyền truy cập liên tục.",
     "plan": {
       "enterprise": {
         "desc": "Các tính năng bảo mật, tuân thủ và quyền bổ sung. Hỗ trợ chuyên dụng với SLA.",
@@ -3475,6 +3530,7 @@
       "try": "Bắt đầu dùng thử miễn phí"
     },
     "plan-compare": "So sánh tính năng giữa các gói khác nhau",
+    "plan-features": "Tính năng của {{plan}}",
     "purchase": {
       "accept-terms-prefix": "Tôi chấp nhận",
       "and": "và",
@@ -3521,6 +3577,8 @@
         "title": "Đã cập nhật thành công giấy phép"
       }
     },
+    "upgrade": "Nâng cấp",
+    "upgrade-now": "Nâng cấp ngay",
     "upload-license": "Tải lên giấy phép",
     "usage": {
       "instance-count": {

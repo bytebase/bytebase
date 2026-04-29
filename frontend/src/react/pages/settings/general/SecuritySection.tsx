@@ -17,8 +17,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Input } from "@/react/components/ui/input";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSubscriptionV1Store } from "@/store";
+import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
@@ -42,15 +41,10 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
   function SecuritySection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
     const settingV1Store = useSettingV1Store();
-    const subscriptionStore = useSubscriptionV1Store();
 
-    const hasWatermarkFeature = useVueState(() =>
-      subscriptionStore.hasFeature(PlanFeature.FEATURE_WATERMARK)
-    );
-    const hasDomainRestrictionFeature = useVueState(() =>
-      subscriptionStore.hasFeature(
-        PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
-      )
+    const hasWatermarkFeature = usePlanFeature(PlanFeature.FEATURE_WATERMARK);
+    const hasDomainRestrictionFeature = usePlanFeature(
+      PlanFeature.FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
     );
     const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 

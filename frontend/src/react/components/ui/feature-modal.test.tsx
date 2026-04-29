@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  useSubscriptionState: vi.fn(),
+  useAppStore: vi.fn(),
   instanceMissingLicense: false,
   requiredPlan: 1, // TEAM
   showTrial: false,
@@ -19,17 +20,12 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/useAppState", () => ({
+  useSubscriptionState: mocks.useSubscriptionState,
 }));
 
-vi.mock("@/store", () => ({
-  useSubscriptionV1Store: () => ({
-    instanceMissingLicense: () => mocks.instanceMissingLicense,
-    getMinimumRequiredPlan: () => mocks.requiredPlan,
-    showTrial: mocks.showTrial,
-    trialingDays: mocks.trialingDays,
-  }),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: mocks.useAppStore,
 }));
 
 vi.mock("@/router", () => ({
@@ -142,11 +138,21 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useVueState.mockImplementation((getter) => getter());
   mocks.instanceMissingLicense = false;
   mocks.requiredPlan = 1;
   mocks.showTrial = false;
   mocks.trialingDays = 14;
+  mocks.useSubscriptionState.mockReturnValue({
+    showTrial: mocks.showTrial,
+    trialingDays: mocks.trialingDays,
+  });
+  mocks.useAppStore.mockImplementation(
+    (selector: (state: Record<string, unknown>) => unknown) =>
+      selector({
+        instanceMissingLicense: () => mocks.instanceMissingLicense,
+        getMinimumRequiredPlan: () => mocks.requiredPlan,
+      })
+  );
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   ({ FeatureModal } = await import("./feature-modal"));
 });

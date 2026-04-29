@@ -9,8 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Input } from "@/react/components/ui/input";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useActuatorV1Store } from "@/store";
+import { useServerState } from "@/react/hooks/useAppState";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
@@ -33,8 +32,7 @@ function CredentialSourceForm({
   onDataSourceChange,
 }: CredentialSourceFormProps) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
-  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const { isSaaSMode } = useServerState();
 
   const isIAMAuthentication =
     dataSource.authenticationType ===

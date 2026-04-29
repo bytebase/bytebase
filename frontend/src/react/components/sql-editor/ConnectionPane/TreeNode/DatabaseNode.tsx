@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { ChevronRight } from "lucide-react";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { RequestQueryButton } from "@/react/components/sql-editor/RequestQueryButton";
 import { Tooltip } from "@/react/components/ui/tooltip";
@@ -49,7 +49,6 @@ export function DatabaseNode({
 
   const database = (node as SQLEditorTreeNode<"database">).meta.target;
   const instance = getInstanceResource(database);
-  const iconPath = EngineIconPath[instance.engine];
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   const canQuery = isDatabaseV1Queryable(database);
 
@@ -77,9 +76,7 @@ export function DatabaseNode({
         )}
       >
         <div className="flex flex-row items-center gap-x-1 min-w-0">
-          {iconPath ? (
-            <img src={iconPath} alt="" className="size-4 shrink-0" />
-          ) : null}
+          <EngineIcon engine={instance.engine} className="size-4" />
           <span className="truncate">{instanceV1Name(instance)}</span>
         </div>
         <ChevronRight className="size-3 shrink-0" />

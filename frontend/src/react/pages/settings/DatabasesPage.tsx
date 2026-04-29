@@ -3,7 +3,6 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -19,6 +18,7 @@ import {
   TransferProjectSheet,
 } from "@/react/components/database";
 import { EditEnvironmentSheet } from "@/react/components/EditEnvironmentSheet";
+import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
@@ -78,8 +78,11 @@ export function DatabasesPage() {
   // Search state — default to showing unassigned databases from default project
   const [searchParams, setSearchParams] = useState<SearchParams>(() => {
     const currentRoute = router.currentRoute.value;
-    const queryString = currentRoute.query.q as string;
-    if (queryString) {
+    const hasQ = "q" in (currentRoute.query ?? {});
+    const queryString = (currentRoute.query.q as string) ?? "";
+    if (hasQ) {
+      // URL has an explicit `q` param (may be empty if the user cleared all
+      // filters) — parse it and do NOT re-apply the default project scope.
       const scopes: { id: string; value: string }[] = [];
       const queryParts: string[] = [];
       for (const token of queryString.split(/\s+/).filter(Boolean)) {
@@ -101,6 +104,7 @@ export function DatabasesPage() {
       }
       return { query: queryParts.join(" "), scopes };
     }
+    // First visit (no `q` in URL) — default to the unassigned project.
     return {
       query: "",
       scopes: [
@@ -207,11 +211,7 @@ export function DatabasesPage() {
           custom: true,
           render: () => (
             <span className="inline-flex items-center gap-x-1.5">
-              <img
-                className="h-4 w-4 shrink-0"
-                src={EngineIconPath[engine]}
-                alt=""
-              />
+              <EngineIcon engine={engine} className="h-4 w-4" />
               <span>{engineNameV1(engine)}</span>
             </span>
           ),
@@ -298,7 +298,7 @@ export function DatabasesPage() {
     const queryString = parts.join(" ");
     const currentQuery = router.currentRoute.value.query.q as string;
     if (queryString !== (currentQuery ?? "")) {
-      router.replace({ query: queryString ? { q: queryString } : {} });
+      router.replace({ query: { q: queryString } });
     }
   }, [searchParams]);
 

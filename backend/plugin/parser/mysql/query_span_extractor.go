@@ -32,6 +32,8 @@ type querySpanExtractor struct {
 
 	// priorTableInFrom resolves JSON_TABLE document expressions against preceding FROM items.
 	priorTableInFrom []base.TableSource
+
+	viewResolutionStack map[string]bool
 }
 
 func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -294,7 +296,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		viewSchema = schema.GetView(tableName)
 	}
 	if viewSchema != nil {
-		columns, err := q.getColumnsForView(viewSchema.Definition)
+		columns, err := q.getColumnsForView(dbMetadata.GetProto().GetName(), viewSchema.Name, viewSchema.Definition)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
@@ -314,8 +316,16 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	}
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	span, err := newOmniQuerySpanExtractor(q.defaultDatabase, q.gCtx, q.ignoreCaseSensitive).getOmniQuerySpan(q.ctx, definition)
+func (q *querySpanExtractor) getColumnsForView(databaseName, viewName, definition string) ([]base.QuerySpanResult, error) {
+	key := mysqlViewResolutionKey(databaseName, viewName)
+	if q.viewResolutionStack[key] {
+		return nil, errors.Errorf("cyclic view reference detected while resolving %q", viewName)
+	}
+
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx, q.ignoreCaseSensitive)
+	newQ.viewResolutionStack = cloneViewResolutionStack(q.viewResolutionStack)
+	newQ.viewResolutionStack[key] = true
+	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get query span for view")
 	}
@@ -323,6 +333,18 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 		return nil, span.NotFoundError
 	}
 	return span.Results, nil
+}
+
+func mysqlViewResolutionKey(databaseName, viewName string) string {
+	return databaseName + "\x00" + viewName
+}
+
+func cloneViewResolutionStack(in map[string]bool) map[string]bool {
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {

@@ -13,13 +13,12 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { NumberInput } from "@/react/components/ui/number-input";
-import { useVueState } from "@/react/hooks/useVueState";
 import {
-  DEFAULT_MAX_RESULT_SIZE_IN_MB,
-  useActuatorV1Store,
-  usePolicyV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+  usePlanFeature,
+  useWorkspaceResourceName,
+} from "@/react/hooks/useAppState";
+import { useVueState } from "@/react/hooks/useVueState";
+import { DEFAULT_MAX_RESULT_SIZE_IN_MB, usePolicyV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   PolicyResourceType,
@@ -51,18 +50,15 @@ export const SQLEditorSection = forwardRef<
   SQLEditorSectionProps
 >(function SQLEditorSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const actuatorStore = useActuatorV1Store();
   const policyV1Store = usePolicyV1Store();
   const settingV1Store = useSettingV1Store();
-  const subscriptionStore = useSubscriptionV1Store();
 
-  const resource = useVueState(() => actuatorStore.workspaceResourceName);
-
-  const hasQueryPolicyFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_QUERY_POLICY)
+  const resource = useWorkspaceResourceName();
+  const hasQueryPolicyFeature = usePlanFeature(
+    PlanFeature.FEATURE_QUERY_POLICY
   );
-  const hasRestrictCopyingDataFeature = useVueState(() =>
-    subscriptionStore.hasFeature(PlanFeature.FEATURE_RESTRICT_COPYING_DATA)
+  const hasRestrictCopyingDataFeature = usePlanFeature(
+    PlanFeature.FEATURE_RESTRICT_COPYING_DATA
   );
 
   const canUpdatePolicy = hasWorkspacePermissionV2("bb.policies.update");

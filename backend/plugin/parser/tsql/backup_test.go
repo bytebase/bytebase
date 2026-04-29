@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,90 @@ import (
 type rollbackCase struct {
 	Input  string
 	Result []base.BackupStatement
+}
+
+func TestBackupRestoreDoNotDependOnANTLR(t *testing.T) {
+	for _, path := range []string{"backup.go", "restore.go"} {
+		content, err := os.ReadFile(path)
+		require.NoError(t, err)
+		source := string(content)
+		require.NotContains(t, source, "github.com/antlr4-go/antlr/v4", path)
+		require.NotContains(t, source, "github.com/bytebase/parser/tsql", path)
+		require.NotContains(t, source, "ParseTSQL(", path)
+	}
+}
+
+func TestBackupOmniBoundaryCases(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantSQL     string
+		wantErrPart string
+	}{
+		{
+			name:  "update top option",
+			input: "UPDATE TOP (3) test SET c1 = 1 WHERE c2 = 2 OPTION (RECOMPILE);",
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* TOP (3) FROM test WHERE c2 = 2 OPTION (RECOMPILE)) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name:  "where keyword in comment",
+			input: "UPDATE test SET c1 = 1 WHERE /* WHERE */ c2 = 2;",
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* FROM test WHERE /* WHERE */ c2 = 2) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name:  "option keyword in comment",
+			input: "UPDATE test SET c1 = 1 /* OPTION */ OPTION (RECOMPILE);",
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* FROM test OPTION (RECOMPILE)) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name:  "option keyword in nested comment",
+			input: "UPDATE test SET c1 = 1 /* outer /* inner */ OPTION in outer */ OPTION (RECOMPILE);",
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* FROM test OPTION (RECOMPILE)) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name: "delete alias from join",
+			input: strings.Join([]string{
+				"DELETE FROM t_alias",
+				"FROM test AS t_alias JOIN test2 AS t2 ON t_alias.c1 = t2.c1",
+				"WHERE t_alias.c1 = 1;",
+			}, "\n"),
+			wantSQL: strings.Join([]string{
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [t_alias].* FROM test AS t_alias JOIN test2 AS t2 ON t_alias.c1 = t2.c1 WHERE t_alias.c1 = 1) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name:        "update current of rejected",
+			input:       "UPDATE test SET c1 = 1 WHERE CURRENT OF my_cursor;",
+			wantErrPart: "CURSOR clause is not supported",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, tc.input, "db", "backupDB", "rollback")
+			if tc.wantErrPart != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.wantErrPart)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, result, 1)
+			require.Equal(t, tc.wantSQL, result[0].Statement)
+		})
+	}
 }
 
 func TestBackup(t *testing.T) {

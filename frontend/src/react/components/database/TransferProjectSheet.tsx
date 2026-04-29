@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { DatabaseTableView } from "@/react/components/database";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -14,7 +14,6 @@ import {
 import { useVueState } from "@/react/hooks/useVueState";
 import { useActuatorV1Store } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 
 export function TransferProjectSheet({
   open,
@@ -50,28 +49,21 @@ export function TransferProjectSheet({
         <SheetHeader>
           <SheetTitle>{t("database.transfer-project")}</SheetTitle>
         </SheetHeader>
-        <SheetBody className="gap-y-4">
-          <p className="text-sm text-control-light">
+        <SheetBody className="gap-y-4 overflow-hidden">
+          <p className="shrink-0 text-sm text-control-light">
             {t("database.selected-n-databases", { n: databases.length })}
           </p>
 
-          <div className="border border-control-border rounded-xs max-h-48 overflow-y-auto">
-            {databases.map((db) => (
-              <div
-                key={db.name}
-                className="px-3 py-2 text-sm border-b last:border-b-0 flex items-center gap-x-2"
-              >
-                <img
-                  className="size-4"
-                  src={EngineIconPath[getInstanceResource(db).engine]}
-                  alt=""
-                />
-                <span>{extractDatabaseResourceName(db.name).databaseName}</span>
-              </div>
-            ))}
+          {/* Table grows / shrinks to fill remaining SheetBody space and
+              becomes the scroll container when the rows exceed it. The
+              `min-h-0` is required so flex can shrink it below the
+              natural content height; without it the children's intrinsic
+              size would push the SheetBody to overflow instead. */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <DatabaseTableView databases={databases} />
           </div>
 
-          <div className="flex items-center gap-x-6">
+          <div className="shrink-0 flex items-center gap-x-6">
             <label className="flex items-center gap-x-2 cursor-pointer">
               <input
                 type="radio"
@@ -97,10 +89,13 @@ export function TransferProjectSheet({
           </div>
 
           {mode === "project" && (
-            <ProjectSelect
-              value={selectedProject}
-              onChange={(name) => setSelectedProject(name)}
-            />
+            <div className="shrink-0">
+              <ProjectSelect
+                value={selectedProject}
+                onChange={(name) => setSelectedProject(name)}
+                portal
+              />
+            </div>
           )}
         </SheetBody>
         <SheetFooter>
