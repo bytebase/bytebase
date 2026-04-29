@@ -135,3 +135,16 @@ func TestNewMetadataDBBeforeConnectReturnsTokenError(t *testing.T) {
 	require.ErrorContains(t, err, "bb_meta")
 	require.Empty(t, connConfig.Password)
 }
+
+func TestMetadataDBOpenOptions(t *testing.T) {
+	require.Empty(t, metadataDBOpenOptions(nil, &fakeMetadataDBTokenProvider{}))
+
+	authConfig := &metadataDBAuthConfig{
+		enabled:  true,
+		region:   "us-east-1",
+		endpoint: "example.us-east-1.rds.amazonaws.com:5432",
+		user:     "bb_meta",
+	}
+
+	require.Len(t, metadataDBOpenOptions(authConfig, &fakeMetadataDBTokenProvider{}), 1)
+}

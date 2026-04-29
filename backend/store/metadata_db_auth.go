@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 )
 
@@ -103,4 +104,11 @@ func newMetadataDBBeforeConnect(authConfig *metadataDBAuthConfig, tokenProvider 
 		connConfig.Password = token
 		return nil
 	}
+}
+
+func metadataDBOpenOptions(authConfig *metadataDBAuthConfig, tokenProvider metadataDBTokenProvider) []stdlib.OptionOpenDB {
+	if authConfig == nil || !authConfig.enabled {
+		return nil
+	}
+	return []stdlib.OptionOpenDB{stdlib.OptionBeforeConnect(newMetadataDBBeforeConnect(authConfig, tokenProvider))}
 }

@@ -201,13 +201,18 @@ func readURLFromFile(path string) (string, error) {
 }
 
 func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, error) {
-	pgxConfig, err := pgx.ParseConfig(pgURL)
+	cleanURL, authConfig, err := parseMetadataDBAuthConfig(pgURL)
+	if err != nil {
+		return nil, err
+	}
+
+	pgxConfig, err := pgx.ParseConfig(cleanURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse database URL")
 	}
 
 	pgxConfig.Tracer = &metadataDBTracer{}
-	db := stdlib.OpenDB(*pgxConfig)
+	db := stdlib.OpenDB(*pgxConfig, metadataDBOpenOptions(authConfig, &awsMetadataDBTokenProvider{})...)
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {
