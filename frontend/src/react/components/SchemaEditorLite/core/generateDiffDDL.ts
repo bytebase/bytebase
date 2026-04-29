@@ -3,7 +3,6 @@ import { createContextValues } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
 import { sqlServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { t } from "@/plugins/i18n";
 import type {
   Database,
   DatabaseMetadata,
@@ -11,7 +10,7 @@ import type {
 import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { getDatabaseEngine } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
-import { validateDatabaseMetadata } from "./utils";
+import { validateDatabaseMetadata } from "./metadata";
 
 export type GenerateDiffDDLResult = {
   statement: string;
@@ -40,10 +39,7 @@ export const generateDiffDDL = async ({
 
   const validationMessages = validateDatabaseMetadata(targetMetadata);
   if (validationMessages.length > 0) {
-    return finish("", [
-      t("schema-editor.message.invalid-schema"),
-      ...validationMessages,
-    ]);
+    return finish("", ["Invalid schema", ...validationMessages]);
   }
   try {
     const newRequest = create(DiffMetadataRequestSchema, {

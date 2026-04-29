@@ -1994,6 +1994,8 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "SQL を挿入",
+    "no-diff": "適用する変更はありません",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2007,6 +2009,7 @@
       "name-placeholder": "Schema name",
       "select": "スキーマの選択"
     },
+    "self": "スキーマエディタ",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2018,7 +2021,8 @@
       "partitions": "パーティション",
       "type": "タイプ",
       "value": "値"
-    }
+    },
+    "template-database": "テンプレートデータベース"
   },
   "schema-template": {
     "classification": {

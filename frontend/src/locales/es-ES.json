@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "¿Eliminar índice?"
-    },
-    "select-tables-to-rollout": "Seleccionar tablas para implementar",
-    "table-partition": {
-      "drop-partition-confirm": "¿Eliminar partición de tabla?",
-      "drop-partition-with-subpartitions-confirm": "También eliminará todas sus subparticiones."
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -1768,9 +1762,7 @@
     },
     "task-execution-errors": "Errores de ejecución de tareas"
   },
-  "schema-designer": {
-    "use-tips": "Selecciona las tablas a diseñar"
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
@@ -1784,7 +1776,6 @@
       "create-table": "Nueva tabla",
       "create-view": "Crear vista",
       "drop": "Eliminar",
-      "drop-column": "Eliminar columna",
       "drop-schema": "Eliminar esquema",
       "drop-table": "Eliminar tabla",
       "rename": "Renombrar",
@@ -1798,7 +1789,6 @@
       "not-null": "No nulo",
       "on-update": "En actualización",
       "primary": "Primaria",
-      "select": "Seleccionar columna",
       "type": "Tipo"
     },
     "columns": "Columnas",
@@ -1811,53 +1801,26 @@
     "default": {
       "placeholder": "Introduzca un valor predeterminado o déjelo vacío si no hay ningún valor predeterminado"
     },
-    "foreign-key": {
-      "edit": "Editar clave externa",
-      "name-description": "El nombre único de la clave externa"
-    },
-    "functions": "Funciones",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "Columnas dependientes",
-      "edit-indexes": "Editar índices",
       "indexes": "Índices",
       "unique": "Único"
     },
-    "message": {
-      "cannot-drop-the-last-column": "No se puede eliminar la última columna",
-      "duplicated-function-name": "Nombre de función duplicado",
-      "duplicated-procedure-name": "Nombre del procedimiento duplicado",
-      "duplicated-table-name": "Nombre de tabla duplicado",
-      "duplicated-view-name": "Nombre de vista duplicado",
-      "invalid-function-name": "Nombre de función no válido",
-      "invalid-procedure-name": "Nombre de procedimiento no válido",
-      "invalid-schema": "Esquema no válido",
-      "invalid-schema-name": "Nombre de esquema inválido",
-      "invalid-table-name": "Nombre de tabla inválido",
-      "invalid-view-name": "Nombre de vista no válido"
-    },
-    "preview-schema-text": "Vista previa del texto del esquema",
-    "preview-view-definition": "Definición de vista previa",
-    "procedures": "Procedimientos",
+    "insert-sql": "Insertar SQL",
     "raw-sql": "SQL sin procesar",
     "schema": {
-      "name": "Nombre del Esquema",
       "select": "Seleccionar esquema"
     },
-    "search-database-and-table": "Buscar base de datos y tabla",
-    "table": {
-      "name": "Nombre de la tabla",
-      "select": "Seleccionar tabla"
-    },
+    "self": "Editor de esquema",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "Agregar subpartición",
-      "edit-partitions": "Editar particiones",
       "expression": "Expresión",
       "partitions": "Particiones",
       "type": "Tipo",
       "value": "Valor"
     },
-    "tables": "Tablas",
-    "views": "Vistas"
+    "template-database": "Base de datos plantilla"
   },
   "schema-template": {
     "classification": {

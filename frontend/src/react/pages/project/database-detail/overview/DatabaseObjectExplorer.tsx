@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite/utils/columnDefaultValue";
+import { getColumnDefaultValuePlaceholder } from "@/react/components/SchemaEditorLite/core/columnDefaultValue";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";

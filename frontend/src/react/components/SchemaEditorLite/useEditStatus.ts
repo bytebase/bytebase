@@ -1,6 +1,4 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { keyForResource } from "@/components/SchemaEditorLite/context/common";
-import type { EditStatus } from "@/components/SchemaEditorLite/types";
 import type {
   ColumnMetadata,
   Database,
@@ -11,6 +9,8 @@ import type {
   TablePartitionMetadata,
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { keyForResource } from "./core/keyForResource";
+import type { EditStatus } from "./core/types";
 import type { EditStatusContext, SchemaResourceMetadata } from "./types";
 
 export function useEditStatus(): EditStatusContext {
@@ -198,6 +198,7 @@ export function useEditStatus(): EditStatusContext {
 
   return {
     isDirty,
+    version,
     markEditStatus,
     markEditStatusByKey,
     getEditStatusByKey,

@@ -1,3 +1,4 @@
+export type { RebuildMetadataEditReset } from "./core/algorithm";
 export type {
   CommonTabContext,
   CoreTabContext,
@@ -6,19 +7,8 @@ export type {
   RolloutObject,
   TabContext,
   TabType,
-} from "@/components/SchemaEditorLite/types";
+} from "./core/types";
 
-import type { CoreTabContext } from "@/components/SchemaEditorLite/types";
-
-export type { RebuildMetadataEditReset } from "@/components/SchemaEditorLite/algorithm/rebuild";
-
-import type { RebuildMetadataEditReset } from "@/components/SchemaEditorLite/algorithm/rebuild";
-import type {
-  EditStatus,
-  EditTarget,
-  RolloutObject,
-  TabContext,
-} from "@/components/SchemaEditorLite/types";
 import type {
   ColumnMetadata,
   Database,
@@ -31,6 +21,14 @@ import type {
   ViewMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { RebuildMetadataEditReset } from "./core/algorithm";
+import type {
+  CoreTabContext,
+  EditStatus,
+  EditTarget,
+  RolloutObject,
+  TabContext,
+} from "./core/types";
 
 export type SchemaEditorOptions = {
   forceShowIndexes: boolean;
@@ -97,6 +95,12 @@ export type TabsContext = {
 // Edit status context
 export type EditStatusContext = {
   isDirty: boolean;
+  /**
+   * Monotonic counter that bumps on any mutation (mark / remove / clear).
+   * Use as a memo / effect dependency to react to in-place metadata edits
+   * that React cannot otherwise observe.
+   */
+  version: number;
   markEditStatus: (
     database: Database,
     metadata: SchemaResourceMetadata,

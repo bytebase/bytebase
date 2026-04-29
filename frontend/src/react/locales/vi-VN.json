@@ -1994,6 +1994,8 @@
       "unique": "Unique"
     },
     "indexes": "Indexes",
+    "insert-sql": "Chèn SQL",
+    "no-diff": "Không có thay đổi nào để áp dụng",
     "partition": {
       "expression": "Expression",
       "type": "Type",
@@ -2007,6 +2009,7 @@
       "name-placeholder": "Schema name",
       "select": "Chọn lược đồ"
     },
+    "self": "Trình chỉnh sửa lược đồ",
     "table": {
       "duplicate-name": "Table name already exists",
       "name-placeholder": "Table name",
@@ -2018,7 +2021,8 @@
       "partitions": "Phân vùng",
       "type": "Loại",
       "value": "Giá trị"
-    }
+    },
+    "template-database": "Cơ sở dữ liệu mẫu"
   },
   "schema-template": {
     "classification": {

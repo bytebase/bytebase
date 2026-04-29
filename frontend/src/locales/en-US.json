@@ -160,14 +160,8 @@
     }
   },
   "branch": {
-    "index": {
-      "drop-index-confirm": "Drop index?"
-    },
-    "select-tables-to-rollout": "Select tables to rollout",
-    "table-partition": {
-      "drop-partition-confirm": "Drop table partition?",
-      "drop-partition-with-subpartitions-confirm": "Will also drop all its subpartitions."
-    }
+    "index": {},
+    "table-partition": {}
   },
   "cel": {
     "condition": {
@@ -1768,9 +1762,7 @@
     },
     "task-execution-errors": "Task execution errors"
   },
-  "schema-designer": {
-    "use-tips": "Click a table to start."
-  },
+  "schema-designer": {},
   "schema-diagram": {
     "fit-content-with-view": "Fit content within view",
     "self": "Schema Diagram"
@@ -1784,7 +1776,6 @@
       "create-table": "New table",
       "create-view": "Create view",
       "drop": "Drop",
-      "drop-column": "Drop column",
       "drop-schema": "Drop schema",
       "drop-table": "Drop table",
       "rename": "Rename",
@@ -1798,7 +1789,6 @@
       "not-null": "Not Null",
       "on-update": "On Update",
       "primary": "Primary",
-      "select": "Select column",
       "type": "Type"
     },
     "columns": "Columns",
@@ -1811,53 +1801,26 @@
     "default": {
       "placeholder": "Enter default value or leave empty for no default"
     },
-    "foreign-key": {
-      "edit": "Edit foreign key",
-      "name-description": "The unique name of foreign key"
-    },
-    "functions": "Functions",
+    "foreign-key": {},
     "index": {
       "dependency-columns": "Depenedent columns",
-      "edit-indexes": "Edit indexes",
       "indexes": "Indexes",
       "unique": "Unique"
     },
-    "message": {
-      "cannot-drop-the-last-column": "Cannot drop the last column",
-      "duplicated-function-name": "Duplicated function name",
-      "duplicated-procedure-name": "Duplicated procedure name",
-      "duplicated-table-name": "Duplicated table name",
-      "duplicated-view-name": "Duplicated view name",
-      "invalid-function-name": "Invalid function name",
-      "invalid-procedure-name": "Invalid procedure name",
-      "invalid-schema": "Invalid schema",
-      "invalid-schema-name": "Invalid schema name",
-      "invalid-table-name": "Invalid table name",
-      "invalid-view-name": "Invalid view name"
-    },
-    "preview-schema-text": "Preview schema text",
-    "preview-view-definition": "Preview view definition",
-    "procedures": "Procedures",
+    "insert-sql": "Insert SQL",
     "raw-sql": "Raw SQL",
     "schema": {
-      "name": "Schema Name",
       "select": "Select schema"
     },
-    "search-database-and-table": "Search database and table",
-    "table": {
-      "name": "Table Name",
-      "select": "Select table"
-    },
+    "self": "Schema editor",
+    "table": {},
     "table-partition": {
-      "add-sub-partition": "Add sub partition",
-      "edit-partitions": "Edit partitions",
       "expression": "Expression",
       "partitions": "Partitions",
       "type": "Type",
       "value": "Value"
     },
-    "tables": "Tables",
-    "views": "Views"
+    "template-database": "Template database"
   },
   "schema-template": {
     "classification": {
