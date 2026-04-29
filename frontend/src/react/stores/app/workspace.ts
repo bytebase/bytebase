@@ -345,6 +345,10 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     return count < 0 ? Number.MAX_VALUE : count;
   },
 
+  hasUnifiedInstanceLicense: () => {
+    return get().instanceCountLimit() <= get().instanceLicenseCount();
+  },
+
   hasFeature: (feature) => {
     if (get().isExpired()) {
       return false;
@@ -360,11 +364,18 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     if (!instance || !instanceLimitFeature.has(feature)) {
       return get().hasFeature(feature);
     }
-    return checkInstanceFeature(plan, feature, instance.activation);
+    return checkInstanceFeature(
+      plan,
+      feature,
+      get().hasUnifiedInstanceLicense() || instance.activation
+    );
   },
 
   instanceMissingLicense: (feature, instance) => {
     if (!instanceLimitFeature.has(feature) || !instance) {
+      return false;
+    }
+    if (get().hasUnifiedInstanceLicense()) {
       return false;
     }
     return get().hasFeature(feature) && !instance.activation;

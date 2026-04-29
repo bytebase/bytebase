@@ -3498,10 +3498,10 @@
       "n-license-remain": "残り {{n}}",
       "require-license": "インスタンスライセンスが必要です",
       "success-notification": "ライセンスの割り当てが正常に更新されました",
+      "used-and-total-instance": "アクティブ/合計インスタンス制限",
       "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
       "used-and-total-user": "アクティブ/合計ユーザー制限"
     },
-    "max-instance-count": "最大インスタンス数",
     "overuse-modal": {
       "description": "{{plan}} では使用できない機能を使用しています。通常どおり使用できるように、できるだけ早くアップグレードしてください："
     },

@@ -37,6 +37,8 @@ type querySpanExtractor struct {
 	tableSourcesFrom []base.TableSource
 
 	predicateColumns base.SourceColumnSet
+
+	viewResolutionStack map[string]bool
 }
 
 func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -127,7 +129,7 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 					continue
 				}
 				view := schemaSchema.GetView(viewName)
-				viewColumns, err := q.getColumnsFromCreateView(view.Definition, databaseName, schemaName)
+				viewColumns, err := q.getColumnsFromCreateView(view.Definition, databaseName, schemaName, viewName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get columns for view %s.%s.%s", databaseName, schemaName, viewName)
 				}
@@ -149,7 +151,12 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 
 // getColumnsFromCreateView parses a CREATE VIEW definition with omni, extracts
 // the body's result columns, and applies the optional column alias list.
-func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDatabaseName string, viewSchemaName string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDatabaseName string, viewSchemaName string, viewName string) ([]base.QuerySpanResult, error) {
+	key := tsqlViewResolutionKey(viewDatabaseName, viewSchemaName, viewName)
+	if q.viewResolutionStack[key] {
+		return nil, errors.Errorf("cyclic view reference detected while resolving %q", viewName)
+	}
+
 	stmts, err := ParseTSQLOmni(definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse CREATE VIEW definition")
@@ -180,6 +187,8 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDat
 	newQ := newOmniQuerySpanExtractor(viewDatabaseName, viewSchemaName, q.gCtx, q.ignoreCaseSensitive)
 	newQ.ctx = q.ctx
 	newQ.source = definition
+	newQ.viewResolutionStack = cloneViewResolutionStack(q.viewResolutionStack)
+	newQ.viewResolutionStack[key] = true
 	pseudo, err := newQ.extractFromSelectStmt(body)
 	if err != nil {
 		var resourceNotFound *base.ResourceNotFoundError
@@ -196,6 +205,18 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDat
 		}
 	}
 	return results, nil
+}
+
+func tsqlViewResolutionKey(databaseName, schemaName, viewName string) string {
+	return databaseName + "\x00" + schemaName + "\x00" + viewName
+}
+
+func cloneViewResolutionStack(in map[string]bool) map[string]bool {
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 // tsqlGetAllFieldsOfTableInFromOrOuterCTE expands `table.*` to the column set

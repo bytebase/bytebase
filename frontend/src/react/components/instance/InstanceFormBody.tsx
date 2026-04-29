@@ -18,6 +18,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
@@ -838,6 +839,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   const instanceV1Store = useInstanceV1Store();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
+  const hasUnifiedInstanceLicense = useVueState(
+    () => subscriptionStore.hasUnifiedInstanceLicense
+  );
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
@@ -1359,35 +1363,37 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             </div>
 
             {/* Activation toggle */}
-            {subscriptionStore.currentPlan !== PlanType.FREE && allowEdit && (
-              <div className="sm:col-span-2 ml-0 sm:ml-3">
-                <label htmlFor="activation" className="textlabel block">
-                  {t("subscription.instance-assignment.assign-license")} (
-                  <a href="/setting/subscription" className="accent-link">
-                    {t("subscription.instance-assignment.n-license-remain", {
-                      n: availableLicenseCountText,
-                    })}
-                  </a>
-                  )
-                </label>
-                <div className="h-8.5 flex flex-row items-center mt-1">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={basicInfo.activation}
-                      disabled={
-                        !basicInfo.activation && availableLicenseCount === 0
-                      }
-                      onChange={(e) =>
-                        changeInstanceActivation(e.target.checked)
-                      }
-                    />
-                    <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            {subscriptionStore.currentPlan !== PlanType.FREE &&
+              !hasUnifiedInstanceLicense &&
+              allowEdit && (
+                <div className="sm:col-span-2 ml-0 sm:ml-3">
+                  <label htmlFor="activation" className="textlabel block">
+                    {t("subscription.instance-assignment.assign-license")} (
+                    <a href="/setting/subscription" className="accent-link">
+                      {t("subscription.instance-assignment.n-license-remain", {
+                        n: availableLicenseCountText,
+                      })}
+                    </a>
+                    )
                   </label>
+                  <div className="h-8.5 flex flex-row items-center mt-1">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={basicInfo.activation}
+                        disabled={
+                          !basicInfo.activation && availableLicenseCount === 0
+                        }
+                        onChange={(e) =>
+                          changeInstanceActivation(e.target.checked)
+                        }
+                      />
+                      <div className="w-9 h-5 bg-control-border peer-focus:outline-none rounded-full peer peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-background after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                    </label>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Resource ID */}
             <div className="sm:col-span-3 sm:col-start-1 -mt-4">

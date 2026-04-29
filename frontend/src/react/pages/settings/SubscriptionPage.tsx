@@ -44,11 +44,13 @@ export function SubscriptionPage({
     expireAt,
     instanceCountLimit,
     instanceLicenseCount,
+    hasUnifiedInstanceLicense,
     userCountLimit,
   } = useSubscriptionState();
   const {
     isSaaSMode,
     userCountInIam,
+    totalInstanceCount,
     activatedInstanceCount,
     workspaceResourceName,
   } = useServerState();
@@ -189,6 +191,8 @@ export function SubscriptionPage({
           <InstanceLicenseStats
             planType={planType}
             instanceCountLimit={instanceCountLimit}
+            totalInstanceCount={totalInstanceCount}
+            hasUnifiedInstanceLicense={hasUnifiedInstanceLicense}
             activatedCount={activatedInstanceCount}
             totalLicenseCount={totalLicenseCount}
             onManageInstanceLicenses={onManageInstanceLicenses}
@@ -301,10 +305,12 @@ export function SubscriptionPage({
           </div>
         </div>
       )}
-      <InstanceAssignmentSheet
-        open={showInstanceAssignmentSheet}
-        onOpenChange={setShowInstanceAssignmentSheet}
-      />
+      {!hasUnifiedInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showInstanceAssignmentSheet}
+          onOpenChange={setShowInstanceAssignmentSheet}
+        />
+      )}
     </div>
   );
 }
@@ -312,23 +318,37 @@ export function SubscriptionPage({
 function InstanceLicenseStats({
   planType,
   instanceCountLimit,
+  totalInstanceCount,
+  hasUnifiedInstanceLicense,
   activatedCount,
   totalLicenseCount,
   onManageInstanceLicenses,
 }: {
   planType: string;
   instanceCountLimit: number;
+  totalInstanceCount: number;
+  hasUnifiedInstanceLicense: boolean;
   activatedCount: number;
   totalLicenseCount: string;
   onManageInstanceLicenses: () => void;
 }) {
   const { t } = useTranslation();
+  const instanceLimit =
+    instanceCountLimit === Number.MAX_VALUE
+      ? t("common.unlimited")
+      : `${instanceCountLimit}`;
 
-  if (planType === "FREE") {
+  if (planType === "FREE" || hasUnifiedInstanceLicense) {
     return (
       <div className="flex flex-col text-left">
-        <dt className="text-main">{t("subscription.max-instance-count")}</dt>
-        <div className="mt-1 text-4xl">{instanceCountLimit}</div>
+        <dt className="text-main">
+          {t("subscription.instance-assignment.used-and-total-instance")}
+        </dt>
+        <div className="mt-1 text-4xl flex items-center gap-2">
+          {totalInstanceCount}
+          <span className="font-mono text-control-light">/</span>
+          {instanceLimit}
+        </div>
       </div>
     );
   }

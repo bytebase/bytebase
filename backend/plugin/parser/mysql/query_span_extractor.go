@@ -40,6 +40,8 @@ type querySpanExtractor struct {
 	// priorTableInFrom is the table sources from the from clause before the current table source.
 	// It's used to resolve the column name in JSON_TABLE functions.
 	priorTableInFrom []base.TableSource
+
+	viewResolutionStack map[string]bool
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -451,11 +453,12 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		subqueryExtractor := &querySpanExtractor{
 			ctx: q.ctx,
 			// The defaultDatabase is the same as the outer query.
-			defaultDatabase:   q.defaultDatabase,
-			gCtx:              q.gCtx,
-			ctes:              q.ctes,
-			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
-			tableSourceFrom:   []base.TableSource{},
+			defaultDatabase:     q.defaultDatabase,
+			gCtx:                q.gCtx,
+			ctes:                q.ctes,
+			outerTableSources:   append(q.outerTableSources, q.tableSourceFrom...),
+			tableSourceFrom:     []base.TableSource{},
+			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		}
 		tableSource, err := subqueryExtractor.extractSubquery(ctx)
 		if err != nil {
@@ -1400,7 +1403,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		viewSchema = schema.GetView(tableName)
 	}
 	if viewSchema != nil {
-		columns, err := q.getColumnsForView(viewSchema.Definition)
+		columns, err := q.getColumnsForView(dbMetadata.GetProto().GetName(), viewSchema.Name, viewSchema.Definition)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
@@ -1420,8 +1423,15 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	}
 }
 
-func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsForView(databaseName, viewName, definition string) ([]base.QuerySpanResult, error) {
+	key := mysqlViewResolutionKey(databaseName, viewName)
+	if q.viewResolutionStack[key] {
+		return nil, errors.Errorf("cyclic view reference detected while resolving %q", viewName)
+	}
+
 	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx, q.ignoreCaseSensitive)
+	newQ.viewResolutionStack = cloneViewResolutionStack(q.viewResolutionStack)
+	newQ.viewResolutionStack[key] = true
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get query span for view")
@@ -1430,6 +1440,18 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 		return nil, span.NotFoundError
 	}
 	return span.Results, nil
+}
+
+func mysqlViewResolutionKey(databaseName, viewName string) string {
+	return databaseName + "\x00" + viewName
+}
+
+func cloneViewResolutionStack(in map[string]bool) map[string]bool {
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 // selectOnlyListener is the listener to listen the top level select statement only.

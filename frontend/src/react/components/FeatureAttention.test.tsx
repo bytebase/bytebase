@@ -51,7 +51,9 @@ vi.mock("@/react/stores/app", () => ({
 
 vi.mock("@/types", () => ({
   ENTERPRISE_INQUIRE_LINK,
-  instanceLimitFeature: new Set<PlanFeature>(),
+  instanceLimitFeature: new Set<PlanFeature>([
+    PlanFeature.FEATURE_DATA_MASKING,
+  ]),
 }));
 
 vi.mock("@/utils", () => ({
@@ -98,6 +100,7 @@ beforeEach(async () => {
       selector({
         hasInstanceFeature: () => false,
         instanceMissingLicense: () => false,
+        hasUnifiedInstanceLicense: () => false,
         getMinimumRequiredPlan: () => PlanType.TEAM,
         hasFeature: () => false,
       })
@@ -138,6 +141,43 @@ describe("FeatureAttention", () => {
     expect(openSpy).toHaveBeenCalledWith(ENTERPRISE_INQUIRE_LINK, "_blank");
 
     openSpy.mockRestore();
+    unmount();
+  });
+
+  test("does not show assignment attention in unified instance license mode", () => {
+    mocks.useSubscriptionState.mockReturnValue({
+      isTrialing: false,
+      trialingDays: 14,
+    });
+    mocks.useServerState.mockReturnValue({
+      totalInstanceCount: 2,
+      activatedInstanceCount: 1,
+    });
+    mocks.useAppStore.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({
+          hasInstanceFeature: () => true,
+          instanceMissingLicense: () => false,
+          hasUnifiedInstanceLicense: () => true,
+          getMinimumRequiredPlan: () => PlanType.TEAM,
+          hasFeature: () => true,
+        })
+    );
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+
+    render();
+
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(
+      [...container.querySelectorAll("button")].some((button) =>
+        button.textContent?.includes(
+          "subscription.instance-assignment.assign-license"
+        )
+      )
+    ).toBe(false);
+
     unmount();
   });
 });

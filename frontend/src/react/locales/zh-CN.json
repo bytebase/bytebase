@@ -3498,10 +3498,10 @@
       "n-license-remain": "剩余 {{n}} 个",
       "require-license": "需要实例证书",
       "success-notification": "证书分配更新成功",
+      "used-and-total-instance": "活跃/总实例限制",
       "used-and-total-license": "已分配 / 总实例证书",
       "used-and-total-user": "活跃/总用户限制"
     },
-    "max-instance-count": "最多实例数",
     "overuse-modal": {
       "description": "您正在使用{{plan}}不可用的功能。请尽快升级以确保正常使用："
     },
