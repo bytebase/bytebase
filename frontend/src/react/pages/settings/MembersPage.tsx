@@ -114,10 +114,6 @@ const assertNever = (value: never): never => {
   throw new Error(`Unexpected value: ${String(value)}`);
 };
 
-const getProjectRoleSet = (bindings: Binding[]): string[] => {
-  return [...new Set(bindings.map((binding) => binding.role))];
-};
-
 // ============================================================
 // MemberTable (view by members)
 // ============================================================
@@ -146,12 +142,23 @@ function MemberTable({
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
 
+  // When showExpiredRoles is off in project scope, hide rows whose only
+  // project bindings are expired — otherwise they'd render as empty-roles
+  // rows but still be selectable, which is misleading.
+  const visibleBindings = useMemo(() => {
+    if (scope !== "project" || showExpiredRoles) return bindings;
+    return bindings.filter((mb) => {
+      if (mb.projectRoleBindings.length === 0) return true;
+      return mb.projectRoleBindings.some((b) => !isBindingPolicyExpired(b));
+    });
+  }, [bindings, scope, showExpiredRoles]);
+
   const selectableBindings = useMemo(
     () =>
-      bindings.filter(
+      visibleBindings.filter(
         (b) => scope !== "project" || b.projectRoleBindings.length > 0
       ),
-    [bindings, scope]
+    [visibleBindings, scope]
   );
 
   const allSelected =
@@ -232,7 +239,7 @@ function MemberTable({
           </tr>
         </thead>
         <tbody>
-          {bindings.map((mb) => (
+          {visibleBindings.map((mb) => (
             <tr
               key={mb.binding}
               className="border-b last:border-b-0 hover:bg-control-bg"
@@ -353,7 +360,7 @@ function MemberTable({
               </td>
             </tr>
           ))}
-          {bindings.length === 0 && (
+          {visibleBindings.length === 0 && (
             <tr>
               <td
                 colSpan={allowEdit ? 4 : 3}
@@ -395,19 +402,33 @@ function MemberTableByRole({
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
+  type RoleMember = { member: MemberBinding; allExpired: boolean };
   const roleToBindings = useMemo(() => {
-    const map = new Map<string, MemberBinding[]>();
+    const map = new Map<string, RoleMember[]>();
     for (const mb of bindings) {
-      const projectBindings = showExpiredRoles
-        ? mb.projectRoleBindings
-        : mb.projectRoleBindings.filter((b) => !isBindingPolicyExpired(b));
-      const roles =
-        scope === "project"
-          ? getProjectRoleSet(projectBindings)
-          : [...mb.workspaceLevelRoles];
-      for (const role of roles) {
-        if (!map.has(role)) map.set(role, []);
-        map.get(role)!.push(mb);
+      if (scope === "project") {
+        const visibleBindings = showExpiredRoles
+          ? mb.projectRoleBindings
+          : mb.projectRoleBindings.filter((b) => !isBindingPolicyExpired(b));
+        // Group this member's visible bindings by role so we can mark a row
+        // expired only when ALL of its bindings for that role are expired.
+        const bindingsByRole = new Map<string, Binding[]>();
+        for (const b of visibleBindings) {
+          if (!bindingsByRole.has(b.role)) bindingsByRole.set(b.role, []);
+          bindingsByRole.get(b.role)!.push(b);
+        }
+        for (const [role, roleBindings] of bindingsByRole) {
+          const allExpired = roleBindings.every((b) =>
+            isBindingPolicyExpired(b)
+          );
+          if (!map.has(role)) map.set(role, []);
+          map.get(role)!.push({ member: mb, allExpired });
+        }
+      } else {
+        for (const role of mb.workspaceLevelRoles) {
+          if (!map.has(role)) map.set(role, []);
+          map.get(role)!.push({ member: mb, allExpired: false });
+        }
       }
     }
     const sortedRoles = sortRoles([...map.keys()]);
@@ -472,10 +493,13 @@ function MemberTableByRole({
                   </td>
                 </tr>
                 {expanded &&
-                  members.map((mb) => (
+                  members.map(({ member: mb, allExpired }) => (
                     <tr
                       key={`${role}-${mb.binding}`}
-                      className="border-b last:border-b-0 hover:bg-control-bg"
+                      className={cn(
+                        "border-b last:border-b-0 hover:bg-control-bg",
+                        allExpired && "opacity-60"
+                      )}
                     >
                       <td className="px-4 py-2 pl-10">
                         <div className="flex items-center gap-x-3">
@@ -491,9 +515,22 @@ function MemberTableByRole({
                           )}
                           <div className="flex flex-col">
                             <div className="flex items-center gap-x-1.5">
-                              <span className="font-medium text-accent">
+                              <span
+                                className={cn(
+                                  "font-medium text-accent",
+                                  allExpired && "line-through"
+                                )}
+                              >
                                 {mb.title}
                               </span>
+                              {allExpired && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  {t("common.expired")}
+                                </Badge>
+                              )}
                               {mb.type === "users" &&
                                 mb.user?.name === currentUser.name && (
                                   <Badge className="text-xs">
