@@ -1,10 +1,34 @@
 package store
 
 import (
+	"context"
+	"errors"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
+
+type fakeMetadataDBTokenProvider struct {
+	token string
+	err   error
+	calls []fakeMetadataDBTokenProviderCall
+}
+
+type fakeMetadataDBTokenProviderCall struct {
+	endpoint string
+	region   string
+	user     string
+}
+
+func (p *fakeMetadataDBTokenProvider) BuildAuthToken(_ context.Context, endpoint, region, user string) (string, error) {
+	p.calls = append(p.calls, fakeMetadataDBTokenProviderCall{
+		endpoint: endpoint,
+		region:   region,
+		user:     user,
+	})
+	return p.token, p.err
+}
 
 func TestParseMetadataDBAuthConfigDisabled(t *testing.T) {
 	cleanURL, authConfig, err := parseMetadataDBAuthConfig("postgres://bb:secret@example.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full")
@@ -70,4 +94,44 @@ func TestParseMetadataDBAuthConfigRequiresFields(t *testing.T) {
 func TestParseMetadataDBAuthConfigRejectsIAMForNonURI(t *testing.T) {
 	_, _, err := parseMetadataDBAuthConfig("host=example.us-east-1.rds.amazonaws.com port=5432 user=bb bytebase_aws_rds_iam=true bytebase_aws_region=us-east-1")
 	require.ErrorContains(t, err, "metadata database AWS RDS IAM auth requires a postgres:// or postgresql:// URL")
+}
+
+func TestNewMetadataDBBeforeConnectSetsPassword(t *testing.T) {
+	tokenProvider := &fakeMetadataDBTokenProvider{token: "generated-token"}
+	hook := newMetadataDBBeforeConnect(&metadataDBAuthConfig{
+		endpoint: "example.us-east-1.rds.amazonaws.com:5432",
+		region:   "us-east-1",
+		user:     "bb_meta",
+	}, tokenProvider)
+	connConfig := &pgx.ConnConfig{}
+
+	err := hook(context.Background(), connConfig)
+
+	require.NoError(t, err)
+	require.Equal(t, "generated-token", connConfig.Password)
+	require.Equal(t, []fakeMetadataDBTokenProviderCall{
+		{
+			endpoint: "example.us-east-1.rds.amazonaws.com:5432",
+			region:   "us-east-1",
+			user:     "bb_meta",
+		},
+	}, tokenProvider.calls)
+}
+
+func TestNewMetadataDBBeforeConnectReturnsTokenError(t *testing.T) {
+	tokenProvider := &fakeMetadataDBTokenProvider{err: errors.New("credential chain failed")}
+	hook := newMetadataDBBeforeConnect(&metadataDBAuthConfig{
+		endpoint: "example.us-east-1.rds.amazonaws.com:5432",
+		region:   "us-east-1",
+		user:     "bb_meta",
+	}, tokenProvider)
+	connConfig := &pgx.ConnConfig{}
+
+	err := hook(context.Background(), connConfig)
+
+	require.ErrorContains(t, err, "failed to build metadata database AWS RDS IAM auth token")
+	require.ErrorContains(t, err, "example.us-east-1.rds.amazonaws.com:5432")
+	require.ErrorContains(t, err, "us-east-1")
+	require.ErrorContains(t, err, "bb_meta")
+	require.Empty(t, connConfig.Password)
 }

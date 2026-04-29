@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 )
@@ -24,6 +26,20 @@ type metadataDBAuthConfig struct {
 
 type metadataDBTokenProvider interface {
 	BuildAuthToken(ctx context.Context, endpoint, region, user string) (string, error)
+}
+
+type awsMetadataDBTokenProvider struct{}
+
+func (*awsMetadataDBTokenProvider) BuildAuthToken(ctx context.Context, endpoint, region, user string) (string, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load AWS config")
+	}
+	token, err := auth.BuildAuthToken(ctx, endpoint, region, user, cfg.Credentials)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create authentication token")
+	}
+	return token, nil
 }
 
 func parseMetadataDBAuthConfig(pgURL string) (string, *metadataDBAuthConfig, error) {
