@@ -67,8 +67,6 @@ const resizeZoneClasses: Record<ResizeDirection, string> = {
   sw: "bottom-[-6px] left-[-6px] size-[12px] cursor-sw-resize",
 };
 
-const tokenFormatter = new Intl.NumberFormat();
-
 export function AgentWindow() {
   const { t } = useTranslation();
 
@@ -246,38 +244,6 @@ export function AgentWindow() {
   const archivedChats = useMemo(
     () => orderedChats.filter((chat) => chat.archived),
     [orderedChats]
-  );
-
-  const currentChatStatusLabel = useMemo(() => {
-    if (!currentChat) return t("agent.chat-status-idle");
-    if (currentChat.interrupted) return t("agent.chat-status-interrupted");
-    switch (currentChat.status) {
-      case "running":
-        return t("agent.chat-status-running");
-      case "awaiting_user":
-        return t("agent.chat-status-awaiting-user");
-      case "error":
-        return t("agent.chat-status-error");
-      default:
-        return t("agent.chat-status-idle");
-    }
-  }, [currentChat, t]);
-
-  const currentChatStatusClass = useMemo(() => {
-    if (!currentChat || currentChat.status === "idle")
-      return "bg-control-bg text-control-light";
-    if (currentChat.status === "running") return "bg-blue-50 text-accent";
-    if (currentChat.interrupted || currentChat.status === "error")
-      return "bg-red-50 text-error";
-    return "bg-amber-50 text-amber-600";
-  }, [currentChat]);
-
-  const currentChatTokenUsageLabel = useMemo(
-    () =>
-      t("agent.chat-total-tokens", {
-        count: tokenFormatter.format(currentChat?.totalTokensUsed ?? 0),
-      }),
-    [currentChat?.totalTokensUsed, t]
   );
 
   const isChatCreationDisabled = hasRunningChat;
@@ -949,20 +915,13 @@ export function AgentWindow() {
       <div className="flex size-full flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl">
         {/* Header */}
         <div
+          data-agent-window-header
           className="flex cursor-move select-none items-center justify-between border-b bg-control-bg px-3 py-2 [touch-action:none]"
           onPointerDown={startDrag}
         >
           <div className="flex min-w-0 items-center gap-x-2">
             <span className="truncate text-sm font-medium">
               {t("agent.assistant-title")}
-            </span>
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${currentChatStatusClass}`}
-            >
-              {currentChatStatusLabel}
-            </span>
-            <span className="truncate text-xs text-control-light">
-              {currentChatTokenUsageLabel}
             </span>
           </div>
           <div className="flex items-center gap-x-1">

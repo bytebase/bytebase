@@ -265,10 +265,20 @@ export function DatabaseTableView({
         ),
     });
     return cols;
-    // toggleSelection / toggleSelectAll close over selectedNames /
-    // onSelectedNamesChange but they're stable callbacks within a single
-    // render and the cell handlers re-bind on every render anyway.
-  }, [showSelection, showProjectColumn, allSelected, selectedNames, t]);
+    // `databases` and `onSelectedNamesChange` belong here because the
+    // header checkbox's `toggleSelectAll` closes over both. Pagination /
+    // filtering can replace `databases` while `allSelected` stays false —
+    // without listing it the memoized handler keeps the previous page's
+    // names and "select all" selects the wrong rows.
+  }, [
+    showSelection,
+    showProjectColumn,
+    allSelected,
+    selectedNames,
+    onSelectedNamesChange,
+    databases,
+    t,
+  ]);
 
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 

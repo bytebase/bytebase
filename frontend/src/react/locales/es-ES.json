@@ -28,12 +28,7 @@
     "chat-archived-label": "Archivado",
     "chat-default-title": "Nuevo chat",
     "chat-list-label": "Chats",
-    "chat-status-awaiting-user": "Esperando usuario",
-    "chat-status-error": "Error",
-    "chat-status-idle": "Inactivo",
-    "chat-status-interrupted": "Interrumpido",
-    "chat-status-running": "Ejecutando",
-    "chat-total-tokens": "Tokens totales",
+    "chat-total-tokens": "Tokens totales: {{count}}",
     "close": "Cerrar",
     "confirm": "Confirmar",
     "delete-all-chats": "Eliminar todos los chats",
@@ -282,6 +277,7 @@
     "environments": "Entornos",
     "error": "Error",
     "expiration": "Expiración",
+    "expired": "Expirado",
     "export": "Exportar",
     "failed": "Error",
     "file-selector": {
@@ -1720,7 +1716,8 @@
         },
         "max-expiration-hint": "Máximo permitido por la política del espacio de trabajo: {{days}} día(s)."
       },
-      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
+      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?",
+      "show-expired-roles": "Mostrar roles expirados"
     },
     "overview": {
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
@@ -1937,6 +1934,7 @@
   "rollout.task.selected-count": "{{count}} tarea seleccionada",
   "rollout.task.statement-truncated-hint": "Declaración truncada debido al gran tamaño.",
   "schema-diagram": {
+    "fit-content-with-view": "Ajustar contenido dentro de la vista",
     "self": "Diagrama de Esquema"
   },
   "schema-editor": {
@@ -2005,7 +2003,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "Seleccionar esquema"
     },
     "self": "Editor de esquema",
     "table": {

@@ -148,6 +148,9 @@ func (q *omniQuerySpanExtractor) extractOmniTableStmt(stmt *ast.TableStmt) (*bas
 	if stmt == nil || stmt.Table == nil {
 		return &base.PseudoTable{}, nil
 	}
+	if stmt.Into != nil {
+		return nil, errors.New("meet unsupported table statement with into")
+	}
 	tableSource, err := q.findTableSchema(stmt.Table.Schema, stmt.Table.Name)
 	if err != nil {
 		return nil, err
@@ -1177,17 +1180,16 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 			return
 		}
 		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromOrderBy(result, n.OrderBy, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromLimit(result, n.Limit, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.ValuesStmt:
 		for _, row := range n.Rows {
 			for _, expr := range row {
 				collectOmniAccessTablesFromExpr(result, expr, defaultDatabase, normalizeStarRocksCluster)
 			}
 		}
-		for _, orderBy := range n.OrderBy {
-			if orderBy != nil {
-				collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
-			}
-		}
+		collectOmniAccessTablesFromOrderBy(result, n.OrderBy, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromLimit(result, n.Limit, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.CallStmt:
 		for _, arg := range n.Args {
 			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase, normalizeStarRocksCluster)
@@ -1203,8 +1205,30 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		collectOmniAccessTablesFromExpr(result, n.Where, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.HandlerCloseStmt:
 		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.LockTablesStmt:
+		for _, table := range n.Tables {
+			if table != nil {
+				collectOmniAccessTablesFromTableRef(result, table.Table, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
 	default:
 	}
+}
+
+func collectOmniAccessTablesFromOrderBy(result base.SourceColumnSet, orderByItems []*ast.OrderByItem, defaultDatabase string, normalizeStarRocksCluster bool) {
+	for _, orderBy := range orderByItems {
+		if orderBy != nil {
+			collectOmniAccessTablesFromExpr(result, orderBy.Expr, defaultDatabase, normalizeStarRocksCluster)
+		}
+	}
+}
+
+func collectOmniAccessTablesFromLimit(result base.SourceColumnSet, limit *ast.Limit, defaultDatabase string, normalizeStarRocksCluster bool) {
+	if limit == nil {
+		return
+	}
+	collectOmniAccessTablesFromExpr(result, limit.Count, defaultDatabase, normalizeStarRocksCluster)
+	collectOmniAccessTablesFromExpr(result, limit.Offset, defaultDatabase, normalizeStarRocksCluster)
 }
 
 func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *ast.TableRef, defaultDatabase string, normalizeStarRocksCluster bool) {

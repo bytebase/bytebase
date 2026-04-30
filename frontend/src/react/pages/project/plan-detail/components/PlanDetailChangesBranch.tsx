@@ -1599,7 +1599,7 @@ function DatabaseGroupSelector({
               <td className="py-2 pr-4">
                 <div className="flex items-center gap-x-1.5">
                   <FolderTree className="size-4 shrink-0 text-control-light" />
-                  <span>{extractDatabaseGroupName(group.name)}</span>
+                  <span>{group.title}</span>
                 </div>
               </td>
             </tr>

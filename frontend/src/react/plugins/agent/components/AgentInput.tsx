@@ -35,6 +35,8 @@ const runTokens = new Map<string, number>();
 // Module-level request token for dom ref suggestion loading.
 let domRefRequestToken = 0;
 
+const tokenFormatter = new Intl.NumberFormat();
+
 // ---------------------------------------------------------------------------
 // Helper functions (same logic as the Vue version)
 // ---------------------------------------------------------------------------
@@ -153,6 +155,13 @@ export function AgentInput() {
     isAwaitingChoose ||
     isAIConfigurationBlocked ||
     !input.trim();
+  const currentChatTokenUsageLabel = useMemo(
+    () =>
+      t("agent.chat-total-tokens", {
+        count: tokenFormatter.format(currentChat?.totalTokensUsed ?? 0),
+      }),
+    [currentChat?.totalTokensUsed, t]
+  );
 
   // @-mention autocomplete
   const activeDomRefQuery = useMemo(
@@ -705,6 +714,13 @@ export function AgentInput() {
           </div>
         </div>
       )}
+
+      <div
+        className="mb-1 flex justify-end text-xs text-control-light"
+        data-agent-input-footer
+      >
+        {currentChatTokenUsageLabel}
+      </div>
 
       {/* Confirm buttons */}
       {isAwaitingConfirm ? (

@@ -196,7 +196,10 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] function arguments containing subqueries appear in access tables.
 - [x] function-level `ORDER BY` subqueries appear in access tables.
 - [x] `VALUES` expressions containing subqueries appear in access tables.
+- [x] `TABLE ... ORDER BY` subqueries participate in mixed user/system table detection.
+- [x] `TABLE ... LIMIT` subqueries participate in mixed user/system table detection when parsed.
 - [x] `CALL` arguments containing subqueries participate in mixed user/system table detection.
+- [x] `LOCK TABLES` references participate in mixed user/system table detection.
 - [x] DML/DDL roots such as `INSERT ... SELECT` and `CREATE TABLE ... AS SELECT` participate in mixed user/system table detection.
 - [x] plain `EXPLAIN` payload tables participate in mixed user/system table detection.
 - [x] `HANDLER` table appears in access tables where legacy did.
@@ -218,10 +221,11 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] missing table maps to fail-open `NotFoundError`.
 - [x] missing column maps to fail-open `NotFoundError`.
 - [x] unsupported select-with-into returns the legacy hard error.
+- [x] unsupported table-with-into returns the legacy hard error.
 - [x] `EXPLAIN ANALYZE` does not require output lineage schema lookups for stale metadata.
 - [ ] unsupported table source returns a hard error instead of silent empty lineage.
 - [x] unsupported expression node cannot silently return empty source columns.
-- [x] parser failure returns the parser error and does not fabricate a query span.
+- [x] parser failure returns `parser/base.SyntaxError` with position and does not fabricate a query span.
 - [x] nil or empty statement list returns the legacy empty select span.
 
 ## Phase 6: Metadata, Views, Engines, And Case Sensitivity

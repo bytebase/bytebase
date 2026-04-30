@@ -56,6 +56,15 @@ func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx ba
 	}
 }
 
+func (q *querySpanExtractor) findTempTable(rawName string) (*base.PhysicalTable, bool) {
+	for name, tempTable := range q.gCtx.TempTables {
+		if q.isIdentifierEqual(rawName, name) {
+			return tempTable, true
+		}
+	}
+	return nil, false
+}
+
 // tsqlFindTableSchemaByParts resolves a (linkedServer, database, schema, table)
 // tuple to a TableSource. Empty strings for database/schema mean "not specified
 // by the user"; defaults are applied here when looking up metadata. CTEs
@@ -67,6 +76,9 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", linkedServer)
 	}
 	if strings.HasPrefix(rawTable, "#") {
+		if tempTable, ok := q.findTempTable(rawTable); ok {
+			return tempTable, nil
+		}
 		// TODO(masking): Considering SELECT * INTO #temp FROM dbo.t1; SELECT * FROM #temp. We should mask the #temp.
 		return &base.PseudoTable{}, nil
 	}

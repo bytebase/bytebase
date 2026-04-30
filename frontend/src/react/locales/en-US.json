@@ -28,12 +28,7 @@
     "chat-archived-label": "Archived",
     "chat-default-title": "New Chat",
     "chat-list-label": "Chats",
-    "chat-status-awaiting-user": "Awaiting user",
-    "chat-status-error": "Error",
-    "chat-status-idle": "Idle",
-    "chat-status-interrupted": "Interrupted",
-    "chat-status-running": "Running",
-    "chat-total-tokens": "Total tokens",
+    "chat-total-tokens": "Total tokens: {{count}}",
     "close": "Close",
     "confirm": "Confirm",
     "delete-all-chats": "Delete all chats",
@@ -285,6 +280,7 @@
     "environments": "Environments",
     "error": "Error",
     "expiration": "Expiration",
+    "expired": "Expired",
     "export": "Export",
     "failed": "Failed",
     "file-selector": {
@@ -1728,7 +1724,8 @@
         },
         "max-expiration-hint": "Maximum allowed by workspace policy: {{days}} day(s)."
       },
-      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
+      "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?",
+      "show-expired-roles": "Show expired roles"
     },
     "overview": {
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
@@ -1950,6 +1947,7 @@
   "rollout.task.selected-count": "{{count}} task selected",
   "rollout.task.statement-truncated-hint": "Statement truncated due to large size.",
   "schema-diagram": {
+    "fit-content-with-view": "Fit content within view",
     "self": "Schema Diagram"
   },
   "schema-editor": {
@@ -2018,7 +2016,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "Select schema"
     },
     "self": "Schema editor",
     "table": {

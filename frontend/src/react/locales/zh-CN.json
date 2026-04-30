@@ -28,12 +28,7 @@
     "chat-archived-label": "已归档",
     "chat-default-title": "新对话",
     "chat-list-label": "对话列表",
-    "chat-status-awaiting-user": "等待用户",
-    "chat-status-error": "错误",
-    "chat-status-idle": "空闲",
-    "chat-status-interrupted": "已中断",
-    "chat-status-running": "运行中",
-    "chat-total-tokens": "总 token 数",
+    "chat-total-tokens": "总 token 数：{{count}}",
     "close": "关闭",
     "confirm": "确认",
     "delete-all-chats": "删除所有对话",
@@ -282,6 +277,7 @@
     "environments": "环境",
     "error": "错误",
     "expiration": "过期时间",
+    "expired": "已过期",
     "export": "导出",
     "failed": "失败",
     "file-selector": {
@@ -1720,7 +1716,8 @@
         },
         "max-expiration-hint": "工作空间策略允许的最大值：{{days}} 天。"
       },
-      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
+      "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？",
+      "show-expired-roles": "显示已过期角色"
     },
     "overview": {
       "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
@@ -1937,6 +1934,7 @@
   "rollout.task.selected-count": "已选择 {{count}} 个任务",
   "rollout.task.statement-truncated-hint": "由于语句过长，已被截断。",
   "schema-diagram": {
+    "fit-content-with-view": "自动适应视图",
     "self": "Schema 关系图"
   },
   "schema-editor": {
@@ -2005,7 +2003,8 @@
     "raw-sql": "Raw SQL",
     "schema": {
       "duplicate-name": "Schema name already exists",
-      "name-placeholder": "Schema name"
+      "name-placeholder": "Schema name",
+      "select": "选择 schema"
     },
     "self": "Schema 编辑器",
     "table": {

@@ -3,7 +3,7 @@
 -- Otherwise:
 --   1. Replace sqlEditorUser with sqlEditorReadUser (keep existing conditions intact)
 --   2. Add a new sqlEditorUser binding scoped to allowed environments
---   3. Scope custom roles with bb.sql.ddl/bb.sql.dml to allowed environments
+--   3. Scope project owner and custom roles with bb.sql.ddl/bb.sql.dml to allowed environments
 
 WITH
 -- Get all environment IDs from the setting table
@@ -37,8 +37,10 @@ env_list AS (
     SELECT COALESCE(string_agg('"' || env_id || '"', ', '), '') AS env_ids
     FROM allowed_envs
 ),
--- Custom roles with bb.sql.ddl or bb.sql.dml
-custom_roles_with_env_limitation AS (
+-- Roles with environment limitations: project owner and custom roles with bb.sql.ddl or bb.sql.dml
+roles_with_env_limitation AS (
+    SELECT 'roles/projectOwner' AS role_name
+    UNION
     SELECT 'roles/' || resource_id AS role_name
     FROM role
     WHERE permissions->'permissions' @> '["bb.sql.ddl"]'::jsonb
@@ -53,7 +55,7 @@ SET payload = (
             SELECT COALESCE(jsonb_agg(new_binding ORDER BY ord), '[]'::jsonb)
             FROM (
                 -- Existing bindings: swap sqlEditorUser -> sqlEditorReadUser,
-                -- and add env condition to custom roles with DDL/DML
+                -- and add env condition to roles with environment limitations
                 SELECT rn AS ord,
                     CASE
                         -- sqlEditorUser: replace with sqlEditorReadUser
@@ -61,8 +63,8 @@ SET payload = (
                              AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
                         THEN jsonb_set(binding, '{role}', '"roles/sqlEditorReadUser"')
 
-                        -- Custom roles: add env condition
-                        WHEN binding->>'role' IN (SELECT role_name FROM custom_roles_with_env_limitation)
+                        -- Environment-limited roles: add env condition
+                        WHEN binding->>'role' IN (SELECT role_name FROM roles_with_env_limitation)
                              AND COALESCE(binding->'condition'->>'expression', '') NOT LIKE '%resource.environment_id%'
                         THEN
                             CASE

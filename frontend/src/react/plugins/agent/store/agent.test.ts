@@ -112,21 +112,40 @@ describe("useAgentStore (Zustand)", () => {
     expect(localStorage.getItem(AGENT_STATE_KEY)).not.toBeNull();
   });
 
-  test("centers the window when opening the agent", () => {
+  test("keeps persisted position when opening the agent", () => {
     setViewportSize(1440, 900);
-    const store = createAgentStore();
+    localStorage.setItem(
+      AGENT_WINDOW_KEY,
+      JSON.stringify({
+        position: { x: 120, y: 140 },
+        size: { width: 480, height: 540 },
+        sidebarWidth: 200,
+      })
+    );
 
-    s(store).setSize(788, 625);
-    s(store).setPosition(700, 500);
+    const store = createAgentStore();
 
     s(store).toggle();
 
     expect(s(store).visible).toBe(true);
-    expect(s(store).position).toEqual({ x: 326, y: 138 });
+    expect(s(store).position).toEqual({ x: 120, y: 140 });
+  });
+
+  test("keeps current position when opening the agent", () => {
+    setViewportSize(1440, 900);
+    const store = createAgentStore();
+
+    s(store).setSize(788, 625);
+    s(store).setPosition(320, 180);
+
+    s(store).toggle();
+
+    expect(s(store).visible).toBe(true);
+    expect(s(store).position).toEqual({ x: 320, y: 180 });
     expect(s(store).size).toEqual({ width: 788, height: 625 });
   });
 
-  test("centers reopening using the rendered minimum size on wider viewports", () => {
+  test("clamps opening position using the rendered minimum size on wider viewports", () => {
     setViewportSize(1440, 900);
     const store = createAgentStore();
 
@@ -136,7 +155,7 @@ describe("useAgentStore (Zustand)", () => {
     s(store).toggle();
 
     expect(s(store).visible).toBe(true);
-    expect(s(store).position).toEqual({ x: 490, y: 250 });
+    expect(s(store).position).toEqual({ x: 700, y: 484 });
   });
 
   test("normalizes stale running chats on load", () => {

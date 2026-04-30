@@ -303,8 +303,8 @@ func TestOmniQuerySpan_UnsupportedTableSources(t *testing.T) {
 		sql                  string
 		wantTypeNotSupported bool
 	}{
-		{name: "pivot", sql: "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p"},
-		{name: "unpivot", sql: "SELECT * FROM t UNPIVOT (v FOR c IN ([1],[2])) AS u"},
+		{name: "pivot", sql: "SELECT * FROM t PIVOT (SUM(a) FOR b IN ([1],[2])) AS p", wantTypeNotSupported: true},
+		{name: "unpivot", sql: "SELECT * FROM t UNPIVOT (v FOR c IN ([1],[2])) AS u", wantTypeNotSupported: true},
 		{name: "cross_apply_tvf", sql: "SELECT * FROM t1 CROSS APPLY fn(t1.a) AS x(v)", wantTypeNotSupported: true},
 		{name: "aliased_tvf", sql: "SELECT * FROM fn(t1.a) AS x(v)", wantTypeNotSupported: true},
 	}
@@ -319,6 +319,132 @@ func TestOmniQuerySpan_UnsupportedTableSources(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOmniQuerySpan_SystemTableValuedFunctions(t *testing.T) {
+	cases := []struct {
+		name        string
+		sql         string
+		wantName    string
+		wantSources []base.ColumnResource
+	}{
+		{
+			name:     "string_split_value_flows_from_input",
+			sql:      "SELECT s.value FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',') AS s",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+		{
+			name:     "openjson_value_flows_from_input",
+			sql:      "SELECT j.value FROM t1 CROSS APPLY OPENJSON(t1.a) AS j",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+		{
+			name:     "tvf_column_alias_list",
+			sql:      "SELECT s.v FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',', 1) AS s(v, ordinal)",
+			wantName: "v",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+		{
+			name:     "string_split_third_arg_zero_has_no_ordinal",
+			sql:      "SELECT s.value FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',', 0) AS s(value)",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+		{
+			name:     "string_split_third_arg_null_has_no_ordinal",
+			sql:      "SELECT s.value FROM t1 CROSS APPLY STRING_SPLIT(t1.a, ',', NULL) AS s(value)",
+			wantName: "value",
+			wantSources: []base.ColumnResource{
+				{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := newOmniTestExtractor(t, "db")
+			span, err := q.getOmniQuerySpan(context.Background(), tc.sql)
+			require.NoError(t, err)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, tc.wantName, span.Results[0].Name)
+			require.ElementsMatch(t, tc.wantSources, sortedSources(span.Results[0].SourceColumns))
+		})
+	}
+}
+
+func TestOmniQuerySpan_TempTableDefinitions(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		TempTables:              make(map[string]*base.PhysicalTable),
+	}
+
+	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span1, err := q1.getOmniQuerySpan(context.Background(), "CREATE TABLE #tmp(id INT, name NVARCHAR(50))")
+	require.NoError(t, err)
+	require.Equal(t, base.DDL, span1.Type)
+	require.Contains(t, gCtx.TempTables, "#tmp")
+	require.Equal(t, []string{"id", "name"}, gCtx.TempTables["#tmp"].Columns)
+
+	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT id, name FROM #tmp")
+	require.NoError(t, err)
+	require.Len(t, span2.Results, 2)
+	require.Equal(t, "id", span2.Results[0].Name)
+	require.Equal(t, "name", span2.Results[1].Name)
+}
+
+func TestOmniQuerySpan_TempTableDefinitionsCaseInsensitive(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		TempTables:              make(map[string]*base.PhysicalTable),
+	}
+
+	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	_, err := q1.getOmniQuerySpan(context.Background(), "CREATE TABLE #Tmp(id INT, name NVARCHAR(50))")
+	require.NoError(t, err)
+
+	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT id, name FROM #tmp")
+	require.NoError(t, err)
+	require.Len(t, span2.Results, 2)
+	require.Equal(t, "id", span2.Results[0].Name)
+	require.Equal(t, "name", span2.Results[1].Name)
+}
+
+func TestOmniQuerySpan_SelectIntoTempTableRegistersColumns(t *testing.T) {
+	getter, lister := buildMockDatabaseMetadataGetter(omniTestMetadata)
+	gCtx := base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		TempTables:              make(map[string]*base.PhysicalTable),
+	}
+
+	q1 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span1, err := q1.getOmniQuerySpan(context.Background(), "SELECT a AS id, b INTO #selected FROM t")
+	require.NoError(t, err)
+	require.Equal(t, base.Select, span1.Type)
+	require.Contains(t, gCtx.TempTables, "#selected")
+	require.Equal(t, []string{"id", "b"}, gCtx.TempTables["#selected"].Columns)
+
+	q2 := newOmniQuerySpanExtractor("db", "dbo", gCtx, true)
+	span2, err := q2.getOmniQuerySpan(context.Background(), "SELECT * FROM #selected")
+	require.NoError(t, err)
+	require.Len(t, span2.Results, 2)
+	require.Equal(t, "id", span2.Results[0].Name)
+	require.Equal(t, "b", span2.Results[1].Name)
 }
 
 // TestOmniQuerySpan_CTEVisibleInSetOpArms verifies that a CTE defined on a

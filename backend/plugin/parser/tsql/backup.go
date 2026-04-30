@@ -3,6 +3,7 @@ package tsql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -219,6 +220,12 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		}
 		if table == nil {
 			return nil, errors.Errorf("failed to resolve DML target table")
+		}
+		if strings.HasPrefix(table.Table, "#") {
+			slog.Info("prior backup: skipping DML targeting temp table",
+				"table", table.Table,
+				"statementType", statementType)
+			continue
 		}
 		table.StatementType = statementType
 		loc := dmlNodeLoc(node)
@@ -512,10 +519,7 @@ func sourceFromLoc(source string, loc ast.Loc) string {
 	if loc.Start < 0 || loc.End < 0 || loc.Start >= len(source) {
 		return ""
 	}
-	end := loc.End
-	if end > len(source) {
-		end = len(source)
-	}
+	end := min(loc.End, len(source))
 	return strings.TrimSpace(source[loc.Start:end])
 }
 

@@ -1129,8 +1129,22 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		_, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
 		require.ErrorContains(t, err, "unsupported select statement with into")
 
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t INTO @x")
+		require.ErrorContains(t, err, "unsupported table statement with into")
+
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT FROM")
 		require.Error(t, err)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SELECT * FORM invalid_table;")
+		require.Error(t, err)
+
+		_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{
+			Text:  "SELECT * FORM invalid_table;",
+			Start: &storepb.Position{Line: 3, Column: 1},
+		}, "db", "", false)
+		var syntaxErr *base.SyntaxError
+		require.ErrorAs(t, err, &syntaxErr)
+		require.Equal(t, int32(3), syntaxErr.Position.Line)
 
 		span, err := newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "")
 		require.NoError(t, err)
@@ -1154,6 +1168,15 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "CALL p((SELECT a FROM t), (SELECT user FROM mysql.user))")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t ORDER BY (SELECT user FROM mysql.user)")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t LIMIT (SELECT COUNT(*) FROM mysql.user)")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "LOCK TABLES t READ, mysql.user READ")
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 	})
 

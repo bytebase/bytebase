@@ -12,7 +12,7 @@ import type {
   ToolCall,
 } from "../logic/types";
 import {
-  getCenteredAgentWindowPosition,
+  clampAgentWindowPosition,
   getDefaultAgentWindowState,
 } from "../window";
 
@@ -616,11 +616,12 @@ export const createAgentStore = () => {
             if (state.visible) {
               state.minimized = false;
               if (typeof window !== "undefined") {
-                state.position = getCenteredAgentWindowPosition(
+                state.position = clampAgentWindowPosition(
                   window.innerWidth,
                   window.innerHeight,
                   state.size.width,
-                  state.size.height
+                  state.size.height,
+                  state.position
                 );
               }
             }

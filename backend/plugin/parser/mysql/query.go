@@ -19,7 +19,7 @@ func init() {
 func validateQuery(statement string) (bool, bool, error) {
 	stmts, err := ParseMySQLOmni(statement)
 	if err != nil {
-		return false, false, err
+		return false, false, convertOmniError(err, base.Statement{Text: statement})
 	}
 
 	hasExecute := false
