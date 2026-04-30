@@ -159,9 +159,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 
 // Execute SQL statement synchronously and return row data or error.
 func (d *Driver) execStatementSync(ctx context.Context, statement string) ([][]string, []dbsql.ColumnInfo, error) {
+	// Bind the connected Bytebase database (= Unity Catalog) to the
+	// session, so unqualified `schema.table` references resolve like in
+	// other RDBMSes. Equivalent to issuing `USE CATALOG <name>` first.
 	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
 		Statement:   statement,
 		WarehouseId: d.WarehouseID,
+		Catalog:     d.curCatalog,
 	})
 	if err != nil {
 		return nil, nil, err
