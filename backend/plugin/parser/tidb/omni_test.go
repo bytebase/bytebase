@@ -144,3 +144,85 @@ func TestOmniASTStartPosition(t *testing.T) {
 	o := &OmniAST{StartPosition: pos}
 	a.Equal(pos, o.ASTStartPosition())
 }
+
+// TestAsPingCapASTReturnsNativeAST pins the bridge contract: an OmniAST
+// successfully parsed from omni-supported SQL also exposes a native pingcap
+// AST via AsPingCapAST. Used by un-migrated advisors during the Phase 1.5
+// migration window via tidbparser.GetTiDBAST.
+func TestAsPingCapASTReturnsNativeAST(t *testing.T) {
+	a := require.New(t)
+	pos := &storepb.Position{Line: 1, Column: 1}
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: pos,
+	}
+
+	got, ok := o.AsPingCapAST()
+	a.True(ok, "expected pingcap fallback to succeed for valid SQL")
+	a.NotNil(got)
+	a.Equal(pos, got.StartPosition)
+	a.NotNil(got.Node, "pingcap StmtNode should be populated")
+}
+
+// TestAsPingCapASTCachesAcrossCalls pins the lazy+cached contract: the
+// native parse runs once per OmniAST instance regardless of how many
+// advisors call the bridge. Mirrors mysql/OmniAST.AsANTLRAST's antlrParsed
+// flag pattern.
+func TestAsPingCapASTCachesAcrossCalls(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	first, ok := o.AsPingCapAST()
+	a.True(ok)
+	a.NotNil(first)
+
+	second, ok := o.AsPingCapAST()
+	a.True(ok)
+
+	// Same *AST pointer proves the cache hit; a fresh re-parse would
+	// allocate a new wrapper.
+	a.Same(first, second, "expected cached *AST; got fresh re-parse — bridge cache contract broken")
+}
+
+// TestAsPingCapASTCachesNegativeResult ensures a parse failure is also
+// cached: a second call does not retry and continues to return (nil, false).
+// Important so that an OmniAST wrapping unparseable-by-pingcap SQL doesn't
+// repeatedly re-parse on every advisor call.
+func TestAsPingCapASTCachesNegativeResult(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		// Syntactically invalid SQL — pingcap should reject.
+		Text:          "SELECT FROM WHERE;",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	got, ok := o.AsPingCapAST()
+	a.False(ok)
+	a.Nil(got)
+	a.True(o.pingcapParsed, "pingcapParsed flag should be set after first attempt")
+
+	// Second call returns the same negative result without re-attempting.
+	got2, ok2 := o.AsPingCapAST()
+	a.False(ok2)
+	a.Nil(got2)
+}
+
+// TestGetTiDBASTFallsBackToProvider pins the cross-cutting contract: when
+// the dispatcher returns *OmniAST, un-migrated callers of GetTiDBAST get a
+// native *AST through the PingCapASTProvider fallback. Without this, the
+// dispatcher flip in §1.5.N+1 silently breaks every un-migrated advisor.
+func TestGetTiDBASTFallsBackToProvider(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	got, ok := GetTiDBAST(o)
+	a.True(ok, "GetTiDBAST should fall back to AsPingCapAST when handed an OmniAST")
+	a.NotNil(got)
+	a.NotNil(got.Node)
+}
