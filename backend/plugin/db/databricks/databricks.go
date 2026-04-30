@@ -78,7 +78,7 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
 	stmts, err := base.SplitMultiSQL(storepb.Engine_DATABRICKS, statement)
 	if err != nil {
@@ -88,7 +88,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	for _, stmt := range stmts {
 		result := &v1pb.QueryResult{}
 		startTime := time.Now()
-		dataArr, colInfo, err := d.execStatementSync(ctx, stmt.Text)
+		dataArr, colInfo, err := d.execStatementSync(ctx, stmt.Text, int64(queryContext.Limit))
 		if err != nil {
 			return nil, err
 		}
@@ -158,15 +158,25 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 }
 
 // Execute SQL statement synchronously and return row data or error.
-func (d *Driver) execStatementSync(ctx context.Context, statement string) ([][]string, []dbsql.ColumnInfo, error) {
+// rowLimit caps the result set when > 0; 0 means no limit (used by sync
+// and dump paths). DDL/DML callers should pass 0.
+func (d *Driver) execStatementSync(ctx context.Context, statement string, rowLimit int64) ([][]string, []dbsql.ColumnInfo, error) {
 	// Bind the connected Bytebase database (= Unity Catalog) to the
 	// session, so unqualified `schema.table` references resolve like in
 	// other RDBMSes. Equivalent to issuing `USE CATALOG <name>` first.
-	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
+	req := dbsql.ExecuteStatementRequest{
 		Statement:   statement,
 		WarehouseId: d.WarehouseID,
 		Catalog:     d.curCatalog,
-	})
+	}
+	// Honor the user-selected row limit (default 1000 from the SQL Editor).
+	// Without it, INLINE results above ~25 MiB are aborted server-side
+	// with no result available — see DispositionExternalLinks for the
+	// large-result path.
+	if rowLimit > 0 {
+		req.RowLimit = rowLimit
+	}
+	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, req)
 	if err != nil {
 		return nil, nil, err
 	}

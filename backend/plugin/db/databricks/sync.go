@@ -54,7 +54,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	instanceMetadata := &db.InstanceMetadata{}
 
 	// fetch version.
-	versionData, _, err := d.execStatementSync(ctx, "SELECT VERSION()")
+	versionData, _, err := d.execStatementSync(ctx, "SELECT VERSION()", 0)
 	if err != nil {
 		return nil, err
 	}
