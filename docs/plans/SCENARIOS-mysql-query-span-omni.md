@@ -197,6 +197,8 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] function arguments containing subqueries appear in access tables.
 - [x] function-level `ORDER BY` subqueries appear in access tables.
 - [x] `VALUES` expressions containing subqueries appear in access tables.
+- [x] `SET` assignment expressions containing subqueries appear in access tables.
+- [x] `SET` assignment expressions containing subqueries participate in mixed user/system table detection.
 - [x] `TABLE ... ORDER BY` subqueries participate in mixed user/system table detection.
 - [x] `TABLE ... LIMIT` subqueries participate in mixed user/system table detection when parsed.
 - [x] `CALL` arguments containing subqueries participate in mixed user/system table detection.

@@ -1239,6 +1239,12 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		for _, arg := range n.Args {
 			collectOmniAccessTablesFromExpr(result, arg, defaultDatabase, normalizeStarRocksCluster)
 		}
+	case *ast.SetStmt:
+		for _, assignment := range n.Assignments {
+			if assignment != nil {
+				collectOmniAccessTablesFromExpr(result, assignment.Value, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
 	case *ast.DoStmt:
 		for _, expr := range n.Exprs {
 			collectOmniAccessTablesFromExpr(result, expr, defaultDatabase, normalizeStarRocksCluster)

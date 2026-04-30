@@ -1122,6 +1122,13 @@ func TestOmniQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
 				{Database: "db", Table: "t"},
 			},
 		},
+		{
+			name:      "set_assignment_subquery",
+			statement: "SET @x = (SELECT a FROM t)",
+			want: []base.ColumnResource{
+				{Database: "db", Table: "t"},
+			},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1178,6 +1185,9 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "CALL p((SELECT a FROM t), (SELECT user FROM mysql.user))")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "SET @x = (SELECT a FROM t), @y = (SELECT user FROM mysql.user)")
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "TABLE t ORDER BY (SELECT user FROM mysql.user)")
