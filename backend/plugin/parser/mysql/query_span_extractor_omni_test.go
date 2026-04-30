@@ -46,6 +46,16 @@ func TestOmniQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 			wantType:  base.SelectInfoSchema,
 		},
 		{
+			name:      "desc_tab_is_info_schema",
+			statement: "DESC\t t",
+			wantType:  base.SelectInfoSchema,
+		},
+		{
+			name:      "desc_newline_is_info_schema",
+			statement: "DESC\n t",
+			wantType:  base.SelectInfoSchema,
+		},
+		{
 			name:      "ddl",
 			statement: "CREATE TABLE t(a INT)",
 			wantType:  base.DDL,
@@ -1177,6 +1187,12 @@ func TestOmniQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
 		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "LOCK TABLES t READ, mysql.user READ")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "DROP TABLE t, mysql.user")
+		require.ErrorIs(t, err, base.MixUserSystemTablesError)
+
+		_, err = newOmniQuerySpanExtractor("db", gCtx, false).getOmniQuerySpan(context.Background(), "RENAME TABLE t TO t_new, mysql.user TO mysql.user_new")
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 	})
 

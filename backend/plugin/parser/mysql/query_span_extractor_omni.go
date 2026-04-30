@@ -1079,7 +1079,8 @@ func isOmniDescribeStatement(source string, loc ast.Loc) bool {
 		statement = strings.TrimSpace(source[loc.Start:loc.End])
 	}
 	upper := strings.ToUpper(statement)
-	return strings.HasPrefix(upper, "DESCRIBE") || strings.HasPrefix(upper, "DESC ")
+	fields := strings.Fields(upper)
+	return len(fields) > 0 && (fields[0] == "DESCRIBE" || fields[0] == "DESC")
 }
 
 func collectOmniAccessTables(root ast.Node, defaultDatabase string, normalizeStarRocksCluster bool) base.SourceColumnSet {
@@ -1175,6 +1176,50 @@ func collectOmniAccessTablesFromNode(result base.SourceColumnSet, node ast.Node,
 		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
 		collectOmniAccessTablesFromTableRef(result, n.Like, defaultDatabase, normalizeStarRocksCluster)
 		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.CreateIndexStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		for _, column := range n.Columns {
+			if column != nil {
+				collectOmniAccessTablesFromExpr(result, column.Expr, defaultDatabase, normalizeStarRocksCluster)
+			}
+		}
+	case *ast.CreateViewStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Name, defaultDatabase, normalizeStarRocksCluster)
+		collectOmniAccessTablesFromNode(result, n.Select, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.AlterTableStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+		for _, command := range n.Commands {
+			if command == nil {
+				continue
+			}
+			collectOmniAccessTablesFromExpr(result, command.DefaultExpr, defaultDatabase, normalizeStarRocksCluster)
+			collectOmniAccessTablesFromTableRef(result, command.ExchangeTable, defaultDatabase, normalizeStarRocksCluster)
+			collectOmniAccessTablesFromOrderBy(result, command.OrderByItems, defaultDatabase, normalizeStarRocksCluster)
+		}
+	case *ast.DropTableStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.DropIndexStmt:
+		collectOmniAccessTablesFromTableRef(result, n.Table, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.DropViewStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Views, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.RenameTableStmt:
+		for _, pair := range n.Pairs {
+			if pair == nil {
+				continue
+			}
+			collectOmniAccessTablesFromTableRef(result, pair.Old, defaultDatabase, normalizeStarRocksCluster)
+			collectOmniAccessTablesFromTableRef(result, pair.New, defaultDatabase, normalizeStarRocksCluster)
+		}
+	case *ast.TruncateStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.AnalyzeTableStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.OptimizeTableStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.CheckTableStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
+	case *ast.RepairTableStmt:
+		collectOmniAccessTablesFromTableRefs(result, n.Tables, defaultDatabase, normalizeStarRocksCluster)
 	case *ast.TableStmt:
 		if n == nil {
 			return
@@ -1229,6 +1274,12 @@ func collectOmniAccessTablesFromLimit(result base.SourceColumnSet, limit *ast.Li
 	}
 	collectOmniAccessTablesFromExpr(result, limit.Count, defaultDatabase, normalizeStarRocksCluster)
 	collectOmniAccessTablesFromExpr(result, limit.Offset, defaultDatabase, normalizeStarRocksCluster)
+}
+
+func collectOmniAccessTablesFromTableRefs(result base.SourceColumnSet, tableRefs []*ast.TableRef, defaultDatabase string, normalizeStarRocksCluster bool) {
+	for _, tableRef := range tableRefs {
+		collectOmniAccessTablesFromTableRef(result, tableRef, defaultDatabase, normalizeStarRocksCluster)
+	}
 }
 
 func collectOmniAccessTablesFromTableRef(result base.SourceColumnSet, tableRef *ast.TableRef, defaultDatabase string, normalizeStarRocksCluster bool) {

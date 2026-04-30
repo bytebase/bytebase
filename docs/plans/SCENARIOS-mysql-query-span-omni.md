@@ -23,6 +23,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `EXPLAIN ANALYZE VALUES ROW(...)` returns `Select` without result lineage extraction.
 - [x] `EXPLAIN ANALYZE INSERT ...` returns `DML` and no result columns.
 - [x] `DESCRIBE ...` returns `SelectInfoSchema` like legacy metadata reads.
+- [x] `DESC` followed by non-space whitespace returns `SelectInfoSchema`.
 - [x] Multiple statements in one query return the legacy single-statement error.
 
 ### 1.2 Query Type Buckets
@@ -201,6 +202,7 @@ Status: [ ] pending, [x] passing, [~] partial.
 - [x] `CALL` arguments containing subqueries participate in mixed user/system table detection.
 - [x] `LOCK TABLES` references participate in mixed user/system table detection.
 - [x] DML/DDL roots such as `INSERT ... SELECT` and `CREATE TABLE ... AS SELECT` participate in mixed user/system table detection.
+- [x] table-bearing DDL roots such as `DROP TABLE` and `RENAME TABLE` participate in mixed user/system table detection.
 - [x] plain `EXPLAIN` payload tables participate in mixed user/system table detection.
 - [x] `HANDLER` table appears in access tables where legacy did.
 
