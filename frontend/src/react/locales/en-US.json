@@ -1162,6 +1162,7 @@
     "syncing": "Syncing ...",
     "test-connection": "Test Connection",
     "testing-connection": "Testing Connection...",
+    "token-write-only": "YOUR_TOKEN - write only",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {{0}}",
     "users": "Users",

@@ -1155,6 +1155,7 @@
     "syncing": "Sincronizando...",
     "test-connection": "Probar conexión",
     "testing-connection": "Probando conexión...",
+    "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
     "users": "Usuarios",

@@ -1155,6 +1155,7 @@
     "syncing": "同步中 ...",
     "test-connection": "测试连接",
     "testing-connection": "测试连接中...",
+    "token-write-only": "YOUR_TOKEN - 仅写入",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{{0}}",
     "users": "用户",
