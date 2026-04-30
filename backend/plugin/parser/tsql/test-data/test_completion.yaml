@@ -46,16 +46,6 @@
 - description: Column alias can be used in order by clause
   input: SELECT Id AS IdAlias, Name FROM Employees ORDER BY |;
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-      priority: 1
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
@@ -71,16 +61,6 @@
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
       priority: 0
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
-      priority: 1
     - text: Company
       type: DATABASE
       definition: ""
@@ -150,16 +130,6 @@
 - description: Full column name
   input: SELECT | FROM Employees;
   want:
-    - text: EmployeeId
-      type: COLUMN
-      definition: Company.dbo.Address | int, NOT NULL
-      comment: ""
-      priority: 1
-    - text: Id
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
     - text: Id
       type: COLUMN
       definition: Company.dbo.Employees | int, NOT NULL
@@ -170,16 +140,6 @@
       definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
       priority: 0
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
-    - text: Street
-      type: COLUMN
-      definition: Company.dbo.Address | varchar, NOT NULL
-      comment: ""
-      priority: 1
     - text: Company
       type: DATABASE
       definition: ""
@@ -230,24 +190,14 @@
       priority: 0
     - text: Id
       type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
-    - text: Id
-      type: COLUMN
-      definition: Company.dbo.Employees | int, NOT NULL
+      definition: ""
       comment: ""
       priority: 0
     - text: Name
       type: COLUMN
-      definition: Company.dbo.Employees | varchar, NOT NULL
+      definition: ""
       comment: ""
       priority: 0
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: Company.MySchema.SalaryLevel | int, NOT NULL
-      comment: ""
-      priority: 1
     - text: Street
       type: COLUMN
       definition: Company.dbo.Address | varchar, NOT NULL
