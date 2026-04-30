@@ -1716,8 +1716,7 @@
         },
         "max-expiration-hint": "Máximo permitido por la política del espacio de trabajo: {{days}} día(s)."
       },
-      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?",
-      "show-expired-roles": "Mostrar roles expirados"
+      "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
     "overview": {
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."

@@ -126,7 +126,6 @@ function MemberTable({
   onUpdateBinding,
   onRevokeBinding,
   scope,
-  showExpiredRoles,
 }: {
   bindings: MemberBinding[];
   allowEdit: boolean;
@@ -135,43 +134,19 @@ function MemberTable({
   onUpdateBinding: (binding: MemberBinding) => void;
   onRevokeBinding: (binding: MemberBinding) => void;
   scope: "workspace" | "project";
-  showExpiredRoles: boolean;
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
 
-  // When showExpiredRoles is off in project scope, hide rows whose only
-  // project bindings are expired — otherwise they'd render as empty-roles
-  // rows but still be selectable, which is misleading.
-  const visibleBindings = useMemo(() => {
-    if (scope !== "project" || showExpiredRoles) return bindings;
-    return bindings.filter((mb) => {
-      if (mb.projectRoleBindings.length === 0) return true;
-      return mb.projectRoleBindings.some((b) => !isBindingPolicyExpired(b));
-    });
-  }, [bindings, scope, showExpiredRoles]);
-
   const selectableBindings = useMemo(
     () =>
-      visibleBindings.filter(
+      bindings.filter(
         (b) => scope !== "project" || b.projectRoleBindings.length > 0
       ),
-    [visibleBindings, scope]
+    [bindings, scope]
   );
-
-  // Drop selections that are no longer visible (e.g. a member was selected
-  // while showExpiredRoles=true, then the toggle was turned off and the
-  // member's only bindings are expired). Without this, the bulk Revoke
-  // action could destructively act on hidden rows.
-  useEffect(() => {
-    const visibleNames = new Set(visibleBindings.map((b) => b.binding));
-    const next = selectedBindings.filter((b) => visibleNames.has(b));
-    if (next.length !== selectedBindings.length) {
-      onSelectionChange(next);
-    }
-  }, [visibleBindings, selectedBindings, onSelectionChange]);
 
   const allSelected =
     selectableBindings.length > 0 &&
@@ -204,15 +179,26 @@ function MemberTable({
   };
 
   const renderProjectRoleSummary = (bindings: Binding[]) => {
-    const visible = showExpiredRoles
-      ? bindings
-      : bindings.filter((b) => !isBindingPolicyExpired(b));
-    return groupProjectRoleBindings(visible).map((group) => {
-      const allExpired = group.bindings.every((b) => isBindingPolicyExpired(b));
-      return (
+    // Show all roles, active first then expired. Expired chips get
+    // line-through + reduced opacity so the count of stale bindings is
+    // visible — exposing the issue rather than hiding it.
+    const active = bindings.filter((b) => !isBindingPolicyExpired(b));
+    const expired = bindings.filter((b) => isBindingPolicyExpired(b));
+    return [
+      ...groupProjectRoleBindings(active).map((group) => (
+        <Badge key={`active-${group.role}`} className="text-xs gap-x-1">
+          {displayRoleTitle(group.role)}
+          {group.bindings.length > 1 && (
+            <span className="text-control-light">
+              ({group.bindings.length})
+            </span>
+          )}
+        </Badge>
+      )),
+      ...groupProjectRoleBindings(expired).map((group) => (
         <Badge
-          key={group.role}
-          className={cn("text-xs gap-x-1", allExpired && "line-through")}
+          key={`expired-${group.role}`}
+          className="text-xs gap-x-1 line-through opacity-60"
         >
           {displayRoleTitle(group.role)}
           {group.bindings.length > 1 && (
@@ -221,8 +207,8 @@ function MemberTable({
             </span>
           )}
         </Badge>
-      );
-    });
+      )),
+    ];
   };
 
   return (
@@ -251,7 +237,7 @@ function MemberTable({
           </tr>
         </thead>
         <tbody>
-          {visibleBindings.map((mb) => (
+          {bindings.map((mb) => (
             <tr
               key={mb.binding}
               className="border-b last:border-b-0 hover:bg-control-bg"
@@ -372,7 +358,7 @@ function MemberTable({
               </td>
             </tr>
           ))}
-          {visibleBindings.length === 0 && (
+          {bindings.length === 0 && (
             <tr>
               <td
                 colSpan={allowEdit ? 4 : 3}
@@ -398,14 +384,12 @@ function MemberTableByRole({
   onUpdateBinding,
   onRevokeBinding,
   scope,
-  showExpiredRoles,
 }: {
   bindings: MemberBinding[];
   allowEdit: boolean;
   onUpdateBinding: (binding: MemberBinding) => void;
   onRevokeBinding: (binding: MemberBinding) => void;
   scope: "workspace" | "project";
-  showExpiredRoles: boolean;
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
@@ -424,13 +408,10 @@ function MemberTableByRole({
     };
     for (const mb of bindings) {
       if (scope === "project") {
-        const visibleBindings = showExpiredRoles
-          ? mb.projectRoleBindings
-          : mb.projectRoleBindings.filter((b) => !isBindingPolicyExpired(b));
-        // Group this member's visible bindings by role so we can mark a row
-        // expired only when ALL of its bindings for that role are expired.
+        // Group this member's bindings by role so we can mark a row expired
+        // only when ALL of its bindings for that role are expired.
         const bindingsByRole = new Map<string, Binding[]>();
-        for (const b of visibleBindings) {
+        for (const b of mb.projectRoleBindings) {
           const arr = bindingsByRole.get(b.role) ?? [];
           arr.push(b);
           bindingsByRole.set(b.role, arr);
@@ -450,9 +431,12 @@ function MemberTableByRole({
     const sortedRoles = sortRoles([...map.keys()]);
     return sortedRoles.map((role) => ({
       role,
-      members: map.get(role) ?? [],
+      // Active members first, expired-only members last.
+      members: (map.get(role) ?? []).slice().sort((a, b) => {
+        return Number(a.allExpired) - Number(b.allExpired);
+      }),
     }));
-  }, [bindings, scope, showExpiredRoles]);
+  }, [bindings, scope]);
 
   // Expand all roles by default on first load
   useEffect(() => {
@@ -1034,20 +1018,6 @@ function EditMemberRoleDrawer({
   });
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
-  const [showExpiredRoles, setShowExpiredRoles] = useState(false);
-
-  const hasExpiredRoles = useMemo(
-    () => liveProjectRoleBindings.some((b) => isBindingPolicyExpired(b)),
-    [liveProjectRoleBindings]
-  );
-
-  const visibleProjectRoleBindings = useMemo(
-    () =>
-      showExpiredRoles
-        ? liveProjectRoleBindings
-        : liveProjectRoleBindings.filter((b) => !isBindingPolicyExpired(b)),
-    [liveProjectRoleBindings, showExpiredRoles]
-  );
 
   const [form, setForm] = useState<RoleBindingFormState>(() => ({
     id: crypto.randomUUID(),
@@ -1381,22 +1351,12 @@ function EditMemberRoleDrawer({
             {/* Body — Role Bindings */}
             <SheetBody className="px-6 py-6">
               <div className="flex flex-col gap-y-6">
-                {hasExpiredRoles && (
-                  <label className="flex items-center gap-x-2 text-sm cursor-pointer self-start">
-                    <input
-                      type="checkbox"
-                      checked={showExpiredRoles}
-                      onChange={(e) => setShowExpiredRoles(e.target.checked)}
-                    />
-                    {t("project.members.show-expired-roles")}
-                  </label>
-                )}
-                {visibleProjectRoleBindings.length === 0 && (
+                {liveProjectRoleBindings.length === 0 && (
                   <div className="text-center text-control-light py-8">
                     {t("common.no-data")}
                   </div>
                 )}
-                {visibleProjectRoleBindings.map((binding, idx) => {
+                {liveProjectRoleBindings.map((binding, idx) => {
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
@@ -1698,7 +1658,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
     MemberBinding | undefined
   >();
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
-  const [showExpiredRoles, setShowExpiredRoles] = useState(false);
 
   const hasRequestRoleFeature = useVueState(() =>
     subscriptionStore.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
@@ -1732,14 +1691,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       ignoreRoles: EMPTY_ROLE_SET,
     })
   );
-
-  // Derived from the unfiltered IAM policy, not memberBindings (which is
-  // already filtered by the search box). Otherwise the toggle would vanish
-  // whenever a search happens to exclude members with expired bindings.
-  const hasExpiredProjectRoles = useMemo(() => {
-    if (!projectName || !projectIamPolicy) return false;
-    return projectIamPolicy.bindings.some((b) => isBindingPolicyExpired(b));
-  }, [projectIamPolicy, projectName]);
 
   const canSetIamPolicy = project
     ? !isDefaultProject(project.name) &&
@@ -1974,26 +1925,14 @@ export function MembersPage({ projectId }: { projectId?: string }) {
         value={memberViewTab}
         onValueChange={(v) => setMemberViewTab(v as "MEMBERS" | "ROLES")}
       >
-        <div className="flex items-center justify-between gap-x-4 border-b border-control-border">
-          <TabsList className="border-b-0">
-            <TabsTrigger value="MEMBERS">
-              {t("settings.members.view-by-members")}
-            </TabsTrigger>
-            <TabsTrigger value="ROLES">
-              {t("settings.members.view-by-roles")}
-            </TabsTrigger>
-          </TabsList>
-          {hasExpiredProjectRoles && (
-            <label className="flex items-center gap-x-2 text-sm cursor-pointer pb-2">
-              <input
-                type="checkbox"
-                checked={showExpiredRoles}
-                onChange={(e) => setShowExpiredRoles(e.target.checked)}
-              />
-              {t("project.members.show-expired-roles")}
-            </label>
-          )}
-        </div>
+        <TabsList>
+          <TabsTrigger value="MEMBERS">
+            {t("settings.members.view-by-members")}
+          </TabsTrigger>
+          <TabsTrigger value="ROLES">
+            {t("settings.members.view-by-roles")}
+          </TabsTrigger>
+        </TabsList>
         <TabsPanel value="MEMBERS">
           <div className="py-4">
             <MemberTable
@@ -2004,7 +1943,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
               onUpdateBinding={handleMemberUpdateBinding}
               onRevokeBinding={handleMemberRevokeBinding}
               scope={scope}
-              showExpiredRoles={showExpiredRoles}
             />
           </div>
         </TabsPanel>
@@ -2016,7 +1954,6 @@ export function MembersPage({ projectId }: { projectId?: string }) {
               onUpdateBinding={handleMemberUpdateBinding}
               onRevokeBinding={handleMemberRevokeBinding}
               scope={scope}
-              showExpiredRoles={showExpiredRoles}
             />
           </div>
         </TabsPanel>
