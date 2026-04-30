@@ -8,6 +8,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 // TestGetTiDBOmniNodesCachesAcrossRules pins the Phase 1.5 single-parse-per-
@@ -82,4 +83,53 @@ func TestGetTiDBOmniNodesSoftFailsOnGrammarGap(t *testing.T) {
 	require.NoError(t, err, "soft-fail invariant: parse errors must not propagate")
 	require.GreaterOrEqual(t, len(got), 2,
 		"expected at least the two non-BATCH statements to parse and be returned")
+}
+
+// TestGetTiDBNodesSoftFailsOnBridgeMiss pins the post-flip soft-fail
+// contract on the un-migrated-advisor side: when an OmniAST's
+// AsPingCapAST() returns (nil, false) — i.e. omni accepted the statement
+// but pingcap rejected the same text — getTiDBNodes must SKIP that
+// statement, not abort the rule with "AST type mismatch".
+//
+// Codex caught this on PR #20179: without the soft-fail, post-flip every
+// un-migrated advisor emits "Rule check failed: AST type mismatch" for
+// statements omni accepts but pingcap doesn't, breaking the migration
+// continuity the bridge is meant to preserve.
+func TestGetTiDBNodesSoftFailsOnBridgeMiss(t *testing.T) {
+	// Pingcap rejects this; omni doesn't matter for this test — what
+	// matters is that the bridge returns (nil, false) and getTiDBNodes
+	// must skip rather than error.
+	bridgeMiss := &tidbparser.OmniAST{
+		Text:          "SELECT FROM WHERE;", // pingcap-invalid
+		StartPosition: &storepb.Position{Line: 1},
+	}
+	bridgeHit := &tidbparser.OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: &storepb.Position{Line: 2},
+	}
+
+	ctx := advisor.Context{
+		ParsedStatements: []base.ParsedStatement{
+			{
+				Statement: base.Statement{
+					Text:  "SELECT FROM WHERE;",
+					Start: &storepb.Position{Line: 1},
+				},
+				AST: bridgeMiss,
+			},
+			{
+				Statement: base.Statement{
+					Text:  "SELECT 1",
+					Start: &storepb.Position{Line: 2},
+				},
+				AST: bridgeHit,
+			},
+		},
+	}
+
+	got, err := getTiDBNodes(ctx)
+	require.NoError(t, err,
+		"bridge miss must be soft-failed (skip), not surfaced as 'AST type mismatch' — see Phase 1.5 invariant #2")
+	require.Len(t, got, 1,
+		"expected 1 statement from the bridge-hit branch; the bridge-miss statement should be skipped silently")
 }

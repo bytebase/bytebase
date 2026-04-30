@@ -84,6 +84,18 @@ func needDefault(column *ast.ColumnDef) bool {
 }
 
 // getTiDBNodes extracts TiDB AST nodes from the advisor context.
+//
+// Soft-fail on bridge miss: when stmt.AST is a PingCapASTProvider
+// (post-dispatcher-flip *OmniAST) whose AsPingCapAST() returns (nil, false),
+// the statement is skipped rather than surfaced as an error. This honors
+// Phase 1.5 invariant #2 from the omni-tidb completion plan — un-migrated
+// advisors emit no advice for the skipped statement; the review continues.
+// The bridge has already logged the parse failure at debug level
+// (omni.go:AsPingCapAST).
+//
+// True engine-mismatch (stmt.AST is some unrelated type, neither *tidb.AST
+// nor a PingCapASTProvider) is still surfaced as an error — that's a
+// programmer error in registration, not a soft-fail case.
 func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 	if checkCtx.ParsedStatements == nil {
 		return nil, errors.New("ParsedStatements is not provided in context")
@@ -96,6 +108,13 @@ func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 		}
 		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
 		if !ok {
+			// Bridge miss → soft-fail (skip). Engine mismatch → error.
+			// PingCapASTProvider implementations route through GetTiDBAST →
+			// AsPingCapAST; a (nil, false) here means the bridge tried and
+			// pingcap rejected the statement. Skip rather than abort the rule.
+			if _, isProvider := stmt.AST.(tidbparser.PingCapASTProvider); isProvider {
+				continue
+			}
 			return nil, errors.New("AST type mismatch: expected TiDB parser result")
 		}
 		stmtNodes = append(stmtNodes, tidbAST.Node)
