@@ -1155,6 +1155,7 @@
     "syncing": "同期中 ...",
     "test-connection": "テスト接続",
     "testing-connection": "接続テスト中...",
+    "token-write-only": "YOUR_TOKEN - 書き込み専用",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{{0}}",
     "users": "ユーザー",

@@ -1155,6 +1155,7 @@
     "syncing": "Đang đồng bộ hóa ...",
     "test-connection": "Kiểm tra kết nối",
     "testing-connection": "Đang kiểm tra kết nối...",
+    "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
     "users": "Người dùng",

@@ -42,6 +42,7 @@ export type EditDataSource = DataSource & {
   pendingCreate: boolean;
   updatedPassword: string;
   updatedMasterPassword: string;
+  updatedToken: string;
   useEmptyPassword?: boolean;
   useEmptyMasterPassword?: boolean;
   updateSsl?: TlsUpdateState;
@@ -109,6 +110,7 @@ export const wrapEditDataSource = (ds: DataSource | undefined) => {
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",
+    updatedToken: "",
     useEmptyPassword: false,
     useEmptyMasterPassword: false,
   };
