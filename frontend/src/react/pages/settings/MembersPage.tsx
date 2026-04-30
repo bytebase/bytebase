@@ -148,6 +148,17 @@ function MemberTable({
     [bindings, scope]
   );
 
+  // Drop selections that are no longer rendered. The parent filters
+  // `bindings` by search text, so without this a user could select rows,
+  // type a search that hides them, and still bulk-revoke hidden members.
+  useEffect(() => {
+    const visibleNames = new Set(bindings.map((b) => b.binding));
+    const next = selectedBindings.filter((b) => visibleNames.has(b));
+    if (next.length !== selectedBindings.length) {
+      onSelectionChange(next);
+    }
+  }, [bindings, selectedBindings, onSelectionChange]);
+
   const allSelected =
     selectableBindings.length > 0 &&
     selectableBindings.every((b) => selectedBindings.includes(b.binding));
