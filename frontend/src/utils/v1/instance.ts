@@ -185,6 +185,7 @@ export const instanceV1HasExtraParameters = (
   const engine = engineOfInstanceV1(instanceOrEngine);
   return [
     Engine.MYSQL,
+    Engine.TIDB,
     Engine.MARIADB,
     Engine.OCEANBASE,
     Engine.POSTGRES,
