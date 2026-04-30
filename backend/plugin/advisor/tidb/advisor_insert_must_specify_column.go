@@ -59,9 +59,19 @@ func (c *insertMustSpecifyColumnChecker) checkStmt(ostmt OmniStmt) {
 	if !ok {
 		return
 	}
-	// Pingcap parity: emit advice only when the INSERT statement has no
-	// explicit column list. omni represents this as an empty/nil Columns slice.
+	// Already has an explicit column list — no advice.
 	if len(node.Columns) > 0 {
+		return
+	}
+	// Mirror mysql/rule_insert_must_specify_column.go: flag only the VALUES
+	// and SELECT forms when they lack an explicit column list. INSERT ... SET
+	// (and equivalent REPLACE ... SET, TABLE-source, DEFAULT VALUES, etc.)
+	// specify their target columns through assignments or source semantics
+	// and were not flagged by the prior pingcap-AST rule. Without this carve-
+	// out the omni-migrated rule false-positives on every SET-form insert.
+	isValuesForm := len(node.Values) > 0
+	isSelectForm := node.Select != nil
+	if !isValuesForm && !isSelectForm {
 		return
 	}
 	c.adviceList = append(c.adviceList, &storepb.Advice{
