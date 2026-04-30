@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestByteOffsetToRunePosition(t *testing.T) {
@@ -225,4 +226,57 @@ func TestGetTiDBASTFallsBackToProvider(t *testing.T) {
 	a.True(ok, "GetTiDBAST should fall back to AsPingCapAST when handed an OmniAST")
 	a.NotNil(got)
 	a.NotNil(got.Node)
+}
+
+// TestAsPingCapASTLineTrackingMatchesCanonical pins that bridge-produced
+// nodes have the same node.OriginTextPosition() as the canonical pre-flip
+// path (ParseTiDBForSyntaxCheck). 49 of 51 tidb advisors call
+// OriginTextPosition() to report advice line numbers; if the bridge omits
+// the line-tracking work that the canonical path performs, post-flip
+// un-migrated advisors silently regress to line 1 for every statement.
+//
+// This is the regression that PR review caught — the original bridge in
+// this PR called bare ParseTiDB without applying applyTiDBLineTracking, so
+// nodes came back with default OriginTextPosition (line 1 of the snippet,
+// not line N of the original multi-statement input).
+func TestAsPingCapASTLineTrackingMatchesCanonical(t *testing.T) {
+	a := require.New(t)
+
+	// Two-statement input. We compare the SECOND statement's line tracking
+	// because that's where any drift would show: line 1 (default, broken)
+	// vs line 2 (correct).
+	multi := "CREATE TABLE foo (id INT);\nALTER TABLE foo ADD COLUMN x INT NOT NULL;"
+
+	// Canonical pre-flip path: ParseTiDBForSyntaxCheck splits + parses +
+	// applies applyTiDBLineTracking via the shared helper.
+	canonical, err := ParseTiDBForSyntaxCheck(multi)
+	a.NoError(err)
+	a.Len(canonical, 2)
+	canonicalSecond, ok := canonical[1].(*AST)
+	a.True(ok)
+
+	// Simulate what the dispatcher does post-flip: split, then for each
+	// non-empty split build an OmniAST. The bridge must produce a node
+	// whose OriginTextPosition matches the canonical path's.
+	splits, err := base.SplitMultiSQL(storepb.Engine_TIDB, multi)
+	a.NoError(err)
+	a.GreaterOrEqual(len(splits), 2)
+	secondSplit := splits[1]
+
+	o := &OmniAST{
+		Text: secondSplit.Text,
+		// StartPosition is 1-based line in the original SQL; SplitMultiSQL
+		// gives BaseLine() as 0-based, so +1 to convert.
+		StartPosition: &storepb.Position{Line: int32(secondSplit.BaseLine()) + 1},
+	}
+	bridged, ok := o.AsPingCapAST()
+	a.True(ok)
+
+	a.Equal(
+		canonicalSecond.Node.OriginTextPosition(),
+		bridged.Node.OriginTextPosition(),
+		"bridge OriginTextPosition must match ParseTiDBForSyntaxCheck — post-flip un-migrated advisors expect identical line numbers",
+	)
+	a.Equal(2, bridged.Node.OriginTextPosition(),
+		"sanity: ALTER TABLE on line 2 of the input should report OriginTextPosition=2")
 }
