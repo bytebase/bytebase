@@ -73,7 +73,7 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 // continuity when omni successfully wraps a statement but pingcap
 // subsequently rejects it. The orthogonal failure mode — omni rejects at the
 // dispatcher level so no *OmniAST exists for the bridge to operate on — is
-// handled by the dispatcher-fallback contract (plan §1.5.0 invariant #5,
+// handled by the dispatcher-fallback contract (plan §1.5.0 invariant #8,
 // shipping with the dispatcher flip in §1.5.N+1).
 func (a *OmniAST) AsPingCapAST() (*AST, bool) {
 	if a.pingcapParsed {
