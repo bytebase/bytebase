@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
+	omnimssql "github.com/bytebase/omni/mssql"
 	mssqlparser "github.com/bytebase/omni/mssql/parser"
 	tsqlparser "github.com/bytebase/parser/tsql"
 
@@ -24,8 +25,6 @@ func init() {
 }
 
 var (
-	// Check tableRefListener is implementing the TSqlParserListener interface.
-	_ tsqlparser.TSqlParserListener = &tableRefListener{}
 	_ tsqlparser.TSqlParserListener = &cteExtractor{}
 
 	tsqlDataTypes = []string{
@@ -454,17 +453,14 @@ type Completer struct {
 	metadataGetter      base.GetDatabaseMetadataFunc
 	databaseNamesLister base.ListDatabaseNamesFunc
 
-	cteCache map[int][]*base.VirtualTableReference
-	// referencesStack is a hierarchical stack of table references.
-	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]base.TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references          []base.TableReference
-	referenceMap        map[string]bool
-	cteTables           []*base.VirtualTableReference
-	caretTokenIsQuoted  quotedType
-	noSeparatorRequired map[int]bool
+	references         []base.TableReference
+	referenceMap       map[string]bool
+	cteTables          []*base.VirtualTableReference
+	caretTokenIsQuoted quotedType
+	completionPrefix   string
+	completionIntent   *omnimssql.CompletionIntent
 }
 
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
@@ -514,7 +510,6 @@ func newCompleter(ctx context.Context, cCtx base.CompletionContext, parser *tsql
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
 		databaseNamesLister: cCtx.ListDatabaseNames,
-		cteCache:            nil,
 	}
 }
 
@@ -644,48 +639,104 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 		}
 	}
 
-	caretIndex := c.scanner.GetIndex()
-	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(true)] {
-		caretIndex--
+	completionContext := omnimssql.CollectCompletion(c.sql, c.cursorByteOffset)
+	if completionContext != nil {
+		c.completionPrefix = completionContext.Prefix
+		c.completionIntent = completionContext.Intent
+		c.collectCompletionScopeReferences(completionContext)
+		c.collectCompletionCTEs(completionContext)
 	}
-	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
+	candidates := (*mssqlparser.CandidateSet)(nil)
+	if completionContext != nil {
+		candidates = completionContext.Candidates
+	}
+	if candidates == nil {
+		candidates = mssqlparser.Collect(c.sql, c.cursorByteOffset)
+	}
 
-	completionOffset := c.cursorByteOffset
-	candidates := mssqlparser.Collect(c.sql, completionOffset)
-	if len(candidates.Rules) == 0 {
-		if prefixTok, ok := c.prefixToken(); ok {
-			completionOffset = prefixTok.Loc
-			candidates = mssqlparser.Collect(c.sql, completionOffset)
-		}
-	}
-
-	for _, rc := range candidates.Rules {
-		if rc.Rule == "columnref" {
-			c.collectLeadingTableReferences(caretIndex)
-			c.takeReferencesSnapshot()
-			c.collectRemainingTableReferences()
-			c.takeReferencesSnapshot()
-			break
-		}
-	}
 	return c.convertCandidates(candidates)
 }
 
-func (c *Completer) prefixToken() (mssqlparser.Token, bool) {
-	idx := c.caretTokenIndex
-	if idx < len(c.tokens) {
-		tok := c.tokens[idx]
-		if tok.Loc < c.cursorByteOffset && c.cursorByteOffset <= tok.End && mssqlparser.IsIdentTokenType(tok.Type) {
-			return tok, true
+func (c *Completer) determineObjectNameContext() []*objectRefContext {
+	if c.completionIntent == nil {
+		return c.determineFullTableNameContext()
+	}
+	context := newObjectRefContext()
+	qualifier := c.completionIntent.Qualifier
+	if qualifier.Server != "" {
+		context.setLinkedServer(qualifier.Server)
+	}
+	if qualifier.Database != "" {
+		context.setDatabase(qualifier.Database)
+	}
+	if qualifier.Schema != "" {
+		context.setSchema(qualifier.Schema)
+		if qualifier.Database == "" {
+			context.flags &^= objectFlagShowDatabase
 		}
 	}
-	if idx > 0 {
-		tok := c.tokens[idx-1]
-		if tok.End == c.cursorByteOffset && mssqlparser.IsIdentTokenType(tok.Type) {
-			return tok, true
+	if qualifier.Object != "" {
+		context.setObject(qualifier.Object)
+	}
+	return []*objectRefContext{context}
+}
+
+func (c *Completer) determineColumnNameContext() []*objectRefContext {
+	if c.completionIntent == nil || !completionIntentHasObjectKind(c.completionIntent, omnimssql.ObjectKindColumn) {
+		return c.determineFullColumnName()
+	}
+	context := newObjectRefContext(withColumn())
+	qualifier := c.completionIntent.Qualifier
+	if qualifier.Database == "" && qualifier.Schema != "" && qualifier.Object == "" &&
+		(strings.EqualFold(qualifier.Schema, "INSERTED") || strings.EqualFold(qualifier.Schema, "DELETED")) {
+		return []*objectRefContext{context}
+	}
+	if qualifier.Object != "" {
+		if qualifier.Server != "" {
+			context.setLinkedServer(qualifier.Server)
+		}
+		if qualifier.Database != "" {
+			context.setDatabase(qualifier.Database)
+		}
+		if qualifier.Schema != "" {
+			context.setSchema(qualifier.Schema)
+		}
+		context.setObject(qualifier.Object)
+		context.flags &^= objectFlagShowDatabase | objectFlagShowSchema
+		return []*objectRefContext{context}
+	}
+	if qualifier.Server != "" && qualifier.Database != "" && qualifier.Schema != "" {
+		context.setDatabase(qualifier.Server)
+		context.setSchema(qualifier.Database)
+		context.setObject(qualifier.Schema)
+		context.flags &^= objectFlagShowDatabase | objectFlagShowSchema
+		return []*objectRefContext{context}
+	}
+	if qualifier.Schema != "" {
+		if qualifier.Database != "" {
+			context.setSchema(qualifier.Database)
+		}
+		context.setObject(qualifier.Schema)
+		context.flags &^= objectFlagShowDatabase | objectFlagShowSchema
+		return []*objectRefContext{context}
+	}
+	if qualifier.Database != "" {
+		context.setObject(qualifier.Database)
+		context.flags &^= objectFlagShowDatabase | objectFlagShowSchema
+	}
+	return []*objectRefContext{context}
+}
+
+func completionIntentHasObjectKind(intent *omnimssql.CompletionIntent, kind omnimssql.ObjectKind) bool {
+	if intent == nil {
+		return false
+	}
+	for _, objectKind := range intent.ObjectKinds {
+		if objectKind == kind {
+			return true
 		}
 	}
-	return mssqlparser.Token{}, false
+	return false
 }
 
 func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]base.Candidate, error) {
@@ -710,6 +761,8 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 		})
 	}
 
+	c.insertCompletionIntentCandidates(keywordEntries, functionEntries, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries)
+
 	for _, ruleCandidate := range candidates.Rules {
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
@@ -721,14 +774,14 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 			databaseEntries.insertMetadataDatabases(c, "")
 		case "schema_ref":
 			schemaEntries.insertMetadataSchemas(c, "", "")
-		case "proc_ref":
-			for _, context := range c.determineFullTableNameContext() {
+		case "proc_ref", "proc_name":
+			for _, context := range c.determineObjectNameContext() {
 				if context.flags&objectFlagShowObject != 0 {
 					routineEntries.insertMetadataProcedures(c, context.linkedServer, context.database, context.schema)
 				}
 			}
 		case "sequence_ref":
-			for _, context := range c.determineFullTableNameContext() {
+			for _, context := range c.determineObjectNameContext() {
 				if context.flags&objectFlagShowObject != 0 {
 					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
 				}
@@ -741,9 +794,15 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 				})
 			}
 		case "table_ref":
-			completionContexts := c.determineFullTableNameContext()
+			completionContexts := c.determineObjectNameContext()
 			for _, context := range completionContexts {
 				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
+			}
+		case "view_name", "view_ref":
+			for _, context := range c.determineObjectNameContext() {
+				if context.flags&objectFlagShowObject != 0 {
+					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+				}
 			}
 		case "asterisk":
 			completionContexts := c.determineAsteriskContext()
@@ -751,7 +810,7 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			}
 		case "columnref":
-			completionContexts := c.determineFullColumnName()
+			completionContexts := c.determineColumnNameContext()
 			for _, context := range completionContexts {
 				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 				if context.flags&objectFlagShowObject != 0 {
@@ -793,10 +852,17 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 							})
 						}
 					}
-					columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
+					if !context.empty() || len(c.references) == 0 {
+						columnEntries.insertMetadataColumns(c, context.linkedServer, context.database, context.schema, context.object)
+					}
 					for _, reference := range c.references {
+						matchedQualifiedReference := false
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
+							if context.empty() {
+								columnEntries.insertMetadataColumns(c, "", reference.Database, reference.Schema, reference.Table)
+								continue
+							}
 							inputLinkedServer := context.linkedServer
 							inputDatabaseName := context.database
 							if inputDatabaseName == "" {
@@ -817,19 +883,26 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 								referenceSchemaName = c.defaultSchema
 							}
 							referenceTableName := reference.Table
+							referenceTableIsAlias := false
 							if reference.Alias != "" {
 								referenceTableName = reference.Alias
+								referenceTableIsAlias = true
 							}
 
-							if inputLinkedServer == "" && strings.EqualFold(referenceDatabaseName, inputDatabaseName) &&
-								strings.EqualFold(referenceSchemaName, inputSchemaName) &&
-								strings.EqualFold(referenceTableName, inputTableName) {
+							if inputLinkedServer == "" && strings.EqualFold(referenceTableName, inputTableName) &&
+								(referenceTableIsAlias ||
+									(strings.EqualFold(referenceDatabaseName, inputDatabaseName) &&
+										strings.EqualFold(referenceSchemaName, inputSchemaName))) {
 								columnEntries.insertMetadataColumns(c, "", reference.Database, reference.Schema, reference.Table)
+								matchedQualifiedReference = referenceTableIsAlias && context.database == "" && context.schema == ""
 							}
 						case *base.VirtualTableReference:
 							// Reference could be a physical table reference or a virtual table reference, if the reference is a virtual table reference,
 							// and users do not specify the server, database and schema, we should also insert the columns.
 							if context.linkedServer == "" && context.database == "" && context.schema == "" {
+								if context.object != "" && !strings.EqualFold(reference.Table, context.object) {
+									continue
+								}
 								for _, column := range reference.Columns {
 									if _, ok := columnEntries[column]; !ok {
 										columnEntries[column] = base.Candidate{
@@ -838,8 +911,12 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 										}
 									}
 								}
+								matchedQualifiedReference = context.object != ""
 							}
 						default:
+						}
+						if matchedQualifiedReference {
+							break
 						}
 					}
 					if context.linkedServer == "" && context.database == "" && context.schema == "" {
@@ -856,7 +933,7 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 							}
 						}
 					}
-					if context.empty() {
+					if context.empty() && len(c.references) == 0 {
 						columnEntries.insertAllColumns(c)
 					}
 				}
@@ -879,7 +956,71 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 	result = append(result, viewEntries.toSlice()...)
 	result = append(result, sequenceEntries.toSlice()...)
 	result = append(result, routineEntries.toSlice()...)
-	return result, nil
+	return c.filterCandidatesByPrefix(result), nil
+}
+
+func (c *Completer) insertCompletionIntentCandidates(keywordEntries, functionEntries, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries CompletionMap) {
+	if c.completionIntent == nil {
+		return
+	}
+	contexts := c.determineObjectNameContext()
+	for _, kind := range c.completionIntent.ObjectKinds {
+		for _, context := range contexts {
+			switch kind {
+			case omnimssql.ObjectKindDatabase:
+				databaseEntries.insertMetadataDatabases(c, context.linkedServer)
+			case omnimssql.ObjectKindSchema:
+				schemaEntries.insertMetadataSchemas(c, context.linkedServer, context.database)
+			case omnimssql.ObjectKindTable:
+				if context.flags&objectFlagShowObject != 0 {
+					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
+				}
+			case omnimssql.ObjectKindView:
+				if context.flags&objectFlagShowObject != 0 {
+					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+				}
+			case omnimssql.ObjectKindSequence:
+				if context.flags&objectFlagShowObject != 0 {
+					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
+				}
+			case omnimssql.ObjectKindProcedure:
+				if context.flags&objectFlagShowObject != 0 {
+					routineEntries.insertMetadataProcedures(c, context.linkedServer, context.database, context.schema)
+				}
+			case omnimssql.ObjectKindFunction:
+				functionEntries.insertBuiltinFunctions()
+			case omnimssql.ObjectKindType:
+				for _, typ := range tsqlDataTypes {
+					keywordEntries.Insert(base.Candidate{
+						Type: base.CandidateTypeKeyword,
+						Text: typ,
+					})
+				}
+			default:
+			}
+		}
+	}
+}
+
+func (c *Completer) filterCandidatesByPrefix(candidates []base.Candidate) []base.Candidate {
+	prefix := c.completionPrefix
+	if prefix == "" {
+		return candidates
+	}
+	_, normalizedPrefix := NormalizeTSQLIdentifierText(prefix)
+	if normalizedPrefix == "" {
+		return candidates
+	}
+	filtered := make([]base.Candidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		text := strings.TrimSuffix(candidate.Text, "()")
+		text = unquoteDoubleQuoted(text)
+		_, normalizedText := NormalizeTSQLIdentifierText(text)
+		if strings.HasPrefix(normalizedText, normalizedPrefix) {
+			filtered = append(filtered, candidate)
+		}
+	}
+	return filtered
 }
 
 func (c *Completer) insertObjectCandidates(context *objectRefContext, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries CompletionMap) {
@@ -1258,7 +1399,7 @@ func isDerivedTableOpen(upperSQL string, idx int) bool {
 		return false
 	}
 	before := strings.TrimRight(upperSQL[:idx], asciiWhitespace)
-	for _, keyword := range []string{"FROM", "JOIN", "APPLY"} {
+	for _, keyword := range []string{"FROM", "JOIN", "APPLY", "USING"} {
 		if strings.HasSuffix(before, keyword) {
 			return true
 		}
@@ -1762,11 +1903,167 @@ func hasMultipleNonEmptyStatements(statements []base.Statement) bool {
 	return false
 }
 
-func (c *Completer) takeReferencesSnapshot() {
-	c.ensureReferenceMap()
-	for _, references := range c.referencesStack {
-		c.rememberReferences(references)
+func (c *Completer) collectCompletionScopeReferences(completionContext *omnimssql.CompletionContext) {
+	if completionContext == nil || completionContext.Scope == nil {
+		return
 	}
+	var references []base.TableReference
+	appendReference := func(reference omnimssql.RangeReference) {
+		if converted := c.convertCompletionScopeReference(reference); converted != nil {
+			references = append(references, converted)
+		}
+	}
+	if completionContext.Scope.DMLTarget != nil {
+		appendReference(*completionContext.Scope.DMLTarget)
+	}
+	if completionContext.Scope.MergeTarget != nil {
+		appendReference(*completionContext.Scope.MergeTarget)
+	}
+	if completionContext.Scope.MergeSource != nil {
+		appendReference(*completionContext.Scope.MergeSource)
+	}
+	for _, reference := range completionContext.Scope.LocalReferences {
+		appendReference(reference)
+	}
+	for _, level := range completionContext.Scope.OuterReferences {
+		for _, reference := range level {
+			appendReference(reference)
+		}
+	}
+	c.rememberReferencesIfMissing(references)
+}
+
+func (c *Completer) collectCompletionCTEs(completionContext *omnimssql.CompletionContext) {
+	if completionContext == nil {
+		return
+	}
+	for _, reference := range completionContext.CTEs {
+		virtual := c.convertCompletionVirtualReference(reference)
+		if virtual == nil {
+			continue
+		}
+		c.appendCTEIfMissing(virtual)
+	}
+}
+
+func (c *Completer) appendCTEIfMissing(reference *base.VirtualTableReference) {
+	for _, existing := range c.cteTables {
+		if strings.EqualFold(existing.Table, reference.Table) {
+			if len(existing.Columns) == 0 && len(reference.Columns) > 0 {
+				existing.Columns = reference.Columns
+			}
+			return
+		}
+	}
+	c.cteTables = append(c.cteTables, reference)
+}
+
+func (c *Completer) rememberReferencesIfMissing(references []base.TableReference) {
+	c.ensureReferenceMap()
+	for _, reference := range references {
+		if c.hasReference(reference) {
+			continue
+		}
+		c.rememberReferences([]base.TableReference{reference})
+	}
+}
+
+func (c *Completer) hasReference(reference base.TableReference) bool {
+	key := completionTableReferenceKey(reference)
+	for _, existing := range c.references {
+		if completionTableReferenceKey(existing) == key {
+			return true
+		}
+	}
+	return false
+}
+
+func completionTableReferenceKey(reference base.TableReference) string {
+	switch reference := reference.(type) {
+	case *base.PhysicalTableReference:
+		return strings.Join([]string{"physical", reference.Database, reference.Schema, reference.Table, reference.Alias}, "\x00")
+	case *base.VirtualTableReference:
+		return strings.Join([]string{"virtual", reference.Table}, "\x00")
+	default:
+		return fmt.Sprintf("%T", reference)
+	}
+}
+
+func (c *Completer) convertCompletionScopeReference(reference omnimssql.RangeReference) base.TableReference {
+	switch reference.Kind {
+	case omnimssql.RangeReferenceRelation, omnimssql.RangeReferenceDMLTarget, omnimssql.RangeReferenceMergeTarget, omnimssql.RangeReferenceMergeSource:
+		alias := normalizeCompletionIdentifier(reference.Alias)
+		if reference.Kind == omnimssql.RangeReferenceMergeSource {
+			table := normalizeCompletionIdentifier(reference.Object)
+			if columns := c.lookupCTEColumns(table); len(columns) > 0 {
+				if alias != "" {
+					table = alias
+				}
+				return &base.VirtualTableReference{
+					Table:   table,
+					Columns: columns,
+				}
+			}
+		}
+		return &base.PhysicalTableReference{
+			Database: normalizeCompletionIdentifier(reference.Database),
+			Schema:   normalizeCompletionIdentifier(reference.Schema),
+			Table:    normalizeCompletionIdentifier(reference.Object),
+			Alias:    alias,
+		}
+	case omnimssql.RangeReferenceCTE, omnimssql.RangeReferenceValues, omnimssql.RangeReferenceSubquery, omnimssql.RangeReferenceTableVariable, omnimssql.RangeReferenceJoinAlias, omnimssql.RangeReferenceFunction:
+		return c.convertCompletionVirtualReference(reference)
+	default:
+		return nil
+	}
+}
+
+func (c *Completer) convertCompletionVirtualReference(reference omnimssql.RangeReference) *base.VirtualTableReference {
+	table := completionReferenceName(reference)
+	if table == "" {
+		return nil
+	}
+	columns := completionReferenceColumns(reference)
+	if len(columns) == 0 && reference.Kind == omnimssql.RangeReferenceCTE {
+		columns = c.lookupCTEColumns(table)
+	}
+	return &base.VirtualTableReference{
+		Table:   table,
+		Columns: columns,
+	}
+}
+
+func completionReferenceName(reference omnimssql.RangeReference) string {
+	if reference.Alias != "" {
+		return normalizeCompletionIdentifier(reference.Alias)
+	}
+	return normalizeCompletionIdentifier(reference.Object)
+}
+
+func completionReferenceColumns(reference omnimssql.RangeReference) []string {
+	columns := reference.Columns
+	if len(columns) == 0 {
+		columns = reference.AliasColumns
+	}
+	result := make([]string, 0, len(columns))
+	for _, column := range columns {
+		result = append(result, normalizeCompletionIdentifier(column))
+	}
+	return result
+}
+
+func normalizeCompletionIdentifier(identifier string) string {
+	original, _ := NormalizeTSQLIdentifierText(unquoteDoubleQuoted(identifier))
+	return original
+}
+
+func (c *Completer) lookupCTEColumns(table string) []string {
+	for _, cte := range c.cteTables {
+		if strings.EqualFold(cte.Table, table) {
+			return cte.Columns
+		}
+	}
+	return nil
 }
 
 func (c *Completer) ensureReferenceMap() {
@@ -1796,271 +2093,6 @@ func (c *Completer) physicalReferenceKey(reference *base.PhysicalTableReference)
 		schema = c.defaultSchema
 	}
 	return fmt.Sprintf("%s.%s.%s", database, schema, reference.Table)
-}
-
-func (c *Completer) collectLeadingTableReferences(caretIndex int) {
-	c.scanner.Push()
-
-	c.scanner.SeekIndex(0)
-
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM
-		for !found {
-			if !c.scanner.Forward(false) || c.scanner.GetIndex() >= caretIndex {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case tsqlparser.TSqlLexerLR_BRACKET:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case tsqlparser.TSqlLexerRR_BRACKET:
-				if level == 0 {
-					c.scanner.PopAndRestore()
-					return // We cannot go above the initial nesting level.
-				}
-			case tsqlparser.TSqlLexerFROM:
-				found = true
-			default:
-				// Other tokens, continue scanning
-			}
-		}
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No FROM clause found.
-		}
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) collectRemainingTableReferences() {
-	c.scanner.Push()
-
-	level := 0
-	for {
-		found := c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM
-		for !found {
-			if !c.scanner.Forward(false /* skipHidden */) {
-				break
-			}
-
-			switch c.scanner.GetTokenType() {
-			case tsqlparser.TSqlLexerLR_BRACKET:
-				level++
-				c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
-			case tsqlparser.TSqlLexerRR_BRACKET:
-				if level > 0 {
-					level--
-				}
-
-			case tsqlparser.TSqlLexerFROM:
-				if level == 0 {
-					found = true
-				}
-			default:
-				// Other tokens, continue scanning
-			}
-		}
-
-		if !found {
-			c.scanner.PopAndRestore()
-			return // No more FROM clause found.
-		}
-
-		c.parseTableReferences(c.scanner.GetFollowingText())
-		if c.scanner.GetTokenType() == tsqlparser.TSqlLexerFROM {
-			c.scanner.Forward(false /* skipHidden */)
-		}
-	}
-}
-
-func (c *Completer) parseTableReferences(fromClause string) {
-	input := antlr.NewInputStream(fromClause)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := tsqlparser.NewTSqlParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.From_table_sources()
-	listener := &tableRefListener{
-		context:        c,
-		fromClauseMode: true,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-}
-
-type tableRefListener struct {
-	*tsqlparser.BaseTSqlParserListener
-
-	context        *Completer
-	fromClauseMode bool
-	done           bool
-	level          int
-}
-
-func (l *tableRefListener) ExitAs_table_alias(ctx *tsqlparser.As_table_aliasContext) {
-	if l.done {
-		return
-	}
-	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
-		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.PhysicalTableReference); ok {
-			physicalTable.Alias = unquote(ctx.Table_alias().GetText())
-			return
-		}
-		if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
-			virtualTable.Table = unquote(ctx.Table_alias().GetText())
-		}
-	}
-}
-
-func (l *tableRefListener) ExitColumn_alias_list(ctx *tsqlparser.Column_alias_listContext) {
-	if l.done {
-		return
-	}
-
-	if l.level == 0 && len(l.context.referencesStack) != 0 && len(l.context.referencesStack[0]) != 0 {
-		if virtualTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.VirtualTableReference); ok {
-			var newColumns []string
-			for _, column := range ctx.AllColumn_alias() {
-				newColumns = append(newColumns, unquote(column.GetText()))
-			}
-			virtualTable.Columns = newColumns
-		}
-	}
-}
-
-func (l *tableRefListener) ExitFull_table_name(ctx *tsqlparser.Full_table_nameContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		reference := &base.PhysicalTableReference{}
-		_ /* Linked Server */, database, schema, table := normalizeFullTableNameFallback(ctx, "", "")
-		reference.Database = database
-		reference.Schema = schema
-		reference.Table = table
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *tableRefListener) ExitRowset_function(*tsqlparser.Rowset_functionContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		reference := &base.VirtualTableReference{}
-
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext) {
-	if l.done {
-		return
-	}
-
-	pCtx, ok := ctx.GetParent().(*tsqlparser.Table_source_itemContext)
-	if !ok {
-		return
-	}
-
-	derivedTableName := unquote(pCtx.As_table_alias().Table_alias().GetText())
-	reference := &base.VirtualTableReference{
-		Table: derivedTableName,
-	}
-
-	if pCtx.Column_alias_list() == nil {
-		// User do not specify the column alias, we should use query span to get the column alias.
-		if span, err := GetQuerySpan(
-			l.context.ctx,
-			base.GetQuerySpanContext{
-				InstanceID:              l.context.instanceID,
-				GetDatabaseMetadataFunc: l.context.metadataGetter,
-				ListDatabaseNamesFunc:   l.context.databaseNamesLister,
-			},
-			base.Statement{Text: fmt.Sprintf("SELECT * FROM (%s);", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))},
-			l.context.defaultDatabase,
-			l.context.defaultSchema,
-			true,
-		); err == nil && span.NotFoundError == nil {
-			for _, column := range span.Results {
-				reference.Columns = append(reference.Columns, column.Name)
-			}
-		}
-	}
-	l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-}
-
-func (l *tableRefListener) ExitChange_table(*tsqlparser.Change_tableContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		reference := &base.VirtualTableReference{}
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *tableRefListener) ExitNodes_method(*tsqlparser.Nodes_methodContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		reference := &base.VirtualTableReference{}
-		l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-	}
-}
-
-func (l *tableRefListener) EnterTable_source_item(ctx *tsqlparser.Table_source_itemContext) {
-	if l.done {
-		return
-	}
-
-	if !l.fromClauseMode || l.level == 0 {
-		if ctx.GetLoc_id() != nil {
-			reference := &base.VirtualTableReference{}
-			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-		} else if ctx.GetLoc_id_call() != nil {
-			reference := &base.VirtualTableReference{}
-			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-		} else if ctx.GetOldstyle_fcall() != nil {
-			reference := &base.VirtualTableReference{}
-			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
-		}
-	}
-}
-
-func (l *tableRefListener) EnterSubquery(*tsqlparser.SubqueryContext) {
-	if l.done {
-		return
-	}
-
-	if l.fromClauseMode {
-		l.level++
-	} else {
-		l.context.referencesStack = append([][]base.TableReference{{}}, l.context.referencesStack...)
-	}
-}
-
-func (l *tableRefListener) ExitSubquery(*tsqlparser.SubqueryContext) {
-	if l.done {
-		return
-	}
-
-	if l.fromClauseMode {
-		l.level--
-	} else {
-		l.context.referencesStack = l.context.referencesStack[1:]
-	}
 }
 
 func (c *Completer) fetchCommonTableExpression(statement string) {
