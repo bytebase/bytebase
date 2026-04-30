@@ -24,6 +24,16 @@ Before you keep more than one Bytebase server active at the same time, make sure
 4. **Your platform provides traffic management and rollout control.**
    - For example, a load balancer plus a rolling update strategy managed by your orchestrator.
 
+### AWS RDS IAM authentication for metadata PostgreSQL
+
+When the shared metadata PostgreSQL database is AWS RDS or Aurora PostgreSQL, every Bytebase replica can enable IAM auth by adding the Bytebase AWS parameters to `PG_URL`. URI-style values are recommended. Direct compact keyword/value values such as `host=... port=...` are also supported; this URI-style value is the typical shape:
+
+```text
+postgres://bb_meta@mydb.abc.us-east-1.rds.amazonaws.com:5432/bytebase?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region=us-east-1
+```
+
+The PostgreSQL user must be granted `rds_iam`, and the AWS principal used by each Bytebase process must have `rds-db:connect` for that database user. Use verified TLS, such as `sslmode=verify-full`, with a trust store that validates the RDS certificate. Do not put AWS access keys in `PG_URL`; use the standard AWS SDK credential chain through the runtime environment, such as EKS IRSA, ECS task roles, EC2 instance profiles, environment variables, or shared AWS config.
+
 ## How replica detection works
 
 Bytebase tracks live replicas with heartbeats:

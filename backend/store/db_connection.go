@@ -185,11 +185,44 @@ func isFilePath(s string) bool {
 		return false
 	}
 
-	if strings.Contains(s, "host=/tmp") {
+	if isKeywordValuePGURL(s) {
 		return false
 	}
 
 	return true
+}
+
+func isKeywordValuePGURL(s string) bool {
+	for _, field := range strings.Fields(s) {
+		eqIdx := strings.IndexRune(field, '=')
+		if eqIdx < 0 {
+			continue
+		}
+
+		switch field[:eqIdx] {
+		case "host",
+			"hostaddr",
+			"port",
+			"dbname",
+			"database",
+			"user",
+			"password",
+			"passfile",
+			"connect_timeout",
+			"sslmode",
+			"sslrootcert",
+			"sslcert",
+			"sslkey",
+			"service",
+			"servicefile",
+			"target_session_attrs",
+			"application_name",
+			metadataDBAWSRDSIAMParam,
+			metadataDBAWSRegionParam:
+			return true
+		}
+	}
+	return false
 }
 
 func readURLFromFile(path string) (string, error) {
@@ -206,8 +239,20 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, err
 		return nil, errors.Wrap(err, "failed to parse database URL")
 	}
 
+	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	pgxConfig.Tracer = &metadataDBTracer{}
-	db := stdlib.OpenDB(*pgxConfig)
+	var tokenProvider metadataDBTokenProvider
+	if authConfig != nil && authConfig.enabled {
+		tokenProvider, err = newAWSMetadataDBTokenProvider(ctx, authConfig.region)
+		if err != nil {
+			return nil, err
+		}
+	}
+	db := stdlib.OpenDB(*pgxConfig, metadataDBOpenOptions(authConfig, tokenProvider)...)
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {
