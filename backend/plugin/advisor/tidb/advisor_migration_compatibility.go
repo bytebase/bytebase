@@ -116,7 +116,9 @@ func (*compatibilityChecker) classifyAlterTable(n *ast.AlterTableStmt) advisorco
 				return c
 			}
 		case ast.ATAlterCheckEnforced:
-			if cmd.Constraint != nil && !cmd.Constraint.NotEnforced {
+			// omni populates cmd.NewName with "ENFORCED" / "NOT ENFORCED";
+			// cmd.Constraint is not set. Flag only the ENFORCED transition.
+			if cmd.NewName == "ENFORCED" {
 				return advisorcode.CompatibilityAlterCheck
 			}
 		case ast.ATModifyColumn, ast.ATChangeColumn:
