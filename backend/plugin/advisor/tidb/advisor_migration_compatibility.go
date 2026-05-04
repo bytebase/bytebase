@@ -55,26 +55,38 @@ type compatibilityChecker struct {
 }
 
 func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
+	// Capture line and code in the same arm so they can never drift.
+	// A separate locStart switch would be a synchronization hazard:
+	// adding a node type to one switch without the other would silently
+	// degrade line numbers to the default of line 1.
 	code := advisorcode.Ok
+	line := 0
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Table != nil {
 			c.lastCreateTable = n.Table.Name
 		}
+		// CREATE TABLE never produces compatibility advice; line capture
+		// is intentionally skipped — code stays Ok.
 	case *ast.DropDatabaseStmt:
 		code = advisorcode.CompatibilityDropDatabase
+		line = ostmt.AbsoluteLine(n.Loc.Start)
 	case *ast.RenameTableStmt:
 		code = advisorcode.CompatibilityRenameTable
+		line = ostmt.AbsoluteLine(n.Loc.Start)
 	case *ast.DropTableStmt:
 		code = advisorcode.CompatibilityDropTable
+		line = ostmt.AbsoluteLine(n.Loc.Start)
 	case *ast.AlterTableStmt:
 		if n.Table != nil && n.Table.Name == c.lastCreateTable {
 			break
 		}
 		code = c.classifyAlterTable(n)
+		line = ostmt.AbsoluteLine(n.Loc.Start)
 	case *ast.CreateIndexStmt:
 		if n.Table != nil && n.Table.Name != c.lastCreateTable && n.Unique {
 			code = advisorcode.CompatibilityAddUniqueKey
+			line = ostmt.AbsoluteLine(n.Loc.Start)
 		}
 	default:
 	}
@@ -85,31 +97,9 @@ func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
 			Code:          code.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", ostmt.Text),
-			StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(c.locStart(ostmt))),
+			StartPosition: common.ConvertANTLRLineToPosition(line),
 		})
 	}
-}
-
-// locStart returns the byte-offset start of the statement node, falling back
-// to 0 (which AbsoluteLine treats as the statement's first line) for any
-// node type without a Loc field. All omni AST top-level statements this
-// advisor handles have a Loc field; the fallback is defensive.
-func (*compatibilityChecker) locStart(ostmt OmniStmt) int {
-	switch n := ostmt.Node.(type) {
-	case *ast.AlterTableStmt:
-		return n.Loc.Start
-	case *ast.CreateTableStmt:
-		return n.Loc.Start
-	case *ast.DropTableStmt:
-		return n.Loc.Start
-	case *ast.DropDatabaseStmt:
-		return n.Loc.Start
-	case *ast.RenameTableStmt:
-		return n.Loc.Start
-	case *ast.CreateIndexStmt:
-		return n.Loc.Start
-	}
-	return 0
 }
 
 // classifyAlterTable inspects ALTER TABLE commands and returns the first
@@ -158,8 +148,14 @@ func classifyAddConstraint(constraint *ast.Constraint) advisorcode.Code {
 		return advisorcode.CompatibilityAddPrimaryKey
 	case ast.ConstrUnique:
 		// Pingcap had three distinct unique constraint types
-		// (ConstraintUniq / ConstraintUniqKey / ConstraintUniqIndex) all
-		// mapping to the same advice; omni unifies them under ConstrUnique.
+		// (ConstraintUniq / ConstraintUniqKey / ConstraintUniqIndex);
+		// omni unifies them under ConstrUnique. NOTE: this is also a
+		// silent bug fix — the original pingcap-typed code at lines
+		// 104-106 only checked ConstraintUniq + ConstraintUniqKey and
+		// missed ConstraintUniqIndex, so `ALTER TABLE t ADD UNIQUE INDEX
+		// idx (col)` previously emitted no compatibility advice. Post-
+		// migration all three forms route here and are flagged
+		// consistently.
 		return advisorcode.CompatibilityAddUniqueKey
 	case ast.ConstrForeignKey:
 		return advisorcode.CompatibilityAddForeignKey

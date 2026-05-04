@@ -256,12 +256,21 @@ func (c *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	return column.GetProto().Type, nil
 }
 
-// formatColumnType reproduces the pingcap-side rendering used in the prior
-// pingcap-AST advisor:
-//   - INT / BIGINT are returned uppercase (matched directly by the rule)
-//   - All other types are rendered as the lowercase pingcap String() form
-//     (e.g. "varchar(5)", "decimal(10,2)") so YAML fixtures that pin the
-//     advice content remain stable across the migration.
+// formatColumnType is a best-effort reproduction of pingcap's tp.String()
+// rendering for types appearing in the INDEX_PK_TYPE_LIMIT YAML fixture.
+//
+// Specifically handled:
+//   - "INT" / "BIGINT" returned uppercase (matched directly by the rule)
+//   - lowercase Name + "(Length[,Scale])" for types whose pingcap rendering
+//     is name + parenthesized length/scale (e.g. varchar(5), decimal(10,2))
+//   - bare lowercase Name for the default case
+//
+// NOT faithful to pingcap's tp.String() for ENUM / SET (which embed value
+// lists), DECIMAL with implicit Scale, BIT, or other types not exercised
+// by the existing fixture. If those types appear in future fixture cases
+// or production input the helper's output may diverge from pre-migration
+// strings — extend the switch when that happens. The contract is fixture
+// stability for the rendered advice content, not full pingcap parity.
 func formatColumnType(t *ast.DataType) string {
 	if t == nil {
 		return ""

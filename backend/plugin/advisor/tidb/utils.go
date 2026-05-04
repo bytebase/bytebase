@@ -173,6 +173,27 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 	return s.BaseLine + int(pos.Line)
 }
 
+// addColumnTargets returns the columns produced by an ATAddColumn cmd,
+// honoring omni's split between cmd.Columns (multi-column form, e.g.
+// ADD COLUMN (a INT, b INT)) and cmd.Column (single-column form, e.g.
+// ADD COLUMN x INT). Mutually exclusive in practice but not enforced
+// by the type — read defensively.
+//
+// Shared across migrated advisors that inspect ALTER TABLE ADD COLUMN
+// (currently advisor_table_require_pk.go and advisor_index_pk_type.go).
+func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
+	if cmd == nil {
+		return nil
+	}
+	if len(cmd.Columns) > 0 {
+		return cmd.Columns
+	}
+	if cmd.Column != nil {
+		return []*omniast.ColumnDef{cmd.Column}
+	}
+	return nil
+}
+
 // canNull reports whether the given pingcap-AST column may have NULL values
 // (i.e. the column has no NOT NULL or PRIMARY KEY constraint).
 //

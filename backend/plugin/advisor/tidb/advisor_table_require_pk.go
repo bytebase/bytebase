@@ -128,21 +128,18 @@ func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Om
 		case ast.ATAddColumn:
 			c.addPKIfExistByCols(tableName, addColumnTargets(cmd))
 		case ast.ATChangeColumn:
-			// cmd.Name is OLD; cmd.NewName / cmd.Column.Name is NEW.
-			oldName := cmd.Name
-			newName := ""
-			if cmd.Column != nil {
-				newName = cmd.Column.Name
+			// omni contract for ATChangeColumn:
+			//   cmd.Name        — OLD column name
+			//   cmd.Column.Name — NEW column name (cmd.NewName is for
+			//                     RENAME ops, NOT ATChangeColumn; do
+			//                     not read it here)
+			if cmd.Column == nil {
+				continue
 			}
-			if newName == "" {
-				newName = cmd.NewName
-			}
-			if c.changeColumn(tableName, oldName, newName) {
+			if c.changeColumn(tableName, cmd.Name, cmd.Column.Name) {
 				c.line[tableName] = stmtLine
 			}
-			if cmd.Column != nil {
-				c.addPKIfExistByCols(tableName, []*ast.ColumnDef{cmd.Column})
-			}
+			c.addPKIfExistByCols(tableName, []*ast.ColumnDef{cmd.Column})
 		case ast.ATModifyColumn:
 			if cmd.Column != nil {
 				c.addPKIfExistByCols(tableName, []*ast.ColumnDef{cmd.Column})
@@ -155,22 +152,6 @@ func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Om
 			// Skip other alter table specification types.
 		}
 	}
-}
-
-// addColumnTargets returns the columns produced by an ATAddColumn cmd,
-// honoring omni's split between cmd.Columns (multi-column form) and
-// cmd.Column (single-column form). Mutually exclusive in practice.
-func addColumnTargets(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
-	if cmd == nil {
-		return nil
-	}
-	if len(cmd.Columns) > 0 {
-		return cmd.Columns
-	}
-	if cmd.Column != nil {
-		return []*ast.ColumnDef{cmd.Column}
-	}
-	return nil
 }
 
 func (c *tableRequirePKChecker) generateAdviceList() []*storepb.Advice {
@@ -289,6 +270,15 @@ func (c *tableRequirePKChecker) addPKIfExistByCols(table string, columns []*ast.
 // expression nodes that we can't trivially flatten to a column-name set.
 // Pingcap parity: this advisor only checks regular PRIMARY KEYs by name,
 // so the simple-column path is sufficient.
+//
+// Side-effect bug fix: the original pingcap-typed convertConstraintToKeySlice
+// did `key.Column.Name.String()` without nil-checking key.Column. For
+// `PRIMARY KEY ((expr))` syntax pingcap left key.Column nil and populated
+// key.Expr instead, so the original would panic with a nil-pointer
+// dereference. This implementation returns an empty slice for expression
+// PKs (graceful skip) — the advisor reports no PK columns for the table,
+// which is the correct conservative behavior given the advisor cannot
+// inspect expression bodies.
 func constraintPKColumns(constraint *ast.Constraint) []string {
 	if constraint == nil {
 		return nil
