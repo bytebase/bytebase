@@ -111,16 +111,13 @@ func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Om
 				c.tables[tableName] = newColumnSet(constraintPKColumns(cmd.Constraint))
 			}
 		case ast.ATDropConstraint:
-			// omni unifies DROP PRIMARY KEY into ATDropConstraint with
-			// Name == "PRIMARY"; see omni/tidb/parser/alter_table.go.
+			// DROP PRIMARY KEY arrives here with cmd.Name == "PRIMARY".
 			if strings.ToUpper(cmd.Name) == primaryKeyName {
 				c.initEmptyTable(tableName)
 				c.line[tableName] = stmtLine
 			}
 		case ast.ATDropIndex:
-			// Some dialects accept DROP INDEX `PRIMARY` as an alias for
-			// DROP PRIMARY KEY; preserve pingcap-side behavior by treating
-			// it the same way.
+			// DROP INDEX `PRIMARY` is also accepted as an alias for DROP PRIMARY KEY.
 			if strings.ToUpper(cmd.Name) == primaryKeyName {
 				c.initEmptyTable(tableName)
 				c.line[tableName] = stmtLine
@@ -128,11 +125,8 @@ func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Om
 		case ast.ATAddColumn:
 			c.addPKIfExistByCols(tableName, addColumnTargets(cmd))
 		case ast.ATChangeColumn:
-			// omni contract for ATChangeColumn:
-			//   cmd.Name        — OLD column name
-			//   cmd.Column.Name — NEW column name (cmd.NewName is for
-			//                     RENAME ops, NOT ATChangeColumn; do
-			//                     not read it here)
+			// cmd.Name is the old name; cmd.Column.Name is the new name.
+			// cmd.NewName is for RENAME ops, not ATChangeColumn.
 			if cmd.Column == nil {
 				continue
 			}
@@ -263,22 +257,10 @@ func (c *tableRequirePKChecker) addPKIfExistByCols(table string, columns []*ast.
 	}
 }
 
-// constraintPKColumns extracts the column names from a PRIMARY KEY
-// constraint. omni stores simple column lists in Constraint.Columns;
-// expression-based / functional PRIMARY KEYs (rare — TiDB does support
-// PRIMARY KEY ((expr)) syntax) populate Constraint.IndexColumns with
-// expression nodes that we can't trivially flatten to a column-name set.
-// Pingcap parity: this advisor only checks regular PRIMARY KEYs by name,
-// so the simple-column path is sufficient.
-//
-// Side-effect bug fix: the original pingcap-typed convertConstraintToKeySlice
-// did `key.Column.Name.String()` without nil-checking key.Column. For
-// `PRIMARY KEY ((expr))` syntax pingcap left key.Column nil and populated
-// key.Expr instead, so the original would panic with a nil-pointer
-// dereference. This implementation returns an empty slice for expression
-// PKs (graceful skip) — the advisor reports no PK columns for the table,
-// which is the correct conservative behavior given the advisor cannot
-// inspect expression bodies.
+// constraintPKColumns returns the simple column names of a PRIMARY KEY.
+// Functional PRIMARY KEYs (`PRIMARY KEY ((expr))`) populate IndexColumns
+// with expression nodes instead of Columns; this returns an empty slice
+// for that form, causing the advisor to report no PK columns.
 func constraintPKColumns(constraint *ast.Constraint) []string {
 	if constraint == nil {
 		return nil

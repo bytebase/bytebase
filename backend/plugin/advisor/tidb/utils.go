@@ -52,15 +52,8 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-// columnNameToColumnDef and tableNewColumn track per-statement seen
-// columns by name with their pingcap-AST column definitions. Used by the
-// un-migrated index advisors (advisor_index_primary_key_type_allowlist.go,
-// advisor_index_type_no_blob.go) to resolve referenced column types
-// without re-walking prior CREATE TABLE statements.
-//
-// Moved here from advisor_index_pk_type.go during its migration to omni AST
-// (Phase 1.5 §1.5.3 batch 2). Still consumed by the two pingcap-AST
-// advisors above; delete when both migrate.
+// tableNewColumn tracks per-statement column definitions by name, scoped
+// to the un-migrated pingcap-AST index advisors. Delete when those migrate.
 // Tracked: https://linear.app/bytebase/issue/BYT-9395
 type columnNameToColumnDef map[string]*ast.ColumnDef
 type tableNewColumn map[string]columnNameToColumnDef
@@ -118,19 +111,12 @@ func needDefault(column *ast.ColumnDef) bool {
 	return true
 }
 
-// getTiDBNodes extracts TiDB AST nodes from the advisor context.
+// getTiDBNodes extracts pingcap-AST nodes for un-migrated advisors.
 //
-// Soft-fail on bridge miss: when stmt.AST is a PingCapASTProvider
-// (post-dispatcher-flip *OmniAST) whose AsPingCapAST() returns (nil, false),
-// the statement is skipped rather than surfaced as an error. This honors
-// Phase 1.5 invariant #2 from the omni-tidb completion plan — un-migrated
-// advisors emit no advice for the skipped statement; the review continues.
-// The bridge has already logged the parse failure at debug level
-// (omni.go:AsPingCapAST).
-//
-// True engine-mismatch (stmt.AST is some unrelated type, neither *tidb.AST
-// nor a PingCapASTProvider) is still surfaced as an error — that's a
-// programmer error in registration, not a soft-fail case.
+// On a PingCapASTProvider whose AsPingCapAST returns (nil, false) — i.e.
+// the bridge tried and pingcap rejected the statement — the statement is
+// skipped, not surfaced as an error. A non-provider, non-*AST input is
+// still surfaced as an engine-mismatch error.
 func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 	if checkCtx.ParsedStatements == nil {
 		return nil, errors.New("ParsedStatements is not provided in context")
@@ -143,10 +129,6 @@ func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 		}
 		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
 		if !ok {
-			// Bridge miss → soft-fail (skip). Engine mismatch → error.
-			// PingCapASTProvider implementations route through GetTiDBAST →
-			// AsPingCapAST; a (nil, false) here means the bridge tried and
-			// pingcap rejected the statement. Skip rather than abort the rule.
 			if _, isProvider := stmt.AST.(tidbparser.PingCapASTProvider); isProvider {
 				continue
 			}
@@ -173,14 +155,9 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 	return s.BaseLine + int(pos.Line)
 }
 
-// addColumnTargets returns the columns produced by an ATAddColumn cmd,
-// honoring omni's split between cmd.Columns (multi-column form, e.g.
-// ADD COLUMN (a INT, b INT)) and cmd.Column (single-column form, e.g.
-// ADD COLUMN x INT). Mutually exclusive in practice but not enforced
-// by the type — read defensively.
-//
-// Shared across migrated advisors that inspect ALTER TABLE ADD COLUMN
-// (currently advisor_table_require_pk.go and advisor_index_pk_type.go).
+// addColumnTargets returns the column definitions added by an ATAddColumn
+// cmd. omni populates either cmd.Columns (multi-column ADD COLUMN (...))
+// or cmd.Column (single ADD COLUMN); read both defensively.
 func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 	if cmd == nil {
 		return nil
@@ -194,12 +171,9 @@ func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 	return nil
 }
 
-// canNull reports whether the given pingcap-AST column may have NULL values
-// (i.e. the column has no NOT NULL or PRIMARY KEY constraint).
-//
-// Moved here from advisor_column_no_null.go during its migration to omni AST.
-// Still consumed by advisor_column_set_default_for_not_null.go (un-migrated).
-// Delete when set_default_for_not_null migrates to omni AST.
+// canNull reports whether a pingcap-AST column may hold NULL (no NOT NULL
+// or PRIMARY KEY option). Scoped to un-migrated advisors; delete when
+// advisor_column_set_default_for_not_null.go migrates.
 // Tracked: https://linear.app/bytebase/issue/BYT-9362
 func canNull(column *ast.ColumnDef) bool {
 	for _, option := range column.Options {
@@ -215,29 +189,13 @@ func canNull(column *ast.ColumnDef) bool {
 // this cache.
 const omniStmtsCacheKey = "tidb.omniStmts"
 
-// getTiDBOmniNodes extracts omni/tidb AST nodes from the advisor context by
-// re-parsing each statement's text with omni. Used by advisors during the
-// migration off the native pingcap parser.
+// getTiDBOmniNodes returns omni-parsed statements for migrated advisors.
 //
-// While the registered ParseStatementsFunc still returns native pingcap ASTs
-// (preserved by Phase 1.5 for backward compat with un-migrated advisors), this
-// helper re-parses with omni. Migrated advisors call this; un-migrated
-// advisors continue to call getTiDBNodes.
-//
-// Phase 1.5 invariants enforced here:
-//
-//   - Single-parse-per-review: result is cached on advisor.Context.Memo so
-//     subsequent advisors in the same review reuse the parse work. Cost stays
-//     1× regardless of how many advisors migrate.
-//   - Soft-fail on omni grammar gaps: a statement that fails to parse with
-//     omni is logged and skipped. Other statements (and other advisors) keep
-//     working. This protects review continuity while omni grammar catches up
-//     to pingcap on Tier 4 deferred features (FLASHBACK, SEQUENCE, BATCH DML,
-//     etc. — see plans/2026-04-23-omni-tidb-completion-plan.md §Phase 2).
-//
-// After all advisors are migrated and the dispatcher is flipped to omni, this
-// helper can be simplified to read directly from checkCtx.ParsedStatements
-// without re-parsing.
+// Two invariants:
+//   - Single-parse-per-review: result is cached on checkCtx.Memo, so all
+//     migrated advisors in one review share one parse pass.
+//   - Soft-fail per statement: omni parse errors are logged at debug and
+//     the statement is skipped; the review never breaks on grammar gaps.
 func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 	if cached, ok := checkCtx.Memo(omniStmtsCacheKey); ok {
 		if stmts, typeOK := cached.([]OmniStmt); typeOK {
@@ -256,10 +214,6 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 		}
 		list, err := tidbparser.ParseTiDBOmni(stmt.Text)
 		if err != nil {
-			// Soft-fail: omni may not yet support every TiDB grammar feature
-			// pingcap accepts. Skip this statement; advisors emit no advice
-			// for it but the review continues. Promote to higher log level
-			// when this signals a real omni regression vs. an expected gap.
 			slog.Debug("omni/tidb parse failed; skipping statement for omni-aware advisors",
 				slog.String("error", err.Error()),
 			)

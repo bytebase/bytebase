@@ -55,10 +55,7 @@ type compatibilityChecker struct {
 }
 
 func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
-	// Capture line and code in the same arm so they can never drift.
-	// A separate locStart switch would be a synchronization hazard:
-	// adding a node type to one switch without the other would silently
-	// degrade line numbers to the default of line 1.
+	// Line and code captured in the same arm so they cannot drift.
 	code := advisorcode.Ok
 	line := 0
 	switch n := ostmt.Node.(type) {
@@ -66,8 +63,6 @@ func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
 		if n.Table != nil {
 			c.lastCreateTable = n.Table.Name
 		}
-		// CREATE TABLE never produces compatibility advice; line capture
-		// is intentionally skipped — code stays Ok.
 	case *ast.DropDatabaseStmt:
 		code = advisorcode.CompatibilityDropDatabase
 		line = ostmt.AbsoluteLine(n.Loc.Start)
@@ -102,9 +97,8 @@ func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
 	}
 }
 
-// classifyAlterTable inspects ALTER TABLE commands and returns the first
-// compatibility-impacting code, mirroring the pingcap-AST behavior of
-// breaking on the first hit.
+// classifyAlterTable returns the first compatibility-impacting code among
+// the ALTER TABLE commands, or Ok if none.
 func (*compatibilityChecker) classifyAlterTable(n *ast.AlterTableStmt) advisorcode.Code {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
@@ -122,16 +116,13 @@ func (*compatibilityChecker) classifyAlterTable(n *ast.AlterTableStmt) advisorco
 				return c
 			}
 		case ast.ATAlterCheckEnforced:
-			// CHECK ENFORCED is only meaningful when the constraint is
-			// enforced (the inverse of NotEnforced).
 			if cmd.Constraint != nil && !cmd.Constraint.NotEnforced {
 				return advisorcode.CompatibilityAlterCheck
 			}
 		case ast.ATModifyColumn, ast.ATChangeColumn:
-			// Pingcap parity: we don't know the current type of the column,
-			// so treat all MODIFY/CHANGE COLUMN as potentially incompatible.
-			// False positives on type widening (INT → BIGINT) and metadata-
-			// only changes (comments, NULL → NOT NULL) are inherited.
+			// Treat all MODIFY/CHANGE COLUMN as incompatible: column's
+			// current type is unknown at advice time, so type-widening and
+			// metadata-only changes false-positive.
 			return advisorcode.CompatibilityAlterColumn
 		default:
 		}
@@ -147,20 +138,11 @@ func classifyAddConstraint(constraint *ast.Constraint) advisorcode.Code {
 	case ast.ConstrPrimaryKey:
 		return advisorcode.CompatibilityAddPrimaryKey
 	case ast.ConstrUnique:
-		// Pingcap had three distinct unique constraint types
-		// (ConstraintUniq / ConstraintUniqKey / ConstraintUniqIndex);
-		// omni unifies them under ConstrUnique. NOTE: this is also a
-		// silent bug fix — the original pingcap-typed code at lines
-		// 104-106 only checked ConstraintUniq + ConstraintUniqKey and
-		// missed ConstraintUniqIndex, so `ALTER TABLE t ADD UNIQUE INDEX
-		// idx (col)` previously emitted no compatibility advice. Post-
-		// migration all three forms route here and are flagged
-		// consistently.
+		// All UNIQUE forms (UNIQUE / UNIQUE KEY / UNIQUE INDEX) route here.
 		return advisorcode.CompatibilityAddUniqueKey
 	case ast.ConstrForeignKey:
 		return advisorcode.CompatibilityAddForeignKey
 	case ast.ConstrCheck:
-		// CHECK is only meaningful when enforced.
 		if !constraint.NotEnforced {
 			return advisorcode.CompatibilityAddCheck
 		}

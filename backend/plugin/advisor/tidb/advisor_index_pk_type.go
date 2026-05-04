@@ -53,11 +53,8 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	return checker.adviceList, nil
 }
 
-// omniColumnNameToColumnDef and tableNewOmniColumn are the omni-AST analog
-// of utils.go's columnNameToColumnDef / tableNewColumn. The pingcap-typed
-// originals stay in utils.go for un-migrated consumers
-// (advisor_index_primary_key_type_allowlist.go,
-// advisor_index_type_no_blob.go) until those migrate.
+// omni-AST analog of columnNameToColumnDef / tableNewColumn in utils.go.
+// (Pingcap-typed siblings remain there for un-migrated advisors.)
 type omniColumnNameToColumnDef map[string]*ast.ColumnDef
 type tableNewOmniColumn map[string]omniColumnNameToColumnDef
 
@@ -256,21 +253,11 @@ func (c *indexPkTypeChecker) getPKColumnType(tableName string, columnName string
 	return column.GetProto().Type, nil
 }
 
-// formatColumnType is a best-effort reproduction of pingcap's tp.String()
-// rendering for types appearing in the INDEX_PK_TYPE_LIMIT YAML fixture.
-//
-// Specifically handled:
-//   - "INT" / "BIGINT" returned uppercase (matched directly by the rule)
-//   - lowercase Name + "(Length[,Scale])" for types whose pingcap rendering
-//     is name + parenthesized length/scale (e.g. varchar(5), decimal(10,2))
-//   - bare lowercase Name for the default case
-//
-// NOT faithful to pingcap's tp.String() for ENUM / SET (which embed value
-// lists), DECIMAL with implicit Scale, BIT, or other types not exercised
-// by the existing fixture. If those types appear in future fixture cases
-// or production input the helper's output may diverge from pre-migration
-// strings — extend the switch when that happens. The contract is fixture
-// stability for the rendered advice content, not full pingcap parity.
+// formatColumnType renders a column type for advice content:
+// "INT"/"BIGINT" uppercase (matched against the rule), everything else
+// lowercase Name with optional "(Length[,Scale])". Types with non-trivial
+// rendering (ENUM/SET value lists, BIT, DECIMAL implicit-Scale) are not
+// special-cased; extend the switch if a fixture exposes a divergence.
 func formatColumnType(t *ast.DataType) string {
 	if t == nil {
 		return ""
