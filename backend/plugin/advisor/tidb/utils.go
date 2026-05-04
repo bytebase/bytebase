@@ -138,6 +138,14 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 	return s.BaseLine + int(pos.Line)
 }
 
+// TrimmedText returns Text with surrounding whitespace removed. Suitable
+// for embedding the statement text into advice content; raw Text may
+// include leading/trailing newlines from the original multi-statement
+// split.
+func (s OmniStmt) TrimmedText() string {
+	return strings.TrimSpace(s.Text)
+}
+
 // canNull reports whether the given pingcap-AST column may have NULL values
 // (i.e. the column has no NOT NULL or PRIMARY KEY constraint).
 //
