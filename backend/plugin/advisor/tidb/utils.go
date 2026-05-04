@@ -52,6 +52,41 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
+// columnNameToColumnDef and tableNewColumn track per-statement seen
+// columns by name with their pingcap-AST column definitions. Used by the
+// un-migrated index advisors (advisor_index_primary_key_type_allowlist.go,
+// advisor_index_type_no_blob.go) to resolve referenced column types
+// without re-walking prior CREATE TABLE statements.
+//
+// Moved here from advisor_index_pk_type.go during its migration to omni AST
+// (Phase 1.5 §1.5.3 batch 2). Still consumed by the two pingcap-AST
+// advisors above; delete when both migrate.
+// Tracked: https://linear.app/bytebase/issue/BYT-9395
+type columnNameToColumnDef map[string]*ast.ColumnDef
+type tableNewColumn map[string]columnNameToColumnDef
+
+func (t tableNewColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
+	if _, ok := t[tableName]; !ok {
+		t[tableName] = make(columnNameToColumnDef)
+	}
+	t[tableName][columnName] = colDef
+}
+
+func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.ColumnDef, ok bool) {
+	if _, ok := t[tableName]; !ok {
+		return nil, false
+	}
+	col, ok := t[tableName][columnName]
+	return col, ok
+}
+
+func (t tableNewColumn) delete(tableName string, columnName string) {
+	if _, ok := t[tableName]; !ok {
+		return
+	}
+	delete(t[tableName], columnName)
+}
+
 func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
 	var buffer strings.Builder
 	ctx := format.NewRestoreCtx(flag, &buffer)
