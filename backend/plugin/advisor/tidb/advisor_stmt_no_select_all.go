@@ -88,11 +88,19 @@ func (v *noSelectAllVisitor) Visit(node ast.Node) ast.Visitor {
 }
 
 // targetListHasStar reports whether any item in a SELECT's target list is
-// a "*" wildcard.
+// a wildcard. omni distinguishes:
+//   - bare "*"        → *ast.StarExpr
+//   - qualified "t.*" → *ast.ColumnRef with Star: true
 func targetListHasStar(targets []ast.ExprNode) bool {
 	for _, expr := range targets {
-		if _, ok := expr.(*ast.StarExpr); ok {
+		switch e := expr.(type) {
+		case *ast.StarExpr:
 			return true
+		case *ast.ColumnRef:
+			if e.Star {
+				return true
+			}
+		default:
 		}
 	}
 	return false
