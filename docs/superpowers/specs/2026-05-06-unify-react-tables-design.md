@@ -79,12 +79,16 @@ Smallest case: no sort, no resize, no selection.
 Largest case.
 
 - Same markup swap with `sortable` / `resizable` props wired to existing state.
-- Expandable data sources stay as page-level logic: when an instance row is
-  expanded, render an extra `<TableRow>` directly after it whose single
-  `<TableCell colSpan=...>` holds the data source list. The unified `Table`
-  does not need to know about expansion.
-- Striping: likely pass `striped={false}` so the expanded follow-up row does
-  not produce odd alternating bands. Confirm during implementation.
+- Expandable data sources stay as in-cell rendering: the address cell shows
+  either the single `hostPortOfInstanceV1(instance)` line or a vertical list
+  of `hostPortOfDataSource(ds)` lines based on `expandedDataSources` state.
+  Page-level logic only — no Table API change.
+- The page builds column widths via `useColumnWidths` + `<colgroup>` and sets
+  `style={{ width: totalWidth }}` + `table-fixed` on the table element.
+  Pass these through to the unified `Table` (it spreads `...props` and
+  accepts arbitrary children including `<colgroup>`).
+- Striping default-on is fine; in-cell expansion does not interact with
+  alternating row bands.
 
 ## Validation
 
@@ -97,8 +101,8 @@ For each migrated page:
 - Manual visual check via `pnpm --dir frontend dev`: load the page, verify
   sort, resize, expand, and row-click behavior; eyeball the visual diff against
   the current build.
-- For `InstancesPage` specifically: expand a row, sort while expanded, resize a
-  column, collapse and re-expand.
+- For `InstancesPage` specifically: expand a row's data sources, sort while
+  expanded, resize a column, collapse and re-expand.
 
 ## PR strategy
 
