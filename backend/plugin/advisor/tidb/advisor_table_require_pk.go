@@ -111,8 +111,11 @@ func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Om
 				c.tables[tableName] = newColumnSet(constraintPKColumns(cmd.Constraint))
 			}
 		case ast.ATDropConstraint:
-			// DROP PRIMARY KEY arrives here with cmd.Name == "PRIMARY".
-			if strings.ToUpper(cmd.Name) == primaryKeyName {
+			// DROP PRIMARY KEY arrives here with cmd.Name == "PRIMARY"
+			// in current omni grammar; the empty-name fallback mirrors
+			// mysql/rule_table_require_pk.go's defensive guard against
+			// grammar changes that might emit it without a name.
+			if strings.EqualFold(cmd.Name, primaryKeyName) || cmd.Name == "" {
 				c.initEmptyTable(tableName)
 				c.line[tableName] = stmtLine
 			}
