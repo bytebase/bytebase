@@ -38,8 +38,7 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
-		commit, ok := ostmt.Node.(*ast.CommitStmt)
-		if !ok {
+		if _, ok := ostmt.Node.(*ast.CommitStmt); !ok {
 			continue
 		}
 		adviceList = append(adviceList, &storepb.Advice{
@@ -47,7 +46,7 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 			Code:          code.StatementDisallowCommit.Int32(),
 			Title:         checkCtx.Rule.Type.String(),
 			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", ostmt.TrimmedText()),
-			StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(commit.Loc.Start)),
+			StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 		})
 	}
 

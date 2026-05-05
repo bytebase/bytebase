@@ -39,17 +39,14 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
 		code := advisorcode.Ok
-		var loc int
 		switch n := ostmt.Node.(type) {
 		case *ast.UpdateStmt:
 			if len(n.OrderBy) > 0 {
 				code = advisorcode.UpdateUseOrderBy
-				loc = n.Loc.Start
 			}
 		case *ast.DeleteStmt:
 			if len(n.OrderBy) > 0 {
 				code = advisorcode.DeleteUseOrderBy
-				loc = n.Loc.Start
 			}
 		default:
 		}
@@ -60,7 +57,7 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 				Code:          code.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", ostmt.TrimmedText()),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(loc)),
+				StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			})
 		}
 	}

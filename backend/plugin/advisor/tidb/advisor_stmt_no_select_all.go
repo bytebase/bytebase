@@ -42,13 +42,12 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
 		// Pingcap parity: every wildcard hit reports the OUTER statement's
-		// line, not the inner SelectStmt's line. Captured once per
-		// statement (offset 0 in ostmt.Text → BaseLine + 1).
+		// first-token line, not the inner SelectStmt's line.
 		v := &noSelectAllVisitor{
 			level:   level,
 			title:   checkCtx.Rule.Type.String(),
 			text:    ostmt.TrimmedText(),
-			line:    ostmt.AbsoluteLine(0),
+			line:    ostmt.FirstTokenLine(),
 			advices: &adviceList,
 		}
 		ast.Walk(v, ostmt.Node)

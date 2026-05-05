@@ -39,22 +39,18 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
 		code := advisorcode.Ok
-		var loc int
 		switch n := ostmt.Node.(type) {
 		case *ast.UpdateStmt:
 			if n.Limit != nil {
 				code = advisorcode.UpdateUseLimit
-				loc = n.Loc.Start
 			}
 		case *ast.DeleteStmt:
 			if n.Limit != nil {
 				code = advisorcode.DeleteUseLimit
-				loc = n.Loc.Start
 			}
 		case *ast.InsertStmt:
 			if insertUsesLimit(n) {
 				code = advisorcode.InsertUseLimit
-				loc = n.Loc.Start
 			}
 		default:
 		}
@@ -65,7 +61,7 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 				Code:          code.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", ostmt.TrimmedText()),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(loc)),
+				StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			})
 		}
 	}
