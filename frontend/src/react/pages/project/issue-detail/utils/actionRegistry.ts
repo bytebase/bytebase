@@ -433,7 +433,9 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
           if (ctx.isExportPlan) {
             return t("common.only-creator-allowed-export");
           }
-          return t("common.missing-required-permission");
+          return t("common.missing-required-permission", {
+            permissions: "bb.taskRuns.create",
+          });
         }
         return undefined;
       },

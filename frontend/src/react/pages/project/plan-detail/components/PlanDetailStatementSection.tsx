@@ -47,6 +47,7 @@ import { usePlanDetailContext } from "../context/PlanDetailContext";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
+  removeLocalSheet,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
@@ -319,6 +320,7 @@ export function PlanDetailStatementSection({
       setIsSaving(true);
       const sheet = createEmptyLocalSheet();
       setSheetStatement(sheet, draftStatement);
+      const previousSheetName = sheetName;
       const createdSheet = await sheetStore.createSheet(project.name, sheet);
       const nextPlan = patchPlanStatement(createdSheet.name);
       if (!nextPlan) return;
@@ -328,6 +330,16 @@ export function PlanDetailStatementSection({
       });
       const response = await planServiceClientConnect.updatePlan(request);
       page.patchState({ plan: response });
+      // Drop the orphaned local sheet only after the spec is committed
+      // to the new server sheet — otherwise an updatePlan failure would
+      // leave the spec pointing at a now-empty local entry, losing the
+      // user's typed content on the next read.
+      if (
+        previousSheetName &&
+        extractSheetUID(previousSheetName).startsWith("-")
+      ) {
+        removeLocalSheet(previousSheetName);
+      }
       setStatement(draftStatement);
       setIsEditing(false);
       pushNotification({

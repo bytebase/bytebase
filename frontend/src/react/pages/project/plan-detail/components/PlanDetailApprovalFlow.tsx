@@ -14,6 +14,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -32,7 +33,7 @@ import {
   useIssueCommentStore,
 } from "@/store/modules/v1/issueComment";
 import { RiskLevel, State } from "@/types/proto-es/v1/common_pb";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Issue_ApprovalStatus,
   Issue_Approver_Status,
@@ -56,6 +57,11 @@ import { extractIssueUID } from "@/utils/v1/issue/issue";
 import { usePlanDetailContext } from "../context/PlanDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
+
+// Stable empty array for the comments selector — useVueState's getter must
+// return a cached reference when we want React to skip re-renders, otherwise
+// useSyncExternalStore will treat every render as a snapshot change.
+const EMPTY_COMMENTS: IssueComment[] = [];
 
 export function PlanDetailSidebarApprovalFlow() {
   return <PlanDetailApprovalFlowContent mode="sidebar" />;
@@ -108,15 +114,15 @@ function PlanDetailApprovalFlowContent({
       .catch(() => undefined);
   }, [issue?.name, issueCommentStore, mode]);
 
-  if (!issue) {
-    return null;
-  }
-
-  const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
-  const statusTag = getStatusTag(issue, approvalSteps.length, t);
-  const comments = issueCommentStore.getIssueComments(issue.name);
+  const comments = useVueState(() => {
+    if (!issue) return EMPTY_COMMENTS;
+    const list = issueCommentStore.getIssueComments(issue.name);
+    // The store returns a fresh `[]` on cache miss; normalise to a stable
+    // reference so useSyncExternalStore can short-circuit re-renders.
+    return list.length > 0 ? list : EMPTY_COMMENTS;
+  });
   const lastRejection = useMemo(() => {
-    if (issue.approvalStatus !== Issue_ApprovalStatus.REJECTED) {
+    if (!issue || issue.approvalStatus !== Issue_ApprovalStatus.REJECTED) {
       return undefined;
     }
     for (let i = comments.length - 1; i >= 0; i--) {
@@ -129,7 +135,14 @@ function PlanDetailApprovalFlowContent({
       }
     }
     return undefined;
-  }, [comments, issue.approvalStatus]);
+  }, [comments, issue]);
+
+  if (!issue) {
+    return null;
+  }
+
+  const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
+  const statusTag = getStatusTag(issue, approvalSteps.length, t);
   const issueUID = extractIssueUID(issue.name);
   const riskLevelText =
     issue.riskLevel === RiskLevel.LOW
@@ -658,7 +671,10 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
-  const project = projectStore.getProjectByName(projectName);
+  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const projectIamPolicy = useVueState(() =>
+    projectIamPolicyStore.getProjectIamPolicy(projectName)
+  );
   const stepApprover = issue.approvers[stepIndex];
 
   const status = useMemo<ApprovalStepStatus>(() => {
@@ -698,9 +714,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   }, [currentUserEmail, issue.creator, stepApprover?.status]);
 
   const groupNamesKey = useMemo(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
+    if (!projectIamPolicy) return "";
     const names: string[] = [];
-    for (const binding of policy.bindings) {
+    for (const binding of projectIamPolicy.bindings) {
       if (binding.role !== step || isBindingPolicyExpired(binding)) continue;
       for (const member of binding.members) {
         if (member.startsWith(groupBindingPrefix)) {
@@ -709,7 +725,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
       }
     }
     return [...new Set(names)].sort().join("\u0000");
-  }, [projectIamPolicyStore, projectName, step]);
+  }, [projectIamPolicy, step]);
   const groupNames = useMemo(
     () => (groupNamesKey ? groupNamesKey.split("\u0000") : []),
     [groupNamesKey]
@@ -720,8 +736,8 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   }, [groupNames, groupStore]);
 
   const candidateEmailsKey = useMemo(() => {
-    const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
-    const memberMap = memberMapToRolesInProjectIAM(policy, step);
+    if (!projectIamPolicy) return "";
+    const memberMap = memberMapToRolesInProjectIAM(projectIamPolicy, step);
     const candidates: string[] = [];
     for (const fullname of memberMap.keys()) {
       if (fullname.startsWith(userNamePrefix)) {
@@ -729,7 +745,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
       }
     }
     return [...new Set(candidates)].sort().join("\u0000");
-  }, [projectIamPolicyStore, projectName, step]);
+  }, [projectIamPolicy, step]);
   const candidateEmails = useMemo(
     () => (candidateEmailsKey ? candidateEmailsKey.split("\u0000") : []),
     [candidateEmailsKey]

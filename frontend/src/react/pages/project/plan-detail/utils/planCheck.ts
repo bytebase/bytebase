@@ -65,11 +65,19 @@ const targetsForSpec = (spec: Plan_Spec): string[] => {
   return [];
 };
 
+// The plan-check scheduler expands a db-group spec into per-database targets
+// before running checks (see backend/runner/plancheck/derive.go), so result.target
+// is always a database resource name. The spec, however, still stores the
+// db-group name. The caller is responsible for resolving any db-group target to
+// its matched database names before calling this function; otherwise checks for
+// db-group specs would silently render empty.
 export const planCheckRunListForSpec = (
   planCheckRuns: PlanCheckRun[],
-  spec: Plan_Spec
+  spec: Plan_Spec,
+  expandedTargets?: string[]
 ): PlanCheckRun[] => {
-  const targetSet = new Set(targetsForSpec(spec));
+  const targets = expandedTargets ?? targetsForSpec(spec);
+  const targetSet = new Set(targets);
   if (targetSet.size === 0) {
     return [];
   }
@@ -88,6 +96,17 @@ export const planCheckRunListForSpec = (
       return [{ ...run, results: [] }];
     }
     return [];
+  });
+};
+
+export const expandSpecTargets = (
+  spec: Plan_Spec,
+  resolveDatabaseGroup: (name: string) => string[] | undefined
+): string[] => {
+  const raw = targetsForSpec(spec);
+  return raw.flatMap((target) => {
+    const databases = resolveDatabaseGroup(target);
+    return databases ?? [target];
   });
 };
 
