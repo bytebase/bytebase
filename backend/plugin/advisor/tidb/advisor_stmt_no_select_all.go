@@ -41,10 +41,14 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
+		// Pingcap parity: every wildcard hit reports the OUTER statement's
+		// line, not the inner SelectStmt's line. Captured once per
+		// statement (offset 0 in ostmt.Text → BaseLine + 1).
 		v := &noSelectAllVisitor{
 			level:   level,
 			title:   checkCtx.Rule.Type.String(),
-			ostmt:   ostmt,
+			text:    ostmt.TrimmedText(),
+			line:    ostmt.AbsoluteLine(0),
 			advices: &adviceList,
 		}
 		ast.Walk(v, ostmt.Node)
@@ -56,12 +60,13 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type noSelectAllVisitor struct {
 	level   storepb.Advice_Status
 	title   string
-	ostmt   OmniStmt
+	text    string
+	line    int
 	advices *[]*storepb.Advice
 }
 
-// Visit returns v to recurse into children. nil signals post-order
-// (no work needed here).
+// Visit returns v to recurse into children, including SelectStmt.Left/Right
+// (UNION/INTERSECT/EXCEPT arms) per omni's Walk contract.
 func (v *noSelectAllVisitor) Visit(node ast.Node) ast.Visitor {
 	if node == nil {
 		return nil
@@ -77,8 +82,8 @@ func (v *noSelectAllVisitor) Visit(node ast.Node) ast.Visitor {
 		Status:        v.level,
 		Code:          code.StatementSelectAll.Int32(),
 		Title:         v.title,
-		Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.ostmt.TrimmedText()),
-		StartPosition: common.ConvertANTLRLineToPosition(v.ostmt.AbsoluteLine(sel.Loc.Start)),
+		Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
+		StartPosition: common.ConvertANTLRLineToPosition(v.line),
 	})
 	return v
 }

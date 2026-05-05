@@ -77,6 +77,11 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 // on its inner SELECT. omni unifies the SELECT and UNION/INTERSECT/EXCEPT
 // forms under a single SelectStmt with a SetOp field, so checking
 // SelectStmt.Limit covers both pingcap's *SelectStmt and *SetOprStmt cases.
+//
+// Only the outermost LIMIT is checked. A LIMIT nested inside a
+// parenthesized UNION arm (e.g.
+// "INSERT INTO t (SELECT a FROM x LIMIT 3) UNION SELECT b FROM y") lives
+// on Left.Limit, not on the outer .Limit; this matches pingcap parity.
 func insertUsesLimit(n *ast.InsertStmt) bool {
 	return n.Select != nil && n.Select.Limit != nil
 }
