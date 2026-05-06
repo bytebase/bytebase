@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/dbauth"
 )
 
 // DBConnectionManager manages database connections with support for dynamic updates.
@@ -216,10 +217,12 @@ func isKeywordValuePGURL(s string) bool {
 			"service",
 			"servicefile",
 			"target_session_attrs",
-			"application_name",
-			metadataDBAWSRDSIAMParam,
-			metadataDBAWSRegionParam:
+			"application_name":
 			return true
+		default:
+			if dbauth.IsKeywordValueRuntimeParam(field[:eqIdx]) {
+				return true
+			}
 		}
 	}
 	return false
@@ -239,20 +242,13 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, err
 		return nil, errors.Wrap(err, "failed to parse database URL")
 	}
 
-	authConfig, err := metadataDBAuthConfigFromPGXConfig(pgxConfig)
+	openOptions, err := dbauth.Configure(ctx, pgxConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	pgxConfig.Tracer = &metadataDBTracer{}
-	var tokenProvider metadataDBTokenProvider
-	if authConfig != nil && authConfig.enabled {
-		tokenProvider, err = newAWSMetadataDBTokenProvider(ctx, authConfig.region)
-		if err != nil {
-			return nil, err
-		}
-	}
-	db := stdlib.OpenDB(*pgxConfig, metadataDBOpenOptions(authConfig, tokenProvider)...)
+	db := stdlib.OpenDB(*pgxConfig, openOptions...)
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {
