@@ -15,6 +15,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -374,34 +382,34 @@ export function SemanticTypesPage() {
       </p>
 
       <div className="border border-control-border rounded-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-control-bg border-b border-control-border">
-              <th className="px-3 py-2 font-medium w-20 text-center">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-20 text-center">
                 {t("settings.sensitive-data.semantic-types.table.icon")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium w-36">ID</th>
-              <th className="px-3 py-2 text-left font-medium">
+              </TableHead>
+              <TableHead className="w-36">ID</TableHead>
+              <TableHead>
                 {t(
                   "settings.sensitive-data.semantic-types.table.semantic-type"
                 )}
-              </th>
-              <th className="px-3 py-2 text-left font-medium w-48">
+              </TableHead>
+              <TableHead className="w-48">
                 {t("settings.sensitive-data.semantic-types.table.description")}
-              </th>
-              <th className="px-3 py-2 text-left font-medium">
+              </TableHead>
+              <TableHead>
                 {t(
                   "settings.sensitive-data.semantic-types.table.masking-algorithm"
                 )}
-              </th>
+              </TableHead>
               {!isReadonly && (
-                <th className="px-3 py-2 text-right font-medium w-28">
+                <TableHead className="w-28 text-right">
                   {t("common.edit")}
-                </th>
+                </TableHead>
               )}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {items.map((row, index) => (
               <SemanticTypeRow
                 key={row.item.id}
@@ -418,17 +426,17 @@ export function SemanticTypesPage() {
               />
             ))}
             {items.length === 0 && (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={isReadonly ? 5 : 6}
                   className="px-3 py-8 text-center text-control-placeholder"
                 >
                   {t("common.no-data")}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {showTemplateDrawer && (
@@ -998,40 +1006,40 @@ function SemanticTemplateDrawer({
             {t("settings.sensitive-data.semantic-types.template.description")}
           </p>
           <div className="border border-control-border rounded-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-control-bg border-b border-control-border">
-                  <th className="px-3 py-2 text-left font-medium">ID</th>
-                  <th className="px-3 py-2 text-left font-medium">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>
                     {t(
                       "settings.sensitive-data.semantic-types.table.semantic-type"
                     )}
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium">
+                  </TableHead>
+                  <TableHead>
                     {t(
                       "settings.sensitive-data.semantic-types.table.description"
                     )}
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium">
+                  </TableHead>
+                  <TableHead>
                     {t(
                       "settings.sensitive-data.semantic-types.table.masking-algorithm"
                     )}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {templates.map((template) => {
                   const key = template.id.split(".").join("-");
                   return (
-                    <tr
+                    <TableRow
                       key={template.id}
-                      className="border-b border-control-border last:border-b-0 hover:bg-control-bg cursor-pointer"
+                      className="cursor-pointer"
                       onClick={() => onApply(template)}
                     >
-                      <td className="px-3 py-2">{template.id}</td>
-                      <td className="px-3 py-2">{template.title}</td>
-                      <td className="px-3 py-2">{template.description}</td>
-                      <td className="px-3 py-2">
+                      <TableCell>{template.id}</TableCell>
+                      <TableCell>{template.title}</TableCell>
+                      <TableCell>{template.description}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-x-1">
                           <span>
                             {t(
@@ -1047,12 +1055,12 @@ function SemanticTemplateDrawer({
                             <Info className="w-4 h-4" />
                           </span>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </SheetBody>
         <SheetFooter>
@@ -1104,8 +1112,8 @@ function SemanticTypeRow({
   const isEditing = row.mode !== "NORMAL";
 
   return (
-    <tr className="border-b border-control-border last:border-b-0 even:bg-control-bg/50">
-      <td className="px-3 py-2 text-center">
+    <TableRow>
+      <TableCell className="text-center">
         {isEditing && !isItemReadonly ? (
           <IconPicker
             value={row.item.icon ?? ""}
@@ -1122,11 +1130,11 @@ function SemanticTypeRow({
         ) : (
           <span className="text-control-placeholder">-</span>
         )}
-      </td>
-      <td className="px-3 py-2 truncate max-w-36" title={row.item.id}>
+      </TableCell>
+      <TableCell className="truncate max-w-36" title={row.item.id}>
         {row.item.id}
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell>
         {isEditing ? (
           <Input
             value={row.item.title}
@@ -1141,8 +1149,8 @@ function SemanticTypeRow({
         ) : (
           <span className="truncate">{row.item.title}</span>
         )}
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell>
         {isEditing ? (
           <Input
             value={row.item.description}
@@ -1160,8 +1168,8 @@ function SemanticTypeRow({
         ) : (
           <span className="truncate">{row.item.description}</span>
         )}
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell>
         <div className="flex items-center gap-x-1">
           {isBuiltin ? (
             <>
@@ -1207,9 +1215,9 @@ function SemanticTypeRow({
             </button>
           )}
         </div>
-      </td>
+      </TableCell>
       {!readonly && (
-        <td className="px-3 py-2">
+        <TableCell>
           <div className="flex items-center justify-end gap-x-1">
             {isBuiltin ? (
               <DeleteConfirmButton
@@ -1260,9 +1268,9 @@ function SemanticTypeRow({
               </>
             )}
           </div>
-        </td>
+        </TableCell>
       )}
-    </tr>
+    </TableRow>
   );
 }
 
