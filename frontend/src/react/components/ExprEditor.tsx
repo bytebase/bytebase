@@ -38,6 +38,7 @@ import {
   operatorDisplayLabel,
 } from "@/plugins/cel";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -621,11 +622,10 @@ function MultiSearchableSelect({
                 }`}
                 onMouseDown={() => toggleValue(o.value)}
               >
-                <input
-                  type="checkbox"
-                  readOnly
+                <Checkbox
                   checked={value.includes(o.value)}
                   className="pointer-events-none"
+                  onCheckedChange={() => {}}
                 />
                 {o.label}
               </li>
@@ -801,14 +801,12 @@ function MultiCheckSelect({
           className="bg-background border border-control-border rounded-sm shadow-md py-1"
         >
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = anySelected && !allSelected;
-              }}
-              onChange={(e) => {
-                if (e.target.checked) {
+            <Checkbox
+              checked={
+                allSelected ? true : anySelected ? "indeterminate" : false
+              }
+              onCheckedChange={(checked) => {
+                if (checked) {
                   onChange(allValues);
                 } else {
                   onChange([]);
@@ -822,10 +820,9 @@ function MultiCheckSelect({
               key={o.value}
               className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-control-bg"
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={value.includes(o.value)}
-                onChange={() => toggleValue(o.value)}
+                onCheckedChange={() => toggleValue(o.value)}
               />
               {renderValue ? renderValue(o.value, o.label) : o.label}
             </label>

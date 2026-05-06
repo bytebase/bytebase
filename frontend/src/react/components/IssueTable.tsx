@@ -13,6 +13,7 @@ import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
@@ -628,14 +629,10 @@ export function IssueListItem({
       className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-control-bg hover:bg-control-bg"
       onClick={onRowClick}
     >
-      <input
-        type="checkbox"
-        className="shrink-0 mt-1 accent-accent"
+      <Checkbox
+        className="shrink-0 mt-1"
         checked={selected}
-        onChange={(e) => {
-          e.stopPropagation();
-          onToggleSelection();
-        }}
+        onCheckedChange={() => onToggleSelection()}
         onClick={(e) => e.stopPropagation()}
       />
 
@@ -920,14 +917,9 @@ export function BatchActionBar({
 
   return (
     <div className="sticky bottom-0 w-full bg-background flex items-center gap-x-2 px-3 sm:px-4 py-2 border-y">
-      <input
-        type="checkbox"
-        checked={allSelected}
-        ref={(el) => {
-          if (el) el.indeterminate = !allSelected;
-        }}
-        onChange={onToggleSelectAll}
-        className="accent-accent"
+      <Checkbox
+        checked={allSelected ? true : "indeterminate"}
+        onCheckedChange={() => onToggleSelectAll()}
       />
       <span className="text-sm text-control-light">
         {issues.length} {t("common.selected")}

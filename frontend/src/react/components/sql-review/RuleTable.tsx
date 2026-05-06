@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Table,
@@ -204,19 +205,16 @@ export function RuleFilter({
           )}
           {supportSelect && (
             <div className="flex items-center gap-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={
                   selectedRuleCount === ruleList.length && ruleList.length > 0
+                    ? true
+                    : selectedRuleCount > 0 &&
+                        selectedRuleCount !== ruleList.length
+                      ? "indeterminate"
+                      : false
                 }
-                ref={(el) => {
-                  if (el) {
-                    el.indeterminate =
-                      selectedRuleCount > 0 &&
-                      selectedRuleCount !== ruleList.length;
-                  }
-                }}
-                onChange={(e) => onToggleSelectAll?.(e.target.checked)}
+                onCheckedChange={(checked) => onToggleSelectAll?.(checked)}
               />
               <span className="text-xl text-main font-medium">
                 {t("sql-review.select-all")}
@@ -409,10 +407,9 @@ export function RuleTable({
                       </span>
                     </div>
                     {supportSelect ? (
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedRuleKeys.includes(getRuleKey(rule))}
-                        onChange={() => toggleRule(rule)}
+                        onCheckedChange={() => toggleRule(rule)}
                       />
                     ) : (
                       <div className="flex items-center gap-x-2">
@@ -525,11 +522,9 @@ function RuleTableRow({
         </TableCell>
         {supportSelect && (
           <TableCell className="w-8" onClick={(e) => e.stopPropagation()}>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={isSelected}
-              onChange={onToggleRule}
-              className="h-4 w-4 rounded-xs border-control-border accent-accent"
+              onCheckedChange={() => onToggleRule()}
             />
           </TableCell>
         )}
