@@ -14,6 +14,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -163,27 +171,25 @@ function WebhookTable({
 
   return (
     <div className="px-4">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 pr-4 font-medium w-60">{t("common.name")}</th>
-            <th className="py-2 pr-4 font-medium">URL</th>
-            <th className="py-2 pr-4 font-medium">
-              {t("project.webhook.triggering-activity")}
-            </th>
-            {allowEdit && <th className="py-2 font-medium w-12" />}
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-60">{t("common.name")}</TableHead>
+            <TableHead>URL</TableHead>
+            <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
+            {allowEdit && <TableHead className="w-12" />}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {webhooks.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={allowEdit ? 4 : 3}
                 className="py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             webhooks.map((webhook) => {
               const activityTitles = webhook.notificationTypes.map(
@@ -198,21 +204,21 @@ function WebhookTable({
               );
 
               return (
-                <tr
+                <TableRow
                   key={webhook.name}
-                  className="border-b cursor-pointer hover:bg-control-bg"
+                  className="cursor-pointer"
                   onClick={(e) => onRowClick(e, webhook)}
                 >
-                  <td className="py-2 pr-4">
+                  <TableCell>
                     <div className="flex items-center gap-x-2">
                       <WebhookTypeIcon type={webhook.type} className="size-5" />
                       {webhook.title}
                     </div>
-                  </td>
-                  <td className="py-2 pr-4 truncate max-w-xs text-control-light">
+                  </TableCell>
+                  <TableCell className="truncate max-w-xs text-control-light">
                     {webhook.url}
-                  </td>
-                  <td className="py-2 pr-4">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-2">
                       {activityTitles.map((title) => (
                         <span
@@ -223,18 +229,18 @@ function WebhookTable({
                         </span>
                       ))}
                     </div>
-                  </td>
+                  </TableCell>
                   {allowEdit && (
-                    <td className="py-2">
+                    <TableCell>
                       <ActionDropdown webhook={webhook} onDelete={onDelete} />
-                    </td>
+                    </TableCell>
                   )}
-                </tr>
+                </TableRow>
               );
             })
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
