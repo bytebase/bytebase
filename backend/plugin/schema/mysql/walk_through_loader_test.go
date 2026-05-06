@@ -42,6 +42,7 @@ func mustGetTable(t *testing.T, c *catalog.Catalog, name string) *catalog.Table 
 	db := c.GetDatabase(testDBName)
 	if db == nil {
 		t.Fatalf("database %q not in catalog", testDBName)
+		return nil
 	}
 	tbl := db.Tables[strings.ToLower(name)]
 	if tbl == nil {
@@ -55,6 +56,7 @@ func mustGetView(t *testing.T, c *catalog.Catalog, name string) *catalog.View {
 	db := c.GetDatabase(testDBName)
 	if db == nil {
 		t.Fatalf("database %q not in catalog", testDBName)
+		return nil
 	}
 	v := db.Views[strings.ToLower(name)]
 	if v == nil {
@@ -68,6 +70,7 @@ func mustGetTrigger(t *testing.T, c *catalog.Catalog, name string) *catalog.Trig
 	db := c.GetDatabase(testDBName)
 	if db == nil {
 		t.Fatalf("database %q not in catalog", testDBName)
+		return nil
 	}
 	trg := db.Triggers[strings.ToLower(name)]
 	if trg == nil {
@@ -81,6 +84,7 @@ func mustGetEvent(t *testing.T, c *catalog.Catalog, name string) *catalog.Event 
 	db := c.GetDatabase(testDBName)
 	if db == nil {
 		t.Fatalf("database %q not in catalog", testDBName)
+		return nil
 	}
 	ev := db.Events[strings.ToLower(name)]
 	if ev == nil {
@@ -232,6 +236,7 @@ func TestLoader_TableBasic(t *testing.T) {
 	idCol := tbl.GetColumn("id")
 	if idCol == nil {
 		t.Fatal("id column missing")
+		return
 	}
 	if !idCol.AutoIncrement {
 		t.Error("id should be AUTO_INCREMENT (sentinel detection)")
@@ -384,6 +389,7 @@ func TestLoader_ForeignKeyAcrossTables(t *testing.T) {
 	}
 	if fk == nil {
 		t.Fatal("fk_child_parent constraint missing")
+		return
 	}
 	if strings.ToUpper(fk.OnDelete) != "CASCADE" {
 		t.Errorf("OnDelete = %q, want CASCADE", fk.OnDelete)

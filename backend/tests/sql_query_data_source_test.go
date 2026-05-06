@@ -119,6 +119,7 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	}
 	if readOnly == nil {
 		t.Fatal("expected read-only data source")
+		return
 	}
 	readOnly.Id = "readonly-legacy"
 	metadata.DataSources = append(metadata.DataSources, readOnly)

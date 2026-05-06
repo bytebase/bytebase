@@ -188,6 +188,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				star := findFirst[*ast.StarExpr](sel)
 				if star == nil {
 					t.Fatal("no StarExpr")
+					return
 				}
 				if star.Qualifier != "" {
 					t.Errorf("want Qualifier empty, got %q", star.Qualifier)
@@ -202,6 +203,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				star := findFirst[*ast.StarExpr](sel)
 				if star == nil {
 					t.Fatal("no StarExpr")
+					return
 				}
 				if star.Qualifier != "t1" {
 					t.Errorf("want Qualifier=t1, got %q", star.Qualifier)
@@ -216,6 +218,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				at := findFirst[*ast.AliasedTableRef](sel.FromClause)
 				if at == nil {
 					t.Fatal("no AliasedTableRef")
+					return
 				}
 				if at.Alias != "x" {
 					t.Errorf("Alias: want x, got %q", at.Alias)
@@ -230,6 +233,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				at := findFirst[*ast.AliasedTableRef](sel.FromClause)
 				if at == nil {
 					t.Fatal("no AliasedTableRef in FROM")
+					return
 				}
 				if at.Alias != "x" {
 					t.Errorf("Alias: want x, got %q", at.Alias)
@@ -379,6 +383,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				j := findFirst[*ast.JoinClause](sel.FromClause)
 				if j == nil {
 					t.Fatal("no JoinClause")
+					return
 				}
 				if j.Type != ast.JoinCrossApply {
 					t.Errorf("JoinType: want CrossApply, got %v", j.Type)
@@ -393,6 +398,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				j := findFirst[*ast.JoinClause](sel.FromClause)
 				if j == nil {
 					t.Fatal("no JoinClause in FROM")
+					return
 				}
 				if j.Type != ast.JoinCrossApply {
 					t.Errorf("JoinType: want CrossApply, got %v", j.Type)
@@ -478,6 +484,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				col := findFirst[*ast.ColumnRef](sel)
 				if col == nil {
 					t.Fatal("no ColumnRef")
+					return
 				}
 				if col.Column != "col name" {
 					t.Errorf("Column: want \"col name\" (unquoted), got %q", col.Column)
@@ -485,6 +492,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				tr := findFirst[*ast.TableRef](sel)
 				if tr == nil {
 					t.Fatal("no TableRef")
+					return
 				}
 				if tr.Object != "my table" {
 					t.Errorf("TableRef.Object: want \"my table\", got %q", tr.Object)
@@ -499,6 +507,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				col := findFirst[*ast.ColumnRef](sel)
 				if col == nil {
 					t.Fatal("no ColumnRef")
+					return
 				}
 				if col.Column != "col name" {
 					t.Errorf("Column: want \"col name\" (unquoted), got %q", col.Column)
@@ -513,6 +522,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				tr := findFirst[*ast.TableRef](sel.FromClause)
 				if tr == nil {
 					t.Fatal("no TableRef in FROM")
+					return
 				}
 				if tr.Database != "db1" || tr.Schema != "dbo" || tr.Object != "t" {
 					t.Errorf("TableRef: got db=%q schema=%q obj=%q", tr.Database, tr.Schema, tr.Object)
@@ -527,6 +537,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				tr := findFirst[*ast.TableRef](sel.FromClause)
 				if tr == nil {
 					t.Fatal("no TableRef in FROM")
+					return
 				}
 				if tr.Server != "srv1" || tr.Database != "db1" || tr.Schema != "dbo" || tr.Object != "t" {
 					t.Errorf("TableRef: got srv=%q db=%q schema=%q obj=%q", tr.Server, tr.Database, tr.Schema, tr.Object)
@@ -566,6 +577,7 @@ func querySpanStructuralInvariants(t *testing.T) {
 				tr := findFirst[*ast.TableRef](sel.FromClause)
 				if tr == nil {
 					t.Fatal("no TableRef in FROM")
+					return
 				}
 				if tr.Object != "#t" {
 					t.Errorf("TableRef.Object for temp table: got %q — extractor must recognize '#' prefix as local temp", tr.Object)
