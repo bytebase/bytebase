@@ -1304,87 +1304,80 @@ export function InstancesPage() {
       )}
 
       {/* Table */}
-      <div className="border rounded-sm">
-        <div className="overflow-x-auto">
-          <Table
-            className="table-fixed"
-            style={{ minWidth: `${totalWidth}px` }}
-          >
-            <colgroup>
-              {widths.map((w, i) => (
-                <col key={columns[i].key} style={{ width: `${w}px` }} />
+      <div className="overflow-x-auto border-y border-block-border">
+        <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+          <colgroup>
+            {widths.map((w, i) => (
+              <col key={columns[i].key} style={{ width: `${w}px` }} />
+            ))}
+          </colgroup>
+          <TableHeader>
+            <TableRow>
+              {columns.map((col, colIdx) => (
+                <TableHead
+                  key={col.key}
+                  sortable={col.sortable}
+                  sortActive={
+                    col.sortable && sortKey === (col.sortKey ?? col.key)
+                  }
+                  sortDir={sortOrder}
+                  onSort={
+                    col.sortable
+                      ? () => toggleSort(col.sortKey ?? col.key)
+                      : undefined
+                  }
+                  resizable={col.resizable}
+                  onResizeStart={
+                    col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
+                  }
+                >
+                  {col.title}
+                </TableHead>
               ))}
-            </colgroup>
-            <TableHeader>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && instances.length === 0 ? (
               <TableRow>
-                {columns.map((col, colIdx) => (
-                  <TableHead
-                    key={col.key}
-                    sortable={col.sortable}
-                    sortActive={
-                      col.sortable && sortKey === (col.sortKey ?? col.key)
-                    }
-                    sortDir={sortOrder}
-                    onSort={
-                      col.sortable
-                        ? () => toggleSort(col.sortKey ?? col.key)
-                        : undefined
-                    }
-                    resizable={col.resizable}
-                    onResizeStart={
-                      col.resizable
-                        ? (e) => onResizeStart(colIdx, e)
-                        : undefined
-                    }
-                  >
-                    {col.title}
-                  </TableHead>
-                ))}
+                <TableCell
+                  colSpan={columns.length}
+                  className="px-4 py-8 text-center text-control-placeholder"
+                >
+                  <div className="flex items-center justify-center gap-x-2">
+                    <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
+                    {t("common.loading")}
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && instances.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
-                      {t("common.loading")}
-                    </div>
-                  </TableCell>
+            ) : instances.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="px-4 py-8 text-center text-control-placeholder"
+                >
+                  {t("common.no-data")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              instances.map((instance) => (
+                <TableRow
+                  key={instance.name}
+                  className="cursor-pointer"
+                  onClick={(e) => handleRowClick(instance, e)}
+                >
+                  {columns.map((col) => (
+                    <TableCell
+                      key={col.key}
+                      className={cn("overflow-hidden", col.cellClassName)}
+                    >
+                      {col.render(instance)}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ) : instances.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    {t("common.no-data")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                instances.map((instance) => (
-                  <TableRow
-                    key={instance.name}
-                    className="cursor-pointer"
-                    onClick={(e) => handleRowClick(instance, e)}
-                  >
-                    {columns.map((col) => (
-                      <TableCell
-                        key={col.key}
-                        className={cn("overflow-hidden", col.cellClassName)}
-                      >
-                        {col.render(instance)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination footer */}
