@@ -1306,7 +1306,10 @@ export function InstancesPage() {
       {/* Table */}
       <div className="border rounded-sm">
         <div className="overflow-x-auto">
-          <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
+          <Table
+            className="table-fixed"
+            style={{ minWidth: `${totalWidth}px` }}
+          >
             <colgroup>
               {widths.map((w, i) => (
                 <col key={columns[i].key} style={{ width: `${w}px` }} />

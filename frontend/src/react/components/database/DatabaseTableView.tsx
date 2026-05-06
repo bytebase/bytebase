@@ -285,14 +285,14 @@ export function DatabaseTableView({
   return (
     <div className="border rounded-sm">
       <div className="overflow-x-auto">
-        <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
+        <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
           <colgroup>
             {widths.map((w, i) => (
               <col key={columns[i].key} style={{ width: `${w}px` }} />
             ))}
           </colgroup>
           <TableHeader>
-            <TableRow className="bg-gray-50">
+            <TableRow>
               {columns.map((col, colIdx) => {
                 const colSortKey = col.sortKey;
                 const sortActive = Boolean(
