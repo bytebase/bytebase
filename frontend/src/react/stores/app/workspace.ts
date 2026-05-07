@@ -148,6 +148,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     }
     const name =
       user?.workspace ||
+      get().currentUser?.workspace ||
       get().serverInfo?.workspace ||
       `${workspaceNamePrefix}-`;
     // Return cached workspace if it matches the current auth context.
