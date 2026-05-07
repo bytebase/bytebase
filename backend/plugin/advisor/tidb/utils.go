@@ -147,10 +147,7 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 // TrimmedText returns Text with surrounding whitespace removed. Suitable
 // for embedding the statement text into advice content; raw Text may
 // include leading/trailing newlines from the original multi-statement
-// input.
-//
-// NOTE: also defined on PR #20199 (batch 3); whichever batch merges
-// second drops the duplicate.
+// split.
 func (s OmniStmt) TrimmedText() string {
 	return strings.TrimSpace(s.Text)
 }
@@ -161,9 +158,6 @@ func (s OmniStmt) TrimmedText() string {
 // keeps comments as part of the statement, so its reported line points
 // at the first comment OR keyword. Used as the StartPosition for
 // statement-level advices.
-//
-// NOTE: also defined on PR #20199 (batch 3); whichever batch merges
-// second drops the duplicate.
 func (s OmniStmt) FirstTokenLine() int {
 	for i, r := range s.Text {
 		if !unicode.IsSpace(r) {

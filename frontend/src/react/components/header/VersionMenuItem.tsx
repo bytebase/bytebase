@@ -113,29 +113,31 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
           )}
         </div>
 
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-x-2 rounded-sm px-0 py-1 text-left text-sm text-control hover:text-accent"
-          onClick={() => {
-            if (hasNewRelease) {
-              onCloseMenu();
-              setDialogOpen(true);
-            }
-          }}
-        >
-          <span className="flex items-center gap-x-2">
-            {hasNewRelease ? (
-              <Volume2 className="h-4 w-4 text-success" />
-            ) : null}
-            {formattedVersion}
-          </span>
-        </button>
-
         {!serverInfo?.saas ? (
-          <div className="mt-1 text-xs text-control-light">
-            <div>BE Git hash: {gitCommitBE.slice(0, 7)}</div>
-            <div>FE Git hash: {gitCommitFE.slice(0, 7)}</div>
-          </div>
+          <>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-x-2 rounded-sm px-0 py-1 text-left text-sm text-control hover:text-accent"
+              onClick={() => {
+                if (hasNewRelease) {
+                  onCloseMenu();
+                  setDialogOpen(true);
+                }
+              }}
+            >
+              <span className="flex items-center gap-x-2">
+                {hasNewRelease ? (
+                  <Volume2 className="h-4 w-4 text-success" />
+                ) : null}
+                {formattedVersion}
+              </span>
+            </button>
+
+            <div className="mt-1 text-xs text-control-light">
+              <div>BE Git hash: {gitCommitBE.slice(0, 7)}</div>
+              <div>FE Git hash: {gitCommitFE.slice(0, 7)}</div>
+            </div>
+          </>
         ) : null}
       </div>
 
