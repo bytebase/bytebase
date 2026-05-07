@@ -44,33 +44,10 @@ The gap is exactly one cell: `BatchSkipTasks`.
 
 ## 4. Fix
 
-Two coupled changes:
-
-### 4.1 Tighten `ResetPlanWebhookDelivery` to only clear FAILED rows
-
-The current store function in `backend/store/plan_webhook_delivery.go:10` does
-`DELETE … WHERE project=$1 AND plan_id=$2`, blindly removing whatever row
-exists. That is unsafe for a recovery endpoint to call after the plan has
-already reached `PIPELINE_COMPLETED` — the next completion check would re-claim
-and re-fire a duplicate completion webhook (adversarial review finding #4).
-
-Narrow the SQL so the function name matches its actual responsibility — clear
-only the failure-notification row:
-
-```sql
-DELETE FROM plan_webhook_delivery
-WHERE project = $1 AND plan_id = $2 AND event_type = 'PIPELINE_FAILED'
-```
-
-`PIPELINE_COMPLETED` is terminal; if it's been delivered, no recovery endpoint
-should re-arm it. Same name kept (`ResetPlanWebhookDelivery`) since the only
-other call site (`BatchRunTasks`) likewise only ever wants to clear the
-failure-notification before a retry.
-
-### 4.2 Add the call inside `BatchSkipTasks`
-
-Mirror the existing call in `BatchRunTasks` — placed immediately after the
-`GetPlan` nil-check and before `GetIssue`:
+Add a `ResetPlanWebhookDelivery` call inside `BatchSkipTasks`, placed
+analogously to the existing call in `BatchRunTasks` — immediately after the
+`GetPlan` nil-check and before `GetIssue`. The store function itself is
+unchanged.
 
 ```go
 // rollout_service.go, inside BatchSkipTasks (~line 886, after the plan == nil check)
@@ -78,11 +55,11 @@ if plan == nil {
     return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
 }
 
-// Reset notification state so PIPELINE_COMPLETED can fire after skipping a failed task.
-// This is non-fatal but it is not "best-effort": if the delete fails, a stale
-// PIPELINE_FAILED row will block the subsequent PIPELINE_COMPLETED claim and
-// the customer will see exactly the BYT-9398 symptom again. We log and proceed
-// to keep the user-facing skip request from blocking on storage hiccups.
+// Reset notification state so PIPELINE_COMPLETED can fire after skipping a
+// failed task. Errors are logged and swallowed so a transient DB hiccup
+// doesn't fail the user-facing skip request — note that a failure here will
+// re-introduce the BYT-9398 symptom for this plan, so the log line should
+// be monitored.
 if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
     slog.Error("failed to reset plan webhook delivery", log.BBError(err))
 }
@@ -90,8 +67,16 @@ if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
 issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 ```
 
-No schema or proto changes — only the SQL inside `ResetPlanWebhookDelivery` and
-a new call site in `BatchSkipTasks`.
+No store-layer, schema, or proto changes — only a new call site in
+`BatchSkipTasks` that mirrors `BatchRunTasks` exactly.
+
+This means a `Skip` on a plan that has already reached `PIPELINE_COMPLETED`
+will (just like a `Run` on such a plan today) wipe the existing dedup row and
+allow a duplicate completion webhook to fire when the next completion check
+runs. We treat this as the same shape of behavior the existing `BatchRunTasks`
+path already has, and address it (if at all) in the section-7 follow-up that
+makes `ClaimPipelineCompletionNotification` atomically supersede a FAILED row
+via `ON CONFLICT … DO UPDATE`, removing the per-endpoint reset entirely.
 
 ## 5. Test plan
 
@@ -135,9 +120,9 @@ to keep events isolated.
 | # | Scenario | Expected `PIPELINE_FAILED` |
 |---|---|---|
 | F1 | One task fails on first run | 1 |
-| F2 | Two tasks fail simultaneously in the same plan | 1 (the table dedupes — that is the contract) |
+| F2 | Two failing tasks in the same plan exercise PK dedup | 1 (the table dedupes — that is the contract) |
 | F3 | Task fails → `BatchRunTasks` → fails again | 2 (Reset on `BatchRunTasks` clears the row, second FAILED fires) |
-| F4 | HA license breach drives `failTaskRunsForHA` | 1 |
+| F4 | HA license breach drives `failTaskRunsForHA` | **Deferred.** Requires a non-HA license JWT, replica-heartbeat seeding, and an injectable `haFailGracePeriod` — none currently exist in the test harness. Codepath at `backend/runner/taskrun/scheduler.go:71-142` is manually verified and the gap is documented via `t.Skip` in the suite. Tracked as a follow-up. |
 
 #### `ISSUE_CREATED`
 

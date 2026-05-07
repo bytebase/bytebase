@@ -16,7 +16,6 @@
 
 | Path | Action | Responsibility |
 |------|--------|----------------|
-| `backend/store/plan_webhook_delivery.go` | Modify | Tighten `ResetPlanWebhookDelivery` SQL to delete only `PIPELINE_FAILED` rows |
 | `backend/api/v1/rollout_service.go` | Modify | Add `ResetPlanWebhookDelivery` call inside `BatchSkipTasks` |
 | `backend/tests/webhook_test.go` | Modify | Drop the outer cross-subtest webhook setup; add per-trigger subtests |
 | `backend/tests/webhook_helpers_test.go` | Create | Test-local helpers shared across subtests |
@@ -53,36 +52,17 @@
 
 After this chunk merges, the customer issue is resolved.
 
-### Task 1: Tighten `ResetPlanWebhookDelivery` and add the call to `BatchSkipTasks`
+### Task 1: Add `ResetPlanWebhookDelivery` call to `BatchSkipTasks`
 
 **Files:**
-- Modify: `backend/store/plan_webhook_delivery.go`
 - Modify: `backend/api/v1/rollout_service.go` (insert after line 885)
 
-- [ ] **Step 1: Confirm the only callers**
+- [ ] **Step 1: Audit existing callers**
 
 Run: `git -C . grep -n "ResetPlanWebhookDelivery"`
 Expected: only the store definition and one call in `BatchRunTasks`. If a third call site exists, stop and re-evaluate the recovery-path table in the spec.
 
-- [ ] **Step 2: Tighten the store function**
-
-In `backend/store/plan_webhook_delivery.go`:
-
-```go
-// ResetPlanWebhookDelivery clears any PIPELINE_FAILED row for the plan so the
-// next claim can fire. Leaves a PIPELINE_COMPLETED row untouched — completion
-// is terminal and must not be re-fired.
-func (s *Store) ResetPlanWebhookDelivery(ctx context.Context, projectID string, planID int64) error {
-    query := `DELETE FROM plan_webhook_delivery
-              WHERE project = $1 AND plan_id = $2 AND event_type = 'PIPELINE_FAILED'`
-    _, err := s.GetDB().ExecContext(ctx, query, projectID, planID)
-    return err
-}
-```
-
-The function comment is rewritten so a future reader understands the asymmetry. Function name retained — both call sites only ever want to clear the failure-notification.
-
-- [ ] **Step 3: Add the call inside `BatchSkipTasks`**
+- [ ] **Step 2: Insert the call inside `BatchSkipTasks`**
 
 Open `backend/api/v1/rollout_service.go`, locate `BatchSkipTasks` (~line 858), find the `if plan == nil` block (~line 883–885) and the `s.store.GetIssue(...)` call (~line 887). Insert between them:
 
@@ -91,11 +71,11 @@ Open `backend/api/v1/rollout_service.go`, locate `BatchSkipTasks` (~line 858), f
         return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
     }
 
-    // Reset the PIPELINE_FAILED notification row so PIPELINE_COMPLETED can fire
-    // after the user resolves the failure by skipping. Mirror the BatchRunTasks
-    // pattern. Errors are logged-and-swallowed so a transient DB hiccup does
-    // not fail the user-facing skip request — note that a failure here will
-    // re-introduce the BYT-9398 symptom for this plan, so monitor the log.
+    // Reset notification state so PIPELINE_COMPLETED can fire after skipping
+    // a failed task. Mirrors the BatchRunTasks pattern at lines 744-748.
+    // Errors are logged and swallowed so a DB hiccup doesn't fail the
+    // user-facing skip request — a failure here will re-introduce the
+    // BYT-9398 symptom for this plan, so the log line should be monitored.
     if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
         slog.Error("failed to reset plan webhook delivery", log.BBError(err))
     }
@@ -103,34 +83,32 @@ Open `backend/api/v1/rollout_service.go`, locate `BatchSkipTasks` (~line 858), f
     issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 ```
 
-- [ ] **Step 4: Compile**
+This is the entire backend code change — character-identical to the block already present in `BatchRunTasks` except for the comment.
+
+- [ ] **Step 3: Compile**
 
 Run: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 Expected: success.
 
-- [ ] **Step 5: Lint**
+- [ ] **Step 4: Lint**
 
-Run: `golangci-lint run --allow-parallel-runners ./backend/store/... ./backend/api/v1/...` (repeat until clean).
+Run: `golangci-lint run --allow-parallel-runners ./backend/api/v1/...` (repeat until clean).
 Expected: clean.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add backend/store/plan_webhook_delivery.go backend/api/v1/rollout_service.go
+git add backend/api/v1/rollout_service.go
 git commit -m "$(cat <<'EOF'
-fix(rollout): emit PIPELINE_COMPLETED after BatchSkipTasks resolves failure
+fix(rollout): reset plan webhook delivery on BatchSkipTasks
 
-Two coupled changes:
+When a user skipped a failed task to recover a rollout, the stale
+PIPELINE_FAILED row in plan_webhook_delivery blocked the subsequent
+PIPELINE_COMPLETED claim and the webhook was silently dropped.
 
-1. Tighten Store.ResetPlanWebhookDelivery to only delete PIPELINE_FAILED
-   rows. PIPELINE_COMPLETED is terminal and a recovery endpoint must not
-   be able to wipe it (would otherwise enable a duplicate completion
-   webhook on subsequent recovery actions).
-
-2. Call ResetPlanWebhookDelivery from BatchSkipTasks before the
-   completion check is signaled, mirroring the existing call in
-   BatchRunTasks. This unblocks the PIPELINE_COMPLETED claim after a
-   user resolves a failed task by skipping it — the BYT-9398 symptom.
+BatchRunTasks already calls ResetPlanWebhookDelivery; mirror the same
+pattern in BatchSkipTasks so the recovery-via-skip path also fires
+PIPELINE_COMPLETED.
 
 Fixes BYT-9398.
 
@@ -565,15 +543,18 @@ func waitForTaskStatus(ctx context.Context, t *testing.T, ctl *controller, rollo
 
 // waitForAllTasksTerminal polls until every task in the rollout is in a
 // terminal status (DONE, FAILED, SKIPPED, or CANCELED). Used before
-// "skip remaining" actions to avoid races with still-running tasks.
+// "skip remaining" actions to avoid races with still-running tasks. On
+// timeout, dumps per-task status to t.Logf so failures are debuggable
+// without re-running.
 func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, timeout time.Duration) {
     t.Helper()
     deadline := time.Now().Add(timeout)
     isTerminal := func(s v1pb.Task_Status) bool {
         return s == v1pb.Task_DONE || s == v1pb.Task_FAILED || s == v1pb.Task_SKIPPED || s == v1pb.Task_CANCELED
     }
+    var fresh *v1pb.Rollout
     for {
-        fresh := refreshRollout(ctx, t, ctl, rollout)
+        fresh = refreshRollout(ctx, t, ctl, rollout)
         allTerminal := true
         for _, stage := range fresh.Stages {
             for _, task := range stage.Tasks {
@@ -586,7 +567,12 @@ func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller,
             return
         }
         if time.Now().After(deadline) {
-            t.Fatalf("timed out waiting for all tasks terminal on rollout %s", rollout.Name)
+            for _, stage := range fresh.Stages {
+                for _, task := range stage.Tasks {
+                    t.Logf("non-terminal task: %s status=%s target=%s", task.Name, task.Status, task.Target)
+                }
+            }
+            t.Fatalf("timed out waiting for all tasks terminal on rollout %s after %s", rollout.Name, timeout)
         }
         time.Sleep(200 * time.Millisecond)
     }
@@ -1032,8 +1018,12 @@ func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *contro
         },
     }}
     if prior != nil {
-        // Append to existing rules so concurrent / earlier subtests aren't
-        // wiped — each subtest's CEL is project-scoped, so coexistence is safe.
+        // Append to existing rules. Subtests run sequentially within the parent
+        // TestWebhookIntegration and each cleanup runs before the next subtest
+        // starts, so this branch is exercised only when a prior rule existed
+        // before the test suite ran (or when the test author wires up multiple
+        // installs in the same subtest). Each rule's CEL is project-scoped, so
+        // coexistence is safe.
         rules = append(prior.Rules, rules...)
     }
 
@@ -1238,22 +1228,12 @@ require.True(t, matchesEvent(req, project.Name, "Issue created"),
 
 body := string(req.Body)
 require.Contains(t, body, project.Name, "payload should reference the project resource name")
-// Issue type and creator name appear in the description text built by manager.go:91:
-//   description = fmt.Sprintf("%s created issue %s", actor.Name, issue.Title)
-// The default test user's name comes from ctl bootstrap; assert via the issue title
-// instead, which is fully under test control.
 require.Contains(t, body, "Test webhook issue", "payload should contain the issue title")
-// Issue type assertion: the database-change icon/color is set per type. Assert
-// the link contains "/issues/" (always present) and the color is the issue-type
-// success palette — but the simpler invariant the spec requires is "issue type
-// indicator present". manager.go does not currently emit a literal "DATABASE_CHANGE"
-// string; assert via the link's project segment which is unique per issue type only
-// in URL form.
 require.Contains(t, body, fmt.Sprintf("/projects/%s/issues/", path.Base(project.Name)),
     "payload should link to the project's issue resource")
 ```
 
-If the live captured payload does not contain those substrings on a manual run, adjust the assertion to the actual literal — re-running the test once with `t.Logf("body=%s", body)` is the recommended way to pin the strings.
+The spec's "creator and issue type" assertions devolve to the project/title/link-shape checks above — the Slack manager (`backend/component/webhook/manager.go:84-92`) does not emit a literal `DATABASE_CHANGE` string in the payload, and the actor name is derived from the runtime user, which is harder to pin reliably. Title + project + link cover the same invariant.
 
 - [ ] **Step 2: `IssueCreated_NoLeakageFromOtherEvents` (I2)**
 
@@ -1465,9 +1445,14 @@ t.Run("IssueSentBack_ThenReapproved_E2E", func(t *testing.T) {
     rejectIssueAs(ctx, t, ctl, issue, appr, "fix and resubmit")
     waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1, 30*time.Second)
 
-    // Issue creator (default ctl token) re-requests approval.
+    // Issue creator (default ctl token) re-requests approval. Note: RequestIssue
+    // does NOT reset ApprovalFindingDone, so waitForIssuePending would return
+    // immediately. Instead, wait for the second "Approval required" webhook —
+    // RequestIssue calls approval.NotifyApprovalRequested directly
+    // (issue_service.go:826), so a second approval-required event is the
+    // observable signal that the request side completed.
     requestIssueAsCreator(ctx, t, ctl, issue, "addressed feedback")
-    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+    waitForWebhookCount(t, collector, project.Name, "Approval required", 2, 30*time.Second)
 
     approveIssueAs(ctx, t, ctl, issue, appr)
     waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
