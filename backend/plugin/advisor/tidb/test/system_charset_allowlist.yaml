@@ -161,3 +161,34 @@
         line: 2
         column: 0
       endposition: null
+# DEFAULT-prefix normalization pin (peer review on PR #20217). The
+# DEFAULT keyword in `DEFAULT CHARSET <name>` / `DEFAULT CHARACTER SET
+# <name>` is consumed by omni's parser without affecting the TableOption
+# shape — the resulting Name/Value matches the bare `CHARSET <name>` /
+# `CHARACTER SET <name>` form. The three syntactic variants below
+# produce identical advisor output, locking in the normalization claim
+# that the advisor's name-set (CHARACTER SET / CHARSET) catches all
+# DEFAULT-prefixed forms identically. Pingcap-typed and omni-typed
+# advisors agree: all three flag `ascii`.
+- statement: CREATE TABLE t(a int) DEFAULT CHARSET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a int) DEFAULT CHARSET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int) DEFAULT CHARACTER SET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a int) DEFAULT CHARACTER SET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

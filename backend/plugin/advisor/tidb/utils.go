@@ -312,7 +312,7 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 // column. Moved here from advisor_charset_allowlist.go during its omni
 // migration; still consumed by advisor_column_disallow_set_charset.go
 // (un-migrated). Delete when that advisor migrates.
-// Tracked: TBD (file Linear ticket per BYT-9362 / BYT-9395 pattern).
+// Tracked: https://linear.app/bytebase/issue/BYT-9412
 func getColumnCharset(column *ast.ColumnDef) string {
 	return strings.ToLower(column.Tp.GetCharset())
 }
