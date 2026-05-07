@@ -307,4 +307,67 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
+
+	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c1")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_b", ""))
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c1_a")},
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c1_b")},
+		})
+		runAllTasks(ctx, t, ctl, plan)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
+	})
+
+	t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c2")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_b", ""))
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_a")},
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_b")},
+		})
+		rollout := createRolloutOnly(ctx, t, ctl, plan)
+		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_b"))
+		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_a"))
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
+	})
+
+	t.Run("PipelineCompleted_AllSkipped", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c5")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_b", ""))
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_a")},
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_b")},
+		})
+		rollout := createRolloutOnly(ctx, t, ctl, plan)
+		skipAllTasks(ctx, t, ctl, rollout)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
+	})
 }

@@ -66,7 +66,7 @@ func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
 
 // waitForWebhookCount blocks until at least n webhooks for (project, eventTitle)
 // have arrived, or fails the test.
-func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, timeout time.Duration) {
+func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, timeout time.Duration) { //nolint:unparam
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	for {
@@ -238,8 +238,6 @@ func refreshRollout(ctx context.Context, t *testing.T, ctl *controller, rollout 
 }
 
 // findTaskByDB scans the rollout for a task targeting dbResource.
-//
-//nolint:unused
 func findTaskByDB(t *testing.T, rollout *v1pb.Rollout, dbResource string) (stageName, taskName string) {
 	t.Helper()
 	for _, stage := range rollout.Stages {
@@ -253,7 +251,6 @@ func findTaskByDB(t *testing.T, rollout *v1pb.Rollout, dbResource string) (stage
 	return "", ""
 }
 
-//nolint:unused
 func runTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string) {
 	t.Helper()
 	stageName, taskName := findTaskByDB(t, rollout, dbResource)
@@ -264,7 +261,6 @@ func runTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1
 	require.NoError(t, err)
 }
 
-//nolint:unused
 func skipTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string) {
 	t.Helper()
 	stageName, taskName := findTaskByDB(t, rollout, dbResource)
@@ -299,7 +295,6 @@ func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout
 	}
 }
 
-//nolint:unused
 func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
 	t.Helper()
 	fresh := refreshRollout(ctx, t, ctl, rollout)
