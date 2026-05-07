@@ -4,31 +4,34 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bytebase/omni/tidb/ast"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/pingcap/tidb/pkg/parser/ast"
 )
 
 var (
 	_ advisor.Advisor = (*WhereRequirementForUpdateDeleteAdvisor)(nil)
-	_ ast.Visitor     = (*whereRequirementForUpdateDeleteChecker)(nil)
 )
 
 func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
-// WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for UPDATE and DELETE statements.
+// WhereRequirementForUpdateDeleteAdvisor checks the WHERE clause
+// requirement for UPDATE and DELETE statements.
 type WhereRequirementForUpdateDeleteAdvisor struct {
 }
 
-// Check checks for the WHERE clause requirement.
+// Check is Recipe A (top-level type-switch) — UPDATE and DELETE cannot
+// nest other UPDATE/DELETE statements in standard SQL, so a sub-walk would
+// add no coverage over a top-level check. Subqueries inside UPDATE/DELETE
+// (in WHERE expressions or SET values) are SELECTs, which are the
+// where_required_for_select advisor's concern, not this rule's.
 func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getTiDBNodes(checkCtx)
-
+	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,57 +40,32 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 	if err != nil {
 		return nil, err
 	}
-	checker := &whereRequirementForUpdateDeleteChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
-		checker.line = stmtNode.OriginTextPosition()
-		(stmtNode).Accept(checker)
-	}
 
-	return checker.adviceList, nil
-}
-
-type whereRequirementForUpdateDeleteChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
-}
-
-// Enter implements the ast.Visitor interface.
-func (v *whereRequirementForUpdateDeleteChecker) Enter(in ast.Node) (ast.Node, bool) {
-	code := advisorcode.Ok
-	switch node := in.(type) {
-	// DELETE
-	case *ast.DeleteStmt:
-		if node.Where == nil {
-			code = advisorcode.StatementNoWhere
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, ostmt := range stmts {
+		var noWhere bool
+		switch n := ostmt.Node.(type) {
+		case *ast.DeleteStmt:
+			if n.Where == nil {
+				noWhere = true
+			}
+		case *ast.UpdateStmt:
+			if n.Where == nil {
+				noWhere = true
+			}
+		default:
 		}
-	// UPDATE
-	case *ast.UpdateStmt:
-		if node.Where == nil {
-			code = advisorcode.StatementNoWhere
+		if !noWhere {
+			continue
 		}
-	default:
-	}
-
-	if code != advisorcode.Ok {
-		v.adviceList = append(v.adviceList, &storepb.Advice{
-			Status:        v.level,
-			Code:          code.Int32(),
-			Title:         v.title,
-			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
-			StartPosition: common.ConvertANTLRLineToPosition(v.line),
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          advisorcode.StatementNoWhere.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", ostmt.TrimmedText()),
+			StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 		})
 	}
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*whereRequirementForUpdateDeleteChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	return adviceList, nil
 }

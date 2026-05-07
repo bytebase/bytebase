@@ -44,3 +44,50 @@
         line: 1
         column: 0
       endposition: null
+# LIKE matrix pins (added with the omni Recipe B migration). Per pingcap
+# parity, NOT LIKE with leading `%` triggers (advisor doesn't gate on
+# the Not flag); ESCAPE clause doesn't affect the pattern check; only
+# `%` is the wildcard (`_` is not flagged); non-string-literal patterns
+# silently skip (parameter `?` doesn't trigger because pingcap restored
+# it as `?`, omni skips because pattern is not *StringLit). UNION arms
+# are walked by omni's Walk per the cumulative shape-divergence table
+# item #5.
+- statement: SELECT * FROM t WHERE a NOT LIKE '%abc'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a NOT LIKE ''%abc''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM t WHERE a LIKE '%abc' ESCAPE '\\'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a LIKE ''%abc'' ESCAPE ''\\''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM t WHERE a LIKE '_abc'
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE 'abc'
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE ?
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE 'foo' UNION SELECT * FROM u WHERE a LIKE '%bar'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a LIKE ''foo'' UNION SELECT * FROM u WHERE a LIKE ''%bar''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
