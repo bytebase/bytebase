@@ -884,6 +884,15 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
 	}
 
+	// Reset notification state so PIPELINE_COMPLETED can fire after skipping
+	// a failed task. Mirrors the BatchRunTasks pattern at lines 744-748.
+	// Errors are logged and swallowed so a DB hiccup doesn't fail the
+	// user-facing skip request — a failure here will re-introduce the
+	// BYT-9398 symptom for this plan, so the log line should be monitored.
+	if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
+		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
+	}
+
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ProjectIDs: []string{projectID},
