@@ -517,9 +517,12 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Issue created", 1)
 		waitForIssuePending(ctx, t, ctl, issue)
 
-		// Drive an approval — webhook is NOT subscribed to ISSUE_APPROVED, so the count must stay at 1.
+		// Drive an approval. The webhook is NOT subscribed to ISSUE_APPROVED, so the
+		// count must stay at 1. Wait for the issue to actually reach APPROVED before
+		// asserting — that proves the approval pipeline ran to completion and any
+		// approval-related webhooks have already had their chance to fire.
 		approveIssueAs(ctx, t, ctl, issue, appr)
-		time.Sleep(2 * time.Second) // intentional grace; asserting absence of further deliveries
+		waitForIssueApproved(ctx, t, ctl, issue)
 		requireWebhookCount(t, collector, project.Name, "Issue created", 1)
 		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
 	})
@@ -559,9 +562,13 @@ func TestWebhookIntegration(t *testing.T) {
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_a2_db")},
 		})
-		_ = createIssueForPlan(ctx, t, ctl, project, plan, "A2 issue")
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "A2 issue")
 
-		time.Sleep(3 * time.Second) // intentional grace; asserting absence
+		// Wait for the approval-finding pipeline to finish (any terminal status —
+		// with no rule applying, the issue auto-resolves). After this wait the
+		// runner has had its chance to fire any approval-related webhook, so the
+		// absence assertion is no longer racing the runner.
+		waitForApprovalFindingDone(ctx, t, ctl, issue)
 		requireWebhookCount(t, collector, project.Name, "Approval required", 0)
 	})
 

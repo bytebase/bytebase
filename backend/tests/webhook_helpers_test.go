@@ -175,7 +175,11 @@ func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
 	dbPath := filepath.Join(instanceDir, dbName+".db")
 	db, err := sql.Open("sqlite3", dbPath)
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		if cerr := db.Close(); cerr != nil {
+			t.Errorf("close sqlite handle for %s: %v", dbPath, cerr)
+		}
+	}()
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS __force_fail_target(id INT);")
 	require.NoError(t, err)
 }
@@ -616,6 +620,53 @@ func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, i
 		Comment: comment,
 	}))
 	require.NoError(t, err)
+}
+
+// waitForApprovalFindingDone blocks until the issue's approval-finding pipeline
+// finishes — i.e., the runner has resolved the workspace approval rules and
+// the issue's ApprovalStatus is no longer CHECKING. Use when the test does not
+// care WHICH terminal status was reached, only that the runner completed (e.g.
+// when asserting that no approval webhook fires for an issue that should auto-
+// approve because no rule applies).
+func waitForApprovalFindingDone(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue) {
+	t.Helper()
+	deadline := time.Now().Add(webhookWaitTimeout)
+	for {
+		resp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+			Name: issue.Name,
+		}))
+		require.NoError(t, err)
+		if resp.Msg.ApprovalStatus != v1pb.Issue_CHECKING {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("issue %s still CHECKING after %s", issue.Name, webhookWaitTimeout)
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+// waitForIssueApproved blocks until the issue reaches APPROVED. Use as a
+// stable post-condition after approveIssueAs to prove that any approval-related
+// webhooks have already had their chance to fire (so a subsequent absence
+// assertion is not racing the approval pipeline).
+func waitForIssueApproved(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue) {
+	t.Helper()
+	deadline := time.Now().Add(webhookWaitTimeout)
+	for {
+		resp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+			Name: issue.Name,
+		}))
+		require.NoError(t, err)
+		if resp.Msg.ApprovalStatus == v1pb.Issue_APPROVED {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("issue %s did not reach APPROVED within %s; current status %s",
+				issue.Name, webhookWaitTimeout, resp.Msg.ApprovalStatus)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 }
 
 // waitForIssuePending blocks until the issue's approval-finding pipeline
