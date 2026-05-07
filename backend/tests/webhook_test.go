@@ -370,4 +370,94 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
 	})
+
+	t.Run("PipelineCompleted_DoneAndFailedThenRetriedDone", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c3")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_pass", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_fail", ""))
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_pass")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_fail")},
+		})
+		rollout := runAllTasks(ctx, t, ctl, plan)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
+
+		unblockFailingTask(t, instanceDir, "byt9398_c3_fail")
+		retryFailedTasks(ctx, t, ctl, rollout)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+	})
+
+	t.Run("PipelineCompleted_AllFailedThenAllSkipped", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c6")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_b", ""))
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_a")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_b")},
+		})
+		rollout := runAllTasks(ctx, t, ctl, plan)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
+
+		skipAllTasks(ctx, t, ctl, rollout)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+	})
+
+	t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-c7")
+		for _, n := range []string{"byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed"} {
+			require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, n, ""))
+		}
+		collector.reset() // flush any PIPELINE_COMPLETED from database creation
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_done")},
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_skip")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_retry")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_skipfailed")},
+		})
+
+		rollout := createRolloutOnly(ctx, t, ctl, plan)
+		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skip"))
+		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_done"))
+		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"))
+		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skipfailed"))
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 60*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
+
+		// Unblock dbRetry only — dbSkipFailed's __force_fail_target table remains
+		// absent in its own .db file, so its retry would still fail.
+		unblockFailingTask(t, instanceDir, "byt9398_c7_retry")
+		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"))
+		waitForTaskStatus(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"), v1pb.Task_DONE, 30*time.Second)
+		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skipfailed"))
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+	})
 }

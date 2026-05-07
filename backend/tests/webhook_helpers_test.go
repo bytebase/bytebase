@@ -162,8 +162,6 @@ func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
 // unblockFailingTask creates the missing table inside the SQLite database file
 // so subsequent runs of seedFailingSheet's SQL succeed. db.Close() flushes
 // WAL/journal so the file is consistent before the retry is enqueued.
-//
-//nolint:unused
 func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
 	t.Helper()
 	dbPath := filepath.Join(instanceDir, dbName+".db")
@@ -319,8 +317,6 @@ func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v
 // whether to call unblockFailingTask first (to make the retry pass) or not
 // (to test that BatchRunTasks resets the dedup row so a second
 // PIPELINE_FAILED can fire).
-//
-//nolint:unused
 func retryFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
 	t.Helper()
 	fresh := refreshRollout(ctx, t, ctl, rollout)
@@ -344,8 +340,6 @@ func retryFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollou
 
 // waitForTaskStatus polls the rollout until the task targeting dbResource has
 // the requested status, or fails the test.
-//
-//nolint:unused
 func waitForTaskStatus(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string, want v1pb.Task_Status, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
