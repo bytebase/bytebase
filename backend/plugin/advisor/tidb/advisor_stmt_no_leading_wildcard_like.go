@@ -91,7 +91,24 @@ func (v *noLeadingWildcardLikeVisitor) Visit(node ast.Node) ast.Visitor {
 	}
 	// Pingcap doesn't gate on like.Not — NOT LIKE with leading wildcard
 	// triggers the same as LIKE. Mirror that behavior.
-	lit, ok := like.Pattern.(*ast.StringLit)
+	//
+	// Cumulative shape divergence #11: omni wraps `'%abc' COLLATE
+	// utf8mb4_bin` as *CollateExpr{Expr: *StringLit, Collation: "..."}.
+	// Pingcap's *SetCollationExpr restored to text as
+	// "%abc COLLATE utf8mb4_bin" (value first, COLLATE clause after), so
+	// pingcap's leading-`%` check accidentally fired on the rendered text.
+	// Without the unwrap, omni would silently skip and regress vs. pingcap.
+	// The loop handles nested COLLATE defensively (not produced by current
+	// TiDB grammar but cheap insurance).
+	pattern := like.Pattern
+	for {
+		c, ok := pattern.(*ast.CollateExpr)
+		if !ok {
+			break
+		}
+		pattern = c.Expr
+	}
+	lit, ok := pattern.(*ast.StringLit)
 	if !ok {
 		// Non-literal patterns (parameter, column ref, expression) — skip.
 		// Per pingcap parity (see Check() docstring).
