@@ -460,4 +460,59 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
+
+	t.Run("PipelineFailed_SingleTaskFails", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-f1")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f1_fail", ""))
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f1_fail")},
+		})
+		runAllTasks(ctx, t, ctl, plan)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+	})
+
+	t.Run("PipelineFailed_DedupOnSecondTaskFailure", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-f2")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_b", ""))
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_a")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_b")},
+		})
+		rollout := runAllTasks(ctx, t, ctl, plan)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
+
+		// Both tasks have failed. ClaimPipelineFailureNotification's PK collision
+		// must dedupe — assert exactly 1 even after both terminal.
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+	})
+
+	t.Run("PipelineFailed_RetryFailsAgain", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-f3")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f3_fail", ""))
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f3_fail")},
+		})
+		rollout := runAllTasks(ctx, t, ctl, plan)
+
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
+
+		// BatchRunTasks resets the dedup row before enqueuing the retry, so the
+		// second failure must re-fire PIPELINE_FAILED. We deliberately do NOT call
+		// unblockFailingTask — the retry should fail again.
+		retryFailedTasks(ctx, t, ctl, rollout)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 2, 30*time.Second)
+	})
 }
