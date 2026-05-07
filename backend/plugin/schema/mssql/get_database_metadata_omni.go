@@ -13,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
+const noAction = "NO ACTION"
+
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
 	return getDatabaseMetadataOmni(schemaText)
@@ -184,7 +186,7 @@ func (e *omniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 			if !ok {
 				continue
 			}
-			e.extractColumn(column, table)
+			e.extractColumn(column, table, schemaName)
 		}
 	}
 	if n.Constraints != nil {
@@ -207,7 +209,7 @@ func (e *omniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.TableMetadata) {
+func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.TableMetadata, schemaName string) {
 	column := &storepb.ColumnMetadata{
 		Name:     n.Name,
 		Position: int32(len(table.Columns) + 1),
@@ -260,7 +262,7 @@ func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.T
 			case ast.ConstraintCheck:
 				e.appendCheckConstraint(table, constraint)
 			case ast.ConstraintForeignKey:
-				appendForeignKey(table, constraint, []string{column.Name}, e.currentSchema)
+				appendForeignKey(table, constraint, []string{column.Name}, schemaName)
 			default:
 			}
 		}
@@ -333,8 +335,8 @@ func (e *omniMetadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIn
 }
 
 func (e *omniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
-	_, sequenceName := tableRefSchemaObject(n.Name, e.currentSchema)
-	schemaMetadata := e.getOrCreateSchema(e.currentSchema)
+	schemaName, sequenceName := tableRefSchemaObject(n.Name, e.currentSchema)
+	schemaMetadata := e.getOrCreateSchema(schemaName)
 	sequence := &storepb.SequenceMetadata{Name: sequenceName}
 	if n.DataType != nil {
 		sequence.DataType = e.nodeText(n.DataType)
@@ -403,10 +405,10 @@ func appendForeignKey(table *storepb.TableMetadata, n *ast.ConstraintDef, column
 		OnUpdate:          referentialAction(n.OnUpdate),
 	}
 	if fk.OnDelete == "" {
-		fk.OnDelete = "NO ACTION"
+		fk.OnDelete = noAction
 	}
 	if fk.OnUpdate == "" {
-		fk.OnUpdate = "NO ACTION"
+		fk.OnUpdate = noAction
 	}
 	if n.RefTable != nil {
 		refSchema, refTable := tableRefSchemaObject(n.RefTable, fallbackSchema)
@@ -701,7 +703,7 @@ func referentialAction(action ast.ReferentialAction) string {
 	case ast.RefActSetDefault:
 		return "SET DEFAULT"
 	case ast.RefActNoAction:
-		return "NO ACTION"
+		return noAction
 	default:
 		return ""
 	}
