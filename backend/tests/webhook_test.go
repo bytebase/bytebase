@@ -562,4 +562,45 @@ func TestWebhookIntegration(t *testing.T) {
 		requireWebhookCount(t, collector, project.Name, "Issue created", 1)
 		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
 	})
+
+	t.Run("IssueApprovalRequested_FiresWhenRequired", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-a1")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_a1_db", ""))
+
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		_ = provisionApprover(ctx, t, ctl, project, "a1", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_a1_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "A1 issue")
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		waitForWebhookCount(t, collector, project.Name, "Approval required", 1, 30*time.Second)
+	})
+
+	t.Run("IssueApprovalRequested_NotFiredWhenUnused", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-a2")
+		// The workspace has a default catch-all approval rule. Clear it so that
+		// no rule applies to A2's project, then assert no ISSUE_APPROVAL_REQUESTED fires.
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_a2_db", ""))
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_a2_db")},
+		})
+		_ = createIssueForPlan(ctx, t, ctl, project, plan, "A2 issue")
+
+		time.Sleep(3 * time.Second) // intentional grace; asserting absence
+		requireWebhookCount(t, collector, project.Name, "Approval required", 0)
+	})
 }

@@ -468,6 +468,53 @@ func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *contro
 	})
 }
 
+// clearWorkspaceApprovalRules removes all workspace approval rules (including the
+// default catch-all) and restores the prior setting on cleanup. Use this in
+// subtests that assert ISSUE_APPROVAL_REQUESTED does NOT fire when truly no rule
+// applies, bypassing the default fallback installed during workspace creation.
+func clearWorkspaceApprovalRules(ctx context.Context, t *testing.T, ctl *controller) {
+	t.Helper()
+
+	// Snapshot the current setting so we can restore it on cleanup.
+	var prior *v1pb.WorkspaceApprovalSetting
+	getResp, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/WORKSPACE_APPROVAL",
+	}))
+	if err == nil && getResp.Msg.Value.GetWorkspaceApproval() != nil {
+		prior = getResp.Msg.Value.GetWorkspaceApproval()
+	}
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{},
+				},
+			},
+		},
+	}))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		// Restore the snapshot.
+		restored := &v1pb.WorkspaceApprovalSetting{}
+		if prior != nil {
+			restored = prior
+		}
+		_, _ = ctl.settingServiceClient.UpdateSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
+			AllowMissing: true,
+			Setting: &v1pb.Setting{
+				Name: "settings/WORKSPACE_APPROVAL",
+				Value: &v1pb.SettingValue{
+					Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: restored},
+				},
+			},
+		}))
+	})
+}
+
 func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) {
 	t.Helper()
 	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
