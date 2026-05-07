@@ -221,12 +221,12 @@ func rewriteMySQLSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (
 		if existingLimit >= 0 && existingLimit <= limitCount {
 			return sql, nil
 		}
-		if existingLimit < 0 {
-			return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
-		}
 		loc := nodeLocOf(stmt.Limit.Count)
 		loc = trimMySQLLocSpace(sql, loc)
 		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
+			if existingLimit < 0 && stmt.Into == nil {
+				return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
+			}
 			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
 		}
 		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
@@ -243,14 +243,14 @@ func rewriteMySQLSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (
 }
 
 func findMySQLLimitInsertPosition(sql string, stmt *ast.SelectStmt) (int, bool) {
-	if stmt.ForUpdate != nil && stmt.ForUpdate.Loc.Start > 0 {
-		return stmt.ForUpdate.Loc.Start, true
-	}
 	if stmt.Into != nil && stmt.Into.Loc.Start > 0 {
 		intoStart := findMySQLKeywordBefore(sql, stmt.Into.Loc.Start, "INTO")
-		if intoStart >= maxMySQLLocEndWithoutInto(stmt) {
+		if intoStart >= maxMySQLLocEndBeforeTailClauses(stmt) {
 			return intoStart, true
 		}
+	}
+	if stmt.ForUpdate != nil && stmt.ForUpdate.Loc.Start > 0 {
+		return stmt.ForUpdate.Loc.Start, true
 	}
 	if stmt.Loc.End > 0 {
 		return stmt.Loc.End, false
@@ -280,7 +280,7 @@ func trimMySQLLocSpace(sql string, loc ast.Loc) ast.Loc {
 	return loc
 }
 
-func maxMySQLLocEndWithoutInto(node ast.Node) int {
+func maxMySQLLocEndBeforeTailClauses(node ast.Node) int {
 	maxEnd := -1
 	ast.Inspect(node, func(n ast.Node) bool {
 		if n == nil {
@@ -290,6 +290,9 @@ func maxMySQLLocEndWithoutInto(node ast.Node) int {
 			return true
 		}
 		if _, ok := n.(*ast.IntoClause); ok {
+			return false
+		}
+		if _, ok := n.(*ast.ForUpdate); ok {
 			return false
 		}
 		if loc := mysqlNodeLoc(n); loc.End > maxEnd {
