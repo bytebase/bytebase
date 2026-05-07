@@ -603,4 +603,116 @@ func TestWebhookIntegration(t *testing.T) {
 		time.Sleep(3 * time.Second) // intentional grace; asserting absence
 		requireWebhookCount(t, collector, project.Name, "Approval required", 0)
 	})
+
+	t.Run("IssueApproved_SingleStep", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-ap1")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_ap1_db", ""))
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		appr := provisionApprover(ctx, t, ctl, project, "ap1", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVED})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_ap1_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP1 issue")
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		approveIssueAs(ctx, t, ctl, issue, appr)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+	})
+
+	t.Run("IssueApproved_MultiStepOnlyFiresAtFinal", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-ap2")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_ap2_db", ""))
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name),
+			[]string{"roles/projectDeveloper", "roles/projectOwner"})
+		apprStep1 := provisionApprover(ctx, t, ctl, project, "ap2-step1", "roles/projectDeveloper")
+		apprStep2 := provisionApprover(ctx, t, ctl, project, "ap2-step2", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVED})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_ap2_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP2 issue")
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		approveIssueAs(ctx, t, ctl, issue, apprStep1)
+		time.Sleep(2 * time.Second) // intentional grace; asserting no intermediate ISSUE_APPROVED
+		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
+
+		approveIssueAs(ctx, t, ctl, issue, apprStep2)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+	})
+
+	t.Run("IssueSentBack_FiresOnRejection", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-sb1")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_sb1_db", ""))
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		appr := provisionApprover(ctx, t, ctl, project, "sb1", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_SENT_BACK})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_sb1_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB1 issue")
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		rejectIssueAs(ctx, t, ctl, issue, appr, "needs more context")
+		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1, 30*time.Second)
+	})
+
+	t.Run("IssueSentBack_ThenReapproved_E2E", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-sb2")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_sb2_db", ""))
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		appr := provisionApprover(ctx, t, ctl, project, "sb2", "roles/projectOwner")
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_ISSUE_SENT_BACK,
+			v1pb.Activity_ISSUE_APPROVED,
+			v1pb.Activity_ISSUE_APPROVAL_REQUESTED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_sb2_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB2 issue")
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		rejectIssueAs(ctx, t, ctl, issue, appr, "fix and resubmit")
+		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1, 30*time.Second)
+
+		// Issue creator (default ctl token) re-requests approval. Note: RequestIssue
+		// does NOT reset ApprovalFindingDone, so waitForIssuePending would return
+		// immediately. Wait for the second "Approval required" webhook instead —
+		// RequestIssue calls approval.NotifyApprovalRequested directly.
+		requestIssueAsCreator(ctx, t, ctl, issue, "addressed feedback")
+		waitForWebhookCount(t, collector, project.Name, "Approval required", 2, 30*time.Second)
+
+		approveIssueAs(ctx, t, ctl, issue, appr)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+	})
 }

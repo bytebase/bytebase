@@ -605,7 +605,6 @@ func approveIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v
 	})
 }
 
-//nolint:unused
 func rejectIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who testApprover, comment string) {
 	t.Helper()
 	withImpersonation(ctx, t, ctl, who, func() {
@@ -620,8 +619,6 @@ func rejectIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1
 // requestIssueAsCreator clears the rejected-approver state on a sent-back issue.
 // MUST be called as the issue creator (canRequestIssue at issue_service.go:803-805).
 // Run with the default ctl token, which is the demo user used as default creator.
-//
-//nolint:unused
 func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, comment string) {
 	t.Helper()
 	_, err := ctl.issueServiceClient.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
@@ -631,7 +628,7 @@ func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, i
 	require.NoError(t, err)
 }
 
-func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) {
+func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) { //nolint:unparam
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	for {
