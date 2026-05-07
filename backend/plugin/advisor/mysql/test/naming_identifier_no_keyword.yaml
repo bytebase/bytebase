@@ -61,3 +61,5 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE master_server_id(id int);
+- statement: CREATE TABLE master_compression_algorithm(id int);
