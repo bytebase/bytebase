@@ -140,3 +140,24 @@
         line: 2
         column: 0
       endposition: null
+# CONVERT TO CHARACTER SET pin (Codex P2 round-2 catch on PR #20217):
+# pingcap parsed `ALTER TABLE t CONVERT TO CHARACTER SET ascii` as
+# AlterTableOption (Tp=1) with the charset in spec.Options, so the
+# pingcap-typed advisor flagged it via its `case ast.AlterTableOption:`.
+# Omni splits this into ATConvertCharset (Type=17), with charset on
+# cmd.Name (and collation on cmd.NewName if specified). cmd.Option is nil.
+# Mechanical migration matching only ATTableOption silently misses the
+# CONVERT form.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CONVERT TO CHARACTER SET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER TABLE t CONVERT TO CHARACTER SET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

@@ -124,6 +124,22 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 					if _, ok := allowlist[cs]; !ok {
 						lastViolation = cs
 					}
+				case ast.ATConvertCharset:
+					// `ALTER TABLE t CONVERT TO CHARACTER SET cs [COLLATE c]`.
+					// Pingcap parses this as AlterTableOption with the
+					// charset in spec.Options (Tp=TableOptionCharset), so the
+					// pingcap-typed advisor flagged it. Omni splits into
+					// ATConvertCharset with charset on cmd.Name (and optional
+					// collation on cmd.NewName); cmd.Option is nil. Without
+					// this case, mechanical migration silently misses the
+					// CONVERT form (Codex P2 round-2 catch on PR #20217).
+					cs := strings.ToLower(cmd.Name)
+					if cs == "" {
+						continue
+					}
+					if _, ok := allowlist[cs]; !ok {
+						lastViolation = cs
+					}
 				case ast.ATAddColumn:
 					for _, col := range addColumnTargets(cmd) {
 						if col == nil {

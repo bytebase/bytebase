@@ -117,6 +117,22 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 					if _, ok := allowlist[c]; !ok {
 						lastViolation = c
 					}
+				case ast.ATConvertCharset:
+					// `ALTER TABLE t CONVERT TO CHARACTER SET cs COLLATE col`.
+					// Pingcap parses both charset and collation into
+					// spec.Options (Tp=TableOptionCharset / Tp=TableOptionCollate).
+					// Omni splits: charset on cmd.Name, collation on cmd.NewName
+					// (empty if no COLLATE clause). cmd.Option is nil. Without
+					// this case, mechanical migration silently misses the
+					// COLLATE-on-CONVERT form (Codex P2 round-2 catch on
+					// PR #20217).
+					c := strings.ToLower(cmd.NewName)
+					if c == "" {
+						continue
+					}
+					if _, ok := allowlist[c]; !ok {
+						lastViolation = c
+					}
 				case ast.ATAddColumn:
 					for _, col := range addColumnTargets(cmd) {
 						if col == nil {
