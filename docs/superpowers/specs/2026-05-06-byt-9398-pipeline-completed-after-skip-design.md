@@ -44,10 +44,33 @@ The gap is exactly one cell: `BatchSkipTasks`.
 
 ## 4. Fix
 
-Add a `ResetPlanWebhookDelivery` call inside `BatchSkipTasks`, placed
-analogously to the existing call in `BatchRunTasks` — i.e. immediately after
-the `GetPlan` nil-check and before `GetIssue`. Reusing the existing call's
-position, error-handling stance, and comment style:
+Two coupled changes:
+
+### 4.1 Tighten `ResetPlanWebhookDelivery` to only clear FAILED rows
+
+The current store function in `backend/store/plan_webhook_delivery.go:10` does
+`DELETE … WHERE project=$1 AND plan_id=$2`, blindly removing whatever row
+exists. That is unsafe for a recovery endpoint to call after the plan has
+already reached `PIPELINE_COMPLETED` — the next completion check would re-claim
+and re-fire a duplicate completion webhook (adversarial review finding #4).
+
+Narrow the SQL so the function name matches its actual responsibility — clear
+only the failure-notification row:
+
+```sql
+DELETE FROM plan_webhook_delivery
+WHERE project = $1 AND plan_id = $2 AND event_type = 'PIPELINE_FAILED'
+```
+
+`PIPELINE_COMPLETED` is terminal; if it's been delivered, no recovery endpoint
+should re-arm it. Same name kept (`ResetPlanWebhookDelivery`) since the only
+other call site (`BatchRunTasks`) likewise only ever wants to clear the
+failure-notification before a retry.
+
+### 4.2 Add the call inside `BatchSkipTasks`
+
+Mirror the existing call in `BatchRunTasks` — placed immediately after the
+`GetPlan` nil-check and before `GetIssue`:
 
 ```go
 // rollout_service.go, inside BatchSkipTasks (~line 886, after the plan == nil check)
@@ -56,15 +79,19 @@ if plan == nil {
 }
 
 // Reset notification state so PIPELINE_COMPLETED can fire after skipping a failed task.
+// This is non-fatal but it is not "best-effort": if the delete fails, a stale
+// PIPELINE_FAILED row will block the subsequent PIPELINE_COMPLETED claim and
+// the customer will see exactly the BYT-9398 symptom again. We log and proceed
+// to keep the user-facing skip request from blocking on storage hiccups.
 if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
     slog.Error("failed to reset plan webhook delivery", log.BBError(err))
-    // Don't fail the request - notification is non-critical
 }
 
 issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 ```
 
-No store-layer, schema, or proto changes.
+No schema or proto changes — only the SQL inside `ResetPlanWebhookDelivery` and
+a new call site in `BatchSkipTasks`.
 
 ## 5. Test plan
 
@@ -163,17 +190,31 @@ to keep events isolated.
 - New `TestCollision_*` cases. We are not adding a new store method touching a
   composite-PK table; AGENTS.md only mandates collision tests for new methods.
 
-## 6. Risks
+## 6. Risks and known limitations
 
 - **Spurious reset in non-failure flow.** If a user clicks Skip on a plan that
-  never had a `PIPELINE_FAILED` row, `ResetPlanWebhookDelivery` is a no-op
-  (`DELETE … WHERE` matches zero rows). Safe.
-- **Race vs. concurrent `ClaimPipelineFailureNotification`.** A failing task on
-  a different stage could claim FAILED at the same instant Skip is issued. The
-  reset removes the just-claimed row, so the FAILED webhook is sent (the claim
-  already fired the webhook in the same code path) but the row is wiped, so a
-  later COMPLETED claim can succeed. This matches the existing
-  `BatchRunTasks` behavior and is the intended semantic.
+  never had a `PIPELINE_FAILED` row, the new `event_type = 'PIPELINE_FAILED'`
+  WHERE clause makes `ResetPlanWebhookDelivery` a no-op. Safe.
+- **Reset runs before permission/validation checks.** The call is placed
+  immediately after `GetPlan` so it mirrors the existing `BatchRunTasks`
+  pattern. A request that fails permission/approval validation will still
+  clear the failure-notification row. Tradeoff accepted for symmetry with
+  `BatchRunTasks`; a future cleanup can move both call sites after validation.
+- **In-flight skip race (pre-existing, unrelated to this fix).** `BatchSkipTasks`
+  sets `payload.skipped = true` but does not cancel a `PENDING`/`RUNNING` task
+  run. If a user skips a still-running task that subsequently fails in
+  `runTaskRunOnce`, the failure-claim and completion-claim race on the
+  `(project, plan_id)` PK and one of the two events is dropped. This is a
+  pre-existing behavior in BatchSkipTasks and is *not* addressed by this PR.
+  The customer's BYT-9398 case is a sequential one (the failed task was
+  terminal-`FAILED` for minutes before the user skipped it), so it's not
+  affected. Tracked as a follow-up in section 7.
+- **Race vs. concurrent `ClaimPipelineFailureNotification` from a different
+  stage.** A failing task on a different stage could claim FAILED at the same
+  instant Skip is issued. With the tightened SQL, reset only deletes the
+  FAILED row, leaving any subsequent COMPLETED claim able to succeed. The
+  failure webhook for that other stage's task still fires (the claim already
+  delivered it in the same code path). Intended semantic.
 - **Operational recovery for plan 2505.** The historical event cannot be
   replayed automatically. Customer recovery is out of scope for this PR (the
   Linear issue notes it explicitly).
@@ -185,3 +226,12 @@ to keep events isolated.
   `ON CONFLICT … DO UPDATE WHERE event_type = 'PIPELINE_FAILED'`. This would
   remove the per-endpoint reset obligation but is a larger change; tracked
   separately if we want to harden the contract.
+- **Cancel in-flight task runs in `BatchSkipTasks`.** Today Skip flips a flag
+  but lets a running task run to completion. To make Skip semantically
+  consistent with the user's intent ("I am done with this task — don't fire
+  any more events for it"), the running task run should be cancelled. This
+  closes the race described in the third bullet of section 6.
+- **Move `ResetPlanWebhookDelivery` after permission/approval validation in
+  both `BatchRunTasks` and `BatchSkipTasks`.** Avoids clearing the dedup
+  ledger when the request is going to be rejected. Out of scope here for
+  symmetry; safe to do as a small follow-up.
