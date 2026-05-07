@@ -245,6 +245,40 @@ function isNumericUID(segment: string): boolean {
 }
 
 /**
+ * If both values parse as JSON arrays, merge old entries into the existing
+ * array (append items from old that aren't already present by JSON identity).
+ * For non-array values, the existing (email-keyed, newer) entry wins.
+ */
+function mergeJsonArrays(
+  key: string,
+  existingRaw: string,
+  oldRaw: string
+): void {
+  try {
+    const existing = JSON.parse(existingRaw);
+    const old = JSON.parse(oldRaw);
+    if (!Array.isArray(existing) || !Array.isArray(old)) return;
+
+    // Build a set of serialized existing items for deduplication.
+    const seen = new Set(existing.map((item) => JSON.stringify(item)));
+    let merged = false;
+    for (const item of old) {
+      const serialized = JSON.stringify(item);
+      if (!seen.has(serialized)) {
+        existing.push(item);
+        seen.add(serialized);
+        merged = true;
+      }
+    }
+    if (merged) {
+      localStorage.setItem(key, JSON.stringify(existing));
+    }
+  } catch {
+    // Not valid JSON or not arrays — keep the existing value.
+  }
+}
+
+/**
  * Post-login migration: rename localStorage keys that used the old
  * numeric UID as user identifier to use the current user's email.
  *
@@ -292,9 +326,20 @@ export function migrateUIDStorageKeys(email: string) {
   }
 
   for (const [oldKey, newKey] of keysToMigrate) {
-    const value = localStorage.getItem(oldKey);
-    if (value !== null && localStorage.getItem(newKey) === null) {
-      localStorage.setItem(newKey, value);
+    const oldValue = localStorage.getItem(oldKey);
+    if (oldValue === null) {
+      localStorage.removeItem(oldKey);
+      continue;
+    }
+    const existingValue = localStorage.getItem(newKey);
+    if (existingValue === null) {
+      // No email-keyed entry yet — just move the value.
+      localStorage.setItem(newKey, oldValue);
+    } else {
+      // Both exist — try to merge if both are JSON arrays (e.g., tabs,
+      // recent projects). For non-arrays, the email-keyed entry is newer
+      // and wins.
+      mergeJsonArrays(newKey, existingValue, oldValue);
     }
     localStorage.removeItem(oldKey);
   }
