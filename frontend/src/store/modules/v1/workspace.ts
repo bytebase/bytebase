@@ -7,6 +7,8 @@ import {
   authServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
+import { router } from "@/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { userNamePrefix, workspaceNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
@@ -20,8 +22,6 @@ import {
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import { UpdateWorkspaceRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils";
-import { router } from "@/router";
-import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store } from "./actuator";
 import { composePolicyBindings } from "./projectIamPolicy";
 

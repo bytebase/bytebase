@@ -7,8 +7,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useProject, useSubscription } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
+import {
+  useProject,
+  useSubscription,
+  useSwitchWorkspace,
+  useWorkspace,
+  useWorkspaceList,
+} from "@/react/hooks/useAppState";
 import {
   isValidProjectName,
   projectNamePrefix,
@@ -19,12 +24,15 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/react/router";
-import { useActuatorV1Store, useWorkspaceV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
 
-function planLabel(t: (key: string) => string, plan: PlanType): string | undefined {
+function planLabel(
+  t: (key: string) => string,
+  plan: PlanType
+): string | undefined {
   switch (plan) {
     case PlanType.FREE:
       return t("subscription.plan.free.title");
@@ -55,15 +63,16 @@ function planVariant(
 // ---------------------------------------------------------------------------
 function WorkspaceSegment() {
   const { t } = useTranslation();
-  const workspaceStore = useWorkspaceV1Store();
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-  const workspaceList = useVueState(() => workspaceStore.workspaceList);
-  const currentWorkspace = useVueState(() => workspaceStore.currentWorkspace);
-  const currentWorkspaceName = currentWorkspace?.name ?? "";
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const workspace = useWorkspace();
+  const workspaceList = useWorkspaceList();
+  const currentWorkspaceName = workspace?.name ?? "";
   const { subscription } = useSubscription();
   const currentPlan = subscription?.plan ?? PlanType.FREE;
   const label = planLabel(t, currentPlan);
   const hasMultiple = workspaceList.length > 1;
+  const switchWorkspace = useSwitchWorkspace();
+  const navigate = useNavigate();
 
   // Self-host has a single workspace — no need to show the workspace segment.
   if (!isSaaSMode) {
@@ -76,12 +85,10 @@ function WorkspaceSegment() {
     (workspaceName: string) => {
       if (workspaceName === currentWorkspaceName) return;
       setOpen(false);
-      workspaceStore.switchWorkspace(workspaceName);
+      void switchWorkspace(workspaceName);
     },
-    [currentWorkspaceName, workspaceStore]
+    [currentWorkspaceName, switchWorkspace]
   );
-
-  const navigate = useNavigate();
 
   const handleNameClick = useCallback(() => {
     void navigate.push({ name: WORKSPACE_ROUTE_LANDING });
@@ -95,7 +102,7 @@ function WorkspaceSegment() {
         onClick={handleNameClick}
       >
         <Building2 className="size-4 text-control-light shrink-0" />
-        <span className="truncate max-w-40">{currentWorkspace?.title}</span>
+        <span className="truncate max-w-40">{workspace?.title}</span>
         {label && (
           <Badge
             variant={planVariant(currentPlan)}
@@ -213,7 +220,7 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
 // HeaderBreadcrumb — the assembled breadcrumb bar
 // ---------------------------------------------------------------------------
 export function HeaderBreadcrumb() {
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   return (
     <div className="flex items-center gap-x-1">
       <WorkspaceSegment />

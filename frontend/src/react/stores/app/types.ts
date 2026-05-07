@@ -38,6 +38,7 @@ export type WorkspaceSlice = {
   serverInfoTs: number;
   serverInfoRequest?: Promise<ActuatorInfo | undefined>;
   workspace?: Workspace;
+  workspaceList: Workspace[];
   workspaceRequest?: Promise<Workspace | undefined>;
   workspaceProfile?: WorkspaceProfileSetting;
   workspaceProfileRequest?: Promise<WorkspaceProfileSetting | undefined>;
@@ -49,6 +50,8 @@ export type WorkspaceSlice = {
   loadServerInfo: () => Promise<ActuatorInfo | undefined>;
   refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
+  loadWorkspaceList: () => Promise<Workspace[]>;
+  switchWorkspace: (workspaceName: string) => Promise<void>;
   loadWorkspaceProfile: () => Promise<WorkspaceProfileSetting | undefined>;
   loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
   refreshEnvironmentList: () => Promise<Environment[]>;
