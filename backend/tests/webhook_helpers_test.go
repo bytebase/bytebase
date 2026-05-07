@@ -405,8 +405,6 @@ func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller,
 // scopes to the given project via CEL and registers a cleanup that restores
 // the prior workspace setting. flowRoles is the ordered list of roles for
 // sequential approval steps (one role per step).
-//
-//nolint:unused
 func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *controller, projectID string, flowRoles []string) {
 	t.Helper()
 
@@ -470,7 +468,6 @@ func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *contro
 	})
 }
 
-//nolint:unused
 func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) {
 	t.Helper()
 	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
@@ -483,12 +480,11 @@ func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, pro
 	require.NoError(t, err)
 }
 
-type testApprover struct { //nolint:unused
+type testApprover struct {
 	Email    string
 	Password string
 }
 
-//nolint:unused
 func provisionApprover(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, suffix, projectRole string) testApprover {
 	t.Helper()
 	email := fmt.Sprintf("approver-%s@example.com", suffix)
@@ -522,8 +518,6 @@ func provisionApprover(ctx context.Context, t *testing.T, ctl *controller, proje
 
 // withImpersonation logs in as the given approver, runs fn with that identity,
 // and restores the original token via defer.
-//
-//nolint:unused
 func withImpersonation(ctx context.Context, t *testing.T, ctl *controller, who testApprover, fn func()) {
 	t.Helper()
 	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
@@ -539,7 +533,6 @@ func withImpersonation(ctx context.Context, t *testing.T, ctl *controller, who t
 	fn()
 }
 
-//nolint:unused
 func createIssueForPlan(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, plan *v1pb.Plan, title string) *v1pb.Issue {
 	t.Helper()
 	resp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
@@ -555,7 +548,6 @@ func createIssueForPlan(ctx context.Context, t *testing.T, ctl *controller, proj
 	return resp.Msg
 }
 
-//nolint:unused
 func approveIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who testApprover) {
 	t.Helper()
 	withImpersonation(ctx, t, ctl, who, func() {
@@ -592,7 +584,6 @@ func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, i
 	require.NoError(t, err)
 }
 
-//nolint:unused
 func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)

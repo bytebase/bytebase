@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path"
 	"strings"
 	"sync"
 	"testing"
@@ -265,6 +266,18 @@ func TestWebhookIntegration(t *testing.T) {
 				if title == "" {
 					t.Logf("⚠️  Issue title is empty (expected: %q)", planTitle)
 				}
+
+				// I1 assertions: event identity and payload contents.
+				require.True(t, matchesEvent(req, project.Name, "Issue created"),
+					"first webhook section should contain 'Issue created'; got %q",
+					firstSlackSectionText(req.Body))
+
+				body := string(req.Body)
+				require.Contains(t, body, project.Name, "payload should reference the project resource name")
+				require.Contains(t, body, "Test webhook issue", "payload should contain the issue title")
+				require.Contains(t, body, fmt.Sprintf("/projects/%s/issues/", path.Base(project.Name)),
+					"payload should link to the project's issue resource")
+
 				break
 			}
 		}
@@ -521,5 +534,32 @@ func TestWebhookIntegration(t *testing.T) {
 			"seeding, and an injectable haFailGracePeriod — none exist in the test harness. " +
 			"Codepath at backend/runner/taskrun/scheduler.go:71-142 is manually verified. " +
 			"Tracked as a follow-up.")
+	})
+
+	t.Run("IssueCreated_NoLeakageFromOtherEvents", func(t *testing.T) {
+		collector.reset()
+		project := ctl.createTestProject(ctx, t, "byt9398-i2")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_i2_db", ""))
+
+		disableSelfApproval(ctx, t, ctl, project)
+		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		appr := provisionApprover(ctx, t, ctl, project, "i2", "roles/projectOwner")
+
+		collector.reset() // flush any creation-time webhook events
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_i2_db")},
+		})
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "I2 issue")
+
+		waitForWebhookCount(t, collector, project.Name, "Issue created", 1, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+		// Drive an approval — webhook is NOT subscribed to ISSUE_APPROVED, so the count must stay at 1.
+		approveIssueAs(ctx, t, ctl, issue, appr)
+		time.Sleep(2 * time.Second) // intentional grace; asserting absence of further deliveries
+		requireWebhookCount(t, collector, project.Name, "Issue created", 1)
+		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
 	})
 }
