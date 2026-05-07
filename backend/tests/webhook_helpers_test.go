@@ -21,8 +21,6 @@ import (
 // captured payload, or "" if none. attachments[0].blocks[0].text.text holds the
 // event title decorated with emoji and Slack <link|title> markup — see
 // backend/plugin/webhook/slack/slack_test.go:42-47, 85.
-//
-//nolint:unused
 func firstSlackSectionText(body []byte) string {
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -58,8 +56,6 @@ func firstSlackSectionText(body []byte) string {
 // matchesEvent reports whether a captured Slack payload matches the given
 // project and event title. Project filtering prevents cross-subtest
 // contamination from the async webhook dispatcher.
-//
-//nolint:unused
 func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
 	body := string(req.Body)
 	if !strings.Contains(body, projectName) {
@@ -70,8 +66,6 @@ func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
 
 // waitForWebhookCount blocks until at least n webhooks for (project, eventTitle)
 // have arrived, or fails the test.
-//
-//nolint:unused
 func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -89,15 +83,12 @@ func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTi
 }
 
 // requireWebhookCount asserts the exact count of webhooks for (project, eventTitle).
-//
-//nolint:unused
 func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
 	t.Helper()
 	got := countWebhooksFor(c, projectName, eventTitle)
 	require.Equalf(t, n, got, "expected %d %q webhooks on %s, got %d", n, eventTitle, projectName, got)
 }
 
-//nolint:unused
 func countWebhooksFor(c *webhookCollector, projectName, eventTitle string) int {
 	n := 0
 	for _, req := range c.getRequests() {
@@ -110,8 +101,6 @@ func countWebhooksFor(c *webhookCollector, projectName, eventTitle string) int {
 
 // createTestProject creates a fresh project (default AllowSelfApproval=true;
 // approval-flow subtests call disableSelfApproval).
-//
-//nolint:unused
 func (ctl *controller) createTestProject(ctx context.Context, t *testing.T, prefix string) *v1pb.Project {
 	t.Helper()
 	pid := generateRandomString(prefix)
@@ -129,8 +118,6 @@ func (ctl *controller) createTestProject(ctx context.Context, t *testing.T, pref
 
 // addWebhookForEvents adds a Slack webhook to the project subscribed to the
 // given event types only.
-//
-//nolint:unused
 func addWebhookForEvents(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, url string, events []v1pb.Activity_Type) {
 	t.Helper()
 	_, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
@@ -146,15 +133,11 @@ func addWebhookForEvents(ctx context.Context, t *testing.T, ctl *controller, pro
 }
 
 // dbTargetName returns the canonical instance/databases/<name> resource form.
-//
-//nolint:unused
 func dbTargetName(instance *v1pb.Instance, dbName string) string {
 	return fmt.Sprintf("%s/databases/%s", instance.Name, dbName)
 }
 
 // seedPassingSheet creates a sheet whose SQL trivially succeeds.
-//
-//nolint:unused
 func seedPassingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
 	t.Helper()
 	resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
@@ -166,8 +149,6 @@ func seedPassingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
 }
 
 // seedFailingSheet creates a sheet whose SQL fails until unblockFailingTask runs.
-//
-//nolint:unused
 func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
 	t.Helper()
 	resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
@@ -193,14 +174,12 @@ func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
 	require.NoError(t, err)
 }
 
-type taskSpec struct { //nolint:unused
+type taskSpec struct {
 	sheetName string
 	dbTarget  string // full instance/databases/<name>
 }
 
 // createPlanWithSpecs creates a plan with one ChangeDatabaseConfig spec per entry.
-//
-//nolint:unused
 func createPlanWithSpecs(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, specs []taskSpec) *v1pb.Plan {
 	t.Helper()
 	var planSpecs []*v1pb.Plan_Spec
@@ -223,7 +202,6 @@ func createPlanWithSpecs(ctx context.Context, t *testing.T, ctl *controller, pro
 	return resp.Msg
 }
 
-//nolint:unused
 func createRolloutOnly(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) *v1pb.Rollout {
 	t.Helper()
 	resp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: plan.Name}))
@@ -232,8 +210,6 @@ func createRolloutOnly(ctx context.Context, t *testing.T, ctl *controller, plan 
 }
 
 // runAllTasks materializes the rollout and starts every task in every stage.
-//
-//nolint:unused
 func runAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) *v1pb.Rollout {
 	t.Helper()
 	rollout := createRolloutOnly(ctx, t, ctl, plan)
@@ -254,7 +230,6 @@ func runAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.
 	return rollout
 }
 
-//nolint:unused
 func refreshRollout(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) *v1pb.Rollout {
 	t.Helper()
 	resp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{Name: rollout.Name}))
@@ -302,8 +277,6 @@ func skipTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v
 }
 
 // skipFailedTasks finds every FAILED task in the rollout and skips them.
-//
-//nolint:unused
 func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
 	t.Helper()
 	fresh := refreshRollout(ctx, t, ctl, rollout)
@@ -405,8 +378,6 @@ func waitForTaskStatus(ctx context.Context, t *testing.T, ctl *controller, rollo
 // "skip remaining" actions to avoid races with still-running tasks. On
 // timeout, dumps per-task status to t.Logf so failures are debuggable
 // without re-running.
-//
-//nolint:unused
 func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)

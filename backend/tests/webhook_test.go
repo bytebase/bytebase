@@ -271,4 +271,40 @@ func TestWebhookIntegration(t *testing.T) {
 
 		require.True(t, foundCorrectWebhook, "Webhook should use plan's description")
 	})
+
+	t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
+		collector.reset()
+
+		project := ctl.createTestProject(ctx, t, "byt9398-c4")
+
+		// Create databases before registering the webhook so the implicit
+		// PIPELINE_COMPLETED events fired by createDatabase (which internally
+		// runs a createDatabaseConfig plan) do not pollute the collector.
+		err := ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_pass", "")
+		require.NoError(t, err)
+		err = ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_fail", "")
+		require.NoError(t, err)
+
+		collector.reset()
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+			v1pb.Activity_PIPELINE_FAILED,
+			v1pb.Activity_PIPELINE_COMPLETED,
+		})
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_pass")},
+			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_fail")},
+		})
+		rollout := runAllTasks(ctx, t, ctl, plan)
+
+		// Phase 1: failing task → exactly one PIPELINE_FAILED, no PIPELINE_COMPLETED.
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
+
+		// Phase 2: skip the failed task → PIPELINE_COMPLETED fires (the fix).
+		skipFailedTasks(ctx, t, ctl, rollout)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
+	})
 }
