@@ -44,39 +44,79 @@ The gap is exactly one cell: `BatchSkipTasks`.
 
 ## 4. Fix
 
-Add a `ResetPlanWebhookDelivery` call inside `BatchSkipTasks`, placed
-analogously to the existing call in `BatchRunTasks` — immediately after the
-`GetPlan` nil-check and before `GetIssue`. The store function itself is
-unchanged.
+Two coupled changes in `backend/api/v1/rollout_service.go`. The store function
+itself is unchanged.
+
+### 4.1 Add the reset call to `BatchSkipTasks`
+
+`BatchSkipTasks` did not previously clear the dedup row, which is the BYT-9398
+root cause. Add a `Store.ResetPlanWebhookDelivery` call inside the success
+path so that PIPELINE_COMPLETED can fire after a skip resolves a prior
+failure.
+
+### 4.2 Move the reset in BOTH endpoints to AFTER validation
+
+`Store.ResetPlanWebhookDelivery` is a state mutation (DELETE row). The
+existing call site in `BatchRunTasks` (and the new one in `BatchSkipTasks`)
+must run only after the request has passed authorization, approval (where
+applicable), and the actual store mutation. A request that is going to be
+rejected (invalid input, denied permission, missing approval) must not have
+visible side effects on the dedup ledger — otherwise a later legitimate
+webhook event can fire as a duplicate, because the ledger was spuriously
+cleared.
+
+The correct order in both endpoints:
+
+```
+1. parse and look up project/plan/issue (read-only)
+2. parse and validate task IDs (return error → no state change)
+3. canUserRunEnvironmentTasks (return error → no state change)
+4. CheckIssueApproved (BatchRunTasks only; return error → no state change)
+5. mutate (atomic-ish):
+   a. store mutation (CreatePendingTaskRuns / store.BatchSkipTasks)
+   b. ResetPlanWebhookDelivery
+   c. signal next stage (TaskRunTickleChan / PlanCompletionCheckChan)
+6. return success
+```
+
+The reset must come AFTER the store mutation (so a failed mutation doesn't
+clear the ledger) and BEFORE the signal (so the async completion check sees
+the cleared ledger).
+
+### 4.3 Inside `BatchSkipTasks` the placement looks like
 
 ```go
-// rollout_service.go, inside BatchSkipTasks (~line 886, after the plan == nil check)
-if plan == nil {
-    return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
+if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {
+    return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 }
 
 // Reset notification state so PIPELINE_COMPLETED can fire after skipping a
-// failed task. Errors are logged and swallowed so a transient DB hiccup
-// doesn't fail the user-facing skip request — note that a failure here will
-// re-introduce the BYT-9398 symptom for this plan, so the log line should
-// be monitored.
+// failed task. Placed after authorization + the store mutation so a rejected
+// request leaves the dedup ledger untouched. Errors are logged and swallowed
+// so a transient DB hiccup doesn't fail the user-facing skip request — note
+// that a failure here will re-introduce the BYT-9398 symptom for this plan.
 if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
     slog.Error("failed to reset plan webhook delivery", log.BBError(err))
 }
 
-issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: projectID, PlanID: planID}
 ```
 
-No store-layer, schema, or proto changes — only a new call site in
-`BatchSkipTasks` that mirrors `BatchRunTasks` exactly.
+`BatchRunTasks` gets the same restructuring: reset moves from immediately
+after `GetPlan` to immediately after `CreatePendingTaskRuns` and before
+`TaskRunTickleChan`.
 
-This means a `Skip` on a plan that has already reached `PIPELINE_COMPLETED`
-will (just like a `Run` on such a plan today) wipe the existing dedup row and
-allow a duplicate completion webhook to fire when the next completion check
-runs. We treat this as the same shape of behavior the existing `BatchRunTasks`
-path already has, and address it (if at all) in the section-7 follow-up that
-makes `ClaimPipelineCompletionNotification` atomically supersede a FAILED row
-via `ON CONFLICT … DO UPDATE`, removing the per-endpoint reset entirely.
+### Behavioral consequences
+
+- Success paths are unchanged: by the time the request returns success, the
+  reset has run.
+- Rejected paths (auth fail, missing tasks, etc.) no longer mutate the
+  dedup ledger.
+- A `Skip` or `Run` on a plan that has already reached `PIPELINE_COMPLETED`
+  still wipes the COMPLETED row when the call succeeds and re-arms the
+  dedup ledger — that's the existing BatchRunTasks behavior and is treated
+  as the same-shape "atomic-supersede-via-ON-CONFLICT" follow-up tracked
+  in section 7.
 
 ## 5. Test plan
 
@@ -181,11 +221,9 @@ to keep events isolated.
 - **Spurious reset in non-failure flow.** If a user clicks Skip on a plan that
   never had a `PIPELINE_FAILED` row, the new `event_type = 'PIPELINE_FAILED'`
   WHERE clause makes `ResetPlanWebhookDelivery` a no-op. Safe.
-- **Reset runs before permission/validation checks.** The call is placed
-  immediately after `GetPlan` so it mirrors the existing `BatchRunTasks`
-  pattern. A request that fails permission/approval validation will still
-  clear the failure-notification row. Tradeoff accepted for symmetry with
-  `BatchRunTasks`; a future cleanup can move both call sites after validation.
+- ~~**Reset runs before permission/validation checks.**~~ Addressed in
+  section 4.2 — both endpoints now reset only after authorization and the
+  store mutation succeed.
 - **In-flight skip race (pre-existing, unrelated to this fix).** `BatchSkipTasks`
   sets `payload.skipped = true` but does not cancel a `PENDING`/`RUNNING` task
   run. If a user skips a still-running task that subsequently fails in
@@ -217,7 +255,6 @@ to keep events isolated.
   consistent with the user's intent ("I am done with this task — don't fire
   any more events for it"), the running task run should be cancelled. This
   closes the race described in the third bullet of section 6.
-- **Move `ResetPlanWebhookDelivery` after permission/approval validation in
-  both `BatchRunTasks` and `BatchSkipTasks`.** Avoids clearing the dedup
-  ledger when the request is going to be rejected. Out of scope here for
-  symmetry; safe to do as a small follow-up.
+- ~~Move `ResetPlanWebhookDelivery` after permission/approval validation in
+  both `BatchRunTasks` and `BatchSkipTasks`.~~ Done in section 4.2 (in
+  response to a Codex P1 finding on the PR).
