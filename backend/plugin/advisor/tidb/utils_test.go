@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	omniast "github.com/bytebase/omni/tidb/ast"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -132,4 +134,46 @@ func TestGetTiDBNodesSoftFailsOnBridgeMiss(t *testing.T) {
 		"bridge miss must be soft-failed (skip), not surfaced as 'AST type mismatch' — see Phase 1.5 invariant #2")
 	require.Len(t, got, 1,
 		"expected 1 statement from the bridge-hit branch; the bridge-miss statement should be skipped silently")
+}
+
+// TestCollectFKCreateTableNilConstraintGuard pins the defensive nil-check
+// in collectFKCreateTable. The original batch-4 form passed
+// `ostmt.AbsoluteLine(constraint.Loc.Start)` as the line argument to
+// buildFKMetaData, which evaluated the dereference BEFORE the helper's
+// internal nil check could fire — a nil entry in n.Constraints would
+// panic. Per Codex round-1 review on PR #20204; sibling collectFKAlterTable
+// was safe because it precomputes stmtLine outside the loop, and
+// collectIndexCreateTable / collectUKCreateTable already nil-checked.
+//
+// Omni's parser doesn't currently produce nil entries from valid SQL, so
+// the YAML fixture suite can't reach this branch. The synthetic AST here
+// pins the contract: a future change that re-orders the loop body or
+// removes the guard fails here.
+func TestCollectFKCreateTableNilConstraintGuard(t *testing.T) {
+	stmt := &omniast.CreateTableStmt{
+		Table: &omniast.TableRef{Name: "t"},
+		Constraints: []*omniast.Constraint{
+			nil, // would panic on AbsoluteLine(constraint.Loc.Start) without the guard
+			{
+				Type:       omniast.ConstrForeignKey,
+				Name:       "fk_t_author_id_author_id",
+				Columns:    []string{"author_id"},
+				RefTable:   &omniast.TableRef{Name: "author"},
+				RefColumns: []string{"id"},
+			},
+		},
+	}
+	ostmt := OmniStmt{
+		Node:     stmt,
+		Text:     "CREATE TABLE t (author_id INT, FOREIGN KEY (author_id) REFERENCES author(id))",
+		BaseLine: 0,
+	}
+
+	require.NotPanics(t, func() {
+		result := collectFKCreateTable(ostmt, stmt)
+		// The non-nil FK constraint must still be collected — the nil guard
+		// is `continue`, not an early exit.
+		require.Len(t, result, 1, "non-nil FK constraint should still be collected after the nil guard skips the nil entry")
+		require.Equal(t, "fk_t_author_id_author_id", result[0].indexName)
+	})
 }

@@ -47,6 +47,12 @@ func collectFKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaDa
 	tableName := n.Table.Name
 	var res []*indexMetaData
 	for _, constraint := range n.Constraints {
+		// Nil-check before evaluating constraint.Loc.Start; otherwise the
+		// line-computation argument would panic ahead of buildFKMetaData's
+		// own nil guard. Mirrors the index/UK CreateTable collectors.
+		if constraint == nil {
+			continue
+		}
 		if metaData := buildFKMetaData(tableName, constraint, ostmt.AbsoluteLine(constraint.Loc.Start)); metaData != nil {
 			res = append(res, metaData)
 		}
