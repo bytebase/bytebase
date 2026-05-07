@@ -90,7 +90,7 @@
               ($event) =>
                 $emit('export', {
                   ...$event,
-                  statement: result.statement,
+                  statement: params.statement,
                 })
             "
           >

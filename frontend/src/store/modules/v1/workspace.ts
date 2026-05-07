@@ -7,6 +7,8 @@ import {
   authServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
+import { router } from "@/router";
+import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { userNamePrefix, workspaceNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
@@ -26,8 +28,10 @@ import { composePolicyBindings } from "./projectIamPolicy";
 // Notify other tabs when the user switches workspace.
 const workspaceSwitchChannel = new BroadcastChannel("bb-workspace-switch");
 workspaceSwitchChannel.onmessage = () => {
-  // Another tab switched workspace — reload to pick up the new cookie.
-  window.location.reload();
+  // Another tab switched workspace — full-reload to the landing page
+  // to pick up the new cookie and reset all frontend state.
+  const landingPath = router.resolve({ name: WORKSPACE_ROUTE_LANDING }).href;
+  window.location.href = landingPath;
 };
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
@@ -238,8 +242,11 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     );
     // Notify other tabs to reload with the new workspace.
     workspaceSwitchChannel.postMessage(workspaceName);
-    // Full page reload to reset all frontend state with new workspace context.
-    window.location.reload();
+    // Full-reload to the landing page to reset all frontend state.
+    // Reloading the current URL would fail if the page is project-scoped
+    // (the project likely doesn't exist in the target workspace).
+    const landingPath = router.resolve({ name: WORKSPACE_ROUTE_LANDING }).href;
+    window.location.href = landingPath;
   };
 
   return {

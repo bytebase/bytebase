@@ -180,3 +180,7 @@
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
   changeType: 1
+- statement: CREATE TABLE t(id INTEGER PRIMARY KEY)
+  changeType: 1
+- statement: CREATE TABLE t(id INTEGER, PRIMARY KEY(id))
+  changeType: 1

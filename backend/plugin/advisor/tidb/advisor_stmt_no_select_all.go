@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/bytebase/omni/tidb/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -14,7 +14,7 @@ import (
 
 var (
 	_ advisor.Advisor = (*NoSelectAllAdvisor)(nil)
-	_ ast.Visitor     = (*noSelectAllChecker)(nil)
+	_ ast.Visitor     = (*noSelectAllVisitor)(nil)
 )
 
 func init() {
@@ -25,10 +25,11 @@ func init() {
 type NoSelectAllAdvisor struct {
 }
 
-// Check checks for no "select *".
+// Check checks for no "select *". Walks the full statement tree because
+// the wildcard can appear in nested subqueries (e.g. SELECT a FROM
+// (SELECT * FROM t) t).
 func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getTiDBNodes(checkCtx)
-
+	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,47 +38,70 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	if err != nil {
 		return nil, err
 	}
-	checker := &noSelectAllChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
-		checker.line = stmtNode.OriginTextPosition()
-		(stmtNode).Accept(checker)
+
+	var adviceList []*storepb.Advice
+	for _, ostmt := range stmts {
+		// Pingcap parity: every wildcard hit reports the OUTER statement's
+		// first-token line, not the inner SelectStmt's line.
+		v := &noSelectAllVisitor{
+			level:   level,
+			title:   checkCtx.Rule.Type.String(),
+			text:    ostmt.TrimmedText(),
+			line:    ostmt.FirstTokenLine(),
+			advices: &adviceList,
+		}
+		ast.Walk(v, ostmt.Node)
 	}
 
-	return checker.adviceList, nil
+	return adviceList, nil
 }
 
-type noSelectAllChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
+type noSelectAllVisitor struct {
+	level   storepb.Advice_Status
+	title   string
+	text    string
+	line    int
+	advices *[]*storepb.Advice
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *noSelectAllChecker) Enter(in ast.Node) (ast.Node, bool) {
-	if node, ok := in.(*ast.SelectStmt); ok {
-		for _, field := range node.Fields.Fields {
-			if field.WildCard != nil {
-				v.adviceList = append(v.adviceList, &storepb.Advice{
-					Status:        v.level,
-					Code:          code.StatementSelectAll.Int32(),
-					Title:         v.title,
-					Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
-					StartPosition: common.ConvertANTLRLineToPosition(v.line),
-				})
-				break
+// Visit returns v to recurse into children, including SelectStmt.Left/Right
+// (UNION/INTERSECT/EXCEPT arms) per omni's Walk contract.
+func (v *noSelectAllVisitor) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		return nil
+	}
+	sel, ok := node.(*ast.SelectStmt)
+	if !ok {
+		return v
+	}
+	if !targetListHasStar(sel.TargetList) {
+		return v
+	}
+	*v.advices = append(*v.advices, &storepb.Advice{
+		Status:        v.level,
+		Code:          code.StatementSelectAll.Int32(),
+		Title:         v.title,
+		Content:       fmt.Sprintf("\"%s\" uses SELECT all", v.text),
+		StartPosition: common.ConvertANTLRLineToPosition(v.line),
+	})
+	return v
+}
+
+// targetListHasStar reports whether any item in a SELECT's target list is
+// a wildcard. omni distinguishes:
+//   - bare "*"        → *ast.StarExpr
+//   - qualified "t.*" → *ast.ColumnRef with Star: true
+func targetListHasStar(targets []ast.ExprNode) bool {
+	for _, expr := range targets {
+		switch e := expr.(type) {
+		case *ast.StarExpr:
+			return true
+		case *ast.ColumnRef:
+			if e.Star {
+				return true
 			}
+		default:
 		}
 	}
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*noSelectAllChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+	return false
 }

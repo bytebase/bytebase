@@ -53,3 +53,48 @@
         line: 1
         column: 0
       endposition: null
+- statement: ALTER TABLE tech_book ALTER CHECK chk ENFORCED
+  changeType: 1
+  want:
+    - status: 2
+      code: 110
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book ALTER CHECK chk ENFORCED" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ALTER CHECK chk NOT ENFORCED
+  changeType: 1
+# Case-insensitivity: omni's tidb lexer lowercases identifiers before keyword
+# lookup (lexer.go:2267) and the ALTER CHECK arms assign canonical literal
+# strings to cmd.NewName ("ENFORCED" / "NOT ENFORCED"; alter_table.go:762-765,
+# 785-788). The advisor's `cmd.NewName == "ENFORCED"` check therefore matches
+# regardless of user case. These fixtures pin the contract — if omni ever
+# stops normalizing, the lowercase/mixed cases will start regressing.
+- statement: ALTER TABLE tech_book ALTER CHECK chk enforced
+  changeType: 1
+  want:
+    - status: 2
+      code: 110
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book ALTER CHECK chk enforced" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ALTER CHECK chk Enforced
+  changeType: 1
+  want:
+    - status: 2
+      code: 110
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE tech_book ALTER CHECK chk Enforced" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ALTER CHECK chk not enforced
+  changeType: 1
+- statement: ALTER TABLE tech_book ALTER CHECK chk Not Enforced
+  changeType: 1

@@ -38,6 +38,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 5;",
 		},
 		{
+			stmt:  "SELECT * FROM t LIMIT 0;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 0;",
+		},
+		{
 			stmt:  "SELECT * FROM t LIMIT 123;",
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 10;",
@@ -95,10 +100,127 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT col1, col2 FROM table1 ORDER BY col1 LIMIT 10;",
 		},
+		{
+			stmt:  "SELECT * FROM t FOR UPDATE;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 FOR UPDATE;",
+		},
+		{
+			stmt:  "SELECT * FROM t LOCK IN SHARE MODE;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 LOCK IN SHARE MODE;",
+		},
+		{
+			stmt:  "SELECT * FROM t INTO OUTFILE '/tmp/a';",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 INTO OUTFILE '/tmp/a';",
+		},
+		{
+			stmt:  "SELECT * FROM t /* into */ INTO OUTFILE '/tmp/a';",
+			count: 10,
+			want:  "SELECT * FROM t /* into */ LIMIT 10 INTO OUTFILE '/tmp/a';",
+		},
+		{
+			stmt:  "SELECT * FROM t INTO /* into */ OUTFILE '/tmp/a';",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 INTO /* into */ OUTFILE '/tmp/a';",
+		},
+		{
+			stmt:  "SELECT c INTO @v FROM t LIMIT row_count;",
+			count: 10,
+			want:  "SELECT c INTO @v FROM t LIMIT 10;",
+		},
+		{
+			stmt:  "SELECT c FROM t INTO @v FOR UPDATE;",
+			count: 10,
+			want:  "SELECT c FROM t LIMIT 10 INTO @v FOR UPDATE;",
+		},
+		{
+			stmt:  "SELECT * INTO OUTFILE '/tmp/a' FROM t;",
+			count: 10,
+			want:  "SELECT * INTO OUTFILE '/tmp/a' FROM t LIMIT 10;",
+		},
 	}
 
 	for _, tc := range testCases {
 		got := getStatementWithResultLimit(tc.stmt, tc.count)
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
+}
+
+func TestGetStatementWithResultLimitFallback(t *testing.T) {
+	testCases := []struct {
+		stmt  string
+		count int
+		want  string
+	}{
+		{
+			stmt:  "SELECT * FROM t LIMIT 1 + 2",
+			count: 5,
+			want:  "SELECT * FROM (SELECT * FROM t LIMIT 1 + 2) result LIMIT 5;",
+		},
+		{
+			stmt:  "SELECT * FROM t LIMIT @row_count",
+			count: 5,
+			want:  "SELECT * FROM (SELECT * FROM t LIMIT @row_count) result LIMIT 5;",
+		},
+	}
+
+	for _, tc := range testCases {
+		got := getStatementWithResultLimit(tc.stmt, tc.count)
+		require.Equal(t, tc.want, got, tc.stmt)
+	}
+}
+
+func TestGetStatementWithResultLimitInline(t *testing.T) {
+	testCases := []struct {
+		stmt    string
+		count   int
+		wantErr bool
+		want    string
+	}{
+		{
+			stmt:    "SELECT * FROM t LIMIT 1 + 2",
+			count:   5,
+			wantErr: true,
+		},
+		{
+			stmt:    "SELECT * FROM t LIMIT @row_count",
+			count:   5,
+			wantErr: true,
+		},
+		{
+			stmt:    "SELECT * FROM a; SELECT * FROM b;",
+			count:   5,
+			wantErr: true,
+		},
+		{
+			stmt:    "SELECT col1 FROM table1 PROCEDURE ANALYSE(10, 2000); SELECT * FROM b;",
+			count:   5,
+			wantErr: true,
+		},
+		{
+			stmt:  "UPDATE t SET a = 1",
+			count: 5,
+			want:  "UPDATE t SET a = 1",
+		},
+	}
+
+	for _, tc := range testCases {
+		got, err := getStatementWithResultLimitInline(tc.stmt, tc.count)
+		if tc.wantErr {
+			require.Error(t, err, tc.stmt)
+			continue
+		}
+		require.NoError(t, err, tc.stmt)
+		require.Equal(t, tc.want, got, tc.stmt)
+	}
+}
+
+func TestGetStatementWithResultLimitUnicodeBeforeInto(t *testing.T) {
+	stmt := "SELECT 'ı' FROM t INTO OUTFILE '/tmp/a';"
+	want := "SELECT 'ı' FROM t LIMIT 10 INTO OUTFILE '/tmp/a';"
+
+	got := getStatementWithResultLimit(stmt, 10)
+	require.Equal(t, want, got)
 }

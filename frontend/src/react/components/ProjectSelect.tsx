@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Combobox } from "@/react/components/ui/combobox";
 import { useProjectV1Store } from "@/store";
@@ -46,21 +46,36 @@ export function ProjectSelect({
   // returns it.
   const [additionalProjects, setAdditionalProjects] = useState<Project[]>([]);
 
+  // Read `excludeDefault` from a ref inside the callback so the
+  // callback identity stays stable across re-renders. Without this, any
+  // parent re-render that re-evaluates the `excludeDefault` prop
+  // expression (e.g. the SQL Editor's `AsidePanel` re-rendering on
+  // tab.connection mutations) recreates the callback, which causes the
+  // mount-`useEffect` below to re-fire and hit `ListProjects` on every
+  // re-render. The boolean value itself is read live each call, so
+  // updates still take effect — just without re-running the effect.
+  const excludeDefaultRef = useRef(excludeDefault);
+  excludeDefaultRef.current = excludeDefault;
+
   const fetchProjects = useCallback(
     (query: string) => {
       projectStore
         .fetchProjectList({
-          filter: { query, excludeDefault },
+          filter: { query, excludeDefault: excludeDefaultRef.current },
           pageSize: getDefaultPagination(),
         })
         .then(({ projects: result }) => setProjects(result));
     },
-    [projectStore, excludeDefault]
+    [projectStore]
   );
 
+  // Fetch the first page on mount, and re-fetch only when
+  // `excludeDefault` actually flips (rare — typically once after
+  // permissions hydrate). `fetchProjects` is stable so this effect
+  // never re-fires from parent re-renders alone.
   useEffect(() => {
     fetchProjects("");
-  }, [fetchProjects]);
+  }, [excludeDefault, fetchProjects]);
 
   // Hydrate the selected project so the trigger always renders its
   // label, even before the paged list loads or when the project is

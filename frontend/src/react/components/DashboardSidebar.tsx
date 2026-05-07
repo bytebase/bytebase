@@ -52,7 +52,6 @@ import {
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/react/router";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -527,7 +526,6 @@ export function DashboardSidebar() {
       >
         <img src={logoSrc} alt="Bytebase" className="max-w-44" />
       </a>
-      <WorkspaceSwitcher />
       <div className="flex-1 overflow-y-auto px-2.5 pb-4 flex flex-col gap-y-1">
         {filteredItems.map((item, i) => renderItem(item, i))}
       </div>

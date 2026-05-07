@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -16,7 +16,6 @@ import (
 
 var (
 	_ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
-	_ ast.Visitor     = (*namingColumnConventionChecker)(nil)
 )
 
 func init() {
@@ -29,8 +28,7 @@ type NamingColumnConventionAdvisor struct {
 
 // Check checks for column naming convention.
 func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getTiDBNodes(checkCtx)
-
+	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +58,8 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		maxLength: maxLength,
 	}
 
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+	for _, ostmt := range stmts {
+		checker.checkStmt(ostmt)
 	}
 
 	return checker.adviceList, nil
@@ -75,81 +73,102 @@ type namingColumnConventionChecker struct {
 	maxLength  int
 }
 
-// Enter implements the ast.Visitor interface.
-func (v *namingColumnConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
-	type columnData struct {
-		name string
-		line int
-	}
-	var columnList []columnData
+type columnDataNamingColumn struct {
+	name string
+	line int
+}
+
+func (c *namingColumnConventionChecker) checkStmt(ostmt OmniStmt) {
+	var columnList []columnDataNamingColumn
 	var tableName string
-	switch node := in.(type) {
-	// CREATE TABLE
+	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
-		tableName = node.Table.Name.O
-		for _, column := range node.Cols {
-			columnList = append(columnList, columnData{
-				name: column.Name.Name.O,
-				line: column.OriginTextPosition(),
+		if n.Table == nil {
+			return
+		}
+		tableName = n.Table.Name
+		for _, col := range n.Columns {
+			if col == nil {
+				continue
+			}
+			columnList = append(columnList, columnDataNamingColumn{
+				name: col.Name,
+				line: ostmt.AbsoluteLine(col.Loc.Start),
 			})
 		}
-	// ALTER TABLE
 	case *ast.AlterTableStmt:
-		tableName = node.Table.Name.O
-		for _, spec := range node.Specs {
-			switch spec.Tp {
-			// RENAME COLUMN
-			case ast.AlterTableRenameColumn:
-				columnList = append(columnList, columnData{
-					name: spec.NewColumnName.Name.O,
-					line: in.OriginTextPosition(),
-				})
-			// ADD COLUMNS
-			case ast.AlterTableAddColumns:
-				for _, column := range spec.NewColumns {
-					columnList = append(columnList, columnData{
-						name: column.Name.Name.O,
-						line: in.OriginTextPosition(),
+		if n.Table == nil {
+			return
+		}
+		tableName = n.Table.Name
+		// Use the ALTER statement's line for all column references — pingcap parity.
+		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
+		for _, cmd := range n.Commands {
+			if cmd == nil {
+				continue
+			}
+			switch cmd.Type {
+			case ast.ATRenameColumn:
+				if cmd.NewName != "" {
+					columnList = append(columnList, columnDataNamingColumn{
+						name: cmd.NewName,
+						line: stmtLine,
 					})
 				}
-			// CHANGE COLUMN
-			case ast.AlterTableChangeColumn:
-				columnList = append(columnList, columnData{
-					name: spec.NewColumns[0].Name.Name.O,
-					line: in.OriginTextPosition(),
-				})
+			case ast.ATAddColumn:
+				// omni populates either Columns (multi-form) or Column (single).
+				// Mutually exclusive in practice but not enforced by the type.
+				if len(cmd.Columns) > 0 {
+					for _, col := range cmd.Columns {
+						if col != nil {
+							columnList = append(columnList, columnDataNamingColumn{
+								name: col.Name,
+								line: stmtLine,
+							})
+						}
+					}
+				} else if cmd.Column != nil {
+					columnList = append(columnList, columnDataNamingColumn{
+						name: cmd.Column.Name,
+						line: stmtLine,
+					})
+				}
+			case ast.ATChangeColumn:
+				// Only the new column name matters here.
+				if cmd.Column != nil {
+					columnList = append(columnList, columnDataNamingColumn{
+						name: cmd.Column.Name,
+						line: stmtLine,
+					})
+				}
 			default:
-				// Skip other alter table specification types
+				// MODIFY COLUMN (ATModifyColumn) and other forms intentionally
+				// not handled — pre-existing inheritance from the pingcap-AST
+				// version of this advisor.
 			}
 		}
 	default:
+		return
 	}
 
 	for _, column := range columnList {
-		if !v.format.MatchString(column.name) {
-			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:        v.level,
+		if !c.format.MatchString(column.name) {
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
 				Code:          code.NamingColumnConventionMismatch.Int32(),
-				Title:         v.title,
-				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, v.format),
+				Title:         c.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, c.format),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
-		if v.maxLength > 0 && len(column.name) > v.maxLength {
-			v.adviceList = append(v.adviceList, &storepb.Advice{
-				Status:        v.level,
+		if c.maxLength > 0 && len(column.name) > c.maxLength {
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
 				Code:          code.NamingColumnConventionMismatch.Int32(),
-				Title:         v.title,
-				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, v.maxLength),
+				Title:         c.title,
+				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, c.maxLength),
 				StartPosition: common.ConvertANTLRLineToPosition(column.line),
 			})
 		}
 	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*namingColumnConventionChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }

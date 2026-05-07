@@ -192,4 +192,24 @@ describe("VersionMenuItem", () => {
     );
     unmount();
   });
+
+  test("hides version info in SaaS/cloud mode", () => {
+    mocks.serverInfo = {
+      version: "1.0.0",
+      gitCommit: "backend123",
+      saas: true,
+      demo: false,
+    };
+    const { container, render, unmount } = renderIntoContainer(
+      <VersionMenuItem onCloseMenu={mocks.closeMenu} />
+    );
+    render();
+
+    expect(container.textContent).not.toContain("v1.0.0");
+    expect(container.textContent).not.toContain("BE Git hash");
+    expect(container.textContent).not.toContain("FE Git hash");
+    // The plan label should still be visible.
+    expect(container.textContent).toContain("Team");
+    unmount();
+  });
 });

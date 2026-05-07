@@ -22,8 +22,8 @@ import {
 } from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { STORAGE_KEY_MY_ISSUES_TAB } from "@/utils/storage-keys";
+import { HeaderBreadcrumb } from "./HeaderBreadcrumb";
 import { ProfileMenuTrigger } from "./ProfileMenuTrigger";
-import { ProjectSwitchPopover } from "./ProjectSwitchPopover";
 
 export interface DashboardHeaderProps {
   showLogo: boolean;
@@ -117,7 +117,7 @@ export function DashboardHeader({
         </button>
       ) : null}
 
-      <ProjectSwitchPopover />
+      <HeaderBreadcrumb />
 
       <div className="flex flex-1 items-center justify-end gap-x-2">
         <Button
