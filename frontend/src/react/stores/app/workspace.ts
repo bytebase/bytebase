@@ -141,10 +141,13 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     if (existing) return existing;
     const pending = get().workspaceRequest;
     if (pending) return pending;
-    await Promise.all([get().loadCurrentUser(), get().loadServerInfo()]);
+    await get().loadCurrentUser();
+    // Prefer currentUser.workspace — it reflects the token's workspace and
+    // is always up-to-date after login. serverInfo.workspace can be stale
+    // if loadServerInfo ran before authentication.
     const name =
-      get().serverInfo?.workspace ||
       get().currentUser?.workspace ||
+      get().serverInfo?.workspace ||
       `${workspaceNamePrefix}-`;
     const request = workspaceServiceClientConnect
       .getWorkspace({ name })
