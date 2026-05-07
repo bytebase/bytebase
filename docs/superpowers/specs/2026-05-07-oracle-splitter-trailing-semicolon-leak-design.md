@@ -116,10 +116,11 @@ for nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()); nex
 Properties:
 
 * **Grammar-stable.** The skip predicate is `channel != DEFAULT`. We do not
-  enumerate token types. `PlSqlLexer.g4:2621-2624` confirms whitespace,
-  `--` comments, `/* */` comments, and `REMARK` comments all go to channel
-  `HIDDEN`. If the grammar adds another hidden-channel token type later, no
-  code change is needed.
+  enumerate token types. `PlSqlLexer.g4` routes whitespace (`SPACES`,
+  line 2638) and all comment forms (`SINGLE_LINE_COMMENT`,
+  `MULTI_LINE_COMMENT`, `REMARK_COMMENT`, lines 2621-2624) to `channel(HIDDEN)`.
+  If the grammar adds another hidden-channel token type later, no code change
+  is needed.
 * **Backward-compatible.** For `stmt;` (no hidden tokens), the first iteration
   matches `;` and breaks — identical to the old behavior.
 * **Bounded.** The loop bails on the first default-channel token that isn't
