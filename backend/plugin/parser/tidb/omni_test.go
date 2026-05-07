@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestByteOffsetToRunePosition(t *testing.T) {
@@ -143,4 +144,139 @@ func TestOmniASTStartPosition(t *testing.T) {
 	pos := &storepb.Position{Line: 5, Column: 7}
 	o := &OmniAST{StartPosition: pos}
 	a.Equal(pos, o.ASTStartPosition())
+}
+
+// TestAsPingCapASTReturnsNativeAST pins the bridge contract: an OmniAST
+// successfully parsed from omni-supported SQL also exposes a native pingcap
+// AST via AsPingCapAST. Used by un-migrated advisors during the Phase 1.5
+// migration window via tidbparser.GetTiDBAST.
+func TestAsPingCapASTReturnsNativeAST(t *testing.T) {
+	a := require.New(t)
+	pos := &storepb.Position{Line: 1, Column: 1}
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: pos,
+	}
+
+	got, ok := o.AsPingCapAST()
+	a.True(ok, "expected pingcap fallback to succeed for valid SQL")
+	a.NotNil(got)
+	a.Equal(pos, got.StartPosition)
+	a.NotNil(got.Node, "pingcap StmtNode should be populated")
+}
+
+// TestAsPingCapASTCachesAcrossCalls pins the lazy+cached contract: the
+// native parse runs once per OmniAST instance regardless of how many
+// advisors call the bridge. Mirrors mysql/OmniAST.AsANTLRAST's antlrParsed
+// flag pattern.
+func TestAsPingCapASTCachesAcrossCalls(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	first, ok := o.AsPingCapAST()
+	a.True(ok)
+	a.NotNil(first)
+
+	second, ok := o.AsPingCapAST()
+	a.True(ok)
+
+	// Same *AST pointer proves the cache hit; a fresh re-parse would
+	// allocate a new wrapper.
+	a.Same(first, second, "expected cached *AST; got fresh re-parse — bridge cache contract broken")
+}
+
+// TestAsPingCapASTCachesNegativeResult ensures a parse failure is also
+// cached: a second call does not retry and continues to return (nil, false).
+// Important so that an OmniAST wrapping unparseable-by-pingcap SQL doesn't
+// repeatedly re-parse on every advisor call.
+func TestAsPingCapASTCachesNegativeResult(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		// Syntactically invalid SQL — pingcap should reject.
+		Text:          "SELECT FROM WHERE;",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	got, ok := o.AsPingCapAST()
+	a.False(ok)
+	a.Nil(got)
+	a.True(o.pingcapParsed, "pingcapParsed flag should be set after first attempt")
+
+	// Second call returns the same negative result without re-attempting.
+	got2, ok2 := o.AsPingCapAST()
+	a.False(ok2)
+	a.Nil(got2)
+}
+
+// TestGetTiDBASTFallsBackToProvider pins the cross-cutting contract: when
+// the dispatcher returns *OmniAST, un-migrated callers of GetTiDBAST get a
+// native *AST through the PingCapASTProvider fallback. Without this, the
+// dispatcher flip in §1.5.N+1 silently breaks every un-migrated advisor.
+func TestGetTiDBASTFallsBackToProvider(t *testing.T) {
+	a := require.New(t)
+	o := &OmniAST{
+		Text:          "SELECT 1",
+		StartPosition: &storepb.Position{Line: 1, Column: 1},
+	}
+
+	got, ok := GetTiDBAST(o)
+	a.True(ok, "GetTiDBAST should fall back to AsPingCapAST when handed an OmniAST")
+	a.NotNil(got)
+	a.NotNil(got.Node)
+}
+
+// TestAsPingCapASTLineTrackingMatchesCanonical pins that bridge-produced
+// nodes have the same node.OriginTextPosition() as the canonical pre-flip
+// path (ParseTiDBForSyntaxCheck). 49 of 51 tidb advisors call
+// OriginTextPosition() to report advice line numbers; if the bridge omits
+// the line-tracking work that the canonical path performs, post-flip
+// un-migrated advisors silently regress to line 1 for every statement.
+//
+// This is the regression that PR review caught — the original bridge in
+// this PR called bare ParseTiDB without applying applyTiDBLineTracking, so
+// nodes came back with default OriginTextPosition (line 1 of the snippet,
+// not line N of the original multi-statement input).
+func TestAsPingCapASTLineTrackingMatchesCanonical(t *testing.T) {
+	a := require.New(t)
+
+	// Two-statement input. We compare the SECOND statement's line tracking
+	// because that's where any drift would show: line 1 (default, broken)
+	// vs line 2 (correct).
+	multi := "CREATE TABLE foo (id INT);\nALTER TABLE foo ADD COLUMN x INT NOT NULL;"
+
+	// Canonical pre-flip path: ParseTiDBForSyntaxCheck splits + parses +
+	// applies applyTiDBLineTracking via the shared helper.
+	canonical, err := ParseTiDBForSyntaxCheck(multi)
+	a.NoError(err)
+	a.Len(canonical, 2)
+	canonicalSecond, ok := canonical[1].(*AST)
+	a.True(ok)
+
+	// Simulate what the dispatcher does post-flip: split, then for each
+	// non-empty split build an OmniAST. The bridge must produce a node
+	// whose OriginTextPosition matches the canonical path's.
+	splits, err := base.SplitMultiSQL(storepb.Engine_TIDB, multi)
+	a.NoError(err)
+	a.GreaterOrEqual(len(splits), 2)
+	secondSplit := splits[1]
+
+	o := &OmniAST{
+		Text: secondSplit.Text,
+		// StartPosition is 1-based line in the original SQL; SplitMultiSQL
+		// gives BaseLine() as 0-based, so +1 to convert.
+		StartPosition: &storepb.Position{Line: int32(secondSplit.BaseLine()) + 1},
+	}
+	bridged, ok := o.AsPingCapAST()
+	a.True(ok)
+
+	a.Equal(
+		canonicalSecond.Node.OriginTextPosition(),
+		bridged.Node.OriginTextPosition(),
+		"bridge OriginTextPosition must match ParseTiDBForSyntaxCheck — post-flip un-migrated advisors expect identical line numbers",
+	)
+	a.Equal(2, bridged.Node.OriginTextPosition(),
+		"sanity: ALTER TABLE on line 2 of the input should report OriginTextPosition=2")
 }

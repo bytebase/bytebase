@@ -21,6 +21,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useProjectV1Store, useSheetV1Store } from "@/store";
@@ -66,7 +67,9 @@ export function PlanDetailRollbackSheet({
   const normalizedProjectName = projectName.startsWith("projects/")
     ? projectName
     : `projects/${projectName}`;
-  const project = projectStore.getProjectByName(normalizedProjectName);
+  const project = useVueState(() =>
+    projectStore.getProjectByName(normalizedProjectName)
+  );
   const [loading, setLoading] = useState(false);
   const [selectedTaskRunNames, setSelectedTaskRunNames] = useState<string[]>(
     []
@@ -234,7 +237,7 @@ export function PlanDetailRollbackSheet({
                       </div>
                     ) : preview.statement ? (
                       <ReadonlyMonaco
-                        className="relative h-auto max-h-[320px] min-h-[120px]"
+                        className="relative h-auto max-h-[320px] min-h-[120px] overflow-hidden rounded-md border border-control-border"
                         content={preview.statement}
                         language="sql"
                       />

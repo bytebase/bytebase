@@ -733,7 +733,7 @@ export function ProjectsPage() {
       )}
 
       {/* Table */}
-      <div className="border rounded-sm overflow-x-auto">
+      <div className="overflow-x-auto border-y border-block-border">
         <ProjectTable
           className="min-w-[700px]"
           projectList={projects}

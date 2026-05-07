@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestValidateSQLForEditor(t *testing.T) {
@@ -118,16 +120,23 @@ func TestValidateSQLForEditor(t *testing.T) {
 			valid:       true,
 			gotAllQuery: false,
 		},
+		{
+			statement: "SELECT * FORM invalid_table;",
+			err:       true,
+		},
 	}
 
 	for _, test := range tests {
-		gotValid, gotAllQuery, err := validateQuery(test.statement)
-		if test.err {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-			require.Equal(t, test.valid, gotValid, test.statement)
-			require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
-		}
+		t.Run(test.statement, func(t *testing.T) {
+			gotValid, gotAllQuery, err := validateQuery(test.statement)
+			if test.err {
+				require.Error(t, err)
+				require.ErrorAs(t, err, new(*base.SyntaxError))
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.valid, gotValid, test.statement)
+				require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
+			}
+		})
 	}
 }

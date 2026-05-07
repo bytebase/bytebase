@@ -1,8 +1,16 @@
-import { Check, ChevronDown } from "lucide-react";
+import { Check } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Badge } from "@/react/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { getProjectName } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
@@ -78,12 +86,6 @@ export interface ProjectTableProps {
  *     server-side sort by title.
  *   - `ProjectSwitchPanel` (header popover) — `showLabels=false` +
  *     `currentProject` set to the active project.
- *
- * Uses plain HTML table elements (not the shadcn `Table` primitives)
- * to preserve the visual styling that ProjectsPage shipped with —
- * specifically: `bg-control-bg` header row, `px-4 py-2` cell padding,
- * and a rotating `ChevronDown` sort indicator. Switching to the
- * shadcn primitives would change all of those at once.
  */
 export function ProjectTable({
   projectList,
@@ -135,11 +137,11 @@ export function ProjectTable({
   };
 
   return (
-    <table className={cn("w-full text-sm", className)}>
-      <thead>
-        <tr className="bg-control-bg border-b border-control-border">
+    <Table className={className}>
+      <TableHeader>
+        <TableRow>
           {showSelection ? (
-            <th className="w-12 px-4 py-2">
+            <TableHead className="w-12">
               <input
                 type="checkbox"
                 aria-label={t("common.select-all")}
@@ -147,42 +149,32 @@ export function ProjectTable({
                 onChange={handleSelectAll}
                 className="rounded-xs border-control-border"
               />
-            </th>
+            </TableHead>
           ) : showLeadingCheck ? (
-            <th className="w-8 px-2 py-2" />
+            <TableHead className="w-8 px-2" />
           ) : null}
-          <th className="px-4 py-2 text-left font-medium min-w-[128px]">
-            {t("common.id")}
-          </th>
-          <th
-            className={cn(
-              "px-4 py-2 text-left font-medium min-w-[200px]",
-              onSortChange && "cursor-pointer select-none"
-            )}
-            onClick={() => onSortChange?.("title")}
+          <TableHead className="min-w-[128px]">{t("common.id")}</TableHead>
+          <TableHead
+            className="min-w-[200px]"
+            sortable={!!onSortChange}
+            sortActive={sortKey === "title"}
+            sortDir={sortOrder}
+            onSort={() => onSortChange?.("title")}
           >
-            <div className="flex items-center gap-x-1">
-              {t("project.table.name")}
-              {onSortChange ? (
-                <SortIndicator
-                  active={sortKey === "title"}
-                  direction={sortOrder}
-                />
-              ) : null}
-            </div>
-          </th>
+            {t("project.table.name")}
+          </TableHead>
           {showLabels ? (
-            <th className="px-4 py-2 text-left font-medium min-w-[240px] hidden md:table-cell">
+            <TableHead className="min-w-[240px] hidden md:table-cell">
               {t("common.labels")}
-            </th>
+            </TableHead>
           ) : null}
-          {showActions ? <th className="w-[50px]" /> : null}
-        </tr>
-      </thead>
-      <tbody>
+          {showActions ? <TableHead className="w-[50px]" /> : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {loading && projectList.length === 0 ? (
-          <tr>
-            <td
+          <TableRow>
+            <TableCell
               colSpan={totalColumns}
               className="px-4 py-8 text-center text-control-placeholder"
             >
@@ -190,36 +182,32 @@ export function ProjectTable({
                 <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
                 {t("common.loading")}
               </div>
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ) : projectList.length === 0 ? (
-          <tr>
-            <td
+          <TableRow>
+            <TableCell
               colSpan={totalColumns}
               className="px-4 py-8 text-center text-control-placeholder"
             >
               {emptyContent ?? t("common.no-data")}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ) : (
-          projectList.map((project, i) => {
+          projectList.map((project) => {
             const resourceId = getProjectName(project.name);
             const isDefault = resourceId === "default";
             const isCurrent = currentProject?.name === project.name;
             const isSelected = selectedProjectNames.includes(project.name);
             return (
-              <tr
+              <TableRow
                 key={project.name}
-                className={cn(
-                  "border-b last:border-b-0",
-                  onRowClick && "cursor-pointer hover:bg-control-bg",
-                  i % 2 === 1 && "bg-control-bg/50"
-                )}
+                className={cn(onRowClick && "cursor-pointer")}
                 onClick={(event) => onRowClick?.(project, event)}
               >
                 {showSelection ? (
-                  <td
-                    className="w-12 px-4 py-2"
+                  <TableCell
+                    className="w-12"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <input
@@ -230,18 +218,18 @@ export function ProjectTable({
                       onChange={() => handleToggleRow(project.name)}
                       className="rounded-xs border-control-border disabled:opacity-50"
                     />
-                  </td>
+                  </TableCell>
                 ) : showLeadingCheck ? (
-                  <td className="w-8 px-2 py-2">
+                  <TableCell className="w-8 px-2">
                     {isCurrent ? (
                       <Check className="size-4 text-accent" />
                     ) : null}
-                  </td>
+                  </TableCell>
                 ) : null}
-                <td className="px-4 py-2">
+                <TableCell>
                   <HighlightLabelText text={resourceId} keyword={keyword} />
-                </td>
-                <td className="px-4 py-2">
+                </TableCell>
+                <TableCell>
                   <div className="flex items-center gap-x-2">
                     <HighlightLabelText
                       text={project.title || resourceId}
@@ -253,54 +241,28 @@ export function ProjectTable({
                       </Badge>
                     ) : null}
                   </div>
-                </td>
+                </TableCell>
                 {showLabels ? (
-                  <td className="px-4 py-2 hidden md:table-cell">
+                  <TableCell className="hidden md:table-cell">
                     <LabelsCell labels={project.labels ?? {}} />
-                  </td>
+                  </TableCell>
                 ) : null}
                 {showActions ? (
-                  <td
-                    className="w-[50px] px-4 py-2"
+                  <TableCell
+                    className="w-[50px]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex justify-end">
                       {renderActions?.(project)}
                     </div>
-                  </td>
+                  </TableCell>
                 ) : null}
-              </tr>
+              </TableRow>
             );
           })
         )}
-      </tbody>
-    </table>
-  );
-}
-
-/**
- * ProjectsPage's original sort indicator: a single ChevronDown that
- * rotates 180° when the column is sorted ascending. Inactive state
- * shows the chevron in `text-control-border` so it reads as "you
- * could click this". Matches the pre-extraction look.
- */
-function SortIndicator({
-  active,
-  direction,
-}: {
-  active: boolean;
-  direction?: ProjectTableSortDirection;
-}) {
-  if (!active) {
-    return <ChevronDown className="size-3 text-control-border" />;
-  }
-  return (
-    <ChevronDown
-      className={cn(
-        "size-3 text-accent transition-transform",
-        direction === "asc" && "rotate-180"
-      )}
-    />
+      </TableBody>
+    </Table>
   );
 }
 

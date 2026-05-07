@@ -61,17 +61,9 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 		// and AST position matches Statement position.
 		// Trim only at display points (e.g., error messages) where needed.
 
-		// Calculate the start line. The native TiDB parser may strip leading newlines
-		// from its internal Text(), so we count how many were stripped.
-		nativeText := node.Text()
-		leadingNewlinesStripped := strings.Count(singleSQL.Text, "\n") - strings.Count(nativeText, "\n")
-		actualStartLine := singleSQL.BaseLine() + leadingNewlinesStripped + 1
-
-		node.SetOriginTextPosition(actualStartLine)
-		if n, ok := node.(*ast.CreateTableStmt); ok {
-			if err := SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, errors.Wrapf(err, "failed to set line for create table statement at line %d", actualStartLine)
-			}
+		actualStartLine, err := applyTiDBLineTracking(node, singleSQL.BaseLine(), singleSQL.Text)
+		if err != nil {
+			return nil, err
 		}
 		results = append(results, &AST{
 			StartPosition: &storepb.Position{Line: int32(actualStartLine)},
@@ -80,6 +72,34 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	}
 
 	return results, nil
+}
+
+// applyTiDBLineTracking sets OriginTextPosition on a freshly-parsed pingcap
+// node and walks CREATE TABLE columns to set their per-column line numbers
+// via SetLineForMySQLCreateTableStmt. Used by both ParseTiDBForSyntaxCheck
+// (the canonical pre-flip parsing path) and OmniAST.AsPingCapAST (the
+// post-flip bridge for un-migrated advisors), so consumers reading
+// node.OriginTextPosition() see consistent values across both paths.
+//
+// baseLine is the 0-based line index of the statement's first line in the
+// original (pre-split) SQL — i.e., base.Statement.BaseLine().
+//
+// Returns the 1-based actualStartLine (`baseLine + leadingNewlinesStripped +
+// 1`) so callers can use it for *AST.StartPosition.
+func applyTiDBLineTracking(node ast.StmtNode, baseLine int, originalText string) (int, error) {
+	// The native TiDB parser may strip leading newlines from its internal
+	// Text(); count how many to recover the absolute line.
+	nativeText := node.Text()
+	leadingNewlinesStripped := strings.Count(originalText, "\n") - strings.Count(nativeText, "\n")
+	actualStartLine := baseLine + leadingNewlinesStripped + 1
+
+	node.SetOriginTextPosition(actualStartLine)
+	if n, ok := node.(*ast.CreateTableStmt); ok {
+		if err := SetLineForMySQLCreateTableStmt(n); err != nil {
+			return actualStartLine, errors.Wrapf(err, "failed to set line for create table statement at line %d", actualStartLine)
+		}
+	}
+	return actualStartLine, nil
 }
 
 // parseTiDBStatements is the ParseStatementsFunc for TiDB.

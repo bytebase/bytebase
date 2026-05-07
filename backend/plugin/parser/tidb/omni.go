@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"log/slog"
 	"unicode/utf8"
 
 	"github.com/bytebase/omni/tidb/ast"
@@ -12,20 +13,22 @@ import (
 
 // OmniAST wraps an omni/tidb AST node and implements the base.AST interface.
 //
-// Unlike mysql/OmniAST, this type does NOT implement base.AntlrASTProvider
-// (AsANTLRAST) nor a hypothetical native-pingcap fallback. Rationale:
-//   - TiDB has no TiDB-specific ANTLR grammar; tidb/backup.go uses the mysql
-//     ANTLR grammar on its own text and never consumes *OmniAST.
-//   - The 51 advisors under backend/plugin/advisor/tidb/ use getTiDBNodes() ->
-//     tidbparser.GetTiDBAST(stmt.AST) which asserts to the native *tidb.AST,
-//     not *OmniAST. So no legacy consumer sees *OmniAST today.
-//   - Task 1.2 (tidb.go extension) keeps the registered ParseStatementsFunc
-//     pointed at the native pingcap parser ("no behavioral change yet"), so
-//     *OmniAST won't reach advisors until a post-Phase 1 migration.
+// During the Phase 1.5 advisor migration, OmniAST also implements
+// PingCapASTProvider so that callers still using GetTiDBAST() (~50 of 51
+// un-migrated advisors at any given point in the migration) can fall back to
+// a native pingcap-parsed AST. After the dispatcher flip (§1.5.N+1) returns
+// *OmniAST from ParseStatements, those un-migrated advisors keep working
+// because GetTiDBAST routes through AsPingCapAST() automatically.
 //
-// When that migration flips the default and the 51 advisors need a compat
-// path, add AsPingCapAST() + a matching provider interface in base/ast.go
-// alongside the migration PR — with real consumers to exercise it.
+// Bridge cleanup is deferred until Phase 2 §Tier 4g (NonTransactionalDMLStmt
+// + production-grade restore equivalent) ships and `dml_dry_run` (the one
+// Class III advisor) can migrate. See plans/2026-04-23-omni-tidb-completion-
+// plan.md §1.5.0 invariant #4 + Bridge persistence rule.
+//
+// Mirrors backend/plugin/parser/mysql/omni.go's AsANTLRAST pattern:
+//   - Lazy parse + cache via pingcapParsed flag (matches mysql's antlrParsed).
+//   - Single bridge call per OmniAST instance regardless of how many advisors
+//     consume it (50+ per review under flip-last + cache).
 type OmniAST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
 	Node ast.Node
@@ -33,11 +36,95 @@ type OmniAST struct {
 	Text string
 	// StartPosition is the 1-based position where this statement starts.
 	StartPosition *storepb.Position
+
+	// pingcapAST is lazily populated when AsPingCapAST() is called for the
+	// first time. Cached for the lifetime of this OmniAST instance.
+	// Will be removed once dml_dry_run migrates and the bridge is no longer
+	// needed (post-Phase-2 §Tier 4g).
+	pingcapAST *AST
+	// pingcapParsed tracks whether we've attempted the native parse, to
+	// distinguish "not yet parsed" from "parsed and got nil".
+	pingcapParsed bool
 }
 
 // ASTStartPosition implements base.AST.
 func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
+}
+
+// AsPingCapAST implements PingCapASTProvider for backward compatibility with
+// un-migrated advisors during the Phase 1.5 migration window. Lazily parses
+// the SQL text with the native pingcap parser and caches the result.
+//
+// Implementation notes:
+//   - Calls ParseTiDB strictly (no error-recovery mode). Unlike mysql's
+//     parseSingleStatementLenient, pingcap has no equivalent error-recovery
+//     mode — it either parses fully or errors. For the bridge case (omni
+//     already validated the SQL syntax) strict parsing is correct.
+//   - Sets OriginTextPosition + per-column lines (CREATE TABLE) via the
+//     shared applyTiDBLineTracking helper, so post-flip un-migrated advisors
+//     that read node.OriginTextPosition() see the same line numbers as the
+//     pre-flip canonical path (ParseTiDBForSyntaxCheck).
+//
+// Returns (nil, false) if the native parser fails to parse the text. In that
+// case un-migrated advisors get no AST for this statement and emit no advice
+// — symmetric with the omni-side soft-fail in
+// advisor/tidb/utils.go.getTiDBOmniNodes. This bridge protects review
+// continuity when omni successfully wraps a statement but pingcap
+// subsequently rejects it. The orthogonal failure mode — omni rejects at the
+// dispatcher level so no *OmniAST exists for the bridge to operate on — is
+// handled by the dispatcher-fallback contract (plan §1.5.0 invariant #8,
+// shipping with the dispatcher flip in §1.5.N+1).
+func (a *OmniAST) AsPingCapAST() (*AST, bool) {
+	if a.pingcapParsed {
+		return a.pingcapAST, a.pingcapAST != nil
+	}
+	a.pingcapParsed = true
+
+	// Use the public ParseTiDB entry point — it configures the parser
+	// consistently (window functions enabled, zero-date modes relaxed) so
+	// the bridge result matches what direct ParseTiDB callers would see.
+	nodes, err := ParseTiDB(a.Text, "", "")
+	if err != nil {
+		slog.Debug("pingcap re-parse failed in tidb omni bridge; un-migrated advisors will see no AST for this statement",
+			slog.String("error", err.Error()),
+		)
+		return nil, false
+	}
+	if len(nodes) == 0 {
+		slog.Debug("pingcap returned no nodes in tidb omni bridge; un-migrated advisors will see no AST for this statement")
+		return nil, false
+	}
+	if len(nodes) > 1 {
+		// Upstream contract: OmniAST.Text is always a single statement (set
+		// by the dispatcher's split). nodes[1:] indicates a contract
+		// violation upstream. Proceed with nodes[0] but record the surplus.
+		slog.Debug("tidb omni bridge unexpectedly received multi-statement input; using nodes[0], dropping the rest",
+			slog.Int("count", len(nodes)),
+		)
+	}
+	node := nodes[0]
+
+	// Mirror the line-tracking work that ParseTiDBForSyntaxCheck applies on
+	// the canonical pre-flip path. Without this, post-flip un-migrated
+	// advisors that call node.OriginTextPosition() would silently see line 1
+	// instead of the statement's actual line in the multi-statement input.
+	baseLine := 0
+	if a.StartPosition != nil {
+		baseLine = int(a.StartPosition.Line) - 1
+	}
+	if _, err := applyTiDBLineTracking(node, baseLine, a.Text); err != nil {
+		slog.Debug("tidb omni bridge line-tracking failed; un-migrated advisors will see fallback line numbers",
+			slog.String("error", err.Error()),
+		)
+		return nil, false
+	}
+
+	a.pingcapAST = &AST{
+		StartPosition: a.StartPosition,
+		Node:          node,
+	}
+	return a.pingcapAST, true
 }
 
 // ParseTiDBOmni parses SQL using omni/tidb's parser and returns an ast.List.

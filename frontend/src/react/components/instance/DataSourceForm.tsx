@@ -1605,12 +1605,18 @@ export function DataSourceForm({
                   Token <span className="text-error">*</span>
                 </div>
                 <Input
-                  value={dataSource.authenticationPrivateKey ?? ""}
+                  type="password"
+                  value={dataSource.updatedToken}
                   className="mt-2 w-full"
+                  autoComplete="off"
                   disabled={!allowEdit}
-                  placeholder="personal access token"
+                  placeholder={
+                    isCreating
+                      ? "personal access token"
+                      : t("instance.token-write-only")
+                  }
                   onChange={(e) =>
-                    update({ authenticationPrivateKey: e.target.value })
+                    update({ updatedToken: e.target.value.trim() })
                   }
                 />
               </div>

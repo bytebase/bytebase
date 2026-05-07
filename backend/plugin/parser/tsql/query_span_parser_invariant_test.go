@@ -12,15 +12,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TestOmniMigrationProbe verifies that the omni MSSQL parser can handle every
-// statement used by the current query-span ANTLR-based tests, and that the omni
-// AST populates the specific fields the planned transliteration depends on.
-// This is a discovery test: failures are the point. Run with
+// TestOmniQuerySpanParserInvariants verifies that the omni MSSQL parser can
+// handle every statement used by the query-span fixtures, and that the AST
+// continues to populate the fields the query-span extractor depends on. Run with
 //
-//	go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/tsql -run ^TestOmniMigrationProbe$
-func TestOmniMigrationProbe(t *testing.T) {
-	t.Run("FixtureParseCoverage", probeFixtureParseCoverage)
-	t.Run("StructuralInvariants", probeStructuralInvariants)
+//	go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/tsql -run ^TestOmniQuerySpanParserInvariants$
+func TestOmniQuerySpanParserInvariants(t *testing.T) {
+	t.Run("FixtureParseCoverage", querySpanFixtureParseCoverage)
+	t.Run("StructuralInvariants", querySpanStructuralInvariants)
 }
 
 type fixtureEntry struct {
@@ -28,7 +27,7 @@ type fixtureEntry struct {
 	Statement   string `yaml:"statement"`
 }
 
-var omniProbeFixturePaths = []string{
+var querySpanFixturePaths = []string{
 	"test-data/query-span/standard.yaml",
 	"test-data/query-span/join.yaml",
 	"test-data/query-span/case-sensitivity.yaml",
@@ -37,7 +36,7 @@ var omniProbeFixturePaths = []string{
 	"test-data/query-span/regression.yaml",
 }
 
-func probeFixtureParseCoverage(t *testing.T) {
+func querySpanFixtureParseCoverage(t *testing.T) {
 	type failure struct {
 		fixture   string
 		index     int
@@ -48,7 +47,7 @@ func probeFixtureParseCoverage(t *testing.T) {
 	totals := map[string][2]int{} // fixture -> [total, passed]
 	var failures []failure
 
-	for _, path := range omniProbeFixturePaths {
+	for _, path := range querySpanFixturePaths {
 		f, err := os.Open(path)
 		if err != nil {
 			t.Fatalf("open %s: %v", path, err)
@@ -111,17 +110,17 @@ func firstLine(s string) string {
 	return s
 }
 
-// probeStructuralInvariants runs hand-crafted SQL probes and asserts the
-// omni AST populates fields the migration will rely on. A failure means we
-// must either change omni or find an alternative in the transliteration.
-func probeStructuralInvariants(t *testing.T) {
-	type probe struct {
+// querySpanStructuralInvariants runs hand-crafted SQL statements and asserts
+// the omni AST populates fields the extractor relies on. A failure means we
+// must either update omni or adapt the extractor.
+func querySpanStructuralInvariants(t *testing.T) {
+	type invariant struct {
 		name  string
 		sql   string
 		check func(*testing.T, ast.Node)
 	}
 
-	probes := []probe{
+	invariants := []invariant{
 		{
 			name: "res_target_as_alias",
 			sql:  "SELECT c AS a FROM t",
@@ -144,10 +143,10 @@ func probeStructuralInvariants(t *testing.T) {
 				// Document actual shape — omni may lose the alias completely for this form.
 				switch v := sel.TargetList.Items[0].(type) {
 				case *ast.ResTarget:
-					t.Logf("omni parses `a = c` as ResTarget{Name=%q, Val=%T} — migration must recover alias from Val if Name is empty", v.Name, v.Val)
+					t.Logf("omni parses `a = c` as ResTarget{Name=%q, Val=%T} — extractor must recover alias from Val if Name is empty", v.Name, v.Val)
 					if v.Name != "a" {
 						if be, ok := v.Val.(*ast.BinaryExpr); ok && be.Op == ast.BinOpEq {
-							t.Logf("  recovery: Val is BinaryExpr{Op=Eq, Left=%T, Right=%T} — migration can pull alias from Left *ColumnRef.Column", be.Left, be.Right)
+							t.Logf("  recovery: Val is BinaryExpr{Op=Eq, Left=%T, Right=%T} — extractor can pull alias from Left *ColumnRef.Column", be.Left, be.Right)
 						}
 						t.Errorf("ResTarget.Name: want a, got %q (parser does not attribute the assignment form)", v.Name)
 					}
@@ -457,7 +456,7 @@ func probeStructuralInvariants(t *testing.T) {
 				default:
 					kind = fmt.Sprintf("%T", sel.WhereClause)
 				}
-				t.Logf("CONTAINS predicate shape: %s — migration must handle this form instead of ANTLR Freetext_predicateContext", kind)
+				t.Logf("CONTAINS predicate shape: %s — extractor must handle this form", kind)
 			},
 		},
 		{
@@ -538,7 +537,7 @@ func probeStructuralInvariants(t *testing.T) {
 			name: "table_variable_in_from",
 			sql:  "DECLARE @t TABLE(id INT); SELECT id FROM @t",
 			check: func(t *testing.T, _ ast.Node) {
-				// ParseTSQLOmni gives a slice; this probe only checks the first stmt (DECLARE).
+				// ParseTSQLOmni gives a slice; this invariant only checks the first stmt (DECLARE).
 				// Walk the full parse to confirm the second has @t as TableVarRef.
 				stmts, err := ParseTSQLOmni("DECLARE @t TABLE(id INT); SELECT id FROM @t")
 				if err != nil {
@@ -569,7 +568,7 @@ func probeStructuralInvariants(t *testing.T) {
 					t.Fatal("no TableRef in FROM")
 				}
 				if tr.Object != "#t" {
-					t.Errorf("TableRef.Object for temp table: got %q — migration must recognize '#' prefix as local temp", tr.Object)
+					t.Errorf("TableRef.Object for temp table: got %q — extractor must recognize '#' prefix as local temp", tr.Object)
 				}
 			},
 		},
@@ -604,7 +603,7 @@ func probeStructuralInvariants(t *testing.T) {
 		},
 	}
 
-	for _, p := range probes {
+	for _, p := range invariants {
 		t.Run(p.name, func(t *testing.T) {
 			stmts, err := ParseTSQLOmni(p.sql)
 			if err != nil {

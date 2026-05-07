@@ -34,7 +34,6 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
-import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +49,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
 import {
@@ -1106,20 +1113,6 @@ export function InstancesPage() {
     []
   );
 
-  const renderSortIndicator = (columnKey: string) => {
-    if (sortKey !== columnKey) {
-      return <ChevronDown className="size-3 text-control-border" />;
-    }
-    return (
-      <ChevronDown
-        className={cn(
-          "h-3 w-3 text-accent transition-transform",
-          sortOrder === "asc" && "rotate-180"
-        )}
-      />
-    );
-  };
-
   const canCreate = hasWorkspacePermissionV2("bb.instances.create");
   const allSelected =
     instances.length > 0 && selectedNames.size === instances.length;
@@ -1311,95 +1304,80 @@ export function InstancesPage() {
       )}
 
       {/* Table */}
-      <div className="border rounded-sm">
-        <div className="overflow-x-auto">
-          <table
-            className="text-sm table-fixed"
-            style={{ width: `${totalWidth}px` }}
-          >
-            <colgroup>
-              {widths.map((w, i) => (
-                <col key={columns[i].key} style={{ width: `${w}px` }} />
+      <div className="overflow-x-auto border-y border-block-border">
+        <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+          <colgroup>
+            {widths.map((w, i) => (
+              <col key={columns[i].key} style={{ width: `${w}px` }} />
+            ))}
+          </colgroup>
+          <TableHeader>
+            <TableRow>
+              {columns.map((col, colIdx) => (
+                <TableHead
+                  key={col.key}
+                  sortable={col.sortable}
+                  sortActive={
+                    col.sortable && sortKey === (col.sortKey ?? col.key)
+                  }
+                  sortDir={sortOrder}
+                  onSort={
+                    col.sortable
+                      ? () => toggleSort(col.sortKey ?? col.key)
+                      : undefined
+                  }
+                  resizable={col.resizable}
+                  onResizeStart={
+                    col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
+                  }
+                >
+                  {col.title}
+                </TableHead>
               ))}
-            </colgroup>
-            <thead>
-              <tr className="bg-control-bg border-b border-control-border">
-                {columns.map((col, colIdx) => (
-                  <th
-                    key={col.key}
-                    className={cn(
-                      "relative px-4 py-2 text-left font-medium",
-                      col.sortable && "cursor-pointer select-none"
-                    )}
-                    onClick={
-                      col.sortable
-                        ? () => toggleSort(col.sortKey ?? col.key)
-                        : undefined
-                    }
-                  >
-                    <div className="flex items-center gap-x-1">
-                      {col.title}
-                      {col.sortable &&
-                        renderSortIndicator(col.sortKey ?? col.key)}
-                    </div>
-                    {col.resizable && (
-                      <ColumnResizeHandle
-                        onMouseDown={(e) => onResizeStart(colIdx, e)}
-                      />
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading && instances.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    <div className="flex items-center justify-center gap-x-2">
-                      <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
-                      {t("common.loading")}
-                    </div>
-                  </td>
-                </tr>
-              ) : instances.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    className="px-4 py-8 text-center text-control-placeholder"
-                  >
-                    {t("common.no-data")}
-                  </td>
-                </tr>
-              ) : (
-                instances.map((instance, i) => (
-                  <tr
-                    key={instance.name}
-                    className={cn(
-                      "border-b last:border-b-0 cursor-pointer hover:bg-control-bg",
-                      i % 2 === 1 && "bg-control-bg/50"
-                    )}
-                    onClick={(e) => handleRowClick(instance, e)}
-                  >
-                    {columns.map((col) => (
-                      <td
-                        key={col.key}
-                        className={cn(
-                          "px-4 py-2 align-middle overflow-hidden",
-                          col.cellClassName
-                        )}
-                      >
-                        {col.render(instance)}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && instances.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="px-4 py-8 text-center text-control-placeholder"
+                >
+                  <div className="flex items-center justify-center gap-x-2">
+                    <div className="animate-spin size-4 border-2 border-accent border-t-transparent rounded-full" />
+                    {t("common.loading")}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : instances.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="px-4 py-8 text-center text-control-placeholder"
+                >
+                  {t("common.no-data")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              instances.map((instance) => (
+                <TableRow
+                  key={instance.name}
+                  className="cursor-pointer"
+                  onClick={(e) => handleRowClick(instance, e)}
+                >
+                  {columns.map((col) => (
+                    <TableCell
+                      key={col.key}
+                      className={cn("overflow-hidden", col.cellClassName)}
+                    >
+                      {col.render(instance)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination footer */}

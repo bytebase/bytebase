@@ -243,3 +243,54 @@ func TestBackupWithQuotedStrings(t *testing.T) {
 	// The WHERE clause should be present
 	a.Contains(stmt2, "WHERE id = 1")
 }
+
+// TestBackupSkipsTempTableTargets validates BYT-9359: prior backup must skip
+// any UPDATE/DELETE whose target table is a temp table (#name local, ##name
+// global). Temp tables are session-scoped, so a backup query running in a
+// separate session would fail with "Invalid object name". Skipping is the
+// only sane outcome — the rows can't be reconstructed across sessions and
+// have no rollback semantics anyway.
+func TestBackupSkipsTempTableTargets(t *testing.T) {
+	tests := []struct {
+		name            string
+		input           string
+		wantLen         int
+		wantTargetTable string // only checked when wantLen == 1
+	}{
+		{
+			name:    "update local temp table only",
+			input:   "UPDATE #tmp SET c1 = 1 WHERE c2 = 2;",
+			wantLen: 0,
+		},
+		{
+			name:    "delete from local temp table only",
+			input:   "DELETE FROM #tmp WHERE c1 = 1;",
+			wantLen: 0,
+		},
+		{
+			name:    "update global temp table only",
+			input:   "UPDATE ##gtmp SET c1 = 1 WHERE c2 = 2;",
+			wantLen: 0,
+		},
+		{
+			name: "mixed temp and real targets",
+			input: strings.Join([]string{
+				"UPDATE #tmp SET c1 = 1 WHERE c2 = 2;",
+				"UPDATE test SET c1 = 2 WHERE c1 = 1;",
+			}, "\n"),
+			wantLen:         1,
+			wantTargetTable: "rollback_test_db",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, tc.input, "db", "backupDB", "rollback")
+			require.NoError(t, err)
+			require.Len(t, result, tc.wantLen)
+			if tc.wantLen == 1 {
+				require.Equal(t, tc.wantTargetTable, result[0].TargetTableName)
+			}
+		})
+	}
+}

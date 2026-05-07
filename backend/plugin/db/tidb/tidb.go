@@ -56,7 +56,18 @@ func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a MySQL driver.
+// validateTiDBExtraConnectionParameters validates that no dangerous parameters are present.
+func validateTiDBExtraConnectionParameters(params map[string]string) error {
+	for key := range params {
+		normalizedKey := strings.ToLower(strings.TrimSpace(key))
+		if normalizedKey == "allowallfiles" {
+			return errors.Errorf("connection parameter %q is not allowed for security reasons", key)
+		}
+	}
+	return nil
+}
+
+// Open opens a TiDB driver.
 func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	defer func() {
 		for _, f := range d.openCleanUp {
@@ -64,40 +75,10 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 		}
 	}()
 
-	protocol := "tcp"
-	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
-		protocol = "unix"
-	}
-	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
-	if connCfg.DataSource.GetSshHost() != "" {
-		sshClient, err := util.GetSSHClient(connCfg.DataSource)
-		if err != nil {
-			return nil, err
-		}
-		d.sshClient = sshClient
-		// Now we register the dialer with the ssh connection as a parameter.
-		protocol = "mysql-tcp-" + uuid.NewString()[:8]
-		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext(protocol, func(_ context.Context, addr string) (net.Conn, error) {
-			return sshClient.Dial("tcp", addr)
-		})
-	}
-
-	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
+	dsn, err := d.getTiDBConnection(connCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "sql: tls config error")
+		return nil, err
 	}
-	tlsKey := uuid.NewString()
-	if tlscfg != nil {
-		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
-			return nil, errors.Wrap(err, "sql: failed to register tls config")
-		}
-		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
-		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
-		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
-	}
-
-	dsn := fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&"))
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -110,6 +91,49 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.Conne
 	db.SetMaxIdleConns(15)
 	d.databaseName = connCfg.ConnectionContext.DatabaseName
 	return d, nil
+}
+
+func (d *Driver) getTiDBConnection(connCfg db.ConnectionConfig) (string, error) {
+	protocol := "tcp"
+	if strings.HasPrefix(connCfg.DataSource.Host, "/") {
+		protocol = "unix"
+	}
+	params := []string{"multiStatements=true", "maxAllowedPacket=0"}
+	if err := validateTiDBExtraConnectionParameters(connCfg.DataSource.GetExtraConnectionParameters()); err != nil {
+		return "", err
+	}
+	for key, value := range connCfg.DataSource.GetExtraConnectionParameters() {
+		params = append(params, fmt.Sprintf("%s=%s", key, value))
+	}
+	if connCfg.DataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(connCfg.DataSource)
+		if err != nil {
+			return "", err
+		}
+		d.sshClient = sshClient
+		// Now we register the dialer with the ssh connection as a parameter.
+		protocol = "mysql-tcp-" + uuid.NewString()[:8]
+		// Now we register the dialer with the ssh connection as a parameter.
+		mysql.RegisterDialContext(protocol, func(_ context.Context, addr string) (net.Conn, error) {
+			return sshClient.Dial("tcp", addr)
+		})
+	}
+
+	tlscfg, err := util.GetTLSConfig(connCfg.DataSource)
+	if err != nil {
+		return "", errors.Wrap(err, "sql: tls config error")
+	}
+	tlsKey := uuid.NewString()
+	if tlscfg != nil {
+		if err := mysql.RegisterTLSConfig(tlsKey, tlscfg); err != nil {
+			return "", errors.Wrap(err, "sql: failed to register tls config")
+		}
+		// TLS config is only used during sql.Open, so should be safe to deregister afterwards.
+		d.openCleanUp = append(d.openCleanUp, func() { mysql.DeregisterTLSConfig(tlsKey) })
+		params = append(params, fmt.Sprintf("tls=%s", tlsKey))
+	}
+
+	return fmt.Sprintf("%s:%s@%s(%s:%s)/%s?%s", connCfg.DataSource.Username, connCfg.Password, protocol, connCfg.DataSource.Host, connCfg.DataSource.Port, connCfg.ConnectionContext.DatabaseName, strings.Join(params, "&")), nil
 }
 
 // Close closes the driver.

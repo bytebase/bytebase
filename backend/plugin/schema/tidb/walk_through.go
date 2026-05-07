@@ -319,6 +319,10 @@ func tidbHandleCreateIndex(d *model.DatabaseMetadata, node *tidbast.CreateIndexS
 		return err
 	}
 
+	if node.IfNotExists && node.IndexName != "" && table.GetIndex(node.IndexName) != nil {
+		return nil
+	}
+
 	unique := false
 	tp := tidbast.IndexTypeBtree.String()
 	isSpatial := false
@@ -367,6 +371,9 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 			}
 		case tidbast.AlterTableAddColumns:
 			for _, column := range spec.NewColumns {
+				if spec.IfNotExists && table.GetColumn(column.Name.Name.L) != nil {
+					continue
+				}
 				var pos *tidbast.ColumnPosition
 				if len(spec.NewColumns) == 1 {
 					pos = spec.Position
@@ -396,6 +403,9 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 				col.Position = int32(i + 1)
 			}
 		case tidbast.AlterTableAddConstraint:
+			if spec.Constraint != nil && spec.Constraint.IfNotExists && spec.Constraint.Name != "" && table.GetIndex(spec.Constraint.Name) != nil {
+				continue
+			}
 			if err := tidbCreateConstraint(table, spec.Constraint); err != nil {
 				return err
 			}
@@ -403,6 +413,9 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 			columnName := spec.OldColumnName.Name.O
 			// Validate column exists
 			if table.GetColumn(columnName) == nil {
+				if spec.IfExists {
+					continue
+				}
 				content := fmt.Sprintf("Column `%s` does not exist in table `%s`", columnName, table.GetProto().Name)
 				return &storepb.Advice{
 					Status:        storepb.Advice_ERROR,
@@ -433,6 +446,9 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 				}
 			}
 		case tidbast.AlterTableDropIndex:
+			if spec.IfExists && table.GetIndex(spec.Name) == nil {
+				continue
+			}
 			if err := table.DropIndex(spec.Name); err != nil {
 				return &storepb.Advice{
 					Status:        storepb.Advice_ERROR,

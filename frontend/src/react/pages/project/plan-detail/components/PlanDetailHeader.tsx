@@ -49,7 +49,7 @@ import {
   hasChecksWarning,
   shouldStayOnPlanDetailPage,
 } from "../utils/header";
-import { getLocalSheetByName } from "../utils/localSheet";
+import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
 
 export function PlanDetailHeader() {
   const { t } = useTranslation();
@@ -279,6 +279,7 @@ export function PlanDetailHeader() {
       if (uid.startsWith("-")) {
         const local = getLocalSheetByName(config.sheet);
         const createdSheet = await sheetStore.createSheet(project.name, local);
+        removeLocalSheet(config.sheet);
         config.sheet = createdSheet.name;
       }
     }

@@ -23,15 +23,21 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   projectNamePrefix,
   pushNotification,
   useCurrentUserV1,
+  useDBGroupStore,
   useProjectV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import {
+  getDateForPbTimestampProtoEs,
+  isValidDatabaseGroupName,
+} from "@/types";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
@@ -46,6 +52,7 @@ import { hasProjectPermissionV2 } from "@/utils";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { usePlanDetailContext } from "../context/PlanDetailContext";
 import {
+  expandSpecTargets,
   getFilteredResultGroups,
   getPlanCheckSummary,
   type PlanCheckSummary,
@@ -63,16 +70,61 @@ export function PlanDetailChecks({
   const page = usePlanDetailContext();
   const { patchState } = page;
   const projectStore = useProjectV1Store();
+  const dbGroupStore = useDBGroupStore();
   const currentUser = useCurrentUserV1().value;
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [selectedResultStatus, setSelectedResultStatus] = useState<
     Advice_Level | undefined
   >();
   const projectName = `${projectNamePrefix}${page.projectId}`;
-  const project = projectStore.getProjectByName(projectName);
+  const project = useVueState(() => projectStore.getProjectByName(projectName));
+
+  // Plan check results are keyed by per-database resource names even for
+  // db-group specs (the scheduler expands targets at runtime). Pre-fetch any
+  // db-group target this spec references so we can resolve it to the matched
+  // databases when filtering check results below.
+  const dbGroupTargets = useMemo(() => {
+    if (selectedSpec.config.case === "changeDatabaseConfig") {
+      return (selectedSpec.config.value.targets ?? []).filter(
+        isValidDatabaseGroupName
+      );
+    }
+    if (selectedSpec.config.case === "exportDataConfig") {
+      return (selectedSpec.config.value.targets ?? []).filter(
+        isValidDatabaseGroupName
+      );
+    }
+    return [];
+  }, [selectedSpec]);
+  useEffect(() => {
+    for (const target of dbGroupTargets) {
+      void dbGroupStore
+        .getOrFetchDBGroupByName(target, { view: DatabaseGroupView.FULL })
+        .catch(() => undefined);
+    }
+  }, [dbGroupStore, dbGroupTargets]);
+  // Stable join-key so useVueState can detect changes via Object.is
+  // — returning a fresh array each call would trigger an update loop.
+  const expandedTargetsKey = useVueState(() => {
+    const targets = expandSpecTargets(selectedSpec, (name) => {
+      if (!isValidDatabaseGroupName(name)) return undefined;
+      const group = dbGroupStore.getDBGroupByName(name, DatabaseGroupView.FULL);
+      return group.matchedDatabases.map((db) => db.name);
+    });
+    return targets.join("\u0000");
+  });
+  const expandedTargets = useMemo(
+    () => (expandedTargetsKey ? expandedTargetsKey.split("\u0000") : []),
+    [expandedTargetsKey]
+  );
   const filteredPlanCheckRuns = useMemo(
-    () => planCheckRunListForSpec(page.planCheckRuns, selectedSpec),
-    [page.planCheckRuns, selectedSpec]
+    () =>
+      planCheckRunListForSpec(
+        page.planCheckRuns,
+        selectedSpec,
+        expandedTargets
+      ),
+    [page.planCheckRuns, selectedSpec, expandedTargets]
   );
   const summary = useMemo(
     () => getPlanCheckSummary(filteredPlanCheckRuns),

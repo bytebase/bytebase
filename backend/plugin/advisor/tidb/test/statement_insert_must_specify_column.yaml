@@ -11,3 +11,20 @@
         line: 1
         column: 0
       endposition: null
+- statement: INSERT INTO tech_book SET id = 1, name = '1'
+  changeType: 1
+- statement: REPLACE INTO tech_book SET id = 1, name = '1'
+  changeType: 1
+- statement: INSERT INTO tech_book(id, name) SELECT id, name FROM other_book
+  changeType: 1
+- statement: INSERT INTO tech_book SELECT id, name FROM other_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 1107
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+      content: The INSERT statement must specify columns but "INSERT INTO tech_book SELECT id, name FROM other_book" does not
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

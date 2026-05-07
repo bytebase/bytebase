@@ -429,7 +429,7 @@ func (s *InstanceService) checkDataSource(ctx context.Context, instance *store.I
 		return nil
 	}
 
-	// Validate extra connection parameters for MySQL-based engines
+	// Validate extra connection parameters for MySQL-compatible engines
 	if err := validateExtraConnectionParameters(instance.Metadata.GetEngine(), dataSource.GetExtraConnectionParameters()); err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -1164,9 +1164,9 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 
 // validateExtraConnectionParameters validates extra connection parameters for security risks.
 func validateExtraConnectionParameters(engine storepb.Engine, params map[string]string) error {
-	// Validate MySQL-based engines
+	// Validate MySQL-compatible engines
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_TIDB:
 		for key := range params {
 			normalizedKey := strings.ToLower(strings.TrimSpace(key))
 			if normalizedKey == "allowallfiles" {

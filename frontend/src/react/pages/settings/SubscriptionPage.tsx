@@ -178,7 +178,7 @@ export function SubscriptionPage({
             <div className="text-main">
               {t("subscription.inquire-enterprise-plan")}
             </div>
-            <div className="mt-1 ml-auto">
+            <div className="mt-1">
               <Button className="text-lg" onClick={onRequireEnterprise}>
                 {t("subscription.contact-us")}
               </Button>

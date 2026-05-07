@@ -58,6 +58,19 @@ import {
   trySetContentWithUndo,
 } from "./utils";
 
+const supportedLanguages = new Set<Language>([
+  "sql",
+  "javascript",
+  "redis",
+  "json",
+]);
+
+const normalizeContent = (value: unknown): string =>
+  typeof value === "string" ? value : "";
+
+const normalizeLanguage = (value: unknown): Language =>
+  supportedLanguages.has(value as Language) ? (value as Language) : "sql";
+
 export interface MonacoEditorProps {
   advices?: AdviceOption[];
   autoCompleteContext?: AutoCompleteContext;
@@ -120,12 +133,14 @@ export function MonacoEditor({
   formatContentOptions,
 }: MonacoEditorProps) {
   const { t } = useTranslation();
+  const safeContent = normalizeContent(content);
+  const safeLanguage = normalizeLanguage(language);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const modelRef = useRef<ITextModel | null>(null);
   const activeDecorationRef = useRef<{ clear(): void } | null>(null);
-  const contentRef = useRef(content);
-  const languageRef = useRef(language);
+  const contentRef = useRef(safeContent);
+  const languageRef = useRef(safeLanguage);
   const readOnlyRef = useRef(readOnly);
   const optionsRef = useRef(options);
   const onChangeRef = useRef(onChange);
@@ -144,10 +159,11 @@ export function MonacoEditor({
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : Math.random().toString(36).slice(2);
-    return `${id}.${extensionNameOfLanguage(language)}`;
-  }, [filename, language]);
+    return `${id}.${extensionNameOfLanguage(safeLanguage)}`;
+  }, [filename, safeLanguage]);
   const [contentHeight, setContentHeight] = useState(min);
   const [ready, setReady] = useState(false);
+  const [initFailed, setInitFailed] = useState(false);
 
   useEffect(() => {
     configureMonacoMessages({
@@ -157,8 +173,8 @@ export function MonacoEditor({
     });
   }, [t]);
 
-  contentRef.current = content;
-  languageRef.current = language;
+  contentRef.current = safeContent;
+  languageRef.current = safeLanguage;
   readOnlyRef.current = readOnly;
   optionsRef.current = options;
   onChangeRef.current = onChange;
@@ -239,121 +255,129 @@ export function MonacoEditor({
     const host = document.createElement("div");
     host.className = "h-full w-full";
     containerRef.current?.replaceChildren(host);
+    setInitFailed(false);
 
     (async () => {
-      if (!containerRef.current || editorRef.current) return;
+      try {
+        if (!containerRef.current || editorRef.current) return;
 
-      if (shouldEnableLSP) {
-        void initializeLSPClient().catch(() => undefined);
-      }
+        if (shouldEnableLSP) {
+          void initializeLSPClient().catch(() => undefined);
+        }
 
-      const editor = await createMonacoEditor({
-        container: host,
-        options: {
-          ...optionsRef.current,
-          language: languageRef.current,
-          value: contentRef.current,
-          readOnly: readOnlyRef.current,
-          domReadOnly: readOnlyRef.current,
-        },
-      });
+        const editor = await createMonacoEditor({
+          container: host,
+          options: {
+            ...optionsRef.current,
+            model: null,
+            readOnly: readOnlyRef.current,
+            domReadOnly: readOnlyRef.current,
+          },
+        });
 
-      if (disposed) {
-        editor.dispose();
-        return;
-      }
-
-      editorRef.current = editor;
-      const monaco = await loadMonacoEditor();
-      // Re-apply the editor's intended theme after construction.
-      // Monaco's theme is global — when a previous editor was
-      // constructed with a different theme (e.g. CompactSQLEditor's
-      // `vs-dark` for admin mode), that theme persists across editor
-      // disposal. If the new editor's requested theme isn't
-      // registered (the custom `bb` theme is silently swallowed by
-      // the vscode-api theme service override in some runtime modes
-      // — see `initializeTheme` in core.ts), `setTheme` becomes a
-      // no-op and the dark theme stays stuck.
-      // `getResolvedTheme` returns the requested theme if it's known
-      // to be registered, otherwise falls back to the always-available
-      // built-in `vs`.
-      monaco.editor.setTheme(getResolvedTheme(optionsRef.current?.theme));
-      const model = await getOrCreateTextModel(
-        generatedFilename,
-        contentRef.current,
-        languageRef.current
-      );
-      if (disposed) {
-        editor.dispose();
-        return;
-      }
-      modelRef.current = model;
-      editor.setModel(model);
-      restoreViewState(editor, model);
-      await setMonacoModelLanguage(model, languageRef.current);
-
-      contentSizeSubscription = editor.onDidContentSizeChange((event) => {
-        if (!event.contentHeightChanged) return;
-        setContentHeight(event.contentHeight);
-      });
-
-      contentSubscription = editor.onDidChangeModelContent(() => {
-        if (isApplyingExternalChangeRef.current) {
+        if (disposed) {
+          editor.dispose();
           return;
         }
-        onChangeRef.current?.(editor.getValue());
-        emitSelectionSideEffects();
-      });
 
-      selectionSubscription = editor.onDidChangeCursorSelection(() => {
-        emitSelectionSideEffects();
-      });
-      modelSubscription = editor.onDidChangeModel(() => {
-        modelRef.current = editor.getModel();
-        emitSelectionSideEffects();
-      });
-      cursorSubscription = editor.onDidChangeCursorPosition(() => {
-        emitSelectionSideEffects();
-      });
-
-      if (editor.getValue() !== contentRef.current) {
-        isApplyingExternalChangeRef.current = true;
-        editor.setValue(contentRef.current);
-        isApplyingExternalChangeRef.current = false;
-      }
-
-      setContentHeight(editor.getContentHeight());
-      setReady(true);
-      onReadyRef.current?.(monaco, editor);
-      emitSelectionSideEffects();
-
-      if (!readOnlyRef.current) {
-        formatAction = attachFormatAction(
-          monaco,
-          editor,
-          () => dialect,
-          () => formatContentOptions ?? { disabled: false },
-          t("sql-editor.format-sql")
+        editorRef.current = editor;
+        const monaco = await loadMonacoEditor();
+        // Re-apply the editor's intended theme after construction.
+        // Monaco's theme is global — when a previous editor was
+        // constructed with a different theme (e.g. CompactSQLEditor's
+        // `vs-dark` for admin mode), that theme persists across editor
+        // disposal. If the new editor's requested theme isn't
+        // registered (the custom `bb` theme is silently swallowed by
+        // the vscode-api theme service override in some runtime modes
+        // — see `initializeTheme` in core.ts), `setTheme` becomes a
+        // no-op and the dark theme stays stuck.
+        // `getResolvedTheme` returns the requested theme if it's known
+        // to be registered, otherwise falls back to the always-available
+        // built-in `vs`.
+        monaco.editor.setTheme(getResolvedTheme(optionsRef.current?.theme));
+        const model = await getOrCreateTextModel(
+          generatedFilename,
+          contentRef.current,
+          languageRef.current
         );
-        suggestStyle = ensureSuggestOverrideStyle();
-      }
+        if (disposed) {
+          editor.dispose();
+          return;
+        }
+        modelRef.current = model;
+        editor.setModel(model);
+        restoreViewState(editor, model);
+        await setMonacoModelLanguage(model, languageRef.current);
 
-      if (shouldEnableLSP) {
-        const wsPromise =
-          getConnectionWebSocket() ??
-          initializeLSPClient().then(() => getConnectionWebSocket());
-        wsPromise?.then((ws) => {
-          if (!ws || disposed) return;
-          messageHandler = (message: MessageEvent) => {
-            processStatementRangeMessage(message, activeRangeByUriRef);
-            emitSelectionSideEffects();
-          };
-          ws.addEventListener("message", messageHandler);
+        contentSizeSubscription = editor.onDidContentSizeChange((event) => {
+          if (!event.contentHeightChanged) return;
+          setContentHeight(event.contentHeight);
         });
-      }
 
-      if (autoFocus) {
-        editor.focus();
+        contentSubscription = editor.onDidChangeModelContent(() => {
+          if (isApplyingExternalChangeRef.current) {
+            return;
+          }
+          onChangeRef.current?.(editor.getValue());
+          emitSelectionSideEffects();
+        });
+
+        selectionSubscription = editor.onDidChangeCursorSelection(() => {
+          emitSelectionSideEffects();
+        });
+        modelSubscription = editor.onDidChangeModel(() => {
+          modelRef.current = editor.getModel();
+          emitSelectionSideEffects();
+        });
+        cursorSubscription = editor.onDidChangeCursorPosition(() => {
+          emitSelectionSideEffects();
+        });
+
+        if (editor.getValue() !== contentRef.current) {
+          isApplyingExternalChangeRef.current = true;
+          editor.setValue(contentRef.current);
+          isApplyingExternalChangeRef.current = false;
+        }
+
+        setContentHeight(editor.getContentHeight());
+        setReady(true);
+        onReadyRef.current?.(monaco, editor);
+        emitSelectionSideEffects();
+
+        if (!readOnlyRef.current) {
+          formatAction = attachFormatAction(
+            monaco,
+            editor,
+            () => dialect,
+            () => formatContentOptions ?? { disabled: false },
+            t("sql-editor.format-sql")
+          );
+          suggestStyle = ensureSuggestOverrideStyle();
+        }
+
+        if (shouldEnableLSP) {
+          const wsPromise =
+            getConnectionWebSocket() ??
+            initializeLSPClient().then(() => getConnectionWebSocket());
+          wsPromise?.then((ws) => {
+            if (!ws || disposed) return;
+            messageHandler = (message: MessageEvent) => {
+              processStatementRangeMessage(message, activeRangeByUriRef);
+              emitSelectionSideEffects();
+            };
+            ws.addEventListener("message", messageHandler);
+          });
+        }
+
+        if (autoFocus) {
+          editor.focus();
+        }
+      } catch (error) {
+        if (disposed) {
+          return;
+        }
+        console.error("Failed to initialize Monaco editor:", error);
+        setInitFailed(true);
       }
     })();
 
@@ -421,14 +445,14 @@ export function MonacoEditor({
       isApplyingExternalChangeRef.current = false;
     }
     setContentHeight(editor.getContentHeight());
-  }, [content]);
+  }, [safeContent]);
 
   useEffect(() => {
     const model = modelRef.current ?? editorRef.current?.getModel();
     if (!model) return;
 
     void setMonacoModelLanguage(model, languageRef.current);
-  }, [generatedFilename, language]);
+  }, [generatedFilename, safeLanguage]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -533,8 +557,28 @@ export function MonacoEditor({
 
   const height = clampMeasuredHeight(contentHeight);
 
+  if (initFailed) {
+    return (
+      <div className={cn("relative", autoHeight ? "" : "h-full", className)}>
+        <pre
+          className={cn(
+            "m-0 w-full overflow-auto whitespace-pre-wrap break-words font-mono text-sm",
+            autoHeight ? "" : "h-full"
+          )}
+          style={autoHeight ? { height } : undefined}
+        >
+          {safeContent}
+        </pre>
+      </div>
+    );
+  }
+
   return (
-    <div className={cn("relative", autoHeight ? "" : "h-full", className)}>
+    <div
+      data-testid="monaco-editor"
+      data-ready={ready ? "true" : "false"}
+      className={cn("relative", autoHeight ? "" : "h-full", className)}
+    >
       <div
         ref={containerRef}
         className={cn(

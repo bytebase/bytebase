@@ -87,7 +87,7 @@ export interface InstanceFormContextValue {
   setResourceIdValidated: React.Dispatch<React.SetStateAction<boolean>>;
   labelErrors: string[];
   setLabelErrors: React.Dispatch<React.SetStateAction<string[]>>;
-  checkDataSource: (dataSources: DataSource[]) => boolean;
+  checkDataSource: (dataSources: EditDataSource[]) => boolean;
   resetDataSource: () => void;
   extractDataSourceFromEdit: (
     engine: Engine,
@@ -208,7 +208,7 @@ export function InstanceFormProvider({
   );
 
   const checkDataSource = useCallback(
-    (dataSources: DataSource[]) => {
+    (dataSources: EditDataSource[]) => {
       return dataSources.every((ds) => {
         if (
           ds.authenticationType ===
@@ -224,7 +224,10 @@ export function InstanceFormProvider({
         if (basicInfo.engine === Engine.ORACLE) {
           if (!ds.sid && !ds.serviceName) return false;
         } else if (basicInfo.engine === Engine.DATABRICKS) {
-          if (!ds.warehouseId || !ds.authenticationPrivateKey) return false;
+          if (!ds.warehouseId) return false;
+          // Token is INPUT_ONLY: backend never returns it. Require it only on
+          // create; on edit, an empty updatedToken means "keep existing token".
+          if (ds.pendingCreate && !ds.updatedToken) return false;
         }
         if (ds.saslConfig?.mechanism?.case === "krbConfig") {
           const krbConfig = ds.saslConfig.mechanism.value;
@@ -326,6 +329,7 @@ export function InstanceFormProvider({
           "useEmptyPassword",
           "updatedMasterPassword",
           "useEmptyMasterPassword",
+          "updatedToken",
           "updateSsl"
         )
       );
@@ -334,6 +338,7 @@ export function InstanceFormProvider({
       if (edit.updatedMasterPassword)
         ds.masterPassword = edit.updatedMasterPassword;
       if (edit.useEmptyMasterPassword) ds.masterPassword = "";
+      if (edit.updatedToken) ds.authenticationPrivateKey = edit.updatedToken;
       if (!specs.showDatabase) ds.database = "";
       if (engine !== Engine.ORACLE) {
         ds.sid = "";

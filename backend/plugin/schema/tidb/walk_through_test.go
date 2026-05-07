@@ -56,9 +56,9 @@ func TestWalkThrough(t *testing.T) {
 		asts := base.ExtractASTs(stmts)
 		advice := WalkThrough(state, asts)
 		if advice != nil {
-			// Compare the advice fields
-			require.Equal(t, test.Advice.Code, advice.Code)
-			require.Equal(t, test.Advice.Content, advice.Content)
+			require.NotNil(t, test.Advice, "unexpected advice for statement %q: %+v", test.Statement, advice)
+			require.Equal(t, test.Advice.Code, advice.Code, "statement %q", test.Statement)
+			require.Equal(t, test.Advice.Content, advice.Content, "statement %q", test.Statement)
 			continue
 		}
 

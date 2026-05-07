@@ -2,12 +2,10 @@ package tsql
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 	"unicode"
 
 	"github.com/bytebase/omni/mssql/ast"
-	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/pkg/errors"
 
@@ -56,6 +54,15 @@ func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx ba
 	}
 }
 
+func (q *querySpanExtractor) findTempTable(rawName string) (*base.PhysicalTable, bool) {
+	for name, tempTable := range q.gCtx.TempTables {
+		if q.isIdentifierEqual(rawName, name) {
+			return tempTable, true
+		}
+	}
+	return nil, false
+}
+
 // tsqlFindTableSchemaByParts resolves a (linkedServer, database, schema, table)
 // tuple to a TableSource. Empty strings for database/schema mean "not specified
 // by the user"; defaults are applied here when looking up metadata. CTEs
@@ -67,6 +74,9 @@ func (q *querySpanExtractor) tsqlFindTableSchemaByParts(linkedServer, rawDatabas
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", linkedServer)
 	}
 	if strings.HasPrefix(rawTable, "#") {
+		if tempTable, ok := q.findTempTable(rawTable); ok {
+			return tempTable, nil
+		}
 		// TODO(masking): Considering SELECT * INTO #temp FROM dbo.t1; SELECT * FROM #temp. We should mask the #temp.
 		return &base.PseudoTable{}, nil
 	}
@@ -412,38 +422,6 @@ func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bo
 		return true
 	}
 	return false
-}
-
-// normalizeFullTableNameFallback normalizes the parts of an ANTLR full_table_name
-// context. Retained for non-query-span tsql callers (completion, backup).
-func normalizeFullTableNameFallback(fullTableName parser.IFull_table_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
-	if fullTableName == nil {
-		return "", "", "", ""
-	}
-	// TODO(zp): unify here and the related code in sql_service.go
-	name, err := NormalizeFullTableName(fullTableName)
-	if err != nil {
-		slog.Debug("Failed to normalize full table name", "error", err)
-	}
-	linkedServer := ""
-	if name.LinkedServer != "" {
-		linkedServer = name.LinkedServer
-	}
-
-	database := normalizedFallbackDatabaseName
-	if name.Database != "" {
-		database = name.Database
-	}
-	schema := normalizedFallbackSchemaName
-	if name.Schema != "" {
-		schema = name.Schema
-	}
-
-	var table string
-	if name.Table != "" {
-		table = name.Table
-	}
-	return linkedServer, database, schema, table
 }
 
 // unquote strips surrounding brackets or `N'...'` from an identifier literal.

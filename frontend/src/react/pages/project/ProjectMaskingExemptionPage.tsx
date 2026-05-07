@@ -33,6 +33,14 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -1214,43 +1222,40 @@ function ExemptionResourceTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-block-border">
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="whitespace-nowrap">
               {t("common.instance")}
-            </th>
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("common.database")}
-            </th>
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("common.schema")}
-            </th>
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("common.table")}
-            </th>
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("database.columns")}
-            </th>
-            <th className="textinfolabel font-medium text-xs py-2 px-2 text-left whitespace-nowrap">
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
               {t("common.classification-level")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody striped={false}>
           {databaseResources.map((resource, idx) => {
             const { instanceName, databaseName } = extractDatabaseResourceName(
               resource.databaseFullName
             );
             return (
-              <tr
-                key={idx}
-                className="border-b border-block-border last:border-b-0"
-              >
-                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+              <TableRow key={idx}>
+                <TableCell className="text-control-light whitespace-nowrap">
                   {isSentinel(instanceName) ? t("database.all") : instanceName}
-                </td>
-                <td className="py-2 px-2 whitespace-nowrap">
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
                   {isSentinel(databaseName) ? (
                     <span className="text-control-placeholder">
                       {t("database.all")}
@@ -1265,30 +1270,30 @@ function ExemptionResourceTable({
                   ) : (
                     <span className="text-control-light">{databaseName}</span>
                   )}
-                </td>
-                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+                </TableCell>
+                <TableCell className="text-control-light whitespace-nowrap">
                   {resource.schema || "-"}
-                </td>
-                <td className="py-2 px-2 text-control-light whitespace-nowrap">
+                </TableCell>
+                <TableCell className="text-control-light whitespace-nowrap">
                   {resource.table || "-"}
-                </td>
-                <td className="py-2 px-2">
+                </TableCell>
+                <TableCell>
                   {resource.columns && resource.columns.length > 0
                     ? resource.columns.join(", ")
                     : "-"}
-                </td>
-                <td className="py-2 px-2">
+                </TableCell>
+                <TableCell>
                   <LevelBadge
                     level={classificationLevel?.value}
                     operator={classificationLevel?.operator}
                     noLimit={!classificationLevel}
                   />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

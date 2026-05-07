@@ -1,12 +1,19 @@
 import { create } from "@bufbuild/protobuf";
-import { reactive } from "vue";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 
-const localSheetsByName = reactive(new Map<string, Sheet>());
+const state = {
+  uid: -101,
+};
+
+const localSheetsByName = new Map<string, Sheet>();
 
 export const createEmptyLocalSheet = () => {
-  return reactive(create(SheetSchema, {}));
+  return create(SheetSchema, {});
+};
+
+export const getNextLocalSheetUID = () => {
+  return String(state.uid--);
 };
 
 export const getLocalSheetByName = (name: string): Sheet => {
@@ -14,10 +21,14 @@ export const getLocalSheetByName = (name: string): Sheet => {
   if (existing) {
     return existing;
   }
-  const sheet = reactive({
+  const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     name,
   });
   localSheetsByName.set(name, sheet);
   return sheet;
+};
+
+export const removeLocalSheet = (name: string): void => {
+  localSheetsByName.delete(name);
 };

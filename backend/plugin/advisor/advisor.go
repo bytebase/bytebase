@@ -68,6 +68,51 @@ type Context struct {
 
 	// Used for test only.
 	NoAppendBuiltin bool
+
+	// memo is a per-review key/value cache shared across rules in one
+	// SQLReviewCheck invocation. Initialized once by SQLReviewCheck before the
+	// rule loop; the map header propagates by value across rule invocations
+	// (advisors run sequentially, no synchronization needed).
+	//
+	// Engine-specific helpers use this to amortize work that would otherwise
+	// repeat per advisor, e.g. omni re-parsing during the tidb advisor
+	// migration (advisor/tidb/utils.go).
+	//
+	// Callers that bypass SQLReviewCheck and construct Context directly
+	// without initializing memo will see Memo/SetMemo silently no-op (cache
+	// disabled, work repeats). Test fixtures and ad-hoc callers should
+	// initialize memo if they want caching behavior.
+	memo map[string]any
+}
+
+// Memo returns the value previously stored under key.
+// Returns (nil, false) on cache miss or uninitialized cache.
+func (c Context) Memo(key string) (any, bool) {
+	if c.memo == nil {
+		return nil, false
+	}
+	v, ok := c.memo[key]
+	return v, ok
+}
+
+// SetMemo stores a value under key for retrieval by Memo.
+// No-op if the cache is uninitialized.
+func (c Context) SetMemo(key string, value any) {
+	if c.memo == nil {
+		return
+	}
+	c.memo[key] = value
+}
+
+// InitMemo initializes the per-review memo cache if not already initialized.
+// Called by SQLReviewCheck before its rule loop. Tests that bypass
+// SQLReviewCheck and want caching behavior should call this on the Context
+// they construct (Context is passed by value through the rule loop, so the
+// init must happen on the original before any copies are made).
+func (c *Context) InitMemo() {
+	if c.memo == nil {
+		c.memo = make(map[string]any)
+	}
 }
 
 // Advisor is the interface for advisor.

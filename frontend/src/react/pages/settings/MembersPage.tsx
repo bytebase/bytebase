@@ -53,6 +53,14 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
+import {
   Tabs,
   TabsList,
   TabsPanel,
@@ -91,6 +99,7 @@ import {
   formatAbsoluteDateTime,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
+  isBindingPolicyExpired,
   sortRoles,
 } from "@/utils";
 import {
@@ -111,10 +120,6 @@ const EMPTY_ROLE_SET = new Set<string>();
 
 const assertNever = (value: never): never => {
   throw new Error(`Unexpected value: ${String(value)}`);
-};
-
-const getProjectRoleSet = (bindings: Binding[]): string[] => {
-  return [...new Set(bindings.map((binding) => binding.role))];
 };
 
 // ============================================================
@@ -151,6 +156,17 @@ function MemberTable({
     [bindings, scope]
   );
 
+  // Drop selections that are no longer rendered. The parent filters
+  // `bindings` by search text, so without this a user could select rows,
+  // type a search that hides them, and still bulk-revoke hidden members.
+  useEffect(() => {
+    const visibleNames = new Set(bindings.map((b) => b.binding));
+    const next = selectedBindings.filter((b) => visibleNames.has(b));
+    if (next.length !== selectedBindings.length) {
+      onSelectionChange(next);
+    }
+  }, [bindings, selectedBindings, onSelectionChange]);
+
   const allSelected =
     selectableBindings.length > 0 &&
     selectableBindings.every((b) => selectedBindings.includes(b.binding));
@@ -182,9 +198,14 @@ function MemberTable({
   };
 
   const renderProjectRoleSummary = (bindings: Binding[]) => {
-    return groupProjectRoleBindings(bindings).map((group) => {
-      return (
-        <Badge key={group.role} className="text-xs gap-x-1">
+    // Show all roles, active first then expired. Expired chips get
+    // line-through + reduced opacity so the count of stale bindings is
+    // visible — exposing the issue rather than hiding it.
+    const active = bindings.filter((b) => !isBindingPolicyExpired(b));
+    const expired = bindings.filter((b) => isBindingPolicyExpired(b));
+    return [
+      ...groupProjectRoleBindings(active).map((group) => (
+        <Badge key={`active-${group.role}`} className="text-xs gap-x-1">
           {displayRoleTitle(group.role)}
           {group.bindings.length > 1 && (
             <span className="text-control-light">
@@ -192,52 +213,56 @@ function MemberTable({
             </span>
           )}
         </Badge>
-      );
-    });
+      )),
+      ...groupProjectRoleBindings(expired).map((group) => (
+        <Badge
+          key={`expired-${group.role}`}
+          className="text-xs gap-x-1 line-through opacity-60"
+        >
+          {displayRoleTitle(group.role)}
+          {group.bindings.length > 1 && (
+            <span className="text-control-light">
+              ({group.bindings.length})
+            </span>
+          )}
+        </Badge>
+      )),
+    ];
   };
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-control-bg border-b">
+      <Table>
+        <TableHeader>
+          <TableRow>
             {allowEdit && (
-              <th className="w-10 px-3 py-2">
+              <TableHead className="w-10">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
                 />
-              </th>
+              </TableHead>
             )}
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.account")}
-            </th>
-            <th className="px-4 py-2 text-left font-medium text-control-light">
-              {t("settings.members.table.roles")}
-            </th>
-            <th className="w-24 px-4 py-2 text-left font-medium text-control-light">
-              {t("common.operations")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead>{t("settings.members.table.account")}</TableHead>
+            <TableHead>{t("settings.members.table.roles")}</TableHead>
+            <TableHead className="w-24">{t("common.operations")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {bindings.map((mb) => (
-            <tr
-              key={mb.binding}
-              className="border-b last:border-b-0 hover:bg-control-bg"
-            >
+            <TableRow key={mb.binding}>
               {allowEdit && (
-                <td className="px-3 py-2">
+                <TableCell>
                   <input
                     type="checkbox"
                     checked={selectedBindings.includes(mb.binding)}
                     disabled={isSelectDisabled(mb)}
                     onChange={() => toggleOne(mb.binding)}
                   />
-                </td>
+                </TableCell>
               )}
-              <td className="px-4 py-2">
+              <TableCell>
                 <div className="flex items-center gap-x-3">
                   {mb.type === "users" ? (
                     <UserAvatar title={mb.title || mb.user?.email || "?"} />
@@ -298,8 +323,8 @@ function MemberTable({
                     </span>
                   </div>
                 </div>
-              </td>
-              <td className="px-4 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex flex-wrap gap-1">
                   {scope === "project"
                     ? renderProjectRoleSummary(mb.projectRoleBindings)
@@ -310,8 +335,8 @@ function MemberTable({
                         </Badge>
                       ))}
                 </div>
-              </td>
-              <td className="px-4 py-2">
+              </TableCell>
+              <TableCell>
                 <div className="flex items-center gap-x-1">
                   {allowEdit && canEdit(mb) && (
                     <Button
@@ -340,21 +365,21 @@ function MemberTable({
                     </Button>
                   )}
                 </div>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {bindings.length === 0 && (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={allowEdit ? 4 : 3}
                 className="px-4 py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -383,22 +408,43 @@ function MemberTableByRole({
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
+  type RoleMember = { member: MemberBinding; allExpired: boolean };
   const roleToBindings = useMemo(() => {
-    const map = new Map<string, MemberBinding[]>();
+    const map = new Map<string, RoleMember[]>();
+    const appendToRole = (role: string, entry: RoleMember) => {
+      const arr = map.get(role) ?? [];
+      arr.push(entry);
+      map.set(role, arr);
+    };
     for (const mb of bindings) {
-      const roles =
-        scope === "project"
-          ? getProjectRoleSet(mb.projectRoleBindings)
-          : [...mb.workspaceLevelRoles];
-      for (const role of roles) {
-        if (!map.has(role)) map.set(role, []);
-        map.get(role)!.push(mb);
+      if (scope === "project") {
+        // Group this member's bindings by role so we can mark a row expired
+        // only when ALL of its bindings for that role are expired.
+        const bindingsByRole = new Map<string, Binding[]>();
+        for (const b of mb.projectRoleBindings) {
+          const arr = bindingsByRole.get(b.role) ?? [];
+          arr.push(b);
+          bindingsByRole.set(b.role, arr);
+        }
+        for (const [role, roleBindings] of bindingsByRole) {
+          const allExpired = roleBindings.every((b) =>
+            isBindingPolicyExpired(b)
+          );
+          appendToRole(role, { member: mb, allExpired });
+        }
+      } else {
+        for (const role of mb.workspaceLevelRoles) {
+          appendToRole(role, { member: mb, allExpired: false });
+        }
       }
     }
     const sortedRoles = sortRoles([...map.keys()]);
     return sortedRoles.map((role) => ({
       role,
-      members: map.get(role) ?? [],
+      // Active members first, expired-only members last.
+      members: (map.get(role) ?? []).slice().sort((a, b) => {
+        return Number(a.allExpired) - Number(b.allExpired);
+      }),
     }));
   }, [bindings, scope]);
 
@@ -427,17 +473,17 @@ function MemberTableByRole({
 
   return (
     <div className="border rounded-sm overflow-hidden">
-      <table className="w-full text-sm">
-        <tbody>
+      <Table>
+        <TableBody striped={false}>
           {roleToBindings.map(({ role, members }) => {
             const expanded = expandedRoles.has(role);
             return (
               <React.Fragment key={role}>
-                <tr
-                  className="bg-control-bg border-b cursor-pointer hover:bg-control-bg"
+                <TableRow
+                  className="bg-control-bg cursor-pointer"
                   onClick={() => toggleRole(role)}
                 >
-                  <td colSpan={3} className="px-4 py-2">
+                  <TableCell colSpan={3}>
                     <div className="flex items-center gap-x-2">
                       {expanded ? (
                         <ChevronDown className="h-4 w-4" />
@@ -454,15 +500,15 @@ function MemberTableByRole({
                         ({members.length})
                       </span>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
                 {expanded &&
-                  members.map((mb) => (
-                    <tr
+                  members.map(({ member: mb, allExpired }) => (
+                    <TableRow
                       key={`${role}-${mb.binding}`}
-                      className="border-b last:border-b-0 hover:bg-control-bg"
+                      className={cn(allExpired && "opacity-60")}
                     >
-                      <td className="px-4 py-2 pl-10">
+                      <TableCell className="pl-10">
                         <div className="flex items-center gap-x-3">
                           {mb.type === "users" ? (
                             <UserAvatar
@@ -476,9 +522,22 @@ function MemberTableByRole({
                           )}
                           <div className="flex flex-col">
                             <div className="flex items-center gap-x-1.5">
-                              <span className="font-medium text-accent">
+                              <span
+                                className={cn(
+                                  "font-medium text-accent",
+                                  allExpired && "line-through"
+                                )}
+                              >
                                 {mb.title}
                               </span>
+                              {allExpired && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  {t("common.expired")}
+                                </Badge>
+                              )}
                               {mb.type === "users" &&
                                 mb.user?.name === currentUser.name && (
                                   <Badge className="text-xs">
@@ -530,9 +589,9 @@ function MemberTableByRole({
                             </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-2" />
-                      <td className="w-24 px-4 py-2">
+                      </TableCell>
+                      <TableCell />
+                      <TableCell className="w-24">
                         <div className="flex items-center gap-x-1">
                           {allowEdit && canEdit(mb) && (
                             <Button
@@ -561,24 +620,24 @@ function MemberTableByRole({
                             </Button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
               </React.Fragment>
             );
           })}
           {roleToBindings.length === 0 && (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={3}
                 className="px-4 py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -941,11 +1000,19 @@ function EditMemberRoleDrawer({
   const isProjectCreateMode = !!projectName && !isEditMode;
   const isProjectEditMode = !!projectName && isEditMode;
 
-  // Live project role bindings for the member (reactively updated when IAM policy changes)
+  // Live project role bindings for the member (reactively updated when IAM policy changes).
+  // Active bindings come first, expired ones last; original order is preserved within each group.
   const liveProjectRoleBindings = useVueState(() => {
     if (!isProjectEditMode || !member || !projectName) return [];
     const policy = projectIamPolicyStore.getProjectIamPolicy(projectName);
-    return policy.bindings.filter((b) => b.members.includes(member.binding));
+    const matching = policy.bindings.filter((b) =>
+      b.members.includes(member.binding)
+    );
+    return [...matching].sort((a, b) => {
+      const aExpired = isBindingPolicyExpired(a) ? 1 : 0;
+      const bExpired = isBindingPolicyExpired(b) ? 1 : 0;
+      return aExpired - bExpired;
+    });
   });
 
   const [selectedBindings, setSelectedBindings] = useState<string[]>(
@@ -1300,16 +1367,32 @@ function EditMemberRoleDrawer({
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
+                  const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
                       key={`${binding.role}-${idx}`}
-                      className="border rounded-sm"
+                      className={cn(
+                        "border rounded-sm",
+                        isExpired && "opacity-60"
+                      )}
                     >
                       {/* Role header */}
                       <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                        <span className="font-medium text-sm">
-                          {displayRoleTitle(binding.role)}
-                        </span>
+                        <div className="flex items-center gap-x-2">
+                          <span
+                            className={cn(
+                              "font-medium text-sm",
+                              isExpired && "line-through"
+                            )}
+                          >
+                            {displayRoleTitle(binding.role)}
+                          </span>
+                          {isExpired && (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("common.expired")}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-x-1">
                           <Button
                             variant="ghost"
@@ -1373,50 +1456,39 @@ function EditMemberRoleDrawer({
 
                       {/* Database resources table */}
                       <div className="p-4">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                                {t("common.database")}
-                              </th>
-                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                                {t("common.schema")}
-                              </th>
-                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                                {t("common.table")}
-                              </th>
-                              <th className="px-2 py-1.5 text-left font-medium text-control-light">
-                                {t("common.expiration")}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t("common.database")}</TableHead>
+                              <TableHead>{t("common.schema")}</TableHead>
+                              <TableHead>{t("common.table")}</TableHead>
+                              <TableHead>{t("common.expiration")}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
                             {rows.map((row, rowIdx) => (
-                              <tr
-                                key={rowIdx}
-                                className="border-b last:border-b-0"
-                              >
-                                <td className="px-2 py-1.5 text-sm">
+                              <TableRow key={rowIdx}>
+                                <TableCell>
                                   {row.databaseResource?.databaseFullName ??
                                     "*"}
-                                </td>
-                                <td className="px-2 py-1.5 text-sm">
+                                </TableCell>
+                                <TableCell>
                                   {row.databaseResource?.schema ?? "*"}
-                                </td>
-                                <td className="px-2 py-1.5 text-sm">
+                                </TableCell>
+                                <TableCell>
                                   {row.databaseResource?.table ?? "*"}
-                                </td>
-                                <td className="px-2 py-1.5 text-sm">
+                                </TableCell>
+                                <TableCell>
                                   {row.expiration
                                     ? formatAbsoluteDateTime(
                                         row.expiration.getTime()
                                       )
                                     : t("project.members.never-expires")}
-                                </td>
-                              </tr>
+                                </TableCell>
+                              </TableRow>
                             ))}
-                          </tbody>
-                        </table>
+                          </TableBody>
+                        </Table>
                       </div>
                     </div>
                   );

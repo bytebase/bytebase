@@ -12,12 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// errOmniUnsupported is a development-time sentinel: signals that the omni
-// extractor cannot handle the given construct yet. Only used by unit tests to
-// distinguish "not yet implemented" from real bugs. Never returned from the
-// public GetQuerySpan entry point after cutover.
-var errOmniUnsupported = errors.New("omni query span extractor: unsupported construct")
-
 // omniQuerySpanExtractor extracts query span information from omni MSSQL AST.
 // It embeds querySpanExtractor so string-based resolution helpers
 // (tsqlIsFieldSensitive, tsqlFindTableSchemaByParts, isIdentifierEqual,
@@ -79,6 +73,9 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	// side-effect. Non-table DECLARE (plain scalar variables) is a no-op.
 	if d, ok := root.(*ast.DeclareStmt); ok {
 		populateOmniTempTables(d, q.gCtx.TempTables)
+	}
+	if c, ok := root.(*ast.CreateTableStmt); ok {
+		populateOmniCreateTempTable(c, q.gCtx.TempTables)
 	}
 
 	accessTables := collectOmniAccessTables(root, q.defaultDatabase, q.defaultSchema)
@@ -175,6 +172,7 @@ func (q *omniQuerySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*ba
 	if err != nil {
 		return nil, err
 	}
+	q.populateSelectIntoTempTable(sel, results)
 
 	return &base.PseudoTable{Columns: results}, nil
 }
@@ -409,7 +407,7 @@ func (q *omniQuerySpanExtractor) processWithClause(w *ast.WithClause) error {
 		}
 		body, ok := cte.Query.(*ast.SelectStmt)
 		if !ok {
-			return errOmniUnsupported
+			return unsupportedNodeError("only SELECT CTE bodies are supported", cte.Query)
 		}
 
 		cteName := normIdent(cte.Name)
@@ -544,20 +542,32 @@ func (q *omniQuerySpanExtractor) extractTableSource(node ast.Node) ([]base.Table
 	case *ast.TableVarMethodCallRef:
 		return []base.TableSource{&base.PseudoTable{Name: v.Alias, Columns: xmlNodesColumns(v.Columns)}}, nil
 	case *ast.PivotExpr:
-		return nil, errors.New("pivot is not supported yet")
-	case *ast.UnpivotExpr:
-		return nil, errors.New("unpivot is not supported yet")
-	case *ast.FuncCallExpr:
 		return nil, unsupportedTableSourceError(node)
+	case *ast.UnpivotExpr:
+		return nil, unsupportedTableSourceError(node)
+	case *ast.FuncCallExpr:
+		ts, err := q.resolveTableValuedFunction(v, "", nil)
+		if err != nil {
+			return nil, err
+		}
+		return []base.TableSource{ts}, nil
 	default:
-		return nil, errors.Wrapf(errOmniUnsupported, "FROM item type %T", node)
+		return nil, unsupportedTableSourceError(node)
 	}
 }
 
 func unsupportedTableSourceError(node ast.Node) error {
+	return unsupportedNodeError("only full table name, supported TVF, derived table, values clause, and temp table in table source item are supported", node)
+}
+
+func unsupportedNodeError(message string, node ast.Node) error {
+	typeName := "<nil>"
+	if typ := reflect.TypeOf(node); typ != nil {
+		typeName = typ.String()
+	}
 	return &base.TypeNotSupportedError{
-		Err:  errors.Errorf("only full table name in table source item is supported"),
-		Type: reflect.TypeOf(node).String(),
+		Err:  errors.New(message),
+		Type: typeName,
 	}
 }
 
@@ -628,9 +638,9 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 		if len(inners) == 1 {
 			return inners[0], nil
 		}
-		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef wrapping TableVarRef with non-single output")
+		return nil, unsupportedNodeError("aliased table variable must produce a single table source", at.Table)
 	case *ast.FuncCallExpr:
-		return nil, unsupportedTableSourceError(at.Table)
+		return q.resolveTableValuedFunction(inner, at.Alias, columnAliases)
 	case *ast.TableVarMethodCallRef:
 		cols := xmlNodesColumns(inner.Columns)
 		if err := applyColumnAliases(cols, columnAliases); err != nil {
@@ -638,14 +648,88 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 		}
 		return &base.PseudoTable{Name: normIdent(at.Alias), Columns: cols}, nil
 	default:
-		return nil, errors.Wrapf(errOmniUnsupported, "AliasedTableRef inner %T", at.Table)
+		return nil, unsupportedNodeError("unsupported aliased table source item", at.Table)
+	}
+}
+
+func (q *omniQuerySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr, alias string, columnAliases []string) (base.TableSource, error) {
+	if fn == nil || fn.Name == nil {
+		return nil, unsupportedTableSourceError(fn)
+	}
+	var columnNames []string
+	switch strings.ToUpper(fn.Name.Object) {
+	case "STRING_SPLIT":
+		columnNames = []string{"value"}
+		hasOrdinal, err := stringSplitHasOrdinalColumn(fn.Args)
+		if err != nil {
+			return nil, err
+		}
+		if hasOrdinal {
+			columnNames = append(columnNames, "ordinal")
+		}
+	case "OPENJSON":
+		columnNames = []string{"key", "value", "type"}
+	default:
+		return nil, unsupportedTableSourceError(fn)
+	}
+
+	argSources, err := q.mergeListSources(fn.Args)
+	if err != nil {
+		return nil, err
+	}
+	columns := make([]base.QuerySpanResult, 0, len(columnNames))
+	for _, name := range columnNames {
+		columns = append(columns, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: argSources.SourceColumns,
+		})
+	}
+	if strings.EqualFold(fn.Name.Object, "STRING_SPLIT") && len(columns) > 1 {
+		columns[1].SourceColumns = make(base.SourceColumnSet)
+	}
+	if err := applyColumnAliases(columns, columnAliases); err != nil {
+		return nil, err
+	}
+	return &base.PseudoTable{Name: normIdent(alias), Columns: columns}, nil
+}
+
+func stringSplitHasOrdinalColumn(args *ast.List) (bool, error) {
+	if args == nil || args.Len() < 3 {
+		return false, nil
+	}
+	arg := args.Items[2]
+	for {
+		paren, ok := arg.(*ast.ParenExpr)
+		if !ok {
+			break
+		}
+		arg = paren.Expr
+	}
+	literal, ok := arg.(*ast.Literal)
+	if !ok {
+		return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be a constant 0, 1, or NULL", arg)
+	}
+	switch literal.Type {
+	case ast.LitInteger:
+		switch literal.Ival {
+		case 0:
+			return false, nil
+		case 1:
+			return true, nil
+		default:
+			return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be 0 or 1", arg)
+		}
+	case ast.LitNull:
+		return false, nil
+	default:
+		return false, unsupportedNodeError("STRING_SPLIT enable_ordinal must be a constant 0, 1, or NULL", arg)
 	}
 }
 
 func (q *omniQuerySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, alias string, columnAliases ...string) (base.TableSource, error) {
 	body, ok := sq.Query.(*ast.SelectStmt)
 	if !ok {
-		return nil, errOmniUnsupported
+		return nil, unsupportedNodeError("only SELECT subqueries in table source are supported", sq.Query)
 	}
 	clone := q.cloneForSubquery()
 	pseudo, err := clone.extractFromSelectStmt(body)
@@ -708,7 +792,7 @@ func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias stri
 		return nil, nil
 	}
 	name := tv.Name
-	if temp, ok := q.gCtx.TempTables[name]; ok {
+	if temp, ok := q.findTempTable(name); ok {
 		tableName := name
 		if alias != "" {
 			tableName = alias
@@ -759,6 +843,43 @@ func populateOmniTempTables(d *ast.DeclareStmt, out map[string]*base.PhysicalTab
 			Name:    v.Name,
 			Columns: columns,
 		}
+	}
+}
+
+func populateOmniCreateTempTable(c *ast.CreateTableStmt, out map[string]*base.PhysicalTable) {
+	if c == nil || c.Name == nil || out == nil || !strings.HasPrefix(c.Name.Object, "#") {
+		return
+	}
+	var columns []string
+	if c.Columns != nil {
+		columns = make([]string, 0, c.Columns.Len())
+		for _, item := range c.Columns.Items {
+			if cd, ok := item.(*ast.ColumnDef); ok {
+				columns = append(columns, cd.Name)
+			}
+		}
+	}
+	out[c.Name.Object] = &base.PhysicalTable{
+		Name:    c.Name.Object,
+		Columns: columns,
+	}
+}
+
+func (q *omniQuerySpanExtractor) populateSelectIntoTempTable(sel *ast.SelectStmt, results []base.QuerySpanResult) {
+	if sel == nil || sel.IntoTable == nil || q.gCtx.TempTables == nil || !strings.HasPrefix(sel.IntoTable.Object, "#") {
+		return
+	}
+	columns := make([]string, 0, len(results))
+	for i, result := range results {
+		name := result.Name
+		if name == "" && sel.TargetList != nil && i < len(sel.TargetList.Items) {
+			name = q.sliceName(sel.TargetList.Items[i])
+		}
+		columns = append(columns, name)
+	}
+	q.gCtx.TempTables[sel.IntoTable.Object] = &base.PhysicalTable{
+		Name:    sel.IntoTable.Object,
+		Columns: columns,
 	}
 }
 
@@ -846,7 +967,7 @@ func (q *omniQuerySpanExtractor) extractTargetList(list *ast.List) ([]base.Query
 				results = append(results, r)
 				continue
 			}
-			return nil, errors.Wrapf(errOmniUnsupported, "target item %T", item)
+			return nil, unsupportedNodeError("unsupported SELECT target item", item)
 		}
 	}
 	return results, nil
@@ -1177,7 +1298,7 @@ func (q *omniQuerySpanExtractor) mergeOrderBySources(list *ast.List) (base.Query
 		case ast.ExprNode:
 			expr = v
 		default:
-			return r, errors.Wrapf(errOmniUnsupported, "ORDER BY item type %T", it)
+			return r, unsupportedNodeError("unsupported ORDER BY item", it)
 		}
 		sub, err := q.resolveExpressionNode(expr)
 		if err != nil {

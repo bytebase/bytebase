@@ -465,3 +465,180 @@
     \     \"visible\": true\n            }\n          ]\n        }\n      ]\n    }\n\
     \  ]\n}"
   advice: null
+- statement: |
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN IF NOT EXISTS a int;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  advice: null
+- statement: |
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN a int;
+  ignore_case_sensitive: false
+  want: ''
+  advice:
+    status: 1
+    code: 412
+    title: Column `a` already exists in table `t`
+    content: Column `a` already exists in table `t`
+    startPosition:
+      line: 0
+- statement: |
+    CREATE TABLE t(a int);
+    ALTER TABLE t DROP COLUMN IF EXISTS b;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  advice: null
+- statement: |
+    CREATE TABLE t(a int);
+    ALTER TABLE t DROP INDEX IF EXISTS idx_nonexistent;
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  advice: null
+- statement: |
+    CREATE TABLE t(a int);
+    CREATE INDEX idx_a ON t(a);
+    CREATE INDEX IF NOT EXISTS idx_a ON t(a);
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  advice: null
+- statement: |
+    CREATE TABLE t(a int);
+    CREATE INDEX idx_a ON t(a);
+    CREATE INDEX idx_a ON t(a);
+  ignore_case_sensitive: false
+  want: ''
+  advice:
+    status: 1
+    code: 805
+    title: Index `idx_a` already exists in table `t`
+    content: Index `idx_a` already exists in table `t`
+    startPosition:
+      line: 0
+- statement: |
+    CREATE TABLE t(a int);
+    CREATE INDEX idx_a ON t(a);
+    ALTER TABLE t ADD INDEX IF NOT EXISTS idx_a (a);
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  advice: null

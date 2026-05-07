@@ -300,7 +300,7 @@ export function DeployTaskItem({
                     <>
                       <ReadonlyMonaco
                         className={cn(
-                          "relative max-h-64 min-h-[120px] overflow-hidden text-sm",
+                          "relative max-h-64 min-h-[120px] overflow-hidden rounded border text-sm",
                           isTruncated && "rounded-b-none"
                         )}
                         content={statement}
