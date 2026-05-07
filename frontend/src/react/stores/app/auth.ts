@@ -15,7 +15,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
         return user;
       })
       .catch(() => {
-        set({ currentUserRequest: undefined });
+        // Don't cache failures — the next call (e.g., after login) should
+        // retry. Without this, a pre-login failure permanently prevents
+        // the React store from loading the authenticated user.
+        set({ currentUser: undefined, currentUserRequest: undefined });
         return undefined;
       });
     set({ currentUserRequest: request });
