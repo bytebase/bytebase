@@ -214,7 +214,7 @@ func (c *tableRequirePKChecker) createTableLike(n *ast.CreateTableStmt) {
 	c.tables[table] = newColumnSet(primaryKey.GetProto().GetExpressions())
 }
 
-func (c *tableRequirePKChecker) dropColumn(table string, column string) bool {
+func (c *tableRequirePKChecker) dropColumn(table, column string) bool {
 	if _, ok := c.tables[table]; !ok {
 		schema := c.originalMetadata.GetSchemaMetadata("")
 		if schema == nil {
@@ -237,7 +237,7 @@ func (c *tableRequirePKChecker) dropColumn(table string, column string) bool {
 	return columnInPK
 }
 
-func (c *tableRequirePKChecker) changeColumn(table string, oldColumn string, newColumn string) bool {
+func (c *tableRequirePKChecker) changeColumn(table, oldColumn, newColumn string) bool {
 	if c.dropColumn(table, oldColumn) {
 		pk := c.tables[table]
 		pk[newColumn] = true

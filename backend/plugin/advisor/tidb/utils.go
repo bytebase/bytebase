@@ -58,14 +58,14 @@ func (t tablePK) tableList() []string {
 type columnNameToColumnDef map[string]*ast.ColumnDef
 type tableNewColumn map[string]columnNameToColumnDef
 
-func (t tableNewColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
+func (t tableNewColumn) set(tableName, columnName string, colDef *ast.ColumnDef) {
 	if _, ok := t[tableName]; !ok {
 		t[tableName] = make(columnNameToColumnDef)
 	}
 	t[tableName][columnName] = colDef
 }
 
-func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.ColumnDef, ok bool) {
+func (t tableNewColumn) get(tableName, columnName string) (colDef *ast.ColumnDef, ok bool) {
 	if _, ok := t[tableName]; !ok {
 		return nil, false
 	}
@@ -73,7 +73,7 @@ func (t tableNewColumn) get(tableName string, columnName string) (colDef *ast.Co
 	return col, ok
 }
 
-func (t tableNewColumn) delete(tableName string, columnName string) {
+func (t tableNewColumn) delete(tableName, columnName string) {
 	if _, ok := t[tableName]; !ok {
 		return
 	}

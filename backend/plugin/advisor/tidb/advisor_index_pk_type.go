@@ -19,6 +19,8 @@ var (
 	_ advisor.Advisor = (*IndexPkTypeAdvisor)(nil)
 )
 
+const errCannotFindColumnTypeFmt = "cannot find the type of `%s`.`%s`"
+
 func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
 }
@@ -58,14 +60,14 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 type omniColumnNameToColumnDef map[string]*ast.ColumnDef
 type tableNewOmniColumn map[string]omniColumnNameToColumnDef
 
-func (t tableNewOmniColumn) set(tableName string, columnName string, colDef *ast.ColumnDef) {
+func (t tableNewOmniColumn) set(tableName, columnName string, colDef *ast.ColumnDef) {
 	if _, ok := t[tableName]; !ok {
 		t[tableName] = make(omniColumnNameToColumnDef)
 	}
 	t[tableName][columnName] = colDef
 }
 
-func (t tableNewOmniColumn) get(tableName string, columnName string) (colDef *ast.ColumnDef, ok bool) {
+func (t tableNewOmniColumn) get(tableName, columnName string) (colDef *ast.ColumnDef, ok bool) {
 	if _, ok := t[tableName]; !ok {
 		return nil, false
 	}
@@ -73,7 +75,7 @@ func (t tableNewOmniColumn) get(tableName string, columnName string) (colDef *as
 	return col, ok
 }
 
-func (t tableNewOmniColumn) delete(tableName string, columnName string) {
+func (t tableNewOmniColumn) delete(tableName, columnName string) {
 	if _, ok := t[tableName]; !ok {
 		return
 	}
@@ -234,21 +236,21 @@ func (c *indexPkTypeChecker) addConstraint(tableName string, line int, constrain
 // preferring the column we observed in this check pass and falling back to
 // the catalog. Returns an empty string and a non-nil error if the column
 // cannot be located in either.
-func (c *indexPkTypeChecker) getPKColumnType(tableName string, columnName string) (string, error) {
+func (c *indexPkTypeChecker) getPKColumnType(tableName, columnName string) (string, error) {
 	if colDef, ok := c.tablesNewColumns.get(tableName, columnName); ok {
 		return formatColumnType(colDef.TypeName), nil
 	}
 	schema := c.originalMetadata.GetSchemaMetadata("")
 	if schema == nil {
-		return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
+		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
 	}
 	table := schema.GetTable(tableName)
 	if table == nil {
-		return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
+		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
 	}
 	column := table.GetColumn(columnName)
 	if column == nil {
-		return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
+		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
 	}
 	return column.GetProto().Type, nil
 }
