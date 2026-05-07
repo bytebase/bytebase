@@ -3,8 +3,10 @@ package tidb
 
 import (
 	"log/slog"
+	"regexp"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
@@ -138,6 +140,35 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 	return s.BaseLine + int(pos.Line)
 }
 
+// TrimmedText returns Text with surrounding whitespace removed. Suitable
+// for embedding the statement text into advice content; raw Text may
+// include leading/trailing newlines from the original multi-statement
+// input.
+//
+// NOTE: also defined on PR #20199 (batch 3); whichever batch merges
+// second drops the duplicate.
+func (s OmniStmt) TrimmedText() string {
+	return strings.TrimSpace(s.Text)
+}
+
+// FirstTokenLine returns the 1-based absolute line of the first
+// non-whitespace character in s.Text. Matches pingcap's
+// OriginTextPosition: pingcap's lexer strips leading whitespace but
+// keeps comments as part of the statement, so its reported line points
+// at the first comment OR keyword. Used as the StartPosition for
+// statement-level advices.
+//
+// NOTE: also defined on PR #20199 (batch 3); whichever batch merges
+// second drops the duplicate.
+func (s OmniStmt) FirstTokenLine() int {
+	for i, r := range s.Text {
+		if !unicode.IsSpace(r) {
+			return s.AbsoluteLine(i)
+		}
+	}
+	return s.AbsoluteLine(0)
+}
+
 // canNull reports whether the given pingcap-AST column may have NULL values
 // (i.e. the column has no NOT NULL or PRIMARY KEY constraint).
 //
@@ -223,4 +254,45 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 
 	checkCtx.SetMemo(omniStmtsCacheKey, result)
 	return result, nil
+}
+
+// indexMetaData captures naming metadata used by the index/UK/FK convention
+// rules. Plain Go fields, AST-agnostic — shared between all 3 advisors that
+// were previously coupled via this struct in advisor_naming_index_convention.go.
+type indexMetaData struct {
+	indexName string
+	tableName string
+	metaData  map[string]string
+	line      int
+}
+
+// getTemplateRegexp formats the template as regex by substituting tokens.
+// Shared by the index/UK/FK naming convention rules.
+func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
+	for _, key := range templateList {
+		if token, ok := tokens[key]; ok {
+			template = strings.ReplaceAll(template, key, token)
+		}
+	}
+	return regexp.Compile(template)
+}
+
+// omniIndexColumns extracts column names from an omni IndexColumn list.
+// Expression-based parts that are not bare column refs are skipped (matches
+// the mysql analog and the pingcap-typed naming rules' behavior of joining
+// only direct column names).
+func omniIndexColumns(cols []*omniast.IndexColumn) []string {
+	if len(cols) == 0 {
+		return nil
+	}
+	var names []string
+	for _, col := range cols {
+		if col == nil {
+			continue
+		}
+		if ref, ok := col.Expr.(*omniast.ColumnRef); ok {
+			names = append(names, ref.Column)
+		}
+	}
+	return names
 }
