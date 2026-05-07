@@ -2,6 +2,7 @@
 package tidb
 
 import (
+	"fmt"
 	"log/slog"
 	"regexp"
 	"slices"
@@ -16,7 +17,10 @@ import (
 
 	omniast "github.com/bytebase/omni/tidb/ast"
 
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
@@ -295,4 +299,93 @@ func omniIndexColumns(cols []*omniast.IndexColumn) []string {
 		}
 	}
 	return names
+}
+
+// namingRuleConfig parameterizes the naming-convention rule scaffold for the
+// index, unique-key, and foreign-key advisors. Only the per-rule labels and
+// the mismatch advice code differ — everything else (payload validation,
+// regex match, length check, advice emission) is shared.
+type namingRuleConfig struct {
+	mismatchCode       code.Code
+	typeNoun           string // "Index" / "Unique key" / "Foreign key" — embedded in advice content
+	internalErrorTitle string
+}
+
+// runNamingConventionRule is the shared scaffold for the index/UK/FK naming
+// rules: parses the naming payload, walks each statement through `collect`,
+// and emits regex-mismatch + length-overflow advices.
+//
+// The advice content is byte-identical to the pre-extraction inline form
+// (`"<noun> in table ..."` and `"<noun> `<name>` in table ..."`), so existing
+// fixture coverage is the safety net for this refactor — no fixture updates
+// needed.
+//
+// Mysql analogs left similar duplication inline (pre-Sonar-gate); we extract
+// here because the trio is new code and Sonar gates duplication on new code.
+// Future naming-rule migrations (naming_table, naming_column,
+// naming_auto_increment_column) reuse this scaffold.
+func runNamingConventionRule(
+	checkCtx advisor.Context,
+	cfg namingRuleConfig,
+	collect func(OmniStmt) []*indexMetaData,
+) ([]*storepb.Advice, error) {
+	stmts, err := getTiDBOmniNodes(checkCtx)
+	if err != nil {
+		return nil, err
+	}
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for this rule")
+	}
+	formatStr := namingPayload.Format
+	templateList, _ := advisor.ParseTemplateTokens(formatStr)
+	for _, key := range templateList {
+		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
+			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
+		}
+	}
+	maxLength := int(namingPayload.MaxLength)
+	if maxLength == 0 {
+		maxLength = advisor.DefaultNameLengthLimit
+	}
+	title := checkCtx.Rule.Type.String()
+
+	var adviceList []*storepb.Advice
+	for _, ostmt := range stmts {
+		for _, indexData := range collect(ostmt) {
+			regex, err := getTemplateRegexp(formatStr, templateList, indexData.metaData)
+			if err != nil {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   cfg.internalErrorTitle,
+					Content: fmt.Sprintf("%q meet internal error %q", ostmt.TrimmedText(), err.Error()),
+				})
+				continue
+			}
+			if !regex.MatchString(indexData.indexName) {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:        level,
+					Code:          cfg.mismatchCode.Int32(),
+					Title:         title,
+					Content:       fmt.Sprintf("%s in table `%s` mismatches the naming convention, expect %q but found `%s`", cfg.typeNoun, indexData.tableName, regex, indexData.indexName),
+					StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				})
+			}
+			if maxLength > 0 && len(indexData.indexName) > maxLength {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:        level,
+					Code:          cfg.mismatchCode.Int32(),
+					Title:         title,
+					Content:       fmt.Sprintf("%s `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", cfg.typeNoun, indexData.indexName, indexData.tableName, maxLength),
+					StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				})
+			}
+		}
+	}
+	return adviceList, nil
 }
