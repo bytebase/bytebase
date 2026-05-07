@@ -26,6 +26,10 @@ type NamingUKConventionAdvisor struct {
 
 // Check checks for unique key naming convention.
 func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+	// Capture originalMetadata in a local so the collector closure can read
+	// it without runNamingConventionRule needing advisor.Context in its
+	// callback signature — the FK rule doesn't need metadata, so keeping
+	// the helper signature uniform is cleaner than threading a Context arg.
 	originalMetadata := checkCtx.OriginalMetadata
 	return runNamingConventionRule(checkCtx, namingRuleConfig{
 		mismatchCode:       code.NamingUKConventionMismatch,

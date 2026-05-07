@@ -276,9 +276,12 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 }
 
 // omniIndexColumns extracts column names from an omni IndexColumn list.
-// Expression-based parts that are not bare column refs are skipped (matches
-// the mysql analog and the pingcap-typed naming rules' behavior of joining
-// only direct column names).
+// Expression-based parts that are not bare column refs are silently
+// skipped — e.g., functional indexes like `INDEX idx ((LOWER(name)))`
+// contribute no name to the column-list substitution. This matches the
+// mysql omni analog and the pingcap-typed naming rules' historical
+// "name-only" behavior; any future rule that needs to inspect index
+// expressions should not route through this helper.
 func omniIndexColumns(cols []*omniast.IndexColumn) []string {
 	if len(cols) == 0 {
 		return nil
@@ -306,7 +309,14 @@ type namingRuleConfig struct {
 }
 
 // runNamingConventionRule is the shared scaffold for the index/UK/FK naming
-// rules: parses the naming payload, walks each statement through `collect`,
+// rules. The collect closure returns []*indexMetaData, so all callers are
+// coupled to that 4-field shape. If a future naming rule needs additional
+// per-finding fields (e.g. an isUnique flag or a per-finding line distinct
+// from the metadata's), expect either widening indexMetaData (everyone
+// pays) or replacing the closure return type (breaks the helper). The
+// current shape is the lowest common denominator across the 3 rules.
+//
+// Behavior: parses the naming payload, walks each statement through `collect`,
 // and emits regex-mismatch + length-overflow advices.
 //
 // The advice content is byte-identical to the pre-extraction inline form

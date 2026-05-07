@@ -9,6 +9,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
@@ -176,4 +177,72 @@ func TestCollectFKCreateTableNilConstraintGuard(t *testing.T) {
 		require.Len(t, result, 1, "non-nil FK constraint should still be collected after the nil guard skips the nil entry")
 		require.Equal(t, "fk_t_author_id_author_id", result[0].indexName)
 	})
+}
+
+// TestRunNamingConventionRuleEmitsInternalErrorAdvice pins the
+// internal-error advice path in the runNamingConventionRule helper —
+// the path that fires when getTemplateRegexp's regexp.Compile fails on
+// the post-substitution template. The YAML fixture suite can't reach
+// this branch because every fixture uses a valid template; without this
+// test, an accidental swap of cfg.internalErrorTitle vs cfg.typeNoun
+// (or a regression in the advice's Status/Code/Content shape) would go
+// unnoticed.
+//
+// The test feeds a Format containing an unbalanced paren — no template
+// tokens (so payload-token validation passes), but regexp.Compile fails
+// after the no-op substitution.
+func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
+	ctx := advisor.Context{
+		Rule: &storepb.SQLReviewRule{
+			Type:  storepb.SQLReviewRule_NAMING_INDEX_IDX,
+			Level: storepb.SQLReviewRule_WARNING,
+			Payload: &storepb.SQLReviewRule_NamingPayload{
+				NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+					Format:    "(unbalanced", // valid (no tokens) but fails regexp.Compile
+					MaxLength: 64,
+				},
+			},
+		},
+		ParsedStatements: []base.ParsedStatement{
+			{
+				Statement: base.Statement{
+					Text:  "CREATE INDEX idx_x ON t (a)",
+					Start: &storepb.Position{Line: 1},
+				},
+			},
+		},
+	}
+	ctx.InitMemo()
+
+	advices, err := runNamingConventionRule(ctx, namingRuleConfig{
+		mismatchCode:       code.NamingIndexConventionMismatch,
+		typeNoun:           "Index",
+		internalErrorTitle: "Internal error for index naming convention rule",
+	}, func(ostmt OmniStmt) []*indexMetaData {
+		// Synthetic collector: surface one indexMetaData per parsed
+		// statement so the helper proceeds to regex compilation.
+		n, ok := ostmt.Node.(*omniast.CreateIndexStmt)
+		if !ok || n.Table == nil {
+			return nil
+		}
+		return []*indexMetaData{{
+			indexName: n.IndexName,
+			tableName: n.Table.Name,
+			metaData: map[string]string{
+				advisor.ColumnListTemplateToken: "a",
+				advisor.TableNameTemplateToken:  n.Table.Name,
+			},
+			line: ostmt.FirstTokenLine(),
+		}}
+	})
+
+	require.NoError(t, err, "regex-compile failure must surface as a per-finding internal-error advice, not a rule-level error")
+	require.Len(t, advices, 1, "expected exactly 1 internal-error advice")
+	require.Equal(t, "Internal error for index naming convention rule", advices[0].Title,
+		"Title must come from cfg.internalErrorTitle, not cfg.typeNoun or the rule.Type string")
+	require.Equal(t, code.Internal.Int32(), advices[0].Code,
+		"internal-error advices must use code.Internal, not the per-rule mismatch code")
+	require.Equal(t, storepb.Advice_WARNING, advices[0].Status)
+	require.Contains(t, advices[0].Content, "meet internal error",
+		"content shape preserved from pre-extraction inline form")
 }
