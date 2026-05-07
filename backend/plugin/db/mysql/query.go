@@ -11,6 +11,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/mysql/ast"
+	omnimysqlparser "github.com/bytebase/omni/mysql/parser"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -329,30 +330,13 @@ func findMySQLKeywordBefore(sql string, offset int, keyword string) int {
 	if len(keyword) == 0 {
 		return offset
 	}
-	for i := offset - len(keyword); i >= 0; i-- {
-		if equalFoldASCII(sql[i:i+len(keyword)], keyword) {
-			return i
+	keyword = strings.ToUpper(keyword)
+	tokens := omnimysqlparser.Tokenize(sql[:offset])
+	for i := len(tokens) - 1; i >= 0; i-- {
+		token := tokens[i]
+		if token.End <= offset && omnimysqlparser.TokenName(token.Type) == keyword {
+			return token.Loc
 		}
 	}
 	return offset
-}
-
-func equalFoldASCII(s, t string) bool {
-	if len(s) != len(t) {
-		return false
-	}
-	for i := range s {
-		a := s[i]
-		b := t[i]
-		if 'a' <= a && a <= 'z' {
-			a -= 'a' - 'A'
-		}
-		if 'a' <= b && b <= 'z' {
-			b -= 'a' - 'A'
-		}
-		if a != b {
-			return false
-		}
-	}
-	return true
 }

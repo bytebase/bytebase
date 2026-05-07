@@ -116,6 +116,16 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10 INTO OUTFILE '/tmp/a';",
 		},
 		{
+			stmt:  "SELECT * FROM t /* into */ INTO OUTFILE '/tmp/a';",
+			count: 10,
+			want:  "SELECT * FROM t /* into */ LIMIT 10 INTO OUTFILE '/tmp/a';",
+		},
+		{
+			stmt:  "SELECT * FROM t INTO /* into */ OUTFILE '/tmp/a';",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10 INTO /* into */ OUTFILE '/tmp/a';",
+		},
+		{
 			stmt:  "SELECT * INTO OUTFILE '/tmp/a' FROM t;",
 			count: 10,
 			want:  "SELECT * INTO OUTFILE '/tmp/a' FROM t LIMIT 10;",
