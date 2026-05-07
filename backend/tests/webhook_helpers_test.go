@@ -646,10 +646,17 @@ func waitForApprovalFindingDone(ctx context.Context, t *testing.T, ctl *controll
 	}
 }
 
-// waitForIssueApproved blocks until the issue reaches APPROVED. Use as a
-// stable post-condition after approveIssueAs to prove that any approval-related
-// webhooks have already had their chance to fire (so a subsequent absence
-// assertion is not racing the approval pipeline).
+// waitForIssueApproved blocks until the issue reaches APPROVED.
+//
+// Use only as a state-transition post-condition. This helper is NOT a barrier
+// for webhook delivery — webhook.Manager.CreateEvent runs asynchronously after
+// the issue row is updated. The current absence-assertion call sites are
+// race-free because they subscribe only to event types the gRPC handler does
+// NOT emit on the awaited transition (e.g., I2 subscribes to ISSUE_CREATED but
+// drives an approval that emits ISSUE_APPROVED — which has no subscriber, so
+// CreateEvent's synchronous len(webhookList) == 0 short-circuit never spawns
+// a goroutine). A future caller that subscribes to the awaited event must wait
+// on the collector, not on issue state.
 func waitForIssueApproved(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue) {
 	t.Helper()
 	deadline := time.Now().Add(webhookWaitTimeout)

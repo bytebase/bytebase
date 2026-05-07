@@ -616,8 +616,14 @@ func TestWebhookIntegration(t *testing.T) {
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP2 issue")
 		waitForIssuePending(ctx, t, ctl, issue)
 
+		// After step-1 approval the issue must remain PENDING (step 2 still required).
+		// waitForIssuePending is a stable post-condition — by the time it returns the
+		// approval runner has updated the next-step approver state and the gRPC
+		// handler has already decided not to call NotifyIssueApproved (because
+		// approved == false). No goroutine for ISSUE_APPROVED was ever spawned, so
+		// the count assertion below is race-free.
 		approveIssueAs(ctx, t, ctl, issue, apprStep1)
-		time.Sleep(2 * time.Second) // intentional grace; asserting no intermediate ISSUE_APPROVED
+		waitForIssuePending(ctx, t, ctl, issue)
 		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
 
 		approveIssueAs(ctx, t, ctl, issue, apprStep2)
