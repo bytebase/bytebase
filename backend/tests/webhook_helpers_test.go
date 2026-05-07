@@ -13,6 +13,8 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -396,5 +398,215 @@ func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller,
 			t.Fatalf("timed out waiting for all tasks terminal on rollout %s after %s", rollout.Name, timeout)
 		}
 		time.Sleep(200 * time.Millisecond)
+	}
+}
+
+// installWorkspaceApprovalRule writes a WORKSPACE_APPROVAL setting rule that
+// scopes to the given project via CEL and registers a cleanup that restores
+// the prior workspace setting. flowRoles is the ordered list of roles for
+// sequential approval steps (one role per step).
+//
+//nolint:unused
+func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *controller, projectID string, flowRoles []string) {
+	t.Helper()
+
+	// Snapshot the current setting so we can restore it on cleanup.
+	var prior *v1pb.WorkspaceApprovalSetting
+	getResp, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+		Name: "settings/WORKSPACE_APPROVAL",
+	}))
+	if err == nil && getResp.Msg.Value.GetWorkspaceApproval() != nil {
+		prior = getResp.Msg.Value.GetWorkspaceApproval()
+	}
+
+	rules := []*v1pb.WorkspaceApprovalSetting_Rule{{
+		Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
+		Condition: &expr.Expr{
+			Expression: fmt.Sprintf(`resource.project_id == "%s"`, projectID),
+		},
+		Template: &v1pb.ApprovalTemplate{
+			Title: "Test approval flow for " + projectID,
+			Flow:  &v1pb.ApprovalFlow{Roles: flowRoles},
+		},
+	}}
+	if prior != nil {
+		// Append to existing rules. Subtests run sequentially within the parent
+		// TestWebhookIntegration and each cleanup runs before the next subtest
+		// starts, so this branch is exercised only when a prior rule existed
+		// before the test suite ran (or when the test author wires up multiple
+		// installs in the same subtest). Each rule's CEL is project-scoped, so
+		// coexistence is safe.
+		rules = append(prior.Rules, rules...)
+	}
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{
+					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: rules},
+				},
+			},
+		},
+	}))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		// Restore the snapshot.
+		restored := &v1pb.WorkspaceApprovalSetting{}
+		if prior != nil {
+			restored = prior
+		}
+		_, _ = ctl.settingServiceClient.UpdateSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
+			AllowMissing: true,
+			Setting: &v1pb.Setting{
+				Name: "settings/WORKSPACE_APPROVAL",
+				Value: &v1pb.SettingValue{
+					Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: restored},
+				},
+			},
+		}))
+	})
+}
+
+//nolint:unused
+func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) {
+	t.Helper()
+	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:              project.Name,
+			AllowSelfApproval: false,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+	}))
+	require.NoError(t, err)
+}
+
+type testApprover struct { //nolint:unused
+	Email    string
+	Password string
+}
+
+//nolint:unused
+func provisionApprover(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, suffix, projectRole string) testApprover {
+	t.Helper()
+	email := fmt.Sprintf("approver-%s@example.com", suffix)
+	password := "1024bytebase"
+
+	newUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Email: email, Password: password, Title: "Approver " + suffix},
+	}))
+	require.NoError(t, err)
+
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, newUser.Msg.Workspace, fmt.Sprintf("user:%s", email), "roles/workspaceMember")
+	require.NoError(t, err)
+
+	policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: project.Name,
+	}))
+	require.NoError(t, err)
+	policy := policyResp.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    projectRole,
+		Members: []string{fmt.Sprintf("user:%s", email)},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: project.Name,
+		Policy:   policy,
+	}))
+	require.NoError(t, err)
+
+	return testApprover{Email: email, Password: password}
+}
+
+// withImpersonation logs in as the given approver, runs fn with that identity,
+// and restores the original token via defer.
+//
+//nolint:unused
+func withImpersonation(ctx context.Context, t *testing.T, ctl *controller, who testApprover, fn func()) {
+	t.Helper()
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    who.Email,
+		Password: who.Password,
+	}))
+	require.NoError(t, err)
+
+	original := ctl.authInterceptor.token
+	ctl.authInterceptor.token = loginResp.Msg.Token
+	defer func() { ctl.authInterceptor.token = original }()
+
+	fn()
+}
+
+//nolint:unused
+func createIssueForPlan(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, plan *v1pb.Plan, title string) *v1pb.Issue {
+	t.Helper()
+	resp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		Parent: project.Name,
+		Issue: &v1pb.Issue{
+			Title:       title,
+			Description: title + " description",
+			Type:        v1pb.Issue_DATABASE_CHANGE,
+			Plan:        plan.Name,
+		},
+	}))
+	require.NoError(t, err)
+	return resp.Msg
+}
+
+//nolint:unused
+func approveIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who testApprover) {
+	t.Helper()
+	withImpersonation(ctx, t, ctl, who, func() {
+		_, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+			Name: issue.Name,
+		}))
+		require.NoError(t, err)
+	})
+}
+
+//nolint:unused
+func rejectIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who testApprover, comment string) {
+	t.Helper()
+	withImpersonation(ctx, t, ctl, who, func() {
+		_, err := ctl.issueServiceClient.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{
+			Name:    issue.Name,
+			Comment: comment,
+		}))
+		require.NoError(t, err)
+	})
+}
+
+// requestIssueAsCreator clears the rejected-approver state on a sent-back issue.
+// MUST be called as the issue creator (canRequestIssue at issue_service.go:803-805).
+// Run with the default ctl token, which is the demo user used as default creator.
+//
+//nolint:unused
+func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, comment string) {
+	t.Helper()
+	_, err := ctl.issueServiceClient.RequestIssue(ctx, connect.NewRequest(&v1pb.RequestIssueRequest{
+		Name:    issue.Name,
+		Comment: comment,
+	}))
+	require.NoError(t, err)
+}
+
+//nolint:unused
+func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for {
+		resp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+			Name: issue.Name,
+		}))
+		require.NoError(t, err)
+		if resp.Msg.ApprovalStatus != v1pb.Issue_CHECKING {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("issue %s still CHECKING after %s", issue.Name, timeout)
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 }
