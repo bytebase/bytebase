@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -66,11 +67,16 @@ func matchesEvent(req webhookRequest, projectName, eventTitle string) bool {
 	return strings.Contains(firstSlackSectionText(req.Body), eventTitle)
 }
 
+// webhookWaitTimeout is the deadline for waitForWebhookCount and the issue-state
+// wait helpers. Webhook delivery + completion-check fanout takes <5s in practice;
+// 30s gives ample headroom under CI load.
+const webhookWaitTimeout = 30 * time.Second
+
 // waitForWebhookCount blocks until at least n webhooks for (project, eventTitle)
-// have arrived, or fails the test.
-func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, timeout time.Duration) { //nolint:unparam
+// have arrived, or fails the test after webhookWaitTimeout.
+func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
+	deadline := time.Now().Add(webhookWaitTimeout)
 	for {
 		count := countWebhooksFor(c, projectName, eventTitle)
 		if count >= n {
@@ -78,7 +84,7 @@ func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTi
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for %d %q webhooks on %s; got %d after %s",
-				n, eventTitle, projectName, count, timeout)
+				n, eventTitle, projectName, count, webhookWaitTimeout)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -405,17 +411,11 @@ func waitForAllTasksTerminal(ctx context.Context, t *testing.T, ctl *controller,
 // scopes to the given project via CEL and registers a cleanup that restores
 // the prior workspace setting. flowRoles is the ordered list of roles for
 // sequential approval steps (one role per step).
-func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *controller, projectID string, flowRoles []string) {
+func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, flowRoles []string) {
 	t.Helper()
+	projectID := path.Base(project.Name)
 
-	// Snapshot the current setting so we can restore it on cleanup.
-	var prior *v1pb.WorkspaceApprovalSetting
-	getResp, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
-		Name: "settings/WORKSPACE_APPROVAL",
-	}))
-	if err == nil && getResp.Msg.Value.GetWorkspaceApproval() != nil {
-		prior = getResp.Msg.Value.GetWorkspaceApproval()
-	}
+	prior := snapshotWorkspaceApproval(ctx, t, ctl)
 
 	rules := []*v1pb.WorkspaceApprovalSetting_Rule{{
 		Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
@@ -428,91 +428,81 @@ func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *contro
 		},
 	}}
 	if prior != nil {
-		// Append to existing rules. Subtests run sequentially within the parent
-		// TestWebhookIntegration and each cleanup runs before the next subtest
-		// starts, so this branch is exercised only when a prior rule existed
-		// before the test suite ran (or when the test author wires up multiple
-		// installs in the same subtest). Each rule's CEL is project-scoped, so
-		// coexistence is safe.
+		// Append to the snapshotted rules. Each subtest's t.Cleanup restores
+		// its own snapshot, so LIFO ordering of cleanups still ends with the
+		// truly-original workspace state. If a future test installs twice in
+		// the same subtest, cleanups run LIFO and each writes the snapshot
+		// taken at its install time, so the final state matches the original.
 		rules = append(prior.Rules, rules...)
 	}
 
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
-		AllowMissing: true,
-		Setting: &v1pb.Setting{
-			Name: "settings/WORKSPACE_APPROVAL",
-			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_WorkspaceApproval{
-					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{Rules: rules},
-				},
-			},
-		},
-	}))
-	require.NoError(t, err)
-
+	writeWorkspaceApproval(ctx, t, ctl, &v1pb.WorkspaceApprovalSetting{Rules: rules})
 	t.Cleanup(func() {
-		// Restore the snapshot.
-		restored := &v1pb.WorkspaceApprovalSetting{}
-		if prior != nil {
-			restored = prior
-		}
-		_, _ = ctl.settingServiceClient.UpdateSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
-			AllowMissing: true,
-			Setting: &v1pb.Setting{
-				Name: "settings/WORKSPACE_APPROVAL",
-				Value: &v1pb.SettingValue{
-					Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: restored},
-				},
-			},
-		}))
+		restoreWorkspaceApproval(t, ctl, prior)
 	})
 }
 
 // clearWorkspaceApprovalRules removes all workspace approval rules (including the
 // default catch-all) and restores the prior setting on cleanup. Use this in
 // subtests that assert ISSUE_APPROVAL_REQUESTED does NOT fire when truly no rule
-// applies, bypassing the default fallback installed during workspace creation.
+// applies, or when a custom multi-step flow must not coexist with the default
+// projectOwner-only rule.
 func clearWorkspaceApprovalRules(ctx context.Context, t *testing.T, ctl *controller) {
 	t.Helper()
 
-	// Snapshot the current setting so we can restore it on cleanup.
-	var prior *v1pb.WorkspaceApprovalSetting
-	getResp, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+	prior := snapshotWorkspaceApproval(ctx, t, ctl)
+	writeWorkspaceApproval(ctx, t, ctl, &v1pb.WorkspaceApprovalSetting{})
+	t.Cleanup(func() {
+		restoreWorkspaceApproval(t, ctl, prior)
+	})
+}
+
+// snapshotWorkspaceApproval reads the current WORKSPACE_APPROVAL setting and
+// fails the test if the read errors — silent failures here would let a later
+// "restore" wipe the workspace's real config.
+func snapshotWorkspaceApproval(ctx context.Context, t *testing.T, ctl *controller) *v1pb.WorkspaceApprovalSetting {
+	t.Helper()
+	resp, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
 		Name: "settings/WORKSPACE_APPROVAL",
 	}))
-	if err == nil && getResp.Msg.Value.GetWorkspaceApproval() != nil {
-		prior = getResp.Msg.Value.GetWorkspaceApproval()
-	}
+	require.NoError(t, err, "snapshot WORKSPACE_APPROVAL setting")
+	return resp.Msg.Value.GetWorkspaceApproval() // may be nil when no rules are set
+}
 
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+func writeWorkspaceApproval(ctx context.Context, t *testing.T, ctl *controller, value *v1pb.WorkspaceApprovalSetting) {
+	t.Helper()
+	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: "settings/WORKSPACE_APPROVAL",
 			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_WorkspaceApproval{
-					WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{},
-				},
+				Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: value},
 			},
 		},
 	}))
-	require.NoError(t, err)
+	require.NoError(t, err, "write WORKSPACE_APPROVAL setting")
+}
 
-	t.Cleanup(func() {
-		// Restore the snapshot.
-		restored := &v1pb.WorkspaceApprovalSetting{}
-		if prior != nil {
-			restored = prior
-		}
-		_, _ = ctl.settingServiceClient.UpdateSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
-			AllowMissing: true,
-			Setting: &v1pb.Setting{
-				Name: "settings/WORKSPACE_APPROVAL",
-				Value: &v1pb.SettingValue{
-					Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: restored},
-				},
+// restoreWorkspaceApproval writes the snapshotted setting back. Runs from
+// t.Cleanup; logs failures loudly so a corrupted teardown doesn't bleed into
+// later subtests as an order-dependent flake.
+func restoreWorkspaceApproval(t *testing.T, ctl *controller, prior *v1pb.WorkspaceApprovalSetting) {
+	t.Helper()
+	restored := prior
+	if restored == nil {
+		restored = &v1pb.WorkspaceApprovalSetting{}
+	}
+	if _, err := ctl.settingServiceClient.UpdateSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/WORKSPACE_APPROVAL",
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_WorkspaceApproval{WorkspaceApproval: restored},
 			},
-		}))
-	})
+		},
+	})); err != nil {
+		t.Errorf("failed to restore WORKSPACE_APPROVAL setting in cleanup: %v", err)
+	}
 }
 
 func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) {
@@ -628,19 +618,29 @@ func requestIssueAsCreator(ctx context.Context, t *testing.T, ctl *controller, i
 	require.NoError(t, err)
 }
 
-func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) { //nolint:unparam
+// waitForIssuePending blocks until the issue's approval-finding pipeline
+// finishes and the issue is in PENDING — i.e., the rule has been resolved and
+// the system is ready for an approver action. Fails the test on any other
+// terminal status (APPROVED, REJECTED), which would indicate a setup bug.
+func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue) {
 	t.Helper()
-	deadline := time.Now().Add(timeout)
+	deadline := time.Now().Add(webhookWaitTimeout)
 	for {
 		resp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
 			Name: issue.Name,
 		}))
 		require.NoError(t, err)
-		if resp.Msg.ApprovalStatus != v1pb.Issue_CHECKING {
+		switch resp.Msg.ApprovalStatus {
+		case v1pb.Issue_PENDING:
 			return
+		case v1pb.Issue_CHECKING:
+			// keep waiting
+		default:
+			t.Fatalf("issue %s reached unexpected approval status %s while waiting for PENDING",
+				issue.Name, resp.Msg.ApprovalStatus)
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("issue %s still CHECKING after %s", issue.Name, timeout)
+			t.Fatalf("issue %s still CHECKING after %s", issue.Name, webhookWaitTimeout)
 		}
 		time.Sleep(500 * time.Millisecond)
 	}

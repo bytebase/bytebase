@@ -147,7 +147,15 @@ func TestWebhookIntegration(t *testing.T) {
 	require.NoError(t, err)
 	defer ctl.Close(ctx)
 
-	// Create a test webhook server
+	// Test webhook server.
+	//
+	// Body MUST be the literal "ok" — the Slack plugin's postMessage
+	// (backend/plugin/webhook/slack/slack.go:247-249) treats any other body as
+	// a delivery failure and triggers common.Retry (up to 3 attempts, 5s
+	// exponential backoff). Without an "ok" response, every webhook event
+	// would be delivered 1-3 times depending on test timing, causing
+	// nondeterministic counts in the requireWebhookCount assertions across
+	// the trigger matrix.
 	collector := &webhookCollector{}
 	webhookServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := collector.addRequest(r); err != nil {
@@ -155,7 +163,7 @@ func TestWebhookIntegration(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"success": true}`))
+		_, _ = w.Write([]byte("ok"))
 	}))
 	defer webhookServer.Close()
 
@@ -178,111 +186,71 @@ func TestWebhookIntegration(t *testing.T) {
 	instance := instanceResp.Msg
 
 	t.Run("IssueWithPlanWebhookPayload", func(t *testing.T) {
-		// Reset webhook collector for this test
 		collector.reset()
 
-		// Each subtest owns its own project + webhook to keep counts isolated.
-		projectID := generateRandomString("byt9398-i1")
-		projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
-			ProjectId: projectID,
-			Project: &v1pb.Project{
-				Name:              fmt.Sprintf("projects/%s", projectID),
-				Title:             "byt9398-i1",
-				AllowSelfApproval: true,
-			},
-		}))
-		require.NoError(t, err)
-		project := projectResp.Msg
+		project := ctl.createTestProject(ctx, t, "byt9398-i1")
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
 
-		_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
-			Project: project.Name,
-			Webhook: &v1pb.Webhook{
-				Type:              v1pb.WebhookType_SLACK,
-				Title:             "Test Webhook for ISSUE_CREATED",
-				Url:               webhookServer.URL,
-				NotificationTypes: []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED},
-			},
-		}))
-		require.NoError(t, err)
-
-		// Create a plan with title and description
-		planTitle := "Database Migration Plan"
 		planDesc := "This plan creates a new database with important schema changes"
 		planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 			Parent: project.Name,
 			Plan: &v1pb.Plan{
-				Name:        planTitle,
+				Name:        "Database Migration Plan",
 				Description: planDesc,
-				Specs: []*v1pb.Plan_Spec{
-					{
-						Id: uuid.NewString(),
-						Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
-							CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
-								Target:   instance.Name,
-								Database: "testdb",
-							},
+				Specs: []*v1pb.Plan_Spec{{
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+						CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+							Target:   instance.Name,
+							Database: "testdb",
 						},
 					},
-				},
+				}},
 			},
 		}))
 		require.NoError(t, err)
 
-		// Create an issue for webhook testing
-		issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+		_, err = ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{
 				Title:       "Test webhook issue",
-				Description: "", // Empty description is OK
+				Description: "",
 				Type:        v1pb.Issue_DATABASE_CHANGE,
 				Plan:        planResp.Msg.Name,
 			},
 		}))
 		require.NoError(t, err)
-		require.NotEmpty(t, issueResp.Msg.Name)
 
-		// Wait for webhook to be processed
-		time.Sleep(5 * time.Second)
+		// Deterministic wait — replaces the original time.Sleep(5*time.Second).
+		waitForWebhookCount(t, collector, project.Name, "Issue created", 1)
 
-		// Verify webhook was triggered
-		requests := collector.getRequests()
-		require.GreaterOrEqual(t, len(requests), 1, "Expected at least 1 webhook")
-
-		// Find and verify the issue creation webhook. Slack incoming webhook
-		// payloads intentionally omit top-level text to avoid rendering a
-		// duplicate message above the attachment card.
+		// Find the captured request and verify payload contents.
 		var foundCorrectWebhook bool
-		for _, req := range requests {
+		for _, req := range collector.getRequests() {
 			require.Equal(t, "POST", req.Method)
 			require.Contains(t, req.Headers.Get("Content-Type"), "application/json")
 
-			title, desc, err := parseSlackWebhook(req.Body)
+			_, desc, err := parseSlackWebhook(req.Body)
 			require.NoError(t, err)
-
-			// The webhook should use plan's description (title support is incomplete)
-			if desc == planDesc {
-				foundCorrectWebhook = true
-				t.Logf("✓ Webhook uses plan's description: %q", desc)
-				if title == "" {
-					t.Logf("⚠️  Issue title is empty (expected: %q)", planTitle)
-				}
-
-				// I1 assertions: event identity and payload contents.
-				require.True(t, matchesEvent(req, project.Name, "Issue created"),
-					"first webhook section should contain 'Issue created'; got %q",
-					firstSlackSectionText(req.Body))
-
-				body := string(req.Body)
-				require.Contains(t, body, project.Name, "payload should reference the project resource name")
-				require.Contains(t, body, "Test webhook issue", "payload should contain the issue title")
-				require.Contains(t, body, fmt.Sprintf("/projects/%s/issues/", path.Base(project.Name)),
-					"payload should link to the project's issue resource")
-
-				break
+			// The webhook payload uses the plan's description (issue-title support is incomplete).
+			if desc != planDesc {
+				continue
 			}
-		}
+			foundCorrectWebhook = true
 
-		require.True(t, foundCorrectWebhook, "Webhook should use plan's description")
+			// I1 assertions: event identity and payload contents.
+			require.True(t, matchesEvent(req, project.Name, "Issue created"),
+				"first webhook section should contain 'Issue created'; got %q",
+				firstSlackSectionText(req.Body))
+
+			body := string(req.Body)
+			require.Contains(t, body, project.Name, "payload should reference the project resource name")
+			require.Contains(t, body, "Test webhook issue", "payload should contain the issue title")
+			require.Contains(t, body, fmt.Sprintf("/projects/%s/issues/", path.Base(project.Name)),
+				"payload should link to the project's issue resource")
+			break
+		}
+		require.True(t, foundCorrectWebhook, "expected a webhook whose Slack description matches the plan description")
 	})
 
 	t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
@@ -311,13 +279,13 @@ func TestWebhookIntegration(t *testing.T) {
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
 		// Phase 1: failing task → exactly one PIPELINE_FAILED, no PIPELINE_COMPLETED.
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
 
 		// Phase 2: skip the failed task → PIPELINE_COMPLETED fires (the fix).
 		skipFailedTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
@@ -337,7 +305,7 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		runAllTasks(ctx, t, ctl, plan)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
 	})
 
@@ -359,7 +327,7 @@ func TestWebhookIntegration(t *testing.T) {
 		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_b"))
 		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_a"))
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
 	})
 
@@ -380,7 +348,7 @@ func TestWebhookIntegration(t *testing.T) {
 		rollout := createRolloutOnly(ctx, t, ctl, plan)
 		skipAllTasks(ctx, t, ctl, rollout)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
 	})
 
@@ -400,14 +368,14 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
 
 		unblockFailingTask(t, instanceDir, "byt9398_c3_fail")
 		retryFailedTasks(ctx, t, ctl, rollout)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
@@ -427,11 +395,11 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 
 		skipAllTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
@@ -459,7 +427,7 @@ func TestWebhookIntegration(t *testing.T) {
 		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"))
 		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skipfailed"))
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 60*time.Second)
 		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
 
@@ -470,7 +438,7 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForTaskStatus(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_retry"), v1pb.Task_DONE, 30*time.Second)
 		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c7_skipfailed"))
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
@@ -484,7 +452,7 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f1_fail")},
 		})
 		runAllTasks(ctx, t, ctl, plan)
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
 	t.Run("PipelineFailed_DedupOnSecondTaskFailure", func(t *testing.T) {
@@ -500,7 +468,7 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 
 		// Both tasks have failed. ClaimPipelineFailureNotification's PK collision
@@ -519,14 +487,14 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		rollout := runAllTasks(ctx, t, ctl, plan)
 
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
 
 		// BatchRunTasks resets the dedup row before enqueuing the retry, so the
 		// second failure must re-fire PIPELINE_FAILED. We deliberately do NOT call
 		// unblockFailingTask — the retry should fail again.
 		retryFailedTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 2, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 2)
 	})
 
 	t.Run("IssueCreated_NoLeakageFromOtherEvents", func(t *testing.T) {
@@ -535,7 +503,7 @@ func TestWebhookIntegration(t *testing.T) {
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_i2_db", ""))
 
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "i2", "roles/projectOwner")
 
 		collector.reset() // flush any creation-time webhook events
@@ -546,8 +514,8 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "I2 issue")
 
-		waitForWebhookCount(t, collector, project.Name, "Issue created", 1, 30*time.Second)
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue created", 1)
+		waitForIssuePending(ctx, t, ctl, issue)
 
 		// Drive an approval — webhook is NOT subscribed to ISSUE_APPROVED, so the count must stay at 1.
 		approveIssueAs(ctx, t, ctl, issue, appr)
@@ -562,7 +530,7 @@ func TestWebhookIntegration(t *testing.T) {
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_a1_db", ""))
 
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		_ = provisionApprover(ctx, t, ctl, project, "a1", "roles/projectOwner")
 
 		collector.reset()
@@ -572,9 +540,9 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_a1_db")},
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "A1 issue")
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue)
 
-		waitForWebhookCount(t, collector, project.Name, "Approval required", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Approval required", 1)
 	})
 
 	t.Run("IssueApprovalRequested_NotFiredWhenUnused", func(t *testing.T) {
@@ -604,7 +572,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		clearWorkspaceApprovalRules(ctx, t, ctl)
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "ap1", "roles/projectOwner")
 
 		collector.reset()
@@ -614,10 +582,10 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_ap1_db")},
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP1 issue")
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue)
 
 		approveIssueAs(ctx, t, ctl, issue, appr)
-		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1)
 	})
 
 	t.Run("IssueApproved_MultiStepOnlyFiresAtFinal", func(t *testing.T) {
@@ -627,7 +595,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		clearWorkspaceApprovalRules(ctx, t, ctl)
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name),
+		installWorkspaceApprovalRule(ctx, t, ctl, project,
 			[]string{"roles/projectDeveloper", "roles/projectOwner"})
 		apprStep1 := provisionApprover(ctx, t, ctl, project, "ap2-step1", "roles/projectDeveloper")
 		apprStep2 := provisionApprover(ctx, t, ctl, project, "ap2-step2", "roles/projectOwner")
@@ -639,14 +607,14 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_ap2_db")},
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP2 issue")
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue)
 
 		approveIssueAs(ctx, t, ctl, issue, apprStep1)
 		time.Sleep(2 * time.Second) // intentional grace; asserting no intermediate ISSUE_APPROVED
 		requireWebhookCount(t, collector, project.Name, "Issue approved", 0)
 
 		approveIssueAs(ctx, t, ctl, issue, apprStep2)
-		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1)
 	})
 
 	t.Run("IssueSentBack_FiresOnRejection", func(t *testing.T) {
@@ -656,7 +624,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		clearWorkspaceApprovalRules(ctx, t, ctl)
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "sb1", "roles/projectOwner")
 
 		collector.reset()
@@ -666,10 +634,10 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_sb1_db")},
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB1 issue")
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue)
 
 		rejectIssueAs(ctx, t, ctl, issue, appr, "needs more context")
-		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1)
 	})
 
 	t.Run("IssueSentBack_ThenReapproved_E2E", func(t *testing.T) {
@@ -679,7 +647,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		clearWorkspaceApprovalRules(ctx, t, ctl)
 		disableSelfApproval(ctx, t, ctl, project)
-		installWorkspaceApprovalRule(ctx, t, ctl, path.Base(project.Name), []string{"roles/projectOwner"})
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "sb2", "roles/projectOwner")
 
 		collector.reset()
@@ -693,19 +661,19 @@ func TestWebhookIntegration(t *testing.T) {
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_sb2_db")},
 		})
 		issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB2 issue")
-		waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+		waitForIssuePending(ctx, t, ctl, issue)
 
 		rejectIssueAs(ctx, t, ctl, issue, appr, "fix and resubmit")
-		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue sent back", 1)
 
 		// Issue creator (default ctl token) re-requests approval. Note: RequestIssue
 		// does NOT reset ApprovalFindingDone, so waitForIssuePending would return
 		// immediately. Wait for the second "Approval required" webhook instead —
 		// RequestIssue calls approval.NotifyApprovalRequested directly.
 		requestIssueAsCreator(ctx, t, ctl, issue, "addressed feedback")
-		waitForWebhookCount(t, collector, project.Name, "Approval required", 2, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Approval required", 2)
 
 		approveIssueAs(ctx, t, ctl, issue, appr)
-		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1, 30*time.Second)
+		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1)
 	})
 }
