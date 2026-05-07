@@ -6,7 +6,7 @@
 
 **Architecture:** Single one-line code fix in `backend/api/v1/rollout_service.go` mirroring the existing `BatchRunTasks` pattern. Test coverage extends the existing `backend/tests/webhook_test.go` infrastructure (HTTP-test-server collector + Slack payload parser) with a per-trigger subtest matrix. Tests assert observable webhook deliveries via the HTTP collector, not DB rows, to keep them aligned with what customers actually see.
 
-**Tech Stack:** Go 1.22+, Connect-RPC, gRPC services exposed via `ctl.rolloutServiceClient` / `planServiceClient` / `issueServiceClient` / `projectServiceClient`, SQLite test instance, `httptest.NewServer` for webhook collection, `testify/require` assertions.
+**Tech Stack:** Go 1.22+, Connect-RPC, gRPC services exposed via `ctl.rolloutServiceClient` / `planServiceClient` / `issueServiceClient` / `projectServiceClient` / `settingServiceClient` / `userServiceClient` / `authServiceClient`, SQLite test instance, `httptest.NewServer` for webhook collection, `testify/require` assertions.
 
 **Spec:** `docs/superpowers/specs/2026-05-06-byt-9398-pipeline-completed-after-skip-design.md`
 
@@ -17,24 +17,28 @@
 | Path | Action | Responsibility |
 |------|--------|----------------|
 | `backend/api/v1/rollout_service.go` | Modify (~line 886) | Add `ResetPlanWebhookDelivery` call inside `BatchSkipTasks` |
-| `backend/tests/webhook_test.go` | Modify | Extend with helpers + per-trigger subtest matrix |
-| `backend/tests/webhook_helpers_test.go` | Create | Test-local helpers: `waitForWebhookCount`, `webhookEventTitle`, `seedFailingSheet`, `seedPassingSheet`, `unblockFailingTask` |
+| `backend/tests/webhook_test.go` | Modify | Extend with per-trigger subtest matrix |
+| `backend/tests/webhook_helpers_test.go` | Create | Test-local helpers: collection helpers, plan/rollout helpers, identity-swap helpers, approval-flow helpers |
 
 The helpers live in their own file so the `webhook_test.go` body stays readable. `webhook_helpers_test.go` is a `_test.go` file in package `tests`, so it has full access to `controller`, `webhookCollector`, etc.
 
 ---
 
-## Cross-Cutting Conventions Used Throughout
+## Cross-Cutting Conventions
 
-**Webhook subscription pattern:** every subtest creates a fresh project and adds one webhook subscribed to *only* the event types it cares about. This avoids cross-event leakage in the shared collector.
+**Webhook subscription pattern.** Every subtest creates a fresh project and adds one webhook subscribed to *only* the event types it cares about. This avoids cross-event leakage in the shared collector.
 
-**Event identification:** the existing `parseSlackWebhook` returns body sections; the new `webhookEventTitle` helper returns the first section's text, which is the event title set by `backend/component/webhook/manager.go` (e.g., `"Issue created"`, `"Rollout failed"`, `"Rollout completed"`, `"Issue approved"`, `"Issue sent back"`, `"Approval required"`).
+**Event identification.** The Slack payload's first section block contains the event title decorated with an emoji and a `<link|title>` Slack-markup wrapper (verified against `backend/plugin/webhook/slack/slack_test.go:42-47, 85`, e.g. block 0 contains `❗` and `<https://…|Rollout failed>`). The new `webhookEventTitle` helper extracts that section text and matches it via **`strings.Contains`** against the canonical title string from `backend/component/webhook/manager.go:85,96,114,130,148,159` — `"Issue created"`, `"Approval required"`, `"Issue approved"`, `"Issue sent back"`, `"Rollout failed"`, `"Rollout completed"`. Exact-equality matching would never succeed.
 
-**Wait pattern:** `waitForWebhookCount(t, collector, eventTitle, n, timeout)` polls every 100ms; replaces the brittle `time.Sleep(5*time.Second)` in the existing test.
+**Wait pattern.** `waitForWebhookCount(t, collector, eventTitle, n, timeout)` polls every 100ms; replaces the brittle `time.Sleep(5*time.Second)` in the existing test.
 
-**Force-fail technique:** the `seedFailingSheet` helper writes SQL that references a missing table/column (`INSERT INTO __force_fail_target VALUES(1)`). The `unblockFailingTask` helper executes `CREATE TABLE __force_fail_target(id INT)` against the SQLite instance file out-of-band, after which a `BatchRunTasks` retry passes. This avoids needing to mutate sheet content (which wouldn't help — tasks capture `sheetSha256`).
+**Force-fail technique.** The `seedFailingSheet` helper writes SQL that references a missing table (`INSERT INTO __force_fail_target VALUES(1)`). The `unblockFailingTask` helper executes `CREATE TABLE __force_fail_target(id INT)` against the SQLite database file out-of-band, after which a `BatchRunTasks` retry passes. Each subtest uses uniquely named databases so the table scope (per-`.db`-file in SQLite) isolates them.
 
-**Commit cadence:** each task ends with a commit. Avoid amending; if a hook fails, fix and create a new commit.
+**SQLite layout assumption.** `backend/tests/tests.go` (`provisionSQLiteInstance`) returns a directory path; `backend/plugin/db/sqlite/sqlite.go:83` confirms each database lives at `<instanceDir>/<dbName>.db`. The `unblockFailingTask` helper reads/writes that file directly using the `modernc.org/sqlite` driver. The outer `TestWebhookIntegration` body must keep `instanceDir` (already declared at `webhook_test.go:163`) in scope so subtests can pass it through.
+
+**Identity swap.** The controller has a single `ctl.authInterceptor.token` field. To act as a different user, a test must `userServiceClient.CreateUser`, `addMemberToWorkspaceIAM`, `projectServiceClient.SetIamPolicy`, then `authServiceClient.Login` and assign the returned token to `ctl.authInterceptor.token`. The pattern is taken verbatim from `backend/tests/approval_test.go:932-970`. **Every helper that swaps identity must `defer` a restore of the original token** so subsequent subtests continue as the default user.
+
+**Commit cadence.** Each task ends with a commit. Avoid amending; if a hook fails, fix and create a new commit.
 
 ---
 
@@ -47,13 +51,16 @@ This chunk closes the bug and proves it stays closed. After this chunk merges, t
 **Files:**
 - Modify: `backend/api/v1/rollout_service.go` (insert after line 885)
 
-- [ ] **Step 1: Read the context window of the existing `BatchSkipTasks` function**
+- [ ] **Step 1: Confirm there are no other recovery paths missing the reset call**
 
-Open `backend/api/v1/rollout_service.go` and locate `BatchSkipTasks` (~line 858). Find the `if plan == nil` block (~line 883–885) and the `s.store.GetIssue(...)` call (~line 887). The new code goes between them.
+Run: `git -C . grep -n "ResetPlanWebhookDelivery"`
+Expected: only `backend/store/plan_webhook_delivery.go` (definition) and `backend/api/v1/rollout_service.go` (one call inside `BatchRunTasks`). If a third call site exists, stop and re-evaluate the recovery-path table in the spec.
 
-- [ ] **Step 2: Insert the reset call**
+- [ ] **Step 2: Read the context window of the existing `BatchSkipTasks`**
 
-Apply this edit:
+Open `backend/api/v1/rollout_service.go`, locate `BatchSkipTasks` (~line 858). Find the `if plan == nil` block (~line 883–885) and the `s.store.GetIssue(...)` call (~line 887). The new code goes between them.
+
+- [ ] **Step 3: Insert the reset call**
 
 ```go
     if plan == nil {
@@ -61,28 +68,29 @@ Apply this edit:
     }
 
     // Reset notification state so PIPELINE_COMPLETED can fire after skipping a failed task.
+    // Reset failures are non-fatal: plan_webhook_delivery is a dedup ledger; a missed
+    // delete at worst causes a duplicate notification, never a missing one.
     if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
         slog.Error("failed to reset plan webhook delivery", log.BBError(err))
-        // Don't fail the request - notification is non-critical
     }
 
     issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 ```
 
-The block is character-identical to the one in `BatchRunTasks` at lines 744–748 except for the comment, which names the specific scenario.
+The block mirrors `BatchRunTasks` lines 744–748; the comment additionally documents the dedup-ledger invariant so a future reviewer doesn't undo the swallowed error.
 
-- [ ] **Step 3: Verify the file compiles**
+- [ ] **Step 4: Verify the file compiles**
 
 Run: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
-Expected: build succeeds with no errors.
+Expected: build succeeds.
 
-- [ ] **Step 4: Run the linter**
+- [ ] **Step 5: Run the linter**
 
 Run: `golangci-lint run --allow-parallel-runners ./backend/api/v1/...`
-Repeat the command until it reports no issues (the linter has a max-issues cap and may not surface every issue in one run).
-Expected: no lint issues.
+Repeat until no issues (linter has a max-issues cap).
+Expected: clean.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add backend/api/v1/rollout_service.go
@@ -106,56 +114,14 @@ EOF
 
 ---
 
-### Task 2: Add the BYT-9398 regression test (cell C4)
+### Task 2: Create the helpers file with the universal helpers used everywhere
 
 **Files:**
 - Create: `backend/tests/webhook_helpers_test.go`
-- Modify: `backend/tests/webhook_test.go`
 
-This task introduces only the helpers needed for cell C4 plus the C4 subtest itself. Helpers needed by later cells are added in Chunk 2.
+This file holds every cross-subtest helper. Subsequent tasks add more helpers to it. Consolidating here lets the chunk-1 reviewer verify them all in one place.
 
-- [ ] **Step 1: Write the failing regression test (skeleton in `webhook_test.go`)**
-
-Add a new subtest to `TestWebhookIntegration` named `PipelineCompletedAfterSkippingFailedTask`. Place it after the existing `IssueWithPlanWebhookPayload` subtest. The skeleton:
-
-```go
-t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
-    collector.reset()
-
-    // Subscribe a fresh webhook to only the two pipeline events.
-    project := ctl.createProject(ctx, t, "byt9398-c4")
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_PIPELINE_FAILED,
-        v1pb.Activity_PIPELINE_COMPLETED,
-    })
-
-    // Two databases on the SQLite instance — one task always passes,
-    // one is forced to fail until unblockFailingTask runs.
-    dbPass := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c4_pass")
-    dbFail := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c4_fail")
-
-    plan := createPlanWithTwoTasks(ctx, t, ctl, project,
-        seedPassingSheet(ctx, t, ctl, project, dbPass.Name),
-        seedFailingSheet(ctx, t, ctl, project, dbFail.Name),
-    )
-    runAllTasks(ctx, t, ctl, plan)
-
-    // Phase 1: failing task should drive PIPELINE_FAILED exactly once.
-    waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
-    requireWebhookCount(t, collector, "Rollout completed", 0)
-
-    // Phase 2: skip the failed task → completion check should fire COMPLETED.
-    skipFailedTasks(ctx, t, ctl, plan)
-    waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
-    requireWebhookCount(t, collector, "Rollout failed", 1) // still exactly 1 — no spurious re-send
-})
-```
-
-(Implementations of `createProject`, `createDatabaseInProject`, `createPlanWithTwoTasks`, `runAllTasks`, `skipFailedTasks`, `addWebhookForEvents` follow.)
-
-- [ ] **Step 2: Add minimum-viable helpers in `webhook_helpers_test.go`**
-
-Create `backend/tests/webhook_helpers_test.go`:
+- [ ] **Step 1: Create the file with the imports and event-title helpers**
 
 ```go
 package tests
@@ -163,6 +129,7 @@ package tests
 import (
     "context"
     "database/sql"
+    "encoding/json"
     "fmt"
     "path/filepath"
     "strings"
@@ -172,35 +139,58 @@ import (
     "connectrpc.com/connect"
     "github.com/google/uuid"
     "github.com/stretchr/testify/require"
+    "google.golang.org/genproto/googleapis/type/expr"
+    "google.golang.org/protobuf/types/known/fieldmaskpb"
 
     _ "modernc.org/sqlite"
 
     v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// webhookEventTitle returns the human-readable event title from the first
-// section text of a captured Slack payload (e.g. "Rollout completed").
-// Empty string means no recognizable event title was present.
-func webhookEventTitle(req webhookRequest) string {
-    title, _, _ := parseSlackWebhook(req.Body)
-    if title != "" {
-        return title
+// firstSlackSectionText returns the text of the first Slack section block in the
+// captured payload, or "" if no section block is present. Slack messages from
+// backend/plugin/webhook/slack/slack.go put the event title (with emoji + link
+// markup) in attachments[0].blocks[0].text.text — see
+// backend/plugin/webhook/slack/slack_test.go:42-47, 85 for the exact shape.
+func firstSlackSectionText(body []byte) string {
+    var payload map[string]any
+    if err := json.Unmarshal(body, &payload); err != nil {
+        return ""
     }
-    // Fallback: walk all sections and use the first one whose text matches a
-    // known event title.
-    return extractFirstSectionText(req.Body)
+    attachments, ok := payload["attachments"].([]any)
+    if !ok || len(attachments) == 0 {
+        return ""
+    }
+    att, ok := attachments[0].(map[string]any)
+    if !ok {
+        return ""
+    }
+    blocks, ok := att["blocks"].([]any)
+    if !ok || len(blocks) == 0 {
+        return ""
+    }
+    block0, ok := blocks[0].(map[string]any)
+    if !ok || block0["type"] != "section" {
+        return ""
+    }
+    textMap, ok := block0["text"].(map[string]any)
+    if !ok {
+        return ""
+    }
+    text, _ := textMap["text"].(string)
+    return text
 }
 
-// extractFirstSectionText pulls the first Slack section block's text.
-// Used as a fallback when the issue-specific parser doesn't apply (e.g.,
-// PIPELINE_COMPLETED has no issue tile).
-func extractFirstSectionText(body []byte) string {
-    // ... walk attachments[0].blocks, return blocks[0].text.text if section ...
-    // (Implementation copies the section-walking logic from parseSlackWebhook.)
+// matchesEventTitle reports whether a captured Slack payload's first section
+// contains the canonical event title. Matching is substring-based because the
+// Slack title is decorated with a leading emoji (e.g. "❗") and wrapped in
+// "<link|title>" markup.
+func matchesEventTitle(req webhookRequest, eventTitle string) bool {
+    return strings.Contains(firstSlackSectionText(req.Body), eventTitle)
 }
 
-// waitForWebhookCount blocks until the collector has received at least n
-// requests whose event title equals the given title, or fails the test.
+// waitForWebhookCount blocks until at least n webhooks matching eventTitle have
+// arrived, or fails the test. Polls every 100ms.
 func waitForWebhookCount(t *testing.T, c *webhookCollector, eventTitle string, n int, timeout time.Duration) {
     t.Helper()
     deadline := time.Now().Add(timeout)
@@ -227,7 +217,7 @@ func requireWebhookCount(t *testing.T, c *webhookCollector, eventTitle string, n
 func countWebhooksByTitle(c *webhookCollector, eventTitle string) int {
     n := 0
     for _, req := range c.getRequests() {
-        if webhookEventTitle(req) == eventTitle {
+        if matchesEventTitle(req, eventTitle) {
             n++
         }
     }
@@ -235,26 +225,28 @@ func countWebhooksByTitle(c *webhookCollector, eventTitle string) int {
 }
 ```
 
-- [ ] **Step 3: Add the project / database / sheet / webhook helpers**
-
-Continue `webhook_helpers_test.go`:
+- [ ] **Step 2: Add project, database, sheet, and webhook helpers**
 
 ```go
-// createProject creates a fresh test project and returns the project resource.
-func (ctl *controller) createProject(ctx context.Context, t *testing.T, prefix string) *v1pb.Project {
+// createTestProject creates a fresh test project. The prefix appears in the project
+// resource ID so subtests are easy to identify in logs.
+func (ctl *controller) createTestProject(ctx context.Context, t *testing.T, prefix string) *v1pb.Project {
     t.Helper()
+    pid := generateRandomString(prefix)
     resp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
-        ProjectId: generateRandomString(prefix),
+        ProjectId: pid,
         Project: &v1pb.Project{
-            Title: prefix + " test project",
+            Name:              fmt.Sprintf("projects/%s", pid),
+            Title:             prefix,
+            AllowSelfApproval: true, // approval-flow subtests override this
         },
     }))
     require.NoError(t, err)
     return resp.Msg
 }
 
-// createDatabaseInProject creates a SQLite database under the given instance,
-// transfers it to the given project, and returns the database resource.
+// createDatabaseInProject creates a SQLite database under the given instance and
+// project, then returns the database resource.
 func (ctl *controller) createDatabaseInProject(ctx context.Context, t *testing.T, project *v1pb.Project, instance *v1pb.Instance, dbName string) *v1pb.Database {
     t.Helper()
     err := ctl.createDatabase(ctx, project, instance, nil, dbName, "")
@@ -274,7 +266,7 @@ func addWebhookForEvents(ctx context.Context, t *testing.T, ctl *controller, pro
         Project: project.Name,
         Webhook: &v1pb.Webhook{
             Type:              v1pb.WebhookType_SLACK,
-            Title:             "test-webhook-" + generateRandomString(""),
+            Title:             "test-webhook-" + generateRandomString("hook"),
             Url:               url,
             NotificationTypes: events,
         },
@@ -283,7 +275,7 @@ func addWebhookForEvents(ctx context.Context, t *testing.T, ctl *controller, pro
 }
 
 // seedPassingSheet creates a sheet whose SQL trivially succeeds.
-func seedPassingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, _ string) string {
+func seedPassingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
     t.Helper()
     resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
         Parent: project.Name,
@@ -293,9 +285,9 @@ func seedPassingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
     return resp.Msg.Name
 }
 
-// seedFailingSheet creates a sheet whose SQL fails until the target table is
-// created via unblockFailingTask.
-func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, _ string) string {
+// seedFailingSheet creates a sheet whose SQL fails until unblockFailingTask
+// has run against the target SQLite database file.
+func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
     t.Helper()
     resp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
         Parent: project.Name,
@@ -305,9 +297,8 @@ func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
     return resp.Msg.Name
 }
 
-// unblockFailingTask creates the missing table inside the SQLite instance
-// file so subsequent runs of seedFailingSheet's SQL succeed. The instance
-// path is the SQLite file directory; the database file is `<dbName>.db`.
+// unblockFailingTask creates the missing table inside the SQLite database file
+// so subsequent runs of seedFailingSheet's SQL succeed.
 func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
     t.Helper()
     dbPath := filepath.Join(instanceDir, dbName+".db")
@@ -319,58 +310,63 @@ func unblockFailingTask(t *testing.T, instanceDir, dbName string) {
 }
 ```
 
-- [ ] **Step 4: Add plan/run/skip helpers**
+- [ ] **Step 3: Add plan, rollout, run, skip, retry helpers**
 
-Continue `webhook_helpers_test.go`:
+The rollout returned by `runAllTasks` (or `createRolloutOnly`) is threaded into every subsequent operation via `rollout.Name`, matching the convention of `backend/tests/rollout.go:105` and `tenant_test.go:228` (concrete rollout resource name, not `…/rollouts/-`).
 
 ```go
-// createPlanWithTwoTasks creates a plan with two ChangeDatabaseConfig specs,
-// one per (sheet, target) pair, and returns the resulting plan.
-func createPlanWithTwoTasks(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, sheetA, sheetB string, dbA, dbB string) *v1pb.Plan {
+type taskSpec struct {
+    sheetName string
+    dbTarget  string // full database resource name, e.g. instances/foo/databases/bar
+}
+
+// createPlanWithSpecs creates a plan with one ChangeDatabaseConfig spec per
+// taskSpec entry.
+func createPlanWithSpecs(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, specs []taskSpec) *v1pb.Plan {
     t.Helper()
-    specs := []*v1pb.Plan_Spec{
-        {
+    var planSpecs []*v1pb.Plan_Spec
+    for _, s := range specs {
+        planSpecs = append(planSpecs, &v1pb.Plan_Spec{
             Id: uuid.NewString(),
             Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
                 ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-                    Targets: []string{dbA},
-                    Sheet:   sheetA,
+                    Targets: []string{s.dbTarget},
+                    Sheet:   s.sheetName,
                 },
             },
-        },
-        {
-            Id: uuid.NewString(),
-            Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-                ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-                    Targets: []string{dbB},
-                    Sheet:   sheetB,
-                },
-            },
-        },
+        })
     }
     resp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
         Parent: project.Name,
-        Plan:   &v1pb.Plan{Specs: specs},
+        Plan:   &v1pb.Plan{Specs: planSpecs},
     }))
     require.NoError(t, err)
     return resp.Msg
 }
 
-// runAllTasks creates the rollout for the plan and starts every task.
-// Returns the rollout for downstream task-id lookups.
-func runAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) *v1pb.Rollout {
+// createRolloutOnly materializes a rollout from the plan but does not start any
+// tasks. Used by subtests that need to skip-before-run.
+func createRolloutOnly(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) *v1pb.Rollout {
     t.Helper()
-    rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
+    resp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
         Parent: plan.Name,
     }))
     require.NoError(t, err)
-    rollout := rolloutResp.Msg
-    require.GreaterOrEqual(t, len(rollout.Stages), 1)
+    return resp.Msg
+}
 
+// runAllTasks materializes the rollout and starts every task in every stage.
+// Returns the rollout for downstream task lookups.
+func runAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) *v1pb.Rollout {
+    t.Helper()
+    rollout := createRolloutOnly(ctx, t, ctl, plan)
     for _, stage := range rollout.Stages {
         var taskNames []string
         for _, task := range stage.Tasks {
             taskNames = append(taskNames, task.Name)
+        }
+        if len(taskNames) == 0 {
+            continue
         }
         _, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
             Parent: stage.Name,
@@ -381,99 +377,90 @@ func runAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.
     return rollout
 }
 
-// skipFailedTasks scans the rollout's tasks, identifies which have FAILED
-// task runs, and skips them via BatchSkipTasks.
-func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) {
+// refreshRollout re-reads the rollout (latest task statuses) by its concrete name.
+func refreshRollout(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) *v1pb.Rollout {
     t.Helper()
-    // Re-fetch rollout to get latest task statuses.
-    rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-        Name: plan.Name + "/rollouts/-",
+    resp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
+        Name: rollout.Name,
     }))
     require.NoError(t, err)
+    return resp.Msg
+}
 
-    var failedTasks []string
-    var stageName string
-    for _, stage := range rolloutResp.Msg.Stages {
+// findTaskByDB scans the rollout for the task targeting the given database resource
+// name and returns (stageName, taskName). Fails the test if not found.
+func findTaskByDB(t *testing.T, rollout *v1pb.Rollout, dbResource string) (stageName, taskName string) {
+    t.Helper()
+    for _, stage := range rollout.Stages {
         for _, task := range stage.Tasks {
-            if task.LatestTaskRunStatus == v1pb.TaskRun_FAILED {
-                failedTasks = append(failedTasks, task.Name)
-                stageName = stage.Name
+            if task.Target == dbResource { // ChangeDatabaseConfig tasks expose the target database here
+                return stage.Name, task.Name
             }
         }
     }
-    require.NotEmpty(t, failedTasks, "expected at least one failed task to skip")
+    t.Fatalf("no task targets database %s in rollout %s", dbResource, rollout.Name)
+    return "", ""
+}
 
-    _, err = ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+// runTaskByDB starts the single task in the given rollout that targets dbResource.
+func runTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string) {
+    t.Helper()
+    stageName, taskName := findTaskByDB(t, rollout, dbResource)
+    _, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
         Parent: stageName,
-        Tasks:  failedTasks,
-        Reason: "test: skipping failed task",
+        Tasks:  []string{taskName},
     }))
     require.NoError(t, err)
 }
-```
 
-(The exact `GetRollout` form may need adjusting — verify the existing rollout-name pattern in `schema_update_test.go`. If the Connect API requires the resolved rollout UID instead of `-`, swap accordingly.)
-
-- [ ] **Step 5: Run only the new subtest**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompletedAfterSkippingFailedTask$" -timeout 5m`
-Expected: PASS. The first phase observes one `"Rollout failed"` webhook; the second phase, after `skipFailedTasks`, observes one `"Rollout completed"` webhook with no extra failures.
-
-- [ ] **Step 6: Sanity-check the existing subtest still passes**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$" -timeout 5m`
-Expected: both subtests pass.
-
-- [ ] **Step 7: Format and lint**
-
-Run: `gofmt -w backend/tests/webhook_helpers_test.go backend/tests/webhook_test.go`
-Run: `golangci-lint run --allow-parallel-runners ./backend/tests/...` (repeat until clean)
-Expected: clean.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add backend/tests/webhook_helpers_test.go backend/tests/webhook_test.go
-git commit -m "$(cat <<'EOF'
-test(webhook): add BYT-9398 regression for PIPELINE_COMPLETED after skip
-
-Adds the C4 cell of the webhook trigger matrix: a rollout where one task
-fails and is then resolved via BatchSkipTasks must observe both
-PIPELINE_FAILED and PIPELINE_COMPLETED webhooks.
-
-Introduces minimum-viable shared helpers (waitForWebhookCount,
-seedFailingSheet, unblockFailingTask, etc.) that subsequent webhook
-trigger subtests will reuse.
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-EOF
-)"
-```
-
-After Chunk 1, BYT-9398 is fixed and locked in by a regression test. Chunks 2–4 broaden coverage.
-
----
-
-## Chunk 2: PIPELINE_COMPLETED Matrix (C1, C2, C3, C5, C6, C7)
-
-This chunk fills the rest of the completion-event matrix. Each subtest follows the same pattern as C4 but exercises a different state combination.
-
-### Task 3: Add helpers needed for the remaining cells
-
-**Files:**
-- Modify: `backend/tests/webhook_helpers_test.go`
-
-- [ ] **Step 1: Add `skipAllTasks` and `skipSpecificTasks` helpers**
-
-```go
-// skipAllTasks skips every task in the plan via BatchSkipTasks.
-func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) {
+// skipTaskByDB skips the single task in the given rollout that targets dbResource.
+func skipTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string) {
     t.Helper()
-    rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-        Name: plan.Name + "/rollouts/-",
+    stageName, taskName := findTaskByDB(t, rollout, dbResource)
+    _, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+        Parent: stageName,
+        Tasks:  []string{taskName},
+        Reason: "test: skip task by db",
     }))
     require.NoError(t, err)
-    for _, stage := range rolloutResp.Msg.Stages {
+}
+
+// retryTaskByDB reruns (BatchRunTasks) the single task targeting dbResource.
+// Caller must have called unblockFailingTask first if they want it to succeed.
+func retryTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string) {
+    t.Helper()
+    runTaskByDB(ctx, t, ctl, rollout, dbResource) // BatchRunTasks is the retry mechanism
+}
+
+// skipFailedTasks finds every task in the rollout with LatestTaskRunStatus FAILED
+// and skips them. Fails the test if there are no failed tasks.
+func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
+    t.Helper()
+    fresh := refreshRollout(ctx, t, ctl, rollout)
+    perStage := map[string][]string{}
+    for _, stage := range fresh.Stages {
+        for _, task := range stage.Tasks {
+            if task.LatestTaskRunStatus == v1pb.TaskRun_FAILED {
+                perStage[stage.Name] = append(perStage[stage.Name], task.Name)
+            }
+        }
+    }
+    require.NotEmpty(t, perStage, "expected at least one failed task to skip")
+    for stageName, names := range perStage {
+        _, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+            Parent: stageName,
+            Tasks:  names,
+            Reason: "test: skip failed tasks",
+        }))
+        require.NoError(t, err)
+    }
+}
+
+// skipAllTasks skips every task in every stage of the rollout.
+func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
+    t.Helper()
+    fresh := refreshRollout(ctx, t, ctl, rollout)
+    for _, stage := range fresh.Stages {
         var names []string
         for _, task := range stage.Tasks {
             names = append(names, task.Name)
@@ -489,103 +476,163 @@ func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb
         require.NoError(t, err)
     }
 }
-```
 
-- [ ] **Step 2: Add `retryFailedTasksAfterUnblock` helper**
-
-```go
-// retryFailedTasksAfterUnblock re-runs the FAILED tasks via BatchRunTasks.
-// Caller must have already invoked unblockFailingTask to make the SQL pass.
-func retryFailedTasksAfterUnblock(ctx context.Context, t *testing.T, ctl *controller, plan *v1pb.Plan) {
+// retryFailedTasks reruns BatchRunTasks on every FAILED task in the rollout.
+// The SQL runs again as-is; the caller decides whether to call unblockFailingTask
+// first (used by C3, C7) or not (used by F3 to verify BatchRunTasks resets the
+// plan_webhook_delivery row so a second PIPELINE_FAILED can fire).
+func retryFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
     t.Helper()
-    rolloutResp, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
-        Name: plan.Name + "/rollouts/-",
-    }))
-    require.NoError(t, err)
-    var failed []string
-    var stageName string
-    for _, stage := range rolloutResp.Msg.Stages {
+    fresh := refreshRollout(ctx, t, ctl, rollout)
+    perStage := map[string][]string{}
+    for _, stage := range fresh.Stages {
         for _, task := range stage.Tasks {
             if task.LatestTaskRunStatus == v1pb.TaskRun_FAILED {
-                failed = append(failed, task.Name)
-                stageName = stage.Name
+                perStage[stage.Name] = append(perStage[stage.Name], task.Name)
             }
         }
     }
-    require.NotEmpty(t, failed)
-    _, err = ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
-        Parent: stageName,
-        Tasks:  failed,
-    }))
-    require.NoError(t, err)
-}
-```
-
-- [ ] **Step 3: Add `createPlanWithSpecs` for variable-task-count cells**
-
-```go
-type taskSpec struct {
-    sheetName string
-    dbName    string
-}
-
-func createPlanWithSpecs(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, specs []taskSpec) *v1pb.Plan {
-    t.Helper()
-    var planSpecs []*v1pb.Plan_Spec
-    for _, s := range specs {
-        planSpecs = append(planSpecs, &v1pb.Plan_Spec{
-            Id: uuid.NewString(),
-            Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-                ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-                    Targets: []string{s.dbName},
-                    Sheet:   s.sheetName,
-                },
-            },
-        })
+    require.NotEmpty(t, perStage)
+    for stageName, names := range perStage {
+        _, err := ctl.rolloutServiceClient.BatchRunTasks(ctx, connect.NewRequest(&v1pb.BatchRunTasksRequest{
+            Parent: stageName,
+            Tasks:  names,
+        }))
+        require.NoError(t, err)
     }
-    resp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-        Parent: project.Name,
-        Plan:   &v1pb.Plan{Specs: planSpecs},
-    }))
-    require.NoError(t, err)
-    return resp.Msg
+}
+
+// waitForTaskDone polls the rollout until the task targeting dbResource has
+// LatestTaskRunStatus == DONE, or fails the test.
+func waitForTaskDone(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout, dbResource string, timeout time.Duration) {
+    t.Helper()
+    deadline := time.Now().Add(timeout)
+    for {
+        fresh := refreshRollout(ctx, t, ctl, rollout)
+        for _, stage := range fresh.Stages {
+            for _, task := range stage.Tasks {
+                if task.Target != dbResource {
+                    continue
+                }
+                if task.LatestTaskRunStatus == v1pb.TaskRun_DONE {
+                    return
+                }
+            }
+        }
+        if time.Now().After(deadline) {
+            t.Fatalf("timed out waiting for task on %s to reach DONE", dbResource)
+        }
+        time.Sleep(200 * time.Millisecond)
+    }
 }
 ```
 
-- [ ] **Step 4: Format / lint / commit**
+- [ ] **Step 4: Verify the helpers file compiles in isolation**
+
+Run: `go build ./backend/tests/...`
+Expected: success.
+
+(If `task.Target` is not the correct field name on the `Task` proto for ChangeDatabaseConfig, swap to whatever the proto exposes — verify by reading `backend/generated-go/v1/rollout_service.pb.go` for the `Task` message. Likely candidates: `Target`, `TargetDatabase`, `Database`. Pin the field before continuing.)
+
+- [ ] **Step 5: Format / lint / commit**
 
 ```bash
 gofmt -w backend/tests/webhook_helpers_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
 git add backend/tests/webhook_helpers_test.go
-git commit -m "test(webhook): add skip-all / retry helpers for trigger matrix"
+git commit -m "test(webhook): add helpers for trigger matrix tests"
 ```
 
 ---
 
-### Task 4: Add subtests C1, C2, C5
+### Task 3: Add the BYT-9398 regression test (cell C4)
+
+**Files:**
+- Modify: `backend/tests/webhook_test.go`
+
+- [ ] **Step 1: Write the regression subtest inside `TestWebhookIntegration`**
+
+Place it after the existing `IssueWithPlanWebhookPayload` subtest. The outer test already declares `instanceDir` (line 163) and `instance` (line 177); the closure captures both.
+
+```go
+t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
+    collector.reset()
+
+    project := ctl.createTestProject(ctx, t, "byt9398-c4")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
+        v1pb.Activity_PIPELINE_FAILED,
+        v1pb.Activity_PIPELINE_COMPLETED,
+    })
+
+    dbPass := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c4_pass")
+    dbFail := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c4_fail")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), dbPass.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbFail.Name},
+    })
+    rollout := runAllTasks(ctx, t, ctl, plan)
+
+    // Phase 1: failing task → exactly one PIPELINE_FAILED, zero PIPELINE_COMPLETED.
+    waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
+    requireWebhookCount(t, collector, "Rollout completed", 0)
+
+    // Phase 2: skip the failed task → completion check fires PIPELINE_COMPLETED.
+    skipFailedTasks(ctx, t, ctl, rollout)
+    waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
+    requireWebhookCount(t, collector, "Rollout failed", 1) // no spurious re-send
+})
+```
+
+- [ ] **Step 2: Run only the new subtest**
+
+Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompletedAfterSkippingFailedTask$" -timeout 5m`
+Expected: PASS.
+
+- [ ] **Step 3: Sanity-check the existing subtest still passes**
+
+Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$" -timeout 5m`
+Expected: both subtests pass.
+
+- [ ] **Step 4: Format / lint / commit**
+
+```bash
+gofmt -w backend/tests/webhook_test.go
+golangci-lint run --allow-parallel-runners ./backend/tests/...
+
+git add backend/tests/webhook_test.go
+git commit -m "test(webhook): add BYT-9398 regression for PIPELINE_COMPLETED after skip"
+```
+
+After Chunk 1 the bug is fixed and locked in by a regression test. Chunks 2–4 broaden coverage.
+
+---
+
+## Chunk 2: PIPELINE_COMPLETED Matrix (C1, C2, C3, C5, C6, C7)
+
+All helpers needed by Chunk 2 are already defined in Task 2 (Chunk 1). This chunk only adds subtests.
+
+### Task 4: Add subtests C1, C2, C5 (no-failure paths)
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
 These three cells share a structure: no failure ever occurs, one `"Rollout completed"` webhook fires.
 
-- [ ] **Step 1: Write subtest `PipelineCompleted_AllTasksDone` (C1)**
+- [ ] **Step 1: `PipelineCompleted_AllTasksDone` (C1)**
 
 ```go
 t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c1")
+    project := ctl.createTestProject(ctx, t, "byt9398-c1")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
     db1 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c1_a")
     db2 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c1_b")
-    sheetA := seedPassingSheet(ctx, t, ctl, project, db1.Name)
-    sheetB := seedPassingSheet(ctx, t, ctl, project, db2.Name)
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {sheetA, db1.Name}, {sheetB, db2.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db1.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db2.Name},
     })
     runAllTasks(ctx, t, ctl, plan)
 
@@ -594,24 +641,21 @@ t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
 })
 ```
 
-- [ ] **Step 2: Write subtest `PipelineCompleted_DoneAndSkipped` (C2)**
+- [ ] **Step 2: `PipelineCompleted_DoneAndSkipped` (C2)**
 
 ```go
 t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c2")
+    project := ctl.createTestProject(ctx, t, "byt9398-c2")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
     db1 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c2_a")
     db2 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c2_b")
-    sheetA := seedPassingSheet(ctx, t, ctl, project, db1.Name)
-    sheetB := seedPassingSheet(ctx, t, ctl, project, db2.Name)
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {sheetA, db1.Name}, {sheetB, db2.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db1.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db2.Name},
     })
-
-    // Skip db2's task; run db1's task. Plan completes via DONE + SKIPPED.
     rollout := createRolloutOnly(ctx, t, ctl, plan)
     skipTaskByDB(ctx, t, ctl, rollout, db2.Name)
     runTaskByDB(ctx, t, ctl, rollout, db1.Name)
@@ -621,115 +665,107 @@ t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
 })
 ```
 
-`createRolloutOnly`, `skipTaskByDB`, `runTaskByDB` are new helpers — add them in the same step. They follow the same pattern as the existing helpers but operate on a single targeted task identified by its database name.
-
-- [ ] **Step 3: Write subtest `PipelineCompleted_AllSkipped` (C5)**
+- [ ] **Step 3: `PipelineCompleted_AllSkipped` (C5)**
 
 ```go
 t.Run("PipelineCompleted_AllSkipped", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c5")
+    project := ctl.createTestProject(ctx, t, "byt9398-c5")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
     db1 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c5_a")
     db2 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c5_b")
-    sheetA := seedPassingSheet(ctx, t, ctl, project, db1.Name)
-    sheetB := seedPassingSheet(ctx, t, ctl, project, db2.Name)
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {sheetA, db1.Name}, {sheetB, db2.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db1.Name},
+        {seedPassingSheet(ctx, t, ctl, project), db2.Name},
     })
-    _ = createRolloutOnly(ctx, t, ctl, plan)
-    skipAllTasks(ctx, t, ctl, plan)
+    rollout := createRolloutOnly(ctx, t, ctl, plan)
+    skipAllTasks(ctx, t, ctl, rollout)
 
     waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
     requireWebhookCount(t, collector, "Rollout failed", 0)
 })
 ```
 
-- [ ] **Step 4: Run the three new subtests**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompleted_(AllTasksDone|DoneAndSkipped|AllSkipped)$" -timeout 5m`
-Expected: all three pass.
-
-- [ ] **Step 5: Format / lint / commit**
+- [ ] **Step 4: Run, format, lint, commit**
 
 ```bash
-gofmt -w backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompleted_(AllTasksDone|DoneAndSkipped|AllSkipped)$" -timeout 5m
+gofmt -w backend/tests/webhook_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
-git add backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+git add backend/tests/webhook_test.go
 git commit -m "test(webhook): cover PIPELINE_COMPLETED no-failure paths (C1, C2, C5)"
 ```
 
 ---
 
-### Task 5: Add subtests C3, C6, C7
+### Task 5: Add subtests C3, C6, C7 (recovery paths)
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
-These cells use `unblockFailingTask` to fix-then-retry a failing task.
+These cells use `unblockFailingTask` to fix-then-retry a failing task. SQLite's per-`.db`-file scope keeps `__force_fail_target` isolated per database, so a C7 plan can mix retried-and-unblocked tasks with still-failing-then-skipped tasks on different databases without interference.
 
-- [ ] **Step 1: Write subtest `PipelineCompleted_DoneAndFailedThenRetriedDone` (C3)**
+- [ ] **Step 1: `PipelineCompleted_DoneAndFailedThenRetriedDone` (C3)**
 
 ```go
 t.Run("PipelineCompleted_DoneAndFailedThenRetriedDone", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c3")
+    project := ctl.createTestProject(ctx, t, "byt9398-c3")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
     dbPass := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c3_pass")
     dbFail := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c3_fail")
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedPassingSheet(ctx, t, ctl, project, dbPass.Name), dbPass.Name},
-        {seedFailingSheet(ctx, t, ctl, project, dbFail.Name), dbFail.Name},
+        {seedPassingSheet(ctx, t, ctl, project), dbPass.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbFail.Name},
     })
-    runAllTasks(ctx, t, ctl, plan)
+    rollout := runAllTasks(ctx, t, ctl, plan)
 
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
     requireWebhookCount(t, collector, "Rollout completed", 0)
 
-    // Unblock the failing SQL and retry.
     unblockFailingTask(t, instanceDir, "byt9398_c3_fail")
-    retryFailedTasksAfterUnblock(ctx, t, ctl, plan)
+    retryFailedTasks(ctx, t, ctl, rollout)
 
     waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
     requireWebhookCount(t, collector, "Rollout failed", 1)
 })
 ```
 
-- [ ] **Step 2: Write subtest `PipelineCompleted_AllFailedThenAllSkipped` (C6)**
+- [ ] **Step 2: `PipelineCompleted_AllFailedThenAllSkipped` (C6)**
 
 ```go
 t.Run("PipelineCompleted_AllFailedThenAllSkipped", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c6")
+    project := ctl.createTestProject(ctx, t, "byt9398-c6")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
     db1 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c6_a")
     db2 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c6_b")
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedFailingSheet(ctx, t, ctl, project, db1.Name), db1.Name},
-        {seedFailingSheet(ctx, t, ctl, project, db2.Name), db2.Name},
+        {seedFailingSheet(ctx, t, ctl, project), db1.Name},
+        {seedFailingSheet(ctx, t, ctl, project), db2.Name},
     })
-    runAllTasks(ctx, t, ctl, plan)
+    rollout := runAllTasks(ctx, t, ctl, plan)
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
 
-    skipAllTasks(ctx, t, ctl, plan)
+    skipAllTasks(ctx, t, ctl, rollout)
     waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
     requireWebhookCount(t, collector, "Rollout failed", 1)
 })
 ```
 
-- [ ] **Step 3: Write subtest `PipelineCompleted_MixedRecovery` (C7)**
+- [ ] **Step 3: `PipelineCompleted_MixedRecovery` (C7)**
 
 ```go
 t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-c7")
+    project := ctl.createTestProject(ctx, t, "byt9398-c7")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
     })
@@ -739,13 +775,12 @@ t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
     dbSkipFailed := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_c7_skipfailed")
 
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedPassingSheet(ctx, t, ctl, project, dbDone.Name), dbDone.Name},
-        {seedPassingSheet(ctx, t, ctl, project, dbSkip.Name), dbSkip.Name},
-        {seedFailingSheet(ctx, t, ctl, project, dbRetry.Name), dbRetry.Name},
-        {seedFailingSheet(ctx, t, ctl, project, dbSkipFailed.Name), dbSkipFailed.Name},
+        {seedPassingSheet(ctx, t, ctl, project), dbDone.Name},
+        {seedPassingSheet(ctx, t, ctl, project), dbSkip.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbRetry.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbSkipFailed.Name},
     })
 
-    // First: skip the always-skipped task, run the rest.
     rollout := createRolloutOnly(ctx, t, ctl, plan)
     skipTaskByDB(ctx, t, ctl, rollout, dbSkip.Name)
     runTaskByDB(ctx, t, ctl, rollout, dbDone.Name)
@@ -755,10 +790,11 @@ t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
     requireWebhookCount(t, collector, "Rollout completed", 0)
 
-    // Second: unblock dbRetry's SQL and retry; skip dbSkipFailed.
+    // Unblock dbRetry's SQL only — dbSkipFailed's __force_fail_target table
+    // remains absent in its own .db file, so dbSkipFailed continues to fail.
     unblockFailingTask(t, instanceDir, "byt9398_c7_retry")
-    retryTaskByDB(ctx, t, ctl, plan, dbRetry.Name)
-    waitForTaskDone(ctx, t, ctl, plan, dbRetry.Name, 30*time.Second)
+    retryTaskByDB(ctx, t, ctl, rollout, dbRetry.Name)
+    waitForTaskDone(ctx, t, ctl, rollout, dbRetry.Name, 30*time.Second)
     skipTaskByDB(ctx, t, ctl, rollout, dbSkipFailed.Name)
 
     waitForWebhookCount(t, collector, "Rollout completed", 1, 30*time.Second)
@@ -766,20 +802,14 @@ t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
 })
 ```
 
-(`retryTaskByDB`, `waitForTaskDone` are new — add them as needed.)
-
-- [ ] **Step 4: Run new subtests**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompleted_(DoneAndFailedThenRetriedDone|AllFailedThenAllSkipped|MixedRecovery)$" -timeout 8m`
-Expected: all three pass.
-
-- [ ] **Step 5: Format / lint / commit**
+- [ ] **Step 4: Run, format, lint, commit**
 
 ```bash
-gofmt -w backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineCompleted_(DoneAndFailedThenRetriedDone|AllFailedThenAllSkipped|MixedRecovery)$" -timeout 8m
+gofmt -w backend/tests/webhook_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
-git add backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+git add backend/tests/webhook_test.go
 git commit -m "test(webhook): cover PIPELINE_COMPLETED recovery paths (C3, C6, C7)"
 ```
 
@@ -792,18 +822,16 @@ git commit -m "test(webhook): cover PIPELINE_COMPLETED recovery paths (C3, C6, C
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
-- [ ] **Step 1: Write subtest `PipelineFailed_SingleTaskFails` (F1)**
+- [ ] **Step 1: `PipelineFailed_SingleTaskFails` (F1)**
 
 ```go
 t.Run("PipelineFailed_SingleTaskFails", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-f1")
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_PIPELINE_FAILED,
-    })
+    project := ctl.createTestProject(ctx, t, "byt9398-f1")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
     dbFail := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_f1_fail")
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedFailingSheet(ctx, t, ctl, project, dbFail.Name), dbFail.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbFail.Name},
     })
     runAllTasks(ctx, t, ctl, plan)
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
@@ -811,61 +839,57 @@ t.Run("PipelineFailed_SingleTaskFails", func(t *testing.T) {
 })
 ```
 
-- [ ] **Step 2: Write subtest `PipelineFailed_TwoTasksFailDeduped` (F2)**
+- [ ] **Step 2: `PipelineFailed_TwoTasksFailDeduped` (F2)**
 
 ```go
 t.Run("PipelineFailed_TwoTasksFailDeduped", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-f2")
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_PIPELINE_FAILED,
-    })
+    project := ctl.createTestProject(ctx, t, "byt9398-f2")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
     db1 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_f2_a")
     db2 := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_f2_b")
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedFailingSheet(ctx, t, ctl, project, db1.Name), db1.Name},
-        {seedFailingSheet(ctx, t, ctl, project, db2.Name), db2.Name},
+        {seedFailingSheet(ctx, t, ctl, project), db1.Name},
+        {seedFailingSheet(ctx, t, ctl, project), db2.Name},
     })
     runAllTasks(ctx, t, ctl, plan)
 
-    // Both tasks will fail; the table dedupes — assert exactly one webhook.
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
-    // Give the second failure a chance to (incorrectly) re-trigger.
+
+    // Intentional sleep: we are asserting the *absence* of a duplicate webhook.
+    // No "wait for X" pattern can do this — only a fixed grace period plus an
+    // exact-count assertion. Do not replace with waitForWebhookCount.
     time.Sleep(2 * time.Second)
     requireWebhookCount(t, collector, "Rollout failed", 1)
 })
 ```
 
-- [ ] **Step 3: Write subtest `PipelineFailed_RetryFailsAgain` (F3)**
+- [ ] **Step 3: `PipelineFailed_RetryFailsAgain` (F3)**
 
 ```go
 t.Run("PipelineFailed_RetryFailsAgain", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-f3")
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_PIPELINE_FAILED,
-    })
+    project := ctl.createTestProject(ctx, t, "byt9398-f3")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
     dbFail := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_f3_fail")
     plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-        {seedFailingSheet(ctx, t, ctl, project, dbFail.Name), dbFail.Name},
+        {seedFailingSheet(ctx, t, ctl, project), dbFail.Name},
     })
-    runAllTasks(ctx, t, ctl, plan)
+    rollout := runAllTasks(ctx, t, ctl, plan)
     waitForWebhookCount(t, collector, "Rollout failed", 1, 30*time.Second)
 
-    // BatchRunTasks resets the delivery row; the next failure must fire FAILED again.
-    retryFailedTasksAfterUnblock(ctx, t, ctl, plan) // intentionally without unblock — it'll fail again
+    // Verify BatchRunTasks resets plan_webhook_delivery: the second failure
+    // must fire PIPELINE_FAILED again. We deliberately do NOT call
+    // unblockFailingTask — we want the retry to fail again.
+    retryFailedTasks(ctx, t, ctl, rollout)
     waitForWebhookCount(t, collector, "Rollout failed", 2, 30*time.Second)
 })
 ```
 
-- [ ] **Step 4: Run the three new subtests**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineFailed_(SingleTaskFails|TwoTasksFailDeduped|RetryFailsAgain)$" -timeout 5m`
-Expected: all three pass.
-
-- [ ] **Step 5: Format / lint / commit**
+- [ ] **Step 4: Run, format, lint, commit**
 
 ```bash
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/PipelineFailed_(SingleTaskFails|TwoTasksFailDeduped|RetryFailsAgain)$" -timeout 5m
 gofmt -w backend/tests/webhook_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
@@ -875,110 +899,302 @@ git commit -m "test(webhook): cover PIPELINE_FAILED dedup and retry paths (F1, F
 
 ---
 
-### Task 7: F4 (HA license failure path)
+### Task 7: F4 (HA license breach) — document and skip
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
-The HA-failure path is exercised via `failTaskRunsForHA` in
-`backend/runner/taskrun/scheduler.go`. If the test environment cannot
-deterministically trigger the HA-license-breach codepath without external
-licensing infrastructure, document this limitation explicitly and gate the
-subtest behind an environment variable or skip it with `t.Skip` and a
-TODO referencing follow-up work.
+Driving an HA license breach deterministically from an integration test requires three pieces of test infrastructure that do not currently exist:
 
-- [ ] **Step 1: Investigate test feasibility**
+1. A **non-HA license JWT** (the canned token in `backend/tests/subscription.go:14` is an `ENTERPRISE` license with `Ha=true`).
+2. A way to **spoof active replica heartbeat rows** so `CountActiveReplicas` (`backend/enterprise/license.go:482`) returns >1.
+3. A way to **bypass `haFailGracePeriod = 10 * time.Minute`** (`backend/runner/taskrun/scheduler.go:26`), currently a hardcoded `const` not exposed via `Profile`.
 
-Read `backend/runner/taskrun/scheduler.go:71-142` (`failTaskRunsForHA`) and
-identify what external state it needs to fire. Look at whether existing
-tests under `backend/enterprise/` or `backend/tests/subscription_test.go`
-demonstrate a way to drive the HA-limit-exceeded check from a test.
+Building this scaffolding is out of scope for BYT-9398. The F4 cell is therefore deferred with a documenting `t.Skip` so the spec coverage is explicit and the future ticket is discoverable.
 
-- [ ] **Step 2 (path A — feasible): Write subtest `PipelineFailed_HALicenseBreach`**
-
-If a deterministic trigger exists, add the subtest. Pattern:
-- Set up an HA-licensed environment with replica count exceeding the licensed limit.
-- Submit a plan that creates pending task runs.
-- Wait for `failTaskRunsForHA` to fire.
-- Assert exactly one `"Rollout failed"` webhook fires.
-
-- [ ] **Step 2 (path B — infeasible): Skip with documentation**
+- [ ] **Step 1: Add a skipped subtest with the rationale**
 
 ```go
 t.Run("PipelineFailed_HALicenseBreach", func(t *testing.T) {
-    t.Skip("Driving HA license breach from an integration test requires harness " +
-        "support not yet available; tracked as follow-up. The codepath is " +
-        "covered manually and by unit-level checks in backend/enterprise/.")
+    t.Skip("HA license-breach path requires a non-HA license JWT, replica-heartbeat " +
+        "seeding, and an injectable haFailGracePeriod — none currently exist in the " +
+        "test harness. The codepath at backend/runner/taskrun/scheduler.go:71-142 is " +
+        "manually verified. Tracked as a follow-up.")
 })
 ```
 
-Pick whichever path matches reality after Step 1.
-
-- [ ] **Step 3: Format / lint / commit**
+- [ ] **Step 2: Format, lint, commit**
 
 ```bash
 gofmt -w backend/tests/webhook_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
 git add backend/tests/webhook_test.go
-git commit -m "test(webhook): cover or skip HA-license PIPELINE_FAILED path (F4)"
+git commit -m "test(webhook): document HA-license PIPELINE_FAILED gap as deferred (F4)"
 ```
 
 ---
 
 ## Chunk 4: Issue Event Matrix (CREATED, APPROVAL_REQUESTED, APPROVED, SENT_BACK)
 
-### Task 8: ISSUE_CREATED enhancement (I1, I2)
+The approval and sent-back cells require running approval/reject actions as a *different user* from the issue creator (Bytebase blocks self-approval by default). The pattern below is taken from `backend/tests/approval_test.go:932-970` and centralized in `webhook_helpers_test.go` so each subtest stays focused on its assertions.
+
+### Task 8: Add approval-flow helpers to `webhook_helpers_test.go`
+
+**Files:**
+- Modify: `backend/tests/webhook_helpers_test.go`
+
+- [ ] **Step 1: Add `installWorkspaceApprovalRule`**
+
+Approval requirements live in the workspace-scoped `WORKSPACE_APPROVAL` setting, not on the project. Each rule has a CEL `Condition` that scopes it to a project, plus a `Template.Flow` describing the steps. (Verified at `backend/tests/approval_test.go:835-861` and the proto.)
+
+```go
+// installWorkspaceApprovalRule writes a WORKSPACE_APPROVAL setting rule that
+// requires the given role(s) to approve issues in the given project. flowRoles
+// is the ordered list of roles for sequential approval steps (one role per step).
+func installWorkspaceApprovalRule(ctx context.Context, t *testing.T, ctl *controller, projectID string, flowRoles []string) {
+    t.Helper()
+    _, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+        AllowMissing: true,
+        Setting: &v1pb.Setting{
+            Name: "settings/WORKSPACE_APPROVAL",
+            Value: &v1pb.SettingValue{
+                Value: &v1pb.SettingValue_WorkspaceApproval{
+                    WorkspaceApproval: &v1pb.WorkspaceApprovalSetting{
+                        Rules: []*v1pb.WorkspaceApprovalSetting_Rule{{
+                            Source: v1pb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED,
+                            Condition: &expr.Expr{
+                                Expression: fmt.Sprintf(`resource.project_id == "%s"`, projectID),
+                            },
+                            Template: &v1pb.ApprovalTemplate{
+                                Title: "Test approval flow for " + projectID,
+                                Flow:  &v1pb.ApprovalFlow{Roles: flowRoles},
+                            },
+                        }},
+                    },
+                },
+            },
+        },
+    }))
+    require.NoError(t, err)
+}
+
+// disableSelfApproval flips the project's AllowSelfApproval flag to false so the
+// creator cannot also approve.
+func disableSelfApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) {
+    t.Helper()
+    _, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+        Project: &v1pb.Project{
+            Name:              project.Name,
+            AllowSelfApproval: false,
+        },
+        UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval"}},
+    }))
+    require.NoError(t, err)
+}
+```
+
+- [ ] **Step 2: Add `provisionApprover` (creates user + grants role + returns credentials)**
+
+```go
+type approver struct {
+    Email    string
+    Password string
+}
+
+// provisionApprover creates a user, makes them a workspace member, and grants
+// them the given project role. Returns credentials for later impersonation.
+func provisionApprover(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, suffix, projectRole string) approver {
+    t.Helper()
+    email := fmt.Sprintf("approver-%s@example.com", suffix)
+    password := "1024bytebase"
+
+    newUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+        User: &v1pb.User{Email: email, Password: password, Title: "Approver " + suffix},
+    }))
+    require.NoError(t, err)
+
+    _, err = ctl.addMemberToWorkspaceIAM(ctx, newUser.Msg.Workspace, fmt.Sprintf("user:%s", email), "roles/workspaceMember")
+    require.NoError(t, err)
+
+    policyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+        Resource: project.Name,
+    }))
+    require.NoError(t, err)
+    policy := policyResp.Msg
+    policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+        Role:    projectRole,
+        Members: []string{fmt.Sprintf("user:%s", email)},
+    })
+    _, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+        Resource: project.Name,
+        Policy:   policy,
+    }))
+    require.NoError(t, err)
+
+    return approver{Email: email, Password: password}
+}
+```
+
+- [ ] **Step 3: Add `withImpersonation` (token-swap helper with deferred restore)**
+
+```go
+// withImpersonation logs in as the given approver, runs fn with that identity,
+// then restores the original token. MUST be used by callers that switch
+// identity to keep subsequent subtests on the default user.
+func withImpersonation(ctx context.Context, t *testing.T, ctl *controller, who approver, fn func()) {
+    t.Helper()
+    loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+        Email:    who.Email,
+        Password: who.Password,
+    }))
+    require.NoError(t, err)
+
+    original := ctl.authInterceptor.token
+    ctl.authInterceptor.token = loginResp.Msg.Token
+    defer func() { ctl.authInterceptor.token = original }()
+
+    fn()
+}
+```
+
+- [ ] **Step 4: Add issue helpers**
+
+```go
+// createIssueForPlan creates an issue tied to the given plan. The DATABASE_CHANGE
+// type matches the plan specs the matrix uses.
+func createIssueForPlan(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, plan *v1pb.Plan, title string) *v1pb.Issue {
+    t.Helper()
+    resp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+        Parent: project.Name,
+        Issue: &v1pb.Issue{
+            Title:       title,
+            Description: title + " description",
+            Type:        v1pb.Issue_DATABASE_CHANGE,
+            Plan:        plan.Name,
+        },
+    }))
+    require.NoError(t, err)
+    return resp.Msg
+}
+
+// approveIssueAs approves the issue while logged in as the given approver.
+func approveIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who approver) {
+    t.Helper()
+    withImpersonation(ctx, t, ctl, who, func() {
+        _, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
+            Name: issue.Name,
+        }))
+        require.NoError(t, err)
+    })
+}
+
+// rejectIssueAs rejects (sends back) the issue while logged in as the given approver.
+func rejectIssueAs(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, who approver, reason string) {
+    t.Helper()
+    withImpersonation(ctx, t, ctl, who, func() {
+        _, err := ctl.issueServiceClient.RejectIssue(ctx, connect.NewRequest(&v1pb.RejectIssueRequest{
+            Name:    issue.Name,
+            Comment: reason,
+        }))
+        require.NoError(t, err)
+    })
+}
+
+// waitForIssuePending polls until the issue's approval-finding phase finishes
+// (status leaves CHECKING). Required after CreateIssue when an approval rule
+// applies — pattern from approval_test.go:900-916.
+func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, issue *v1pb.Issue, timeout time.Duration) {
+    t.Helper()
+    deadline := time.Now().Add(timeout)
+    for {
+        resp, err := ctl.issueServiceClient.GetIssue(ctx, connect.NewRequest(&v1pb.GetIssueRequest{
+            Name: issue.Name,
+        }))
+        require.NoError(t, err)
+        if resp.Msg.ApprovalStatus != v1pb.Issue_CHECKING {
+            return
+        }
+        if time.Now().After(deadline) {
+            t.Fatalf("issue %s still CHECKING after %s", issue.Name, timeout)
+        }
+        time.Sleep(500 * time.Millisecond)
+    }
+}
+```
+
+- [ ] **Step 5: Verify the helpers file compiles**
+
+Run: `go build ./backend/tests/...`
+Expected: success.
+
+- [ ] **Step 6: Format, lint, commit**
+
+```bash
+gofmt -w backend/tests/webhook_helpers_test.go
+golangci-lint run --allow-parallel-runners ./backend/tests/...
+
+git add backend/tests/webhook_helpers_test.go
+git commit -m "test(webhook): add approval-flow helpers (impersonation, workspace approval)"
+```
+
+---
+
+### Task 9: ISSUE_CREATED enhancement (I1, I2)
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
 - [ ] **Step 1: Augment existing `IssueWithPlanWebhookPayload` for I1**
 
-Locate the existing subtest. After the `parseSlackWebhook` block, add:
+Open `webhook_test.go` and locate the existing subtest (~line 195). After the `parseSlackWebhook` block, add:
 
 ```go
-require.Equal(t, "Issue created", webhookEventTitle(req))
-// payload should contain project name and issue type indicator
-require.Contains(t, string(req.Body), project.Name)
-require.Contains(t, strings.ToLower(string(req.Body)), "database change")
+require.True(t, matchesEventTitle(req, "Issue created"),
+    "first webhook section should contain 'Issue created'; got %q", firstSlackSectionText(req.Body))
+require.Contains(t, string(req.Body), project.Name,
+    "payload should reference the project resource name")
 ```
 
-(Adjust the issue-type assertion to match what `manager.go` actually emits — may be `"Issue created"` description format.)
+Pin the issue-type assertion based on what `backend/component/webhook/manager.go:84-92` actually emits — read that block and assert against the literal description string the manager builds (e.g., `"Admin created issue"` or whatever the actor / issue-title format is). If unsure, run the existing test once and inspect the captured payload before pinning the assertion.
 
-- [ ] **Step 2: Add subtest `IssueCreated_NoLeakageFromOtherEvents` (I2)**
+- [ ] **Step 2: Add `IssueCreated_NoLeakageFromOtherEvents` (I2)**
 
 ```go
 t.Run("IssueCreated_NoLeakageFromOtherEvents", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-i2")
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_ISSUE_CREATED,
-    })
+    project := ctl.createTestProject(ctx, t, "byt9398-i2")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial passing task */ })
-    issue := createIssueForPlan(ctx, t, ctl, project, plan)
+    // Set up an approval rule + second user so we have something to approve.
+    disableSelfApproval(ctx, t, ctl, project)
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name), []string{"roles/projectOwner"})
+    appr := provisionApprover(ctx, t, ctl, project, "i2", "roles/projectOwner")
+
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_i2_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
+    })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "I2 issue")
 
     waitForWebhookCount(t, collector, "Issue created", 1, 30*time.Second)
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
 
-    // Drive an approval (or any non-CREATED event) and confirm the count stays at 1.
-    approveIssue(ctx, t, ctl, issue)
-    time.Sleep(2 * time.Second)
+    // Drive an approval — the webhook is NOT subscribed to this event, so the
+    // collector count must stay at 1.
+    approveIssueAs(ctx, t, ctl, issue, appr)
+    time.Sleep(2 * time.Second) // intentional grace; we're asserting absence
     requireWebhookCount(t, collector, "Issue created", 1)
-    requireWebhookCount(t, collector, "Issue approved", 0) // not subscribed
+    requireWebhookCount(t, collector, "Issue approved", 0)
 })
 ```
 
-(`createIssueForPlan` and `approveIssue` are new helpers — add them, mirroring patterns in `approval_test.go`.)
+(`lastSegment` is a tiny helper — `func lastSegment(name string) string { parts := strings.Split(name, "/"); return parts[len(parts)-1] }` — add it next to the other helpers in `webhook_helpers_test.go`.)
 
-- [ ] **Step 3: Run the subtests**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/(IssueWithPlanWebhookPayload|IssueCreated_NoLeakageFromOtherEvents)$" -timeout 5m`
-Expected: pass.
-
-- [ ] **Step 4: Format / lint / commit**
+- [ ] **Step 3: Run, format, lint, commit**
 
 ```bash
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/(IssueWithPlanWebhookPayload|IssueCreated_NoLeakageFromOtherEvents)$" -timeout 5m
 gofmt -w backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
@@ -988,171 +1204,188 @@ git commit -m "test(webhook): augment ISSUE_CREATED coverage and add isolation c
 
 ---
 
-### Task 9: ISSUE_APPROVAL_REQUESTED (A1, A2)
+### Task 10: ISSUE_APPROVAL_REQUESTED (A1, A2)
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
-- [ ] **Step 1: Add helpers for approval setup**
-
-```go
-// setProjectRequiresApproval enables the require-approval setting on a project.
-func setProjectRequiresApproval(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) { ... }
-
-// configureApprovalFlow sets up an approval flow with the given approver users.
-func configureApprovalFlow(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project, approvers []string) { ... }
-```
-
-(Pattern these on existing approval test helpers; if the helpers already exist for `approval_test.go`, hoist or share them rather than duplicating.)
-
-- [ ] **Step 2: Write subtest `IssueApprovalRequested_FiresWhenRequired` (A1)**
+- [ ] **Step 1: `IssueApprovalRequested_FiresWhenRequired` (A1)**
 
 ```go
 t.Run("IssueApprovalRequested_FiresWhenRequired", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-a1")
-    setProjectRequiresApproval(ctx, t, ctl, project)
-    configureApprovalFlow(ctx, t, ctl, project, []string{"approver@example.com"})
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_ISSUE_APPROVAL_REQUESTED,
-    })
+    project := ctl.createTestProject(ctx, t, "byt9398-a1")
+    disableSelfApproval(ctx, t, ctl, project)
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name), []string{"roles/projectOwner"})
+    _ = provisionApprover(ctx, t, ctl, project, "a1", "roles/projectOwner")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED})
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial */ })
-    _ = createIssueForPlan(ctx, t, ctl, project, plan)
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_a1_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
+    })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "A1 issue")
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
 
     waitForWebhookCount(t, collector, "Approval required", 1, 30*time.Second)
 })
 ```
 
-- [ ] **Step 3: Write subtest `IssueApprovalRequested_NotFiredWhenUnused` (A2)**
+- [ ] **Step 2: `IssueApprovalRequested_NotFiredWhenUnused` (A2)**
 
 ```go
 t.Run("IssueApprovalRequested_NotFiredWhenUnused", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-a2")
-    // Note: do NOT enable require-approval.
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_ISSUE_APPROVAL_REQUESTED,
+    project := ctl.createTestProject(ctx, t, "byt9398-a2")
+    // Note: do NOT install any workspace approval rule. AllowSelfApproval stays true.
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED})
+
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_a2_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
     })
+    _ = createIssueForPlan(ctx, t, ctl, project, plan, "A2 issue")
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial */ })
-    _ = createIssueForPlan(ctx, t, ctl, project, plan)
-
-    time.Sleep(3 * time.Second) // give async pipeline time
+    time.Sleep(3 * time.Second) // intentional grace; asserting absence
     requireWebhookCount(t, collector, "Approval required", 0)
 })
 ```
 
-- [ ] **Step 4: Run, format, lint, commit**
+- [ ] **Step 3: Run, format, lint, commit**
 
 ```bash
 go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/IssueApprovalRequested_" -timeout 5m
-gofmt -w backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+gofmt -w backend/tests/webhook_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
-git add backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
+git add backend/tests/webhook_test.go
 git commit -m "test(webhook): cover ISSUE_APPROVAL_REQUESTED firing rules (A1, A2)"
 ```
 
 ---
 
-### Task 10: ISSUE_APPROVED (AP1, AP2) and ISSUE_SENT_BACK (SB1, SB2)
+### Task 11: ISSUE_APPROVED (AP1, AP2) and ISSUE_SENT_BACK (SB1, SB2)
 
 **Files:**
 - Modify: `backend/tests/webhook_test.go`
 
-- [ ] **Step 1: Write subtest `IssueApproved_SingleStep` (AP1)**
+For AP2 (multi-step), the `ApprovalFlow.Roles` is an ordered list — each role represents one sequential step. We use two distinct project roles (`roles/projectDeveloper` then `roles/projectOwner`) and provision one user per role. The `ISSUE_APPROVED` webhook fires only when the final step approves — confirmed by reading `backend/runner/approval/runner.go:1047` (emitted only when overall issue reaches `APPROVED`).
 
-Single approver flow → approve → expect one `"Issue approved"`.
+- [ ] **Step 1: `IssueApproved_SingleStep` (AP1)**
 
-- [ ] **Step 2: Write subtest `IssueApproved_MultiStepOnlyFiresAtFinal` (AP2)**
+```go
+t.Run("IssueApproved_SingleStep", func(t *testing.T) {
+    collector.reset()
+    project := ctl.createTestProject(ctx, t, "byt9398-ap1")
+    disableSelfApproval(ctx, t, ctl, project)
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name), []string{"roles/projectOwner"})
+    appr := provisionApprover(ctx, t, ctl, project, "ap1", "roles/projectOwner")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVED})
 
-Two-step flow. After step 1 approval, assert count = 0. After step 2 approval, assert count = 1.
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_ap1_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
+    })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP1 issue")
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+    approveIssueAs(ctx, t, ctl, issue, appr)
+    waitForWebhookCount(t, collector, "Issue approved", 1, 30*time.Second)
+})
+```
+
+- [ ] **Step 2: `IssueApproved_MultiStepOnlyFiresAtFinal` (AP2)**
 
 ```go
 t.Run("IssueApproved_MultiStepOnlyFiresAtFinal", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-ap2")
-    setProjectRequiresApproval(ctx, t, ctl, project)
-    configureApprovalFlow(ctx, t, ctl, project, []string{"step1@example.com", "step2@example.com"})
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_ISSUE_APPROVED,
+    project := ctl.createTestProject(ctx, t, "byt9398-ap2")
+    disableSelfApproval(ctx, t, ctl, project)
+    // Two sequential steps: developer first, owner second.
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name),
+        []string{"roles/projectDeveloper", "roles/projectOwner"})
+    apprStep1 := provisionApprover(ctx, t, ctl, project, "ap2-step1", "roles/projectDeveloper")
+    apprStep2 := provisionApprover(ctx, t, ctl, project, "ap2-step2", "roles/projectOwner")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVED})
+
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_ap2_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
     })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "AP2 issue")
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial */ })
-    issue := createIssueForPlan(ctx, t, ctl, project, plan)
-
-    approveIssueAs(ctx, t, ctl, issue, "step1@example.com")
-    time.Sleep(2 * time.Second)
+    // Step-1 approval: should NOT fire ISSUE_APPROVED yet.
+    approveIssueAs(ctx, t, ctl, issue, apprStep1)
+    time.Sleep(2 * time.Second) // intentional grace; asserting absence
     requireWebhookCount(t, collector, "Issue approved", 0)
 
-    approveIssueAs(ctx, t, ctl, issue, "step2@example.com")
+    // Step-2 approval: now ISSUE_APPROVED fires.
+    approveIssueAs(ctx, t, ctl, issue, apprStep2)
     waitForWebhookCount(t, collector, "Issue approved", 1, 30*time.Second)
 })
 ```
 
-- [ ] **Step 3: Write subtest `IssueSentBack_FiresOnRejection` (SB1)**
+- [ ] **Step 3: `IssueSentBack_FiresOnRejection` (SB1)**
 
 ```go
 t.Run("IssueSentBack_FiresOnRejection", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-sb1")
-    setProjectRequiresApproval(ctx, t, ctl, project)
-    configureApprovalFlow(ctx, t, ctl, project, []string{"approver@example.com"})
-    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-        v1pb.Activity_ISSUE_SENT_BACK,
+    project := ctl.createTestProject(ctx, t, "byt9398-sb1")
+    disableSelfApproval(ctx, t, ctl, project)
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name), []string{"roles/projectOwner"})
+    appr := provisionApprover(ctx, t, ctl, project, "sb1", "roles/projectOwner")
+    addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_SENT_BACK})
+
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_sb1_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
     })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB1 issue")
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial */ })
-    issue := createIssueForPlan(ctx, t, ctl, project, plan)
-    rejectIssueAs(ctx, t, ctl, issue, "approver@example.com", "needs more context")
-
+    rejectIssueAs(ctx, t, ctl, issue, appr, "needs more context")
     waitForWebhookCount(t, collector, "Issue sent back", 1, 30*time.Second)
 })
 ```
 
-- [ ] **Step 4: Write subtest `IssueSentBack_ThenReapproved_E2E` (SB2)**
+- [ ] **Step 4: `IssueSentBack_ThenReapproved_E2E` (SB2)**
 
 ```go
 t.Run("IssueSentBack_ThenReapproved_E2E", func(t *testing.T) {
     collector.reset()
-    project := ctl.createProject(ctx, t, "byt9398-sb2")
-    setProjectRequiresApproval(ctx, t, ctl, project)
-    configureApprovalFlow(ctx, t, ctl, project, []string{"approver@example.com"})
+    project := ctl.createTestProject(ctx, t, "byt9398-sb2")
+    disableSelfApproval(ctx, t, ctl, project)
+    installWorkspaceApprovalRule(ctx, t, ctl, lastSegment(project.Name), []string{"roles/projectOwner"})
+    appr := provisionApprover(ctx, t, ctl, project, "sb2", "roles/projectOwner")
     addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
         v1pb.Activity_ISSUE_SENT_BACK,
         v1pb.Activity_ISSUE_APPROVED,
     })
 
-    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{ /* trivial */ })
-    issue := createIssueForPlan(ctx, t, ctl, project, plan)
-    rejectIssueAs(ctx, t, ctl, issue, "approver@example.com", "fix")
+    db := ctl.createDatabaseInProject(ctx, t, project, instance, "byt9398_sb2_db")
+    plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+        {seedPassingSheet(ctx, t, ctl, project), db.Name},
+    })
+    issue := createIssueForPlan(ctx, t, ctl, project, plan, "SB2 issue")
+    waitForIssuePending(ctx, t, ctl, issue, 30*time.Second)
+
+    rejectIssueAs(ctx, t, ctl, issue, appr, "fix and resubmit")
     waitForWebhookCount(t, collector, "Issue sent back", 1, 30*time.Second)
 
-    approveIssueAs(ctx, t, ctl, issue, "approver@example.com")
+    approveIssueAs(ctx, t, ctl, issue, appr)
     waitForWebhookCount(t, collector, "Issue approved", 1, 30*time.Second)
 })
 ```
 
-- [ ] **Step 5: Add `approveIssueAs` and `rejectIssueAs` helpers**
-
-These call the appropriate approval-service endpoints. Mirror the patterns
-already in `approval_test.go`; if a shared helper already exists, hoist it
-into a `_helpers_test.go` file rather than duplicating.
-
-- [ ] **Step 6: Run all new subtests**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/(IssueApproved_|IssueSentBack_)" -timeout 8m`
-Expected: pass.
-
-- [ ] **Step 7: Run the full test file as a final sanity check**
-
-Run: `go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$" -timeout 15m`
-Expected: every subtest passes.
-
-- [ ] **Step 8: Format / lint / commit**
+- [ ] **Step 5: Run, format, lint, final-suite check, commit**
 
 ```bash
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$/(IssueApproved_|IssueSentBack_)" -timeout 8m
+
+# Final sanity: all subtests in the parent test pass in any order.
+go test -v -count=1 ./backend/tests/ -run "^TestWebhookIntegration$" -timeout 15m
+
 gofmt -w backend/tests/webhook_test.go backend/tests/webhook_helpers_test.go
 golangci-lint run --allow-parallel-runners ./backend/tests/...
 
@@ -1164,7 +1397,7 @@ git commit -m "test(webhook): cover ISSUE_APPROVED multi-step and ISSUE_SENT_BAC
 
 ## Final Verification
 
-- [ ] **Run the entire backend test suite to confirm no regressions**
+- [ ] **Run the entire backend test package**
 
 Run: `go test -count=1 ./backend/tests/... -timeout 30m`
 Expected: pass. If any failures pre-exist on `main`, note them but do not fix in this branch.
@@ -1190,11 +1423,11 @@ Body:
 ## Test plan
 - [x] New regression subtest (cell C4) exercises the BYT-9398 scenario end-to-end
 - [x] PIPELINE_COMPLETED matrix (C1–C7) covers all paths to the completion event
-- [x] PIPELINE_FAILED matrix (F1–F3) locks in the dedup contract; F4 (HA) feasibility documented
+- [x] PIPELINE_FAILED matrix (F1–F3) locks in the dedup contract; F4 (HA) deferred with documenting `t.Skip`
 - [x] Issue event matrix (I1–I2, A1–A2, AP1–AP2, SB1–SB2) prevents trigger-drop regressions
 - [x] `go test -count=1 ./backend/tests/...` passes locally
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-The historical PIPELINE_COMPLETED for plan 2505 cannot be replayed — out of scope for this PR (called out in the spec).
+The historical PIPELINE_COMPLETED for plan 2505 cannot be replayed — out of scope for this PR.
