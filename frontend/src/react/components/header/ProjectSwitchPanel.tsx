@@ -38,6 +38,7 @@ import {
 } from "@/react/lib/resourceName";
 import {
   PROJECT_V1_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_ISSUES,
   useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
@@ -160,11 +161,15 @@ export function ProjectSwitchPanel({
 
   const handleProjectSelect = useCallback(
     (project: Project, event: ReactMouseEvent<HTMLElement>) => {
+      const projectId = getProjectName(project.name);
+      // Navigate directly to the issues page instead of PROJECT_V1_ROUTE_DETAIL.
+      // DETAIL renders ProjectLandingPage which does a useEffect → router.replace
+      // redirect. When Vue Router reuses the same ReactPageMount component across
+      // projects, the async render queue races with the redirect, causing the
+      // second and subsequent switches to silently fail.
       const route = navigate.resolve({
-        name: PROJECT_V1_ROUTE_DETAIL,
-        params: {
-          projectId: getProjectName(project.name),
-        },
+        name: PROJECT_V1_ROUTE_ISSUES,
+        params: { projectId },
       });
       record(route.fullPath);
 
@@ -172,10 +177,8 @@ export function ProjectSwitchPanel({
         window.open(route.fullPath, "_blank");
       } else {
         void navigate.push({
-          name: PROJECT_V1_ROUTE_DETAIL,
-          params: {
-            projectId: getProjectName(project.name),
-          },
+          name: PROJECT_V1_ROUTE_ISSUES,
+          params: { projectId },
         });
       }
 
