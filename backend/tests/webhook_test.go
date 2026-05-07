@@ -529,13 +529,6 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 2, 30*time.Second)
 	})
 
-	t.Run("PipelineFailed_HALicenseBreach", func(t *testing.T) {
-		t.Skip("HA license-breach path requires a non-HA license JWT, replica-heartbeat " +
-			"seeding, and an injectable haFailGracePeriod — none exist in the test harness. " +
-			"Codepath at backend/runner/taskrun/scheduler.go:71-142 is manually verified. " +
-			"Tracked as a follow-up.")
-	})
-
 	t.Run("IssueCreated_NoLeakageFromOtherEvents", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-i2")

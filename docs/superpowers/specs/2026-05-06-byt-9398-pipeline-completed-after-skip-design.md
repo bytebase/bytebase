@@ -122,7 +122,8 @@ to keep events isolated.
 | F1 | One task fails on first run | 1 |
 | F2 | Two failing tasks in the same plan exercise PK dedup | 1 (the table dedupes — that is the contract) |
 | F3 | Task fails → `BatchRunTasks` → fails again | 2 (Reset on `BatchRunTasks` clears the row, second FAILED fires) |
-| F4 | HA license breach drives `failTaskRunsForHA` | **Deferred.** Requires a non-HA license JWT, replica-heartbeat seeding, and an injectable `haFailGracePeriod` — none currently exist in the test harness. Codepath at `backend/runner/taskrun/scheduler.go:71-142` is manually verified and the gap is documented via `t.Skip` in the suite. Tracked as a follow-up. |
+
+**Out of scope:** the HA-license-breach path (`failTaskRunsForHA` in `backend/runner/taskrun/scheduler.go:71-142`). Driving it deterministically from an integration test needs harness pieces that do not currently exist (a non-HA license JWT, replica-heartbeat seeding, and an injectable `haFailGracePeriod`). The codepath is manually verified. Build the harness and add the test in a separate PR if regression coverage there becomes necessary.
 
 #### `ISSUE_CREATED`
 
