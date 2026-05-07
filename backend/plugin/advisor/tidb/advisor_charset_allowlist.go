@@ -98,6 +98,13 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				}
 			}
 		case *ast.AlterTableStmt:
+			// Pingcap parity: a single ALTER TABLE statement emits AT MOST
+			// ONE advice regardless of how many commands violate. Pingcap's
+			// pattern set `code`/`disabledCharset` inside the spec loop
+			// without break, with one append after the loop — multiple
+			// violations overwrite, last violation wins. Mirroring exactly
+			// (Codex P2 round-1 catch on PR #20217).
+			var lastViolation string
 			for _, cmd := range n.Commands {
 				if cmd == nil {
 					continue
@@ -115,7 +122,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 						continue
 					}
 					if _, ok := allowlist[cs]; !ok {
-						emit(text, cs, stmtLine)
+						lastViolation = cs
 					}
 				case ast.ATAddColumn:
 					for _, col := range addColumnTargets(cmd) {
@@ -127,8 +134,8 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 							continue
 						}
 						if _, ok := allowlist[cs]; !ok {
-							emit(text, cs, stmtLine)
-							break
+							lastViolation = cs
+							break // pingcap parity: only first violating column per spec
 						}
 					}
 				case ast.ATChangeColumn, ast.ATModifyColumn:
@@ -140,10 +147,13 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 						continue
 					}
 					if _, ok := allowlist[cs]; !ok {
-						emit(text, cs, stmtLine)
+						lastViolation = cs
 					}
 				default:
 				}
+			}
+			if lastViolation != "" {
+				emit(text, lastViolation, stmtLine)
 			}
 		default:
 		}

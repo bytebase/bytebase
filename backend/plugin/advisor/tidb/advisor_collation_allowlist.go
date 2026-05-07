@@ -94,6 +94,10 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 				}
 			}
 		case *ast.AlterTableStmt:
+			// Pingcap parity: single ALTER TABLE → at most ONE advice. See
+			// the matching comment in advisor_charset_allowlist.go for the
+			// rationale (Codex P2 round-1 catch on PR #20217).
+			var lastViolation string
 			for _, cmd := range n.Commands {
 				if cmd == nil {
 					continue
@@ -111,7 +115,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 						continue
 					}
 					if _, ok := allowlist[c]; !ok {
-						emit(text, c, stmtLine)
+						lastViolation = c
 					}
 				case ast.ATAddColumn:
 					for _, col := range addColumnTargets(cmd) {
@@ -123,8 +127,8 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 							continue
 						}
 						if _, ok := allowlist[c]; !ok {
-							emit(text, c, stmtLine)
-							break
+							lastViolation = c
+							break // pingcap parity: only first violating column per spec
 						}
 					}
 				case ast.ATChangeColumn, ast.ATModifyColumn:
@@ -136,10 +140,13 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 						continue
 					}
 					if _, ok := allowlist[c]; !ok {
-						emit(text, c, stmtLine)
+						lastViolation = c
 					}
 				default:
 				}
+			}
+			if lastViolation != "" {
+				emit(text, lastViolation, stmtLine)
 			}
 		default:
 		}

@@ -96,3 +96,19 @@
         line: 2
         column: 0
       endposition: null
+# Cardinality pin (Codex P2 round-1 catch on PR #20217): single
+# ALTER TABLE → at most ONE advice. See the matching fixture in
+# system_charset_allowlist.yaml for rationale.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t COLLATE utf8mb4_polish_ci, MODIFY COLUMN a VARCHAR(10) COLLATE latin1_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: '"ALTER TABLE t COLLATE utf8mb4_polish_ci, MODIFY COLUMN a VARCHAR(10) COLLATE latin1_bin" used disabled collation ''latin1_bin'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

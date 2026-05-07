@@ -121,3 +121,22 @@
         line: 1
         column: 0
       endposition: null
+# Cardinality pin (Codex P2 round-1 catch on PR #20217): a single
+# ALTER TABLE statement emits AT MOST ONE advice regardless of how many
+# commands violate. Pingcap's pattern set state inside the spec loop
+# without break, with one append after — multiple violations overwrite,
+# last violation wins. Mirroring exactly. Without this fixture, a future
+# refactor that emits per-command would silently regress.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CHARSET ascii, MODIFY COLUMN a VARCHAR(10) CHARSET latin1
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER TABLE t CHARSET ascii, MODIFY COLUMN a VARCHAR(10) CHARSET latin1" used disabled charset ''latin1'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
