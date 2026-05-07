@@ -860,6 +860,14 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 // BatchSkipTasks skips tasks in batch.
 func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Request[v1pb.BatchSkipTasksRequest]) (*connect.Response[v1pb.BatchSkipTasksResponse], error) {
 	request := req.Msg
+	// Reject empty input early. Without this guard the request would skip the
+	// task-parse loop, the environmentSet-based permission check, and arrive
+	// at a no-op store.BatchSkipTasks — but still run ResetPlanWebhookDelivery
+	// and signal the completion check, mutating dedup state for a request that
+	// did nothing. Mirrors the BatchRunTasks pattern.
+	if len(request.Tasks) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("The tasks in request cannot be empty"))
+	}
 	projectID, planID, _, err := common.GetProjectIDPlanIDMaybeStageID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)

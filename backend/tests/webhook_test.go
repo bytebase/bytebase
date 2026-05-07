@@ -689,4 +689,21 @@ func TestWebhookIntegration(t *testing.T) {
 		approveIssueAs(ctx, t, ctl, issue, appr)
 		waitForWebhookCount(t, collector, project.Name, "Issue approved", 1)
 	})
+
+	// Regression for the second Codex P1 finding on PR #20212. Empty BatchSkipTasks
+	// must be rejected at the API boundary, otherwise it sneaks past the
+	// task-parse, environmentSet permission, and store mutation paths and would
+	// run ResetPlanWebhookDelivery on a request that did nothing — re-arming the
+	// dedup ledger for any plan the caller can name.
+	t.Run("BatchSkipTasks_RejectsEmptyTasks", func(t *testing.T) {
+		project := ctl.createTestProject(ctx, t, "byt9398-empty-skip")
+		// Parent format doesn't matter here; the empty-tasks guard fires first.
+		_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
+			Parent: project.Name + "/plans/-/rollouts/-/stages/-",
+			Tasks:  []string{},
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err),
+			"BatchSkipTasks must reject empty Tasks at the API boundary")
+	})
 }
