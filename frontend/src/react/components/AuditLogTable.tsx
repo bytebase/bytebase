@@ -2,13 +2,7 @@ import { create, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import {
-  ChevronDown,
-  Download,
-  ExternalLink,
-  Maximize2,
-  X,
-} from "lucide-react";
+import { Download, ExternalLink, Maximize2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { auditLogServiceClientConnect } from "@/connect";
@@ -22,13 +16,20 @@ import {
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
-import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/react/hooks/usePagedData";
@@ -689,19 +690,6 @@ export function AuditLogTable({
     ];
   }, [t, searchUsers]);
 
-  const renderSortIndicator = (columnKey: string) => {
-    if (sortKey !== columnKey)
-      return <ChevronDown className="h-4 w-4 text-control-light" />;
-    return (
-      <ChevronDown
-        className={cn(
-          "h-4 w-4 text-accent transition-transform",
-          sortOrder === "asc" && "rotate-180"
-        )}
-      />
-    );
-  };
-
   const pageSizeOptions = getPageSizeOptions();
 
   return (
@@ -733,82 +721,74 @@ export function AuditLogTable({
       {hasAuditLogFeature ? (
         <div>
           <div className="overflow-x-auto">
-            <table
-              className="text-sm border-t border-block-border table-fixed"
-              style={{ width: `${totalWidth}px` }}
+            <Table
+              className="border-t border-block-border table-fixed"
+              style={{ minWidth: `${totalWidth}px` }}
             >
               <colgroup>
                 {widths.map((w, i) => (
                   <col key={columns[i].key} style={{ width: `${w}px` }} />
                 ))}
               </colgroup>
-              <thead>
-                <tr className="border-b border-block-border">
+              <TableHeader>
+                <TableRow>
                   {columns.map((col, colIdx) => (
-                    <th
+                    <TableHead
                       key={col.key}
-                      className={cn(
-                        "relative px-4 py-3 text-left text-sm font-medium text-main whitespace-nowrap",
-                        col.sortable && "cursor-pointer select-none"
-                      )}
-                      onClick={
+                      className="text-sm text-main whitespace-nowrap"
+                      sortable={col.sortable}
+                      sortActive={col.sortable && sortKey === col.key}
+                      sortDir={sortOrder}
+                      onSort={
                         col.sortable ? () => toggleSort(col.key) : undefined
                       }
+                      resizable={col.resizable}
+                      onResizeStart={
+                        col.resizable
+                          ? (e) => onResizeStart(colIdx, e)
+                          : undefined
+                      }
                     >
-                      <div className="flex items-center gap-x-1">
-                        {col.title}
-                        {col.sortable && renderSortIndicator(col.key)}
-                      </div>
-                      {col.resizable && (
-                        <ColumnResizeHandle
-                          onMouseDown={(e) => onResizeStart(colIdx, e)}
-                        />
-                      )}
-                    </th>
+                      {col.title}
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {loading && auditLogs.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={columns.length}
                       className="text-center py-8 text-control-placeholder"
                     >
                       {t("common.loading")}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : auditLogs.length === 0 ? (
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       colSpan={columns.length}
                       className="text-center py-8 text-control-placeholder"
                     >
                       {t("common.no-data")}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   auditLogs.map((log, idx) => (
-                    <tr
-                      key={log.name || idx}
-                      className={cn(
-                        "border-b border-block-border",
-                        idx % 2 === 1 && "bg-control-bg/50"
-                      )}
-                    >
+                    <TableRow key={log.name || idx}>
                       {columns.map((col) => (
-                        <td
+                        <TableCell
                           key={col.key}
-                          className="px-4 py-3 text-sm align-top overflow-hidden"
+                          className="align-top overflow-hidden"
                         >
                           {col.render(log)}
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination footer */}

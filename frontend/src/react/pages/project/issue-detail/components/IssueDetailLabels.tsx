@@ -18,6 +18,7 @@ import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
 import { pushNotification, useProjectV1Store } from "@/store";
 import { getProjectName, projectNamePrefix } from "@/store/modules/v1/common";
 import {
+  IssueSchema,
   IssueStatus,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -77,11 +78,12 @@ export function IssueDetailLabels() {
       }
       try {
         setIsUpdating(true);
+        const issuePatch = create(IssueSchema, {
+          ...page.issue,
+          labels,
+        });
         const request = create(UpdateIssueRequestSchema, {
-          issue: {
-            ...page.issue,
-            labels,
-          },
+          issue: issuePatch,
           updateMask: { paths: ["labels"] },
         });
         const response = await issueServiceClientConnect.updateIssue(request);

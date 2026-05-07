@@ -28,3 +28,7 @@ export const getLocalSheetByName = (name: string): Sheet => {
   localSheetsByName.set(name, sheet);
   return sheet;
 };
+
+export const removeLocalSheet = (name: string): void => {
+  localSheetsByName.delete(name);
+};

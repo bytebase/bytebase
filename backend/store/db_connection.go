@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/dbauth"
 )
 
 // DBConnectionManager manages database connections with support for dynamic updates.
@@ -185,11 +186,46 @@ func isFilePath(s string) bool {
 		return false
 	}
 
-	if strings.Contains(s, "host=/tmp") {
+	if isKeywordValuePGURL(s) {
 		return false
 	}
 
 	return true
+}
+
+func isKeywordValuePGURL(s string) bool {
+	for _, field := range strings.Fields(s) {
+		eqIdx := strings.IndexRune(field, '=')
+		if eqIdx < 0 {
+			continue
+		}
+
+		switch field[:eqIdx] {
+		case "host",
+			"hostaddr",
+			"port",
+			"dbname",
+			"database",
+			"user",
+			"password",
+			"passfile",
+			"connect_timeout",
+			"sslmode",
+			"sslrootcert",
+			"sslcert",
+			"sslkey",
+			"service",
+			"servicefile",
+			"target_session_attrs",
+			"application_name":
+			return true
+		default:
+			if dbauth.IsKeywordValueRuntimeParam(field[:eqIdx]) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func readURLFromFile(path string) (string, error) {
@@ -206,8 +242,13 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*sql.DB, err
 		return nil, errors.Wrap(err, "failed to parse database URL")
 	}
 
+	openOptions, err := dbauth.Configure(ctx, pgxConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	pgxConfig.Tracer = &metadataDBTracer{}
-	db := stdlib.OpenDB(*pgxConfig)
+	db := stdlib.OpenDB(*pgxConfig, openOptions...)
 
 	// Validate connection
 	if err := db.PingContext(ctx); err != nil {

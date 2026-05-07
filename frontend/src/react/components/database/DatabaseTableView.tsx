@@ -283,88 +283,84 @@ export function DatabaseTableView({
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   return (
-    <div className="border rounded-sm">
-      <div className="overflow-x-auto">
-        <Table className="table-fixed" style={{ width: `${totalWidth}px` }}>
-          <colgroup>
-            {widths.map((w, i) => (
-              <col key={columns[i].key} style={{ width: `${w}px` }} />
-            ))}
-          </colgroup>
-          <TableHeader>
-            <TableRow className="bg-gray-50">
-              {columns.map((col, colIdx) => {
-                const colSortKey = col.sortKey;
-                const sortActive = Boolean(
-                  col.sortable && colSortKey && sort?.key === colSortKey
-                );
-                return (
-                  <TableHead
-                    key={col.key}
-                    sortable={col.sortable && sortable}
-                    sortActive={sortActive}
-                    sortDir={sort?.order ?? "asc"}
-                    onSort={
-                      col.sortable && sortable && colSortKey
-                        ? () => toggleSort(colSortKey)
-                        : undefined
-                    }
-                    resizable={col.resizable}
-                    onResizeStart={
-                      col.resizable
-                        ? (e) => onResizeStart(colIdx, e)
-                        : undefined
-                    }
-                  >
-                    {col.title}
-                  </TableHead>
-                );
-              })}
+    <div className="overflow-x-auto border-y border-block-border">
+      <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+        <colgroup>
+          {widths.map((w, i) => (
+            <col key={columns[i].key} style={{ width: `${w}px` }} />
+          ))}
+        </colgroup>
+        <TableHeader>
+          <TableRow>
+            {columns.map((col, colIdx) => {
+              const colSortKey = col.sortKey;
+              const sortActive = Boolean(
+                col.sortable && colSortKey && sort?.key === colSortKey
+              );
+              return (
+                <TableHead
+                  key={col.key}
+                  sortable={col.sortable && sortable}
+                  sortActive={sortActive}
+                  sortDir={sort?.order ?? "asc"}
+                  onSort={
+                    col.sortable && sortable && colSortKey
+                      ? () => toggleSort(colSortKey)
+                      : undefined
+                  }
+                  resizable={col.resizable}
+                  onResizeStart={
+                    col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
+                  }
+                >
+                  {col.title}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading && databases.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className="py-8 text-center text-control-placeholder"
+              >
+                <div className="flex items-center justify-center gap-x-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
+                  {t("common.loading")}
+                </div>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading && databases.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="py-8 text-center text-control-placeholder"
-                >
-                  <div className="flex items-center justify-center gap-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
-                    {t("common.loading")}
-                  </div>
-                </TableCell>
+          ) : databases.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className="py-8 text-center text-control-placeholder"
+              >
+                {t("common.no-data")}
+              </TableCell>
+            </TableRow>
+          ) : (
+            databases.map((db) => (
+              <TableRow
+                key={db.name}
+                className={onRowClick ? "cursor-pointer" : undefined}
+                onClick={onRowClick ? (e) => onRowClick(db, e) : undefined}
+              >
+                {columns.map((col) => (
+                  <TableCell
+                    key={col.key}
+                    className={cn("overflow-hidden", col.cellClassName)}
+                  >
+                    {col.render(db)}
+                  </TableCell>
+                ))}
               </TableRow>
-            ) : databases.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="py-8 text-center text-control-placeholder"
-                >
-                  {t("common.no-data")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              databases.map((db) => (
-                <TableRow
-                  key={db.name}
-                  className={onRowClick ? "cursor-pointer" : undefined}
-                  onClick={onRowClick ? (e) => onRowClick(db, e) : undefined}
-                >
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col.key}
-                      className={cn("overflow-hidden", col.cellClassName)}
-                    >
-                      {col.render(db)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

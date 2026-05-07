@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import semver from "semver";
 import {
   actuatorServiceClientConnect,
+  authServiceClientConnect,
   settingServiceClientConnect,
   subscriptionServiceClientConnect,
   workspaceServiceClientConnect,
@@ -19,6 +20,7 @@ import {
   instanceLimitFeature,
   PLANS,
 } from "@/types/plan";
+import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 import {
   DatabaseChangeMode,
   type EnvironmentSetting_Environment,
@@ -39,6 +41,12 @@ import {
 import type { Environment } from "@/types/v1/environment";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
+
+// Notify other tabs when the user switches workspace.
+const workspaceSwitchChannel = new BroadcastChannel("bb-workspace-switch");
+workspaceSwitchChannel.onmessage = () => {
+  window.location.href = "/";
+};
 
 const workspaceProfileSettingName = `${settingNamePrefix}${
   Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]
@@ -93,6 +101,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   get
 ) => ({
   serverInfoTs: 0,
+  workspaceList: [],
   environmentList: [],
   appFeatures: defaultAppProfile().features,
 
@@ -149,6 +158,25 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       });
     set({ workspaceRequest: request });
     return request;
+  },
+
+  loadWorkspaceList: async () => {
+    const resp = await workspaceServiceClientConnect.listWorkspaces({});
+    set({ workspaceList: resp.workspaces });
+    return resp.workspaces;
+  },
+
+  switchWorkspace: async (workspaceName: string) => {
+    await authServiceClientConnect.switchWorkspace(
+      createProto(SwitchWorkspaceRequestSchema, {
+        workspace: workspaceName,
+        web: true,
+      })
+    );
+    // Notify other tabs to reload with the new workspace.
+    workspaceSwitchChannel.postMessage(workspaceName);
+    // Full-reload to the landing page to reset all frontend state.
+    window.location.href = "/";
   },
 
   loadWorkspaceProfile: async () => {

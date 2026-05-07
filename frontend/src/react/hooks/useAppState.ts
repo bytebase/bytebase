@@ -37,6 +37,19 @@ export function useWorkspace() {
   return workspace;
 }
 
+export function useWorkspaceList() {
+  const workspaceList = useAppStore((state) => state.workspaceList);
+  const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
+  useEffect(() => {
+    void loadWorkspaceList();
+  }, [loadWorkspaceList]);
+  return workspaceList;
+}
+
+export function useSwitchWorkspace() {
+  return useAppStore((state) => state.switchWorkspace);
+}
+
 export function useSubscription() {
   const subscription = useAppStore((state) => state.subscription);
   const loadSubscription = useAppStore((state) => state.loadSubscription);

@@ -214,10 +214,12 @@ export function RevisionDetailPanel({
               ) : null}
               <CopyButton content={statement} />
             </p>
-            <ReadonlyMonaco
-              content={statement}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-            />
+            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <ReadonlyMonaco
+                content={statement}
+                className="relative h-auto max-h-[600px] min-h-[120px]"
+              />
+            </div>
           </div>
         </div>
       </main>

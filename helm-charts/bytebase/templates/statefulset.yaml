@@ -19,7 +19,9 @@
 {{- $externalPgDatabase := .Values.bytebase.option.externalPg.pgDatabase | default "database" -}}
 {{- $externalPgExistingPgPasswordSecret := .Values.bytebase.option.externalPg.existingPgPasswordSecret -}}
 {{- $externalPgExistingPgPasswordSecretKey := .Values.bytebase.option.externalPg.existingPgPasswordSecretKey -}}
-{{- $externalPgEscapePgPassword := .Values.bytebase.option.externalPg.escapePassword }}
+{{- $externalPgEscapePgPassword := .Values.bytebase.option.externalPg.escapePassword -}}
+{{- $externalPgAWSRDSIAMEnabled := .Values.bytebase.option.externalPg.awsRdsIam.enabled -}}
+{{- $externalPgAWSRDSIAMRegion := .Values.bytebase.option.externalPg.awsRdsIam.region -}}
 # bytbease.persistence
 {{- $persistenceEnable := .Values.bytebase.persistence.enabled -}}
 {{- $persistenceExistingClaim := .Values.bytebase.persistence.existingClaim -}}
@@ -47,7 +49,7 @@ spec:
         app: bytebase
     spec:
       serviceAccountName: {{ template "bytebase.serviceAccountName" . }}
-      {{- if $externalPgEscapePgPassword }}
+      {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) }}
       # If user specify the externalPgEscapePgPassword, we should escape the password in the PG_URL in the shell,
       # because the password may comes from a secret, which is invisible in helm.
       # Hence, we do the escaping in the initialization container, and write the escaped password to the shared volume.
@@ -158,7 +160,10 @@ spec:
             value: {{ $externalPgURL }}
           {{- else }}
           # Otherwise, we should construct the external pg connection string from the specified parameters.
-          {{- if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
+          {{- if $externalPgAWSRDSIAMEnabled }}
+          - name: PG_URL
+            value: postgres://{{ $externalPgUsername }}@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}?sslmode=verify-full&bytebase_aws_rds_iam=true&bytebase_aws_region={{ required "bytebase.option.externalPg.awsRdsIam.region is required when bytebase.option.externalPg.awsRdsIam.enabled is true" $externalPgAWSRDSIAMRegion }}
+          {{- else if and $externalPgExistingPgPasswordSecret (not $externalPgEscapePgPassword) }}
           # If user specifies an existing secret, we should read the external pg password in that secret.
           - name: PG_PASSWORD
             valueFrom:
@@ -177,7 +182,7 @@ spec:
             - -c
           args:
             - |
-              {{- if $externalPgEscapePgPassword }}
+              {{- if and $externalPgEscapePgPassword (not $externalPgAWSRDSIAMEnabled) }}
               # If user escape the password, we should read the escaped password from the shared volume, and construct the PG_PASSWORD.
               export PG_URL=postgres://{{ $externalPgUsername }}:$(cat /mnt/bytebase-shared-volume/pg_escaped_password)@{{ $externalPgHost }}:{{ $externalPgPort }}/{{ $externalPgDatabase }}
               {{- end }}

@@ -88,12 +88,13 @@ export function IssueDetailChecks() {
   }, [currentUser.email, page.plan, project]);
 
   const refreshChecks = useCallback(async () => {
-    if (!page.plan) {
+    const planName = page.plan?.name;
+    if (!planName) {
       return [];
     }
     const nextPlan = await planServiceClientConnect.getPlan(
       create(GetPlanRequestSchema, {
-        name: page.plan.name,
+        name: planName,
       })
     );
 
@@ -101,7 +102,7 @@ export function IssueDetailChecks() {
     try {
       const response = await planServiceClientConnect.getPlanCheckRun(
         create(GetPlanCheckRunRequestSchema, {
-          name: `${page.plan.name}/planCheckRun`,
+          name: `${planName}/planCheckRun`,
         })
       );
       nextPlanCheckRuns = [response];
@@ -114,7 +115,7 @@ export function IssueDetailChecks() {
       planCheckRuns: nextPlanCheckRuns,
     });
     return nextPlanCheckRuns;
-  }, [page.plan]);
+  }, [page.plan?.name, page.patchState]);
 
   const runChecks = useCallback(async () => {
     if (!page.plan?.name) {

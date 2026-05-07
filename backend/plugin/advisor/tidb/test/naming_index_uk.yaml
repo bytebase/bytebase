@@ -62,3 +62,36 @@
   changeType: 1
 - statement: CREATE TABLE book(id INT PRIMARY KEY, name VARCHAR(20), UNIQUE INDEX (name))
   changeType: 1
+# Pins omni's ATAddConstraint vs ATAddIndex split + ConstrUnique
+# unification. Pingcap had three distinct constraint enums for the
+# UNIQUE/UNIQUE KEY/UNIQUE INDEX syntactic forms; omni unifies them under
+# ConstrUnique. The existing `ALTER TABLE ... ADD UNIQUE name` cases
+# above hit the bare-UNIQUE form; these pin the UNIQUE INDEX and UNIQUE
+# KEY variants, which omni routes through ATAddIndex (not
+# ATAddConstraint).
+- statement: ALTER TABLE tech_book ADD UNIQUE INDEX uk_tech_book_id_name (id, name)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD UNIQUE INDEX bad_uk (id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `bad_uk`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD UNIQUE KEY uk_tech_book_id_name (id, name)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD UNIQUE KEY bad_uk (id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `bad_uk`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

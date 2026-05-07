@@ -485,16 +485,20 @@ export function DatabaseChangelogDetailPage({
           </div>
 
           {showDiff ? (
-            <ReadonlyDiffMonaco
-              original={previousChangelog?.schema ?? ""}
-              modified={resolvedChangelog.schema}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-            />
+            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <ReadonlyDiffMonaco
+                original={previousChangelog?.schema ?? ""}
+                modified={resolvedChangelog.schema}
+                className="relative h-auto max-h-[600px] min-h-[120px]"
+              />
+            </div>
           ) : resolvedChangelog.schema ? (
-            <ReadonlyMonaco
-              content={resolvedChangelog.schema}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-            />
+            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <ReadonlyMonaco
+                content={resolvedChangelog.schema}
+                className="relative h-auto max-h-[600px] min-h-[120px]"
+              />
+            </div>
           ) : (
             <div className="text-sm text-control-light">
               {t("changelog.current-schema-empty")}

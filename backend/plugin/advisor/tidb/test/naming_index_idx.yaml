@@ -60,3 +60,21 @@
   changeType: 1
 - statement: CREATE TABLE tech_book_copy(id INT PRIMARY KEY, name VARCHAR(20), INDEX (name))
   changeType: 1
+# Pins omni's ATAddConstraint vs ATAddIndex split: pingcap collapsed both
+# `ADD INDEX` (above) and `ADD CONSTRAINT name INDEX` (below) into
+# AlterTableAddConstraint, but omni preserves the syntactic distinction.
+# The advisor's switch covers both arms — these cases prove the
+# ATAddConstraint+ConstrIndex path is exercised, not just ATAddIndex.
+- statement: ALTER TABLE tech_book ADD CONSTRAINT idx_tech_book_id_name INDEX (id, name)
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD CONSTRAINT bad_idx INDEX (id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `bad_idx`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

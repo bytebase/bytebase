@@ -107,7 +107,11 @@ import {
   updateRoleSetter,
   updateTransactionMode,
 } from "../utils/directiveUtils";
-import { getLocalSheetByName, getNextLocalSheetUID } from "../utils/localSheet";
+import {
+  getLocalSheetByName,
+  getNextLocalSheetUID,
+  removeLocalSheet,
+} from "../utils/localSheet";
 import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
@@ -164,7 +168,9 @@ export function PlanDetailChangesBranch({
   const { patchState } = page;
   const currentUser = useCurrentUserV1().value;
   const projectStore = useProjectV1Store();
-  const project = projectStore.getProjectByName(`projects/${page.projectId}`);
+  const project = useVueState(() =>
+    projectStore.getProjectByName(`projects/${page.projectId}`)
+  );
   const sheetStore = useSheetV1Store();
   const [showAddSpecSheet, setShowAddSpecSheet] = useState(false);
   const [showTargetSelectorSheet, setShowTargetSelectorSheet] = useState(false);
@@ -239,6 +245,7 @@ export function PlanDetailChangesBranch({
           project.name,
           localSheet
         );
+        removeLocalSheet(localSheet.name);
         if (spec.config.case === "changeDatabaseConfig") {
           spec.config.value.sheet = createdSheet.name;
         }
@@ -476,7 +483,9 @@ function OptionsSection({ selectedSpec }: { selectedSpec: Plan_Spec }) {
   const { patchState, refreshState } = page;
   const currentUser = useCurrentUserV1().value;
   const projectStore = useProjectV1Store();
-  const project = projectStore.getProjectByName(`projects/${page.projectId}`);
+  const project = useVueState(() =>
+    projectStore.getProjectByName(`projects/${page.projectId}`)
+  );
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
   const sheetStore = useSheetV1Store();

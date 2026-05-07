@@ -50,6 +50,7 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
+  removeLocalSheet,
 } from "../utils/localSheet";
 
 const MAX_DISPLAYED_RELEASE_FILES = 4;
@@ -340,6 +341,7 @@ export function IssueDetailStatementSection({
       setIsSaving(true);
       const sheet = createEmptyLocalSheet();
       setSheetStatement(sheet, draftStatement);
+      const previousSheetName = sheetName;
       const createdSheet = await sheetStore.createSheet(project.name, sheet);
       const nextPlan = patchPlanStatement(page.plan, spec, createdSheet.name);
       if (!nextPlan) {
@@ -355,6 +357,12 @@ export function IssueDetailStatementSection({
       page.patchState({
         plan: response,
       });
+      // Drop the orphaned local sheet only after the spec is committed —
+      // an updatePlan failure would otherwise leave the spec referencing
+      // a now-empty local entry, losing the user's typed content.
+      if (extractSheetUID(previousSheetName).startsWith("-")) {
+        removeLocalSheet(previousSheetName);
+      }
       setStatement(draftStatement);
       setIsEditing(false);
       pushNotification({
@@ -455,7 +463,7 @@ export function IssueDetailStatementSection({
           {t("common.loading")}
         </div>
       ) : statement || isEditing ? (
-        <div className="relative">
+        <div className="relative overflow-hidden rounded-sm border border-control-border">
           {isEditing ? (
             <MonacoEditor
               autoCompleteContext={autoCompleteContext}
