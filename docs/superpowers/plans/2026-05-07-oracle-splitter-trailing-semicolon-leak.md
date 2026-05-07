@@ -1,14 +1,16 @@
-# Splitter trailing `;` leak (BYT-9367) — implementation plan
+# Oracle splitter trailing `;` leak (BYT-9367) — implementation plan
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix `plsql.SplitSQL` and `trino.splitByParser` so a trailing `;` separated from the statement's parse-tree stop token by hidden-channel tokens (whitespace, comments) is correctly consumed by the current statement instead of leaking into the next statement's text/range.
+**Goal:** Fix `plsql.SplitSQL` so a trailing `;` separated from the statement's parse-tree stop token by hidden-channel tokens (whitespace, comments) is correctly consumed by the current statement instead of leaking into the next statement's text/range. Also fix the latent `byteOffsetStart` misalignment surfaced by the Range invariant in the design.
 
-**Architecture:** Replace single-token SEMI lookaheads with channel-aware loops. plsql also needs a post-loop `byteOffsetStart` bookkeeping update so `Range.Start` of the next statement aligns with where its leadingContent actually begins in source. Trino's text/range model (`statement[byteOffsetStart:rangeEnd]`) handles bookkeeping naturally, so only the loop is needed there.
+**Architecture:** Replace the single-token SEMI lookahead with a channel-aware loop. After the loop, advance `byteOffsetStart` by the byte length of any tokens the loop consumed (using token stop-index arithmetic — no string materialization), so `Range.Start` of the next statement aligns with where its leadingContent actually begins in source.
 
-**Tech Stack:** Go, ANTLR4 (`github.com/antlr4-go/antlr/v4`), `github.com/bytebase/parser/plsql`, `github.com/bytebase/parser/trino`, YAML test runner (`backend/plugin/parser/base/split_test_runner.go`).
+**Tech Stack:** Go, ANTLR4 (`github.com/antlr4-go/antlr/v4`), `github.com/bytebase/parser/plsql`, YAML test runner (`backend/plugin/parser/base/split_test_runner.go`).
 
 **Spec:** `docs/superpowers/specs/2026-05-07-oracle-splitter-trailing-semicolon-leak-design.md`
+
+**Scope note:** Trino was investigated and ruled out — `trino/parser/TrinoParser.g4:38-40` requires `;` in the `singleStatement` parse tree, so the BYT-9367 leak shape can't occur there. See spec §7 audit.
 
 ---
 
@@ -16,27 +18,21 @@
 
 | File | Role | Change |
 |---|---|---|
-| `backend/plugin/parser/plsql/split.go` | Oracle splitter | Replace `split.go:108-113` lookahead block with channel-aware loop + bookkeeping |
-| `backend/plugin/parser/plsql/test-data/test_split.yaml` | plsql YAML fixtures | Append 5 new fixtures (cells b, c, d, f, h); 3 existing fixtures will re-record with 1-byte/1-column Range/Start.Column shifts |
-| `backend/plugin/parser/trino/split.go` | Trino splitter | Replace `split.go:88-91` lookahead block with channel-aware loop |
-| `backend/plugin/parser/trino/test-data/test_split.yaml` | Trino YAML fixtures | Append 3 new fixtures (whitespace-before-`;`, comment, multi-newline); existing fixtures unchanged |
+| `backend/plugin/parser/plsql/split.go` | Oracle splitter | Replace `split.go:108-113` lookahead block with channel-aware loop + 2-line bookkeeping update |
+| `backend/plugin/parser/plsql/test-data/test_split.yaml` | YAML fixtures | Append 5 new fixtures (cells b, c, d, f, h); 4 existing fixtures will re-record with 1-byte/1-column Range/Start.Column shifts |
 
 ## Test plan recap (from spec §6)
 
-**plsql** — five new cells (b, c, d, f, h); see spec §6.1. Three existing fixtures re-record (§6.2): `multiple SELECT statements`, `multiple statements with newlines`, `position semantic: multi-statement with leading whitespace`. Range/Start.Column shift by 1; Text unchanged.
-
-**Trino** — three new fixtures; existing fixtures unchanged.
+Five new fixtures (cells b, c, d, f, h). Four existing fixtures re-record (§6.2): `multiple SELECT statements`, `multiple statements with newlines`, `SELECT statements separated by forward slash`, `position semantic: multi-statement with leading whitespace`. Range/Start.Column shift by 1; Text unchanged.
 
 ---
 
 ## Chunk 1: implementation
 
-### Task 1: Verify starting state and audit `splitByTokenizer` fallback
+### Task 1: Verify starting state
 
 **Files:**
 - Read: `backend/plugin/parser/plsql/split.go`
-- Read: `backend/plugin/parser/trino/split.go`
-- Read: `backend/plugin/parser/tokenizer/standard.go` (or wherever `SplitStandardMultiSQL` is defined)
 
 - [ ] **Step 1: Verify the buggy plsql code is at the expected location**
 
@@ -57,41 +53,12 @@ if nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()) {
 }
 ```
 
-If the code differs (e.g., line numbers shifted), update the file references in subsequent steps.
+If the code differs, update the file references in subsequent steps.
 
-- [ ] **Step 2: Verify the buggy trino code is at the expected location**
-
-```bash
-sed -n '85,92p' backend/plugin/parser/trino/split.go
-```
-
-Expected output:
-```go
-// Find the actual start position
-endIdx := stopToken.GetTokenIndex()
-
-// Check if there's a semicolon after the statement and include it
-finalEndIdx := endIdx
-if endIdx+1 < len(tokens) && tokens[endIdx+1].GetTokenType() == trinoparser.TrinoLexerSEMICOLON_ {
-    finalEndIdx = endIdx + 1
-}
-```
-
-- [ ] **Step 3: Audit the trino tokenizer fallback for the same bug class**
-
-The trino splitter has a fallback at `splitByTokenizer` (`trino/split.go:27-29`) that uses `tokenizer.NewTokenizer` / `SplitStandardMultiSQL`. Verify whether that path has the same single-token SEMI lookahead bug.
+- [ ] **Step 2: Run the existing plsql test suite to establish a green baseline**
 
 ```bash
-grep -nE "SEMICOLON|';'" backend/plugin/parser/tokenizer/standard.go | head -20
-grep -nE "SplitStandardMultiSQL" backend/plugin/parser/tokenizer/*.go
-```
-
-Read the relevant `SplitStandardMultiSQL` function. If it walks the input character-by-character (typical tokenizer pattern) rather than using a parse-tree-stop + lookahead pattern, it is structurally immune. Document the finding in a one-line comment in the spec's §7 audit row for `splitByTokenizer`. If it has the same bug, **stop and file a follow-up ticket** rather than expanding scope.
-
-- [ ] **Step 4: Run the existing plsql + trino test suites to establish a green baseline**
-
-```bash
-go test -count=1 ./backend/plugin/parser/plsql/ ./backend/plugin/parser/trino/
+go test -count=1 ./backend/plugin/parser/plsql/
 ```
 
 Expected: all existing subtests pass.
@@ -100,7 +67,6 @@ Expected: all existing subtests pass.
 
 **Files:**
 - Modify: `backend/plugin/parser/plsql/test-data/test_split.yaml` (append five new cases)
-- Modify: `backend/plugin/parser/trino/test-data/test_split.yaml` (append three new cases)
 
 - [ ] **Step 1: Append five plsql test cases**
 
@@ -116,37 +82,20 @@ Append to the END of `backend/plugin/parser/plsql/test-data/test_split.yaml`:
 - description: 'BYT-9367: trailing semicolon with multiple newlines does not leak (cell d)'
   input: "insert into t values('a',1)\n\n;\n\ninsert into t values('b',2);"
   result: []
-- description: 'BYT-9367: anonymous block followed by / with no terminating semicolon (cell f)'
-  input: "BEGIN NULL; END\n/\nBEGIN NULL; END\n/"
+- description: 'BYT-9367: anonymous block followed by SELECT with no separator (cell f, bail-on-default-channel)'
+  input: "BEGIN NULL; END;\nSELECT 1 FROM dual"
   result: []
 - description: 'BYT-9367: trailing semicolon with leading space at EOF (cell h)'
   input: "insert into t values('a',1) ;"
   result: []
 ```
 
-`result: []` is a placeholder — Step 4 below records the expected values. Hand-computing positions is error-prone (`byteOffsetStart` arithmetic depends on token byte offsets across hidden channels), and the `-record` mode is the load-bearing tool here.
+`result: []` is a placeholder — Step 4 below records the expected values via `-record`. Hand-computing positions is error-prone; the `-record` mode is the load-bearing tool.
 
-- [ ] **Step 2: Append three trino test cases**
-
-Append to the END of `backend/plugin/parser/trino/test-data/test_split.yaml`:
-
-```yaml
-- description: 'BYT-9367 trino: trailing semicolon with leading space does not leak'
-  input: "SELECT 1 ; SELECT 2 ;"
-  result: []
-- description: 'BYT-9367 trino: trailing semicolon with leading inline comment does not leak'
-  input: "SELECT 1 /* note */ ; SELECT 2 ;"
-  result: []
-- description: 'BYT-9367 trino: trailing semicolon with multiple newlines does not leak'
-  input: "SELECT 1\n\n;\n\nSELECT 2;"
-  result: []
-```
-
-### Task 3: Apply the fixes
+### Task 3: Apply the fix
 
 **Files:**
 - Modify: `backend/plugin/parser/plsql/split.go:108-113`
-- Modify: `backend/plugin/parser/trino/split.go:88-91`
 
 - [ ] **Step 1: Apply the plsql fix**
 
@@ -184,73 +133,32 @@ with:
 				// next statement's Range.Start lands at the byte AFTER the consumed
 				// ';' (matching where its leadingContent actually begins in source).
 				if prevStopTokenIndex > loopStart {
-					consumed := tokens.GetTextFromTokens(allTokens[loopStart+1], allTokens[prevStopTokenIndex])
-					byteOffsetStart += len(consumed)
+					byteOffsetStart += allTokens[prevStopTokenIndex].GetStop() - allTokens[loopStart].GetStop()
 				}
 ```
 
 The `antlr` import is already present at `split.go:4`. The `parser.PlSqlParserSEMICOLON` symbol is unchanged.
 
-- [ ] **Step 2: Apply the trino fix**
-
-In `backend/plugin/parser/trino/split.go`, replace lines 87-91 (the `// Check if there's a semicolon...` block):
-
-```go
-				// Check if there's a semicolon after the statement and include it
-				finalEndIdx := endIdx
-				if endIdx+1 < len(tokens) && tokens[endIdx+1].GetTokenType() == trinoparser.TrinoLexerSEMICOLON_ {
-					finalEndIdx = endIdx + 1
-				}
-```
-
-with:
-
-```go
-				// Walk forward through hidden-channel tokens (whitespace, comments) to
-				// find a trailing ';' belonging to this statement. Bail on the first
-				// default-channel non-';' token — that's the start of the next statement.
-				finalEndIdx := endIdx
-				for nextIdx := endIdx + 1; nextIdx < len(tokens); nextIdx++ {
-					next := tokens[nextIdx]
-					if next.GetTokenType() == trinoparser.TrinoLexerSEMICOLON_ {
-						finalEndIdx = nextIdx
-						break
-					}
-					if next.GetChannel() == antlr.TokenDefaultChannel {
-						break
-					}
-				}
-```
-
-The `antlr` import is already present at `trino/split.go:4`. The `trinoparser.TrinoLexerSEMICOLON_` symbol is unchanged.
-
-- [ ] **Step 3: Format both files**
+- [ ] **Step 2: Format**
 
 ```bash
-gofmt -w backend/plugin/parser/plsql/split.go backend/plugin/parser/trino/split.go
+gofmt -w backend/plugin/parser/plsql/split.go
 ```
 
 ### Task 4: Record YAML and verify text/range invariants
 
 **Files:**
 - Read/diff: `backend/plugin/parser/plsql/test-data/test_split.yaml`
-- Read/diff: `backend/plugin/parser/trino/test-data/test_split.yaml`
 
-- [ ] **Step 1: Record both packages**
+- [ ] **Step 1: Record**
 
 ```bash
 go test -count=1 ./backend/plugin/parser/plsql/ -run TestPLSQLSplitSQL -args -record
-go test -count=1 ./backend/plugin/parser/trino/ -run TestTrinoSplitSQL -args -record
 ```
 
-If the trino test function has a different name, find it:
-```bash
-grep -n "RunSplitTests" backend/plugin/parser/trino/*_test.go
-```
+This populates `result:` for the new cases and re-records all others.
 
-This populates `result:` for new cases and re-records all others.
-
-- [ ] **Step 2: Diff the plsql YAML and verify text invariants for new cells**
+- [ ] **Step 2: Diff and verify text invariants for new cells**
 
 ```bash
 git diff backend/plugin/parser/plsql/test-data/test_split.yaml
@@ -262,62 +170,47 @@ For each of the five NEW cases, verify stmt 2's `text` is CLEAN:
 |---|---|---|
 | b | `,1) ;\n\nstmt2 ;` | starts with `"\n\n"`, NO leading `;`, NO leading space |
 | c | `,1) /* note */ ;\nstmt2 ;` | starts with `"\n"`, NO leading `;`, NO leading comment |
-| d | `,1)\n\n;\n\nstmt2;` | starts with `"\n\n"` (or similar pure-whitespace prefix); NO leading `;`. **If the parse tree produces 3 unit_statements** (with empty middle from the standalone `;`), confirm the middle stmt has `Empty: true` and stmt 3's text starts with `"\n\n"` instead. |
-| f | `BEGIN NULL; END\n/\nBEGIN NULL; END\n/` | 2 anonymous blocks, each with text `"BEGIN NULL; END;"` (the trailing `;` synthesized by `needSemicolon`); NO leading `/` or `\n` on stmt 2 |
-| h | `,1) ;` (EOF, no stmt 2) | 1 stmt only, text `"insert into t values('a',1)"`, NO `;` in text (non-needSemicolon strips trailing `;`) |
+| d | `,1)\n\n;\n\nstmt2;` | starts with `"\n\n"` (or pure-whitespace prefix); NO leading `;`. **If parse tree produces 3 unit_statements** (with empty middle from the standalone `;`), confirm middle stmt has `Empty: true` and stmt 3's text starts with `"\n\n"`. |
+| f | `BEGIN NULL; END;\nSELECT 1 FROM dual` | 2 stmts: stmt 1 text = `"BEGIN NULL; END;"`; stmt 2 text = `"\nSELECT 1 FROM dual"` (single `\n` leading, NO `;` leak) |
+| h | `,1) ;` (EOF, no stmt 2) | 1 stmt only, text = `"insert into t values('a',1)"`, NO `;` in text |
 
 If any invariant is violated, the fix is wrong — investigate before continuing.
 
-- [ ] **Step 3: Diff the plsql YAML and verify expected existing-fixture changes**
+- [ ] **Step 3: Diff and verify expected existing-fixture changes**
 
-The same diff should show 1-byte/1-column shifts (NOT text changes) in three existing fixtures:
+The same diff should show 1-byte/1-column shifts (NOT text changes) in four existing fixtures:
 
-| fixture (line)                                          | expected change                                  |
-|----------------------------------------------------------|--------------------------------------------------|
-| `multiple SELECT statements` (line 1)                   | stmt 2: `range.start` 16→17, `range.end` 33→34, `start.column` 17→18 |
-| `multiple statements with newlines` (line 28)           | stmt 2: range/start.column shift by 1 byte/column |
-| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2: range/start.column shift by 1 |
+| fixture (line)                                                          | expected change                                      |
+|-------------------------------------------------------------------------|------------------------------------------------------|
+| `multiple SELECT statements` (line 1)                                   | stmt 2: `range.start` 16→17, `range.end` 33→34, `start.column` 17→18 |
+| `multiple statements with newlines` (line 28)                           | stmt 2: range/start.column shift by 1 byte/column    |
+| `SELECT statements separated by forward slash` (line 120)               | stmt 2 (after `/`): range/start.column shift by 1 (the SELECT-then-`;` of stmt 1 triggers bookkeeping) |
+| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2: range/start.column shift by 1                 |
 
 For each: verify `text` is UNCHANGED. Any text change is a flag.
 
-For the four anonymous-block-with-`/` fixtures (lines 55, 79, 120, 150), verify ZERO changes — they don't trigger the bookkeeping update.
+For all OTHER existing fixtures (lines 55, 79, 150, 172 region anonymous-block-with-`/`; single-stmt fixtures; position-leading-whitespace fixtures), verify ZERO changes — they don't trigger the bookkeeping update.
 
-- [ ] **Step 4: Diff the trino YAML and verify text invariants for new cases**
-
-```bash
-git diff backend/plugin/parser/trino/test-data/test_split.yaml
-```
-
-For each of the three NEW trino cases, verify stmt 2's `text`:
-
-| input | expected stmt 2 text invariant |
-|---|---|
-| `SELECT 1 ; SELECT 2 ;` | starts with `" "` (leading space), no leading `;`, ends with `";"` (trino includes consumed `;` in text) |
-| `SELECT 1 /* note */ ; SELECT 2 ;` | starts with `" "`, no leading comment, no leading `;` |
-| `SELECT 1\n\n;\n\nSELECT 2;` | starts with `"\n\n"` (or pure whitespace), no leading `;` |
-
-Verify ZERO changes to existing trino fixtures (none should re-record because none use the bug shape).
-
-- [ ] **Step 5: Run both test suites in normal (non-record) mode**
+- [ ] **Step 4: Run the test suite in normal (non-record) mode**
 
 ```bash
-go test -count=1 -v ./backend/plugin/parser/plsql/ ./backend/plugin/parser/trino/
+go test -count=1 -v ./backend/plugin/parser/plsql/ -run TestPLSQLSplitSQL
 ```
 
-Expected: all subtests pass.
+Expected: all subtests pass, including the five new BYT-9367 subtests.
 
 ### Task 5: Lint and build
 
 - [ ] **Step 1: Lint**
 
 ```bash
-golangci-lint run --allow-parallel-runners ./backend/plugin/parser/plsql/... ./backend/plugin/parser/trino/...
+golangci-lint run --allow-parallel-runners ./backend/plugin/parser/plsql/...
 ```
 
-Run repeatedly until no issues remain (per `AGENTS.md`). Use `--fix` to auto-fix:
+Run repeatedly until no issues remain. Use `--fix` to auto-fix:
 
 ```bash
-golangci-lint run --fix --allow-parallel-runners ./backend/plugin/parser/plsql/... ./backend/plugin/parser/trino/...
+golangci-lint run --fix --allow-parallel-runners ./backend/plugin/parser/plsql/...
 ```
 
 Expected: clean.
@@ -336,37 +229,38 @@ Expected: builds successfully.
 
 ```bash
 git add backend/plugin/parser/plsql/split.go \
-        backend/plugin/parser/plsql/test-data/test_split.yaml \
-        backend/plugin/parser/trino/split.go \
-        backend/plugin/parser/trino/test-data/test_split.yaml
+        backend/plugin/parser/plsql/test-data/test_split.yaml
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git commit -m "$(cat <<'EOF'
-fix(plsql,trino): trailing ';' leak when whitespace/comment separates stop and ';'
+fix(plsql): trailing ';' leak when whitespace/comment separates stop and ';'
 
-BYT-9367. The plsql and trino splitters' "advance past trailing ';'"
-lookahead inspected only the token immediately after the parse-tree stop,
-so any hidden-channel token (whitespace, comment) between the stop and
-the ';' prevented consumption. The ';' then leaked into the next
-statement's text. For Oracle this surfaced as ORA-00900 at position 1.
+BYT-9367. The plsql splitter's "advance past trailing ';'" lookahead
+inspected only the token immediately after the parse-tree stop, so any
+hidden-channel token (whitespace, comment) between the stop and the ';'
+prevented consumption. The ';' then leaked into the next statement's
+text. For Oracle this surfaced as ORA-00900 at position 1.
 
-Replace the single-token lookaheads with channel-aware loops that skip
-hidden-channel tokens until they find ';' (consume) or a default-channel
-non-';' token (bail). For plsql, also advance byteOffsetStart past
-loop-consumed tokens so the next statement's Range.Start aligns with
-where its leadingContent actually begins in source. Trino's text/range
-model already handles this naturally via statement[byteOffsetStart:rangeEnd].
+Replace the single-token lookahead with a channel-aware loop that skips
+hidden-channel tokens until it finds ';' (consume) or a default-channel
+non-';' token (bail). After the loop, advance byteOffsetStart by the byte
+length of any consumed tokens so the next statement's Range.Start aligns
+with where its leadingContent actually begins in source. This also
+quietly fixes a pre-existing 1-byte off-by-one in the immediate-';' case
+(visible in 4 existing fixtures).
 
 Tests:
-- 5 new plsql YAML fixtures (cells b/c/d/f/h of the design gap).
-- 3 new trino YAML fixtures (Trino-equivalent inputs).
-- 3 existing plsql fixtures re-recorded with 1-byte/1-column Range/Start.Column
+- 5 new YAML fixtures (cells b/c/d/f/h of the design gap).
+- 4 existing fixtures re-recorded with 1-byte/1-column Range/Start.Column
   shifts (text unchanged): multiple SELECT statements, multiple statements
-  with newlines, position semantic: multi-statement with leading whitespace.
-- Trino existing fixtures unchanged.
+  with newlines, SELECT statements separated by forward slash, position
+  semantic: multi-statement with leading whitespace.
+
+Trino was investigated and ruled out — TrinoParser.g4 requires ';' in
+the singleStatement parse tree, so the leak shape can't occur there.
 
 Spec: docs/superpowers/specs/2026-05-07-oracle-splitter-trailing-semicolon-leak-design.md
 
@@ -387,8 +281,8 @@ Expected: working tree clean (besides the spec/plan docs from earlier commits).
 
 ## Out of scope (for reference)
 
-- **`trino.splitByTokenizer` fallback.** Audited in Task 1 Step 3. If it has the same bug, separate ticket.
+- **Trino splitter.** Investigated; not affected. `TrinoParser.g4` requires `;` in `singleStatement`.
 - **Multi-`;` runs (`stmt;;stmt2`).** Pre-existing limitation; not made worse.
-- **Driver-level integration tests.** No existing testcontainer infra for either driver targeting this code path; building it for one bug isn't proportional.
-- **Defensive `leadingContent` rebuild.** Long-term hardening idea from the original Linear analysis; the channel-aware loop + bookkeeping closes the documented gap.
-- **Variable rename of `prevStopTokenIndex` / `finalEndIdx`.** Names are mildly confusing in the inner loop's local context but renaming would balloon the diff.
+- **Driver-level integration tests.** No existing testcontainer infra targeting this code path.
+- **Defensive `leadingContent` rebuild.** Long-term hardening idea; channel-aware loop + bookkeeping closes the documented gap.
+- **Variable rename of `prevStopTokenIndex`.** Mildly confusing in the inner loop's local context but renaming would balloon the diff.
