@@ -4,7 +4,7 @@
 
 **Goal:** Fix `plsql.SplitSQL` so a trailing `;` separated from the statement's parse-tree stop token by hidden-channel tokens (whitespace, comments) is correctly consumed by the current statement instead of leaking into the next statement's text/range. Also fix the latent `byteOffsetStart` misalignment surfaced by the Range invariant in the design.
 
-**Architecture:** Replace the single-token SEMI lookahead with a channel-aware loop. After the loop, advance `byteOffsetStart` by the byte length of any tokens the loop consumed (using token stop-index arithmetic — no string materialization), so `Range.Start` of the next statement aligns with where its leadingContent actually begins in source.
+**Architecture:** Replace the single-token SEMI lookahead with a channel-aware loop. After the loop, advance `byteOffsetStart` by `len(GetTextFromTokens(...))` of any tokens the loop consumed (matching the byte-length convention at `split.go:82`), so `Range.Start` of the next statement aligns with where its leadingContent actually begins in source. Note: ANTLR token Start/Stop indices are *rune* indices into a `[]rune` input stream, NOT byte offsets — so the bookkeeping must use `len()` of the materialized text, not stop-index arithmetic.
 
 **Tech Stack:** Go, ANTLR4 (`github.com/antlr4-go/antlr/v4`), `github.com/bytebase/parser/plsql`, YAML test runner (`backend/plugin/parser/base/split_test_runner.go`).
 
@@ -23,45 +23,21 @@
 
 ## Test plan recap (from spec §6)
 
-Five new fixtures (cells b, c, d, f, h). Four existing fixtures re-record (§6.2): `multiple SELECT statements`, `multiple statements with newlines`, `SELECT statements separated by forward slash`, `position semantic: multi-statement with leading whitespace`. Range/Start.Column shift by 1; Text unchanged.
+Five new fixtures (cells b, c, d, f, h). The current YAML has **15 existing fixtures**; **4 re-record** with 1-byte/1-column Range/Start.Column shifts (`multiple SELECT statements`, `multiple statements with newlines`, `SELECT statements separated by forward slash`, `position semantic: multi-statement with leading whitespace`); **11 stay unchanged** (see spec §6.2 for the full list and rationale per fixture). Text never changes.
 
 ---
 
 ## Chunk 1: implementation
 
-### Task 1: Verify starting state
+### Task 1: Establish green baseline
 
-**Files:**
-- Read: `backend/plugin/parser/plsql/split.go`
-
-- [ ] **Step 1: Verify the buggy plsql code is at the expected location**
-
-```bash
-sed -n '105,113p' backend/plugin/parser/plsql/split.go
-```
-
-Expected output:
-```go
-// Set prevStopTokenIndex to the last token we want to "consume" for this statement.
-// For statements where the semicolon is a separator (not part of the statement parse tree),
-// we need to skip past the semicolon so it's not included in the next statement's leadingContent.
-prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
-if nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()) {
-    if nextToken := tokens.Get(nextIdx); nextToken.GetTokenType() == parser.PlSqlParserSEMICOLON {
-        prevStopTokenIndex = nextIdx
-    }
-}
-```
-
-If the code differs, update the file references in subsequent steps.
-
-- [ ] **Step 2: Run the existing plsql test suite to establish a green baseline**
+- [ ] **Step 1: Run the existing plsql test suite**
 
 ```bash
 go test -count=1 ./backend/plugin/parser/plsql/
 ```
 
-Expected: all existing subtests pass.
+Expected: all existing subtests pass. The Edit tool in Task 3 will fail loudly if the source has drifted from the spec's `split.go:108-113` reference, so no separate sed-check is needed.
 
 ### Task 2: Add new test fixtures with placeholder results
 
@@ -129,11 +105,19 @@ with:
 						break
 					}
 				}
-				// If the loop consumed any tokens, advance byteOffsetStart so the
-				// next statement's Range.Start lands at the byte AFTER the consumed
-				// ';' (matching where its leadingContent actually begins in source).
+				// If the loop consumed any tokens, advance byteOffsetStart by the
+				// byte length of those consumed tokens so the next statement's
+				// Range.Start lands at the byte AFTER the consumed ';' (matching
+				// where its leadingContent actually begins in source).
+				//
+				// IMPORTANT: use len(GetTextFromTokens(...)) — Go's len() on a
+				// string is byte length, while ANTLR token Start/Stop indices are
+				// rune indices into the input stream's []rune. For ASCII the
+				// difference is zero, but multi-byte UTF-8 inside hidden tokens
+				// (e.g., a comment containing non-ASCII characters) would diverge.
+				// This matches the byte-offset arithmetic at line 82.
 				if prevStopTokenIndex > loopStart {
-					byteOffsetStart += allTokens[prevStopTokenIndex].GetStop() - allTokens[loopStart].GetStop()
+					byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[loopStart+1], allTokens[prevStopTokenIndex]))
 				}
 ```
 
@@ -170,7 +154,7 @@ For each of the five NEW cases, verify stmt 2's `text` is CLEAN:
 |---|---|---|
 | b | `,1) ;\n\nstmt2 ;` | starts with `"\n\n"`, NO leading `;`, NO leading space |
 | c | `,1) /* note */ ;\nstmt2 ;` | starts with `"\n"`, NO leading `;`, NO leading comment |
-| d | `,1)\n\n;\n\nstmt2;` | starts with `"\n\n"` (or pure-whitespace prefix); NO leading `;`. **If parse tree produces 3 unit_statements** (with empty middle from the standalone `;`), confirm middle stmt has `Empty: true` and stmt 3's text starts with `"\n\n"`. |
+| d | `,1)\n\n;\n\nstmt2;` | exactly 2 unit_statements (the standalone `;` matches sql_script's bare-`SEMICOLON` alternative, not a unit_statement, so the splitter — which only iterates `IUnit_statementContext` — sees 2 children). Stmt 2 text starts with pure whitespace, NO leading `;` |
 | f | `BEGIN NULL; END;\nSELECT 1 FROM dual` | 2 stmts: stmt 1 text = `"BEGIN NULL; END;"`; stmt 2 text = `"\nSELECT 1 FROM dual"` (single `\n` leading, NO `;` leak) |
 | h | `,1) ;` (EOF, no stmt 2) | 1 stmt only, text = `"insert into t values('a',1)"`, NO `;` in text |
 
@@ -178,18 +162,18 @@ If any invariant is violated, the fix is wrong — investigate before continuing
 
 - [ ] **Step 3: Diff and verify expected existing-fixture changes**
 
-The same diff should show 1-byte/1-column shifts (NOT text changes) in four existing fixtures:
+The same diff should show 1-byte/1-column shifts (NOT text changes) in exactly 4 of the 15 existing fixtures:
 
 | fixture (line)                                                          | expected change                                      |
 |-------------------------------------------------------------------------|------------------------------------------------------|
 | `multiple SELECT statements` (line 1)                                   | stmt 2: `range.start` 16→17, `range.end` 33→34, `start.column` 17→18 |
-| `multiple statements with newlines` (line 28)                           | stmt 2: range/start.column shift by 1 byte/column    |
-| `SELECT statements separated by forward slash` (line 120)               | stmt 2 (after `/`): range/start.column shift by 1 (the SELECT-then-`;` of stmt 1 triggers bookkeeping) |
-| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2: range/start.column shift by 1                 |
+| `multiple statements with newlines` (line 28)                           | stmt 2: `range.start` 20→21, `range.end` 54→55, `start.column` 20→21 |
+| `SELECT statements separated by forward slash` (line 120)               | stmt 2 (after `/`): `range.start` 18→19, `range.end` 35→36, `start.column` 1→2 |
+| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2: `range.start` 18→19, `range.end` 40→41, `start.column` 19→20 |
 
 For each: verify `text` is UNCHANGED. Any text change is a flag.
 
-For all OTHER existing fixtures (lines 55, 79, 150, 172 region anonymous-block-with-`/`; single-stmt fixtures; position-leading-whitespace fixtures), verify ZERO changes — they don't trigger the bookkeeping update.
+For the OTHER 11 existing fixtures (lines 55, 79, 150 — needSemicolon-with-`/`; lines 172, 205, 220, 235, 238, 241, 312, 327 — single-statement / parse-error / single-stmt-with-leading-whitespace), verify ZERO changes — they don't trigger the bookkeeping update.
 
 - [ ] **Step 4: Run the test suite in normal (non-record) mode**
 

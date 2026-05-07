@@ -106,28 +106,13 @@ any statement with hidden-channel tokens before `;`.
 **Invariant B — Range alignment.** `byteOffsetStart` of statement N+1 (which
 becomes `Range.Start` of N+1 and the input to `CalculateLineAndColumn` for
 `Start.Line`/`Start.Column`) must equal the byte position of the first
-character of N+1's `leadingContent`. This is so that `source[Range.Start :
-Range.End]` reproduces `Text`, and `Start.Line`/`Column` points at where
-the statement actually begins in source.
-
-In the OLD code, `byteOffsetStart` of N+1 = `byteOffsetEnd` of N = byte after
-N's `lastToken` text. `prevStopTokenIndex` is then advanced (by the 1-token
-lookahead) past N's `lastToken` to the consumed `;` IF one is immediately
-present, but `byteOffsetStart` is **not** advanced in lockstep. The result is
-that for the existing immediate-`;` case (`SELECT t1; SELECT t2`),
-`byteOffsetStart` of stmt 2 lands at the byte position of the consumed `;`
-itself, off by 1 from where the next `leadingContent` byte actually begins
-(visible in the existing fixture: stmt 2 `Range.Start = 16` is the byte of
-`;`, while text begins with the leading space at byte 17). For BYT-9367
-inputs, this off-by-N drift is even larger (whitespace + `;` + newlines).
-
-**The fix's loop change alone satisfies Invariant A.** For BYT-9367 inputs,
-it advances `prevStopTokenIndex` past N bytes of hidden tokens + the `;`. But
-without a corresponding advance of `byteOffsetStart`, Invariant B is now off
-by N bytes (where N can be tens of bytes for `/* long comment */ ;`
-patterns), which would visibly drift `Start.Line`/`Column` and
-`source[Range:]` for downstream consumers (e.g., BYT-9089 rollout error
-mapping). The fix must satisfy both invariants.
+character of N+1's `leadingContent`, so that `source[Range.Start:Range.End]`
+reproduces `Text` and `Start.Line`/`Column` points at where the statement
+actually begins in source. The OLD code never advanced `byteOffsetStart`
+after the lookahead, so existing fixtures already drift by 1 byte for the
+immediate-`;` case (see §6.2 row 1). BYT-9367 inputs (where the loop now
+consumes whitespace + `;`) would amplify this to N bytes, visibly drifting
+line/column for downstream consumers (e.g., BYT-9089 rollout error mapping).
 
 The corrected statement of intent: **(A) scan forward through hidden-channel
 tokens to find the trailing `;`, if any; consume it and stop. Otherwise (the
@@ -156,13 +141,17 @@ for nextIdx := prevStopTokenIndex + 1; nextIdx < len(allTokens); nextIdx++ {
         break
     }
 }
-// If the loop consumed any tokens, advance byteOffsetStart so the next
-// statement's Range.Start lands at the byte AFTER the consumed `;` (matching
-// where its leadingContent actually begins in source). Use stop-index
-// arithmetic rather than materializing the consumed text — equivalent and
-// cheaper.
+// If the loop consumed any tokens, advance byteOffsetStart by the byte length
+// of those consumed tokens so the next statement's Range.Start lands at the
+// byte AFTER the consumed `;` (matching where its leadingContent actually
+// begins in source). Use len(GetTextFromTokens(...)) — Go's len() on a
+// string is byte length, while ANTLR token Start/Stop indices are *rune*
+// indices into the input stream (input_stream.go: data []rune). For ASCII
+// the difference is zero, but multi-byte UTF-8 inside hidden tokens (e.g.,
+// a comment containing non-ASCII characters) would diverge. Match the
+// byte-offset arithmetic at line 82 by using string length.
 if prevStopTokenIndex > loopStart {
-    byteOffsetStart += allTokens[prevStopTokenIndex].GetStop() - allTokens[loopStart].GetStop()
+    byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[loopStart+1], allTokens[prevStopTokenIndex]))
 }
 ```
 
@@ -174,28 +163,14 @@ Properties:
   `MULTI_LINE_COMMENT`, `REMARK_COMMENT`, lines 2621-2624) to `channel(HIDDEN)`.
   If the grammar adds another hidden-channel token type later, no code change
   is needed.
-* **Behavior for inputs that don't trigger the bug:**
-  - **Existing `stmt;stmt2` (non-needSemicolon, immediate `;`)**: `stop` is
-    the last token of the unit_statement (e.g., `t1`); loop's first iteration
-    matches `;` and breaks; bookkeeping fires (`consumed = ";"`,
-    `byteOffsetStart += 1`). This **shifts the existing 1-byte mismatch to
-    correctness**: stmt 2's `Range.Start` now lands at the byte AFTER `;`
-    rather than at `;` itself. Existing fixtures with this shape will see
-    a 1-byte/1-column re-record (see §6.2).
-  - **Existing `needSemicolon` blocks followed by `/`**: `stop` is the
-    block's own `;`; loop walks past `\n` (HIDDEN) and bails on `/` (DEFAULT,
-    FORWARD_SLASH, not SEMI); `prevStopTokenIndex` unchanged; bookkeeping
-    does not fire. **Unchanged.**
-  - **Statements with no trailing `;`**: loop bails on first default-channel
-    token (or EOF); `prevStopTokenIndex` unchanged; bookkeeping does not fire.
-    **Unchanged.**
+* **Per-fixture behavior** is enumerated in §6 (cells a–h, plus existing
+  fixture re-records).
 * **Bounded.** The loop bails on the first default-channel token that isn't
   `;`, so it cannot consume a `;` that belongs to a later statement.
+* **UTF-8 safe.** Bookkeeping uses `len(GetTextFromTokens(...))` (byte
+  length) rather than `Stop()-Stop()` rune-index arithmetic, matching the
+  existing byte-offset convention at `split.go:82`.
 * **Local.** No signature change, no new helper, no callsite churn.
-* **Stop-index arithmetic.** `allTokens[i].GetStop()` returns the inclusive
-  byte-end of token `i` in the input. The delta between consumed-`;`'s end
-  and `loopStart`'s end equals the byte length of the run of tokens consumed
-  by the loop (whitespace + `;`), without needing to materialize the text.
 
 ## 6. Test plan
 
@@ -232,30 +207,40 @@ bodies, etc.), the trailing `;` is preserved.
 
 ### 6.2 Existing fixtures — Range value changes
 
-Four existing fixtures will see numerical Range/Start.Column shifts (1 byte /
-1 column) from the bookkeeping fix in §5 because they exercise the
-"non-needSemicolon stmt with immediate `;` consumed by lookahead" path that
-the new bookkeeping now correctly accounts for:
+The current `test_split.yaml` has **15 existing fixtures**. Of these, **4
+will re-record** (1-byte/1-column Range/Start.Column shifts) and **11 will
+remain unchanged**.
+
+The 4 that re-record exercise the "non-needSemicolon stmt with immediate
+`;` consumed by lookahead" path that the new bookkeeping now correctly
+accounts for:
 
 | fixture (line in `test_split.yaml`)                                     | what shifts                                  |
 |-------------------------------------------------------------------------|----------------------------------------------|
 | `multiple SELECT statements` (line 1)                                   | stmt 2 `Range.Start` 16→17; `Range.End` 33→34; `Start.Column` 17→18 |
-| `multiple statements with newlines` (line 28)                           | stmt 2's `Range`/`Start.Column` shift by 1 byte/col |
-| `SELECT statements separated by forward slash` (line 120)               | stmt 2 (after `/`): `Range`/`Start.Column` shift by 1 (the SELECT-then-`;` of stmt 1 triggers bookkeeping; the sql_plus_command branch then carries forward the shifted `byteOffsetStart`) |
-| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2 Range/Start shift by 1                |
+| `multiple statements with newlines` (line 28)                           | stmt 2: `Range.Start` 20→21; `Range.End` 54→55; `Start.Column` 20→21 |
+| `SELECT statements separated by forward slash` (line 120)               | stmt 2 (after `/`): `Range.Start` 18→19; `Range.End` 35→36; `Start.Column` 1→2 |
+| `position semantic: multi-statement with leading whitespace` (line 342) | stmt 2: `Range.Start` 18→19; `Range.End` 40→41; `Start.Column` 19→20 |
 
 `Text`, `End.Line`/`End.Column`, and `Empty` are unchanged. Re-record via
 `go test -args -record` and verify in diff that ONLY Range/Start.Column
 shift, NEVER Text. Any Text change would indicate a bug elsewhere.
 
-The four anonymous-block-with-`/` fixtures (lines 55, 79, 150, 172 region)
-are unchanged — `prevStopTokenIndex` points at `;` (the parse-tree stop of
-the needSemicolon body), loop walks past `\n` and bails on `/`, no
-consumption, no bookkeeping update.
+The 11 unchanged fixtures:
 
-Single-statement fixtures (`ALTER TABLE`, `CALL procedure`, `DROP TABLESPACE`,
-`CREATE TABLE`, leading-newlines/spaces position fixtures) are unchanged —
-no second statement to be affected by `byteOffsetStart` advancement.
+| fixture (line)                                              | why unchanged                                                |
+|-------------------------------------------------------------|--------------------------------------------------------------|
+| `procedure with forward slash separator` (55)               | needSemicolon, stop = block's own `;`; loop walks `\n` HIDDEN and bails on `/` DEFAULT non-SEMI; no consumption |
+| `two procedures with forward slash separator` (79)          | same as above                                                |
+| `anonymous block with forward slash` (150)                  | same as above                                                |
+| `ALTER TABLE with PARTITION` (172)                          | single-statement; no next statement to be affected            |
+| `CALL procedure` (205)                                      | single-statement                                              |
+| `DROP TABLESPACE with CASCADE CONSTRAINTS` (220)            | single-statement                                              |
+| `DROP TABLESPACE CASCADE alone should error` (235)          | parse-error path; splitter never reaches lookahead            |
+| `DROP TABLESPACE then CASCADE should error` (238)           | same as above                                                 |
+| `CREATE TABLE with ROW STORE COMPRESS ADVANCED` (241)       | single-statement                                              |
+| `position semantic: leading newlines` (312)                 | single-statement                                              |
+| `position semantic: leading spaces and newlines` (327)      | single-statement                                              |
 
 ### 6.3 Driver-level integration tests — skipped
 
