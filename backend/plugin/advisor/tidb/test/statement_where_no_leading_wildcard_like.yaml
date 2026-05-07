@@ -111,3 +111,15 @@
       endposition: null
 - statement: SELECT * FROM t WHERE a LIKE 'abc' COLLATE utf8mb4_bin
   changeType: 1
+# Cumulative shape divergence #12 (peer-review preempt; empirically NOT
+# a regression). LIKE ('%abc') wraps the literal in parens. Pingcap
+# parses Pattern as *ast.ParenthesesExpr; restoreNode renders as
+# "(%abc)" (parens preserved), so pattern[0] == '(' and pingcap does
+# NOT trigger. Omni parses Pattern as *ast.ParenExpr{Expr: *StringLit};
+# the StringLit type-assert fails, silently skips. Same outcome via
+# different mechanisms — no divergence. DO NOT add ParenExpr to the
+# CollateExpr unwrap loop; doing so would make omni start triggering
+# on a case pingcap doesn't, introducing a real regression. This
+# fixture pins the non-trigger contract.
+- statement: SELECT * FROM t WHERE a LIKE ('%abc')
+  changeType: 1
