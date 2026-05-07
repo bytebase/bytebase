@@ -176,31 +176,39 @@ func TestWebhookIntegration(t *testing.T) {
 	require.NoError(t, err)
 	instance := instanceResp.Msg
 
-	// Create webhooks for issue events
-	for _, eventType := range []v1pb.Activity_Type{
-		v1pb.Activity_ISSUE_CREATED,
-	} {
-		_, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
-			Project: ctl.project.Name,
-			Webhook: &v1pb.Webhook{
-				Type:              v1pb.WebhookType_SLACK,
-				Title:             fmt.Sprintf("Test Webhook for %s", eventType),
-				Url:               webhookServer.URL,
-				NotificationTypes: []v1pb.Activity_Type{eventType},
-			},
-		}))
-		require.NoError(t, err)
-	}
-
 	t.Run("IssueWithPlanWebhookPayload", func(t *testing.T) {
 		// Reset webhook collector for this test
 		collector.reset()
+
+		// Each subtest owns its own project + webhook to keep counts isolated.
+		projectID := generateRandomString("byt9398-i1")
+		projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+			ProjectId: projectID,
+			Project: &v1pb.Project{
+				Name:              fmt.Sprintf("projects/%s", projectID),
+				Title:             "byt9398-i1",
+				AllowSelfApproval: true,
+			},
+		}))
+		require.NoError(t, err)
+		project := projectResp.Msg
+
+		_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:              v1pb.WebhookType_SLACK,
+				Title:             "Test Webhook for ISSUE_CREATED",
+				Url:               webhookServer.URL,
+				NotificationTypes: []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED},
+			},
+		}))
+		require.NoError(t, err)
 
 		// Create a plan with title and description
 		planTitle := "Database Migration Plan"
 		planDesc := "This plan creates a new database with important schema changes"
 		planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-			Parent: ctl.project.Name,
+			Parent: project.Name,
 			Plan: &v1pb.Plan{
 				Name:        planTitle,
 				Description: planDesc,
@@ -221,7 +229,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		// Create an issue for webhook testing
 		issueResp, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
-			Parent: ctl.project.Name,
+			Parent: project.Name,
 			Issue: &v1pb.Issue{
 				Title:       "Test webhook issue",
 				Description: "", // Empty description is OK
