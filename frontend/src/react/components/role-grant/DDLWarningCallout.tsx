@@ -40,8 +40,10 @@ export function DDLWarningCallout(props: DDLWarningProps) {
         </Alert>
       );
     case "binding-none":
+      // Info, not warning: this state is benign — DDL/DML is gated, no risk to
+      // surface. Yellow on a positive permission state would mislead readers.
       return (
-        <Alert variant="warning">
+        <Alert variant="info">
           {t("project.members.ddl-current-none", { kind: props.kind })}
         </Alert>
       );
