@@ -789,10 +789,7 @@
     "self": "centro de exportacion"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0",
-      "export-rows-required": "Se requieren filas de exportación"
-    },
+    "error": {},
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
@@ -1406,8 +1403,7 @@
         "self": "El Asistente AI no está configurado."
       },
       "send": "Enviar",
-      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
-      "text2sql": "Text2SQL"
+      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL"
     }
   },
   "policy": {
@@ -2414,7 +2410,6 @@
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "copy-name": "Copiar nombre",
-    "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "copy-url": "Copiar URL",
     "download-as-file": "Descargar como {file}",
     "duration-day": "{days} day",

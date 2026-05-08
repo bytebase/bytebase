@@ -789,10 +789,7 @@
     "self": "Trung tâm xuất"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "Số dòng xuất phải lớn hơn 0",
-      "export-rows-required": "Yêu cầu số dòng xuất"
-    },
+    "error": {},
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
     "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
@@ -1406,8 +1403,7 @@
         "self": "Trợ lý AI chưa được định cấu hình."
       },
       "send": "Gửi",
-      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL",
-      "text2sql": "Chuyển văn bản thành SQL"
+      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL"
     }
   },
   "policy": {
@@ -2414,7 +2410,6 @@
     "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "copy-name": "Sao chép tên",
-    "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",

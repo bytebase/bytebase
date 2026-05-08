@@ -789,10 +789,7 @@
     "self": "エクスポートセンター"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "エクスポート行の数は 0 より大きくなければなりません",
-      "export-rows-required": "エクスポート行数を指定する必要があります"
-    },
+    "error": {},
     "export-format": "エクスポート形式",
     "export-rows": "エクスポート行数",
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
@@ -1406,8 +1403,7 @@
         "self": "AI アシスタントが設定されていません。"
       },
       "send": "送信",
-      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。",
-      "text2sql": "Text2SQL"
+      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。"
     }
   },
   "policy": {
@@ -2414,7 +2410,6 @@
     "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-name": "名前をコピーする",
-    "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "copy-url": "URLをコピー",
     "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{days} day",

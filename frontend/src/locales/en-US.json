@@ -789,10 +789,7 @@
     "self": "Export Center"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "Export rows must greater than 0",
-      "export-rows-required": "Export rows required"
-    },
+    "error": {},
     "export-format": "Export format",
     "export-rows": "Export rows",
     "password-info": "Provide a password to encrypt the export file.",
@@ -1406,8 +1403,7 @@
         "self": "AI Assistant is not configured."
       },
       "send": "Send",
-      "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL",
-      "text2sql": "Text2SQL"
+      "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL"
     }
   },
   "policy": {
@@ -2414,7 +2410,6 @@
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "copy-all-column-names": "Copy all column names",
     "copy-name": "Copy name",
-    "copy-selected-results": "Copy selected data by {action} or {button}",
     "copy-url": "Copy URL",
     "download-as-file": "Download as {file}",
     "duration-day": "{days} day",
