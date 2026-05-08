@@ -2,11 +2,11 @@ import { describe, expect, test, vi } from "vitest";
 import { getRoleEnvironmentLimitationKind } from "./utils";
 
 const fixtures: Record<string, string[]> = {
-  "roles/sqlEditorUser":     ["bb.sql.ddl", "bb.sql.dml"],
-  "roles/sqlEditorDDLOnly":  ["bb.sql.ddl"],
-  "roles/sqlEditorDMLOnly":  ["bb.sql.dml"],
-  "roles/queryOnly":         ["bb.sql.select"],
-  "roles/projectViewer":     [],
+  "roles/sqlEditorUser": ["bb.sql.ddl", "bb.sql.dml"],
+  "roles/sqlEditorDDLOnly": ["bb.sql.ddl"],
+  "roles/sqlEditorDMLOnly": ["bb.sql.dml"],
+  "roles/queryOnly": ["bb.sql.select"],
+  "roles/projectViewer": [],
 };
 vi.mock("@/store", () => ({
   useRoleStore: () => ({

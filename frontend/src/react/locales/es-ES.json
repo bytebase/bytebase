@@ -1703,14 +1703,11 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
-      "allow-ddl-all-environments": "Sin restricciones de entorno. Permitir ejecutar sentencias DDL/DML en todos los entornos.",
       "ddl-current-all": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en TODOS los entornos sin aprobación.",
       "ddl-current-none": "Las sentencias {{kind}} no se pueden ejecutar directamente en el editor SQL en ningún entorno.",
       "ddl-current-some": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en los entornos listados sin aprobación.",
       "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
-      "disallow-ddl-all-environments": "No permitir ejecutar sentencias DDL/DML en ningún entorno.",
       "edit-member": "Editar miembro - {{member}}",
       "never-expires": "Never",
       "request-role": {

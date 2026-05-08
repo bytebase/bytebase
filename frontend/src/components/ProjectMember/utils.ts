@@ -40,11 +40,3 @@ export const getRoleEnvironmentLimitationKind = (
   if (hasDML) return "DML";
   return undefined;
 };
-
-/**
- * Transitional shim — keeps the build green while call sites migrate.
- * Removed in Task 10 once the last caller is gone.
- * @deprecated Use getRoleEnvironmentLimitationKind instead.
- */
-export const roleHasEnvironmentLimitation = (role: string): boolean =>
-  getRoleEnvironmentLimitationKind(role) !== undefined;

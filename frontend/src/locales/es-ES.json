@@ -1456,7 +1456,6 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "never-expires": "Nunca caduca",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo"
