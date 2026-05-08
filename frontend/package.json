@@ -40,6 +40,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@markdoc/markdoc": "0.5.5",
+    "@tanstack/react-virtual": "^3.13.24",
     "@vueuse/core": "14.2.1",
     "bootstrap": "5.3.8",
     "class-variance-authority": "^0.7.1",

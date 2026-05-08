@@ -26,13 +26,15 @@
       </NButton>
     </div>
   </template>
-  <ResultViewV1
+  <ReactPageMount
     v-else
-    class="w-full h-auto grow"
-    :execute-params="context.params"
-    :database="database"
-    :result-set="context.resultSet"
-    @execute="execQuery"
+    page="ResultViewPage"
+    container-class="w-full flex-1 min-h-0"
+    :page-props="{
+      executeParams: context.params,
+      database,
+      resultSet: context.resultSet,
+    }"
   />
 </template>
 
@@ -42,13 +44,13 @@ import { computed, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useCurrentTimestamp } from "@/composables/useCurrentTimestamp";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ResultViewV1 } from "../../EditorCommon/";
 
 const props = defineProps<{
   database: Database;

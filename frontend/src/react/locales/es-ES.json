@@ -336,6 +336,7 @@
     "previous": "Previous",
     "project": "Proyecto",
     "projects": "Proyectos",
+    "query": "Consulta",
     "read-only": "Solo lectura",
     "reason": "Razón",
     "refresh": "Actualizar",
@@ -393,6 +394,7 @@
     "succeed": "Tener éxito",
     "system": "Sistema",
     "table": "Tabla",
+    "text-wrap": "Ajuste de texto",
     "title": "Título",
     "to": "Hasta",
     "total": "Total",
@@ -780,6 +782,7 @@
     "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
+    "sync-database": "Sincronizar base de datos",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -849,6 +852,7 @@
     "extensions": "Extensiones",
     "external-tables": "Tablas externas",
     "failed-to-sync-schema": "Error al sincronizar el esquema",
+    "failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos \"{{name}}\".",
     "functions": "Funciones",
     "n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
     "packages": "Paquetes",
@@ -871,6 +875,7 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "streams": "Streams",
     "successfully-synced-schema": "Esquema sincronizado exitosamente",
+    "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos \"{{name}}\".",
     "syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
     "tables": "Tablas",
     "tasks": "Tareas",
@@ -2027,6 +2032,9 @@
       "select": "Seleccionar clasificación"
     }
   },
+  "sensitive-data": {
+    "self": "Datos Sensibles"
+  },
   "setting": {
     "label": {
       "key-placeholder": "Clave de etiqueta...",
@@ -2619,14 +2627,19 @@
       },
       "show-or-hide-empty-query-results": "Mostrar/ocultar resultados de consulta vacíos"
     },
+    "binary-format": "Formato binario",
+    "boolean-format": "Formato booleano",
+    "cancel-selection": "Cancelar selección",
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
     "click-to-sync-now": "Haga clic para sincronizar ahora",
     "close-sheet": "Cerrar hoja",
+    "column-display-format": "Formato de visualización de columna",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "connect-to-a-database": "Conectar a base de datos",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "copy-name": "Copiar nombre",
+    "copy-selected-results": "Copiar datos seleccionados por <action></action> o <button></button>",
     "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
@@ -2637,9 +2650,11 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format": "Formato",
+    "format-default": "Predeterminado",
     "format-sql": "Format SQL",
     "generate-sql": "Generar SQL",
     "grant-type-unmask": "Unmask",
+    "hex-format": "Formato hexadecimal",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "content": "¿Cerrar la hoja y perder cualquier dato no guardado?",
@@ -2649,9 +2664,12 @@
     "jit": "Just-In-Time Access",
     "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
+    "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
     "manage-connections": "Gestionar las conexiones",
+    "next-row": "Siguiente fila",
     "no-access-requests": "No access requests",
+    "no-data-available": "No hay datos disponibles",
     "no-database-selected": "No se ha seleccionado una base de datos",
     "no-history-found": "No se encontró historial",
     "no-project": {
@@ -2663,6 +2681,7 @@
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "open-in-new-tab": "Abrir en nueva pestaña",
     "preview-table-data": "Vista previa de datos de la tabla",
+    "previous-row": "Fila anterior",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
     "project-read": "Lectura del proyecto",
@@ -2672,6 +2691,7 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
+    "query-time": "Tiempo de consulta",
     "re-request": "Volver a solicitar",
     "redis-command": {
       "all-nodes": "Todos los nodos",
@@ -2688,13 +2708,24 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "rows": {
+      "self": "filas"
+    },
+    "rows-affected": "filas afectadas",
+    "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "save-sheet": "Guardar hoja",
     "save-sheet-input-placeholder": "Por favor, ingresa un nombre para la hoja",
+    "scroll-to-bottom": "Desplazarse hacia abajo",
+    "scroll-to-top": "Desplazarse hacia arriba",
     "search-history-by-statement": "Búsqueda por enunciado",
+    "search-scope-column-description": "Columna de tipo {{type}}. Ingrese un valor y presione Enter para saltar a la fila coincidente.",
+    "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
+    "search-scope-row-number-title": "Número de fila",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
     "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
+    "show-in-editor": "Mostrar en editor",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {
@@ -2711,13 +2742,18 @@
         }
       }
     },
+    "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
+    "table-view": "Vista de tabla",
+    "text-format": "Formato de texto",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "Subir archivo",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
+    "vertical-display": "Pantalla vertical",
     "view-database-detail": "Ver detalle de la base de datos",
     "view-detail": "Ver detalle",
     "view-issue": "View Issue",
     "view-schema-text": "Ver texto del esquema",
+    "visualize-explain": "Visualizar explicación",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

@@ -27,7 +27,7 @@ export type ConnectionState = {
   lastCommand: ExecuteCommandParams | undefined;
   retries: number;
   heartbeat: {
-    timer: NodeJS.Timeout | undefined;
+    timer: ReturnType<typeof setTimeout> | undefined;
     counter: number;
     timestamp: number;
   };

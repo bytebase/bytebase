@@ -336,6 +336,7 @@
     "previous": "Previous",
     "project": "Dự án",
     "projects": "Dự án",
+    "query": "Truy vấn",
     "read-only": "Chỉ đọc",
     "reason": "Lý do",
     "refresh": "Làm mới",
@@ -393,6 +394,7 @@
     "succeed": "Thành công",
     "system": "Hệ thống",
     "table": "Bảng",
+    "text-wrap": "Ngắt dòng văn bản",
     "title": "Tiêu đề",
     "to": "Đến",
     "total": "Total",
@@ -780,6 +782,7 @@
     "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
+    "sync-database": "Đồng bộ cơ sở dữ liệu",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -849,6 +852,7 @@
     "extensions": "Tiện ích mở rộng",
     "external-tables": "Bảng ngoài",
     "failed-to-sync-schema": "Đồng bộ hóa lược đồ thất bại",
+    "failed-to-sync-schema-for-database-database-value-name": "Đồng bộ schema thất bại cho cơ sở dữ liệu \"{{name}}\".",
     "functions": "Hàm",
     "n-databases-had-sync-errors": "{{0}} cơ sở dữ liệu gặp lỗi đồng bộ",
     "packages": "Gói",
@@ -871,6 +875,7 @@
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "streams": "Luồng",
     "successfully-synced-schema": "Đồng bộ hóa lược đồ thành công",
+    "successfully-synced-schema-for-database-database-value-name": "Đồng bộ schema thành công cho cơ sở dữ liệu \"{{name}}\".",
     "syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
     "tables": "Bảng",
     "tasks": "Tác vụ",
@@ -2027,6 +2032,9 @@
       "select": "Chọn phân loại"
     }
   },
+  "sensitive-data": {
+    "self": "Dữ liệu nhạy cảm"
+  },
   "setting": {
     "label": {
       "key-placeholder": "Khóa nhãn...",
@@ -2619,14 +2627,19 @@
       },
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống"
     },
+    "binary-format": "Định dạng nhị phân",
+    "boolean-format": "Định dạng boolean",
+    "cancel-selection": "Hủy chọn",
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
     "click-to-sync-now": "Nhấp để đồng bộ ngay",
     "close-sheet": "Đóng trang tính",
+    "column-display-format": "Định dạng hiển thị cột",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "copy-name": "Sao chép tên",
+    "copy-selected-results": "Sao chép dữ liệu đã chọn bằng <action></action> hoặc <button></button>",
     "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {{file}}",
@@ -2637,9 +2650,11 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format": "Định dạng",
+    "format-default": "Mặc định",
     "format-sql": "Format SQL",
     "generate-sql": "Tạo SQL",
     "grant-type-unmask": "Unmask",
+    "hex-format": "Định dạng thập lục phân",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "content": "Đóng trang tính và mất bất kỳ dữ liệu chưa lưu nào?",
@@ -2649,9 +2664,12 @@
     "jit": "Just-In-Time Access",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
+    "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "manage-connections": "Quản lý kết nối",
+    "next-row": "Dòng tiếp theo",
     "no-access-requests": "No access requests",
+    "no-data-available": "Không có dữ liệu",
     "no-database-selected": "Chưa chọn cơ sở dữ liệu",
     "no-history-found": "Không tìm thấy lịch sử",
     "no-project": {
@@ -2663,6 +2681,7 @@
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
     "preview-table-data": "Xem trước dữ liệu bảng",
+    "previous-row": "Dòng trước",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
     "project-read": "Đọc dự án",
@@ -2672,6 +2691,7 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
+    "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
     "redis-command": {
       "all-nodes": "Tất cả các nút",
@@ -2688,13 +2708,24 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "rows": {
+      "self": "dòng"
+    },
+    "rows-affected": "dòng bị ảnh hưởng",
+    "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "save-sheet": "Lưu trang tính",
     "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
+    "scroll-to-bottom": "Cuộn xuống cuối",
+    "scroll-to-top": "Cuộn lên đầu",
     "search-history-by-statement": "Tìm kiếm theo câu lệnh",
+    "search-scope-column-description": "Cột kiểu {{type}}. Nhập giá trị và nhấn Enter để chuyển đến dòng khớp.",
+    "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
+    "search-scope-row-number-title": "Số dòng",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
     "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
+    "show-in-editor": "Hiển thị trong editor",
     "sync-in-progress": "Đang đồng bộ",
     "tab": {
       "context-menu": {
@@ -2711,13 +2742,18 @@
         }
       }
     },
+    "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
+    "table-view": "Chế độ xem bảng",
+    "text-format": "Định dạng văn bản",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "Tải lên tệp",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
+    "vertical-display": "Hiển thị dọc",
     "view-database-detail": "Xem chi tiết cơ sở dữ liệu",
     "view-detail": "Xem chi tiết",
     "view-issue": "View Issue",
     "view-schema-text": "Xem văn bản lược đồ",
+    "visualize-explain": "Trực quan hóa Giải thích",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

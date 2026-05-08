@@ -30,16 +30,19 @@
               onClearScreen: handleClearScreen,
             }"
           />
-          <ResultViewV1
+          <ReactPageMount
             v-if="query.params && query.resultSet"
-            class="p-2"
-            :execute-params="query.params"
-            :result-set="query.resultSet"
-            :database="
-              databaseStore.getDatabaseByName(query.params.connection.database)
-            "
-            :loading="query.status === 'RUNNING'"
-            :dark="true"
+            page="ResultViewPage"
+            container-class="p-2 w-full flex-1 min-h-0"
+            :page-props="{
+              executeParams: query.params,
+              resultSet: query.resultSet,
+              database: databaseStore.getDatabaseByName(
+                query.params.connection.database
+              ),
+              loading: query.status === 'RUNNING',
+              dark: true,
+            }"
           />
 
           <div
@@ -83,7 +86,6 @@ import {
   useWebTerminalStore,
 } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
-import { ResultViewV1 } from "../../EditorCommon";
 import { useHistory } from "./useHistory";
 
 const tabStore = useSQLEditorTabStore();

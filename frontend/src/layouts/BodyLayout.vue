@@ -130,7 +130,7 @@ actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   showReleaseModal.value = openRemindModal;
 });
 
-const refreshRemindTimer = ref<NodeJS.Timeout>();
+const refreshRemindTimer = ref<ReturnType<typeof setTimeout>>();
 onMounted(async () => {
   const remind = await actuatorStore.tryToRemindRefresh();
   if (remind) {

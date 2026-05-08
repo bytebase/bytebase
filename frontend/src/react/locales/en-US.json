@@ -341,6 +341,7 @@
     "previous": "Previous",
     "project": "Project",
     "projects": "Projects",
+    "query": "Query",
     "read-only": "Read-only",
     "reason": "Reason",
     "recent": "Recent",
@@ -399,6 +400,7 @@
     "succeed": "Succeed",
     "system": "System",
     "table": "Table",
+    "text-wrap": "Text Wrap",
     "title": "Title",
     "to": "To",
     "total": "Total",
@@ -787,6 +789,7 @@
     "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{{0}}'",
+    "sync-database": "Sync Database",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -856,6 +859,7 @@
     "extensions": "Extensions",
     "external-tables": "External tables",
     "failed-to-sync-schema": "Failed to sync schema",
+    "failed-to-sync-schema-for-database-database-value-name": "Failed to sync schema for database \"{{name}}\".",
     "functions": "Functions",
     "n-databases-had-sync-errors": "{{0}} database(s) had sync errors",
     "packages": "Packages",
@@ -878,6 +882,7 @@
     "start-to-sync-schema": "Start to sync schema",
     "streams": "Streams",
     "successfully-synced-schema": "Successfully synced schema",
+    "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database \"{{name}}\".",
     "syncing-databases-for-instance": "Syncing databases for {{0}}...",
     "tables": "Tables",
     "tasks": "Tasks",
@@ -2040,6 +2045,9 @@
       "select": "Select classification"
     }
   },
+  "sensitive-data": {
+    "self": "Sensitive Data"
+  },
   "setting": {
     "label": {
       "key-placeholder": "Label key...",
@@ -2633,14 +2641,19 @@
       },
       "show-or-hide-empty-query-results": "Show / hide empty query results"
     },
+    "binary-format": "Binary format",
+    "boolean-format": "Boolean format",
+    "cancel-selection": "Cancel selection",
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
     "click-to-sync-now": "Click to sync now",
     "close-sheet": "Close sheet",
+    "column-display-format": "Column Display Format",
     "connect-in-admin-mode": "Connect in admin mode",
     "connect-to-a-database": "Connect to database",
     "copy-all-column-names": "Copy all column names",
     "copy-name": "Copy name",
+    "copy-selected-results": "Copy selected data by <action></action> or <button></button>",
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
@@ -2651,9 +2664,11 @@
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format": "Format",
+    "format-default": "Default",
     "format-sql": "Format SQL",
     "generate-sql": "Generate SQL",
     "grant-type-unmask": "Unmask",
+    "hex-format": "Hexadecimal format",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "content": "Close the sheet and lose any unsaved data?",
@@ -2663,9 +2678,12 @@
     "jit": "Just-In-Time Access",
     "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
+    "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
     "manage-connections": "Manage connections",
+    "next-row": "Next Row",
     "no-access-requests": "No access requests",
+    "no-data-available": "No data available",
     "no-database-selected": "No database selected",
     "no-history-found": "No history found",
     "no-project": {
@@ -2677,6 +2695,7 @@
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
     "preview-table-data": "Preview table data",
+    "previous-row": "Previous Row",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
     "project-read": "Project read",
@@ -2686,6 +2705,7 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
+    "query-time": "Query time",
     "re-request": "Re-request",
     "redis-command": {
       "all-nodes": "All nodes",
@@ -2702,13 +2722,24 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "rows": {
+      "self": "rows"
+    },
+    "rows-affected": "rows affected",
+    "rows-upper-limit": "reached the limit of query results",
     "save-sheet": "Save Sheet",
     "save-sheet-input-placeholder": "Please input a sheet name",
+    "scroll-to-bottom": "Scroll to the bottom",
+    "scroll-to-top": "Scroll to the top",
     "search-history-by-statement": "Search by statement",
+    "search-scope-column-description": "Column with {{type}} type. Enter a value and press Enter to jump to the matching row.",
+    "search-scope-row-number-description": "Enter a row number to jump to that row.",
+    "search-scope-row-number-title": "Row number",
     "select-a-database-to-start": "Select a database to start",
     "select-encoding": "Select encoding",
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
+    "show-in-editor": "Show in Editor",
     "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {
@@ -2725,13 +2756,18 @@
         }
       }
     },
+    "table-empty-placeholder": "Click Run to execute the query.",
+    "table-view": "Table view",
+    "text-format": "Text format",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "Upload file",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
+    "vertical-display": "Vertical display",
     "view-database-detail": "View database detail",
     "view-detail": "View detail",
     "view-issue": "View Issue",
     "view-schema-text": "View schema text",
+    "visualize-explain": "Visualize Explain",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",

@@ -44,7 +44,7 @@ const subscriptionStore = useSubscriptionV1Store();
 
 const ready = ref(false);
 
-const authCheckIntervalId = ref<NodeJS.Timeout>();
+const authCheckIntervalId = ref<ReturnType<typeof setInterval>>();
 
 const isAuthRoute = computed(() => {
   return (
