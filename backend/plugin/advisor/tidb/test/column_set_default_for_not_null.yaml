@@ -81,3 +81,25 @@
       endposition: null
 - statement: "\n\t\t\t\tCREATE TABLE book(uid int, id int);\n\t\t\t\tALTER TABLE book \n\t\t\t\t\tCHANGE COLUMN uid uid int NOT NULL DEFAULT 0,\n\t\t\t\t\tMODIFY COLUMN id int PRIMARY KEY DEFAULT 0,\n\t\t\t\t\tADD COLUMN name varchar(20) NOT NULL DEFAULT ''\n\t\t\t\t"
   changeType: 1
+# omniNeedDefault contract pins (batch 7 migration). The following column
+# kinds are NOT NULL but should NOT trigger the rule because they don't
+# need an explicit DEFAULT clause:
+# - BLOB / TEXT family (omni stores them under separate TypeName.Name
+#   strings — "BLOB", "TEXT", etc. — vs pingcap's unified TypeBlob enum;
+#   omniNeedDefault must include both name families)
+# - JSON
+# - AUTO_INCREMENT (auto-generated value)
+# - GENERATED columns (computed from other columns)
+# Without these pins, a future change that drops a name from the
+# omniNeedDefault switch (or stops populating ColumnDef.AutoIncrement /
+# ColumnDef.Generated) silently starts flagging these.
+- statement: CREATE TABLE t(c TEXT NOT NULL)
+  changeType: 1
+- statement: CREATE TABLE t(c BLOB NOT NULL)
+  changeType: 1
+- statement: CREATE TABLE t(c JSON NOT NULL)
+  changeType: 1
+- statement: CREATE TABLE t(c INT NOT NULL AUTO_INCREMENT PRIMARY KEY)
+  changeType: 1
+- statement: CREATE TABLE t(a INT, c INT GENERATED ALWAYS AS (a + 1) STORED NOT NULL)
+  changeType: 1

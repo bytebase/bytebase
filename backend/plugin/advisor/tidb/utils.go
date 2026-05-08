@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
@@ -84,15 +83,6 @@ func (t tableNewColumn) delete(tableName, columnName string) {
 		return
 	}
 	delete(t[tableName], columnName)
-}
-
-func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
-	var buffer strings.Builder
-	ctx := format.NewRestoreCtx(flag, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
 }
 
 func needDefault(column *ast.ColumnDef) bool {
@@ -308,15 +298,6 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 	return false
 }
 
-// getColumnCharset returns lowercased CHARACTER SET of a pingcap-AST
-// column. Moved here from advisor_charset_allowlist.go during its omni
-// migration; still consumed by advisor_column_disallow_set_charset.go
-// (un-migrated). Delete when that advisor migrates.
-// Tracked: https://linear.app/bytebase/issue/BYT-9412
-func getColumnCharset(column *ast.ColumnDef) string {
-	return strings.ToLower(column.Tp.GetCharset())
-}
-
 // addColumnTargets returns the column definitions added by an ATAddColumn
 // cmd. omni populates either cmd.Columns (multi-column ADD COLUMN (...))
 // or cmd.Column (single ADD COLUMN); read both defensively.
@@ -333,15 +314,42 @@ func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 	return nil
 }
 
-// canNull reports whether a pingcap-AST column may hold NULL (no NOT NULL
-// or PRIMARY KEY option). Scoped to un-migrated advisors; delete when
-// advisor_column_set_default_for_not_null.go migrates.
-// Tracked: https://linear.app/bytebase/issue/BYT-9362
-func canNull(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == ast.ColumnOptionNotNull || option.Tp == ast.ColumnOptionPrimaryKey {
+// omniNeedDefault reports whether a column needs a DEFAULT clause to be
+// considered "well-formed" by the column_set_default_for_not_null and
+// column_require_default rules. Returns false (default not needed) when:
+//   - column is auto-increment (auto-generated value)
+//   - column is generated (computed from other columns)
+//   - column is PRIMARY KEY (auto-incrementing-or-required by other means)
+//   - column type is BLOB/TEXT (omni stores TEXT as a separate name from
+//     BLOB; pingcap unified them under TypeBlob — both must be checked)
+//   - column type is JSON or geometry (no meaningful default)
+//
+// Mirror of pingcap-typed needDefault (still in utils.go for the
+// un-migrated advisor_column_require_default.go consumer).
+// When that advisor migrates, switch its calls here and delete needDefault.
+// Tracked: https://linear.app/bytebase/issue/BYT-9414
+func omniNeedDefault(col *omniast.ColumnDef) bool {
+	if col == nil {
+		return false
+	}
+	if col.AutoIncrement || col.Generated != nil {
+		return false
+	}
+	for _, c := range col.Constraints {
+		if c != nil && c.Type == omniast.ColConstrPrimaryKey {
 			return false
 		}
+	}
+	if col.TypeName == nil {
+		return false
+	}
+	switch strings.ToUpper(col.TypeName.Name) {
+	case "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB",
+		"TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT",
+		"JSON",
+		"GEOMETRY", "POINT", "LINESTRING", "POLYGON",
+		"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION":
+		return false
 	}
 	return true
 }
