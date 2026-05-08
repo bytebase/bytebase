@@ -1,41 +1,54 @@
 import { describe, expect, test } from "vitest";
 import enReact from "@/react/locales/en-US.json";
+import esReact from "@/react/locales/es-ES.json";
+import jaReact from "@/react/locales/ja-JP.json";
+import viReact from "@/react/locales/vi-VN.json";
+import zhReact from "@/react/locales/zh-CN.json";
 
-// Locale-format guard for the new role-grant warning strings. The component
-// tests assert that interpolation reaches the rendered text via a mock t(),
-// but they don't see the real locale strings — so a typo like "kind" instead
-// of "{{kind}}" would slip through. This test loads en-US directly and
-// asserts the placeholders survive translation, independent of any component.
-//
-// Other locales are kept in sync by frontend/scripts/check-react-i18n.mjs
-// (cross-locale key parity) and locales without these placeholders would be
-// caught by a localized smoke test, but this guard pins the EN source of
-// truth so every consumer of `kind` / `environments` interpolation is safe.
+// Locale-format guard for the new role-grant warning strings. Component
+// tests use a mock t() that doesn't see the real locale strings, so a typo
+// like "kind" instead of "{{kind}}" — or a translator dropping a placeholder
+// in a non-EN locale — would slip through. This test loads every React
+// locale and asserts placeholder presence directly. Cross-locale key parity
+// is enforced separately by frontend/scripts/check-react-i18n.mjs, but key
+// parity ≠ placeholder parity.
+
+const locales = {
+  "en-US": enReact,
+  "zh-CN": zhReact,
+  "ja-JP": jaReact,
+  "es-ES": esReact,
+  "vi-VN": viReact,
+};
+
+const projectMembersKindKeys = [
+  "ddl-warning",
+  "ddl-current-all",
+  "ddl-current-some",
+  "ddl-current-none",
+] as const;
 
 describe("DDLWarningCallout locale strings", () => {
-  test.each([
-    ["project.members.ddl-warning", enReact.project.members["ddl-warning"]],
-    [
-      "project.members.ddl-current-all",
-      enReact.project.members["ddl-current-all"],
-    ],
-    [
-      "project.members.ddl-current-some",
-      enReact.project.members["ddl-current-some"],
-    ],
-    [
-      "project.members.ddl-current-none",
-      enReact.project.members["ddl-current-none"],
-    ],
-  ])("%s contains {{kind}} placeholder", (_key, value) => {
-    expect(value).toBeDefined();
-    expect(value).toContain("{{kind}}");
-  });
+  for (const [locale, data] of Object.entries(locales)) {
+    describe(locale, () => {
+      test.each(
+        projectMembersKindKeys
+      )("project.members.%s contains {{kind}} placeholder", (key) => {
+        const value = (
+          data.project.members as unknown as Record<string, string>
+        )[key];
+        expect(value).toBeDefined();
+        expect(value).toContain("{{kind}}");
+      });
 
-  test("issue.role-grant.ddl-warning contains both {{kind}} and {{environments}}", () => {
-    const value = enReact.issue["role-grant"]["ddl-warning"];
-    expect(value).toBeDefined();
-    expect(value).toContain("{{kind}}");
-    expect(value).toContain("{{environments}}");
-  });
+      test("issue.role-grant.ddl-warning contains both {{kind}} and {{environments}}", () => {
+        const value = (
+          data.issue["role-grant"] as unknown as Record<string, string>
+        )["ddl-warning"];
+        expect(value).toBeDefined();
+        expect(value).toContain("{{kind}}");
+        expect(value).toContain("{{environments}}");
+      });
+    });
+  }
 });
