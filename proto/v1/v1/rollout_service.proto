@@ -702,8 +702,6 @@ message TaskRunLogEntry {
     google.protobuf.Timestamp end_time = 2;
     // Error message if the gh-ost migration failed.
     string error = 3;
-    // The cleaned ALTER statement passed to gh-ost.
-    string statement = 4;
   }
 
   // Release file execution details.

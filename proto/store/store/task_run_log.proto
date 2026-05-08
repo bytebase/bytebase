@@ -97,10 +97,7 @@ message TaskRunLog {
     // The file path within the release (e.g., "2.2/V0001_create_table.sql").
     string file_path = 2;
   }
-  message GhostMigrationStart {
-    // The cleaned ALTER statement passed to gh-ost.
-    string statement = 1;
-  }
+  message GhostMigrationStart {}
   message GhostMigrationEnd {
     string error = 1;
   }

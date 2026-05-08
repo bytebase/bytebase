@@ -5270,11 +5270,6 @@ Table identifies a database table.
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| statement | [string](#string) |  | The cleaned ALTER statement passed to gh-ost. |
-
-
 
 
 

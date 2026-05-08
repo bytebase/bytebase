@@ -336,7 +336,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 	// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 	migrationError := make(chan error, 1)
 	migrator := logic.NewMigrator(migrationContext, "bb")
-	opts.LogGhostMigrationStart(statement)
+	opts.LogGhostMigrationStart()
 
 	defer func() {
 		cleanupCtx := context.Background()

@@ -2803,9 +2803,7 @@ type TaskRunLogEntry_GhostMigration struct {
 	// When the gh-ost migration ended.
 	EndTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	// Error message if the gh-ost migration failed.
-	Error string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
-	// The cleaned ALTER statement passed to gh-ost.
-	Statement     string `protobuf:"bytes,4,opt,name=statement,proto3" json:"statement,omitempty"`
+	Error         string `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2857,13 +2855,6 @@ func (x *TaskRunLogEntry_GhostMigration) GetEndTime() *timestamppb.Timestamp {
 func (x *TaskRunLogEntry_GhostMigration) GetError() string {
 	if x != nil {
 		return x.Error
-	}
-	return ""
-}
-
-func (x *TaskRunLogEntry_GhostMigration) GetStatement() string {
-	if x != nil {
-		return x.Statement
 	}
 	return ""
 }
@@ -3560,7 +3551,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"TaskRunLog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aentries\x18\x02 \x03(\v2\x1c.bytebase.v1.TaskRunLogEntryR\aentries:x\xeaAu\n" +
-	"\x17bytebase.com/TaskRunLog\x12Zprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log\"\x89\x1a\n" +
+	"\x17bytebase.com/TaskRunLog\x12Zprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log\"\xeb\x19\n" +
 	"\x0fTaskRunLogEntry\x125\n" +
 	"\x04type\x18\x01 \x01(\x0e2!.bytebase.v1.TaskRunLogEntry.TypeR\x04type\x125\n" +
 	"\blog_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x1d\n" +
@@ -3634,13 +3625,12 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x1a\xb6\x01\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x1a\x98\x01\n" +
 	"\x0eGhostMigration\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\x12\x1c\n" +
-	"\tstatement\x18\x04 \x01(\tR\tstatement\x1aK\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\x1aK\n" +
 	"\x12ReleaseFileExecute\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
 	"\tfile_path\x18\x02 \x01(\tR\bfilePath\"\xd1\x01\n" +

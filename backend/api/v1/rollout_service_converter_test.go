@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -19,11 +20,9 @@ func TestConvertToTaskRunLogEntries_GhostMigration(t *testing.T) {
 		{
 			T: start,
 			Payload: &storepb.TaskRunLog{
-				Type:      storepb.TaskRunLog_GHOST_MIGRATION_START,
-				ReplicaId: "replica-a",
-				GhostMigrationStart: &storepb.TaskRunLog_GhostMigrationStart{
-					Statement: "ALTER TABLE book ADD COLUMN author VARCHAR(54)",
-				},
+				Type:                storepb.TaskRunLog_GHOST_MIGRATION_START,
+				ReplicaId:           "replica-a",
+				GhostMigrationStart: &storepb.TaskRunLog_GhostMigrationStart{},
 			},
 		},
 		{
@@ -43,7 +42,7 @@ func TestConvertToTaskRunLogEntries_GhostMigration(t *testing.T) {
 	require.Equal(t, v1pb.TaskRunLogEntry_GHOST_MIGRATION, entry.Type)
 	require.Equal(t, "replica-a", entry.ReplicaId)
 	require.NotNil(t, entry.GhostMigration)
-	require.Equal(t, "ALTER TABLE book ADD COLUMN author VARCHAR(54)", entry.GhostMigration.Statement)
+	require.Nil(t, entry.GhostMigration.ProtoReflect().Descriptor().Fields().ByName(protoreflect.Name("statement")))
 	require.Equal(t, start.Unix(), entry.GhostMigration.StartTime.AsTime().Unix())
 	require.Equal(t, end.Unix(), entry.GhostMigration.EndTime.AsTime().Unix())
 	require.Equal(t, "copy failed", entry.GhostMigration.Error)

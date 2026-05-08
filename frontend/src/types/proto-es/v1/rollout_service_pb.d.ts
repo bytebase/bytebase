@@ -1530,13 +1530,6 @@ export declare type TaskRunLogEntry_GhostMigration = Message<"bytebase.v1.TaskRu
    * @generated from field: string error = 3;
    */
   error: string;
-
-  /**
-   * The cleaned ALTER statement passed to gh-ost.
-   *
-   * @generated from field: string statement = 4;
-   */
-  statement: string;
 };
 
 /**

@@ -992,9 +992,7 @@ func (x *TaskRunLog_ReleaseFileExecute) GetFilePath() string {
 }
 
 type TaskRunLog_GhostMigrationStart struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The cleaned ALTER statement passed to gh-ost.
-	Statement     string `protobuf:"bytes,1,opt,name=statement,proto3" json:"statement,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1027,13 +1025,6 @@ func (x *TaskRunLog_GhostMigrationStart) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TaskRunLog_GhostMigrationStart.ProtoReflect.Descriptor instead.
 func (*TaskRunLog_GhostMigrationStart) Descriptor() ([]byte, []int) {
 	return file_store_task_run_log_proto_rawDescGZIP(), []int{0, 13}
-}
-
-func (x *TaskRunLog_GhostMigrationStart) GetStatement() string {
-	if x != nil {
-		return x.Statement
-	}
-	return ""
 }
 
 type TaskRunLog_GhostMigrationEnd struct {
@@ -1222,7 +1213,7 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xf8\x15\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xda\x15\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1d\n" +
@@ -1281,9 +1272,8 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1aK\n" +
 	"\x12ReleaseFileExecute\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
-	"\tfile_path\x18\x02 \x01(\tR\bfilePath\x1a3\n" +
-	"\x13GhostMigrationStart\x12\x1c\n" +
-	"\tstatement\x18\x01 \x01(\tR\tstatement\x1a)\n" +
+	"\tfile_path\x18\x02 \x01(\tR\bfilePath\x1a\x15\n" +
+	"\x13GhostMigrationStart\x1a)\n" +
 	"\x11GhostMigrationEnd\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\"\xf6\x02\n" +
 	"\x04Type\x12\x14\n" +

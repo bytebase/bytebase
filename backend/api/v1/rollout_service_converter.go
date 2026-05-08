@@ -537,7 +537,6 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				ReplicaId: l.Payload.ReplicaId,
 				GhostMigration: &v1pb.TaskRunLogEntry_GhostMigration{
 					StartTime: timestamppb.New(l.T),
-					Statement: l.Payload.GhostMigrationStart.Statement,
 				},
 			})
 

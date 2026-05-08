@@ -322,15 +322,13 @@ func (o *ExecuteOptions) LogCommandResponse(affectedRows int64, allAffectedRows 
 	}
 }
 
-func (o *ExecuteOptions) LogGhostMigrationStart(statement string) {
+func (o *ExecuteOptions) LogGhostMigrationStart() {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_GHOST_MIGRATION_START,
-		GhostMigrationStart: &storepb.TaskRunLog_GhostMigrationStart{
-			Statement: statement,
-		},
+		Type:                storepb.TaskRunLog_GHOST_MIGRATION_START,
+		GhostMigrationStart: &storepb.TaskRunLog_GhostMigrationStart{},
 	})
 	if err != nil {
 		slog.Warn("failed to log gh-ost migration start", log.BBError(err))

@@ -707,9 +707,6 @@ func (x *TaskRunLogEntry_GhostMigration) Equal(y *TaskRunLogEntry_GhostMigration
 	if x.Error != y.Error {
 		return false
 	}
-	if x.Statement != y.Statement {
-		return false
-	}
 	return true
 }
 

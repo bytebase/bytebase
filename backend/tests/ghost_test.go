@@ -160,7 +160,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	}
 	a.NotNil(ghostEntry)
 	a.NotNil(ghostEntry.GetGhostMigration())
-	a.Contains(ghostEntry.GetGhostMigration().Statement, "ALTER TABLE book ADD author VARCHAR(54)")
 	a.NotNil(ghostEntry.GetGhostMigration().StartTime)
 	a.NotNil(ghostEntry.GetGhostMigration().EndTime)
 	a.Empty(ghostEntry.GetGhostMigration().Error)

@@ -18754,10 +18754,6 @@ components:
           type: string
           title: error
           description: Error message if the gh-ost migration failed.
-        statement:
-          type: string
-          title: statement
-          description: The cleaned ALTER statement passed to gh-ost.
       title: GhostMigration
       additionalProperties: false
       description: gh-ost migration details.

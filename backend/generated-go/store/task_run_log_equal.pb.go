@@ -196,9 +196,6 @@ func (x *TaskRunLog_GhostMigrationStart) Equal(y *TaskRunLog_GhostMigrationStart
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Statement != y.Statement {
-		return false
-	}
 	return true
 }
 

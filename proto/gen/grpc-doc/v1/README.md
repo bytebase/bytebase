@@ -7887,7 +7887,6 @@ gh-ost migration details.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration started. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration ended. |
 | error | [string](#string) |  | Error message if the gh-ost migration failed. |
-| statement | [string](#string) |  | The cleaned ALTER statement passed to gh-ost. |
 
 
 

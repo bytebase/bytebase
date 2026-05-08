@@ -253,7 +253,6 @@ describe("task-run-log model", () => {
         type: TaskRunLogEntry_Type.GHOST_MIGRATION,
         logTime: ts(10),
         ghostMigration: {
-          statement: "ALTER TABLE book ADD COLUMN author VARCHAR(54)",
           startTime: ts(10),
           endTime: ts(13),
           error: "",
@@ -263,7 +262,6 @@ describe("task-run-log model", () => {
         type: TaskRunLogEntry_Type.GHOST_MIGRATION,
         logTime: ts(20),
         ghostMigration: {
-          statement: "ALTER TABLE book ADD COLUMN title VARCHAR(54)",
           startTime: ts(20),
           error: "copy failed",
         },
