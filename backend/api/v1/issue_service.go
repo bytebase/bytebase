@@ -904,6 +904,34 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after retry"))
 	}
 
+	// Mirror the post-approval side effects that `postCreateIssue` and the
+	// approval runner perform when finding completes — without these, an
+	// auto-approved (template-less / SKIPPED) retry result would leave the
+	// issue out of CHECKING but skip the actual work:
+	//   * ACCESS_GRANT / ROLE_GRANT → activate the grant via
+	//     `completeAccessRequestIssue`.
+	//   * DATABASE_CHANGE with a plan → enqueue rollout creation.
+	approved, err := utils.CheckIssueApproved(refreshed)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check approval state"))
+	}
+	if approved {
+		switch refreshed.Type {
+		case storepb.Issue_ACCESS_GRANT, storepb.Issue_ROLE_GRANT:
+			if completed, completeErr := completeAccessRequestIssue(ctx, s.store, user.Email, refreshed); completeErr != nil {
+				slog.Warn("failed to complete access request issue after retry", log.BBError(completeErr))
+			} else {
+				refreshed = completed
+			}
+		case storepb.Issue_DATABASE_CHANGE:
+			if refreshed.PlanUID != nil {
+				s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: refreshed.ProjectID, PlanID: *refreshed.PlanUID}
+			}
+		default:
+			// DATABASE_EXPORT auto-approve has no follow-up step.
+		}
+	}
+
 	issueV1, err := s.convertToIssue(refreshed)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert to issue"))
