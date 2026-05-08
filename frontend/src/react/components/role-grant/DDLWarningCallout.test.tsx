@@ -62,16 +62,14 @@ describe("DDLWarningCallout", () => {
 });
 
 const _typeChecks = () => {
+  // biome-ignore format: keep @ts-expect-error directive aligned with JSX line
   // @ts-expect-error — `binding-all` does not accept `environments`.
-  const _a = (
-    <DDLWarningCallout type="binding-all" kind="DDL" environments={["x"]} />
-  );
+  const _a = <DDLWarningCallout type="binding-all" kind="DDL" environments={["x"]} />;
   // @ts-expect-error — `issue` requires `environments`.
   const _b = <DDLWarningCallout type="issue" kind="DDL" />;
+  // biome-ignore format: keep @ts-expect-error directive aligned with JSX line
   // @ts-expect-error — `drawer` does not accept `environments`.
-  const _c = (
-    <DDLWarningCallout type="drawer" kind="DDL" environments={["x"]} />
-  );
+  const _c = <DDLWarningCallout type="drawer" kind="DDL" environments={["x"]} />;
   return [_a, _b, _c];
 };
 void _typeChecks;
