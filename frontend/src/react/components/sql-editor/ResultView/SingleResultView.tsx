@@ -101,6 +101,12 @@ export function SingleResultView(props: SingleResultViewProps) {
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
     true
   );
+  // Sort state lives at this level (not inside the inner component) so the
+  // sorted `rows` we feed into the provider are the same array the user
+  // sees in the table. The provider's selection-copy logic dereferences
+  // `rows[selectionIndex]` — if the provider held the unsorted array but
+  // the table rendered sorted rows, Cmd+C would copy the wrong row.
+  const [sortState, setSortState] = useState<SortState | undefined>();
 
   const flattened = useMemo(() => {
     if (engine === Engine.ELASTICSEARCH) {
@@ -134,11 +140,43 @@ export function SingleResultView(props: SingleResultViewProps) {
     [activeResult]
   );
 
+  const rows: ResultTableRow[] = useMemo(() => {
+    if (!sortState || !sortState.direction) return baseRows;
+    const { columnIndex, direction } = sortState;
+    const columnType = columns[columnIndex]?.columnType ?? "";
+    return [...baseRows].sort((a, b) => {
+      const cmp = compareQueryRowValues(
+        columnType,
+        a.item.values[columnIndex],
+        b.item.values[columnIndex]
+      );
+      return direction === "asc" ? cmp : -cmp;
+    });
+  }, [baseRows, sortState, columns]);
+
+  // Reset sort whenever the user toggles the NoSQL table-view switch:
+  // column indices don't carry over between flattened/raw shapes.
+  useEffect(() => {
+    setSortState(undefined);
+  }, [noSQLTableView]);
+
+  const toggleSort = useCallback((columnIndex: number) => {
+    setSortState((current) => {
+      if (!current || current.columnIndex !== columnIndex) {
+        return { columnIndex, direction: "desc" };
+      }
+      if (current.direction === "desc") {
+        return { columnIndex, direction: "asc" };
+      }
+      return undefined;
+    });
+  }, []);
+
   return (
     <SQLResultViewProvider
       dark={dark}
       disallowCopyingData={disallowCopyingData}
-      rows={baseRows}
+      rows={rows}
       columns={columns}
     >
       <SingleResultViewInner
@@ -146,7 +184,9 @@ export function SingleResultView(props: SingleResultViewProps) {
         engine={engine}
         activeResult={activeResult}
         columns={columns}
-        baseRows={baseRows}
+        rows={rows}
+        sortState={sortState}
+        toggleSort={toggleSort}
         supportsTableViewToggle={supportsTableViewToggle}
         noSQLTableView={noSQLTableView}
         setNoSQLTableView={setNoSQLTableView}
@@ -159,7 +199,9 @@ interface SingleResultViewInnerProps extends SingleResultViewProps {
   engine: Engine;
   activeResult: QueryResult;
   columns: ResultTableColumn[];
-  baseRows: ResultTableRow[];
+  rows: ResultTableRow[];
+  sortState: SortState | undefined;
+  toggleSort: (columnIndex: number) => void;
   supportsTableViewToggle: boolean;
   noSQLTableView: boolean;
   setNoSQLTableView: (next: boolean) => void;
@@ -177,7 +219,9 @@ function SingleResultViewInner({
   engine,
   activeResult: _activeResult,
   columns,
-  baseRows,
+  rows,
+  sortState,
+  toggleSort,
   supportsTableViewToggle,
   noSQLTableView,
   setNoSQLTableView,
@@ -198,7 +242,6 @@ function SingleResultViewInner({
   >(null);
 
   const [vertical, setVertical] = useState(false);
-  const [sortState, setSortState] = useState<SortState | undefined>();
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
     scopes: [],
@@ -209,27 +252,13 @@ function SingleResultViewInner({
     number[]
   >([]);
 
-  // Reset search/sort state when toggling NoSQL table view.
+  // Reset search state when toggling NoSQL table view (sort reset is
+  // handled by the wrapper, where sortState lives).
   useEffect(() => {
-    setSortState(undefined);
     setSearchParams({ query: "", scopes: [] });
     setSearchCandidateActiveIndex(-1);
     setSearchCandidateRowIndexs([]);
   }, [noSQLTableView]);
-
-  const rows: ResultTableRow[] = useMemo(() => {
-    if (!sortState || !sortState.direction) return baseRows;
-    const { columnIndex, direction } = sortState;
-    const columnType = columns[columnIndex]?.columnType ?? "";
-    return [...baseRows].sort((a, b) => {
-      const cmp = compareQueryRowValues(
-        columnType,
-        a.item.values[columnIndex],
-        b.item.values[columnIndex]
-      );
-      return direction === "asc" ? cmp : -cmp;
-    });
-  }, [baseRows, sortState, columns]);
 
   const viewMode: ViewMode = useMemo(() => {
     if (result.error && rows.length === 0) return "ERROR";
@@ -346,18 +375,6 @@ function SingleResultViewInner({
 
   const clearSearchCandidate = () => {
     setSearchParams({ query: "", scopes: [] });
-  };
-
-  const toggleSort = (columnIndex: number) => {
-    setSortState((current) => {
-      if (!current || current.columnIndex !== columnIndex) {
-        return { columnIndex, direction: "desc" };
-      }
-      if (current.direction === "desc") {
-        return { columnIndex, direction: "asc" };
-      }
-      return undefined;
-    });
   };
 
   const reachQueryLimit =
