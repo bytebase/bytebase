@@ -125,9 +125,11 @@ export function IssueDetailRoleGrantDetails() {
             <span className="text-sm text-control-light">
               {t("common.database")}
             </span>
-            <div className="text-base">
+            <div>
               {condition.databaseResources.length === 0 ? (
-                <span>{t("issue.role-grant.all-databases")}</span>
+                <span className="text-base">
+                  {t("issue.role-grant.all-databases")}
+                </span>
               ) : (
                 <IssueDetailDatabaseResourceTable
                   databaseResourceList={condition.databaseResources}
