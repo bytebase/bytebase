@@ -142,7 +142,7 @@
     "autoprefixer": "10.4.27",
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.0.0",
-    "eslint": "10.0.2",
+    "eslint": "10.3.0",
     "eslint-plugin-vue": "10.8.0",
     "jsdom": "27.4.0",
     "micromark-util-sanitize-uri": "^2.0.1",
