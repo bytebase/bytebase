@@ -158,8 +158,8 @@ function PolicyTable({
                         <Tooltip content={t("common.delete")}>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-error hover:text-error"
+                            size="sm"
+                            className="text-error hover:text-error"
                             onClick={() => setConfirmingDelete(policy.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -175,8 +175,7 @@ function PolicyTable({
                     >
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
+                        size="sm"
                         onClick={() => navigateToDetail(policy)}
                       >
                         <Pencil className="w-4 h-4" />

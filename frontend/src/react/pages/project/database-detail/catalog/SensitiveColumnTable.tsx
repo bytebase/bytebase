@@ -282,7 +282,7 @@ export function SensitiveColumnTable({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         onClick={() => onDelete(item)}
                         title={t(
                           "settings.sensitive-data.remove-sensitive-column-tips"

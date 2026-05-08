@@ -802,7 +802,7 @@ function LocalFileUpload({
                 </div>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() =>
                     onFilesChange(files.filter((_, i) => i !== index))
                   }

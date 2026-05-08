@@ -539,7 +539,7 @@ export function PlanDetailHeader() {
           {page.sidebarMode === "MOBILE" && (
             <Button
               onClick={() => page.setMobileSidebarOpen(true)}
-              size="icon"
+              size="sm"
               variant="ghost"
             >
               <Menu className="h-5 w-5" />

@@ -24,3 +24,36 @@
   changeType: 1
 - statement: UPDATE tech_book SET id = 1 WHERE id > 10
   changeType: 1
+# Cumulative shape divergence #13 (Codex P2 catch on PR #20211, batch 5
+# round-1). EXPLAIN/TRACE/DESCRIBE wrap DML — both pingcap and omni
+# parse `EXPLAIN DELETE FROM t` as *ExplainStmt{Stmt: *DeleteStmt}.
+# Pingcap's Visitor walked into the inner DML; the initial batch-5
+# Recipe A migration only checked the top-level type and silently
+# regressed on the EXPLAIN-wrapped form. Switched to Recipe B; these
+# fixtures pin the contract.
+- statement: EXPLAIN DELETE FROM tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"EXPLAIN DELETE FROM tech_book" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXPLAIN UPDATE tech_book SET id = 1
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"EXPLAIN UPDATE tech_book SET id = 1" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXPLAIN DELETE FROM tech_book WHERE id > 0
+  changeType: 1
+- statement: EXPLAIN UPDATE tech_book SET id = 1 WHERE id > 10
+  changeType: 1

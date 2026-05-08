@@ -20,8 +20,9 @@ func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_MSSQL, GetDatabaseMetadata)
 }
 
-// GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
-func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+// getDatabaseMetadataANTLR parses the SQL schema text and returns the database metadata.
+// It is kept as a compatibility oracle while MSSQL metadata extraction migrates to omni.
+func getDatabaseMetadataANTLR(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
 	parseResults, err := tsql.ParseTSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse SQL schema")

@@ -265,8 +265,7 @@ function ServiceAccountTable({
                           {user.serviceKey && !copiedKeys.has(user.name) ? (
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="h-6 text-xs"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCopyKey(user);
@@ -282,8 +281,7 @@ function ServiceAccountTable({
                               </span>
                               <Button
                                 variant="destructive"
-                                size="sm"
-                                className="h-6 text-xs"
+                                size="xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleResetKey(user);
@@ -293,8 +291,7 @@ function ServiceAccountTable({
                               </Button>
                               <Button
                                 variant="outline"
-                                size="sm"
-                                className="h-6 text-xs"
+                                size="xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setResetConfirmUser(undefined);
@@ -306,8 +303,7 @@ function ServiceAccountTable({
                           ) : (
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="h-6 text-xs"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setResetConfirmUser(user);
@@ -342,8 +338,8 @@ function ServiceAccountTable({
                           >
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-error hover:text-error"
+                              size="sm"
+                              className="text-error hover:text-error"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeactivate(user);
@@ -369,8 +365,7 @@ function ServiceAccountTable({
                           >
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRestore(user);

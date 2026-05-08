@@ -348,7 +348,8 @@ function IssueDetailDatabaseExportOptions() {
               </span>
               <Input
                 autoComplete="new-password"
-                className="h-8 w-auto min-w-48"
+                size="sm"
+                className="w-auto min-w-48"
                 onChange={(event) => handlePasswordChange(event.target.value)}
                 placeholder={t("common.password")}
                 type="password"
@@ -475,7 +476,6 @@ function IssueDetailDatabaseExportTaskActions({ task }: { task: Task }) {
           <>
             <Button
               aria-label={t("common.more")}
-              className="px-1"
               onClick={() => setMenuOpen((open) => !open)}
               size="xs"
               variant="ghost"
