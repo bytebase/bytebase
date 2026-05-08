@@ -838,17 +838,23 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		}
 	})
 
-	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
-	}
-
 	// Reset notification state so the user gets fresh feedback on this retry.
-	// Placed after authorization + the successful CreatePendingTaskRuns so a
-	// rejected request (auth fail, missing tasks, missing approval) leaves the
-	// dedup ledger untouched. Errors are logged and swallowed so a transient
-	// DB hiccup doesn't fail the user-facing run request.
+	// Placed AFTER all validation (auth, approval, task parse) so a rejected
+	// request leaves the dedup ledger untouched, but BEFORE
+	// CreatePendingTaskRuns so the pending-task scheduler — which polls
+	// independently on its own ticker — cannot observe the new task_run rows
+	// before the stale plan_webhook_delivery row is cleared. Without this
+	// ordering, a fast-failing retry could be picked up, fail, and try to
+	// claim PIPELINE_FAILED against the stale row (ON CONFLICT DO NOTHING),
+	// and the API's later reset would clear the row with no pending event
+	// left to re-fire. Errors are logged and swallowed so a transient DB
+	// hiccup doesn't fail the user-facing run request.
 	if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
 		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
+	}
+
+	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
 	// Tickle task run scheduler.
