@@ -854,6 +854,12 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 // non-DATABASE_CHANGE issue types — once stuck, only this RPC (or a
 // direct DB edit) gets the issue back into a resolved state.
 //
+// Authorization mirrors `RequestIssue`: only the issue creator may
+// retry. The action is a self-service for "my issue is stuck"; an
+// operator who needs to unstick someone else's issue should fix the
+// underlying workspace approval rule and (if necessary) ask the issue
+// creator to click Retry.
+//
 // Idempotent: returns the existing issue unchanged when approval-finding
 // has already completed.
 func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Request[v1pb.RetryIssueApprovalRequest]) (*connect.Response[v1pb.Issue], error) {
@@ -861,6 +867,15 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 	if err != nil {
 		return nil, err
 	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+	if !canRequestIssue(issue.CreatorEmail, user) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the issue creator can retry approval finding"))
+	}
+
 	// No-op fast path: nothing to retry if the previous attempt completed.
 	if issue.Payload.GetApproval().GetApprovalFindingDone() {
 		issueV1, err := s.convertToIssue(issue)

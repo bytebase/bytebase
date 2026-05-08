@@ -5956,7 +5956,8 @@ corrected it — without this, the issue would remain in CHECKING
 indefinitely because there is no other retry path for non-DATABASE_CHANGE
 issue types. Idempotent: returns the existing issue unchanged when
 approval-finding has already completed.
-Permissions required: bb.issues.update</p></td>
+Permissions required: None (caller must be the issue creator;
+mirrors RequestIssue&#39;s authorization model).</p></td>
               </tr>
             
           </tbody>

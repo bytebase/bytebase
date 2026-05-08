@@ -83,7 +83,8 @@ type IssueServiceClient interface {
 	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
 	// issue types. Idempotent: returns the existing issue unchanged when
 	// approval-finding has already completed.
-	// Permissions required: bb.issues.update
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(ctx context.Context, in *RetryIssueApprovalRequest, opts ...grpc.CallOption) (*Issue, error)
 }
 
@@ -274,7 +275,8 @@ type IssueServiceServer interface {
 	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
 	// issue types. Idempotent: returns the existing issue unchanged when
 	// approval-finding has already completed.
-	// Permissions required: bb.issues.update
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }

@@ -2397,7 +2397,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04OPEN\x10\x01\x12\b\n" +
 	"\x04DONE\x10\x02\x12\f\n" +
-	"\bCANCELED\x10\x032\x80\x11\n" +
+	"\bCANCELED\x10\x032\xec\x10\n" +
 	"\fIssueService\x12\x80\x01\n" +
 	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"B\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\x9c\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"X\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x94\x01\n" +
@@ -2411,8 +2411,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x17BatchUpdateIssuesStatus\x12+.bytebase.v1.BatchUpdateIssuesStatusRequest\x1a,.bytebase.v1.BatchUpdateIssuesStatusResponse\"W\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/issues:batchUpdateStatus\x12\x7f\n" +
 	"\fApproveIssue\x12 .bytebase.v1.ApproveIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:approve\x12|\n" +
 	"\vRejectIssue\x12\x1f.bytebase.v1.RejectIssueRequest\x1a\x12.bytebase.v1.Issue\"8\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=projects/*/issues/*}:reject\x12\x7f\n" +
-	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:request\x12\xa5\x01\n" +
-	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"S\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApprovalB\xa7\x01\n" +
+	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"9\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:request\x12\x91\x01\n" +
+	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"?\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApprovalB\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11IssueServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

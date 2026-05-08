@@ -117,7 +117,8 @@ type IssueServiceClient interface {
 	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
 	// issue types. Idempotent: returns the existing issue unchanged when
 	// approval-finding has already completed.
-	// Permissions required: bb.issues.update
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
 }
 
@@ -340,7 +341,8 @@ type IssueServiceHandler interface {
 	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
 	// issue types. Idempotent: returns the existing issue unchanged when
 	// approval-finding has already completed.
-	// Permissions required: bb.issues.update
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
 }
 

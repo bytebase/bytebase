@@ -1387,7 +1387,8 @@ export declare const IssueService: GenService<{
    * indefinitely because there is no other retry path for non-DATABASE_CHANGE
    * issue types. Idempotent: returns the existing issue unchanged when
    * approval-finding has already completed.
-   * Permissions required: bb.issues.update
+   * Permissions required: None (caller must be the issue creator;
+   * mirrors RequestIssue's authorization model).
    *
    * @generated from rpc bytebase.v1.IssueService.RetryIssueApproval
    */
