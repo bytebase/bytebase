@@ -41,25 +41,24 @@ function Checkbox({
   const baseChecked = checked === "indeterminate" ? false : checked;
   const indeterminate = checked === "indeterminate";
 
-  return (
+  const root = (
     <BaseCheckbox.Root
       checked={baseChecked}
       indeterminate={indeterminate}
       onCheckedChange={(value) => onCheckedChange?.(value)}
-      onClick={onClick}
       disabled={disabled}
       id={id}
       name={name}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-sm border bg-background transition-colors",
+        "inline-flex shrink-0 items-center justify-center align-middle rounded-sm border bg-background transition-colors",
         ROOT_SIZE[size],
         "border-control-border hover:border-accent/60",
         "data-[checked]:bg-accent data-[checked]:border-accent",
         "data-[indeterminate]:bg-accent data-[indeterminate]:border-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-control-border",
-        className
+        !onClick && className
       )}
     >
       <BaseCheckbox.Indicator className="flex items-center justify-center text-background">
@@ -70,6 +69,17 @@ function Checkbox({
         )}
       </BaseCheckbox.Indicator>
     </BaseCheckbox.Root>
+  );
+
+  if (!onClick) return root;
+
+  return (
+    <span
+      className={cn("inline-flex align-middle", className)}
+      onClick={onClick}
+    >
+      {root}
+    </span>
   );
 }
 
