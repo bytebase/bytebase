@@ -8,7 +8,7 @@
     "lib": ["ES2025", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "types": ["react", "react-dom", "vite/client"],
+    "types": ["react", "react-dom", "vite/client", "@testing-library/jest-dom/vitest"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
