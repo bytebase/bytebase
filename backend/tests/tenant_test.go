@@ -389,9 +389,10 @@ func TestCreatePlanWithRepeatedDatabaseGroupTarget(t *testing.T) {
 				Name: fmt.Sprintf("%s/planCheckRun", plan.Msg.Name),
 			}))
 			a.NoError(err)
-			if resp.Msg.Status == v1pb.PlanCheckRun_DONE || resp.Msg.Status == v1pb.PlanCheckRun_FAILED {
+			if resp.Msg.Status == v1pb.PlanCheckRun_DONE {
 				return
 			}
+			a.NotEqual(v1pb.PlanCheckRun_FAILED, resp.Msg.Status, resp.Msg.Error)
 		case <-timeout:
 			t.Fatal("timed out waiting for plan check run")
 		}
