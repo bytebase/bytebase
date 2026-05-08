@@ -119,8 +119,20 @@ vi.mock("@/react/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/react/components/ui/alert", () => ({
-  Alert: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="alert">{children}</div>
+  Alert: ({
+    children,
+    title,
+    description,
+  }: {
+    children?: React.ReactNode;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+  }) => (
+    <div data-testid="alert">
+      {title}
+      {description}
+      {children}
+    </div>
   ),
 }));
 

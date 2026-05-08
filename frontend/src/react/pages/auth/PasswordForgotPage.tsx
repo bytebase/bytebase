@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import logoFull from "@/assets/logo-full.svg";
 import { authServiceClientConnect } from "@/connect";
-import { Alert, AlertTitle } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -80,9 +80,10 @@ export function PasswordForgotPage() {
       <div className="mt-8">
         <div className="mt-6 flex flex-col gap-y-4">
           {!passwordResetEnabled ? (
-            <Alert variant="warning">
-              <AlertTitle>{t("auth.password-forget.selfhost")}</AlertTitle>
-            </Alert>
+            <Alert
+              variant="warning"
+              title={t("auth.password-forget.selfhost")}
+            />
           ) : (
             <>
               <div>

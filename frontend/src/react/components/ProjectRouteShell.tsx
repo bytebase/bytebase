@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IAMRemindDialog } from "@/react/components/IAMRemindDialog";
 import { RoutePermissionGuardShell } from "@/react/components/RoutePermissionGuardShell";
-import { Alert, AlertDescription } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import type { ReactRouteShellTargets } from "@/react/dashboard-shell";
 import { useNotify } from "@/react/hooks/useAppState";
 import {
@@ -148,11 +148,11 @@ export function ProjectRouteShell({
           <h1 className="mb-4 text-xl font-bold leading-6 text-main truncate">
             {t("database.unassigned-databases")}
           </h1>
-          <Alert variant="info" className="mb-4">
-            <AlertDescription>
-              {t("project.overview.info-slot-content")}
-            </AlertDescription>
-          </Alert>
+          <Alert
+            variant="info"
+            className="mb-4"
+            description={t("project.overview.info-slot-content")}
+          />
         </div>
       )}
       <RoutePermissionGuardShell

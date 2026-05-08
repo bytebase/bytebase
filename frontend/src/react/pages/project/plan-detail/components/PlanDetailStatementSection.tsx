@@ -477,24 +477,27 @@ export function PlanDetailStatementSection({
         </div>
       </div>
       {isSheetOversize && (
-        <Alert variant="warning">
-          <div className="flex items-center justify-between gap-x-4">
-            <span>{t("issue.statement-from-sheet-warning")}</span>
-            {sheetName && (
-              <Button
-                disabled={isDownloading}
-                onClick={() => void downloadSheet()}
-                size="xs"
-                variant="outline"
-              >
-                {isDownloading && (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                )}
-                {t("common.download")}
-              </Button>
-            )}
-          </div>
-        </Alert>
+        <Alert
+          variant="warning"
+          description={
+            <div className="flex items-center justify-between gap-x-4">
+              <span>{t("issue.statement-from-sheet-warning")}</span>
+              {sheetName && (
+                <Button
+                  disabled={isDownloading}
+                  onClick={() => void downloadSheet()}
+                  size="xs"
+                  variant="outline"
+                >
+                  {isDownloading && (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {t("common.download")}
+                </Button>
+              )}
+            </div>
+          }
+        />
       )}
       {isLoading ? (
         <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
@@ -571,9 +574,11 @@ function PlanDetailReleaseStatement({
 
   return (
     <div className={cn("flex h-full flex-col gap-y-2", className)}>
-      <Alert className="border-0" variant="info">
-        {t("release.change-tip")}
-      </Alert>
+      <Alert
+        className="border-0"
+        variant="info"
+        description={t("release.change-tip")}
+      />
       <div className="flex items-center justify-between gap-x-2">
         <div className="flex items-center gap-x-1 text-base font-medium">
           <Package className="h-4 w-4" />

@@ -557,9 +557,10 @@ export function GlobalMaskingPage() {
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
       {hasSensitiveDataFeature && (
-        <Alert variant="info">
-          {t("custom-approval.rule.first-match-wins")}
-        </Alert>
+        <Alert
+          variant="info"
+          description={t("custom-approval.rule.first-match-wins")}
+        />
       )}
 
       {/* Toolbar */}

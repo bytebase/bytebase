@@ -254,7 +254,10 @@ function AccessGrantRequestDrawerInner({
               {t("common.statement")}
               <span className="text-error ml-0.5">*</span>
             </div>
-            <Alert variant="info">{t("sql-editor.only-select-allowed")}</Alert>
+            <Alert
+              variant="info"
+              description={t("sql-editor.only-select-allowed")}
+            />
             <MonacoEditor
               className="border rounded-[3px] h-40"
               content={query}

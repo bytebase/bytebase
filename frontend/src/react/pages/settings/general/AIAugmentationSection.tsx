@@ -224,9 +224,12 @@ export const AIAugmentationSection = forwardRef<
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <div className="flex-1 lg:px-4">
             {isSaaSMode ? (
-              <Alert variant="info">
-                {t("settings.general.workspace.ai-assistant.enabled-in-saas")}
-              </Alert>
+              <Alert
+                variant="info"
+                description={t(
+                  "settings.general.workspace.ai-assistant.enabled-in-saas"
+                )}
+              />
             ) : (
               <div className="mt-4 lg:mt-0 flex flex-col gap-y-4">
                 {/* Enable toggle */}

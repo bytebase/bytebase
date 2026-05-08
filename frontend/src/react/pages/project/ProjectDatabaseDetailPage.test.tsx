@@ -339,9 +339,23 @@ vi.mock("./database-detail/panels/DatabaseSettingsPanel", () => ({
 }));
 
 vi.mock("@/react/components/ui/alert", () => ({
-  Alert: vi.fn(({ children }: { children: ReactNode }) => (
-    <div data-testid="alert">{children}</div>
-  )),
+  Alert: vi.fn(
+    ({
+      children,
+      title,
+      description,
+    }: {
+      children?: ReactNode;
+      title?: ReactNode;
+      description?: ReactNode;
+    }) => (
+      <div data-testid="alert">
+        {title}
+        {description}
+        {children}
+      </div>
+    )
+  ),
 }));
 
 vi.mock("@/react/components/ui/button", () => ({

@@ -113,18 +113,22 @@ export function DataSourceSection({
   return (
     <>
       {showROTips && (
-        <Alert variant="warning" className="my-4">
-          <div className="flex items-center justify-between gap-x-2">
-            <span>{t("data-source.no-read-only-data-source")}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCreateRODataSource}
-            >
-              {t("common.create")}
-            </Button>
-          </div>
-        </Alert>
+        <Alert
+          variant="warning"
+          className="my-4"
+          description={
+            <div className="flex items-center justify-between gap-x-2">
+              <span>{t("data-source.no-read-only-data-source")}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateRODataSource}
+              >
+                {t("common.create")}
+              </Button>
+            </div>
+          }
+        />
       )}
 
       <div className="mt-2 gap-y-2 gap-x-4 border-none">

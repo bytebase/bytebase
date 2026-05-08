@@ -215,9 +215,12 @@ export function PlanDetailRollbackSheet({
             </div>
           ) : (
             <div className="space-y-4">
-              <Alert variant="info">
-                {t("task-run.rollback.preview-statement.description")}
-              </Alert>
+              <Alert
+                variant="info"
+                description={t(
+                  "task-run.rollback.preview-statement.description"
+                )}
+              />
               {loading ? (
                 <div className="flex items-center justify-center py-8 text-control-light">
                   <Loader2 className="h-5 w-5 animate-spin" />

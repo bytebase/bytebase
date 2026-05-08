@@ -399,11 +399,13 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
             </div>
           )}
           {paymentInfo?.cancelAtPeriodEnd ? (
-            <Alert variant="warning" className="my-2">
-              {t("subscription.purchase.cancel-pending", {
+            <Alert
+              variant="warning"
+              className="my-2"
+              description={t("subscription.purchase.cancel-pending", {
                 date: paymentInfo.periodEnd,
               })}
-            </Alert>
+            />
           ) : (
             allowManage && (
               <div className="mt-4">

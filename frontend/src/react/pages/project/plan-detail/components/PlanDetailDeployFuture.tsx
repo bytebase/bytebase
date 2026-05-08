@@ -9,7 +9,7 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
-import { Alert, AlertTitle } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
   Sheet,
@@ -320,23 +320,29 @@ export function PlanDetailDeployFuture() {
           </SheetHeader>
           <SheetBody className="gap-y-4">
             {errorMessages.length > 0 ? (
-              <Alert variant="error">
-                <AlertTitle>{t("common.error")}</AlertTitle>
-                <ul className="mt-2 list-inside list-disc text-sm">
-                  {errorMessages.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              </Alert>
+              <Alert
+                variant="error"
+                title={t("common.error")}
+                description={
+                  <ul className="list-inside list-disc text-sm">
+                    {errorMessages.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                }
+              />
             ) : warningMessages.length > 0 ? (
-              <Alert variant="warning">
-                <AlertTitle>{t("common.warning")}</AlertTitle>
-                <ul className="mt-2 list-inside list-disc text-sm">
-                  {warningMessages.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              </Alert>
+              <Alert
+                variant="warning"
+                title={t("common.warning")}
+                description={
+                  <ul className="list-inside list-disc text-sm">
+                    {warningMessages.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                }
+              />
             ) : null}
 
             {page.issue && (

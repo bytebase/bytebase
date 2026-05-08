@@ -67,12 +67,15 @@ vi.mock("@/react/components/ui/expiration-picker", () => ({
 }));
 
 vi.mock("@/react/components/ui/alert", () => ({
-  Alert: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  AlertTitle: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  AlertDescription: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
+  Alert: ({
+    children,
+    title,
+    description,
+  }: {
+    children?: ReactNode;
+    title?: ReactNode;
+    description?: ReactNode;
+  }) => createElement("div", {}, title, description, children),
 }));
 
 vi.mock("@/react/components/IssueLabelSelect", () => ({

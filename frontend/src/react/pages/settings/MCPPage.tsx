@@ -1,11 +1,7 @@
 import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -93,35 +89,37 @@ export function MCPPage() {
 
       {/* Warning if external URL not configured */}
       {needConfigureExternalUrl && (
-        <Alert variant="error">
-          <AlertTitle>{t("banner.external-url")}</AlertTitle>
-          <AlertDescription>
-            <span>
-              {t("settings.general.workspace.external-url.description")}
-            </span>
-            {canConfigureExternalUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-3"
-                onClick={() =>
-                  router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
-                }
-              >
-                {t("common.configure-now")}
-              </Button>
-            )}
-          </AlertDescription>
-        </Alert>
+        <Alert
+          variant="error"
+          title={t("banner.external-url")}
+          description={
+            <>
+              <span>
+                {t("settings.general.workspace.external-url.description")}
+              </span>
+              {canConfigureExternalUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-3"
+                  onClick={() =>
+                    router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
+                  }
+                >
+                  {t("common.configure-now")}
+                </Button>
+              )}
+            </>
+          }
+        />
       )}
 
       {/* Authentication Notice */}
-      <Alert variant="info">
-        <AlertTitle>{t("settings.mcp.auth.title")}</AlertTitle>
-        <AlertDescription>
-          {t("settings.mcp.auth.description")}
-        </AlertDescription>
-      </Alert>
+      <Alert
+        variant="info"
+        title={t("settings.mcp.auth.title")}
+        description={t("settings.mcp.auth.description")}
+      />
 
       {/* Section 1: General Config */}
       <div className="flex flex-col gap-y-3">

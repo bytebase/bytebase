@@ -13,11 +13,7 @@ import {
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
 import { RoleSelect } from "@/react/components/RoleSelect";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -307,21 +303,24 @@ function DeleteConfirmModal({
 
         {occupiedResources.length > 0 ? (
           <div className="mt-4">
-            <Alert variant="warning">
-              <AlertDescription>
-                <p className="mb-2">
-                  {t("resource.delete-warning-with-resources", {
-                    name: displayRoleTitle(roleName),
-                  })}
-                </p>
-                <ul className="list-disc pl-4 text-sm">
-                  {occupiedResources.map((r) => (
-                    <li key={r}>{r}</li>
-                  ))}
-                </ul>
-                <p className="mt-2">{t("resource.delete-warning-retry")}</p>
-              </AlertDescription>
-            </Alert>
+            <Alert
+              variant="warning"
+              description={
+                <>
+                  <p className="mb-2">
+                    {t("resource.delete-warning-with-resources", {
+                      name: displayRoleTitle(roleName),
+                    })}
+                  </p>
+                  <ul className="list-disc pl-4 text-sm">
+                    {occupiedResources.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2">{t("resource.delete-warning-retry")}</p>
+                </>
+              }
+            />
           </div>
         ) : (
           <AlertDialogDescription className="mt-2">
@@ -607,24 +606,25 @@ function RoleSheet({
               </div>
 
               {missedBasicPermissions.length > 0 && !isBuiltin && (
-                <Alert variant="error">
-                  <AlertTitle>
-                    {t("common.missing-required-permission")}
-                  </AlertTitle>
-                  <AlertDescription>
-                    <p>{t("common.required-workspace-permission")}</p>
-                    <ul className="list-disc pl-4 mt-1">
-                      {missedBasicPermissions.map((p) => (
-                        <li key={p}>{p}</li>
-                      ))}
-                    </ul>
-                    <div className="mt-2">
-                      <Button size="sm" onClick={addMissingPermissions}>
-                        {t("common.add-permissions")}
-                      </Button>
-                    </div>
-                  </AlertDescription>
-                </Alert>
+                <Alert
+                  variant="error"
+                  title={t("common.missing-required-permission")}
+                  description={
+                    <>
+                      <p>{t("common.required-workspace-permission")}</p>
+                      <ul className="list-disc pl-4 mt-1">
+                        {missedBasicPermissions.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-2">
+                        <Button size="sm" onClick={addMissingPermissions}>
+                          {t("common.add-permissions")}
+                        </Button>
+                      </div>
+                    </>
+                  }
+                />
               )}
 
               <PermissionTransfer

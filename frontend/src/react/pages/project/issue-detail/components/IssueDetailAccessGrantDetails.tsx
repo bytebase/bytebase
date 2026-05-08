@@ -114,9 +114,11 @@ export function IssueDetailAccessGrantDetails() {
                 {t("common.statement")}
               </span>
               {accessGrant.unmask && (
-                <Alert variant="warning" showIcon={false}>
-                  {t("sql-editor.unmask-warning")}
-                </Alert>
+                <Alert
+                  variant="warning"
+                  showIcon={false}
+                  description={t("sql-editor.unmask-warning")}
+                />
               )}
               <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
                 <pre className="whitespace-pre-wrap font-mono text-sm">

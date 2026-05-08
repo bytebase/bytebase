@@ -1101,17 +1101,23 @@ function TargetsSection({
           )}
         </div>
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (
-          <Alert className="px-3 py-2" variant="warning">
-            <div>{nonEnvWarning}</div>
-            <div className="mt-1 flex flex-col gap-1 text-sm">
-              {nonEnvDatabaseNames.map((name) => (
-                <div key={name} className="flex items-center gap-2">
-                  <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
-                  <DatabaseTarget target={name} />
+          <Alert
+            className="px-3 py-2"
+            variant="warning"
+            description={
+              <>
+                <div>{nonEnvWarning}</div>
+                <div className="mt-1 flex flex-col gap-1 text-sm">
+                  {nonEnvDatabaseNames.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
+                      <DatabaseTarget target={name} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </Alert>
+              </>
+            }
+          />
         )}
         {isLoadingTargets ? (
           <div className="flex items-center justify-center py-2">

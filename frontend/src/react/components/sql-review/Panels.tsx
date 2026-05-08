@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
-import { Alert, AlertDescription } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
   Sheet,
@@ -343,20 +343,23 @@ export function AttachResourcesPanel({
 
         {showOverrideConfirm && conflictingResources.length > 0 && (
           <div className="px-4 py-3 border-t">
-            <Alert variant="warning">
-              <AlertDescription>
-                <p className="mb-2">
-                  {t("sql-review.attach-resource.override-warning", {
-                    button: t("common.confirm"),
-                  })}
-                </p>
-                <ul className="list-disc list-inside text-sm">
-                  {conflictingResources.map((r) => (
-                    <li key={r}>{r}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
+            <Alert
+              variant="warning"
+              description={
+                <>
+                  <p className="mb-2">
+                    {t("sql-review.attach-resource.override-warning", {
+                      button: t("common.confirm"),
+                    })}
+                  </p>
+                  <ul className="list-disc list-inside text-sm">
+                    {conflictingResources.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </>
+              }
+            />
           </div>
         )}
 

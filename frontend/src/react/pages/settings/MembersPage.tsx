@@ -35,11 +35,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -1540,11 +1536,10 @@ function EditMemberRoleDrawer({
         <SheetBody className="px-6 py-6">
           <div className="flex flex-col gap-y-6">
             {!isEditMode && !projectName && hasEmailSetting && (
-              <Alert variant="info">
-                <AlertDescription>
-                  {t("settings.members.invite-email-hint")}
-                </AlertDescription>
-              </Alert>
+              <Alert
+                variant="info"
+                description={t("settings.members.invite-email-hint")}
+              />
             )}
             {/* Member input */}
             <div className="flex flex-col gap-y-2">
@@ -1816,20 +1811,24 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   return (
     <div className="w-full px-4 overflow-x-hidden flex flex-col pt-2 pb-4">
       {!projectName && remainingUserCount <= 3 && (
-        <Alert variant="warning" className="mb-2">
-          <AlertTitle>{t("subscription.usage.user-count.title")}</AlertTitle>
-          <AlertDescription>
-            {remainingUserCount > 0
-              ? t("subscription.usage.user-count.remaining", {
-                  total: userCountLimit,
-                  count: remainingUserCount,
-                })
-              : t("subscription.usage.user-count.runoutof", {
-                  total: userCountLimit,
-                })}{" "}
-            {t("subscription.usage.user-count.upgrade")}
-          </AlertDescription>
-        </Alert>
+        <Alert
+          variant="warning"
+          className="mb-2"
+          title={t("subscription.usage.user-count.title")}
+          description={
+            <>
+              {remainingUserCount > 0
+                ? t("subscription.usage.user-count.remaining", {
+                    total: userCountLimit,
+                    count: remainingUserCount,
+                  })
+                : t("subscription.usage.user-count.runoutof", {
+                    total: userCountLimit,
+                  })}{" "}
+              {t("subscription.usage.user-count.upgrade")}
+            </>
+          }
+        />
       )}
       {projectName && (
         <div className="textinfolabel mb-4">

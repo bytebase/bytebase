@@ -22,11 +22,7 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -1247,16 +1243,14 @@ export function InstancesPage() {
     <div className="py-4 flex flex-col">
       {/* Instance count warning */}
       {quotaExhausted && (
-        <Alert variant="warning" className="mx-4 mb-4">
-          <AlertTitle>
-            {t("subscription.usage.instance-count.title")}
-          </AlertTitle>
-          <AlertDescription>
-            {t("subscription.usage.instance-count.runoutof", {
-              total: instanceCountLimit,
-            })}
-          </AlertDescription>
-        </Alert>
+        <Alert
+          variant="warning"
+          className="mx-4 mb-4"
+          title={t("subscription.usage.instance-count.title")}
+          description={t("subscription.usage.instance-count.runoutof", {
+            total: instanceCountLimit,
+          })}
+        />
       )}
 
       {/* Header: Search + Create */}

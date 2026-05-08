@@ -14,7 +14,7 @@ import { ComponentPermissionGuard } from "@/react/components/ComponentPermission
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { UserSelect } from "@/react/components/UserSelect";
-import { Alert, AlertDescription } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
@@ -717,11 +717,10 @@ function GroupForm({
       <SheetBody>
         <div className="flex flex-col gap-y-6">
           {isExternalGroup && (
-            <Alert variant="info">
-              <AlertDescription>
-                {t("settings.members.groups.external-readonly")}
-              </AlertDescription>
-            </Alert>
+            <Alert
+              variant="info"
+              description={t("settings.members.groups.external-readonly")}
+            />
           )}
 
           {/* Email */}

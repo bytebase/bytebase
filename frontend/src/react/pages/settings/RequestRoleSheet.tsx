@@ -21,11 +21,7 @@ import type { OptionConfig } from "@/react/components/ExprEditor";
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { RoleSelect } from "@/react/components/RoleSelect";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import {
@@ -424,28 +420,27 @@ function RequestRoleForm({
       <SheetBody>
         <div className="flex flex-col gap-y-4">
           {labelsMisconfigured && (
-            <Alert variant="warning">
-              <AlertTitle>
-                {t("project.members.request-role.labels-misconfigured.title")}
-              </AlertTitle>
-              <AlertDescription>
-                {t(
-                  "project.members.request-role.labels-misconfigured.description"
-                )}
-              </AlertDescription>
-            </Alert>
+            <Alert
+              variant="warning"
+              title={t(
+                "project.members.request-role.labels-misconfigured.title"
+              )}
+              description={t(
+                "project.members.request-role.labels-misconfigured.description"
+              )}
+            />
           )}
           {requiredPermissionList.length > 0 && (
-            <Alert>
-              <AlertTitle>{t("common.required-permission")}</AlertTitle>
-              <AlertDescription>
+            <Alert
+              title={t("common.required-permission")}
+              description={
                 <ul className="list-disc pl-4">
                   {requiredPermissionList.map((permission) => (
                     <li key={permission}>{permission}</li>
                   ))}
                 </ul>
-              </AlertDescription>
-            </Alert>
+              }
+            />
           )}
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
