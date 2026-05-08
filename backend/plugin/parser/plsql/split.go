@@ -13,8 +13,27 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_ORACLE, SplitSQL)
 }
 
+// consumeTrailingSemicolon walks forward from stopIdx through hidden-channel
+// tokens (whitespace, comments) looking for a trailing ';' that belongs to the
+// statement ending at stopIdx. Returns the index of the ';' if found before any
+// default-channel token, otherwise stopIdx (no consumption). Used by both
+// SplitSQL and ParsePLSQL to keep the two iterations' separator handling in
+// lockstep — divergence between them is what produced BYT-9367's secondary
+// AST-classification leak.
+func consumeTrailingSemicolon(allTokens []antlr.Token, stopIdx int) int {
+	for nextIdx := stopIdx + 1; nextIdx < len(allTokens); nextIdx++ {
+		next := allTokens[nextIdx]
+		if next.GetTokenType() == parser.PlSqlParserSEMICOLON {
+			return nextIdx
+		}
+		if next.GetChannel() == antlr.TokenDefaultChannel {
+			return stopIdx
+		}
+	}
+	return stopIdx
+}
+
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-// TODO(zp): Consolidate with split logic in ParsePLSQL?
 func SplitSQL(statement string) ([]base.Statement, error) {
 	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
@@ -102,38 +121,17 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				},
 			})
 			byteOffsetStart = byteOffsetEnd
-			// Set prevStopTokenIndex to the last token we want to "consume" for this statement.
-			// For statements where the semicolon is a separator (not part of the statement parse tree),
-			// we need to skip past the semicolon so it's not included in the next statement's leadingContent.
-			// Walk forward through hidden-channel tokens (whitespace, comments) to
-			// find a trailing ';' belonging to this statement. Bail on the first
-			// default-channel non-';' token — that's the start of the next statement.
-			loopStart := stmt.GetStop().GetTokenIndex()
-			prevStopTokenIndex = loopStart
+			// Skip past any trailing ';' separator so it doesn't bleed into the
+			// next statement's leadingContent. If a ';' was consumed across
+			// hidden tokens, advance byteOffsetStart by the BYTE length of the
+			// consumed span — len() on a string is byte length, while ANTLR
+			// token indices are rune indices, and multi-byte UTF-8 in hidden
+			// tokens (e.g., a comment with non-ASCII text) would diverge.
+			stopIdx := stmt.GetStop().GetTokenIndex()
 			allTokens := tokens.GetAllTokens()
-			for nextIdx := prevStopTokenIndex + 1; nextIdx < len(allTokens); nextIdx++ {
-				next := allTokens[nextIdx]
-				if next.GetTokenType() == parser.PlSqlParserSEMICOLON {
-					prevStopTokenIndex = nextIdx
-					break
-				}
-				if next.GetChannel() == antlr.TokenDefaultChannel {
-					break
-				}
-			}
-			// If the loop consumed any tokens, advance byteOffsetStart by the
-			// byte length of those consumed tokens so the next statement's
-			// Range.Start lands at the byte AFTER the consumed ';' (matching
-			// where its leadingContent actually begins in source).
-			//
-			// IMPORTANT: use len(GetTextFromTokens(...)) — Go's len() on a
-			// string is byte length, while ANTLR token Start/Stop indices are
-			// rune indices into the input stream's []rune. For ASCII the
-			// difference is zero, but multi-byte UTF-8 inside hidden tokens
-			// (e.g., a comment containing non-ASCII characters) would diverge.
-			// This matches the byte-offset arithmetic at line 82.
-			if prevStopTokenIndex > loopStart {
-				byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[loopStart+1], allTokens[prevStopTokenIndex]))
+			prevStopTokenIndex = consumeTrailingSemicolon(allTokens, stopIdx)
+			if prevStopTokenIndex > stopIdx {
+				byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[stopIdx+1], allTokens[prevStopTokenIndex]))
 			}
 		}
 	}

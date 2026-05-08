@@ -136,27 +136,11 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
 		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
 
-		// Walk forward through hidden-channel tokens (whitespace, comments) to
-		// find a trailing ';' belonging to this statement. Bail on the first
-		// default-channel non-';' token — that's the start of the next statement.
-		// Mirrors the channel-aware loop in SplitSQL (split.go) so that the
-		// next statement's leadingContent does not absorb the trailing ';' of
-		// this one — otherwise the re-parsed sub-AST would gain a leading bare
-		// SEMICOLON child, which getStatementType() would classify as
+		// Skip past any trailing ';' separator so it doesn't bleed into the
+		// next statement's reparse text — otherwise the resulting sub-AST
+		// gains a leading bare SEMICOLON child and getStatementType() returns
 		// STATEMENT_TYPE_UNSPECIFIED.
-		stopIdx := stopToken.GetTokenIndex()
-		prevStopTokenIndex = stopIdx
-		allTokens := tokens.GetAllTokens()
-		for nextIdx := stopIdx + 1; nextIdx < len(allTokens); nextIdx++ {
-			next := allTokens[nextIdx]
-			if next.GetTokenType() == parser.PlSqlParserSEMICOLON {
-				prevStopTokenIndex = nextIdx
-				break
-			}
-			if next.GetChannel() == antlr.TokenDefaultChannel {
-				break
-			}
-		}
+		prevStopTokenIndex = consumeTrailingSemicolon(tokens.GetAllTokens(), stopToken.GetTokenIndex())
 
 		// Skip empty statements
 		if strings.TrimSpace(stmtText) == "" || stmtText == ";" {
