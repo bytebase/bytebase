@@ -288,8 +288,9 @@ function RequestRoleForm({
         databaseResources.length > 0
           ? databaseResources
           : undefined;
-      const scopedEnvironments =
-        envKind !== undefined ? environments : undefined;
+      // EnvLimitationKind union has no falsy members, so the truthy check
+      // is equivalent to !== undefined.
+      const scopedEnvironments = envKind ? environments : undefined;
 
       // The backend uses two fields on the RoleGrant message:
       //   1. `condition.expression` — CEL evaluated by

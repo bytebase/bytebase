@@ -6,10 +6,10 @@ import type { ProjectRoleBindingEnvironmentLimitationState } from "./membersPage
 export function MemberBindingEnvironmentBanner({
   envLimitation,
   bindingKind,
-}: {
+}: Readonly<{
   envLimitation: ProjectRoleBindingEnvironmentLimitationState;
   bindingKind: EnvLimitationKind;
-}) {
+}>) {
   if (envLimitation.type === "unrestricted") {
     return <DDLWarningCallout type="binding-all" kind={bindingKind} />;
   }
