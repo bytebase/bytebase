@@ -140,9 +140,7 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(
       screen.queryByText(/issue.role-grant.ddl-warning/)
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/common.environments/)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
   });
 
   test("hides warning when role has been deleted (helper returns undefined)", async () => {
@@ -173,5 +171,47 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(
       screen.queryByText(/issue.role-grant.ddl-warning/)
     ).not.toBeInTheDocument();
+  });
+
+  test("clears stale environments when the issue prop changes", async () => {
+    mockContextRef.current = {
+      issue: {
+        roleGrant: {
+          role: "roles/sqlEditorUser",
+          condition: { expression: 'resource.environment_id in ["prod"]' },
+        },
+      },
+    };
+    const { rerender } = render(<IssueDetailRoleGrantDetails />);
+    await screen.findByText(/issue.role-grant.ddl-warning/);
+    expect(
+      screen.getByText(/issue.role-grant.ddl-warning/).textContent
+    ).toContain("Prod");
+
+    mockContextRef.current = {
+      issue: {
+        roleGrant: {
+          role: "roles/sqlEditorUser",
+          condition: { expression: 'resource.environment_id in ["test"]' },
+        },
+      },
+    };
+    rerender(<IssueDetailRoleGrantDetails />);
+
+    // Without the synchronous clear, stale "Prod" leaks into the warning
+    // until the async CEL parse for "test" resolves. Right after rerender
+    // the warning must either be hidden or already updated — never stale.
+    const syncWarning = screen.queryByText(/issue.role-grant.ddl-warning/);
+    if (syncWarning) {
+      expect(syncWarning.textContent).not.toContain("Prod");
+    }
+
+    await screen.findByText(/Test/);
+    expect(
+      screen.getByText(/issue.role-grant.ddl-warning/).textContent
+    ).toContain("Test");
+    expect(
+      screen.getByText(/issue.role-grant.ddl-warning/).textContent
+    ).not.toContain("Prod");
   });
 });

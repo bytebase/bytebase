@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
@@ -42,28 +42,22 @@ export function IssueDetailRoleGrantDetails() {
   const [condition, setCondition] = useState<ConditionExpression | undefined>();
 
   useEffect(() => {
-    let canceled = false;
+    // Clear synchronously so a prop change doesn't briefly show the
+    // previous issue's environments while the new CEL expression parses.
+    setCondition(undefined);
 
-    const run = async () => {
-      const expression = issue?.roleGrant?.condition?.expression ?? "";
-      if (!expression) {
-        setCondition(undefined);
-        return;
-      }
+    const expression = issue?.roleGrant?.condition?.expression ?? "";
+    if (!expression) return;
+
+    let canceled = false;
+    void (async () => {
       try {
         const parsed = await convertFromCELString(expression);
-        if (!canceled) {
-          setCondition(parsed);
-        }
+        if (!canceled) setCondition(parsed);
       } catch (error) {
         console.error("Failed to parse CEL expression:", error);
-        if (!canceled) {
-          setCondition(undefined);
-        }
       }
-    };
-
-    void run();
+    })();
     return () => {
       canceled = true;
     };
@@ -81,14 +75,12 @@ export function IssueDetailRoleGrantDetails() {
   const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
   const envNames = condition?.environments ?? [];
   const envList = useEnvironmentList();
-  const envTitles = useMemo(() => {
-    const names = condition?.environments ?? [];
-    const byName = new Map(envList.map((e) => [e.name, e.title]));
-    // Falls back to the raw env resource name (e.g. environments/prod-old) if the
-    // env isn't in the store, which can happen if the env was renamed or deleted
-    // between request submission and approver review.
-    return names.map((n) => byName.get(n) ?? n);
-  }, [condition?.environments, envList]);
+  // Falls back to the raw env resource name (e.g. environments/prod-old) when
+  // the env isn't in the store — happens when an env is renamed or deleted
+  // between request submission and approver review.
+  const envTitles = envNames.map(
+    (n) => envList.find((e) => e.name === n)?.title ?? n
+  );
 
   return (
     <div className="flex flex-col gap-y-4">
