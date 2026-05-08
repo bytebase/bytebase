@@ -1,4 +1,4 @@
-FROM node:24.14.0-slim AS frontend
+FROM node:24.15.0-slim AS frontend
 ARG GIT_COMMIT
 
 RUN npm i -g pnpm@10.30.3
