@@ -1343,7 +1343,8 @@
           "title": "Motor"
         },
         "environment": {
-          "description": "Filtrar por entorno"
+          "description": "Filtrar por entorno",
+          "title": "Ambiente"
         },
         "instance": {
           "description": "Filtrar por instancia",
@@ -1374,6 +1375,10 @@
         },
         "status": {
           "description": "Buscar por el estado del issue"
+        },
+        "table": {
+          "description": "Ingrese el valor y luego presione Enter",
+          "title": "Tabla"
         },
         "user": {
           "description": "Filtrar por usuario"
@@ -1416,7 +1421,6 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",

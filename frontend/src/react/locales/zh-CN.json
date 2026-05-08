@@ -1343,7 +1343,8 @@
           "title": "引擎"
         },
         "environment": {
-          "description": "根据环境过滤"
+          "description": "根据环境过滤",
+          "title": "环境"
         },
         "instance": {
           "description": "根据实例过滤",
@@ -1374,6 +1375,10 @@
         },
         "status": {
           "description": "按工单状态搜索"
+        },
+        "table": {
+          "description": "输入值后按下回车",
+          "title": "表"
         },
         "user": {
           "description": "按用户筛选"
@@ -1416,7 +1421,6 @@
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手动选择",

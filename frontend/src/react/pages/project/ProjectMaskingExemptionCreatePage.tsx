@@ -368,6 +368,7 @@ export function ProjectMaskingExemptionCreatePage({
               <DatabaseResourceSelector
                 projectName={projectName}
                 value={databaseResources}
+                includeColumns
                 onChange={setDatabaseResources}
               />
             )}

@@ -1343,7 +1343,8 @@
           "title": "エンジン"
         },
         "environment": {
-          "description": "環境に基づいてフィルタリングする"
+          "description": "環境に基づいてフィルタリングする",
+          "title": "環境"
         },
         "instance": {
           "description": "インスタンスによるフィルター",
@@ -1374,6 +1375,10 @@
         },
         "status": {
           "description": "イシューのステータスで検索"
+        },
+        "table": {
+          "description": "値を入力してEnterを押します",
+          "title": "テーブル"
         },
         "user": {
           "description": "ユーザーでフィルター"
@@ -1416,7 +1421,6 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
-      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手動選択",

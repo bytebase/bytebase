@@ -1179,7 +1179,6 @@
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
       "details": "请求详细",
       "expired-at": "过期时间",
       "manually-select": "手动选择",

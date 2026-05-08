@@ -1179,7 +1179,6 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "manually-select": "selección manual",

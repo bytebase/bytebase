@@ -1179,7 +1179,6 @@
     "role-grant": {
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
-      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Request Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",

@@ -1350,7 +1350,8 @@
           "title": "Engine"
         },
         "environment": {
-          "description": "Filter by environment"
+          "description": "Filter by environment",
+          "title": "Environment"
         },
         "instance": {
           "description": "Filter by instance",
@@ -1381,6 +1382,10 @@
         },
         "status": {
           "description": "Search by the issue status"
+        },
+        "table": {
+          "description": "Input the value then press Enter",
+          "title": "Table"
         },
         "user": {
           "description": "Filter by user"
@@ -1424,7 +1429,6 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
-      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",

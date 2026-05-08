@@ -11,19 +11,11 @@ import {
   convertSensitiveColumnToDatabaseResource,
   getExpressionsForDatabaseResource as getResourceExpressions,
 } from "@/components/SensitiveData/utils";
-import type {
-  ConditionGroupExpr,
-  Factor,
-  Operator,
-  SimpleExpr,
-} from "@/plugins/cel";
+import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
   ExprType,
   emptySimpleExpr,
-  isConditionExpr,
-  isConditionGroupExpr,
-  isRawStringExpr,
   resolveCELExpr,
   validateSimpleExpr,
   wrapAsGroup,
@@ -87,19 +79,6 @@ interface GrantAccessDialogProps {
 
 const hasColumnScopedResources = (resources: DatabaseResource[]): boolean => {
   return resources.some((resource) => (resource.columns?.length ?? 0) > 0);
-};
-
-const hasColumnScopedExpr = (expr: SimpleExpr): boolean => {
-  if (isConditionGroupExpr(expr)) {
-    return expr.args.some((arg) => hasColumnScopedExpr(arg));
-  }
-  if (isConditionExpr(expr)) {
-    return expr.args[0] === CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME;
-  }
-  if (isRawStringExpr(expr)) {
-    return expr.content.includes(CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME);
-  }
-  return false;
 };
 
 export function GrantAccessDialog({
@@ -261,17 +240,6 @@ export function GrantAccessDialog({
     setModeChangeProcessing(false);
   }, [open]);
 
-  const exprHasColumnScope = useMemo(() => hasColumnScopedExpr(expr), [expr]);
-  const selectModeDisabled = useMemo(() => {
-    if (hasColumnScopedResource) {
-      return true;
-    }
-    if (radioValue === "EXPRESSION") {
-      return exprHasColumnScope;
-    }
-    return false;
-  }, [hasColumnScopedResource, radioValue, exprHasColumnScope]);
-
   const isValid = useMemo(() => {
     switch (radioValue) {
       case "SELECT":
@@ -351,10 +319,6 @@ export function GrantAccessDialog({
         setShowFeatureModal(true);
         return;
       }
-      if (value === "SELECT" && selectModeDisabled) {
-        return;
-      }
-
       const requestId = modeChangeRequestIdRef.current + 1;
       modeChangeRequestIdRef.current = requestId;
 
@@ -400,7 +364,6 @@ export function GrantAccessDialog({
     },
     [
       hasRequiredFeature,
-      selectModeDisabled,
       radioValue,
       convertToConditionGroupExpr,
       databaseResources,
@@ -584,40 +547,22 @@ export function GrantAccessDialog({
                     </div>
                   </label>
 
-                  <label
-                    className={`flex items-center gap-x-2 ${
-                      selectModeDisabled
-                        ? "cursor-not-allowed"
-                        : "cursor-pointer"
-                    }`}
-                  >
+                  <label className="flex items-center gap-x-2 cursor-pointer">
                     <input
                       type="radio"
                       name="resource-mode"
                       checked={radioValue === "SELECT"}
                       onChange={() => onRadioChange("SELECT")}
-                      disabled={selectModeDisabled || modeChangeProcessing}
+                      disabled={modeChangeProcessing}
                       className="accent-accent"
                     />
-                    <Tooltip
-                      content={
-                        selectModeDisabled
-                          ? t("issue.role-grant.column-scope-select-disabled")
-                          : ""
-                      }
-                    >
-                      <div
-                        className={`flex items-center gap-x-1 ${
-                          selectModeDisabled ? "cursor-not-allowed" : ""
-                        }`}
-                      >
-                        <FeatureBadge
-                          feature={PlanFeature.FEATURE_DATA_MASKING}
-                          instance={instance}
-                        />
-                        <span>{t("issue.role-grant.manually-select")}</span>
-                      </div>
-                    </Tooltip>
+                    <div className="flex items-center gap-x-1">
+                      <FeatureBadge
+                        feature={PlanFeature.FEATURE_DATA_MASKING}
+                        instance={instance}
+                      />
+                      <span>{t("issue.role-grant.manually-select")}</span>
+                    </div>
                   </label>
                 </div>
               </div>
@@ -626,6 +571,7 @@ export function GrantAccessDialog({
                 <DatabaseResourceSelector
                   projectName={projectName}
                   value={databaseResources}
+                  includeColumns
                   onChange={setDatabaseResources}
                 />
               )}

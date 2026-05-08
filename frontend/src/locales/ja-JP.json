@@ -1179,7 +1179,6 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
-      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "manually-select": "手動選択",
