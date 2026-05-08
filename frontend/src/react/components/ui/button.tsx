@@ -17,11 +17,11 @@ const buttonVariants = cva(
       },
       size: {
         // `default` is an alias for `md` — both render identically.
-        default: "h-9 px-4 text-sm leading-5",
+        default: "h-9 px-3 text-sm leading-5",
         xs: "h-6 px-1.5 text-xs leading-4 gap-1.5",
         sm: "h-7 px-2 text-xs leading-4",
-        md: "h-9 px-4 text-sm leading-5",
-        lg: "h-10 px-6 text-sm leading-5",
+        md: "h-9 px-3 text-sm leading-5",
+        lg: "h-10 px-4 text-sm leading-5",
       },
     },
     defaultVariants: {
