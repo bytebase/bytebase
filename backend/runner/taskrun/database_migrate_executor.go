@@ -291,7 +291,23 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver, opts *db.ExecuteOptions) error {
+type ghostMigrationExecution struct {
+	task     *store.TaskMessage
+	sheet    *store.SheetMessage
+	instance *store.InstanceMessage
+	database *store.DatabaseMessage
+	driver   db.Driver
+	opts     *db.ExecuteOptions
+}
+
+func executeGhostMigration(ctx context.Context, driverCtx context.Context, execution ghostMigrationExecution) error {
+	task := execution.task
+	sheet := execution.sheet
+	instance := execution.instance
+	database := execution.database
+	driver := execution.driver
+	opts := execution.opts
+
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse ghost directive")
@@ -419,7 +435,14 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
-	migrationErr := executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
+	migrationErr := executeGhostMigration(ctx, driverCtx, ghostMigrationExecution{
+		task:     task,
+		sheet:    sheet,
+		instance: instance,
+		database: database,
+		driver:   driver,
+		opts:     &opts,
+	})
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
@@ -540,7 +563,14 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 		// Execute the SQL.
 		if ghost.IsGhostEnabled(sheet.Statement) {
-			err = executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
+			err = executeGhostMigration(ctx, driverCtx, ghostMigrationExecution{
+				task:     task,
+				sheet:    sheet,
+				instance: instance,
+				database: database,
+				driver:   driver,
+				opts:     &opts,
+			})
 		} else {
 			slog.Debug("Start migration...",
 				slog.String("instance", database.InstanceID),
