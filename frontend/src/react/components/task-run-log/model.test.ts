@@ -67,7 +67,7 @@ const createHookHarness = (initialProps: HookHarnessProps) => {
     current = useTaskRunLogSections({
       entries: props.entries,
       datasetKey: props.datasetKey,
-      getSectionLabel: (type) => String(type),
+      getSectionLabel: String,
     });
     return null;
   };
@@ -236,7 +236,7 @@ describe("task-run-log model", () => {
     ];
 
     const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
+      getSectionLabel: String,
     });
 
     expect(sections[0]?.status).toBe("running");
@@ -269,7 +269,7 @@ describe("task-run-log model", () => {
     ];
 
     const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
+      getSectionLabel: String,
       detailText,
     });
 
@@ -335,7 +335,7 @@ describe("task-run-log model", () => {
     ];
 
     const sections = buildSectionsFromEntries(entries, {
-      getSectionLabel: (type) => String(type),
+      getSectionLabel: String,
       detailText,
     });
 
@@ -397,7 +397,7 @@ describe("task-run-log model", () => {
     expect(groupedEntries[3]?.entries).toHaveLength(0);
 
     const groups = buildReleaseFileGroups(entries, {
-      getSectionLabel: (type) => String(type),
+      getSectionLabel: String,
       includeOrphanGroup: true,
     });
     expect(groups).toHaveLength(2);

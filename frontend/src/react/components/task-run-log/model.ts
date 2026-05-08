@@ -55,6 +55,17 @@ export interface TaskRunLogDetailText {
   backupCompleted?: (count: number) => string;
 }
 
+interface BuildDisplayItemsOptions {
+  entries: TaskRunLogEntry[];
+  groupIndex: number;
+  startTime: number;
+  sheet?: Sheet;
+  sheetsMap?: Map<string, Sheet>;
+  idPrefix?: string;
+  detailText?: TaskRunLogDetailText;
+  fileVersion?: string;
+}
+
 export const getTimestampMs = (timestamp?: Timestamp): number => {
   if (!timestamp) return 0;
   return Number(timestamp.seconds) * 1000 + timestamp.nanos / 1000000;
@@ -462,16 +473,16 @@ const getCommandDuration = (entry: TaskRunLogEntry): string | undefined => {
   return formatDuration(endMs - startMs);
 };
 
-const buildDisplayItems = (
-  entries: TaskRunLogEntry[],
-  groupIndex: number,
-  startTime: number,
-  sheet: Sheet | undefined,
-  sheetsMap: Map<string, Sheet> | undefined,
-  idPrefix: string | undefined,
-  detailText: TaskRunLogDetailText | undefined,
-  fileVersion?: string
-): DisplayItem[] => {
+const buildDisplayItems = ({
+  entries,
+  groupIndex,
+  startTime,
+  sheet,
+  sheetsMap,
+  idPrefix,
+  detailText,
+  fileVersion,
+}: BuildDisplayItemsOptions): DisplayItem[] => {
   return entries.map((entry, entryIndex) => {
     const entryTime = getTimestampMs(entry.logTime);
     const relativeMs = startTime > 0 ? entryTime - startTime : 0;
@@ -539,16 +550,16 @@ export const buildSectionsFromEntries = (
           ? formatDuration(Math.max(durationMs, 0))
           : "",
       entryCount: group.entries.length,
-      items: buildDisplayItems(
-        group.entries,
+      items: buildDisplayItems({
+        entries: group.entries,
         groupIndex,
         startTime,
-        options.sheet,
-        options.sheetsMap,
-        options.idPrefix,
-        options.detailText,
-        options.fileVersion
-      ),
+        sheet: options.sheet,
+        sheetsMap: options.sheetsMap,
+        idPrefix: options.idPrefix,
+        detailText: options.detailText,
+        fileVersion: options.fileVersion,
+      }),
     };
   });
 };
@@ -558,7 +569,7 @@ export const buildReleaseFileGroups = (
   options?: BuildReleaseFileGroupsOptions
 ): ReleaseFileGroup[] => {
   const buildOptions: BuildReleaseFileGroupsOptions = {
-    getSectionLabel: (type) => String(type),
+    getSectionLabel: String,
     includeOrphanGroup: false,
     ...options,
   };
