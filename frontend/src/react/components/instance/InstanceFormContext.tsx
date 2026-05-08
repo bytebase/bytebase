@@ -44,6 +44,7 @@ import {
   extractBasicInfo,
   extractDataSourceEditState,
 } from "./common";
+import { effectivePortForEngine } from "./constants";
 import { type InstanceSpecs, useInstanceSpecs } from "./specs";
 
 export type LocalState = {
@@ -339,6 +340,7 @@ export function InstanceFormProvider({
         ds.masterPassword = edit.updatedMasterPassword;
       if (edit.useEmptyMasterPassword) ds.masterPassword = "";
       if (edit.updatedToken) ds.authenticationPrivateKey = edit.updatedToken;
+      ds.port = effectivePortForEngine(engine, ds.port, ds.srv);
       if (!specs.showDatabase) ds.database = "";
       if (engine !== Engine.ORACLE) {
         ds.sid = "";
