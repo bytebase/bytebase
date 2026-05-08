@@ -3,8 +3,8 @@ import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 
 vi.mock("@/components/ProjectMember/utils", () => ({
-  roleHasEnvironmentLimitation: (role: string) =>
-    role === "roles/sqlEditorUser",
+  getRoleEnvironmentLimitationKind: (role: string) =>
+    role === "roles/sqlEditorUser" ? "DDL/DML" : undefined,
 }));
 
 vi.mock("@/utils/issue/cel", () => ({
