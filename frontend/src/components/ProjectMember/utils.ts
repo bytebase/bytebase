@@ -1,5 +1,5 @@
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { useRoleStore } from "@/store";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
 
 export const getBindingIdentifier = (binding: Binding): string => {
@@ -41,8 +41,10 @@ export const getRoleEnvironmentLimitationKind = (
   return undefined;
 };
 
-// Transitional shim — keeps the build green while call sites migrate.
-// Removed in Task 10 once the last caller is gone.
-// @deprecated use getRoleEnvironmentLimitationKind instead.
+/**
+ * Transitional shim — keeps the build green while call sites migrate.
+ * Removed in Task 10 once the last caller is gone.
+ * @deprecated Use getRoleEnvironmentLimitationKind instead.
+ */
 export const roleHasEnvironmentLimitation = (role: string): boolean =>
   getRoleEnvironmentLimitationKind(role) !== undefined;
