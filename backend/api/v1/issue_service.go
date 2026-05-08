@@ -847,6 +847,98 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	return connect.NewResponse(issueV1), nil
 }
 
+// RetryIssueApproval re-runs approval-template finding for an issue stuck
+// in CHECKING. The synchronous post-create path in `postCreateIssue`
+// swallows errors (e.g. CEL evaluation failure against a malformed
+// workspace approval rule), and there is no event-driven retry for
+// non-DATABASE_CHANGE issue types — once stuck, only this RPC (or a
+// direct DB edit) gets the issue back into a resolved state.
+//
+// Authorization mirrors `RequestIssue`: only the issue creator may
+// retry. The action is a self-service for "my issue is stuck"; an
+// operator who needs to unstick someone else's issue should fix the
+// underlying workspace approval rule and (if necessary) ask the issue
+// creator to click Retry.
+//
+// Idempotent: returns the existing issue unchanged when approval-finding
+// has already completed.
+func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Request[v1pb.RetryIssueApprovalRequest]) (*connect.Response[v1pb.Issue], error) {
+	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+	if !canRequestIssue(issue.CreatorEmail, user) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the issue creator can retry approval finding"))
+	}
+
+	// No-op fast path: nothing to retry if the previous attempt completed.
+	if issue.Payload.GetApproval().GetApprovalFindingDone() {
+		issueV1, err := s.convertToIssue(issue)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
+		}
+		return connect.NewResponse(issueV1), nil
+	}
+
+	if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+		// Surface the underlying cause (e.g. CEL error in the workspace
+		// approval rule) so the operator can fix it.
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "approval finding still failing"))
+	}
+
+	uid := issue.UID
+	refreshed, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &uid,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to refresh issue"))
+	}
+	if refreshed == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after retry"))
+	}
+
+	// Mirror the post-approval side effects that `postCreateIssue` and the
+	// approval runner perform when finding completes — without these, an
+	// auto-approved (template-less / SKIPPED) retry result would leave the
+	// issue out of CHECKING but skip the actual work:
+	//   * ACCESS_GRANT / ROLE_GRANT → activate the grant via
+	//     `completeAccessRequestIssue`.
+	//   * DATABASE_CHANGE with a plan → enqueue rollout creation.
+	approved, err := utils.CheckIssueApproved(refreshed)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check approval state"))
+	}
+	if approved {
+		switch refreshed.Type {
+		case storepb.Issue_ACCESS_GRANT, storepb.Issue_ROLE_GRANT:
+			if completed, completeErr := completeAccessRequestIssue(ctx, s.store, user.Email, refreshed); completeErr != nil {
+				slog.Warn("failed to complete access request issue after retry", log.BBError(completeErr))
+			} else {
+				refreshed = completed
+			}
+		case storepb.Issue_DATABASE_CHANGE:
+			if refreshed.PlanUID != nil {
+				s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: refreshed.ProjectID, PlanID: *refreshed.PlanUID}
+			}
+		default:
+			// DATABASE_EXPORT auto-approve has no follow-up step.
+		}
+	}
+
+	issueV1, err := s.convertToIssue(refreshed)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert to issue"))
+	}
+	return connect.NewResponse(issueV1), nil
+}
+
 // UpdateIssue updates the issue.
 func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1pb.UpdateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
 	user, ok := GetUserFromContext(ctx)

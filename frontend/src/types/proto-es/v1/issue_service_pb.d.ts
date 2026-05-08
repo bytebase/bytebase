@@ -443,6 +443,25 @@ export declare type RequestIssueRequest = Message<"bytebase.v1.RequestIssueReque
 export declare const RequestIssueRequestSchema: GenMessage<RequestIssueRequest>;
 
 /**
+ * @generated from message bytebase.v1.RetryIssueApprovalRequest
+ */
+export declare type RetryIssueApprovalRequest = Message<"bytebase.v1.RetryIssueApprovalRequest"> & {
+  /**
+   * The name of the issue whose approval-finding should be retried.
+   * Format: projects/{project}/issues/{issue}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RetryIssueApprovalRequest.
+ * Use `create(RetryIssueApprovalRequestSchema)` to create a new message.
+ */
+export declare const RetryIssueApprovalRequestSchema: GenMessage<RetryIssueApprovalRequest>;
+
+/**
  * @generated from message bytebase.v1.Issue
  */
 export declare type Issue = Message<"bytebase.v1.Issue"> & {
@@ -1358,6 +1377,24 @@ export declare const IssueService: GenService<{
   requestIssue: {
     methodKind: "unary";
     input: typeof RequestIssueRequestSchema;
+    output: typeof IssueSchema;
+  },
+  /**
+   * Re-runs approval-template finding for an issue stuck in CHECKING.
+   * Useful when the synchronous post-create finding errored (e.g. against
+   * a malformed workspace approval rule) and the operator has since
+   * corrected it — without this, the issue would remain in CHECKING
+   * indefinitely because there is no other retry path for non-DATABASE_CHANGE
+   * issue types. Idempotent: returns the existing issue unchanged when
+   * approval-finding has already completed.
+   * Permissions required: None (caller must be the issue creator;
+   * mirrors RequestIssue's authorization model).
+   *
+   * @generated from rpc bytebase.v1.IssueService.RetryIssueApproval
+   */
+  retryIssueApproval: {
+    methodKind: "unary";
+    input: typeof RetryIssueApprovalRequestSchema;
     output: typeof IssueSchema;
   },
 }>;

@@ -396,6 +396,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RetryIssueApprovalRequest"><span class="badge">M</span>RetryIssueApprovalRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RoleGrant"><span class="badge">M</span>RoleGrant</a>
                 </li>
               
@@ -5369,6 +5373,31 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
+        <h3 id="bytebase.v1.RetryIssueApprovalRequest">RetryIssueApprovalRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the issue whose approval-finding should be retried.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RoleGrant">RoleGrant</h3>
         <p></p>
 
@@ -5916,6 +5945,21 @@ Permissions required: None (determined by approval flow)</p></td>
 Permissions required: None (determined by approval flow)</p></td>
               </tr>
             
+              <tr>
+                <td>RetryIssueApproval</td>
+                <td><a href="#bytebase.v1.RetryIssueApprovalRequest">RetryIssueApprovalRequest</a></td>
+                <td><a href="#bytebase.v1.Issue">Issue</a></td>
+                <td><p>Re-runs approval-template finding for an issue stuck in CHECKING.
+Useful when the synchronous post-create finding errored (e.g. against
+a malformed workspace approval rule) and the operator has since
+corrected it — without this, the issue would remain in CHECKING
+indefinitely because there is no other retry path for non-DATABASE_CHANGE
+issue types. Idempotent: returns the existing issue unchanged when
+approval-finding has already completed.
+Permissions required: None (caller must be the issue creator;
+mirrors RequestIssue&#39;s authorization model).</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -6050,6 +6094,16 @@ Permissions required: None (determined by approval flow)</p></td>
                 <td>RequestIssue</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*}:request</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RetryIssueApproval</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/issues/*}:retryApproval</td>
                 <td>*</td>
               </tr>
               

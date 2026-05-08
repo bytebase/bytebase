@@ -253,6 +253,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
+	// `ProjectIDs` is required: empty slice intentionally returns zero
+	// rows, which `SearchIssues` relies on as its IAM-derived "this user
+	// has access to no projects" guard. Skipping the filter on empty
+	// would leak cross-project issues. Cross-project runner scans must
+	// pre-collect the project ID set (e.g. via `ListProjects`) and pass
+	// the explicit list here.
 	if len(find.ProjectIDs) == 1 {
 		where.And("issue.project = ?", find.ProjectIDs[0])
 	} else {

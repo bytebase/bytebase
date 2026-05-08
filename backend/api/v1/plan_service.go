@@ -551,6 +551,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	var releaseString string
 	var instanceIDs []string
 	var databaseGroups []string
+	seenDatabaseGroups := map[string]bool{}
 	var databaseNames []string
 	var databaseGroup *v1pb.DatabaseGroup
 
@@ -583,7 +584,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 					databaseGroupTarget++
-					databaseGroups = append(databaseGroups, target)
+					if !seenDatabaseGroups[target] {
+						databaseGroups = append(databaseGroups, target)
+						seenDatabaseGroups[target] = true
+					}
 				} else {
 					return nil, errors.Errorf("invalid target %v", target)
 				}
@@ -609,7 +613,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-					databaseGroups = append(databaseGroups, target)
+					if !seenDatabaseGroups[target] {
+						databaseGroups = append(databaseGroups, target)
+						seenDatabaseGroups[target] = true
+					}
 				} else {
 					return nil, errors.Errorf("invalid target %v", target)
 				}

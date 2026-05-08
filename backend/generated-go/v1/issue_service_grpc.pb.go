@@ -31,6 +31,7 @@ const (
 	IssueService_ApproveIssue_FullMethodName            = "/bytebase.v1.IssueService/ApproveIssue"
 	IssueService_RejectIssue_FullMethodName             = "/bytebase.v1.IssueService/RejectIssue"
 	IssueService_RequestIssue_FullMethodName            = "/bytebase.v1.IssueService/RequestIssue"
+	IssueService_RetryIssueApproval_FullMethodName      = "/bytebase.v1.IssueService/RetryIssueApproval"
 )
 
 // IssueServiceClient is the client API for IssueService service.
@@ -75,6 +76,16 @@ type IssueServiceClient interface {
 	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
 	// Permissions required: None (determined by approval flow)
 	RequestIssue(ctx context.Context, in *RequestIssueRequest, opts ...grpc.CallOption) (*Issue, error)
+	// Re-runs approval-template finding for an issue stuck in CHECKING.
+	// Useful when the synchronous post-create finding errored (e.g. against
+	// a malformed workspace approval rule) and the operator has since
+	// corrected it — without this, the issue would remain in CHECKING
+	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
+	// issue types. Idempotent: returns the existing issue unchanged when
+	// approval-finding has already completed.
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
+	RetryIssueApproval(ctx context.Context, in *RetryIssueApprovalRequest, opts ...grpc.CallOption) (*Issue, error)
 }
 
 type issueServiceClient struct {
@@ -205,6 +216,16 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, in *RequestIssueR
 	return out, nil
 }
 
+func (c *issueServiceClient) RetryIssueApproval(ctx context.Context, in *RetryIssueApprovalRequest, opts ...grpc.CallOption) (*Issue, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Issue)
+	err := c.cc.Invoke(ctx, IssueService_RetryIssueApproval_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IssueServiceServer is the server API for IssueService service.
 // All implementations must embed UnimplementedIssueServiceServer
 // for forward compatibility.
@@ -247,6 +268,16 @@ type IssueServiceServer interface {
 	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
 	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error)
+	// Re-runs approval-template finding for an issue stuck in CHECKING.
+	// Useful when the synchronous post-create finding errored (e.g. against
+	// a malformed workspace approval rule) and the operator has since
+	// corrected it — without this, the issue would remain in CHECKING
+	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
+	// issue types. Idempotent: returns the existing issue unchanged when
+	// approval-finding has already completed.
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
+	RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error)
 	mustEmbedUnimplementedIssueServiceServer()
 }
 
@@ -292,6 +323,9 @@ func (UnimplementedIssueServiceServer) RejectIssue(context.Context, *RejectIssue
 }
 func (UnimplementedIssueServiceServer) RequestIssue(context.Context, *RequestIssueRequest) (*Issue, error) {
 	return nil, status.Error(codes.Unimplemented, "method RequestIssue not implemented")
+}
+func (UnimplementedIssueServiceServer) RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error) {
+	return nil, status.Error(codes.Unimplemented, "method RetryIssueApproval not implemented")
 }
 func (UnimplementedIssueServiceServer) mustEmbedUnimplementedIssueServiceServer() {}
 func (UnimplementedIssueServiceServer) testEmbeddedByValue()                      {}
@@ -530,6 +564,24 @@ func _IssueService_RequestIssue_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IssueService_RetryIssueApproval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryIssueApprovalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IssueServiceServer).RetryIssueApproval(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IssueService_RetryIssueApproval_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IssueServiceServer).RetryIssueApproval(ctx, req.(*RetryIssueApprovalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IssueService_ServiceDesc is the grpc.ServiceDesc for IssueService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -584,6 +636,10 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestIssue",
 			Handler:    _IssueService_RequestIssue_Handler,
+		},
+		{
+			MethodName: "RetryIssueApproval",
+			Handler:    _IssueService_RetryIssueApproval_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

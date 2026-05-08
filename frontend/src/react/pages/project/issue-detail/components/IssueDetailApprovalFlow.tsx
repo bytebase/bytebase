@@ -31,6 +31,7 @@ import {
   Issue_ApprovalStatus,
   Issue_Approver_Status,
   RequestIssueRequestSchema,
+  RetryIssueApprovalRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User as UserMessage } from "@/types/proto-es/v1/user_service_pb";
@@ -98,12 +99,7 @@ export function IssueDetailApprovalFlow() {
 
       <div className="mt-2">
         {issue.approvalStatus === Issue_ApprovalStatus.CHECKING ? (
-          <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-control-border border-t-accent" />
-            <span>
-              {t("custom-approval.issue-review.generating-approval-flow")}
-            </span>
-          </div>
+          <CheckingState issue={issue} />
         ) : approvalSteps.length > 0 ? (
           <div className="mt-1 flex flex-col gap-y-4 pl-1">
             {approvalSteps.map((step, index) => (
@@ -124,6 +120,60 @@ export function IssueDetailApprovalFlow() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * "Generating approval flow…" placeholder shown while the backend is
+ * still computing an approval template. Includes a Retry button that
+ * calls the backend's `RetryIssueApproval` RPC — the synchronous
+ * post-create finding path swallows errors (e.g. CEL evaluation against
+ * a malformed workspace approval rule) and there is no event-driven
+ * retry for non-DATABASE_CHANGE issue types, so without this button a
+ * stuck issue would stay in CHECKING indefinitely.
+ */
+function CheckingState({ issue }: { issue: Issue }) {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  const [retrying, setRetrying] = useState(false);
+
+  const handleRetry = async () => {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      const response = await issueServiceClientConnect.retryIssueApproval(
+        create(RetryIssueApprovalRequestSchema, { name: issue.name })
+      );
+      page.patchState({ issue: response });
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.failed"),
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-x-2 text-sm text-control-placeholder">
+      <div className="h-4 w-4 animate-spin rounded-full border-2 border-control-border border-t-accent" />
+      <span>{t("custom-approval.issue-review.generating-approval-flow")}</span>
+      <Button
+        className="gap-x-1.5"
+        disabled={retrying}
+        onClick={() => {
+          void handleRetry();
+        }}
+        size="xs"
+        variant="outline"
+      >
+        <RotateCcw className="h-3 w-3" />
+        {t("custom-approval.issue-review.retry-approval-finding")}
+      </Button>
     </div>
   );
 }

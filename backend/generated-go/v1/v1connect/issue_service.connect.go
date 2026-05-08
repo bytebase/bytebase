@@ -67,6 +67,9 @@ const (
 	// IssueServiceRequestIssueProcedure is the fully-qualified name of the IssueService's RequestIssue
 	// RPC.
 	IssueServiceRequestIssueProcedure = "/bytebase.v1.IssueService/RequestIssue"
+	// IssueServiceRetryIssueApprovalProcedure is the fully-qualified name of the IssueService's
+	// RetryIssueApproval RPC.
+	IssueServiceRetryIssueApprovalProcedure = "/bytebase.v1.IssueService/RetryIssueApproval"
 )
 
 // IssueServiceClient is a client for the bytebase.v1.IssueService service.
@@ -107,6 +110,16 @@ type IssueServiceClient interface {
 	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
 	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Re-runs approval-template finding for an issue stuck in CHECKING.
+	// Useful when the synchronous post-create finding errored (e.g. against
+	// a malformed workspace approval rule) and the operator has since
+	// corrected it — without this, the issue would remain in CHECKING
+	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
+	// issue types. Idempotent: returns the existing issue unchanged when
+	// approval-finding has already completed.
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
+	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
 }
 
 // NewIssueServiceClient constructs a client for the bytebase.v1.IssueService service. By default,
@@ -192,6 +205,12 @@ func NewIssueServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(issueServiceMethods.ByName("RequestIssue")),
 			connect.WithClientOptions(opts...),
 		),
+		retryIssueApproval: connect.NewClient[v1.RetryIssueApprovalRequest, v1.Issue](
+			httpClient,
+			baseURL+IssueServiceRetryIssueApprovalProcedure,
+			connect.WithSchema(issueServiceMethods.ByName("RetryIssueApproval")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -209,6 +228,7 @@ type issueServiceClient struct {
 	approveIssue            *connect.Client[v1.ApproveIssueRequest, v1.Issue]
 	rejectIssue             *connect.Client[v1.RejectIssueRequest, v1.Issue]
 	requestIssue            *connect.Client[v1.RequestIssueRequest, v1.Issue]
+	retryIssueApproval      *connect.Client[v1.RetryIssueApprovalRequest, v1.Issue]
 }
 
 // GetIssue calls bytebase.v1.IssueService.GetIssue.
@@ -271,6 +291,11 @@ func (c *issueServiceClient) RequestIssue(ctx context.Context, req *connect.Requ
 	return c.requestIssue.CallUnary(ctx, req)
 }
 
+// RetryIssueApproval calls bytebase.v1.IssueService.RetryIssueApproval.
+func (c *issueServiceClient) RetryIssueApproval(ctx context.Context, req *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error) {
+	return c.retryIssueApproval.CallUnary(ctx, req)
+}
+
 // IssueServiceHandler is an implementation of the bytebase.v1.IssueService service.
 type IssueServiceHandler interface {
 	// Retrieves an issue by name.
@@ -309,6 +334,16 @@ type IssueServiceHandler interface {
 	// Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
 	// Permissions required: None (determined by approval flow)
 	RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error)
+	// Re-runs approval-template finding for an issue stuck in CHECKING.
+	// Useful when the synchronous post-create finding errored (e.g. against
+	// a malformed workspace approval rule) and the operator has since
+	// corrected it — without this, the issue would remain in CHECKING
+	// indefinitely because there is no other retry path for non-DATABASE_CHANGE
+	// issue types. Idempotent: returns the existing issue unchanged when
+	// approval-finding has already completed.
+	// Permissions required: None (caller must be the issue creator;
+	// mirrors RequestIssue's authorization model).
+	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
 }
 
 // NewIssueServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -390,6 +425,12 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(issueServiceMethods.ByName("RequestIssue")),
 		connect.WithHandlerOptions(opts...),
 	)
+	issueServiceRetryIssueApprovalHandler := connect.NewUnaryHandler(
+		IssueServiceRetryIssueApprovalProcedure,
+		svc.RetryIssueApproval,
+		connect.WithSchema(issueServiceMethods.ByName("RetryIssueApproval")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.IssueService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case IssueServiceGetIssueProcedure:
@@ -416,6 +457,8 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 			issueServiceRejectIssueHandler.ServeHTTP(w, r)
 		case IssueServiceRequestIssueProcedure:
 			issueServiceRequestIssueHandler.ServeHTTP(w, r)
+		case IssueServiceRetryIssueApprovalProcedure:
+			issueServiceRetryIssueApprovalHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -471,4 +514,8 @@ func (UnimplementedIssueServiceHandler) RejectIssue(context.Context, *connect.Re
 
 func (UnimplementedIssueServiceHandler) RequestIssue(context.Context, *connect.Request[v1.RequestIssueRequest]) (*connect.Response[v1.Issue], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RequestIssue is not implemented"))
+}
+
+func (UnimplementedIssueServiceHandler) RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RetryIssueApproval is not implemented"))
 }

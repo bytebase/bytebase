@@ -247,6 +247,19 @@ func (x *RequestIssueRequest) Equal(y *RequestIssueRequest) bool {
 	return true
 }
 
+func (x *RetryIssueApprovalRequest) Equal(y *RetryIssueApprovalRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *Issue_Approver) Equal(y *Issue_Approver) bool {
 	if x == y {
 		return true

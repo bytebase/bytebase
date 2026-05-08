@@ -55,8 +55,11 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	return checker.adviceList, nil
 }
 
-// omni-AST analog of columnNameToColumnDef / tableNewColumn in utils.go.
-// (Pingcap-typed siblings remain there for un-migrated advisors.)
+// tableNewOmniColumn tracks per-review column definitions by table+name
+// for the index-family advisors that need to resolve column types referenced
+// later in the same review (e.g. an ALTER TABLE ADD INDEX over a column
+// just added). Shared by advisor_index_pk_type, advisor_index_type_no_blob,
+// and advisor_index_primary_key_type_allowlist.
 type omniColumnNameToColumnDef map[string]*ast.ColumnDef
 type tableNewOmniColumn map[string]omniColumnNameToColumnDef
 

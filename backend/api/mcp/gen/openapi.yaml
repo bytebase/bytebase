@@ -3003,6 +3003,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Issue'
+  /bytebase.v1.IssueService/RetryIssueApproval:
+    post:
+      tags:
+        - bytebase.v1.IssueService
+      summary: RetryIssueApproval
+      description: |-
+        Re-runs approval-template finding for an issue stuck in CHECKING.
+         Useful when the synchronous post-create finding errored (e.g. against
+         a malformed workspace approval rule) and the operator has since
+         corrected it — without this, the issue would remain in CHECKING
+         indefinitely because there is no other retry path for non-DATABASE_CHANGE
+         issue types. Idempotent: returns the existing issue unchanged when
+         approval-finding has already completed.
+         Permissions required: None (caller must be the issue creator;
+         mirrors RequestIssue's authorization model).
+      operationId: bytebase.v1.IssueService.RetryIssueApproval
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RetryIssueApprovalRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Issue'
   /bytebase.v1.IssueService/SearchIssues:
     post:
       tags:
@@ -16124,6 +16169,17 @@ components:
             Whether password reset via email is available for this workspace.
              True when the workspace (or deployment) has an email setting configured.
       title: Restriction
+      additionalProperties: false
+    bytebase.v1.RetryIssueApprovalRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the issue whose approval-finding should be retried.
+             Format: projects/{project}/issues/{issue}
+      title: RetryIssueApprovalRequest
       additionalProperties: false
     bytebase.v1.ReviewConfig:
       type: object

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -299,6 +300,101 @@ func TestTenantBackfill(t *testing.T) {
 	for _, stage := range completedRollout.Msg.Stages {
 		for _, task := range stage.Tasks {
 			a.Equal(v1pb.Task_DONE, task.Status)
+		}
+	}
+}
+
+func TestCreatePlanWithRepeatedDatabaseGroupTarget(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	instanceDir, err := ctl.provisionSQLiteInstance(t.TempDir(), t.Name())
+	a.NoError(err)
+	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("instance"),
+		Instance: &v1pb.Instance{
+			Title:       "prod-instance",
+			Engine:      v1pb.Engine_SQLITE,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: instanceDir, Id: "admin"}},
+		},
+	}))
+	a.NoError(err)
+
+	err = ctl.createDatabase(ctx, ctl.project, instance.Msg, nil, "tenant_01", "")
+	a.NoError(err)
+
+	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+		Parent:          ctl.project.Name,
+		DatabaseGroupId: "tenants",
+		DatabaseGroup: &v1pb.DatabaseGroup{
+			Title:        "All Tenants",
+			DatabaseExpr: &expr.Expr{Expression: "true"},
+		},
+	}))
+	a.NoError(err)
+
+	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE book(id INTEGER PRIMARY KEY);`)},
+	}))
+	a.NoError(err)
+	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet:  &v1pb.Sheet{Content: []byte(`CREATE TABLE author(id INTEGER PRIMARY KEY);`)},
+	}))
+	a.NoError(err)
+
+	plan, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{
+			Title: "Apply multiple changes to tenants",
+			Specs: []*v1pb.Plan_Spec{
+				{
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Targets: []string{databaseGroup.Msg.Name},
+							Sheet:   sheet1.Msg.Name,
+						},
+					},
+				},
+				{
+					Id: uuid.NewString(),
+					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+							Targets: []string{databaseGroup.Msg.Name},
+							Sheet:   sheet2.Msg.Name,
+						},
+					},
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.After(30 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+				Name: fmt.Sprintf("%s/planCheckRun", plan.Msg.Name),
+			}))
+			a.NoError(err)
+			if resp.Msg.Status == v1pb.PlanCheckRun_DONE {
+				return
+			}
+			a.NotEqual(v1pb.PlanCheckRun_FAILED, resp.Msg.Status, resp.Msg.Error)
+		case <-timeout:
+			t.Fatal("timed out waiting for plan check run")
 		}
 	}
 }

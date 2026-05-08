@@ -153,6 +153,24 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Re-runs approval-template finding for an issue stuck in CHECKING.
+  // Useful when the synchronous post-create finding errored (e.g. against
+  // a malformed workspace approval rule) and the operator has since
+  // corrected it — without this, the issue would remain in CHECKING
+  // indefinitely because there is no other retry path for non-DATABASE_CHANGE
+  // issue types. Idempotent: returns the existing issue unchanged when
+  // approval-finding has already completed.
+  // Permissions required: None (caller must be the issue creator;
+  // mirrors RequestIssue's authorization model).
+  rpc RetryIssueApproval(RetryIssueApprovalRequest) returns (Issue) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*}:retryApproval"
+      body: "*"
+    };
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+  }
 }
 
 message GetIssueRequest {
@@ -362,6 +380,15 @@ message RequestIssueRequest {
   ];
   // The comment explaining the request.
   string comment = 2;
+}
+
+message RetryIssueApprovalRequest {
+  // The name of the issue whose approval-finding should be retried.
+  // Format: projects/{project}/issues/{issue}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 }
 
 message Issue {
