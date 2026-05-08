@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytebase/omni/pg/ast"
+	ghostbase "github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -373,8 +374,12 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 		return nil
 	case <-driverCtx.Done():
 		err := errors.New("task canceled")
-		migrationContext.PanicAbort <- err
 		opts.LogGhostMigrationEnd(err.Error())
+		abortCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if sendErr := ghostbase.SendWithContext(abortCtx, migrationContext.PanicAbort, err); sendErr != nil {
+			slog.Warn("failed to abort gh-ost migration", log.BBError(sendErr))
+		}
 		return err
 	}
 }
