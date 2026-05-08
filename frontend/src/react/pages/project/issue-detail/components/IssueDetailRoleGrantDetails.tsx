@@ -1,6 +1,9 @@
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import {
   Table,
   TableBody,
@@ -9,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useDatabaseV1Store,
@@ -74,11 +78,31 @@ export function IssueDetailRoleGrantDetails() {
     }
   }, [condition?.databaseResources, databaseStore]);
 
+  const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
+  const envNames = condition?.environments ?? [];
+  const envList = useEnvironmentList();
+  const envTitles = useMemo(() => {
+    const names = condition?.environments ?? [];
+    const byName = new Map(envList.map((e) => [e.name, e.title]));
+    // Falls back to the raw env resource name (e.g. environments/prod-old) if the
+    // env isn't in the store, which can happen if the env was renamed or deleted
+    // between request submission and approver review.
+    return names.map((n) => byName.get(n) ?? n);
+  }, [condition?.environments, envList]);
+
   return (
     <div className="flex flex-col gap-y-4">
       <h3 className="text-base font-medium">{t("issue.role-grant.details")}</h3>
 
       <div className="flex flex-col gap-y-4 rounded-sm border p-4">
+        {envKind && envNames.length > 0 && (
+          <DDLWarningCallout
+            type="issue"
+            kind={envKind}
+            environments={envTitles}
+          />
+        )}
+
         {requestRoleName && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">{t("role.self")}</span>
@@ -96,6 +120,23 @@ export function IssueDetailRoleGrantDetails() {
                 <p key={permission} className="text-sm leading-5">
                   {permission}
                 </p>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {envNames.length > 0 && (
+          <div className="flex flex-col gap-y-2">
+            <span className="text-sm text-control-light">
+              {t("common.environments")}
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {envNames.map((env) => (
+                <EnvironmentLabel
+                  key={env}
+                  environmentName={env}
+                  className="text-xs"
+                />
               ))}
             </div>
           </div>
