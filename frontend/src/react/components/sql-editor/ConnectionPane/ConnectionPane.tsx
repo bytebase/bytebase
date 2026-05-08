@@ -10,6 +10,7 @@ import {
 import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Separator } from "@/react/components/ui/separator";
 import {
@@ -592,12 +593,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
             {treeStoreState === "READY" && (
               <div className="flex flex-col gap-y-2 text-sm select-none pt-1">
                 <label className="inline-flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
-                    className="rounded-xs border-control-border"
+                  <Checkbox
                     checked={showMissingQueryDatabases}
-                    onChange={(e) =>
-                      setShowMissingQueryDatabases(e.target.checked)
+                    onCheckedChange={(checked) =>
+                      setShowMissingQueryDatabases(checked)
                     }
                   />
                   {t("sql-editor.show-databases-without-query-permission")}

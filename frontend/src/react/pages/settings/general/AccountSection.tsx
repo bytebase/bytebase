@@ -17,6 +17,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { usePlanFeature, useServerState } from "@/react/hooks/useAppState";
@@ -427,14 +428,13 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               <>
                 <div className="mt-4 lg:mt-0">
                   <div className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={toggleState.disallowSignup}
                       disabled={disabled || !hasDisallowSignupFeature}
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setToggleState((s) => ({
                           ...s,
-                          disallowSignup: e.target.checked,
+                          disallowSignup: checked,
                         }))
                       }
                     />
@@ -491,13 +491,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   </span>
                 </div>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={passwordState.requireNumber}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       updatePasswordField({
-                        requireNumber: e.target.checked,
+                        requireNumber: checked,
                       })
                     }
                   />
@@ -506,13 +505,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </label>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={passwordState.requireLetter}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       updatePasswordField({
-                        requireLetter: e.target.checked,
+                        requireLetter: checked,
                       })
                     }
                   />
@@ -521,13 +519,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </label>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={passwordState.requireUppercaseLetter}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       updatePasswordField({
-                        requireUppercaseLetter: e.target.checked,
+                        requireUppercaseLetter: checked,
                       })
                     }
                   />
@@ -536,13 +533,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </label>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={passwordState.requireSpecialCharacter}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       updatePasswordField({
-                        requireSpecialCharacter: e.target.checked,
+                        requireSpecialCharacter: checked,
                       })
                     }
                   />
@@ -551,13 +547,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </label>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={passwordState.requireResetPasswordForFirstLogin}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       updatePasswordField({
-                        requireResetPasswordForFirstLogin: e.target.checked,
+                        requireResetPasswordForFirstLogin: checked,
                       })
                     }
                   />
@@ -566,12 +561,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                   )}
                 </label>
                 <label className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={!!passwordState.passwordRotation}
                     disabled={disabled || !hasPasswordFeature}
-                    onChange={(e) => {
-                      if (e.target.checked) {
+                    onCheckedChange={(checked) => {
+                      if (checked) {
                         updatePasswordField({
                           passwordRotation: create(DurationSchema, {
                             seconds: BigInt(7 * 24 * 60 * 60),
@@ -634,14 +628,13 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <div className="flex flex-col gap-y-7">
               <div className="mt-4 lg:mt-0">
                 <div className="flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={toggleState.requireMfa}
                     disabled={disabled || !has2FAFeature}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       setToggleState((s) => ({
                         ...s,
-                        requireMfa: e.target.checked,
+                        requireMfa: checked,
                       }))
                     }
                   />
@@ -659,8 +652,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               {!isSaaSMode && (
                 <div className="lg:mt-0">
                   <div className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={toggleState.disallowPasswordSignin}
                       disabled={
                         disabled ||
@@ -668,10 +660,10 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                         (!toggleState.disallowPasswordSignin &&
                           !existActiveIdentityProvider)
                       }
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setToggleState((s) => ({
                           ...s,
-                          disallowPasswordSignin: e.target.checked,
+                          disallowPasswordSignin: checked,
                         }))
                       }
                     />
@@ -708,17 +700,16 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               {!isSaaSMode && isDev() && (
                 <div className="lg:mt-0">
                   <div className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={toggleState.allowEmailCodeSignin}
                       disabled={
                         disabled ||
                         (!toggleState.allowEmailCodeSignin && !hasEmailSetting)
                       }
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setToggleState((s) => ({
                           ...s,
-                          allowEmailCodeSignin: e.target.checked,
+                          allowEmailCodeSignin: checked,
                         }))
                       }
                     />

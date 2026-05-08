@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Sheet,
@@ -293,11 +294,11 @@ export function InstanceAssignmentSheet({
                       >
                         {canManageSubscription && (
                           <td className="px-4 py-2">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={checked}
-                              onChange={() => toggleSelection(instance.name)}
-                              className="rounded-xs border-control-border"
+                              onCheckedChange={() =>
+                                toggleSelection(instance.name)
+                              }
                             />
                           </td>
                         )}

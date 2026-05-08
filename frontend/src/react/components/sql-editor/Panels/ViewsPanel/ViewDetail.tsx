@@ -2,6 +2,7 @@ import { ChevronLeft, Code, Columns, Eye, FileSymlink } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Tabs,
   TabsList,
@@ -115,11 +116,9 @@ export function ViewDetail({ db, database, schema, view }: ViewDetailProps) {
         {mode === "DEFINITION" ? (
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-x-1 text-sm text-control cursor-pointer select-none">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={format}
-                onChange={(event) => setFormat(event.target.checked)}
-                className="accent-accent"
+                onCheckedChange={(checked) => setFormat(checked)}
               />
               {t("sql-editor.format")}
             </label>

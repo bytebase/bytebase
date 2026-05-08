@@ -17,6 +17,7 @@ import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -740,11 +741,10 @@ function SyncDatabases({
       </div>
       <div className="flex flex-col gap-y-2">
         <label className="flex items-center gap-x-2 cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={syncAll}
             disabled={!allowEdit}
-            onChange={(e) => setSyncAll(e.target.checked)}
+            onCheckedChange={(checked) => setSyncAll(checked)}
           />
           {t("instance.sync-databases.sync-all")}
         </label>
@@ -768,11 +768,10 @@ function SyncDatabases({
                       key={db}
                       className="flex items-center gap-x-2 cursor-pointer text-sm"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={selectedSet.has(db)}
                         disabled={!allowEdit}
-                        onChange={() => toggleDatabase(db)}
+                        onCheckedChange={() => toggleDatabase(db)}
                       />
                       <span>{db}</span>
                     </label>
@@ -1806,13 +1805,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               adminDataSource.additionalAddresses.length === 0 && (
                 <div className="sm:col-span-4 sm:col-start-1">
                   <label className="flex items-center gap-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={adminDataSource.directConnection}
                       disabled={!allowEdit}
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         updateAdminDS({
-                          directConnection: e.target.checked,
+                          directConnection: checked,
                         })
                       }
                     />

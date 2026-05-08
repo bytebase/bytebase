@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { NumberInput } from "@/react/components/ui/number-input";
 import {
   usePlanFeature,
@@ -232,12 +233,12 @@ export const SQLEditorSection = forwardRef<
         {/* Data Export toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div className="w-full inline-flex items-center gap-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={!state.disableExport}
               disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-              onChange={(e) => handleToggle("disableExport", !e.target.checked)}
-              className="h-4 w-4"
+              onCheckedChange={(checked) =>
+                handleToggle("disableExport", !checked)
+              }
             />
             <span className="text-base font-semibold">
               {t("settings.general.workspace.data-export")}
@@ -249,14 +250,12 @@ export const SQLEditorSection = forwardRef<
         {/* Data Copy toggle */}
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div className="w-full inline-flex items-center gap-x-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={!state.disableCopyData}
               disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
-              onChange={(e) =>
-                handleToggle("disableCopyData", !e.target.checked)
+              onCheckedChange={(checked) =>
+                handleToggle("disableCopyData", !checked)
               }
-              className="h-4 w-4"
             />
             <span className="text-base font-semibold">
               {t("settings.general.workspace.data-copy")}
@@ -269,14 +268,12 @@ export const SQLEditorSection = forwardRef<
         <PermissionGuard permissions={["bb.policies.update"]} display="block">
           <div>
             <div className="w-full inline-flex items-center gap-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={state.allowAdminDataSource}
                 disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
-                onChange={(e) =>
-                  handleToggle("allowAdminDataSource", e.target.checked)
+                onCheckedChange={(checked) =>
+                  handleToggle("allowAdminDataSource", checked)
                 }
-                className="h-4 w-4"
               />
               <span className="text-base font-semibold">
                 {t("settings.general.workspace.allow-admin-data-source.self")}

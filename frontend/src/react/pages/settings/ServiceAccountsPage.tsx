@@ -8,6 +8,7 @@ import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -827,10 +828,9 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
         {/* Inactive toggle */}
         <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
+            onCheckedChange={(checked) => setShowInactive(checked)}
           />
           <span className="textinfolabel">
             {t("settings.members.show-inactive")}

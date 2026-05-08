@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { RequestQueryButton } from "@/react/components/sql-editor/RequestQueryButton";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -54,13 +55,12 @@ export function DatabaseNode({
 
   const checkbox = supportBatchMode ? (
     <Tooltip content={checkTooltip ?? ""}>
-      <input
-        type="checkbox"
-        className="mr-2 size-3.5"
+      <Checkbox
         checked={!!checked}
+        className="mr-2"
         disabled={checkDisabled}
         onClick={(e) => e.stopPropagation()}
-        onChange={(e) => onCheckedChange?.(e.target.checked)}
+        onCheckedChange={(checked) => onCheckedChange?.(checked)}
       />
     </Tooltip>
   ) : null;

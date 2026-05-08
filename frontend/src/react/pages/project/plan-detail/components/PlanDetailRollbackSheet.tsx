@@ -13,6 +13,7 @@ import { ReadonlyMonaco } from "@/react/components/monaco";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Sheet,
   SheetBody,
@@ -182,12 +183,11 @@ export function PlanDetailRollbackSheet({
                       key={item.taskRun.name}
                       className="flex cursor-pointer items-center gap-3 border-b border-control-border px-3 py-2 last:border-b-0 hover:bg-gray-50"
                     >
-                      <input
+                      <Checkbox
                         checked={checked}
-                        className="accent-accent"
-                        onChange={(event) => {
+                        onCheckedChange={(checked) => {
                           setSelectedTaskRunNames((prev) => {
-                            if (event.target.checked) {
+                            if (checked) {
                               return [...prev, item.taskRun.name];
                             }
                             return prev.filter(
@@ -195,7 +195,6 @@ export function PlanDetailRollbackSheet({
                             );
                           });
                         }}
-                        type="checkbox"
                       />
                       <div className="min-w-0 space-y-1">
                         <div className="min-w-0 text-sm font-medium text-main">

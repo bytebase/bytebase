@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import {
@@ -408,13 +409,9 @@ export function PlanDetailTaskRolloutActionPanel({
             {action === "RUN" && hasPriorBackupTasks && (
               <div className="flex flex-col">
                 <label className="inline-flex items-center gap-x-2 text-sm">
-                  <input
+                  <Checkbox
                     checked={skipPriorBackup}
-                    className="h-4 w-4 rounded border-control-border"
-                    onChange={(event) =>
-                      setSkipPriorBackup(event.target.checked)
-                    }
-                    type="checkbox"
+                    onCheckedChange={(checked) => setSkipPriorBackup(checked)}
                   />
                   <span>{t("task.skip-prior-backup")}</span>
                 </label>

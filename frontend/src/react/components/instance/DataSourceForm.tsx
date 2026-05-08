@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
@@ -914,12 +915,11 @@ export function DataSourceForm({
                         <div className="mt-2">
                           {!isCreating && allowUsingEmptyPassword && (
                             <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-                              <input
-                                type="checkbox"
+                              <Checkbox
                                 checked={dataSource.useEmptyPassword ?? false}
                                 disabled={!allowEdit}
-                                onChange={(e) =>
-                                  toggleUseEmptyPassword(e.target.checked)
+                                onCheckedChange={(checked) =>
+                                  toggleUseEmptyPassword(checked)
                                 }
                               />
                               {t("instance.no-password")}
@@ -1441,17 +1441,15 @@ export function DataSourceForm({
                             <div className="mt-2">
                               {!isCreating && allowUsingEmptyPassword && (
                                 <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox
                                     checked={
                                       dataSource.useEmptyMasterPassword ?? false
                                     }
                                     disabled={!allowEdit}
-                                    onChange={(e) => {
+                                    onCheckedChange={(checked) => {
                                       update({
-                                        useEmptyMasterPassword:
-                                          e.target.checked,
-                                        updatedMasterPassword: e.target.checked
+                                        useEmptyMasterPassword: checked,
+                                        updatedMasterPassword: checked
                                           ? ""
                                           : dataSource.updatedMasterPassword,
                                       });

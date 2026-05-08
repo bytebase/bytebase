@@ -33,6 +33,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -890,12 +891,10 @@ function EnvironmentDetail({
               </p>
             </div>
             <label className="inline-flex items-center gap-x-2 cursor-pointer">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={editProtected}
                 disabled={!canEdit}
-                onChange={(e) => setEditProtected(e.target.checked)}
-                className="rounded-xs border-gray-300"
+                onCheckedChange={(checked) => setEditProtected(checked)}
               />
               <span className="text-sm">
                 {t("policy.environment-tier.mark-env-as-production")}
@@ -992,11 +991,10 @@ function EnvironmentDetail({
             <div className="mt-3">
               {existRelatedResource && (
                 <label className="flex items-start gap-x-2 mb-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={confirmDelete}
-                    onChange={(e) => setConfirmDelete(e.target.checked)}
-                    className="mt-0.5 rounded-xs border-gray-300"
+                    onCheckedChange={(checked) => setConfirmDelete(checked)}
+                    className="mt-0.5"
                   />
                   <span className="text-sm text-gray-600">
                     {t("environment.delete-description")}
@@ -1188,11 +1186,9 @@ function CreateSheet({
                 {t("policy.environment-tier.description", { newline: "\n" })}
               </p>
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isProtected}
-                  onChange={(e) => setIsProtected(e.target.checked)}
-                  className="rounded-xs border-gray-300"
+                  onCheckedChange={(checked) => setIsProtected(checked)}
                 />
                 <span className="text-sm">
                   {t("policy.environment-tier.mark-env-as-production")}

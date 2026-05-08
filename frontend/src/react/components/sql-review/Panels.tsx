@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Alert, AlertDescription } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Sheet,
   SheetBody,
@@ -281,11 +282,9 @@ export function AttachResourcesPanel({
                       key={name}
                       className="flex items-center gap-x-2 cursor-pointer"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={checked}
-                        onChange={() => toggleResource(name)}
-                        className="accent-accent"
+                        onCheckedChange={() => toggleResource(name)}
                       />
                       <span>{env.title || name}</span>
                       {attachedConfig && (
@@ -321,11 +320,9 @@ export function AttachResourcesPanel({
                       key={name}
                       className="flex items-center gap-x-2 cursor-pointer"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={checked}
-                        onChange={() => toggleResource(name)}
-                        className="accent-accent"
+                        onCheckedChange={() => toggleResource(name)}
                       />
                       <span>{proj.title || name}</span>
                       {attachedConfig && (

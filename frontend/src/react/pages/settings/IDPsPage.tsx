@@ -24,6 +24,7 @@ import {
   type ResourceIdFieldRef,
 } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -653,13 +654,12 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={configForOAuth2.skipTlsVerify}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 onUpdateOAuth2({
                   ...configForOAuth2,
-                  skipTlsVerify: e.target.checked,
+                  skipTlsVerify: checked,
                 })
               }
             />
@@ -796,13 +796,12 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={configForOIDC.skipTlsVerify}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 onUpdateOIDC({
                   ...configForOIDC,
-                  skipTlsVerify: e.target.checked,
+                  skipTlsVerify: checked,
                 })
               }
             />
@@ -1011,13 +1010,12 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={configForLDAP.skipTlsVerify}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 onUpdateLDAP({
                   ...configForLDAP,
-                  skipTlsVerify: e.target.checked,
+                  skipTlsVerify: checked,
                 })
               }
             />

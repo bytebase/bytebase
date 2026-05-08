@@ -7,6 +7,7 @@ import { accessGrantServiceClientConnect } from "@/connect";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox } from "@/react/components/ui/combobox";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import {
@@ -270,11 +271,9 @@ function AccessGrantRequestDrawerInner({
               {t("sql-editor.grant-type-unmask")}
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={unmask}
-                onChange={(e) => setUnmask(e.target.checked)}
-                className="accent-accent"
+                onCheckedChange={(checked) => setUnmask(checked)}
               />
               <span>{t("sql-editor.access-type-unmask")}</span>
             </label>

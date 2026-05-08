@@ -16,6 +16,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
@@ -214,14 +215,13 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             {/* Watermark */}
             <div>
               <div className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={state.enableWatermark}
                   disabled={!canEdit || !hasWatermarkFeature}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     setState((prev) => ({
                       ...prev,
-                      enableWatermark: e.target.checked,
+                      enableWatermark: checked,
                     }))
                   }
                 />
@@ -274,14 +274,13 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     </span>
                   </div>
                   <label className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={state.neverExpire}
                       disabled={!canEdit}
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setState((prev) => ({
                           ...prev,
-                          neverExpire: e.target.checked,
+                          neverExpire: checked,
                         }))
                       }
                     />
@@ -344,19 +343,18 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 {/* Enforce restriction checkbox */}
                 <div className="w-full flex flex-row justify-between items-center">
                   <label className="flex items-start gap-x-2">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
+                    <Checkbox
                       checked={state.enableRestriction}
+                      className="mt-1"
                       disabled={
                         !canEdit ||
                         validDomains.length === 0 ||
                         !hasDomainRestrictionFeature
                       }
-                      onChange={(e) =>
+                      onCheckedChange={(checked) =>
                         setState((prev) => ({
                           ...prev,
-                          enableRestriction: e.target.checked,
+                          enableRestriction: checked,
                         }))
                       }
                     />

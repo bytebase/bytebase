@@ -21,6 +21,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1472,20 +1473,15 @@ function DatabaseSelector({
             <thead>
               <tr className="border-b text-left text-control-light">
                 <th className="w-8 py-2 pr-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={() =>
+                  <Checkbox
+                    checked={someSelected ? "indeterminate" : allSelected}
+                    onCheckedChange={() =>
                       onSelectedNamesChange(
                         allSelected
                           ? new Set()
                           : new Set(databases.map((db) => db.name))
                       )
                     }
-                    className="accent-accent"
                   />
                 </th>
                 <th className="py-2 pr-4 font-medium">
@@ -1518,12 +1514,7 @@ function DatabaseSelector({
                     onClick={() => toggleDatabase(db.name)}
                   >
                     <td className="py-2 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="accent-accent"
-                      />
+                      <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">

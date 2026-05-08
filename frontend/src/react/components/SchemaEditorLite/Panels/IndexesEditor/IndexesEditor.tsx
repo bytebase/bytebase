@@ -3,6 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox } from "@/react/components/ui/combobox";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -147,18 +148,17 @@ export function IndexesEditor({
                 />
               </TableCell>
               <TableCell className="text-center">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={index.unique}
                   disabled={isReadonly || index.primary}
-                  onChange={(e) => {
-                    index.unique = e.target.checked;
+                  onCheckedChange={(checked) => {
+                    index.unique = checked;
                     handleIndexChange();
                   }}
                 />
               </TableCell>
               <TableCell className="text-center">
-                <input type="checkbox" checked={index.primary} disabled />
+                <Checkbox checked={index.primary} disabled />
               </TableCell>
               {!isReadonly && (
                 <TableCell className="text-right">

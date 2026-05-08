@@ -5,6 +5,7 @@ import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadId
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -404,10 +405,9 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
 
         {/* Show inactive toggle */}
         <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
+            onCheckedChange={(checked) => setShowInactive(checked)}
           />
           <span className="textinfolabel">
             {t("settings.members.show-inactive")}

@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -152,13 +153,12 @@ export function DeployTaskItem({
         >
           <div className="flex items-center justify-between gap-x-3">
             <div className="flex min-w-0 flex-1 items-center gap-x-2">
-              <input
+              <Checkbox
                 checked={isSelected}
-                className="shrink-0 accent-accent"
+                className="shrink-0"
                 disabled={!isSelectable}
-                onChange={() => onToggleSelect()}
+                onCheckedChange={() => onToggleSelect()}
                 onClick={(event) => event.stopPropagation()}
-                type="checkbox"
               />
               <DeployTaskStatus
                 size={isExpanded ? "large" : "small"}

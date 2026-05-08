@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -112,11 +113,9 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
           </ul>
         </div>
         <label className="mt-6 flex items-center gap-x-2 text-sm text-control-light">
-          <input
-            type="checkbox"
-            className="size-4 rounded-xs border-control-border"
+          <Checkbox
             checked={checked}
-            onChange={(event) => setChecked(event.target.checked)}
+            onCheckedChange={(checked) => setChecked(checked)}
           />
           {t("remind.role-expire.checkbox")}
         </label>

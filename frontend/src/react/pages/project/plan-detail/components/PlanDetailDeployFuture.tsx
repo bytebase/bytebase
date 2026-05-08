@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
 import { Alert, AlertTitle } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Sheet,
   SheetBody,
@@ -360,12 +361,10 @@ export function PlanDetailDeployFuture() {
           <SheetFooter className="justify-between">
             {warningMessages.length > 0 && errorMessages.length === 0 ? (
               <label className="flex items-center gap-x-2 text-sm text-control">
-                <input
+                <Checkbox
                   checked={bypassWarnings}
-                  className="accent-accent"
                   disabled={creatingRollout}
-                  onChange={(event) => setBypassWarnings(event.target.checked)}
-                  type="checkbox"
+                  onCheckedChange={(checked) => setBypassWarnings(checked)}
                 />
                 <span>{t("rollout.bypass-stage-requirements")}</span>
               </label>

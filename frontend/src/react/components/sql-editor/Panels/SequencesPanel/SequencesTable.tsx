@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -108,12 +109,7 @@ export function SequencesTable({
                 </TableCell>
                 <TableCell>{sequence.increment}</TableCell>
                 <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={sequence.cycle}
-                    disabled
-                    className="accent-accent"
-                  />
+                  <Checkbox checked={sequence.cycle} disabled />
                 </TableCell>
                 <TableCell>{sequence.cacheSize}</TableCell>
                 <TableCell>

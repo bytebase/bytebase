@@ -1,8 +1,9 @@
 import { Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { MaskData } from "@/components/SensitiveData/types";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -114,7 +115,6 @@ export function SensitiveColumnTable({
   onDelete: (item: MaskData) => void;
 }) {
   const { t } = useTranslation();
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
   const checkedKeySet = useMemo(
     () => new Set(checkedColumnList.map(itemKey)),
     [checkedColumnList]
@@ -128,15 +128,6 @@ export function SensitiveColumnTable({
     columnList.length > 0 && visibleSelectedCount === columnList.length;
   const someSelected =
     visibleSelectedCount > 0 && visibleSelectedCount < columnList.length;
-
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someSelected;
-      if (!someSelected) {
-        headerCheckboxRef.current.indeterminate = false;
-      }
-    }
-  }, [someSelected]);
 
   const toggleSelection = (item: MaskData) => {
     const key = itemKey(item);
@@ -175,13 +166,10 @@ export function SensitiveColumnTable({
           <TableRow className="hover:bg-control-bg">
             {showSelectionColumn && (
               <TableHead className="w-12">
-                <input
-                  ref={headerCheckboxRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
+                <Checkbox
+                  checked={someSelected ? "indeterminate" : allSelected}
+                  onCheckedChange={toggleSelectAll}
                   onClick={(event) => event.stopPropagation()}
-                  className="rounded-xs border-control-border"
                 />
               </TableHead>
             )}
@@ -224,12 +212,10 @@ export function SensitiveColumnTable({
                 >
                   {showSelectionColumn && (
                     <TableCell className="w-12">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={isChecked}
-                        onChange={() => toggleSelection(item)}
+                        onCheckedChange={() => toggleSelection(item)}
                         onClick={(event) => event.stopPropagation()}
-                        className="rounded-xs border-control-border"
                       />
                     </TableCell>
                   )}

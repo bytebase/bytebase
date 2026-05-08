@@ -13,6 +13,7 @@ import { ComponentPermissionGuard } from "@/react/components/ComponentPermission
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -232,11 +233,10 @@ export const AIAugmentationSection = forwardRef<
                 {/* Enable toggle */}
                 <div>
                   <div className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={state.enabled}
                       disabled={!canEdit}
-                      onChange={(e) => toggleEnabled(e.target.checked)}
+                      onCheckedChange={(checked) => toggleEnabled(checked)}
                     />
                     <span className="text-base font-semibold">
                       {t(

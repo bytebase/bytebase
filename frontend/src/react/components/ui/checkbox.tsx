@@ -15,41 +15,34 @@ const ICON_SIZE: Record<CheckboxSize, string> = {
   md: "size-3",
 };
 
-interface CheckboxProps {
+interface CheckboxProps
+  extends Omit<
+    React.ComponentProps<typeof BaseCheckbox.Root>,
+    "checked" | "onCheckedChange" | "className" | "children"
+  > {
   checked: boolean | "indeterminate";
   onCheckedChange?: (checked: boolean) => void;
-  onClick?: React.MouseEventHandler<HTMLElement>;
-  disabled?: boolean;
   size?: CheckboxSize;
   className?: string;
-  id?: string;
-  name?: string;
-  "aria-label"?: string;
 }
 
 function Checkbox({
   checked,
   onCheckedChange,
   onClick,
-  disabled,
   size = "md",
   className,
-  id,
-  name,
-  "aria-label": ariaLabel,
+  ...rootProps
 }: CheckboxProps) {
   const baseChecked = checked === "indeterminate" ? false : checked;
   const indeterminate = checked === "indeterminate";
 
   const root = (
     <BaseCheckbox.Root
+      {...rootProps}
       checked={baseChecked}
       indeterminate={indeterminate}
       onCheckedChange={(value) => onCheckedChange?.(value)}
-      disabled={disabled}
-      id={id}
-      name={name}
-      aria-label={ariaLabel}
       className={cn(
         "inline-flex shrink-0 items-center justify-center align-middle rounded-sm border bg-background transition-colors",
         ROOT_SIZE[size],

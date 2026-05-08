@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -119,11 +120,10 @@ export function ReleaseFileTable({
                   className="w-10"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={checked}
-                    onChange={(e) =>
-                      handleCheckboxChange(file, e.target.checked)
+                    onCheckedChange={(checked) =>
+                      handleCheckboxChange(file, checked)
                     }
                   />
                 </TableCell>
