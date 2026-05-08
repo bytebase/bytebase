@@ -3,7 +3,6 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
-  Info,
   Pencil,
   Plus,
   ShieldUser,
@@ -28,7 +27,6 @@ import {
 } from "@/components/ProjectMember/utils";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -104,6 +102,7 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 import { RequestRoleSheet } from "./RequestRoleSheet";
@@ -1362,6 +1361,9 @@ function EditMemberRoleDrawer({
                   const rows = getSingleBindingRows(binding);
                   const envLimitation =
                     getProjectRoleBindingEnvironmentLimitationState(binding);
+                  const bindingKind = getRoleEnvironmentLimitationKind(
+                    binding.role
+                  );
                   const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
@@ -1410,42 +1412,12 @@ function EditMemberRoleDrawer({
                       </div>
 
                       {/* Environment info banner */}
-                      {envLimitation && (
-                        <div className="mx-4 mt-3 flex items-start gap-x-2 rounded-sm bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-700">
-                          <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                          <div>
-                            {envLimitation.type === "unrestricted" ? (
-                              <span>
-                                {t(
-                                  "project.members.allow-ddl-all-environments"
-                                )}
-                              </span>
-                            ) : envLimitation.environments.length > 0 ? (
-                              <>
-                                <span>{t("project.members.allow-ddl")}</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {envLimitation.environments.map((env) => (
-                                    <Badge
-                                      key={env}
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      <EnvironmentLabel
-                                        environmentName={env}
-                                        className="text-xs"
-                                      />
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <span>
-                                {t(
-                                  "project.members.disallow-ddl-all-environments"
-                                )}
-                              </span>
-                            )}
-                          </div>
+                      {envLimitation && bindingKind && (
+                        <div className="mx-4 mt-3">
+                          <MemberBindingEnvironmentBanner
+                            envLimitation={envLimitation}
+                            bindingKind={bindingKind}
+                          />
                         </div>
                       )}
 
