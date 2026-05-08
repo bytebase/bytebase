@@ -184,3 +184,21 @@
   changeType: 1
 - statement: CREATE TABLE t(id INTEGER, PRIMARY KEY(id))
   changeType: 1
+# Named CONSTRAINT form pin (empirical cumulative #17): omni emits
+# ATAddConstraint for `ADD CONSTRAINT <name> PRIMARY KEY (...)` (same arm
+# as bare `ADD PRIMARY KEY`). Pins the contract that batch-2's
+# `case ATAddConstraint:` covers both bare and named forms — no
+# ATAddIndex split exists for this construct in current tidb omni.
+- statement: |-
+    CREATE TABLE t(id VARCHAR(5));
+    ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PK_TYPE_LIMIT
+      content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

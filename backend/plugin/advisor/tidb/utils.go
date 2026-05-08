@@ -59,34 +59,6 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-// tableNewColumn tracks per-statement column definitions by name, scoped
-// to the un-migrated pingcap-AST index advisors. Delete when those migrate.
-// Tracked: https://linear.app/bytebase/issue/BYT-9395
-type columnNameToColumnDef map[string]*ast.ColumnDef
-type tableNewColumn map[string]columnNameToColumnDef
-
-func (t tableNewColumn) set(tableName, columnName string, colDef *ast.ColumnDef) {
-	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(columnNameToColumnDef)
-	}
-	t[tableName][columnName] = colDef
-}
-
-func (t tableNewColumn) get(tableName, columnName string) (colDef *ast.ColumnDef, ok bool) {
-	if _, ok := t[tableName]; !ok {
-		return nil, false
-	}
-	col, ok := t[tableName][columnName]
-	return col, ok
-}
-
-func (t tableNewColumn) delete(tableName, columnName string) {
-	if _, ok := t[tableName]; !ok {
-		return
-	}
-	delete(t[tableName], columnName)
-}
-
 func needDefault(column *ast.ColumnDef) bool {
 	for _, option := range column.Options {
 		switch option.Tp {
@@ -298,6 +270,18 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 		}
 	}
 	return false
+}
+
+// omniDataTypeNameCompact returns a compact, lowercase type-name string
+// for use in advice content + allowlist comparisons. Mirrors the mysql
+// helper of the same name (mysql/utils_omni.go). Length/scale info is
+// intentionally omitted — pingcap's `tidbparser.TypeString` and the
+// canonical fixture rendering both elide it (e.g. `varchar(5)` → "varchar").
+func omniDataTypeNameCompact(dt *omniast.DataType) string {
+	if dt == nil {
+		return ""
+	}
+	return strings.ToLower(dt.Name)
 }
 
 // addColumnTargets returns the column definitions added by an ATAddColumn
