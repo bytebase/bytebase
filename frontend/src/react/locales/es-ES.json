@@ -1422,7 +1422,6 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
-      "ddl-warning": "Si se aprueba, en {{environments}}, las sentencias {{kind}} podrán ejecutarse directamente en el editor SQL sin aprobación adicional.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",

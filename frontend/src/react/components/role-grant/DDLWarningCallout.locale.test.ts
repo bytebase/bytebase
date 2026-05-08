@@ -40,15 +40,6 @@ describe("DDLWarningCallout locale strings", () => {
         expect(value).toBeDefined();
         expect(value).toContain("{{kind}}");
       });
-
-      test("issue.role-grant.ddl-warning contains both {{kind}} and {{environments}}", () => {
-        const value = (
-          data.issue["role-grant"] as unknown as Record<string, string>
-        )["ddl-warning"];
-        expect(value).toBeDefined();
-        expect(value).toContain("{{kind}}");
-        expect(value).toContain("{{environments}}");
-      });
     });
   }
 });

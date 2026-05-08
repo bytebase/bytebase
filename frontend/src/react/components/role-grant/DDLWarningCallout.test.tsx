@@ -20,19 +20,6 @@ describe("DDLWarningCallout", () => {
     );
   });
 
-  test("issue variant renders issue.role-grant.ddl-warning with environments", () => {
-    render(
-      <DDLWarningCallout
-        type="issue"
-        kind="DDL"
-        environments={["Prod", "Test"]}
-      />
-    );
-    const node = screen.getByText(/issue.role-grant.ddl-warning/);
-    expect(node).toHaveTextContent("DDL");
-    expect(node).toHaveTextContent("Prod, Test");
-  });
-
   test("binding-some renders ddl-current-some copy", () => {
     render(<DDLWarningCallout type="binding-some" kind="DML" />);
     expect(
@@ -63,13 +50,11 @@ describe("DDLWarningCallout", () => {
 
 const _typeChecks = () => {
   // biome-ignore format: keep @ts-expect-error directive aligned with JSX line
-  // @ts-expect-error — `binding-all` does not accept `environments`.
+  // @ts-expect-error — `binding-all` does not accept extra props.
   const _a = <DDLWarningCallout type="binding-all" kind="DDL" environments={["x"]} />;
-  // @ts-expect-error — `issue` requires `environments`.
-  const _b = <DDLWarningCallout type="issue" kind="DDL" />;
   // biome-ignore format: keep @ts-expect-error directive aligned with JSX line
-  // @ts-expect-error — `drawer` does not accept `environments`.
-  const _c = <DDLWarningCallout type="drawer" kind="DDL" environments={["x"]} />;
-  return [_a, _b, _c];
+  // @ts-expect-error — `drawer` does not accept extra props.
+  const _b = <DDLWarningCallout type="drawer" kind="DDL" environments={["x"]} />;
+  return [_a, _b];
 };
 void _typeChecks;

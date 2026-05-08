@@ -1430,7 +1430,6 @@
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
       "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
-      "ddl-warning": "If approved, in {{environments}}, {{kind}} statements can be directly run in SQL Editor without further approval.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",

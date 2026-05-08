@@ -120,11 +120,12 @@ describe("IssueDetailRoleGrantDetails", () => {
       },
     };
     render(<IssueDetailRoleGrantDetails />);
-    const warning = await screen.findByText(/issue.role-grant.ddl-warning/);
-    expect(warning).toBeInTheDocument();
-    expect(warning.textContent).toContain("Prod");
-    expect(warning.textContent).toContain("Test");
+    expect(
+      await screen.findByText(/project.members.ddl-current-some/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/common.environments/)).toBeInTheDocument();
+    // Env titles render as plain text inside the env section.
+    expect(screen.getByText("Prod, Test")).toBeInTheDocument();
   });
 
   test("hides warning + env row when role has DDL/DML but condition has no environments", async () => {
@@ -138,7 +139,7 @@ describe("IssueDetailRoleGrantDetails", () => {
     };
     render(<IssueDetailRoleGrantDetails />);
     expect(
-      screen.queryByText(/issue.role-grant.ddl-warning/)
+      screen.queryByText(/project.members.ddl-current-some/)
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
   });
@@ -154,7 +155,7 @@ describe("IssueDetailRoleGrantDetails", () => {
     };
     render(<IssueDetailRoleGrantDetails />);
     expect(
-      screen.queryByText(/issue.role-grant.ddl-warning/)
+      screen.queryByText(/project.members.ddl-current-some/)
     ).not.toBeInTheDocument();
   });
 
@@ -169,7 +170,7 @@ describe("IssueDetailRoleGrantDetails", () => {
     };
     render(<IssueDetailRoleGrantDetails />);
     expect(
-      screen.queryByText(/issue.role-grant.ddl-warning/)
+      screen.queryByText(/project.members.ddl-current-some/)
     ).not.toBeInTheDocument();
   });
 
@@ -183,10 +184,7 @@ describe("IssueDetailRoleGrantDetails", () => {
       },
     };
     const { rerender } = render(<IssueDetailRoleGrantDetails />);
-    await screen.findByText(/issue.role-grant.ddl-warning/);
-    expect(
-      screen.getByText(/issue.role-grant.ddl-warning/).textContent
-    ).toContain("Prod");
+    expect(await screen.findByText("Prod")).toBeInTheDocument();
 
     mockContextRef.current = {
       issue: {
@@ -198,20 +196,12 @@ describe("IssueDetailRoleGrantDetails", () => {
     };
     rerender(<IssueDetailRoleGrantDetails />);
 
-    // Without the synchronous clear, stale "Prod" leaks into the warning
-    // until the async CEL parse for "test" resolves. Right after rerender
-    // the warning must either be hidden or already updated — never stale.
-    const syncWarning = screen.queryByText(/issue.role-grant.ddl-warning/);
-    if (syncWarning) {
-      expect(syncWarning.textContent).not.toContain("Prod");
-    }
+    // Without the synchronous setCondition(undefined), stale "Prod" leaks
+    // into the env row until the async CEL parse for "test" resolves.
+    expect(screen.queryByText("Prod")).not.toBeInTheDocument();
 
-    await screen.findByText(/Test/);
-    expect(
-      screen.getByText(/issue.role-grant.ddl-warning/).textContent
-    ).toContain("Test");
-    expect(
-      screen.getByText(/issue.role-grant.ddl-warning/).textContent
-    ).not.toContain("Prod");
+    // After the new parse, "Test" shows; "Prod" stays absent.
+    expect(await screen.findByText("Test")).toBeInTheDocument();
+    expect(screen.queryByText("Prod")).not.toBeInTheDocument();
   });
 });

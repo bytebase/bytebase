@@ -2,7 +2,6 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import {
   Table,
@@ -87,14 +86,6 @@ export function IssueDetailRoleGrantDetails() {
       <h3 className="text-base font-medium">{t("issue.role-grant.details")}</h3>
 
       <div className="flex flex-col gap-y-4 rounded-sm border p-4">
-        {envKind && envNames.length > 0 && (
-          <DDLWarningCallout
-            type="issue"
-            kind={envKind}
-            environments={envTitles}
-          />
-        )}
-
         {requestRoleName && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">{t("role.self")}</span>
@@ -122,15 +113,10 @@ export function IssueDetailRoleGrantDetails() {
             <span className="text-sm text-control-light">
               {t("common.environments")}
             </span>
-            <div className="flex flex-wrap gap-1">
-              {envNames.map((env) => (
-                <EnvironmentLabel
-                  key={env}
-                  environmentName={env}
-                  className="text-xs"
-                />
-              ))}
-            </div>
+            <div className="text-base">{envTitles.join(", ")}</div>
+            {envKind && (
+              <DDLWarningCallout type="binding-some" kind={envKind} />
+            )}
           </div>
         )}
 

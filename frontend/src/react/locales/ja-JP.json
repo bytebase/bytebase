@@ -1422,7 +1422,6 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
-      "ddl-warning": "承認された場合、{{environments}} で {{kind}} ステートメントを SQL エディターで追加の承認なしに直接実行できます。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手動選択",

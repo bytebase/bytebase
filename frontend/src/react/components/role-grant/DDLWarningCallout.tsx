@@ -4,7 +4,6 @@ import { Alert } from "@/react/components/ui/alert";
 
 type DDLWarningProps =
   | { type: "drawer"; kind: EnvLimitationKind }
-  | { type: "issue"; kind: EnvLimitationKind; environments: string[] }
   | { type: "binding-some"; kind: EnvLimitationKind }
   | { type: "binding-all"; kind: EnvLimitationKind }
   | { type: "binding-none"; kind: EnvLimitationKind };
@@ -16,15 +15,6 @@ export function DDLWarningCallout(props: DDLWarningProps) {
       return (
         <Alert variant="warning">
           {t("project.members.ddl-warning", { kind: props.kind })}
-        </Alert>
-      );
-    case "issue":
-      return (
-        <Alert variant="warning">
-          {t("issue.role-grant.ddl-warning", {
-            kind: props.kind,
-            environments: props.environments.join(", "),
-          })}
         </Alert>
       );
     case "binding-some":

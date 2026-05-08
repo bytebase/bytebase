@@ -1422,7 +1422,6 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
-      "ddl-warning": "若审批通过，在 {{environments}} 中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需进一步审批。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手动选择",
