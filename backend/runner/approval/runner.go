@@ -46,6 +46,17 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	slog.Debug("Approval runner started (event-driven)")
 
+	// One-shot startup pass: re-evaluate any non-DATABASE_CHANGE issues
+	// whose approval finding never completed. The synchronous path in
+	// `postCreateIssue` swallows errors (e.g. CEL evaluation failure
+	// against a malformed rule), leaving `ApprovalFindingDone=false`
+	// permanently — the frontend then shows "Generating approval flow..."
+	// indefinitely. Once the operator fixes the offending workspace
+	// approval rule and restarts the backend, this pass picks the issues
+	// up and resolves them. DATABASE_CHANGE issues are excluded because
+	// they retry naturally via the bus channel after plan checks finish.
+	r.retryStuckApprovalFinding(ctx)
+
 	for {
 		select {
 		case ref := <-r.bus.ApprovalCheckChan:
@@ -58,6 +69,84 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
+}
+
+// retryStuckApprovalFinding finds every ACCESS_GRANT / ROLE_GRANT /
+// DATABASE_EXPORT issue with `ApprovalFindingDone=false` (open issues
+// only) and re-runs `FindAndApplyApprovalTemplate` against it. Errors
+// for individual issues are logged and otherwise ignored — a stuck
+// issue staying stuck is a degraded state but not worth aborting the
+// runner for.
+func (r *Runner) retryStuckApprovalFinding(ctx context.Context) {
+	slog.Info("Approval startup retry: scanning for stuck issues")
+
+	if err := r.licenseService.CheckReplicaLimit(ctx); err != nil {
+		slog.Warn("Approval startup retry skipped due to HA license restriction", log.BBError(err))
+		return
+	}
+
+	workspaces, err := r.store.ListWorkspaces(ctx)
+	if err != nil {
+		slog.Error("Approval startup retry: failed to list workspaces", log.BBError(err))
+		return
+	}
+	slog.Info("Approval startup retry: workspace scan",
+		slog.Int("workspace_count", len(workspaces)))
+	if len(workspaces) == 0 {
+		return
+	}
+
+	types := []storepb.Issue_Type{
+		storepb.Issue_ACCESS_GRANT,
+		storepb.Issue_ROLE_GRANT,
+		storepb.Issue_DATABASE_EXPORT,
+	}
+	openOnly := []storepb.Issue_Status{storepb.Issue_OPEN}
+
+	var listed, retried, healed, failed int
+	for _, workspace := range workspaces {
+		setting, err := r.store.GetWorkspaceApprovalSetting(ctx, workspace.ResourceID)
+		if err != nil {
+			slog.Error("Approval startup retry: failed to load approval setting",
+				slog.String("workspace", workspace.ResourceID), log.BBError(err))
+			continue
+		}
+
+		// Empty `ProjectIDs` ⇒ all projects in this workspace.
+		issues, err := r.store.ListIssues(ctx, &store.FindIssueMessage{
+			Workspace:  workspace.ResourceID,
+			Types:      &types,
+			StatusList: openOnly,
+		})
+		if err != nil {
+			slog.Error("Approval startup retry: failed to list issues",
+				slog.String("workspace", workspace.ResourceID), log.BBError(err))
+			continue
+		}
+		listed += len(issues)
+		for _, issue := range issues {
+			if issue.Payload.GetApproval().GetApprovalFindingDone() {
+				continue
+			}
+			retried++
+			if err := findApprovalTemplateForIssue(ctx, r.store, r.webhookManager, r.licenseService, issue, setting); err != nil {
+				failed++
+				slog.Error("Approval startup retry: still failing",
+					slog.String("project", issue.ProjectID),
+					slog.Int64("issue_uid", issue.UID),
+					slog.String("issue_title", issue.Title),
+					log.BBError(err))
+				continue
+			}
+			healed++
+		}
+	}
+	slog.Info("Approval startup retry complete",
+		slog.Int("workspaces", len(workspaces)),
+		slog.Int("listed_open_issues", listed),
+		slog.Int("attempted", retried),
+		slog.Int("healed", healed),
+		slog.Int("still_failing", failed))
 }
 
 // FindAndApplyApprovalTemplate finds and applies the approval template for an issue.

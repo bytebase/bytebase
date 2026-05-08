@@ -1016,6 +1016,16 @@ function ValueInput({
   }
 
   const isNumberValue = isNumberFactor(factor);
+  const isBooleanValue = isBooleanFactor(factor);
+
+  const getBooleanValue = (): boolean =>
+    typeof expr.args[1] === "boolean" ? (expr.args[1] as boolean) : true;
+  const setBooleanValue = (v: boolean) => {
+    doUpdate((group) => {
+      const cond = group.args[operandIndex] as ConditionExpr;
+      (cond.args as unknown[])[1] = v;
+    });
+  };
 
   // Reset value when factor or operator changes
   const prevRef = useRef({ factor, operator });
@@ -1093,6 +1103,29 @@ function ValueInput({
         />
       );
     }
+    if (isBooleanValue) {
+      // BooleanFactors (e.g. `request.unmask`) need a boolean value;
+      // the default text input would store a string and trip
+      // `validateSimpleExpr`'s `typeof value === "boolean"` check,
+      // leaving the parent form's submit button permanently disabled.
+      return (
+        <Select
+          value={String(getBooleanValue())}
+          disabled={readonly}
+          onValueChange={(val) => {
+            if (val != null) setBooleanValue(val === "true");
+          }}
+        >
+          <SelectTrigger className="min-w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">true</SelectItem>
+            <SelectItem value="false">false</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+    }
     return (
       <Input
         size="sm"
@@ -1117,12 +1150,19 @@ function ValueInput({
         />
       );
     }
+    // BooleanFactors (e.g. `request.unmask`) ship a [true,false] options
+    // list with string-typed values. The Select stores whatever the user
+    // picks via `setStringValue`, but `validateSimpleExpr` requires
+    // `typeof value === "boolean"` for the equality arm — so without
+    // this conversion the parent form's submit button stays disabled.
     return (
       <Select
-        value={getStringValue()}
+        value={isBooleanValue ? String(getBooleanValue()) : getStringValue()}
         disabled={readonly}
         onValueChange={(val) => {
-          if (val != null) setStringValue(val);
+          if (val == null) return;
+          if (isBooleanValue) setBooleanValue(val === "true");
+          else setStringValue(val);
         }}
       >
         <SelectTrigger className="min-w-28">
