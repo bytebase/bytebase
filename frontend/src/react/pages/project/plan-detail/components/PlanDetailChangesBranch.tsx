@@ -1144,9 +1144,8 @@ function TargetsSection({
             )}
             {targets.length > DEFAULT_VISIBLE_TARGETS && (
               <Button
-                className="h-7 px-2"
                 onClick={() => setShowAllTargetsDialog(true)}
-                size="xs"
+                size="sm"
                 type="button"
                 variant="ghost"
               >

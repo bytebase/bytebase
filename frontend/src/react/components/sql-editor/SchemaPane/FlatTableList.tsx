@@ -177,7 +177,7 @@ export function FlatTableList({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
+                    size="xs"
                     className="size-5"
                     onClick={(e) => {
                       e.stopPropagation();

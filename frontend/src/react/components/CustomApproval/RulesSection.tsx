@@ -127,16 +127,14 @@ function SortableRow({
           <div className="flex items-center gap-x-1">
             <Button
               variant="destructive"
-              size="sm"
-              className="h-6 px-2 text-xs"
+              size="xs"
               onClick={handleConfirmDelete}
             >
               {t("common.delete")}
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              className="h-6 px-2 text-xs"
+              size="xs"
               onClick={() => setConfirmingDelete(false)}
             >
               {t("common.cancel")}

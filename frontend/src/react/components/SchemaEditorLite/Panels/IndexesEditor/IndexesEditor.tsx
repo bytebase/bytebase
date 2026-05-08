@@ -113,7 +113,8 @@ export function IndexesEditor({
                 <Input
                   value={index.name}
                   disabled={isReadonly || index.primary}
-                  className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                  size="sm"
+                  className="border-none bg-transparent shadow-none focus-visible:ring-1"
                   onChange={(e) => {
                     index.name = e.target.value;
                     handleIndexChange();
@@ -137,7 +138,8 @@ export function IndexesEditor({
                 <Input
                   value={index.comment}
                   disabled={isReadonly}
-                  className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                  size="sm"
+                  className="border-none bg-transparent shadow-none focus-visible:ring-1"
                   onChange={(e) => {
                     index.comment = e.target.value;
                     handleIndexChange();

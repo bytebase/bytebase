@@ -453,7 +453,7 @@ export function IMPage() {
               {item.isConfigured && allowEdit && (
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   className="text-error hover:text-error hover:bg-error/10"
                   onClick={() => handleDelete(i, item.type)}
                 >

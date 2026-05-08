@@ -841,8 +841,8 @@ export function RolesPage() {
                         {canDelete && (
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-error hover:text-error"
+                            size="sm"
+                            className="text-error hover:text-error"
                             onClick={() => handleDeleteRole(role)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -850,8 +850,7 @@ export function RolesPage() {
                         )}
                         <Button
                           variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
+                          size="sm"
                           onClick={() => editRole(role)}
                         >
                           <Pencil className="h-4 w-4" />

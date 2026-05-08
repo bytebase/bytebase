@@ -235,7 +235,7 @@ export function SubscriptionPage({
               />
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={handleCopy}
                 title={t("common.copy")}
               >
@@ -365,11 +365,7 @@ function InstanceLicenseStats({
             <span className="font-mono text-control-light"> / </span>
             {totalLicenseCount}
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onManageInstanceLicenses}
-          >
+          <Button variant="ghost" size="sm" onClick={onManageInstanceLicenses}>
             <Pencil className="h-5 w-5" />
           </Button>
         </div>

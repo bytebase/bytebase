@@ -398,7 +398,7 @@ function SearchableSelect({
           <div className="p-1 border-b border-control-border">
             <SearchInput
               autoFocus
-              className="h-8"
+              size="sm"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -597,7 +597,7 @@ function MultiSearchableSelect({
           <div className="p-1 border-b border-control-border">
             <SearchInput
               autoFocus
-              className="h-8"
+              size="sm"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -1084,7 +1084,8 @@ function ValueInput({
       return (
         <Input
           type="number"
-          className="h-8 max-w-20"
+          size="sm"
+          className="max-w-20"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}
@@ -1094,7 +1095,8 @@ function ValueInput({
     }
     return (
       <Input
-        className="h-8 min-w-28 text-sm"
+        size="sm"
+        className="min-w-28"
         value={getStringValue()}
         disabled={readonly}
         onChange={(e) => setStringValue(e.target.value)}
@@ -1419,7 +1421,7 @@ function ConditionGroup({
                   });
                 }}
               >
-                <SelectTrigger className="shrink-0 px-2">
+                <SelectTrigger size="sm" className="shrink-0">
                   <SelectValue>
                     {(value: string | null) =>
                       value ? logicalLabel(value) : null

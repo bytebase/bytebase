@@ -75,7 +75,7 @@ interface DataExportButtonProps {
 }
 
 const SIZE_TO_BUTTON: Record<Size, ButtonProps["size"]> = {
-  tiny: "icon",
+  tiny: "xs",
   sm: "sm",
   md: "default",
   lg: "lg",

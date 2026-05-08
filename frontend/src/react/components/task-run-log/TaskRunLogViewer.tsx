@@ -260,7 +260,7 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 gap-x-1 px-2 text-xs text-gray-600 hover:text-gray-900"
+              className="gap-x-1 text-control-light hover:text-control"
               onClick={toggleExpandAll}
             >
               {areAllExpanded ? (

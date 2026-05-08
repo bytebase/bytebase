@@ -192,8 +192,8 @@ function WorkloadIdentityTable({
                         >
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-error hover:text-error"
+                            size="sm"
+                            className="text-error hover:text-error"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeactivate(user);
@@ -211,8 +211,7 @@ function WorkloadIdentityTable({
                         >
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
+                            size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRestore(user);
