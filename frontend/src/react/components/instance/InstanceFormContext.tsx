@@ -156,6 +156,26 @@ export function InstanceFormProvider({
   const [labelErrors, setLabelErrors] = useState<string[]>([]);
   const [showConnectionOptionsEvent, setShowConnectionOptionsEvent] =
     useState(0);
+  const syncedInstanceNameRef = useRef(instance?.name);
+
+  useEffect(() => {
+    if (syncedInstanceNameRef.current === instance?.name) {
+      return;
+    }
+
+    syncedInstanceNameRef.current = instance?.name;
+    const nextBasicInfo = extractBasicInfo(instance);
+    const nextDataSourceEditState = extractDataSourceEditState(instance);
+    setBasicInfo(nextBasicInfo);
+    setLabelKVList(convertLabelsToKVList(nextBasicInfo.labels, true));
+    setDataSourceEditState(nextDataSourceEditState);
+    setState((prev) => ({
+      ...prev,
+      editingDataSourceId: nextDataSourceEditState.editingDataSourceId,
+    }));
+    setLabelErrors([]);
+    setMissingFeature(undefined);
+  }, [instance]);
 
   const emitShowConnectionOptions = useCallback(() => {
     setShowConnectionOptionsEvent((prev) => prev + 1);
