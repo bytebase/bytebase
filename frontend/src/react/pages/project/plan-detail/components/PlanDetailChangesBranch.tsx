@@ -82,6 +82,7 @@ import {
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -116,7 +117,10 @@ import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
 } from "../utils/options";
-import { planCheckRunListForSpec } from "../utils/planCheck";
+import {
+  planCheckRunListForSpec,
+  transformReleaseCheckResultsToPlanCheckRuns,
+} from "../utils/planCheck";
 import { getSelectedSpec, getSpecTitle } from "../utils/spec";
 import { updateSpecSheetWithStatement } from "../utils/specMutation";
 import {
@@ -177,6 +181,9 @@ export function PlanDetailChangesBranch({
   const [draftCheckRunsBySpecId, setDraftCheckRunsBySpecId] = useState<
     Record<string, PlanCheckRun[]>
   >({});
+  const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
+    Record<string, CheckReleaseResponse_CheckResult[] | undefined>
+  >({});
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const specs = page.plan.specs ?? [];
   const selectedSpec = useMemo(() => {
@@ -223,6 +230,16 @@ export function PlanDetailChangesBranch({
     [page.isCreating, page.plan, patchState]
   );
 
+  const selectSpec = useCallback(
+    (specId: string) => {
+      onSelectedSpecIdChange(specId);
+      if (!page.isCreating) {
+        void pushSpecDetailRoute(page.projectId, page.planId, specId);
+      }
+    },
+    [onSelectedSpecIdChange, page.isCreating, page.planId, page.projectId]
+  );
+
   const handleSpecCreate = async (targets: string[]) => {
     try {
       const sheetUID = getNextLocalSheetUID();
@@ -252,8 +269,7 @@ export function PlanDetailChangesBranch({
       }
 
       await commitSpecs([...page.plan.specs, spec]);
-      onSelectedSpecIdChange(spec.id);
-      void pushSpecDetailRoute(page.projectId, page.planId, spec.id);
+      selectSpec(spec.id);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -283,8 +299,7 @@ export function PlanDetailChangesBranch({
     try {
       await commitSpecs(nextSpecs);
       if (fallbackSpec) {
-        onSelectedSpecIdChange(fallbackSpec.id);
-        void pushSpecDetailRoute(page.projectId, page.planId, fallbackSpec.id);
+        selectSpec(fallbackSpec.id);
       }
       pushNotification({
         module: "bytebase",
@@ -337,6 +352,26 @@ export function PlanDetailChangesBranch({
       onSelectedSpecIdChange(selectedSpec.id);
     }
   }, [onSelectedSpecIdChange, selectedSpec, selectedSpecId]);
+
+  const selectedSpecIdForDraftChecks = selectedSpec?.id;
+  const handleDraftCheckResultsChange = useCallback(
+    (results: CheckReleaseResponse_CheckResult[] | undefined) => {
+      if (!selectedSpecIdForDraftChecks) return;
+      setDraftCheckResultsBySpecId((prev) => {
+        if (prev[selectedSpecIdForDraftChecks] === results) return prev;
+        return {
+          ...prev,
+          [selectedSpecIdForDraftChecks]: results,
+        };
+      });
+      setDraftCheckRunsBySpecId((prev) => ({
+        ...prev,
+        [selectedSpecIdForDraftChecks]:
+          transformReleaseCheckResultsToPlanCheckRuns(results ?? []),
+      }));
+    },
+    [selectedSpecIdForDraftChecks]
+  );
 
   if (!selectedSpec) {
     return (
@@ -398,8 +433,7 @@ export function PlanDetailChangesBranch({
                 ) : undefined
               }
               onSelect={() => {
-                onSelectedSpecIdChange(spec.id);
-                void pushSpecDetailRoute(page.projectId, page.planId, spec.id);
+                selectSpec(spec.id);
               }}
               selected={isSelected}
             >
@@ -441,13 +475,10 @@ export function PlanDetailChangesBranch({
             (page.isCreating ? (
               selectedSpec.config.case === "changeDatabaseConfig" ? (
                 <PlanDetailDraftChecks
+                  key={selectedSpec.id}
+                  checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
+                  onCheckResultsChange={handleDraftCheckResultsChange}
                   selectedSpec={selectedSpec}
-                  onPlanCheckRunsChange={(runs) =>
-                    setDraftCheckRunsBySpecId((prev) => ({
-                      ...prev,
-                      [selectedSpec.id]: runs,
-                    }))
-                  }
                 />
               ) : null
             ) : (
@@ -1215,12 +1246,14 @@ function TargetSelectorSheet({
   const [selectedDatabaseGroup, setSelectedDatabaseGroup] = useState<
     string | undefined
   >();
+  const currentTargetsKey = currentTargets.join("\0");
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    const firstTarget = currentTargets[0];
+    const targets = currentTargetsKey ? currentTargetsKey.split("\0") : [];
+    const firstTarget = targets[0];
     if (firstTarget && isValidDatabaseGroupName(firstTarget)) {
       setChangeSource("GROUP");
       setSelectedDatabaseGroup(firstTarget);
@@ -1228,9 +1261,9 @@ function TargetSelectorSheet({
       return;
     }
     setChangeSource("DATABASE");
-    setSelectedDatabaseNames(new Set(currentTargets));
+    setSelectedDatabaseNames(new Set(targets));
     setSelectedDatabaseGroup(undefined);
-  }, [currentTargets, open]);
+  }, [currentTargetsKey, open]);
 
   const canSubmit =
     changeSource === "DATABASE"

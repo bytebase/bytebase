@@ -246,3 +246,48 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 	require.Contains(t, advices[0].Content, "meet internal error",
 		"content shape preserved from pre-extraction inline form")
 }
+
+// TestOmniColumnHasComment_PresentAbsentDistinction pins the structural
+// contract that omniColumnHasComment uses to distinguish "no COMMENT
+// clause" from `COMMENT ”` (deliberately empty). Both produce
+// `ColumnDef.Comment == ""`, so the value field alone is ambiguous; the
+// signal lives in `Constraints[ColConstrComment]`. If a future omni
+// parser change stops emitting the marker for the empty-explicit form,
+// the column-comment-required check would silently treat
+// deliberately-empty comments as missing. This test catches that.
+//
+// Per peer review on PR #20217 — "the structural-marker contract is
+// plausible but unverified for COMMENT ” specifically". Pin it.
+func TestOmniColumnHasComment_PresentAbsentDistinction(t *testing.T) {
+	// Case 1: no COMMENT clause at all → omniColumnHasComment returns false.
+	noCommentCol := &omniast.ColumnDef{
+		Name:        "c",
+		Comment:     "",
+		Constraints: nil,
+	}
+	require.False(t, omniColumnHasComment(noCommentCol),
+		"absent COMMENT clause: no ColConstrComment marker, omniColumnHasComment must return false")
+
+	// Case 2: explicit COMMENT '' (deliberately empty) → marker present,
+	// value empty. omniColumnHasComment returns true.
+	emptyCommentCol := &omniast.ColumnDef{
+		Name:    "c",
+		Comment: "",
+		Constraints: []*omniast.ColumnConstraint{
+			{Type: omniast.ColConstrComment},
+		},
+	}
+	require.True(t, omniColumnHasComment(emptyCommentCol),
+		"explicit COMMENT '' (empty value, marker present): omniColumnHasComment must return true")
+
+	// Case 3: explicit COMMENT 'something' → marker present, value populated.
+	regularCommentCol := &omniast.ColumnDef{
+		Name:    "c",
+		Comment: "hello",
+		Constraints: []*omniast.ColumnConstraint{
+			{Type: omniast.ColConstrComment},
+		},
+	}
+	require.True(t, omniColumnHasComment(regularCommentCol),
+		"explicit COMMENT with value: omniColumnHasComment must return true")
+}

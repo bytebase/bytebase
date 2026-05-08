@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { useDatabaseV1Store } from "@/store";
 import { useDBSchemaV1Store } from "@/store/modules/v1/dbSchema";
@@ -441,14 +442,16 @@ export function DatabaseResourceSelector({
                         <ChevronRight className="w-3.5 h-3.5" />
                       )}
                     </button>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       className="shrink-0"
-                      checked={dbChecked}
-                      ref={(el) => {
-                        if (el) el.indeterminate = dbIndeterminate;
-                      }}
-                      onChange={() => toggleDatabase(db)}
+                      checked={
+                        dbChecked
+                          ? true
+                          : dbIndeterminate
+                            ? "indeterminate"
+                            : false
+                      }
+                      onCheckedChange={() => toggleDatabase(db)}
                     />
                     {envName && (
                       <EnvironmentLabel
@@ -528,15 +531,16 @@ export function DatabaseResourceSelector({
                                       <ChevronRight className="w-3.5 h-3.5" />
                                     )}
                                   </button>
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox
                                     className="shrink-0"
-                                    checked={schemaChecked}
-                                    ref={(el) => {
-                                      if (el)
-                                        el.indeterminate = schemaIndeterminate;
-                                    }}
-                                    onChange={() =>
+                                    checked={
+                                      schemaChecked
+                                        ? true
+                                        : schemaIndeterminate
+                                          ? "indeterminate"
+                                          : false
+                                    }
+                                    onCheckedChange={() =>
                                       toggleSchema(db.name, schema.name)
                                     }
                                   />
@@ -630,11 +634,10 @@ function TableRow({
   return (
     <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-gray-50">
       <span className="shrink-0 w-4" />
-      <input
-        type="checkbox"
+      <Checkbox
         className="shrink-0"
         checked={checked}
-        onChange={onChange}
+        onCheckedChange={() => onChange()}
       />
       <Table2 className="w-3.5 h-3.5 text-control-light shrink-0" />
       <span className="text-sm truncate">{tableName}</span>

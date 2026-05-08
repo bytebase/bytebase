@@ -44,3 +44,82 @@
         line: 1
         column: 0
       endposition: null
+# LIKE matrix pins (added with the omni Recipe B migration). Per pingcap
+# parity, NOT LIKE with leading `%` triggers (advisor doesn't gate on
+# the Not flag); ESCAPE clause doesn't affect the pattern check; only
+# `%` is the wildcard (`_` is not flagged); non-string-literal patterns
+# silently skip (parameter `?` doesn't trigger because pingcap restored
+# it as `?`, omni skips because pattern is not *StringLit). UNION arms
+# are walked by omni's Walk per the cumulative shape-divergence table
+# item #5.
+- statement: SELECT * FROM t WHERE a NOT LIKE '%abc'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a NOT LIKE ''%abc''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM t WHERE a LIKE '%abc' ESCAPE '\\'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a LIKE ''%abc'' ESCAPE ''\\''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM t WHERE a LIKE '_abc'
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE 'abc'
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE ?
+  changeType: 1
+- statement: SELECT * FROM t WHERE a LIKE 'foo' UNION SELECT * FROM u WHERE a LIKE '%bar'
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a LIKE ''foo'' UNION SELECT * FROM u WHERE a LIKE ''%bar''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative shape divergence #11 (Codex P1 catch on PR #20211):
+# omni wraps `'%abc' COLLATE utf8mb4_bin` as *CollateExpr{Expr: *StringLit};
+# pingcap rendered *SetCollationExpr to text as "%abc COLLATE utf8mb4_bin"
+# (value first), so the leading-`%` check accidentally fired. The omni
+# port unwraps CollateExpr before the StringLit type-assert to preserve
+# pingcap behavior. Both fixtures pin the contract: leading-`%` with
+# COLLATE triggers; non-leading with COLLATE doesn't.
+- statement: SELECT * FROM t WHERE a LIKE '%abc' COLLATE utf8mb4_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT * FROM t WHERE a LIKE ''%abc'' COLLATE utf8mb4_bin" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM t WHERE a LIKE 'abc' COLLATE utf8mb4_bin
+  changeType: 1
+# Cumulative shape divergence #12 (peer-review preempt; empirically NOT
+# a regression). LIKE ('%abc') wraps the literal in parens. Pingcap
+# parses Pattern as *ast.ParenthesesExpr; restoreNode renders as
+# "(%abc)" (parens preserved), so pattern[0] == '(' and pingcap does
+# NOT trigger. Omni parses Pattern as *ast.ParenExpr{Expr: *StringLit};
+# the StringLit type-assert fails, silently skips. Same outcome via
+# different mechanisms — no divergence. DO NOT add ParenExpr to the
+# CollateExpr unwrap loop; doing so would make omni start triggering
+# on a case pingcap doesn't, introducing a real regression. This
+# fixture pins the non-trigger contract.
+- statement: SELECT * FROM t WHERE a LIKE ('%abc')
+  changeType: 1

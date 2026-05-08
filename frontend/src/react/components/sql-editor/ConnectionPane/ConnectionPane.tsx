@@ -1069,7 +1069,15 @@ function TreeRow({
         selected && "bg-accent/10"
       )}
       data-node-key={node.key}
-      onClick={onClick}
+      // Use `onMouseUp` instead of `onClick` for the row activation. Safari
+      // drops the synthesized `click` event when `mousedown` and `mouseup`
+      // resolve to different inner elements (the chevron / engine icon /
+      // text span). `mouseup` always fires regardless, so we drive the
+      // selection from there, gated to the primary button.
+      onMouseUp={(e) => {
+        if (e.button !== 0) return;
+        onClick(e);
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onContextMenu={(e) => {

@@ -252,14 +252,14 @@ export function ProjectPlanDetailPage({
   }, [page.isCreating, page.issue, page.rollout, t]);
 
   useEffect(() => {
-    if (specId) {
+    if (!page.isCreating && specId) {
       setSelectedSpecId(specId);
       return;
     }
     if (!selectedSpecId && page.plan.specs.length > 0) {
       setSelectedSpecId(page.plan.specs[0].id);
     }
-  }, [page.plan.specs, selectedSpecId, specId]);
+  }, [page.isCreating, page.plan.specs, selectedSpecId, specId]);
 
   return (
     <PlanDetailProvider value={page}>

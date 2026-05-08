@@ -260,7 +260,7 @@ export function PasswordResetPage() {
               className="accent-link bg-white px-2"
               onClick={(e) => {
                 e.preventDefault();
-                router.push({ name: AUTH_SIGNIN_MODULE, query });
+                router.push({ name: AUTH_SIGNIN_MODULE });
               }}
             >
               {t("auth.password-forget.return-to-sign-in")}

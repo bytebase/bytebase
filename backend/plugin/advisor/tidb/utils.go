@@ -184,6 +184,139 @@ func (s OmniStmt) FirstTokenLine() int {
 	return s.AbsoluteLine(0)
 }
 
+// AST-shape accessors for omni TableOption / DatabaseOption / ColumnDef.
+//
+// Cumulative shape divergence #14: omni replaces pingcap's
+// `{Tp: enum, StrValue}` model with `{Name: "CANONICAL KEYWORD", Value}`
+// for both Table and Database options. omni normalizes Name to uppercase
+// regardless of user case, but EqualFold is used here for safety. These
+// accessors centralize the lookup so future advisors don't repeat the
+// shape-aware logic.
+
+// omni preserves the user's keyword form on TableOption.Name and
+// DatabaseOption.Name — CHARSET and CHARACTER SET are NOT canonicalized
+// to a single form. Pingcap canonicalized at the enum level (both
+// produced TableOptionCharset / DatabaseOptionCharset). Accessors below
+// take a name-set and match any of them, EqualFold-style. Helps batch
+// authors avoid the silent-regression failure mode where mechanically
+// using only the canonical name misses the shorthand form.
+var (
+	omniOptionNamesCharset = []string{"CHARACTER SET", "CHARSET"}
+	omniOptionNamesCollate = []string{"COLLATE"}
+	omniOptionNamesComment = []string{"COMMENT"}
+)
+
+// omniDatabaseOption returns the lowercased value of the first option
+// whose Name matches any in `names` (case-insensitive), or "" if none
+// match. For case-insensitive identifiers (charset/collation names);
+// user-content values like COMMENT should use *Present variants.
+func omniDatabaseOption(opts []*omniast.DatabaseOption, names []string) string {
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		for _, name := range names {
+			if strings.EqualFold(opt.Name, name) {
+				return strings.ToLower(opt.Value)
+			}
+		}
+	}
+	return ""
+}
+
+// omniTableOption returns the lowercased value of the first option whose
+// Name matches any in `names` (case-insensitive), or "" if none match.
+// Case-insensitive-identifier semantics (see omniDatabaseOption).
+func omniTableOption(opts []*omniast.TableOption, names []string) string {
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		for _, name := range names {
+			if strings.EqualFold(opt.Name, name) {
+				return strings.ToLower(opt.Value)
+			}
+		}
+	}
+	return ""
+}
+
+// omniTableOptionPresent reports whether any option whose Name matches
+// any in `names` is in the slice; returns its raw value (case preserved —
+// user content). Distinguishes "no clause" from "clause with empty value"
+// (e.g. COMMENT ”).
+func omniTableOptionPresent(opts []*omniast.TableOption, names []string) (string, bool) {
+	for _, opt := range opts {
+		if opt == nil {
+			continue
+		}
+		for _, name := range names {
+			if strings.EqualFold(opt.Name, name) {
+				return opt.Value, true
+			}
+		}
+	}
+	return "", false
+}
+
+// omniOptionNameMatches reports whether `optName` (case-insensitively)
+// matches any name in `names`. Used for single-option checks where the
+// option is already plucked from a slice (e.g. AlterTableCmd.Option).
+func omniOptionNameMatches(optName string, names []string) bool {
+	for _, n := range names {
+		if strings.EqualFold(optName, n) {
+			return true
+		}
+	}
+	return false
+}
+
+// omniColumnCharset returns the column-level CHARACTER SET (lowercased)
+// from ColumnDef.TypeName.Charset. Empty if no clause.
+func omniColumnCharset(col *omniast.ColumnDef) string {
+	if col == nil || col.TypeName == nil {
+		return ""
+	}
+	return strings.ToLower(col.TypeName.Charset)
+}
+
+// omniColumnCollate returns the column-level COLLATE (lowercased) from
+// ColumnDef.TypeName.Collate. Empty if no clause. Note: omni stores
+// column-level COLLATE on the DataType, NOT in Constraints[] — the
+// ColConstrCollate enum value exists but isn't populated by the parser
+// for this form.
+func omniColumnCollate(col *omniast.ColumnDef) string {
+	if col == nil || col.TypeName == nil {
+		return ""
+	}
+	return strings.ToLower(col.TypeName.Collate)
+}
+
+// omniColumnHasComment reports whether the column has a COMMENT clause.
+// The value is in col.Comment, but the "clause was written" signal lives
+// in Constraints[] as ColConstrComment — needed to distinguish
+// "COMMENT ”" (present, empty) from no COMMENT clause at all.
+func omniColumnHasComment(col *omniast.ColumnDef) bool {
+	if col == nil {
+		return false
+	}
+	for _, c := range col.Constraints {
+		if c != nil && c.Type == omniast.ColConstrComment {
+			return true
+		}
+	}
+	return false
+}
+
+// getColumnCharset returns lowercased CHARACTER SET of a pingcap-AST
+// column. Moved here from advisor_charset_allowlist.go during its omni
+// migration; still consumed by advisor_column_disallow_set_charset.go
+// (un-migrated). Delete when that advisor migrates.
+// Tracked: https://linear.app/bytebase/issue/BYT-9412
+func getColumnCharset(column *ast.ColumnDef) string {
+	return strings.ToLower(column.Tp.GetCharset())
+}
+
 // addColumnTargets returns the column definitions added by an ATAddColumn
 // cmd. omni populates either cmd.Columns (multi-column ADD COLUMN (...))
 // or cmd.Column (single ADD COLUMN); read both defensively.

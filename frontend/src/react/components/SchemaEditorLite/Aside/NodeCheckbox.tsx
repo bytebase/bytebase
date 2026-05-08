@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import type { SelectionContext } from "../types";
 import type {
   TreeNode,
@@ -48,21 +49,19 @@ function TableCheckbox({
 }) {
   const state = selection.getTableSelectionState(node.db, node.metadata);
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      selection.updateTableSelection(node.db, node.metadata, e.target.checked);
+    (checked: boolean) => {
+      selection.updateTableSelection(node.db, node.metadata, checked);
     },
     [selection, node]
   );
   return (
-    <input
-      type="checkbox"
-      checked={state.checked}
-      ref={(el) => {
-        if (el) el.indeterminate = state.indeterminate;
-      }}
-      onChange={handleChange}
+    <Checkbox
+      size="sm"
+      checked={
+        state.checked ? true : state.indeterminate ? "indeterminate" : false
+      }
+      onCheckedChange={handleChange}
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5"
     />
   );
 }
@@ -76,18 +75,19 @@ function ColumnCheckbox({
 }) {
   const state = selection.getColumnSelectionState(node.db, node.metadata);
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      selection.updateColumnSelection(node.db, node.metadata, e.target.checked);
+    (checked: boolean) => {
+      selection.updateColumnSelection(node.db, node.metadata, checked);
     },
     [selection, node]
   );
   return (
-    <input
-      type="checkbox"
-      checked={state.checked}
-      onChange={handleChange}
+    <Checkbox
+      size="sm"
+      checked={
+        state.checked ? true : state.indeterminate ? "indeterminate" : false
+      }
+      onCheckedChange={handleChange}
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5"
     />
   );
 }
@@ -101,18 +101,19 @@ function ViewCheckbox({
 }) {
   const state = selection.getViewSelectionState(node.db, node.metadata);
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      selection.updateViewSelection(node.db, node.metadata, e.target.checked);
+    (checked: boolean) => {
+      selection.updateViewSelection(node.db, node.metadata, checked);
     },
     [selection, node]
   );
   return (
-    <input
-      type="checkbox"
-      checked={state.checked}
-      onChange={handleChange}
+    <Checkbox
+      size="sm"
+      checked={
+        state.checked ? true : state.indeterminate ? "indeterminate" : false
+      }
+      onCheckedChange={handleChange}
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5"
     />
   );
 }
@@ -126,22 +127,19 @@ function ProcedureCheckbox({
 }) {
   const state = selection.getProcedureSelectionState(node.db, node.metadata);
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      selection.updateProcedureSelection(
-        node.db,
-        node.metadata,
-        e.target.checked
-      );
+    (checked: boolean) => {
+      selection.updateProcedureSelection(node.db, node.metadata, checked);
     },
     [selection, node]
   );
   return (
-    <input
-      type="checkbox"
-      checked={state.checked}
-      onChange={handleChange}
+    <Checkbox
+      size="sm"
+      checked={
+        state.checked ? true : state.indeterminate ? "indeterminate" : false
+      }
+      onCheckedChange={handleChange}
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5"
     />
   );
 }
@@ -155,22 +153,19 @@ function FunctionCheckbox({
 }) {
   const state = selection.getFunctionSelectionState(node.db, node.metadata);
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      selection.updateFunctionSelection(
-        node.db,
-        node.metadata,
-        e.target.checked
-      );
+    (checked: boolean) => {
+      selection.updateFunctionSelection(node.db, node.metadata, checked);
     },
     [selection, node]
   );
   return (
-    <input
-      type="checkbox"
-      checked={state.checked}
-      onChange={handleChange}
+    <Checkbox
+      size="sm"
+      checked={
+        state.checked ? true : state.indeterminate ? "indeterminate" : false
+      }
+      onCheckedChange={handleChange}
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5"
     />
   );
 }
@@ -195,22 +190,20 @@ function GroupCheckbox({
       tableMetas
     );
     return (
-      <input
-        type="checkbox"
-        checked={state.checked}
-        ref={(el) => {
-          if (el) el.indeterminate = state.indeterminate;
-        }}
-        onChange={(e) => {
+      <Checkbox
+        size="sm"
+        checked={
+          state.checked ? true : state.indeterminate ? "indeterminate" : false
+        }
+        onCheckedChange={(checked) => {
           selection.updateAllTablesSelection(
             node.db,
             node.metadata,
             tableMetas,
-            e.target.checked
+            checked
           );
         }}
         onClick={(e) => e.stopPropagation()}
-        className="size-3.5"
       />
     );
   }
@@ -227,22 +220,20 @@ function GroupCheckbox({
       viewMetas
     );
     return (
-      <input
-        type="checkbox"
-        checked={state.checked}
-        ref={(el) => {
-          if (el) el.indeterminate = state.indeterminate;
-        }}
-        onChange={(e) => {
+      <Checkbox
+        size="sm"
+        checked={
+          state.checked ? true : state.indeterminate ? "indeterminate" : false
+        }
+        onCheckedChange={(checked) => {
           selection.updateAllViewsSelection(
             node.db,
             node.metadata,
             viewMetas,
-            e.target.checked
+            checked
           );
         }}
         onClick={(e) => e.stopPropagation()}
-        className="size-3.5"
       />
     );
   }

@@ -96,3 +96,39 @@
         line: 2
         column: 0
       endposition: null
+# Cardinality pin (Codex P2 round-1 catch on PR #20217): single
+# ALTER TABLE → at most ONE advice. See the matching fixture in
+# system_charset_allowlist.yaml for rationale.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t COLLATE utf8mb4_polish_ci, MODIFY COLUMN a VARCHAR(10) COLLATE latin1_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: '"ALTER TABLE t COLLATE utf8mb4_polish_ci, MODIFY COLUMN a VARCHAR(10) COLLATE latin1_bin" used disabled collation ''latin1_bin'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# CONVERT TO CHARACTER SET pin (Codex P2 round-2 catch on PR #20217):
+# pingcap parsed the COLLATE clause into spec.Options as
+# Tp=TableOptionCollate; pingcap-typed advisor flagged it via
+# `case ast.AlterTableOption:`. Omni splits ATConvertCharset (Type=17)
+# from ATTableOption, with collation on cmd.NewName (charset on cmd.Name).
+# Mechanical migration matching only ATTableOption silently misses the
+# CONVERT form's collation.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE latin1_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: '"ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE latin1_bin" used disabled collation ''latin1_bin'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
