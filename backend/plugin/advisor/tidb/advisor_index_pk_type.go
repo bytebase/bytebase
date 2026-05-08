@@ -102,63 +102,17 @@ type pkData struct {
 }
 
 func (c *indexPkTypeChecker) checkStmt(ostmt OmniStmt) {
+	cb := indexFamilyCallbacks{
+		onColumn:       c.addNewColumn,
+		onConstraint:   c.addConstraint,
+		onChangeColumn: c.changeColumn,
+	}
 	var pkDataList []pkData
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		for _, column := range n.Columns {
-			if column == nil {
-				continue
-			}
-			pds := c.addNewColumn(tableName, ostmt.AbsoluteLine(column.Loc.Start), column)
-			pkDataList = append(pkDataList, pds...)
-		}
-		for _, constraint := range n.Constraints {
-			if constraint == nil {
-				continue
-			}
-			pds := c.addConstraint(tableName, ostmt.AbsoluteLine(constraint.Loc.Start), constraint)
-			pkDataList = append(pkDataList, pds...)
-		}
+		pkDataList = collectIndexFamilyCreateTable(ostmt, n, cb)
 	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATAddColumn:
-				for _, column := range addColumnTargets(cmd) {
-					pds := c.addNewColumn(tableName, stmtLine, column)
-					pkDataList = append(pkDataList, pds...)
-				}
-			case ast.ATAddConstraint:
-				if cmd.Constraint != nil {
-					pds := c.addConstraint(tableName, stmtLine, cmd.Constraint)
-					pkDataList = append(pkDataList, pds...)
-				}
-			case ast.ATChangeColumn, ast.ATModifyColumn:
-				if cmd.Column == nil {
-					continue
-				}
-				newColumnDef := cmd.Column
-				oldColumnName := newColumnDef.Name
-				if cmd.Type == ast.ATChangeColumn && cmd.Name != "" {
-					// CHANGE COLUMN: cmd.Name is the OLD column name.
-					oldColumnName = cmd.Name
-				}
-				pds := c.changeColumn(tableName, oldColumnName, stmtLine, newColumnDef)
-				pkDataList = append(pkDataList, pds...)
-			default:
-			}
-		}
+		pkDataList = collectIndexFamilyAlterTable(ostmt, n, cb)
 	default:
 		return
 	}
