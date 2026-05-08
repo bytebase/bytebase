@@ -3699,7 +3699,7 @@
   "task-run.log-type.command-execute": "Command Execute",
   "task-run.log-type.compute-diff": "Compute Diff",
   "task-run.log-type.database-sync": "Database Sync",
-  "task-run.log-type.ghost-migration": "gh-ost migration",
+  "task-run.log-type.ghost-migration": "gh-ost Migration",
   "task-run.log-type.prior-backup": "Prior Backup",
   "task-run.log-type.release-file-execute": "Release File",
   "task-run.log-type.retry": "Retry",

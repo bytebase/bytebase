@@ -3685,7 +3685,7 @@
   "task-run.log-type.command-execute": "コマンド実行",
   "task-run.log-type.compute-diff": "差分計算",
   "task-run.log-type.database-sync": "データベース同期",
-  "task-run.log-type.ghost-migration": "gh-ost migration",
+  "task-run.log-type.ghost-migration": "gh-ost Migration",
   "task-run.log-type.prior-backup": "事前のバックアップ",
   "task-run.log-type.release-file-execute": "リリースファイル",
   "task-run.log-type.retry": "リトライ",
