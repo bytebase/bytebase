@@ -89,14 +89,7 @@ export function IssueDetailRoleGrantDetails() {
   // expression that's about to resolve to binding-some/binding-none.
   const expression = issue?.roleGrant?.condition?.expression ?? "";
   const isParsing = expression !== "" && condition === undefined;
-  const envScope: "binding-all" | "binding-some" | "binding-none" | undefined =
-    !envKind || isParsing
-      ? undefined
-      : condition?.environments === undefined
-        ? "binding-all"
-        : condition.environments.length === 0
-          ? "binding-none"
-          : "binding-some";
+  const envScope = computeEnvScope(envKind, isParsing, condition?.environments);
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -128,9 +121,12 @@ export function IssueDetailRoleGrantDetails() {
         {envScope === "binding-all" && envKind && (
           <DDLWarningCallout type="binding-all" kind={envKind} />
         )}
-        {envScope === "binding-none" && envKind && (
-          <DDLWarningCallout type="binding-none" kind={envKind} />
-        )}
+        {/*
+         * binding-none on the issue page = the request specified an empty
+         * env list (degenerate: the binding would grant no env access at
+         * all). Showing an info box would suggest there's something to
+         * approve here when really the binding grants nothing. Hide.
+         */}
         {envScope === "binding-some" && envKind && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">
@@ -240,6 +236,17 @@ function IssueDetailDatabaseResourceTable({
       </Table>
     </div>
   );
+}
+
+function computeEnvScope(
+  envKind: ReturnType<typeof getRoleEnvironmentLimitationKind>,
+  isParsing: boolean,
+  environments: string[] | undefined
+): "binding-all" | "binding-some" | "binding-none" | undefined {
+  if (!envKind || isParsing) return undefined;
+  if (environments === undefined) return "binding-all";
+  if (environments.length === 0) return "binding-none";
+  return "binding-some";
 }
 
 function extractTableName(databaseResource: DatabaseResource) {

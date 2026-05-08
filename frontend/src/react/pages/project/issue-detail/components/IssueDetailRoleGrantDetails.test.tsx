@@ -166,7 +166,11 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
   });
 
-  test("renders binding-none info when env clause is an empty list", async () => {
+  test("hides env section entirely for empty env clause (degenerate binding-none)", async () => {
+    // A request submitted with no envs selected serializes to
+    // `environment_id in []` — degenerate, grants no env access. We hide
+    // the env section to avoid suggesting approval-relevant DDL/DML risk
+    // when the binding wouldn't grant DDL/DML anywhere anyway.
     mockContextRef.current = {
       issue: {
         roleGrant: {
@@ -176,9 +180,20 @@ describe("IssueDetailRoleGrantDetails", () => {
       },
     };
     render(<IssueDetailRoleGrantDetails />);
+    // Wait for the async CEL parse to complete by polling that the loading
+    // guard has lifted (envScope === undefined during parse hides everything).
+    // After parse, if any warning were going to show it would be present;
+    // assert all three are absent.
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(
-      await screen.findByText(/project.members.ddl-current-none/)
-    ).toBeInTheDocument();
+      screen.queryByText(/project.members.ddl-current-none/)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/project.members.ddl-current-all/)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/project.members.ddl-current-some/)
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
   });
 
