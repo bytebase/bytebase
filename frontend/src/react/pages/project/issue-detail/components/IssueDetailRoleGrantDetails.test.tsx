@@ -128,7 +128,29 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(screen.getByText("Prod, Test")).toBeInTheDocument();
   });
 
-  test("hides warning + env row when role has DDL/DML but condition has no environments", async () => {
+  test("renders binding-all warning when condition has no environment clause (unrestricted)", async () => {
+    // Expression with expiration but no environment_id clause — the grant
+    // would apply to ALL environments. This is the highest-risk scenario;
+    // the approver MUST see the warning.
+    mockContextRef.current = {
+      issue: {
+        roleGrant: {
+          role: "roles/sqlEditorUser",
+          condition: {
+            expression: 'request.time < timestamp("2026-12-31T00:00:00Z")',
+          },
+        },
+      },
+    };
+    render(<IssueDetailRoleGrantDetails />);
+    expect(
+      await screen.findByText(/project.members.ddl-current-all/)
+    ).toBeInTheDocument();
+    // No env list rendered for binding-all.
+    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
+  });
+
+  test("renders binding-all warning when expression is empty entirely", async () => {
     mockContextRef.current = {
       issue: {
         roleGrant: {
@@ -139,8 +161,24 @@ describe("IssueDetailRoleGrantDetails", () => {
     };
     render(<IssueDetailRoleGrantDetails />);
     expect(
-      screen.queryByText(/project.members.ddl-current-some/)
-    ).not.toBeInTheDocument();
+      await screen.findByText(/project.members.ddl-current-all/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
+  });
+
+  test("renders binding-none info when env clause is an empty list", async () => {
+    mockContextRef.current = {
+      issue: {
+        roleGrant: {
+          role: "roles/sqlEditorUser",
+          condition: { expression: "resource.environment_id in []" },
+        },
+      },
+    };
+    render(<IssueDetailRoleGrantDetails />);
+    expect(
+      await screen.findByText(/project.members.ddl-current-none/)
+    ).toBeInTheDocument();
     expect(screen.queryByText(/common.environments/)).not.toBeInTheDocument();
   });
 

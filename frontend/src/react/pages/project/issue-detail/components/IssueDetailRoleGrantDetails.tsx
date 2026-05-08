@@ -81,6 +81,23 @@ export function IssueDetailRoleGrantDetails() {
     (n) => envList.find((e) => e.name === n)?.title ?? n
   );
 
+  // Three-way env scope:
+  //   environments === undefined  → no env clause in CEL → unrestricted (binding-all)
+  //   environments === []         → restricted to empty list (binding-none)
+  //   environments === [list]     → restricted to listed envs (binding-some)
+  // Hide during async parse so we don't briefly show binding-all for an
+  // expression that's about to resolve to binding-some/binding-none.
+  const expression = issue?.roleGrant?.condition?.expression ?? "";
+  const isParsing = expression !== "" && condition === undefined;
+  const envScope: "binding-all" | "binding-some" | "binding-none" | undefined =
+    !envKind || isParsing
+      ? undefined
+      : condition?.environments === undefined
+        ? "binding-all"
+        : condition.environments.length === 0
+          ? "binding-none"
+          : "binding-some";
+
   return (
     <div className="flex flex-col gap-y-4">
       <h3 className="text-base font-medium">{t("issue.role-grant.details")}</h3>
@@ -108,14 +125,18 @@ export function IssueDetailRoleGrantDetails() {
           </div>
         )}
 
-        {envNames.length > 0 && (
+        {envScope === "binding-all" && envKind && (
+          <DDLWarningCallout type="binding-all" kind={envKind} />
+        )}
+        {envScope === "binding-none" && envKind && (
+          <DDLWarningCallout type="binding-none" kind={envKind} />
+        )}
+        {envScope === "binding-some" && envKind && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">
               {t("common.environments")}
             </span>
-            {envKind && (
-              <DDLWarningCallout type="binding-some" kind={envKind} />
-            )}
+            <DDLWarningCallout type="binding-some" kind={envKind} />
             <div className="text-base">{envTitles.join(", ")}</div>
           </div>
         )}
