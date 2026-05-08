@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => {
     fetchPreviousChangelog: vi.fn(),
     getChangelogByName: vi.fn(),
     useChangelogStore: vi.fn(),
+    getTaskRunLog: vi.fn(),
     useVueState: vi.fn((getter: () => unknown) => getter()),
     clipboardWriteText,
     pushNotification: vi.fn(),
@@ -169,6 +170,12 @@ vi.mock("@/store", () => ({
   useChangelogStore: mocks.useChangelogStore,
 }));
 
+vi.mock("@/connect", () => ({
+  rolloutServiceClientConnect: {
+    getTaskRunLog: mocks.getTaskRunLog,
+  },
+}));
+
 vi.mock("./database-detail/useProjectDatabaseDetail", () => ({
   useProjectDatabaseDetail: mocks.useProjectDatabaseDetail,
 }));
@@ -238,6 +245,7 @@ beforeEach(() => {
   mocks.fetchPreviousChangelog.mockReset();
   mocks.getChangelogByName.mockReset();
   mocks.useChangelogStore.mockReset();
+  mocks.getTaskRunLog.mockReset();
   mocks.pushNotification.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
   mocks.ReadonlyMonaco.mockClear();
@@ -289,6 +297,18 @@ beforeEach(() => {
     getOrFetchChangelogByName: mocks.getOrFetchChangelogByName,
     fetchPreviousChangelog: mocks.fetchPreviousChangelog,
     getChangelogByName: mocks.getChangelogByName,
+  });
+  mocks.getTaskRunLog.mockResolvedValue({
+    entries: [
+      {
+        type: 3,
+        databaseSync: {
+          startTime: { seconds: BigInt(1710000001), nanos: 0 },
+          endTime: { seconds: BigInt(1710000002), nanos: 0 },
+          error: "",
+        },
+      },
+    ],
   });
 });
 
@@ -539,6 +559,322 @@ describe("DatabaseChangelogDetailPage", () => {
     expect(
       container.querySelectorAll('[data-testid="readonly-monaco"]').length
     ).toBe(0); // Should be 0 because it renders the empty text div
+
+    unmount();
+  });
+
+  test("shows a diff when database sync exists and current schema is empty", async () => {
+    const changelog = {
+      ...mocks.currentChangelog,
+      schema: "",
+      schemaSize: BigInt(0),
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "POSTGRES" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(changelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(mocks.previousChangelog);
+    mocks.getChangelogByName.mockReturnValue(undefined);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="diff-original"]')?.textContent
+    ).toBe("previous schema");
+    expect(
+      container.querySelector('[data-testid="diff-modified"]')?.textContent
+    ).toBe("");
+
+    unmount();
+  });
+
+  test("hides the schema snapshot for task-run changelogs without database sync", async () => {
+    const changelog = {
+      ...mocks.currentChangelog,
+      schema: "",
+      schemaSize: BigInt(0),
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "POSTGRES" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(changelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(mocks.previousChangelog);
+    mocks.getTaskRunLog.mockResolvedValue({
+      entries: [
+        {
+          type: 2,
+          commandExecute: {
+            statement: "DELETE FROM t WHERE id = 1",
+          },
+        },
+      ],
+    });
+    mocks.getChangelogByName.mockReturnValue(undefined);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getTaskRunLog).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: changelog.taskRun })
+    );
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).toBeNull();
+    expect(container.textContent).not.toContain("common.schema");
+    expect(container.textContent).not.toContain("common.snapshot");
+    expect(container.textContent).not.toContain("changelog.no-schema-change");
+    expect(container.textContent).not.toContain(
+      "changelog.current-schema-empty"
+    );
+    expect(container.textContent).not.toContain("common.rollback");
+
+    unmount();
+  });
+
+  test("recomputes schema snapshot visibility when the active changelog updates", async () => {
+    let activeChangelog = {
+      ...mocks.currentChangelog,
+      status: 1,
+      schema: "",
+      schemaSize: BigInt(0),
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "POSTGRES" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(activeChangelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(mocks.previousChangelog);
+    mocks.getChangelogByName.mockImplementation(() => activeChangelog);
+    mocks.getTaskRunLog
+      .mockResolvedValueOnce({
+        entries: [
+          {
+            type: 2,
+            commandExecute: {
+              statement: "DELETE FROM t WHERE id = 1",
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        entries: [
+          {
+            type: 3,
+            databaseSync: {
+              startTime: { seconds: BigInt(1710000001), nanos: 0 },
+              endTime: { seconds: BigInt(1710000002), nanos: 0 },
+              error: "",
+            },
+          },
+        ],
+      });
+
+    const createPage = () =>
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      });
+    const { container, render, unmount } = renderIntoContainer(createPage());
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain("common.schema");
+    expect(container.textContent).not.toContain("common.snapshot");
+
+    activeChangelog = {
+      ...activeChangelog,
+      status: 2,
+    };
+    render(createPage());
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getTaskRunLog).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toContain("common.schema");
+    expect(container.textContent).toContain("common.snapshot");
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+
+    unmount();
+  });
+
+  test("shows the schema snapshot when task-run-log fetch fails", async () => {
+    const changelog = {
+      ...mocks.currentChangelog,
+      schema: "",
+      schemaSize: BigInt(0),
+    };
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "POSTGRES" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(changelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(mocks.previousChangelog);
+    mocks.getTaskRunLog.mockRejectedValue(new Error("forbidden"));
+    mocks.getChangelogByName.mockReturnValue(undefined);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getTaskRunLog).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: changelog.taskRun })
+    );
+    expect(container.textContent).toContain("common.schema");
+    expect(container.textContent).toContain("common.snapshot");
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="diff-original"]')?.textContent
+    ).toBe("previous schema");
+    expect(
+      container.querySelector('[data-testid="diff-modified"]')?.textContent
+    ).toBe("");
+
+    unmount();
+    consoleError.mockRestore();
+  });
+
+  test("allows diff for changelogs without task run", async () => {
+    const changelog = {
+      ...mocks.currentChangelog,
+      taskRun: "",
+      schema: "",
+      schemaSize: BigInt(0),
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        instanceResource: { engine: "POSTGRES" },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+    mocks.getOrFetchChangelogByName.mockResolvedValue(changelog);
+    mocks.fetchPreviousChangelog.mockResolvedValue(mocks.previousChangelog);
+    mocks.getChangelogByName.mockReturnValue(undefined);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseChangelogDetailPage, {
+        project: "projects/proj1",
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        changelogId: "7",
+      })
+    );
+
+    render();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getTaskRunLog).not.toHaveBeenCalled();
+    expect(
+      container.querySelector('[data-testid="readonly-diff-monaco"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="diff-original"]')?.textContent
+    ).toBe("previous schema");
+    expect(
+      container.querySelector('[data-testid="diff-modified"]')?.textContent
+    ).toBe("");
 
     unmount();
   });
