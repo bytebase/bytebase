@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
@@ -84,15 +83,6 @@ func (t tableNewColumn) delete(tableName, columnName string) {
 		return
 	}
 	delete(t[tableName], columnName)
-}
-
-func restoreNode(node ast.Node, flag format.RestoreFlags) (string, error) {
-	var buffer strings.Builder
-	ctx := format.NewRestoreCtx(flag, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
 }
 
 func needDefault(column *ast.ColumnDef) bool {
