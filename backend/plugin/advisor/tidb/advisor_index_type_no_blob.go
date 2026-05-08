@@ -61,91 +61,19 @@ type indexTypeNoBlobChecker struct {
 }
 
 func (c *indexTypeNoBlobChecker) checkStmt(ostmt OmniStmt) {
+	cb := indexFamilyCallbacks{
+		onColumn:       c.addNewColumn,
+		onConstraint:   c.addConstraint,
+		onChangeColumn: c.changeColumn,
+	}
 	var pkDataList []pkData
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		for _, column := range n.Columns {
-			if column == nil {
-				continue
-			}
-			pds := c.addNewColumn(tableName, ostmt.AbsoluteLine(column.Loc.Start), column)
-			pkDataList = append(pkDataList, pds...)
-		}
-		for _, constraint := range n.Constraints {
-			if constraint == nil {
-				continue
-			}
-			pds := c.addConstraint(tableName, ostmt.AbsoluteLine(constraint.Loc.Start), constraint)
-			pkDataList = append(pkDataList, pds...)
-		}
+		pkDataList = collectIndexFamilyCreateTable(ostmt, n, cb)
 	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATAddColumn:
-				for _, column := range addColumnTargets(cmd) {
-					pds := c.addNewColumn(tableName, stmtLine, column)
-					pkDataList = append(pkDataList, pds...)
-				}
-			case ast.ATAddConstraint, ast.ATAddIndex:
-				// Empirically tidb omni emits only ATAddConstraint for
-				// `ALTER TABLE ... ADD …` forms (bare and named); ATAddIndex
-				// is reserved (not emitted). Dual arm preserved for sibling
-				// parity with the naming-convention advisors and mysql analog.
-				if cmd.Constraint != nil {
-					pds := c.addConstraint(tableName, stmtLine, cmd.Constraint)
-					pkDataList = append(pkDataList, pds...)
-				}
-			case ast.ATChangeColumn, ast.ATModifyColumn:
-				if cmd.Column == nil {
-					continue
-				}
-				newColumnDef := cmd.Column
-				oldColumnName := newColumnDef.Name
-				if cmd.Type == ast.ATChangeColumn && cmd.Name != "" {
-					// CHANGE COLUMN: cmd.Name is the OLD column name.
-					oldColumnName = cmd.Name
-				}
-				pds := c.changeColumn(tableName, oldColumnName, stmtLine, newColumnDef)
-				pkDataList = append(pkDataList, pds...)
-			default:
-			}
-		}
+		pkDataList = collectIndexFamilyAlterTable(ostmt, n, cb)
 	case *ast.CreateIndexStmt:
-		if n.Table == nil {
-			return
-		}
-		// Note: pingcap-typed advisor does NOT exclude FULLTEXT/SPATIAL
-		// indexes from the BLOB check, even though the mysql omni rule does.
-		// Preserve pingcap behavior; aligning to mysql's stricter exclusion
-		// is a separate intentional behavior change (cumulative #9 territory).
-		tableName := n.Table.Name
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, columnName := range omniIndexColumns(n.Columns) {
-			columnType, err := c.getColumnType(tableName, columnName)
-			if err != nil {
-				continue
-			}
-			if isBlobType(columnType) {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     columnName,
-					columnType: columnType,
-					line:       stmtLine,
-				})
-			}
-		}
+		pkDataList = c.collectCreateIndex(ostmt, n)
 	default:
 		return
 	}
@@ -159,6 +87,38 @@ func (c *indexTypeNoBlobChecker) checkStmt(ostmt OmniStmt) {
 			StartPosition: common.ConvertANTLRLineToPosition(pd.line),
 		})
 	}
+}
+
+// collectCreateIndex handles standalone `CREATE INDEX ... ON t (...)`
+// statements (the BLOB-only top-level type — neither pk_type nor
+// allowlist inspect this form).
+//
+// Note: pingcap-typed advisor does NOT exclude FULLTEXT/SPATIAL indexes
+// from the BLOB check, even though the mysql omni rule does. Preserve
+// pingcap behavior; aligning to mysql's stricter exclusion is a separate
+// intentional behavior change (cumulative #9 territory).
+func (c *indexTypeNoBlobChecker) collectCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []pkData {
+	if n.Table == nil {
+		return nil
+	}
+	tableName := n.Table.Name
+	stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
+	var pkDataList []pkData
+	for _, columnName := range omniIndexColumns(n.Columns) {
+		columnType, err := c.getColumnType(tableName, columnName)
+		if err != nil {
+			continue
+		}
+		if isBlobType(columnType) {
+			pkDataList = append(pkDataList, pkData{
+				table:      tableName,
+				column:     columnName,
+				columnType: columnType,
+				line:       stmtLine,
+			})
+		}
+	}
+	return pkDataList
 }
 
 func (c *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
