@@ -3685,6 +3685,7 @@
   "task-run.log-type.command-execute": "命令执行",
   "task-run.log-type.compute-diff": "计算差异",
   "task-run.log-type.database-sync": "数据库同步",
+  "task-run.log-type.ghost-migration": "gh-ost 迁移",
   "task-run.log-type.prior-backup": "预备份",
   "task-run.log-type.release-file-execute": "发布包文件",
   "task-run.log-type.retry": "重试",

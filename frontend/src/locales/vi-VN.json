@@ -2765,6 +2765,7 @@
       "command-execute": "Lệnh thực thi",
       "compute-diff": "Tính toán chênh lệch",
       "database-sync": "Đồng bộ cơ sở dữ liệu",
+      "ghost-migration": "Di chuyển gh-ost",
       "prior-backup": "Sao lưu trước",
       "release-file-execute": "Tệp phát hành",
       "retry": "Thử lại",

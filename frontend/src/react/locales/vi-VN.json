@@ -3685,6 +3685,7 @@
   "task-run.log-type.command-execute": "Lệnh thực thi",
   "task-run.log-type.compute-diff": "Tính toán chênh lệch",
   "task-run.log-type.database-sync": "Đồng bộ cơ sở dữ liệu",
+  "task-run.log-type.ghost-migration": "Di chuyển gh-ost",
   "task-run.log-type.prior-backup": "Sao lưu trước",
   "task-run.log-type.release-file-execute": "Tệp phát hành",
   "task-run.log-type.retry": "Thử lại",

@@ -2765,6 +2765,7 @@
       "command-execute": "Command Execute",
       "compute-diff": "Compute Diff",
       "database-sync": "Database Sync",
+      "ghost-migration": "gh-ost migration",
       "prior-backup": "Prior Backup",
       "release-file-execute": "Release File",
       "retry": "Retry",

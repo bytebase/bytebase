@@ -102,6 +102,8 @@ export const hasError = (entry: TaskRunLogEntry): boolean => {
       return Boolean(entry.priorBackup?.error);
     case TaskRunLogEntry_Type.COMPUTE_DIFF:
       return Boolean(entry.computeDiff?.error);
+    case TaskRunLogEntry_Type.GHOST_MIGRATION:
+      return Boolean(entry.ghostMigration?.error);
     default:
       return false;
   }
@@ -125,6 +127,10 @@ export const isComplete = (entry: TaskRunLogEntry): boolean => {
       return Boolean(
         entry.computeDiff?.startTime && entry.computeDiff?.endTime
       );
+    case TaskRunLogEntry_Type.GHOST_MIGRATION:
+      return Boolean(
+        entry.ghostMigration?.startTime && entry.ghostMigration?.endTime
+      );
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
     case TaskRunLogEntry_Type.RETRY_INFO:
       return true;
@@ -144,7 +150,11 @@ export const groupEntriesByType = (
   let current: EntryGroup | undefined;
 
   for (const entry of sorted) {
-    if (current && current.type === entry.type) {
+    if (
+      current &&
+      current.type === entry.type &&
+      entry.type !== TaskRunLogEntry_Type.GHOST_MIGRATION
+    ) {
       current.entries.push(entry);
       continue;
     }
@@ -261,6 +271,11 @@ export const getEntryTimeRange = (
       return {
         start: getTimestampMs(entry.computeDiff?.startTime),
         end: getTimestampMs(entry.computeDiff?.endTime),
+      };
+    case TaskRunLogEntry_Type.GHOST_MIGRATION:
+      return {
+        start: getTimestampMs(entry.ghostMigration?.startTime),
+        end: getTimestampMs(entry.ghostMigration?.endTime),
       };
     default: {
       const time = getTimestampMs(entry.logTime);
@@ -424,6 +439,12 @@ const getEntryDetail = (
       return getTimedEntryDetail(
         entry.computeDiff,
         runningByType?.[TaskRunLogEntry_Type.COMPUTE_DIFF] ?? "",
+        completed
+      );
+    case TaskRunLogEntry_Type.GHOST_MIGRATION:
+      return getTimedEntryDetail(
+        entry.ghostMigration,
+        runningByType?.[TaskRunLogEntry_Type.GHOST_MIGRATION] ?? "",
         completed
       );
     case TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE:

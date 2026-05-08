@@ -2765,6 +2765,7 @@
       "command-execute": "コマンド実行",
       "compute-diff": "差分計算",
       "database-sync": "データベース同期",
+      "ghost-migration": "gh-ost migration",
       "prior-backup": "事前のバックアップ",
       "release-file-execute": "リリースファイル",
       "retry": "リトライ",

@@ -2765,6 +2765,7 @@
       "command-execute": "Comando Ejecutar",
       "compute-diff": "Calcular diferencia",
       "database-sync": "Sincronización de bases de datos",
+      "ghost-migration": "Migración gh-ost",
       "prior-backup": "Copia de seguridad previa",
       "release-file-execute": "Archivo de lanzamiento",
       "retry": "Reintentar",

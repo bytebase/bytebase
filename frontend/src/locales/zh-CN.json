@@ -2765,6 +2765,7 @@
       "command-execute": "命令执行",
       "compute-diff": "计算差异",
       "database-sync": "数据库同步",
+      "ghost-migration": "gh-ost 迁移",
       "prior-backup": "预备份",
       "release-file-execute": "发布包文件",
       "retry": "重试",

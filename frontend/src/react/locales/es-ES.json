@@ -3685,6 +3685,7 @@
   "task-run.log-type.command-execute": "Comando Ejecutar",
   "task-run.log-type.compute-diff": "Calcular diferencia",
   "task-run.log-type.database-sync": "Sincronización de bases de datos",
+  "task-run.log-type.ghost-migration": "Migración gh-ost",
   "task-run.log-type.prior-backup": "Copia de seguridad previa",
   "task-run.log-type.release-file-execute": "Archivo de lanzamiento",
   "task-run.log-type.retry": "Reintentar",
