@@ -1,4 +1,6 @@
 // package tidb implements the SQL advisor rules for MySQL.
+//
+//nolint:unused // Kept for PingCap-based TiDB advisors during the omni migration.
 package tidb
 
 import (
