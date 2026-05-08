@@ -442,7 +442,13 @@ function SingleResultViewInner({
   const resultRowsText = `${rows.length} ${t("sql-editor.rows.self")}`;
 
   const handleExport = (req: DataExportRequest) => {
-    onExport?.({ ...req, statement: result.statement });
+    // Forward the user-typed query (`params.statement`) rather than
+    // `result.statement`. The backend may rewrite the result statement
+    // with an auto-appended LIMIT for non-admin reads — re-running that
+    // rewritten SQL on the export path silently caps the exported rows
+    // even when the user asks for more. This matches the Vue
+    // multi-result export, which already used `executeParams.statement`.
+    onExport?.({ ...req, statement: params.statement });
   };
 
   // ---- Render branches by viewMode ----
