@@ -17,13 +17,13 @@
       baseline: 0
       start:
         line: 1
-        column: 17
+        column: 18
       end:
         line: 1
         column: 35
       range:
-        start: 16
-        end: 33
+        start: 17
+        end: 34
       empty: false
 - description: multiple statements with newlines
   input: "\n\t\t\t\tselect * from t;\n\t\t\t\tcreate table table$1 (id int)\n\t\t\t"
@@ -44,13 +44,13 @@
       baseline: 1
       start:
         line: 2
-        column: 20
+        column: 21
       end:
         line: 3
         column: 34
       range:
-        start: 20
-        end: 54
+        start: 21
+        end: 55
       empty: false
 - description: procedure with forward slash separator
   input: |-
@@ -139,13 +139,13 @@
       baseline: 1
       start:
         line: 2
-        column: 1
+        column: 2
       end:
         line: 3
         column: 17
       range:
-        start: 18
-        end: 35
+        start: 19
+        end: 36
       empty: false
 - description: anonymous block with forward slash
   input: |-
@@ -358,11 +358,134 @@
       baseline: 0
       start:
         line: 1
-        column: 19
+        column: 20
       end:
         line: 3
         column: 21
       range:
-        start: 18
-        end: 40
+        start: 19
+        end: 41
+      empty: false
+- description: 'BYT-9367: trailing semicolon with leading space does not leak (cell b)'
+  input: "insert into t values('a',1) ;\n\ninsert into t values('b',2) ;"
+  result:
+    - text: "insert into t values('a',1)"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 28
+      range:
+        start: 0
+        end: 27
+      empty: false
+    - text: "\n\ninsert into t values('b',2)"
+      baseline: 0
+      start:
+        line: 1
+        column: 30
+      end:
+        line: 3
+        column: 28
+      range:
+        start: 29
+        end: 58
+      empty: false
+- description: 'BYT-9367: trailing semicolon with leading inline comment does not leak (cell c)'
+  input: "insert into t values('a',1) /* note */ ;\ninsert into t values('b',2) ;"
+  result:
+    - text: "insert into t values('a',1)"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 28
+      range:
+        start: 0
+        end: 27
+      empty: false
+    - text: "\ninsert into t values('b',2)"
+      baseline: 0
+      start:
+        line: 1
+        column: 41
+      end:
+        line: 2
+        column: 28
+      range:
+        start: 40
+        end: 68
+      empty: false
+- description: 'BYT-9367: trailing semicolon with multiple newlines does not leak (cell d)'
+  input: "insert into t values('a',1)\n\n;\n\ninsert into t values('b',2);"
+  result:
+    - text: "insert into t values('a',1)"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 28
+      range:
+        start: 0
+        end: 27
+      empty: false
+    - text: "\n\ninsert into t values('b',2)"
+      baseline: 2
+      start:
+        line: 3
+        column: 2
+      end:
+        line: 5
+        column: 28
+      range:
+        start: 30
+        end: 59
+      empty: false
+- description: 'BYT-9367: anonymous block followed by SELECT with no separator (cell f, bail-on-default-channel)'
+  input: "BEGIN NULL; END;\nSELECT 1 FROM dual"
+  result:
+    - text: "BEGIN NULL; END;"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 17
+      range:
+        start: 0
+        end: 16
+      empty: false
+    - text: "\nSELECT 1 FROM dual"
+      baseline: 0
+      start:
+        line: 1
+        column: 17
+      end:
+        line: 2
+        column: 19
+      range:
+        start: 16
+        end: 35
+      empty: false
+- description: 'BYT-9367: trailing semicolon with leading space at EOF (cell h)'
+  input: "insert into t values('a',1) ;"
+  result:
+    - text: "insert into t values('a',1)"
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 28
+      range:
+        start: 0
+        end: 27
       empty: false
