@@ -600,6 +600,7 @@
   "custom-approval.issue-review.approved-issue": "approved issue",
   "custom-approval.issue-review.re-requested-review": "re-requested issue review",
   "custom-approval.issue-review.rejected-issue": "rejected issue",
+  "custom-approval.issue-review.retry-approval-finding": "Thử lại",
   "data-source": {
     "additional-node-addresses": "Địa chỉ nút bổ sung",
     "automatic-query-data-source": "Tự động",
