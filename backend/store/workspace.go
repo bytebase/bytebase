@@ -249,38 +249,6 @@ func (s *Store) FindWorkspace(ctx context.Context, find *FindWorkspaceMessage) (
 	return workspaces[0], nil
 }
 
-// ListWorkspaces returns every non-deleted workspace, sorted by resource ID.
-// Use this for runner-level scans that need to enumerate workspaces without
-// any user/email scoping (e.g. background reconciliation jobs).
-func (s *Store) ListWorkspaces(ctx context.Context) ([]*WorkspaceMessage, error) {
-	rows, err := s.GetDB().QueryContext(ctx,
-		`SELECT resource_id, payload FROM workspace WHERE deleted = FALSE ORDER BY resource_id`,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query workspaces")
-	}
-	defer rows.Close()
-
-	var workspaces []*WorkspaceMessage
-	for rows.Next() {
-		var w WorkspaceMessage
-		var payloadBytes []byte
-		if err := rows.Scan(&w.ResourceID, &payloadBytes); err != nil {
-			return nil, errors.Wrap(err, "failed to scan workspace row")
-		}
-		payload := &storepb.WorkspacePayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payloadBytes, payload); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal workspace payload")
-		}
-		w.Payload = payload
-		workspaces = append(workspaces, &w)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "rows iteration error")
-	}
-	return workspaces, nil
-}
-
 // ListWorkspacesByEmail finds all workspaces where the given email is a member
 // in the workspace IAM policy bindings, either directly or via a group.
 // Returns workspaces sorted by name.

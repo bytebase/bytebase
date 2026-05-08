@@ -847,6 +847,55 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	return connect.NewResponse(issueV1), nil
 }
 
+// RetryIssueApproval re-runs approval-template finding for an issue stuck
+// in CHECKING. The synchronous post-create path in `postCreateIssue`
+// swallows errors (e.g. CEL evaluation failure against a malformed
+// workspace approval rule), and there is no event-driven retry for
+// non-DATABASE_CHANGE issue types — once stuck, only this RPC (or a
+// direct DB edit) gets the issue back into a resolved state.
+//
+// Idempotent: returns the existing issue unchanged when approval-finding
+// has already completed.
+func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Request[v1pb.RetryIssueApprovalRequest]) (*connect.Response[v1pb.Issue], error) {
+	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	// No-op fast path: nothing to retry if the previous attempt completed.
+	if issue.Payload.GetApproval().GetApprovalFindingDone() {
+		issueV1, err := s.convertToIssue(issue)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
+		}
+		return connect.NewResponse(issueV1), nil
+	}
+
+	if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+		// Surface the underlying cause (e.g. CEL error in the workspace
+		// approval rule) so the operator can fix it.
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "approval finding still failing"))
+	}
+
+	uid := issue.UID
+	refreshed, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &uid,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to refresh issue"))
+	}
+	if refreshed == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("issue not found after retry"))
+	}
+
+	issueV1, err := s.convertToIssue(refreshed)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert to issue"))
+	}
+	return connect.NewResponse(issueV1), nil
+}
+
 // UpdateIssue updates the issue.
 func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1pb.UpdateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
 	user, ok := GetUserFromContext(ctx)
