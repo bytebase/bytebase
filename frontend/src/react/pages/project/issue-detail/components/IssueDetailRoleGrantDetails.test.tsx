@@ -140,6 +140,9 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(
       screen.queryByText(/issue.role-grant.ddl-warning/)
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/common.environments/)
+    ).not.toBeInTheDocument();
   });
 
   test("hides warning when role has been deleted (helper returns undefined)", async () => {
