@@ -756,7 +756,7 @@ export function ProjectSettingsPage() {
                             {canUpdatePolicies && (
                               <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"
                                 onClick={() => {
                                   setPendingReviewPolicy(undefined);
                                   setEnforceReview(false);

@@ -208,7 +208,7 @@ export function ProjectSwitchPanel({
         <Button
           variant="ghost"
           size="sm"
-          className="mb-2 mx-3 h-7 w-fit px-0 text-control-light hover:bg-transparent hover:text-control"
+          className="mb-2 mx-3 w-fit px-0 text-control-light hover:bg-transparent hover:text-control"
           onClick={handleGotoWorkspace}
         >
           <ChevronLeft className="h-4 w-4 opacity-80" />
@@ -243,7 +243,6 @@ export function ProjectSwitchPanel({
                 size="sm"
                 variant="outline"
                 aria-label={t("quick-action.new-project")}
-                className="h-8 w-8 px-0"
                 onClick={onRequestCreate}
               >
                 <Plus className="h-4 w-4" />

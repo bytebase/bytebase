@@ -114,7 +114,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
                 <Button
                   aria-label={t("common.close")}
                   onClick={() => page.setMobileSidebarOpen(false)}
-                  size="icon"
+                  size="sm"
                   variant="ghost"
                 >
                   <X className="h-4 w-4" />

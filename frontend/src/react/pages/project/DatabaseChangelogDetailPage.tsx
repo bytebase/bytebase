@@ -137,7 +137,7 @@ function CopyButton({ content }: { content: string }) {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size="sm"
       aria-label={t("common.copy")}
       title={t("common.copy")}
       disabled={!content}

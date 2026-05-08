@@ -201,7 +201,7 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
               </DialogTitle>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 aria-label={t("common.close")}
                 onClick={() => setShowModal(false)}
               >

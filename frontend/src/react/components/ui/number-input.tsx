@@ -17,9 +17,9 @@ const numberInputClasses = cva(
     variants: {
       size: {
         xs: "h-6 px-2 text-xs leading-4",
-        sm: "h-8 px-3 text-xs leading-4",
+        sm: "h-7 px-2 text-xs leading-4",
         md: "h-9 px-3 text-sm leading-5",
-        lg: "h-10 px-3 text-sm leading-5",
+        lg: "h-10 px-4 text-sm leading-5",
       },
     },
     defaultVariants: {

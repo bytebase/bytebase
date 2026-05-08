@@ -341,7 +341,7 @@ function MemberTable({
                   {allowEdit && canEdit(mb) && (
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       onClick={() => onUpdateBinding(mb)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -350,7 +350,7 @@ function MemberTable({
                   {allowEdit && (
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       onClick={() => {
                         if (
                           window.confirm(
@@ -596,7 +596,7 @@ function MemberTableByRole({
                           {allowEdit && canEdit(mb) && (
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => onUpdateBinding(mb)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -605,7 +605,7 @@ function MemberTableByRole({
                           {allowEdit && (
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => {
                                 if (
                                   window.confirm(
@@ -1396,7 +1396,7 @@ function EditMemberRoleDrawer({
                         <div className="flex items-center gap-x-1">
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             title={t("common.edit")}
                             onClick={() => setShowNestedGrant(true)}
                           >
@@ -1404,7 +1404,7 @@ function EditMemberRoleDrawer({
                           </Button>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             title={t("common.delete")}
                             disabled={isRequesting}
                             onClick={() => handleDeleteRole(binding)}

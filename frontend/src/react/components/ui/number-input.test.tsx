@@ -59,7 +59,7 @@ describe("NumberInput", () => {
     const wrapper = container.firstElementChild as HTMLElement | null;
     const input = container.querySelector("input");
     expect(wrapper?.className).toContain("w-60");
-    expect(input?.className).toContain("h-8");
+    expect(input?.className).toContain("h-7");
   });
 
   test("forwards the disabled prop to the underlying input", () => {

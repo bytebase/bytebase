@@ -375,8 +375,8 @@ function GroupRow({
               <Tooltip content={t("common.delete")}>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-error hover:text-error"
+                  size="sm"
+                  className="text-error hover:text-error"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete();
@@ -835,8 +835,8 @@ function GroupForm({
                   </Select>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 text-error hover:text-error"
+                    size="sm"
+                    className="shrink-0 text-error hover:text-error"
                     onClick={() => handleRemoveMember(index)}
                     disabled={!allowEdit}
                   >

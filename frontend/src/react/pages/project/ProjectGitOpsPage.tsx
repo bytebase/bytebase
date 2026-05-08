@@ -725,12 +725,7 @@ function CopyButton({ content }: { content: string }) {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-7 w-7"
-      onClick={handleCopy}
-    >
+    <Button variant="ghost" size="sm" onClick={handleCopy}>
       {copied ? (
         <Check className="h-4 w-4 text-success" />
       ) : (

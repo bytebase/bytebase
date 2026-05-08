@@ -149,7 +149,8 @@ export function PartitionsEditor({
                   <Input
                     value={partition.name}
                     disabled={isReadonly || status === "dropped"}
-                    className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                    size="sm"
+                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
                     onChange={(e) => {
                       partition.name = e.target.value;
                       handlePartitionChange(partition);
@@ -163,7 +164,8 @@ export function PartitionsEditor({
                   <Input
                     value={partition.expression}
                     disabled={isReadonly || !isFirst || status === "dropped"}
-                    className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                    size="sm"
+                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
                     onChange={(e) => {
                       partition.expression = e.target.value;
                       handlePartitionChange(partition);
@@ -174,7 +176,8 @@ export function PartitionsEditor({
                   <Input
                     value={partition.value}
                     disabled={isReadonly || status === "dropped"}
-                    className="h-7 border-none bg-transparent shadow-none focus-visible:ring-1"
+                    size="sm"
+                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
                     onChange={(e) => {
                       partition.value = e.target.value;
                       handlePartitionChange(partition);
