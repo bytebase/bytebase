@@ -917,11 +917,11 @@ function ProjectRoleBindingForm({
           <label className="block text-sm font-medium text-control">
             {t("common.environments")}
           </label>
+          <DDLWarningCallout type="drawer" kind={envKind} />
           <EnvironmentMultiSelect
             value={form.environments}
             onChange={(envs) => onChange({ ...form, environments: envs })}
           />
-          <DDLWarningCallout type="drawer" kind={envKind} />
         </div>
       )}
 

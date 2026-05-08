@@ -535,11 +535,11 @@ function RequestRoleForm({
               <label className="text-sm font-medium">
                 {t("common.environments")}
               </label>
+              <DDLWarningCallout type="drawer" kind={envKind} />
               <EnvironmentMultiSelect
                 value={environments}
                 onChange={setEnvironments}
               />
-              <DDLWarningCallout type="drawer" kind={envKind} />
             </div>
           )}
           <div className="flex flex-col gap-y-1">

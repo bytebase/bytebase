@@ -113,10 +113,10 @@ export function IssueDetailRoleGrantDetails() {
             <span className="text-sm text-control-light">
               {t("common.environments")}
             </span>
-            <div className="text-base">{envTitles.join(", ")}</div>
             {envKind && (
               <DDLWarningCallout type="binding-some" kind={envKind} />
             )}
+            <div className="text-base">{envTitles.join(", ")}</div>
           </div>
         )}
 
