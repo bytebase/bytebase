@@ -210,9 +210,20 @@ func (c *indexTypeNoBlobChecker) getColumnType(tableName, columnName string) (st
 	return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
 }
 
+// isBlobType matches the BLOB *and* TEXT type families. The rule is
+// named INDEX_TYPE_NO_BLOB and pingcap rendered everything as "blob" in
+// advice content, but pingcap-tidb's `mysql.TypeBlob` enum value covers
+// both BLOB and TEXT (TEXT is BLOB with non-binary charset), so the
+// pingcap-typed advisor flagged TEXT-in-INDEX too. Omni gives TEXT its
+// own DataType.Name (cumulative #14 territory): a mechanical port that
+// only matched the four BLOB names dropped TEXT coverage. Match both
+// families to preserve the rule's effective behavior; advice content
+// now reflects the accurate type name (e.g. "is text" rather than
+// pingcap's accidental "is blob").
 func isBlobType(columnType string) bool {
 	switch strings.ToLower(columnType) {
-	case "blob", "tinyblob", "mediumblob", "longblob":
+	case "blob", "tinyblob", "mediumblob", "longblob",
+		"text", "tinytext", "mediumtext", "longtext":
 		return true
 	default:
 		return false
