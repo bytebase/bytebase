@@ -52,26 +52,27 @@
 import { describe, expect, test, vi } from "vitest";
 import { getRoleEnvironmentLimitationKind } from "./utils";
 
-// Replace the WHOLE @/utils module — vi.mock factories replace every export.
-// Even though only checkRoleContainsAnyPermission is exercised by these tests,
-// the helper file at runtime also imports displayRoleTitle from @/utils. We
-// stub it as a no-op so a sibling export touching displayRoleTitle (e.g.
-// getBindingIdentifier) doesn't crash if a future test calls it.
+// Stub the role store — getRoleEnvironmentLimitationKind reads it once
+// per call. Other @/utils + @/store exports are stubbed as no-ops so a
+// sibling export's transitive imports don't crash.
+const fixtures: Record<string, string[]> = {
+  "roles/sqlEditorUser":     ["bb.sql.ddl", "bb.sql.dml"],
+  "roles/sqlEditorDDLOnly":  ["bb.sql.ddl"],
+  "roles/sqlEditorDMLOnly":  ["bb.sql.dml"],
+  "roles/queryOnly":         ["bb.sql.select"],
+  "roles/projectViewer":     [],
+};
+vi.mock("@/store", () => ({
+  useRoleStore: () => ({
+    getRoleByName: (role: string) =>
+      fixtures[role] === undefined
+        ? undefined
+        : { name: role, permissions: fixtures[role] },
+  }),
+}));
 vi.mock("@/utils", () => ({
   displayRoleTitle: (r: string) => r,
-  checkRoleContainsAnyPermission: (role: string, ...permissions: string[]) => {
-    const fixtures: Record<string, string[]> = {
-      "roles/sqlEditorUser":  ["bb.sql.ddl", "bb.sql.dml", "bb.sql.select"],
-      "roles/sqlEditorDDLOnly": ["bb.sql.ddl"],
-      "roles/sqlEditorDMLOnly": ["bb.sql.dml"],
-      "roles/queryOnly":      ["bb.sql.select"],
-      "roles/projectViewer":  [],
-    };
-    const perms = fixtures[role];
-    return perms === undefined
-      ? false
-      : permissions.some((p) => perms.includes(p));
-  },
+  checkRoleContainsAnyPermission: () => false, // unused by the new helper
 }));
 
 describe("getRoleEnvironmentLimitationKind", () => {
@@ -110,12 +111,13 @@ describe("getRoleEnvironmentLimitationKind", () => {
 Run: `pnpm --dir frontend test -- src/components/ProjectMember/utils.test.ts`
 Expected: FAIL — `getRoleEnvironmentLimitationKind is not a function` (or "no exported member").
 
-- [ ] **Step 1.3: Implement the helper, delete the old one.**
+- [ ] **Step 1.3: Implement the helper.**
 
 Replace the body of `frontend/src/components/ProjectMember/utils.ts`:
 
 ```ts
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
+import { useRoleStore } from "@/store";
 import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
 
 export const getBindingIdentifier = (binding: Binding): string => {
@@ -137,37 +139,34 @@ export const roleHasDatabaseLimitation = (role: string) => {
   );
 };
 
-// String-literal values double as user-visible interpolation values in
-// every locale (`{{kind}}` is spliced raw into translated strings). Do
-// not localize these labels — `DDL` and `DML` are product permission
-// names, not English words.
+// {{kind}} is spliced raw into translated strings — do not localize.
 export type EnvLimitationKind = "DDL" | "DML" | "DDL/DML";
 
-// Returns the human-readable statement-kind label for the role's
-// environment-scoped permissions, or undefined if the role has none
-// (i.e. no environment field is shown for this role).
-//
-// Returns undefined for unknown roles too — symmetric with the previous
-// boolean helper. Once the role store hydrates, callers re-render and
-// the correct label is returned.
+// undefined ⇔ role has no env-scoped permissions ⇔ caller hides the env section.
+// Reads the role once (vs. two checkRoleContainsAnyPermission calls) so the
+// hot path on member-list / drawer renders touches the role store once.
 export const getRoleEnvironmentLimitationKind = (
   role: string
 ): EnvLimitationKind | undefined => {
-  const hasDDL = checkRoleContainsAnyPermission(role, "bb.sql.ddl");
-  const hasDML = checkRoleContainsAnyPermission(role, "bb.sql.dml");
+  const r = useRoleStore().getRoleByName(role);
+  if (!r) return undefined;
+  const perms = new Set(r.permissions);
+  const hasDDL = perms.has("bb.sql.ddl");
+  const hasDML = perms.has("bb.sql.dml");
   if (hasDDL && hasDML) return "DDL/DML";
   if (hasDDL) return "DDL";
   if (hasDML) return "DML";
   return undefined;
 };
 
-// Transitional shim — keeps the build green between this commit and the
-// end of Chunk 2 while call sites migrate one at a time. Removed in
-// Task 10's final cleanup.
+// Transitional shim — keeps the build green while call sites migrate.
+// Removed in Task 10 once the last caller is gone.
 // @deprecated use getRoleEnvironmentLimitationKind instead.
 export const roleHasEnvironmentLimitation = (role: string): boolean =>
   getRoleEnvironmentLimitationKind(role) !== undefined;
 ```
+
+Note on the `useRoleStore()` call: this is a Pinia store accessor (returns a cached singleton), not a React hook. It's safe to call from a non-component utility — that's the same pattern `IssueDetailRoleGrantDetails.tsx` already uses inline.
 
 The boolean `roleHasEnvironmentLimitation` is kept as a **transitional shim** that delegates to the new helper. Tasks 4–7 migrate each production call site to `getRoleEnvironmentLimitationKind`; Task 10 deletes the shim once the last caller is gone. This keeps `git bisect` and partial-checkout workflows working across the migration.
 
@@ -261,22 +260,22 @@ import { DDLWarningCallout } from "./DDLWarningCallout";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    // Resolve placeholders so we can assert against the rendered text.
+    // Return the key + a JSON-encoded vars suffix so assertions can match
+    // both the i18n key and the interpolated values. We don't have access
+    // to the locale files in unit tests, so the actual locale value isn't
+    // rendered — just the key + vars, which is sufficient to verify the
+    // component picked the right key and threaded the right interpolation.
     t: (key: string, vars?: Record<string, unknown>) => {
-      let s = key;
-      if (vars) {
-        for (const [k, v] of Object.entries(vars)) {
-          s = s.replace(`{{${k}}}`, String(v));
-        }
-      }
-      return s;
+      const parts = [key];
+      if (vars) parts.push(JSON.stringify(vars));
+      return parts.join(" ");
     },
   }),
 }));
 
 describe("DDLWarningCallout", () => {
   test("drawer variant renders ddl-warning copy with kind interpolated", () => {
-    render(<DDLWarningCallout variant="drawer" kind="DDL/DML" />);
+    render(<DDLWarningCallout type="drawer" kind="DDL/DML" />);
     expect(
       screen.getByText(/project.members.ddl-warning/),
     ).toHaveTextContent("DDL/DML");
@@ -285,7 +284,7 @@ describe("DDLWarningCallout", () => {
   test("issue variant renders issue.role-grant.ddl-warning with environments", () => {
     render(
       <DDLWarningCallout
-        variant="issue"
+        type="issue"
         kind="DDL"
         environments={["Prod", "Test"]}
       />,
@@ -298,7 +297,7 @@ describe("DDLWarningCallout", () => {
   test("binding-some renders ddl-current-some copy", () => {
     render(
       <DDLWarningCallout
-        variant="binding-some"
+        type="binding-some"
         kind="DML"
       />,
     );
@@ -313,25 +312,45 @@ describe("DDLWarningCallout", () => {
   });
 
   test("binding-all renders ddl-current-all copy", () => {
-    render(<DDLWarningCallout variant="binding-all" kind="DDL/DML" />);
+    render(<DDLWarningCallout type="binding-all" kind="DDL/DML" />);
     expect(
       screen.getByText(/project.members.ddl-current-all/),
     ).toHaveTextContent("DDL/DML");
   });
 
   test("binding-none renders ddl-current-none copy", () => {
-    render(<DDLWarningCallout variant="binding-none" kind="DML" />);
+    render(<DDLWarningCallout type="binding-none" kind="DML" />);
     expect(
       screen.getByText(/project.members.ddl-current-none/),
     ).toHaveTextContent("DML");
   });
 
   test("renders an alert with role=alert", () => {
-    render(<DDLWarningCallout variant="drawer" kind="DDL" />);
+    render(<DDLWarningCallout type="drawer" kind="DDL" />);
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
+
 });
+
+// Type-level assertions — these functions are NEVER called. They live
+// outside any `it()` block so vitest doesn't execute them. Their sole
+// purpose is to fail `pnpm --dir frontend type-check` if the union
+// shape ever stops rejecting invalid prop combinations. (Spec §6.)
+//
+// `void _typeChecks` keeps eslint from flagging the function as unused.
+const _typeChecks = () => {
+  // @ts-expect-error — `binding-all` does not accept `environments`.
+  const _a = <DDLWarningCallout type="binding-all" kind="DDL" environments={["x"]} />;
+  // @ts-expect-error — `issue` requires `environments`.
+  const _b = <DDLWarningCallout type="issue" kind="DDL" />;
+  // @ts-expect-error — `drawer` does not accept `environments`.
+  const _c = <DDLWarningCallout type="drawer" kind="DDL" environments={["x"]} />;
+  return [_a, _b, _c];
+};
+void _typeChecks;
 ```
+
+The thunk is never invoked, so `render(...)` calls never trip on missing `environments` at runtime — but `tsc` still type-checks the JSX inside, which is where the `@ts-expect-error` assertions fire.
 
 - [ ] **Step 3.2: Run the tests and confirm they fail.**
 
@@ -348,18 +367,20 @@ import { useTranslation } from "react-i18next";
 import type { EnvLimitationKind } from "@/components/ProjectMember/utils";
 import { Alert } from "@/react/components/ui/alert";
 
-// Discriminated union: `environments` is required exactly when the
-// variant interpolates them ("issue") and absent everywhere else.
-// Consumers needing to render env badges (e.g. binding-some) carry
-// the env list themselves and render it as a separate row.
+// Discriminated union (matches the codebase's `type:` discriminator
+// convention — see usePagedData.tsx, useDropdown.ts).
+// `environments` is required exactly when the variant interpolates
+// them ("issue") and absent everywhere else. Consumers needing to
+// render env badges (e.g. binding-some) carry the env list themselves
+// and render it as a separate row.
 type DDLWarningProps =
-  | { variant: "drawer"; kind: EnvLimitationKind }
-  | { variant: "issue"; kind: EnvLimitationKind; environments: string[] }
-  | { variant: "binding-some"; kind: EnvLimitationKind }
-  | { variant: "binding-all"; kind: EnvLimitationKind }
-  | { variant: "binding-none"; kind: EnvLimitationKind };
+  | { type: "drawer"; kind: EnvLimitationKind }
+  | { type: "issue"; kind: EnvLimitationKind; environments: string[] }
+  | { type: "binding-some"; kind: EnvLimitationKind }
+  | { type: "binding-all"; kind: EnvLimitationKind }
+  | { type: "binding-none"; kind: EnvLimitationKind };
 
-const variantToKey: Record<DDLWarningProps["variant"], string> = {
+const typeToKey: Record<DDLWarningProps["type"], string> = {
   drawer: "project.members.ddl-warning",
   issue: "issue.role-grant.ddl-warning",
   "binding-some": "project.members.ddl-current-some",
@@ -369,9 +390,9 @@ const variantToKey: Record<DDLWarningProps["variant"], string> = {
 
 export function DDLWarningCallout(props: DDLWarningProps) {
   const { t } = useTranslation();
-  const key = variantToKey[props.variant];
+  const key = typeToKey[props.type];
   const interpolated =
-    props.variant === "issue"
+    props.type === "issue"
       ? t(key, { kind: props.kind, environments: props.environments.join(", ") })
       : t(key, { kind: props.kind });
   return <Alert variant="warning">{interpolated}</Alert>;
@@ -380,6 +401,7 @@ export function DDLWarningCallout(props: DDLWarningProps) {
 
 Notes:
 - `binding-some` does **not** carry `environments` on its prop. The consumer (`MembersPage.tsx`) already has the env list in scope and renders env badges as a separate row next to the warning — keeping the prop union narrow prevents future implementers from accidentally interpolating env names into the warning string.
+- Discriminator is named `type` (not `variant`) to match the existing pattern in `frontend/src/react/hooks/usePagedData.tsx:36-45` and `frontend/src/react/components/sql-editor/useDropdown.ts`.
 - Bare `Alert` (no title/description) gives a single-line warning, matching the brainstorming mockups.
 
 - [ ] **Step 3.4: Run the tests and confirm they pass.**
@@ -432,15 +454,16 @@ Replace with:
 
 ```ts
 vi.mock("@/components/ProjectMember/utils", () => ({
-  // PROJECT_OWNER is not a SQL-permission role — these return false, so the
-  // database/environment scope sections stay hidden in the tests. Override
-  // the env helper per-test for cases that need DDL/DML behavior.
-  roleHasDatabaseLimitation: () => false,
-  getRoleEnvironmentLimitationKind: () => undefined,
+  // Wrap in vi.fn() so per-test overrides (vi.mocked(x).mockReturnValue(...))
+  // work — plain arrow functions can't be re-mocked at runtime.
+  // Default behavior matches the existing test assumption: scope sections
+  // stay hidden because PROJECT_OWNER isn't a SQL-permission role.
+  roleHasDatabaseLimitation: vi.fn(() => false),
+  getRoleEnvironmentLimitationKind: vi.fn(() => undefined),
 }));
 ```
 
-This keeps the existing tests' "scope sections hidden" assumption intact (env helper still returns `undefined` by default). The new test cases in Step 4.2 override the mock per-test using `vi.mocked(...).mockImplementation(...)`.
+The new test cases in Step 4.2 override the mock per-test using `vi.mocked(...).mockReturnValue(...)`.
 
 - [ ] **Step 4.2: Add a failing assertion for the new warning.**
 
@@ -511,11 +534,10 @@ Existing derivation at `RequestRoleSheet.tsx:251`:
 const showEnvironments = !!role && roleHasEnvironmentLimitation(role);
 ```
 
-Replace with:
+Replace with (`envKind` is its own gate — no separate boolean):
 
 ```ts
 const envKind = role ? getRoleEnvironmentLimitationKind(role) : undefined;
-const showEnvironments = envKind !== undefined;
 ```
 
 Existing JSX block at `RequestRoleSheet.tsx:536-546`:
@@ -537,7 +559,7 @@ Existing JSX block at `RequestRoleSheet.tsx:536-546`:
 Replace with (note `gap-y-2` so the warning sits cleanly under the multiselect, and the new callout):
 
 ```tsx
-{showEnvironments && envKind && (
+{envKind && (
   <div className="flex flex-col gap-y-2">
     <label className="text-sm font-medium">
       {t("common.environments")}
@@ -546,12 +568,12 @@ Replace with (note `gap-y-2` so the warning sits cleanly under the multiselect, 
       value={environments}
       onChange={setEnvironments}
     />
-    <DDLWarningCallout variant="drawer" kind={envKind} />
+    <DDLWarningCallout type="drawer" kind={envKind} />
   </div>
 )}
 ```
 
-The `&& envKind` clause makes the discriminated-union narrowing explicit so `kind={envKind}` doesn't need a non-null assertion (TypeScript narrows `envKind` to `EnvLimitationKind` inside the branch).
+Gating on `envKind` directly narrows it to `EnvLimitationKind` inside the branch — no separate boolean, no non-null assertion.
 
 - [ ] **Step 4.5: Run the test and confirm it passes.**
 
@@ -664,7 +686,7 @@ Refs: BYT-9390"
 **Files:**
 - Modify: `frontend/src/react/pages/settings/MembersPage.tsx` — three regions:
   - **Imports** (top of file): swap the helper import.
-  - **Drawer form component** (~L800-940): swap the `showEnvironments` derivation, replace the helper-text caption with `<DDLWarningCallout>`.
+  - **Drawer form component** (~L800-940): swap the env-limitation derivation to `envKind`, replace the helper-text caption with `<DDLWarningCallout>`.
   - **Drawer submit handler** (~L1162): swap the second helper call to use `envKind` for the env-scope filter.
 
   All three regions live inside the drawer form's component file. Task 7 (member-list banner) edits a different region (~L1417-1455) of the same file but does not conflict with these regions. Do **not** change anything outside these line spans.
@@ -693,7 +715,6 @@ In the form component's body, near the existing memos/derived values, derive onc
 const envKind = form.role
   ? getRoleEnvironmentLimitationKind(form.role)
   : undefined;
-const showEnvironments = envKind !== undefined;
 ```
 
 Then:
@@ -741,7 +762,7 @@ Find the JSX block at ~L918–934:
 Replace with:
 
 ```tsx
-{showEnvironments && (
+{envKind && (
   <div className="flex flex-col gap-y-2">
     <label className="block text-sm font-medium text-control">
       {t("common.environments")}
@@ -750,10 +771,12 @@ Replace with:
       value={form.environments}
       onChange={(envs) => onChange({ ...form, environments: envs })}
     />
-    <DDLWarningCallout variant="drawer" kind={envKind!} />
+    <DDLWarningCallout type="drawer" kind={envKind} />
   </div>
 )}
 ```
+
+Gating on `envKind` directly narrows it to `EnvLimitationKind` inside the branch — no separate boolean, no non-null assertion.
 
 Add the import:
 
@@ -807,53 +830,78 @@ const bindingKind = getRoleEnvironmentLimitationKind(binding.role);
 
 Replace the banner JSX:
 
+Single render switch — flat tri-state, no compound `&&` chains. Render `EnvironmentLabel` directly (no `Badge` wrapper — `EnvironmentLabel` is already a styled chip; the previous `Badge` wrap was a double-pill carried over from the old blue banner):
+
 ```tsx
 {envLimitation && bindingKind && (
   <div className="mx-4 mt-3">
-    {envLimitation.type === "unrestricted" && (
-      <DDLWarningCallout variant="binding-all" kind={bindingKind} />
-    )}
-    {envLimitation.type === "restricted" &&
-      envLimitation.environments.length === 0 && (
-        <DDLWarningCallout variant="binding-none" kind={bindingKind} />
-    )}
-    {envLimitation.type === "restricted" &&
-      envLimitation.environments.length > 0 && (
+    {(() => {
+      if (envLimitation.type === "unrestricted") {
+        return <DDLWarningCallout type="binding-all" kind={bindingKind} />;
+      }
+      if (envLimitation.environments.length === 0) {
+        return <DDLWarningCallout type="binding-none" kind={bindingKind} />;
+      }
+      return (
         <div className="flex flex-col gap-y-2">
-          <DDLWarningCallout
-            variant="binding-some"
-            kind={bindingKind}
-            environments={envLimitation.environments}
-          />
+          <DDLWarningCallout type="binding-some" kind={bindingKind} />
           <div className="flex flex-wrap gap-1">
             {envLimitation.environments.map((env) => (
-              <Badge key={env} variant="secondary" className="text-xs">
-                <EnvironmentLabel
-                  environmentName={env}
-                  className="text-xs"
-                />
-              </Badge>
+              <EnvironmentLabel
+                key={env}
+                environmentName={env}
+                className="text-xs"
+              />
             ))}
           </div>
         </div>
-    )}
+      );
+    })()}
   </div>
 )}
 ```
 
-The env badges are kept as a separate row under the warning, matching existing layout but moving them outside the warning Alert so the Alert chrome stays uncluttered. (Alternative: render badges inside the Alert via children — implementer's call. Prefer the separate-row approach for cleaner alignment.)
+Two design choices baked in:
+- The IIFE replaces three sequential compound-`&&` branches with one mutually-exclusive return chain. Reads as a flat tri-state at a glance.
+- `EnvironmentLabel` renders directly without `<Badge variant="secondary">`. The previous wrap was a double-pill (Badge styles + EnvironmentLabel's own colored chip). Task 8 already renders it this way — Task 7 now matches.
 
-Remove now-unused imports (`Info` icon, etc.) if any — `pnpm --dir frontend fix` will surface unused imports.
+Remove now-unused imports (`Info` icon, `Badge` if it's no longer used elsewhere in the file — `pnpm --dir frontend fix` will surface unused imports).
 
-- [ ] **Step 7.2: Type-check + lint.**
+- [ ] **Step 7.2: Add an automated test for the banner tri-state.**
+
+Pick the closest existing `MembersPage` test (or, if none exists, scaffold one in `frontend/src/react/pages/settings/MembersPage.test.tsx` using `IssueDetailRoleGrantDetails.test.tsx` as the harness reference). Add three cases that mount the member-list with one binding each and assert the rendered copy:
+
+```ts
+test("binding-all: renders DDL/DML in ALL environments warning, no env badges", () => {
+  // Mount with envLimitation = { type: "unrestricted" } and role = sql-editor.
+  // Assert: text "project.members.ddl-current-all" is present and the env-badge
+  // container is absent.
+});
+
+test("binding-some: renders 'in the listed environments' warning + EnvironmentLabel chips", () => {
+  // Mount with envLimitation = { type: "restricted", environments: ["environments/prod"] }.
+  // Assert: text "project.members.ddl-current-some" present; EnvironmentLabel
+  // chip for "environments/prod" rendered.
+});
+
+test("binding-none: renders 'not allowed in any environment' warning, no env badges", () => {
+  // Mount with envLimitation = { type: "restricted", environments: [] }.
+  // Assert: text "project.members.ddl-current-none" present.
+});
+```
+
+These lock the IIFE's three return branches against future regression. Match the mocking style established in `RequestRoleSheet.test.tsx`.
+
+- [ ] **Step 7.3: Type-check + lint.**
 
 Run: `pnpm --dir frontend fix && pnpm --dir frontend type-check`
 Expected: passes. The file no longer references `project.members.allow-ddl` / `*-all-environments` / `disallow-*` keys.
 
-- [ ] **Step 7.3: Commit.**
+- [ ] **Step 7.4: Commit.**
 
 ```bash
-git add frontend/src/react/pages/settings/MembersPage.tsx
+git add frontend/src/react/pages/settings/MembersPage.tsx \
+        frontend/src/react/pages/settings/MembersPage.test.tsx
 git commit -m "feat(role-grant): restyle member-list binding banner as warning
 
 Replaces the blue info banner with a permission-aware yellow warning.
@@ -879,7 +927,7 @@ Refs: BYT-9390"
 ```tsx
 // IssueDetailRoleGrantDetails.test.tsx
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { IssueDetailRoleGrantDetails } from "./IssueDetailRoleGrantDetails";
 
 vi.mock("react-i18next", () => ({
@@ -899,24 +947,56 @@ vi.mock("@/components/ProjectMember/utils", () => ({
     role === "roles/sqlEditorUser" ? "DDL/DML" : undefined,
 }));
 
-vi.mock(
-  "../context/IssueDetailContext",
-  () => ({
-    useIssueDetailContext: () => mockContext,
-  }),
-);
+vi.mock("@/react/hooks/useAppState", () => ({
+  useEnvironmentList: () => [
+    { name: "environments/prod", title: "Prod" },
+    { name: "environments/test", title: "Test" },
+  ],
+}));
 
-let mockContext: any;
+// Stub EnvironmentLabel — the real component pulls in useEnvironment +
+// usePlanFeature + theme tokens we don't need to exercise here. Stub
+// with a span that surfaces the env name so the test can assert on it.
+vi.mock("@/react/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({
+    environmentName,
+    className,
+  }: {
+    environmentName: string;
+    className?: string;
+  }) => (
+    <span data-testid="env-label" className={className}>
+      {environmentName}
+    </span>
+  ),
+}));
 
-// stub stores + utility deps with the minimum shape this component needs
-// (databaseStore.getDatabaseByName, environmentStore.getEnvironmentByName,
-//  roleStore.getRoleByName, convertFromCELString, etc.)
-// — copy the existing pattern from IssueDetailDatabaseChangeView.test.tsx
-//   and trim to the two helpers actually used.
+// vi.mock factories are hoisted above imports — wrap the mutable test
+// context in vi.hoisted() so the closure reads from a binding that's
+// guaranteed initialized at hoist time. Pattern matches other tests in
+// this codebase that share state between vi.mock and per-case setup.
+const { mockContextRef } = vi.hoisted(() => ({
+  mockContextRef: { current: undefined as unknown },
+}));
+
+vi.mock("../context/IssueDetailContext", () => ({
+  useIssueDetailContext: () => mockContextRef.current,
+}));
+
+beforeEach(() => {
+  // Force every test to set its own context — catches cases where a test
+  // relies on a previous case's mock leaking through.
+  mockContextRef.current = undefined;
+});
+
+// stub other stores + utility deps with the minimum shape the component
+// needs (databaseStore.getDatabaseByName, roleStore.getRoleByName,
+// convertFromCELString, etc.) — copy the existing pattern from
+// IssueDetailDatabaseChangeView.test.tsx and trim to what the component uses.
 
 describe("IssueDetailRoleGrantDetails", () => {
   test("renders Environments row and warning when role has DDL/DML and env list is non-empty", async () => {
-    mockContext = {
+    mockContextRef.current = {
       issue: {
         roleGrant: {
           role: "roles/sqlEditorUser",
@@ -931,11 +1011,19 @@ describe("IssueDetailRoleGrantDetails", () => {
     expect(
       await screen.findByText(/issue.role-grant.ddl-warning/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Environments/i)).toBeInTheDocument();
+    // Mock returns translation keys verbatim — assert against the key,
+    // not the English string ("Environments").
+    expect(screen.getByText(/common.environments/)).toBeInTheDocument();
+    // Assert env interpolation flowed into the warning text. The mock t()
+    // appends a JSON-encoded vars suffix, so the warning's text content
+    // contains the env titles.
+    const warning = await screen.findByText(/issue.role-grant.ddl-warning/);
+    expect(warning.textContent).toContain("Prod");
+    expect(warning.textContent).toContain("Test");
   });
 
   test("hides warning + env row when role has DDL/DML but condition has no environments", async () => {
-    mockContext = {
+    mockContextRef.current = {
       issue: {
         roleGrant: {
           role: "roles/sqlEditorUser",
@@ -949,8 +1037,27 @@ describe("IssueDetailRoleGrantDetails", () => {
     ).not.toBeInTheDocument();
   });
 
+  test("hides warning when role has been deleted (helper returns undefined)", async () => {
+    mockContextRef.current = {
+      issue: {
+        roleGrant: {
+          role: "roles/wasDeleted",
+          condition: {
+            expression: 'resource.environment_id in ["prod"]',
+          },
+        },
+      },
+    };
+    render(<IssueDetailRoleGrantDetails />);
+    // Helper mock returns undefined for unknown roles — warning hidden,
+    // rest of the details card still renders.
+    expect(
+      screen.queryByText(/issue.role-grant.ddl-warning/),
+    ).not.toBeInTheDocument();
+  });
+
   test("hides warning when role lacks DDL/DML perms", async () => {
-    mockContext = {
+    mockContextRef.current = {
       issue: {
         roleGrant: {
           role: "roles/queryOnly",
@@ -979,42 +1086,46 @@ Expected: FAIL — warning + env row not rendered.
 
 Edits inside the component (between the existing role + permissions block and the existing database + expiration blocks):
 
-1. Add imports:
+1. Add imports (and extend the existing `react` import to include `useMemo`):
 
 ```ts
-import {
-  getRoleEnvironmentLimitationKind,
-} from "@/components/ProjectMember/utils";
-import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
-import { useEnvironmentV1Store } from "@/store";
-```
+// Extend the existing import — file currently imports useEffect, useState.
+import { useEffect, useMemo, useState } from "react";
 
-(`useEnvironmentV1Store` may already be imported in the inner `IssueDetailDatabaseResourceTable` scope — promote/share it.)
+import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
+import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
+```
 
 2. After the existing `condition` `useEffect` block, derive:
 
 ```ts
 const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
 const envNames = condition?.environments ?? [];
-const envStore = useEnvironmentV1Store();
-const envTitles = useVueState(() =>
-  envNames.map((n) => envStore.getEnvironmentByName(n).title),
-);
-const showWarning = envKind !== undefined && envNames.length > 0;
+const envList = useEnvironmentList();
+const envTitles = useMemo(() => {
+  const names = condition?.environments ?? [];
+  const byName = new Map(envList.map((e) => [e.name, e.title]));
+  return names.map((n) => byName.get(n) ?? n);
+}, [condition?.environments, envList]);
 ```
+
+`useEnvironmentList` is the React-native hook for the environment store (already used by `EnvironmentLabel.tsx`). The memo depends on the **stable upstream** `condition?.environments` (set by the async `useEffect` parsing the CEL string), not on the locally-derived `envNames` — `envNames = condition?.environments ?? []` produces a fresh `[]` on every render whenever `condition` is undefined, which would force the memo to re-run unconditionally. Falls back to the raw env resource name (e.g. `environments/prod-old`) if the env isn't in the store, which can happen if the env was renamed or deleted between request submission and approver review — preserves visibility instead of dropping the row silently.
 
 3. As the **first child** of the bordered details `<div>` (before the role row), insert:
 
 ```tsx
-{showWarning && (
+{envKind && envNames.length > 0 && (
   <DDLWarningCallout
-    variant="issue"
-    kind={envKind!}
+    type="issue"
+    kind={envKind}
     environments={envTitles}
   />
 )}
 ```
+
+The `envKind && envNames.length > 0` guard narrows `envKind` to `EnvLimitationKind` inside the branch — no non-null assertion needed.
 
 4. Add a new Environments row between Permissions and Database, rendered only when `envNames.length > 0`:
 
@@ -1140,22 +1251,24 @@ Refs: BYT-9390"
 - Modify: `frontend/src/react/locales/{en-US,zh-CN,ja-JP,es-ES,vi-VN}.json` — remove `allow-ddl`, `allow-ddl-all-environments`, `disallow-ddl-all-environments`.
 - Modify: `frontend/src/locales/{en-US,zh-CN,ja-JP,es-ES,vi-VN}.json` — remove `allow-ddl` only.
 
-- [ ] **Step 10.1: Confirm no source code still references the old keys.**
+- [ ] **Step 10.1: Confirm no source code still references the old keys or the transitional shim.**
 
 Run:
 
 ```bash
-grep -rn "allow-ddl\|disallow-ddl-all-environments" \
+grep -rn "allow-ddl\|disallow-ddl-all-environments\|roleHasEnvironmentLimitation" \
   frontend/src --include="*.ts" --include="*.tsx" --include="*.vue"
 ```
 
-Expected: zero results outside locale files. If any results appear, fix the call site before deleting the key.
+Expected: zero results outside locale files. If `roleHasEnvironmentLimitation` still appears, the migration left a caller behind — fix that caller (use `getRoleEnvironmentLimitationKind`) before continuing. If old i18n keys appear in source (not in locale JSON), fix the call site first.
 
 - [ ] **Step 10.2: Delete the keys from all 10 locale files.**
 
 React tree (5 files): remove `project.members.allow-ddl`, `project.members.allow-ddl-all-environments`, `project.members.disallow-ddl-all-environments`.
 
 Vue tree (5 files): remove `project.members.allow-ddl` only.
+
+Also remove the **transitional shim** `roleHasEnvironmentLimitation` from `frontend/src/components/ProjectMember/utils.ts` (added in Task 1 to keep the build green during migration). Step 10.1's grep confirmed no callers remain.
 
 - [ ] **Step 10.3: Lint + type-check + test sweep.**
 
@@ -1189,12 +1302,13 @@ Start the backend + dev server per the project's standard instructions (`pnpm --
 - [ ] **Step 10.5: Commit.**
 
 ```bash
-git add frontend/src/react/locales/*.json frontend/src/locales/*.json
-git commit -m "i18n: remove obsolete allow-ddl* keys
+git add frontend/src/react/locales/*.json frontend/src/locales/*.json \
+        frontend/src/components/ProjectMember/utils.ts
+git commit -m "chore(role-grant): remove obsolete keys + transitional shim
 
-The new ddl-warning + ddl-current-* keys fully replace the old ones
-across all four surfaces. Old keys removed from both Vue and React
-locale trees.
+Removes the old allow-ddl* i18n keys (10 locale files) and deletes the
+roleHasEnvironmentLimitation transitional shim now that all call sites
+use getRoleEnvironmentLimitationKind.
 
 Refs: BYT-9390"
 ```

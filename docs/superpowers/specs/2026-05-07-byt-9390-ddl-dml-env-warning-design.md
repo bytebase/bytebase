@@ -39,13 +39,27 @@ export type EnvLimitationKind = "DDL" | "DML" | "DDL/DML";
 // Returns the human-readable statement-kind label for the role, or undefined
 // if the role has no environment-scoped DDL/DML permissions (i.e. no env
 // field is shown for this role).
-export const getRoleEnvironmentLimitationKind =
-  (role: string) => EnvLimitationKind | undefined;
+export function getRoleEnvironmentLimitationKind(
+  role: string
+): EnvLimitationKind | undefined;
 ```
 
-Implementation reads the role's permission set (via `useRoleStore`/`checkRoleContainsAnyPermission`) and returns the matching label.
+**Read path.** Implementation is a non-hook utility (call sites include `membersPageEnvironment.ts`, which is not a React component). It reads the role from the Pinia store synchronously via `useRoleStore().getRoleByName(role)` and uses the existing `checkRoleContainsAnyPermission(role, "bb.sql.ddl")` / `("bb.sql.dml")` predicate to test each statement-kind permission separately, then composes the resulting label. This matches how the sibling helper `roleHasDatabaseLimitation` is written today, so the two stay structurally consistent.
 
-All current call sites of `roleHasEnvironmentLimitation` switch to checking `getRoleEnvironmentLimitationKind(role) !== undefined`. The boolean wrapper is **deleted** — call sites are limited to `MembersPage.tsx`, `RequestRoleSheet.tsx`, and `RoleGrantPanel.tsx` (verified via grep). Any third-party caller will surface as a TS error at build time.
+**Unknown role.** If the role is not yet loaded into the store (e.g. an issue page that races role-store hydration), `getRoleByName` returns `undefined` (per `frontend/src/store/modules/role.ts:23-25`, which is `roleList.value.find(...)`). The helper short-circuits and returns `undefined` — symmetric with today's `roleHasEnvironmentLimitation` returning `false` for an unknown role. Once the store hydrates, React re-renders and the helper returns the correct label. Document this in a docstring.
+
+**Call-site migration.** All current call sites switch to checking `getRoleEnvironmentLimitationKind(role) !== undefined`. The boolean wrapper is **deleted**. Verified call sites (`grep -rn "roleHasEnvironmentLimitation"` across `frontend/src/`):
+
+| File | Notes |
+|------|-------|
+| `frontend/src/components/ProjectMember/utils.ts` | Definition. Replace. |
+| `frontend/src/react/pages/settings/MembersPage.tsx` | 2 callers (drawer env-field gate, drawer submit-time env scoping). Switch both to the new helper. |
+| `frontend/src/react/pages/settings/RequestRoleSheet.tsx` | 1 caller (drawer env-field gate). Switch. |
+| `frontend/src/react/pages/settings/membersPageEnvironment.ts` | 1 caller in `getProjectRoleBindingEnvironmentLimitationState`. Switch. |
+| `frontend/src/react/pages/settings/RequestRoleSheet.test.tsx` | Mocks the helper. Update to mock `getRoleEnvironmentLimitationKind`. |
+| `frontend/src/react/pages/settings/membersPageEnvironment.test.ts` | Mocks the helper. Update mock. |
+
+(There is no production caller in `RoleGrantPanel.tsx` — earlier draft of this spec was wrong. The Vue tree's `frontend/src/components/RoleGrantPanel/` contains only `DatabaseResourceForm/` and `MaxRowCountSelect.vue`; neither references this helper.)
 
 ### 3. i18n keys
 
@@ -82,24 +96,21 @@ project.members.ddl-current-none:
 
 #### Removed keys
 
-Delete from `frontend/src/react/locales/en-US.json` and `frontend/src/locales/en-US.json`:
+The old keys live in **10 locale files** across both the Vue and React i18n trees. Removal scope:
 
-```
-project.members.allow-ddl
-project.members.allow-ddl-all-environments
-project.members.disallow-ddl-all-environments
-```
+- `frontend/src/react/locales/{en-US,zh-CN,ja-JP,es-ES,vi-VN}.json` — remove all three keys: `allow-ddl`, `allow-ddl-all-environments`, `disallow-ddl-all-environments`. (React surfaces are the only runtime callers.)
+- `frontend/src/locales/{en-US,zh-CN,ja-JP,es-ES,vi-VN}.json` — remove the single key `allow-ddl` only. (The Vue locale tree contains only `allow-ddl` for these surfaces; the other two keys never existed there. Confirmed by direct inspection of all five files.)
 
-(Vue-locale copies are dead — only React surfaces use the keys, verified via grep.)
+Verified via grep that no `.vue`/`.ts`/`.tsx` source under `frontend/src/` outside of locale files references any of the three old keys other than `MembersPage.tsx` (the surface we're rewriting).
 
-Other locale files (`zh-CN.json`, etc.) get the new keys with the English string as a placeholder; translation lands in a follow-up PR.
+Non-English React locales (`zh-CN.json`, `ja-JP.json`, `es-ES.json`, `vi-VN.json`) get the **new keys** added with translations produced **during implementation in the same PR**. Translation is part of the implementation plan, not deferred — the existing `allow-ddl` is fully translated in all four non-EN locales today, and we should not regress that. The implementation plan will list each (locale, key) pair as an explicit task so translators / the implementer can sweep them together.
 
 ### 4. UI treatment per surface
 
 #### 4.1 Admin grant drawer (`MembersPage.tsx`, env section)
 
 - Remove the muted helper-text caption under the Environments label.
-- Render `<DDLWarningCallout kind={kind} variant="drawer" />` **immediately under the env multi-select**, only when `getRoleEnvironmentLimitationKind(role)` returns a kind.
+- Render `<DDLWarningCallout kind={kind} type="drawer" />` **immediately under the env multi-select**, only when `getRoleEnvironmentLimitationKind(role)` returns a kind.
 - Visual: yellow background (`bg-warning-bg`) / yellow border, ⚠ icon, copy from `project.members.ddl-warning`.
 
 #### 4.2 Developer request drawer (`RequestRoleSheet.tsx`, env section)
@@ -118,53 +129,85 @@ Two changes inside the existing bordered details card:
   - `getRoleEnvironmentLimitationKind(issue.roleGrant.role)` returns a kind, **and**
   - `condition?.environments?.length > 0`
 
-Backup placement (Option B from brainstorming): if review feedback during implementation finds the top banner too heavy, the warning can move to a contextual callout immediately under the Environments row. Same copy; same component.
+**Edge cases (explicit):**
+
+| Situation | Behavior | Rationale |
+|---|---|---|
+| Role has DDL/DML perms, `condition.environments` is `undefined` | Warning hidden; Environments row hidden. | Today's request flow always emits an `environments` clause when `getRoleEnvironmentLimitationKind(role) !== undefined`, so undefined is only seen for legacy / hand-edited bindings. Approver still sees role title + permissions. |
+| Role has DDL/DML perms, `condition.environments` is `[]` (explicit empty) | Warning hidden; Environments row hidden. | Reachable: the request flow emits `environments: []` when the developer requests a DDL/DML role but selects zero environments. Backend semantics: `resource.environment_id in []` is false everywhere, so the binding grants **no** DDL/DML access — there is no risk to convey, hence no warning. The Environments row is also suppressed because rendering "Environments: (none)" alongside a request that had a DDL/DML-shaped role would invite the misread "this role grants DDL/DML somewhere"; rather than disambiguate via a fourth UI state we let the role's permission list speak for itself. If user research later flags this as confusing, surfacing an explicit "no environments selected" indicator is a follow-up spec. |
+| Role-grant issue references a role that has been **deleted** by the time an approver opens the page | `useRoleStore().getRoleByName` returns `undefined` → helper returns `undefined` → warning hides. | Symmetric with today's silent-hide for unknown roles. Approver still sees the existing role-name and database details; they can revoke/decline as usual. |
+| Role store hasn't hydrated yet | Helper returns `undefined` on first render, warning hidden; React re-renders once the store loads and warning appears. | Matches today's gating behavior; no flash-of-warning on subsequent loads because the store is cached after first hydration. |
+| `kind` would be the empty string | Cannot occur — the warning component is only mounted when `getRoleEnvironmentLimitationKind` returns one of three explicit string literals. **Implementers must NOT add a defensive `kind ?? "DDL/DML"` fallback** — that would mask a logic bug elsewhere. |
+
+Placement is **Option A only** for this plan. Option B (contextual callout under the Environments row) was discussed during brainstorming as a fallback but is intentionally **not** included as a mid-implementation pivot — if review pushes back on Option A, we treat that as a separate spec amendment rather than letting the plan absorb both.
 
 #### 4.4 Member-list current-binding banner (`MembersPage.tsx`)
 
 - Restyle from blue info → yellow warning (`Alert variant="warning"`).
-- Use the same `<DDLWarningCallout>` component with `variant="binding-some" | "binding-all" | "binding-none"` so the string switch happens in one place.
+- Use the same `<DDLWarningCallout>` component with one of three variants so the string switch happens in one place.
 - Gating unchanged: only renders when `getRoleEnvironmentLimitationKind(binding.role) !== undefined` (this is the same set of roles that previously triggered `envLimitation`, so visible bindings don't change).
+
+**Variant ↔ existing limitation-state mapping.** `getProjectRoleBindingEnvironmentLimitationState` (in `membersPageEnvironment.ts`) already returns the three states we need:
+
+| Existing limitation state | New `<DDLWarningCallout>` variant | Visual rendering |
+|---|---|---|
+| `{ type: "unrestricted" }` | `binding-all` | Warning Alert, copy from `ddl-current-all`. **No** env badges. |
+| `{ type: "restricted", environments: [...] }` (length > 0) | `binding-some` | Warning Alert, copy from `ddl-current-some`, **plus** env badges rendered next to or under the copy (mirrors the existing layout). |
+| `{ type: "restricted", environments: [] }` | `binding-none` | Warning Alert, copy from `ddl-current-none`. No env badges. |
+| `undefined` | (don't render) | (banner hidden — no DDL/DML scope on this role.) |
+
+The component receives the limitation state directly (or the variant + optional env list) — implementer's call. The mapping table above is the source of truth.
 
 ### 5. New shared component: `DDLWarningCallout`
 
 ```tsx
 // frontend/src/react/components/role-grant/DDLWarningCallout.tsx
 
-type Variant =
-  | "drawer"          // admin grant + developer request
-  | "issue"           // approver issue page
-  | "binding-some"    // member list, specific envs
-  | "binding-all"     // member list, no env restriction
-  | "binding-none";   // member list, empty envs
-
-interface Props {
-  kind: EnvLimitationKind;        // "DDL" | "DML" | "DDL/DML"
-  variant: Variant;
-  environments?: string[];        // required for "issue"; ignored otherwise
-}
+type DDLWarningProps =
+  | { type: "drawer";       kind: EnvLimitationKind }
+  | { type: "issue";        kind: EnvLimitationKind; environments: string[] }
+  | { type: "binding-some"; kind: EnvLimitationKind }
+  | { type: "binding-all";  kind: EnvLimitationKind }
+  | { type: "binding-none"; kind: EnvLimitationKind };
 ```
 
-Internally it picks the right i18n key, interpolates `kind` (and `environments` when relevant), and renders an `Alert` with the standard warning chrome.
+The discriminated union enforces at compile time that callers provide `environments` exactly when the variant needs them — no `environments?` footgun where a caller forgets to pass them and silently renders an empty list.
+
+Internally:
+- Picks the right i18n key per variant.
+- Interpolates `kind` always; interpolates `environments` (comma-joined display titles) only for `issue`.
+- Renders an `Alert` with `variant="warning"` chrome (yellow background, ⚠ icon).
+
+The component does **not** render env badges itself. Consumers that need badges (issue page's Environments row, member-list `binding-some` banner) render them outside the callout because each surface arranges them differently relative to surrounding rows. Centralizing badge layout in the component would couple it to one surface's layout decisions; the centralized thing here is **copy + i18n key routing**.
 
 ### 6. Tests
 
-- **Unit test** for `getRoleEnvironmentLimitationKind`: covers `bb.sql.ddl` only, `bb.sql.dml` only, both, neither, and a built-in role that mixes env-scoped perms with non-env-scoped ones.
-- **`MembersPage` test**: switching the selected role updates the kind label in the warning callout (`DDL`, `DML`, `DDL/DML`); for a non-DDL role the env field and warning are both hidden.
-- **`RequestRoleSheet.test.tsx`**: extend the existing test file to assert the warning copy renders for a DDL/DML role and is absent for a SELECT-only role.
+- **Unit test** for `getRoleEnvironmentLimitationKind`: covers `bb.sql.ddl` only, `bb.sql.dml` only, both, neither, a built-in role that mixes env-scoped with non-env-scoped perms, and the **unknown-role** case (returns `undefined` to lock the symmetry-with-old-`false` behavior).
+- **`MembersPage` test**: switching the selected role updates the kind label in the warning callout (`DDL`, `DML`, `DDL/DML`); for a non-DDL role the env field and warning are both hidden. Member-list banner renders the correct variant for each of `unrestricted` / `restricted` (non-empty) / `restricted` (empty).
+- **`RequestRoleSheet.test.tsx`**: existing mock of `roleHasEnvironmentLimitation` switches to mocking `getRoleEnvironmentLimitationKind`. Add assertions: the warning copy renders for a DDL/DML role and is absent for a SELECT-only role.
+- **`membersPageEnvironment.test.ts`**: existing mock switches to `getRoleEnvironmentLimitationKind`. Existing tri-state assertions stay green; add a case for the new mock returning `undefined` (still produces `undefined` from `getProjectRoleBindingEnvironmentLimitationState`).
 - **`IssueDetailRoleGrantDetails` test (new)**:
   - Warning + Environments row render for a role-grant issue with `bb.sql.ddl` + `bb.sql.dml` and two envs.
   - Warning hidden when role lacks DDL/DML perms (e.g. SELECT-only role).
   - Environments row hidden when `condition.environments` is empty/undefined.
   - Env-name interpolation: warning text contains the env display titles, not env resource names.
-- **`DDLWarningCallout` snapshot/RTL test**: each `variant` × representative `kind` renders the expected i18n string.
+  - Role-deleted case: helper returns `undefined`, warning is hidden, rest of details still render.
+- **`DDLWarningCallout` snapshot/RTL test**: each variant × representative `kind` renders the expected i18n string. Type-level test (compile-only) confirms the discriminated union rejects passing `environments` to `binding-all` and rejects omitting `environments` from `issue`.
 
 ### 7. Out of scope
 
 - No backend changes. CEL expression generation, `RoleGrant` proto, and the approval runner are untouched.
-- Translation of new keys into non-English locales lands in a follow-up.
 - The drawer label *Environments* itself is unchanged.
 - No change to which roles support env scoping; we only change how the existing scoping is *communicated*.
+- Surfacing a warning when a role has DDL/DML perms but `condition.environments` is empty/undefined (today this combination is unreachable from the request flow — see §4.3 edge cases).
+
+## Known limitations (accepted)
+
+- **`binding-all` copy ("ALL environments") describes env scope only.** A binding can be `unrestricted` on environments while still being database-scoped (DDL/DML allowed in selected databases × all environments). The warning conveys the env axis only — not the database axis. This is consistent with the warning being attached to environment selection. If user research later flags this as misleading, surfacing the database scope alongside is a follow-up spec; the current scope is intentionally narrow.
+
+- **Async layout shift on the issue page.** `condition.environments` is parsed inside an awaited `convertFromCELString` call in `IssueDetailRoleGrantDetails.tsx`. The Environments row + warning banner therefore appear after first paint, causing a small layout shift at the top of the details card. This already happens today for the database row; the new rows continue the existing pattern. If this becomes noticeable in user research, a skeleton placeholder can land in a follow-up.
+
+- **No equivalent surface in the SQL Editor self-service flow.** Verified via grep: `frontend/src/react/components/sql-editor/RoleGrantPanel.tsx` does not use `EnvironmentMultiSelect` — it grants per-database, not per-environment. The warning is irrelevant there. The Linear ticket title's "SQL Editor self-service" refers to the developer request flow (`RequestRoleSheet`), which is covered.
 
 ## Open questions
 
