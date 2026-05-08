@@ -6,6 +6,7 @@ import {
   authServiceClientConnect,
   settingServiceClientConnect,
   subscriptionServiceClientConnect,
+  userServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
 import {
@@ -137,15 +138,24 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   },
 
   loadWorkspace: async () => {
+    // Always re-fetch currentUser to get the latest auth context.
+    // The cached currentUser may be from before login (undefined or stale).
+    const user = await userServiceClientConnect
+      .getCurrentUser({})
+      .catch(() => undefined);
+    if (user) {
+      set({ currentUser: user });
+    }
+    const name =
+      user?.workspace ||
+      get().currentUser?.workspace ||
+      get().serverInfo?.workspace ||
+      `${workspaceNamePrefix}-`;
+    // Return cached workspace if it matches the current auth context.
     const existing = get().workspace;
-    if (existing) return existing;
+    if (existing?.name === name) return existing;
     const pending = get().workspaceRequest;
     if (pending) return pending;
-    await Promise.all([get().loadCurrentUser(), get().loadServerInfo()]);
-    const name =
-      get().serverInfo?.workspace ||
-      get().currentUser?.workspace ||
-      `${workspaceNamePrefix}-`;
     const request = workspaceServiceClientConnect
       .getWorkspace({ name })
       .then((workspace) => {

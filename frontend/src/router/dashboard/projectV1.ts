@@ -164,11 +164,12 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "",
         name: PROJECT_V1_ROUTE_DETAIL,
-        // We will check user's permission to decide the redirect page.
-        component: () => import("@/react/ReactPageMount.vue"),
-        props: (route: RouteLocationNormalized) => ({
-          page: "ProjectLandingPage",
-          ...route.params,
+        // Redirect to the issues page synchronously via beforeEnter instead
+        // of rendering ProjectLandingPage (which did an async useEffect →
+        // router.replace that raced with ReactPageMount's render queue).
+        redirect: (to) => ({
+          name: PROJECT_V1_ROUTE_ISSUES,
+          params: to.params,
         }),
       },
       {
