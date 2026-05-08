@@ -842,19 +842,29 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
-	// Reset notification state so the user gets fresh feedback on this retry.
-	// Placed after authorization + the successful CreatePendingTaskRuns so a
-	// rejected request (auth fail, missing tasks, missing approval) leaves the
-	// dedup ledger untouched. Errors are logged and swallowed so a transient
-	// DB hiccup doesn't fail the user-facing run request.
-	if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
-		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
-	}
+	// Re-arm webhook notifications for this fresh retry attempt.
+	s.resetPlanWebhookDeliveryBestEffort(ctx, projectID, planID)
 
 	// Tickle task run scheduler.
 	s.bus.TaskRunTickleChan <- 0
 
 	return connect.NewResponse(&v1pb.BatchRunTasksResponse{}), nil
+}
+
+// resetPlanWebhookDeliveryBestEffort wipes the plan_webhook_delivery row so
+// the next pipeline event can fire. Called from the success path of
+// BatchRunTasks and BatchSkipTasks after authorization and the actual store
+// mutation; placed before the channel signal that drives the next async
+// stage so the completion check sees the cleared row.
+//
+// Errors are logged and swallowed: a transient DB hiccup must not fail the
+// user-facing request, but a persistent failure here will re-introduce the
+// BYT-9398 symptom for the affected plan, so the log line should be
+// monitored.
+func (s *RolloutService) resetPlanWebhookDeliveryBestEffort(ctx context.Context, projectID string, planID int64) {
+	if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
+		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
+	}
 }
 
 // BatchSkipTasks skips tasks in batch.
@@ -947,16 +957,9 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
-	// Reset notification state so PIPELINE_COMPLETED can fire after skipping a
-	// failed task (the BYT-9398 fix). Placed after authorization + the
-	// successful BatchSkipTasks so a rejected request (auth fail, unknown
-	// task, etc.) leaves the dedup ledger untouched. Must run before the
-	// completion-check signal below so the async claim sees the cleared row.
-	// Errors are logged and swallowed so a DB hiccup doesn't fail the
-	// user-facing skip request.
-	if err := s.store.ResetPlanWebhookDelivery(ctx, projectID, planID); err != nil {
-		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
-	}
+	// Clear any stale PIPELINE_FAILED dedupe row so the BYT-9398 recovery
+	// path can fire PIPELINE_COMPLETED (see helper docs).
+	s.resetPlanWebhookDeliveryBestEffort(ctx, projectID, planID)
 
 	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
 	s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: projectID, PlanID: planID}
