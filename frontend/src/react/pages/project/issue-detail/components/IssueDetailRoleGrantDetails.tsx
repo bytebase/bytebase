@@ -125,7 +125,7 @@ export function IssueDetailRoleGrantDetails() {
             <span className="text-sm text-control-light">
               {t("common.database")}
             </span>
-            <div>
+            <div className="text-base">
               {condition.databaseResources.length === 0 ? (
                 <span>{t("issue.role-grant.all-databases")}</span>
               ) : (
