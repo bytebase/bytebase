@@ -121,12 +121,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				},
 			})
 			byteOffsetStart = byteOffsetEnd
-			// Skip past any trailing ';' separator so it doesn't bleed into the
-			// next statement's leadingContent. If a ';' was consumed across
-			// hidden tokens, advance byteOffsetStart by the BYTE length of the
-			// consumed span — len() on a string is byte length, while ANTLR
-			// token indices are rune indices, and multi-byte UTF-8 in hidden
-			// tokens (e.g., a comment with non-ASCII text) would diverge.
+			// If a trailing ';' was consumed across hidden tokens, advance
+			// byteOffsetStart by the BYTE length of the consumed span — len()
+			// is bytes; ANTLR token indices are runes, so multi-byte UTF-8 in
+			// hidden tokens (e.g., a non-ASCII comment) would diverge.
 			stopIdx := stmt.GetStop().GetTokenIndex()
 			allTokens := tokens.GetAllTokens()
 			prevStopTokenIndex = consumeTrailingSemicolon(allTokens, stopIdx)

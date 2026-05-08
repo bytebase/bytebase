@@ -136,10 +136,6 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
 		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
 
-		// Skip past any trailing ';' separator so it doesn't bleed into the
-		// next statement's reparse text — otherwise the resulting sub-AST
-		// gains a leading bare SEMICOLON child and getStatementType() returns
-		// STATEMENT_TYPE_UNSPECIFIED.
 		prevStopTokenIndex = consumeTrailingSemicolon(tokens.GetAllTokens(), stopToken.GetTokenIndex())
 
 		// Skip empty statements

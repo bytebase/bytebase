@@ -43,3 +43,12 @@
     WHERE FirstName = 'John' AND LastName = 'Doe';
   want:
     - DELETE
+- statement: "insert into t values('a',1) ;\n\ninsert into t values('b',2) ;"
+  want:
+    - INSERT
+- statement: "insert into t values('a',1) /* note */ ;\ninsert into t values('b',2) ;"
+  want:
+    - INSERT
+- statement: "insert into t values('a',1)\n\n;\n\ninsert into t values('b',2);"
+  want:
+    - INSERT
