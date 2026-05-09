@@ -104,6 +104,7 @@ import {
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
+import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
 import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 import { RequestRoleSheet } from "./RequestRoleSheet";
@@ -1432,8 +1433,9 @@ function EditMemberRoleDrawer({
                             {rows.map((row, rowIdx) => (
                               <TableRow key={rowIdx}>
                                 <TableCell>
-                                  {row.databaseResource?.databaseFullName ??
-                                    "*"}
+                                  <MemberDatabaseResourceName
+                                    resource={row.databaseResource}
+                                  />
                                 </TableCell>
                                 <TableCell>
                                   {row.databaseResource?.schema ?? "*"}
