@@ -1,8 +1,12 @@
 package mysql
 
 import (
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
@@ -85,4 +89,23 @@ func TestMySQLRules(t *testing.T) {
 	for _, rule := range rules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
 	}
+}
+
+func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
+	sm := sheet.NewManager()
+
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t(id INT);\nUPDATE test SET c1 = 1 WHERE b1 = 1;", nil, advisor.Context{
+		DBType:            storepb.Engine_MARIADB,
+		DBSchema:          advisor.MockMySQLDatabase,
+		EnablePriorBackup: true,
+		InstanceID:        "instance",
+		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+			return []string{"bbdataarchive"}, nil
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotEmpty(t, adviceList)
+	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
+	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
 }
