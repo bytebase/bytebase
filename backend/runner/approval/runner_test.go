@@ -175,3 +175,41 @@ func TestCalculateRiskLevelFromCELVars(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
+	results := []*storepb.PlanCheckRunResult_Result{
+		{
+			Target:      "instances/prod/databases/app",
+			Type:        storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+			SheetSha256: "sheet-a",
+			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+					AffectedRows: 10,
+				},
+			},
+		},
+		{
+			Target:      "instances/prod/databases/app",
+			Type:        storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+			SheetSha256: "sheet-b",
+			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+					AffectedRows: 20,
+				},
+			},
+		},
+	}
+
+	got := buildStatementSummaryResultMap(results)
+
+	require.Equal(t, int64(10), got[statementSummaryKey{
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		SheetSHA256:  "sheet-a",
+	}].GetSqlSummaryReport().GetAffectedRows())
+	require.Equal(t, int64(20), got[statementSummaryKey{
+		InstanceID:   "prod",
+		DatabaseName: "app",
+		SheetSHA256:  "sheet-b",
+	}].GetSqlSummaryReport().GetAffectedRows())
+}

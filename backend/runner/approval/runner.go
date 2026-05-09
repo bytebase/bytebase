@@ -517,6 +517,31 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 
 // buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
 // This includes DDL and DML operations.
+type statementSummaryKey struct {
+	InstanceID   string
+	DatabaseName string
+	SheetSHA256  string
+}
+
+func buildStatementSummaryResultMap(results []*storepb.PlanCheckRunResult_Result) map[statementSummaryKey]*storepb.PlanCheckRunResult_Result {
+	m := map[statementSummaryKey]*storepb.PlanCheckRunResult_Result{}
+	for _, result := range results {
+		if result.Type != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
+			continue
+		}
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(result.Target)
+		if err != nil {
+			continue
+		}
+		m[statementSummaryKey{
+			InstanceID:   instanceID,
+			DatabaseName: databaseName,
+			SheetSHA256:  result.SheetSha256,
+		}] = result
+	}
+	return m
+}
+
 func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
@@ -534,33 +559,14 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
-	type Key struct {
-		InstanceID   string
-		DatabaseName string
-	}
-	latestPlanCheckRun := map[Key]*storepb.PlanCheckRunResult_Result{}
-
 	// Wait for plan check to complete if running
 	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusRunning {
 		return nil, false, nil // Not ready yet, retry later
 	}
 
-	// Build map from results, filtering for STATEMENT_SUMMARY_REPORT
+	statementSummaryResults := map[statementSummaryKey]*storepb.PlanCheckRunResult_Result{}
 	if planCheckRun != nil {
-		for _, result := range planCheckRun.Result.Results {
-			if result.Type != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
-				continue
-			}
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(result.Target)
-			if err != nil {
-				continue
-			}
-			key := Key{
-				InstanceID:   instanceID,
-				DatabaseName: databaseName,
-			}
-			latestPlanCheckRun[key] = result
-		}
+		statementSummaryResults = buildStatementSummaryResultMap(planCheckRun.Result.GetResults())
 	}
 
 	// Unfold database groups and get all targets
@@ -599,9 +605,10 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		}
 
 		// Add summary report data if available
-		result, ok := latestPlanCheckRun[Key{
+		result, ok := statementSummaryResults[statementSummaryKey{
 			InstanceID:   target.database.InstanceID,
 			DatabaseName: target.database.DatabaseName,
+			SheetSHA256:  target.sheetSha256,
 		}]
 		if !ok {
 			celVarsList = append(celVarsList, celVars)
