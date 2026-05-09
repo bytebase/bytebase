@@ -128,7 +128,7 @@
     "@types/normalize-wheel": "^1.0.4",
     "@types/pouchdb": "^6.4.2",
     "@types/pouchdb-find": "^7.3.3",
-    "@types/qs": "6.14.0",
+    "@types/qs": "6.15.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/scrollparent": "^2.0.3",
