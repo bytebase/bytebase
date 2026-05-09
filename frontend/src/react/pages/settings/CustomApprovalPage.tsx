@@ -44,7 +44,7 @@ export function CustomApprovalPage() {
 
       {hasFeature && (
         <div className="textinfolabel">
-          {t("custom-approval.rule.first-match-wins")}
+          {t("custom-approval.rule.approval-rule-matching")}
         </div>
       )}
 

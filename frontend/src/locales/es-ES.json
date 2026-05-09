@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
-      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
+      "fallback-rules-hint": "Las reglas de respaldo se evalúan de arriba abajo solo cuando ninguna regla específica de origen coincide.",
       "node": {
         "add": "Agregar nodo",
         "approver": "Aprobador",
@@ -527,6 +527,7 @@
       }
     },
     "rule": {
+      "approval-rule-matching": "Las reglas se evalúan en orden. Las reglas específicas de origen se ejecutan antes que las Reglas de respaldo. En un plan con varios destinos, una regla específica de origen coincide con todo el plan si cualquier destino cumple su condición, y la primera regla coincidente selecciona el flujo de aprobación para todo el plan. Coloca las reglas para cambios de mayor riesgo antes que las de menor riesgo. Para riesgos similares, coloca las reglas más estrictas o específicas antes de las más amplias.",
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
       "self": "Regla de aprobación personalizada"
     },

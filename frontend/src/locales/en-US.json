@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Fallback Rules",
-      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
+      "fallback-rules-hint": "Fallback rules are evaluated from top to bottom only when no source-specific rule matches.",
       "node": {
         "add": "Add node",
         "approver": "Approver",
@@ -527,6 +527,7 @@
       }
     },
     "rule": {
+      "approval-rule-matching": "Rules are evaluated in order. Source-specific rules run before Fallback Rules. For a multi-target plan, a source-specific rule matches the whole plan if any target matches its condition, and the first matching rule selects the approval flow for the whole plan. Place rules for higher risk changes before those for lower-risk changes. For similar risks, place stricter or more specific rules before broader rules.",
       "first-match-wins": "Rules are evaluated in order. First matching rule applies.",
       "self": "Custom Approval Rule"
     },
