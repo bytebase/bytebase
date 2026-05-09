@@ -25,6 +25,7 @@ import {
   isRelease,
   migrateStorageKeys,
   migrateUIDStorageKeys,
+  semverCompare,
 } from "./utils";
 
 console.debug("dev:", isDev());
@@ -48,11 +49,6 @@ migrateStorageKeys();
   app.use(pinia);
 
   const currentUser = await useAuthStore().fetchCurrentUser();
-  // Migrate old UID-scoped localStorage keys to email-scoped keys.
-  // Must run after fetchCurrentUser so we know the email.
-  if (currentUser?.email) {
-    migrateUIDStorageKeys(currentUser.email);
-  }
   // Initialize stores.
   const initPromises: Promise<unknown>[] = [
     useActuatorV1Store().fetchServerInfo(currentUser?.workspace),
@@ -62,6 +58,20 @@ migrateStorageKeys();
     initPromises.push(useWorkspaceV1Store().fetchWorkspaceList());
   }
   await Promise.all(initPromises);
+
+  // Migrate old UID-scoped localStorage keys to email-scoped keys.
+  // Only runs on versions < 3.15.0 (the bug window was v3.13.0–v3.14.1
+  // where user.name changed from users/{uid} to users/{email} but
+  // localStorage keys were not migrated).
+  const serverVersion = useActuatorV1Store().version;
+  if (
+    currentUser?.email &&
+    serverVersion &&
+    serverVersion !== "development" &&
+    semverCompare(serverVersion, "3.15.0", "lt")
+  ) {
+    migrateUIDStorageKeys(currentUser.email);
+  }
 
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
 
