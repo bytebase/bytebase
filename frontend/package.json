@@ -104,7 +104,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.14",
-    "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",
     "@intlify/eslint-plugin-vue-i18n": "^4.0.0",
     "@intlify/unplugin-vue-i18n": "11.1.2",
     "@playwright/test": "^1.59.1",
@@ -144,6 +143,7 @@
     "autoprefixer": "10.5.0",
     "code-inspector-plugin": "^1.4.4",
     "dotenv": "^17.4.2",
+    "esbuild": "0.27.2",
     "eslint": "10.3.0",
     "eslint-plugin-vue": "10.9.1",
     "jsdom": "27.4.0",

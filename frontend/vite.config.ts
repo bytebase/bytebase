@@ -1,7 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
-// @ts-ignore -- esbuild is a transitive dependency via vite
 import { transform as esbuildTransform } from "esbuild";
-import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
 import VueI18nPlugin from "@intlify/unplugin-vue-i18n/vite";
 import yaml from "@rollup/plugin-yaml";
 import tailwindcss from "@tailwindcss/vite";
@@ -139,9 +137,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["vscode-textmate", "vscode-oniguruma"],
-    esbuildOptions: {
-      plugins: [importMetaUrlPlugin],
-    },
   },
   envPrefix: ["BB_", "GIT_COMMIT"],
   define: {
