@@ -17,48 +17,69 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
   roles: [],
 
   loadWorkspacePermissionState: async () => {
+    // Short-circuit when both caches are already populated. Without
+    // this, every `PermissionGuard` / `usePermissionCheck` mount
+    // re-issues `listRoles` / `getIamPolicy` because the in-flight
+    // dedupe (`rolesRequest` / `workspacePolicyRequest`) is reset to
+    // `undefined` once the previous request resolves. Pages with many
+    // permission-guarded widgets would otherwise fan out N RPCs per
+    // mount cycle.
+    if (get().roles.length > 0 && get().workspacePolicy !== undefined) {
+      return;
+    }
+
     await Promise.all([
       get().loadCurrentUser(),
       get().loadServerInfo(),
       get().loadWorkspace(),
     ]);
 
-    const rolesRequest =
-      get().rolesRequest ??
-      roleServiceClientConnect
-        .listRoles(createProto(ListRolesRequestSchema, {}))
-        .then((response) => {
-          set({ roles: response.roles, rolesRequest: undefined });
-          return response.roles;
-        })
-        .catch(() => {
-          set({ rolesRequest: undefined });
-          return [];
-        });
-    set({ rolesRequest });
+    const pending: Promise<unknown>[] = [];
 
-    const policyResource =
-      get().serverInfo?.workspace ||
-      get().workspace?.name ||
-      get().currentUser?.workspace ||
-      `${workspaceNamePrefix}-`;
-    const policyRequest =
-      get().workspacePolicyRequest ??
-      workspaceServiceClientConnect
-        .getIamPolicy(
-          createProto(GetIamPolicyRequestSchema, { resource: policyResource })
-        )
-        .then((workspacePolicy) => {
-          set({ workspacePolicy, workspacePolicyRequest: undefined });
-          return workspacePolicy;
-        })
-        .catch(() => {
-          set({ workspacePolicyRequest: undefined });
-          return undefined;
-        });
-    set({ workspacePolicyRequest: policyRequest });
+    if (get().roles.length === 0) {
+      const req =
+        get().rolesRequest ??
+        roleServiceClientConnect
+          .listRoles(createProto(ListRolesRequestSchema, {}))
+          .then((response) => {
+            set({ roles: response.roles, rolesRequest: undefined });
+            return response.roles;
+          })
+          .catch(() => {
+            set({ rolesRequest: undefined });
+            return [];
+          });
+      if (!get().rolesRequest) set({ rolesRequest: req });
+      pending.push(req);
+    }
 
-    await Promise.all([rolesRequest, policyRequest]);
+    if (get().workspacePolicy === undefined) {
+      const policyResource =
+        get().serverInfo?.workspace ||
+        get().workspace?.name ||
+        get().currentUser?.workspace ||
+        `${workspaceNamePrefix}-`;
+      const req =
+        get().workspacePolicyRequest ??
+        workspaceServiceClientConnect
+          .getIamPolicy(
+            createProto(GetIamPolicyRequestSchema, { resource: policyResource })
+          )
+          .then((workspacePolicy) => {
+            set({ workspacePolicy, workspacePolicyRequest: undefined });
+            return workspacePolicy;
+          })
+          .catch(() => {
+            set({ workspacePolicyRequest: undefined });
+            return undefined;
+          });
+      if (!get().workspacePolicyRequest) {
+        set({ workspacePolicyRequest: req });
+      }
+      pending.push(req);
+    }
+
+    await Promise.all(pending);
   },
 
   loadProjectIamPolicy: async (project) => {

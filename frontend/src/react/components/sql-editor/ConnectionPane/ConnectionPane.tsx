@@ -1077,8 +1077,16 @@ function TreeRow({
       data-node-key={node.key}
       onMouseDown={(e) => {
         const target = e.target as HTMLElement;
+        // Match `data-row-interactive` first because tooltip / permission
+        // wrappers (Base UI's Tooltip.Trigger renders a `<span>`) can be
+        // the actual mousedown target when the wrapped control is
+        // disabled — `target.closest('button')` from that span walks UP
+        // and won't find the disabled `<button>` descendant. Wrappers
+        // owning interactive controls in this row mark themselves with
+        // `data-row-interactive` to opt out of row activation regardless
+        // of internal nesting.
         interactiveMouseDownRef.current = !!target.closest(
-          'button, [role="checkbox"], a, input'
+          '[data-row-interactive], button, [role="checkbox"], a, input'
         );
       }}
       // Use `onMouseUp` instead of `onClick` for the row activation. Safari

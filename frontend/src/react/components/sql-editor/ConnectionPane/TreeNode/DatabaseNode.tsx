@@ -53,15 +53,31 @@ export function DatabaseNode({
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   const canQuery = isDatabaseV1Queryable(database);
 
+  // Wrappers around interactive controls (checkbox / RequestQueryButton)
+  // are marked with `data-row-interactive` so the parent `TreeRow`'s
+  // mousedown-target check skips row activation when the press starts
+  // anywhere inside — including on a tooltip-trigger `<span>` that
+  // wraps a disabled control (which `closest('button')` misses because
+  // closest walks UP the DOM and the disabled `<button>` is a
+  // descendant of the span).
+  //
+  // We only stop `onClick` propagation here, NOT `mousedown`/`mouseup` —
+  // the row's mousedown listener needs to see the press to record that
+  // it started on an interactive child (so it can skip `onMouseUp`-driven
+  // row activation even when the cursor drifts off the wrapper before
+  // release). Stopping `onClick` is enough to keep checkbox clicks from
+  // leaking to ancestor React onClick handlers.
   const checkbox = supportBatchMode ? (
-    <Tooltip content={checkTooltip ?? ""}>
-      <Checkbox
-        checked={!!checked}
-        className="mr-2"
-        disabled={checkDisabled}
-        onCheckedChange={(checked) => onCheckedChange?.(checked)}
-      />
-    </Tooltip>
+    <span data-row-interactive onClick={(e) => e.stopPropagation()}>
+      <Tooltip content={checkTooltip ?? ""}>
+        <Checkbox
+          checked={!!checked}
+          className="mr-2"
+          disabled={checkDisabled}
+          onCheckedChange={(checked) => onCheckedChange?.(checked)}
+        />
+      </Tooltip>
+    </span>
   ) : null;
 
   return (
@@ -85,7 +101,11 @@ export function DatabaseNode({
       </div>
 
       {!canQuery && (
-        <div className="ml-auto shrink-0">
+        <div
+          className="ml-auto shrink-0"
+          data-row-interactive
+          onClick={(e) => e.stopPropagation()}
+        >
           <RequestQueryButton
             size="sm"
             text
