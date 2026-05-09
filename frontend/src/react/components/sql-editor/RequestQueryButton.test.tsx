@@ -306,6 +306,46 @@ describe("RequestQueryButton", () => {
     unmount();
   });
 
+  test("non-JIT role request works without Array.prototype.toSorted", async () => {
+    setupDefaultMocks(false, true);
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Array.prototype,
+      "toSorted"
+    );
+    Object.defineProperty(Array.prototype, "toSorted", {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      const { container, render, unmount } = renderIntoContainer(
+        <RequestQueryButton
+          text={false}
+          permissionDeniedDetail={makePermissionDeniedDetail({
+            requiredPermissions: ["bb.sql.select"],
+          })}
+        />
+      );
+      render();
+
+      const btn = container.querySelector("button") as HTMLButtonElement;
+      await act(async () => {
+        btn.click();
+      });
+
+      expect(
+        container
+          .querySelector("[data-testid='role-grant-panel']")
+          ?.getAttribute("data-role")
+      ).toBe("roles/sqlEditorReadUser");
+      unmount();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Array.prototype, "toSorted", descriptor);
+      }
+    }
+  });
+
   test("click in JIT mode opens AccessGrantRequestDrawer", async () => {
     setupDefaultMocks(true, true);
     const { container, render, unmount } = renderIntoContainer(

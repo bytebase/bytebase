@@ -30,11 +30,11 @@ const getDefaultQueryRole = (
     requiredPermissions.length > 0
       ? requiredPermissions
       : [SQL_SELECT_PERMISSION];
-  const candidates = roles
+  const candidates = [...roles]
     .filter((role) =>
       permissions.every((permission) => role.permissions.includes(permission))
     )
-    .toSorted((a, b) => {
+    .sort((a, b) => {
       const permissionCountDelta = a.permissions.length - b.permissions.length;
       if (permissionCountDelta !== 0) {
         return permissionCountDelta;
