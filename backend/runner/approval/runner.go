@@ -515,8 +515,6 @@ func unfoldSpecTargets(ctx context.Context, stores *store.Store, specs []*storep
 	return targets, nil
 }
 
-// buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
-// This includes DDL and DML operations.
 type statementSummaryKey struct {
 	InstanceID   string
 	DatabaseName string
@@ -609,6 +607,8 @@ func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus
 	return nil
 }
 
+// buildCELVariablesForDatabaseChange builds CEL variables for DATABASE_CHANGE issues.
+// This includes DDL and DML operations.
 func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) ([]map[string]any, bool, error) {
 	if issue.PlanUID == nil {
 		return nil, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
