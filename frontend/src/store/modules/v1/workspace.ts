@@ -7,7 +7,6 @@ import {
   authServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
-import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { userNamePrefix, workspaceNamePrefix } from "@/store/modules/v1/common";
@@ -193,13 +192,6 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     });
     const policy = await workspaceServiceClientConnect.setIamPolicy(request);
     _workspaceIamPolicy.value = policy;
-    // Mirror the new policy into the React app store's IAM cache so
-    // already-mounted `PermissionGuard` consumers re-evaluate against
-    // the fresh policy on the next render. Setting it in place — rather
-    // than clearing the cache and waiting for a refetch — avoids a
-    // transient `disabled=true` flash on those guards (their load
-    // effect only fires on mount/project change).
-    useAppStore.getState().setWorkspacePolicy(policy);
   };
 
   const findRolesByMember = (member: string): string[] => {

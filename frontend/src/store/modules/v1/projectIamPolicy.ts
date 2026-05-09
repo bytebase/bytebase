@@ -3,7 +3,6 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, shallowReactive, unref, watch } from "vue";
 import { projectServiceClientConnect } from "@/connect";
-import { useAppStore } from "@/react/stores/app";
 import {
   ALL_USERS_USER_EMAIL,
   groupBindingPrefix,
@@ -96,12 +95,6 @@ export const useProjectIamPolicyStore = defineStore(
       policyMap.set(project, response);
 
       usePermissionStore().invalidCacheByProject(project);
-      // Mirror the new policy into the React app store's project IAM
-      // cache so already-mounted `PermissionGuard` consumers see it on
-      // the next render without remounting. Setting in place — rather
-      // than dropping the entry and refetching — avoids a transient
-      // `disabled=true` flash on those guards.
-      useAppStore.getState().setProjectIamPolicy(project, response);
     };
 
     const getProjectIamPolicy = (project: string) => {

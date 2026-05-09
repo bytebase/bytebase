@@ -1,56 +1,25 @@
-import { type ReactNode, useEffect } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useComponentPermissionState } from "@/react/components/ComponentPermissionGuard";
-import { useAppStore } from "@/react/stores/app";
 import type { Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { BlockTooltip, Tooltip } from "./ui/tooltip";
 
 /**
- * Fire-and-forget hook that kicks off the workspace + (optional) project
- * IAM policy fetches so the Zustand caches read by
- * `useComponentPermissionState` are populated.
- *
- * Defensive: every current `PermissionGuard` caller mounts inside a route
- * shell that already triggers these loaders (`BannersWrapper` →
- * `useWorkspacePermission`, `ProjectRouteShell` / `SQLEditorRouteShell` →
- * `usePermissionDataReady`). Triggering again is a cache hit — both
- * loaders dedupe via the in-flight `*Request` promise or the populated
- * cache. The point of doing it here is to keep `PermissionGuard` working
- * if a future caller mounts it outside such a shell (a modal, a
- * standalone page, a reused widget) so it doesn't sit forever
- * `disabled={true}` against an empty cache.
- *
- * Intentionally does NOT gate `disabled` on a "ready" flag — see the
- * earlier `usePermissionDataReady` integration we removed: gating
- * caused `disabled` to flap on parent re-renders, which both flickered
- * the Tooltip wrapper and silently dropped clicks landing during the
- * load window.
- */
-function useTriggerPermissionLoad(project?: Project) {
-  const loadWorkspacePermissionState = useAppStore(
-    (state) => state.loadWorkspacePermissionState
-  );
-  const loadProjectIamPolicy = useAppStore(
-    (state) => state.loadProjectIamPolicy
-  );
-  const projectName = project?.name;
-  useEffect(() => {
-    void loadWorkspacePermissionState();
-    if (projectName) void loadProjectIamPolicy(projectName);
-  }, [loadWorkspacePermissionState, loadProjectIamPolicy, projectName]);
-}
-
-/**
  * usePermissionCheck returns whether the user has all the required permissions
  * and a tooltip message listing missing ones.
+ *
+ * Reads directly from the Zustand IAM caches without triggering a load —
+ * every current caller mounts inside a route shell that already preloads
+ * (`BannersWrapper` → `useWorkspacePermission` for workspace,
+ * `ProjectRouteShell` / `SQLEditorRouteShell` → `usePermissionDataReady`
+ * for project). If a future orphan caller appears, add the trigger then.
  */
 export function usePermissionCheck(
   permissions: Permission[],
   project?: Project
 ): [boolean, string | undefined] {
   const { t } = useTranslation();
-  useTriggerPermissionLoad(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,
@@ -111,7 +80,6 @@ export function PermissionGuard({
   display = "inline",
 }: PermissionGuardProps) {
   const { t } = useTranslation();
-  useTriggerPermissionLoad(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,
