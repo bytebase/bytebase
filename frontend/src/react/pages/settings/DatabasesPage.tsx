@@ -46,6 +46,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
@@ -304,6 +305,7 @@ export function DatabasesPage() {
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -475,44 +477,56 @@ export function DatabasesPage() {
         </PermissionGuard>
       </div>
 
-      <div className="flex flex-col gap-y-4">
-        <DatabaseBatchOperationsBar
-          databases={selectedDatabases}
-          onSyncSchema={handleSyncSchema}
-          onEditLabels={() => setShowLabelEditor(true)}
-          onEditEnvironment={() => setShowEditEnvDrawer(true)}
-          onTransferProject={() => setShowTransferDrawer(true)}
-        />
-        <EditEnvironmentSheet
-          open={showEditEnvDrawer}
-          onClose={() => setShowEditEnvDrawer(false)}
-          onUpdate={handleEnvironmentUpdate}
-        />
-        <LabelEditorSheet
-          open={showLabelEditor}
-          databases={selectedDatabases}
-          onClose={() => setShowLabelEditor(false)}
-          onApply={handleLabelsApply}
-        />
-        <TransferProjectSheet
-          open={showTransferDrawer}
-          databases={selectedDatabases}
-          onClose={() => setShowTransferDrawer(false)}
-          onTransfer={handleTransferProject}
-        />
+      <DatabaseTable
+        filter={filter}
+        mode="ALL"
+        selectedNames={selectedNames}
+        onSelectedNamesChange={setSelectedNames}
+        onDatabasesChange={setVisibleDatabases}
+        refreshToken={refreshToken}
+      />
 
-        <DatabaseTable
-          filter={filter}
-          mode="ALL"
-          selectedNames={selectedNames}
-          onSelectedNamesChange={setSelectedNames}
-          refreshToken={refreshToken}
-        />
-      </div>
+      {/* Batch operations bar */}
+      <DatabaseBatchOperationsBar
+        databases={selectedDatabases}
+        onSyncSchema={handleSyncSchema}
+        onEditLabels={() => setShowLabelEditor(true)}
+        onEditEnvironment={() => setShowEditEnvDrawer(true)}
+        onTransferProject={() => setShowTransferDrawer(true)}
+        allSelected={
+          visibleDatabases.length > 0 &&
+          visibleDatabases.every((d) => selectedNames.has(d.name))
+        }
+        onToggleSelectAll={() => {
+          const allOnPage =
+            visibleDatabases.length > 0 &&
+            visibleDatabases.every((d) => selectedNames.has(d.name));
+          if (allOnPage) setSelectedNames(new Set());
+          else setSelectedNames(new Set(visibleDatabases.map((d) => d.name)));
+        }}
+      />
 
+      {/* Modals (portaled, position-independent) */}
       <CreateDatabaseSheet
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
+      />
+      <EditEnvironmentSheet
+        open={showEditEnvDrawer}
+        onClose={() => setShowEditEnvDrawer(false)}
+        onUpdate={handleEnvironmentUpdate}
+      />
+      <LabelEditorSheet
+        open={showLabelEditor}
+        databases={selectedDatabases}
+        onClose={() => setShowLabelEditor(false)}
+        onApply={handleLabelsApply}
+      />
+      <TransferProjectSheet
+        open={showTransferDrawer}
+        databases={selectedDatabases}
+        onClose={() => setShowTransferDrawer(false)}
+        onTransfer={handleTransferProject}
       />
     </div>
   );
