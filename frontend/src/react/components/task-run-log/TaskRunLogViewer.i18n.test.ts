@@ -28,7 +28,7 @@ describe("TaskRunLogViewer locale interpolation", () => {
       interpolation: {
         escapeValue: false,
       },
-      initImmediate: false,
+      initAsync: false,
     });
 
     expect(

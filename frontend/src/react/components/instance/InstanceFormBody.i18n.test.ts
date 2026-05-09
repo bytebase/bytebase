@@ -28,7 +28,7 @@ describe("Instance form locale interpolation", () => {
       interpolation: {
         escapeValue: false,
       },
-      initImmediate: false,
+      initAsync: false,
     });
 
     expect(i18n.t("instance.sentence.host.none-snowflake")).toContain(" | ");
