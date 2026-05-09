@@ -76,6 +76,22 @@ func TestBackup(t *testing.T) {
 	}
 }
 
+func TestMariaDBTransformDMLToSelectRegistration(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+
+	result, err := base.TransformDMLToSelect(context.Background(), store.Engine_MARIADB, base.TransformContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, "DELETE FROM test WHERE b1 = 1;", "db", "backupDB", "_rollback")
+
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Equal(t, "test", result[0].SourceTableName)
+	require.Equal(t, "_rollback_test_db", result[0].TargetTableName)
+	require.Contains(t, result[0].Statement, "CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;")
+}
+
 func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	schemaMetadata := []*store.SchemaMetadata{
 		{

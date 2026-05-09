@@ -20,6 +20,7 @@ const (
 
 func init() {
 	base.RegisterGenerateRestoreSQL(storepb.Engine_MYSQL, GenerateRestoreSQL)
+	base.RegisterGenerateRestoreSQL(storepb.Engine_MARIADB, GenerateRestoreSQL)
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
