@@ -155,6 +155,7 @@ type IsolationLevel =
 
 const BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
+  Engine.MARIADB,
   Engine.TIDB,
   Engine.MSSQL,
   Engine.ORACLE,

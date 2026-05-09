@@ -28,6 +28,18 @@ describe("getPlanOptionVisibility", () => {
     });
   });
 
+  test("shows pre-backup for MariaDB change database configs", () => {
+    expect(
+      getPlanOptionVisibility({
+        databases: [databaseWithEngine(Engine.MARIADB, "10.11.0")],
+        isChangeDatabaseConfig: true,
+        isSheetBasedDatabaseChange: true,
+      })
+    ).toMatchObject({
+      showPreBackup: true,
+    });
+  });
+
   test("hides sheet-only options for release-backed specs", () => {
     expect(
       getPlanOptionVisibility({
