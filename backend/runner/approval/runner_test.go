@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestRiskLevelToString(t *testing.T) {
@@ -212,4 +213,32 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 		DatabaseName: "app",
 		SheetSHA256:  "sheet-b",
 	}].GetSqlSummaryReport().GetAffectedRows())
+}
+
+func TestHasLegacyStatementSummaryResultForSheetTarget(t *testing.T) {
+	targets := []specTarget{
+		{
+			database: &store.DatabaseMessage{
+				InstanceID:   "prod",
+				DatabaseName: "app",
+			},
+			sheetSha256: "sheet-a",
+		},
+	}
+	planCheckRun := &store.PlanCheckRunMessage{
+		Status: store.PlanCheckRunStatusDone,
+		Result: &storepb.PlanCheckRunResult{
+			Results: []*storepb.PlanCheckRunResult_Result{
+				{
+					Target: "instances/prod/databases/app",
+					Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+				},
+			},
+		},
+	}
+
+	require.True(t, hasLegacyStatementSummaryResult(planCheckRun, targets))
+
+	planCheckRun.Result.Results[0].SheetSha256 = "sheet-a"
+	require.False(t, hasLegacyStatementSummaryResult(planCheckRun, targets))
 }
