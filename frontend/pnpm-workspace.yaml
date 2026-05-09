@@ -1,0 +1,11 @@
+patchedDependencies:
+  naive-ui@2.44.1: patches/naive-ui@2.44.1.patch
+
+peerDependencyRules:
+  allowedVersions:
+    typescript: '6'
+
+allowBuilds:
+  core-js: true
+  esbuild: true
+  leveldown: true
