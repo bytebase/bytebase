@@ -885,7 +885,7 @@ func (s *IssueService) RetryIssueApproval(ctx context.Context, req *connect.Requ
 		return connect.NewResponse(issueV1), nil
 	}
 
-	if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, issue); err != nil {
+	if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.bus, s.webhookManager, s.licenseService, issue); err != nil {
 		// Surface the underlying cause (e.g. CEL error in the workspace
 		// approval rule) so the operator can fix it.
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Wrap(err, "approval finding still failing"))
