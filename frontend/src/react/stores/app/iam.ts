@@ -17,14 +17,26 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
   roles: [],
 
   loadWorkspacePermissionState: async () => {
-    // Short-circuit when both caches are already populated. Without
-    // this, every `PermissionGuard` / `usePermissionCheck` mount
-    // re-issues `listRoles` / `getIamPolicy` because the in-flight
-    // dedupe (`rolesRequest` / `workspacePolicyRequest`) is reset to
-    // `undefined` once the previous request resolves. Pages with many
-    // permission-guarded widgets would otherwise fan out N RPCs per
-    // mount cycle.
-    if (get().roles.length > 0 && get().workspacePolicy !== undefined) {
+    // Short-circuit when all three pieces of state needed to evaluate
+    // permissions are populated. Without this, every `PermissionGuard`
+    // / `usePermissionCheck` mount re-issues `listRoles` /
+    // `getIamPolicy` because the in-flight dedupe (`rolesRequest` /
+    // `workspacePolicyRequest`) is reset to `undefined` once the
+    // previous request resolves. Pages with many permission-guarded
+    // widgets would otherwise fan out N RPCs per mount cycle.
+    //
+    // `currentUser` MUST be in the gate alongside `roles` and
+    // `workspacePolicy`: `loadCurrentUser()` swallows transient
+    // failures and resolves to `undefined`, while `listRoles` /
+    // `getIamPolicy` may still succeed independently. If we skipped
+    // refetch on roles/policy alone, a missing `currentUser` would
+    // leave `hasWorkspacePermission` / `hasProjectPermission` stuck
+    // returning false (`if (!user) return false;`) until a full reload.
+    if (
+      get().currentUser !== undefined &&
+      get().roles.length > 0 &&
+      get().workspacePolicy !== undefined
+    ) {
       return;
     }
 
