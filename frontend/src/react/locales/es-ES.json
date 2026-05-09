@@ -527,7 +527,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
-      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
+      "fallback-rules-hint": "Las reglas de respaldo se evalúan de arriba abajo solo cuando ninguna regla específica de origen coincide.",
       "node": {
         "add": "Agregar nodo",
         "approver": "Aprobador",
@@ -595,6 +595,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Las reglas se evalúan en orden. Las reglas específicas de origen se ejecutan antes que las Reglas de respaldo.",
+        "multi-target": "En un plan con varios destinos, una regla específica de origen coincide con todo el plan si cualquier destino cumple su condición, y la primera regla coincidente selecciona el flujo de aprobación para todo el plan.",
+        "priority": "Coloca las reglas para cambios de mayor riesgo antes que las de menor riesgo. Para riesgos similares, coloca las reglas más estrictas o específicas antes de las más amplias."
+      },
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
       "self": "Regla de aprobación personalizada"
     },
@@ -1350,7 +1355,8 @@
           "title": "Motor"
         },
         "environment": {
-          "description": "Filtrar por entorno"
+          "description": "Filtrar por entorno",
+          "title": "Ambiente"
         },
         "instance": {
           "description": "Filtrar por instancia",
@@ -1381,6 +1387,10 @@
         },
         "status": {
           "description": "Buscar por el estado del issue"
+        },
+        "table": {
+          "description": "Ingrese el valor y luego presione Enter",
+          "title": "Tabla"
         },
         "user": {
           "description": "Filtrar por usuario"
@@ -1423,7 +1433,6 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",

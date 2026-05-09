@@ -534,7 +534,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Fallback Rules",
-      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
+      "fallback-rules-hint": "Fallback rules are evaluated from top to bottom only when no source-specific rule matches.",
       "node": {
         "add": "Add node",
         "approver": "Approver",
@@ -602,6 +602,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Rules are evaluated in order. Source-specific rules run before Fallback Rules.",
+        "multi-target": "For a multi-target plan, a source-specific rule matches the whole plan if any target matches its condition, and the first matching rule selects the approval flow for the whole plan.",
+        "priority": "Place rules for higher risk changes before those for lower-risk changes. For similar risks, place stricter or more specific rules before broader rules."
+      },
       "first-match-wins": "Rules are evaluated in order. First matching rule applies.",
       "self": "Custom Approval Rule"
     },
@@ -1357,7 +1362,8 @@
           "title": "Engine"
         },
         "environment": {
-          "description": "Filter by environment"
+          "description": "Filter by environment",
+          "title": "Environment"
         },
         "instance": {
           "description": "Filter by instance",
@@ -1388,6 +1394,10 @@
         },
         "status": {
           "description": "Search by the issue status"
+        },
+        "table": {
+          "description": "Input the value then press Enter",
+          "title": "Table"
         },
         "user": {
           "description": "Filter by user"
@@ -1431,7 +1441,6 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
-      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",

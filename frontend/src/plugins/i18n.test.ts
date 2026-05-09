@@ -169,18 +169,6 @@ const checkKeysSorted = (
   return errors;
 };
 
-const getNestedValue = (
-  obj: Record<string, unknown>,
-  path: string
-): unknown => {
-  return path.split(".").reduce<unknown>((current, key) => {
-    if (!current || typeof current !== "object") {
-      return undefined;
-    }
-    return (current as Record<string, unknown>)[key];
-  }, obj);
-};
-
 describe("Locale keys are sorted alphabetically", () => {
   const localesDirs = [
     resolve(__dirname, "../locales"),
@@ -195,29 +183,6 @@ describe("Locale keys are sorted alphabetically", () => {
         const errors = checkKeysSorted(content, file);
         expect(errors, errors.join("\n")).toHaveLength(0);
       });
-    }
-  }
-});
-
-describe("Grant access locale coverage", () => {
-  const localesDirs = [
-    resolve(__dirname, "../locales"),
-    resolve(__dirname, "../react/locales"),
-  ];
-  const requiredKeys = ["issue.role-grant.column-scope-select-disabled"];
-
-  for (const dir of localesDirs) {
-    const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-    for (const file of files) {
-      const content = JSON.parse(readFileSync(resolve(dir, file), "utf-8"));
-      for (const key of requiredKeys) {
-        test(`${dir.includes("react") ? "react/" : ""}locales/${file} includes ${key}`, () => {
-          expect(
-            getNestedValue(content, key),
-            `${file} missing ${key}`
-          ).toBeTruthy();
-        });
-      }
     }
   }
 });

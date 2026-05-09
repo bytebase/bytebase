@@ -90,16 +90,21 @@ function WorkspaceSegment() {
     [currentWorkspaceName, switchWorkspace]
   );
 
-  const handleNameClick = useCallback(() => {
-    void navigate.push({ name: WORKSPACE_ROUTE_LANDING });
-  }, [navigate]);
+  const workspaceHref = navigate.resolve({
+    name: WORKSPACE_ROUTE_LANDING,
+  }).href;
 
   return (
     <div className="inline-flex items-center">
-      <button
-        type="button"
-        className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer"
-        onClick={handleNameClick}
+      <a
+        href={workspaceHref}
+        className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control hover:bg-control-bg cursor-pointer no-underline"
+        onClick={(e) => {
+          if (!e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            void navigate.push({ name: WORKSPACE_ROUTE_LANDING });
+          }
+        }}
       >
         <Building2 className="size-4 text-control-light shrink-0" />
         <span className="truncate max-w-40">{workspace?.title}</span>
@@ -111,7 +116,7 @@ function WorkspaceSegment() {
             {label}
           </Badge>
         )}
-      </button>
+      </a>
       {hasMultiple && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
@@ -158,6 +163,7 @@ function WorkspaceSegment() {
 // ProjectSegment — shows project name + dropdown, only when inside a project
 // ---------------------------------------------------------------------------
 function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
+  const { t } = useTranslation();
   const route = useCurrentRoute();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -166,14 +172,11 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
     ? `${projectNamePrefix}${projectId}`
     : "";
   const currentProject = useProject(currentProjectName);
+  const hasProject = isValidProjectName(currentProject?.name);
 
   useEffect(() => {
     setOpen(false);
   }, [route.fullPath]);
-
-  if (!isValidProjectName(currentProject?.name)) {
-    return null;
-  }
 
   return (
     <>
@@ -190,7 +193,13 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
           }
         >
           <FolderKanban className="size-4 text-control-light shrink-0" />
-          <span className="truncate max-w-48">{currentProject.title}</span>
+          {hasProject ? (
+            <span className="truncate max-w-48">{currentProject.title}</span>
+          ) : (
+            <span className="truncate max-w-48 text-control-placeholder">
+              {t("project.select")}
+            </span>
+          )}
           <ChevronDown className="size-3.5 text-control-placeholder shrink-0" />
         </PopoverTrigger>
         <PopoverContent

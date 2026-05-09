@@ -4,6 +4,7 @@
 // (React pages import from @/store, @/router which re-export .vue modules)
 declare module "*.vue" {
   import type { DefineComponent } from "vue";
+
   const component: DefineComponent<
     Record<string, unknown>,
     Record<string, unknown>,

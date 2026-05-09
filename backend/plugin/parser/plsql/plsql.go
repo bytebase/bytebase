@@ -136,7 +136,7 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
 		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
 
-		prevStopTokenIndex = stopToken.GetTokenIndex()
+		prevStopTokenIndex = consumeTrailingSemicolon(tokens.GetAllTokens(), stopToken.GetTokenIndex())
 
 		// Skip empty statements
 		if strings.TrimSpace(stmtText) == "" || stmtText == ";" {

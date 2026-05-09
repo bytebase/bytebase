@@ -527,7 +527,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "フォールバックルール",
-      "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
+      "fallback-rules-hint": "フォールバックルールは、ソース固有のルールが一致しない場合にのみ、上から順に評価されます。",
       "node": {
         "add": "ノードの追加",
         "approver": "承認者",
@@ -595,6 +595,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "ルールは順番に評価されます。ソース固有のルールはフォールバックルールより先に実行されます。",
+        "multi-target": "複数ターゲットのプランでは、いずれかのターゲットがソース固有ルールの条件に一致すると、そのルールはプラン全体に一致し、最初に一致したルールがプラン全体の承認フローを決定します。",
+        "priority": "リスクが高い変更のルールを、リスクが低い変更のルールより上に配置してください。同程度のリスクでは、より厳格または具体的なルールを、より広いルールより上に配置してください。"
+      },
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。",
       "self": "カスタム承認ルール"
     },
@@ -1350,7 +1355,8 @@
           "title": "エンジン"
         },
         "environment": {
-          "description": "環境に基づいてフィルタリングする"
+          "description": "環境に基づいてフィルタリングする",
+          "title": "環境"
         },
         "instance": {
           "description": "インスタンスによるフィルター",
@@ -1381,6 +1387,10 @@
         },
         "status": {
           "description": "イシューのステータスで検索"
+        },
+        "table": {
+          "description": "値を入力してEnterを押します",
+          "title": "テーブル"
         },
         "user": {
           "description": "ユーザーでフィルター"
@@ -1423,7 +1433,6 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
-      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手動選択",

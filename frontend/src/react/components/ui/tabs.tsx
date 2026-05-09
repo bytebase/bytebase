@@ -47,4 +47,4 @@ function TabsPanel({
   );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsPanel };
+export { Tabs, TabsList, TabsPanel, TabsTrigger };
