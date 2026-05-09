@@ -76,5 +76,5 @@ function Checkbox({
   );
 }
 
-export { Checkbox };
 export type { CheckboxProps, CheckboxSize };
+export { Checkbox };

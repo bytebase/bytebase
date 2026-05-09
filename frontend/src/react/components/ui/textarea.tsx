@@ -37,5 +37,5 @@ function Textarea({ className, size, ref, ...props }: TextareaProps) {
   );
 }
 
-export { Textarea };
 export type { TextareaProps };
+export { Textarea };

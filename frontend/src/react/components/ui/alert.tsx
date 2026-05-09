@@ -95,5 +95,5 @@ function Alert({
   );
 }
 
-export { Alert, alertVariants };
 export type { AlertProps };
+export { Alert, alertVariants };
