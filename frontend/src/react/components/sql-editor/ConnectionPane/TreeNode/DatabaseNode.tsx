@@ -54,25 +54,14 @@ export function DatabaseNode({
   const canQuery = isDatabaseV1Queryable(database);
 
   const checkbox = supportBatchMode ? (
-    // The row activates on `mouseup` (Safari workaround). Stop the
-    // mouse events here so clicking the checkbox doesn't first connect
-    // to the database (which closes the panel and prevents the toggle
-    // click from registering) — the previous `onClick` stopPropagation
-    // alone wasn't enough because mouseup bubbles before click fires.
-    <div
-      onMouseDown={(e) => e.stopPropagation()}
-      onMouseUp={(e) => e.stopPropagation()}
-    >
-      <Tooltip content={checkTooltip ?? ""}>
-        <Checkbox
-          checked={!!checked}
-          className="mr-2"
-          disabled={checkDisabled}
-          onClick={(e) => e.stopPropagation()}
-          onCheckedChange={(checked) => onCheckedChange?.(checked)}
-        />
-      </Tooltip>
-    </div>
+    <Tooltip content={checkTooltip ?? ""}>
+      <Checkbox
+        checked={!!checked}
+        className="mr-2"
+        disabled={checkDisabled}
+        onCheckedChange={(checked) => onCheckedChange?.(checked)}
+      />
+    </Tooltip>
   ) : null;
 
   return (
@@ -96,15 +85,7 @@ export function DatabaseNode({
       </div>
 
       {!canQuery && (
-        <div
-          className="ml-auto shrink-0"
-          // The row activates on `mouseup` (Safari workaround for click
-          // events split across inner elements). Stop propagation here so
-          // clicking the button doesn't connect to the database first
-          // and unmount the button before its `onClick` can open the drawer.
-          onMouseDown={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
-        >
+        <div className="ml-auto shrink-0">
           <RequestQueryButton
             size="sm"
             text

@@ -7,18 +7,25 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { BlockTooltip, Tooltip } from "./ui/tooltip";
 
 /**
- * Side-effect-only hook: kick off the workspace + (optional) project
+ * Fire-and-forget hook that kicks off the workspace + (optional) project
  * IAM policy fetches so the Zustand caches read by
- * `useComponentPermissionState` get populated.
+ * `useComponentPermissionState` are populated.
  *
- * Why a separate hook (vs. just inlining the effect): keeps the
- * trigger-only behavior callable in isolation without dragging in the
- * gate-on-readiness semantics of `usePermissionDataReady`. Route shells
- * still use the gating variant to block their content; inline guards
- * (`PermissionGuard`) only need the cache populated, not blocked
- * rendering — gating their disabled state on a "ready" flag flapped
- * `disabled` between true and false on parent re-renders and was the
- * root of the stuck-disabled-button bug we previously hit.
+ * Defensive: every current `PermissionGuard` caller mounts inside a route
+ * shell that already triggers these loaders (`BannersWrapper` →
+ * `useWorkspacePermission`, `ProjectRouteShell` / `SQLEditorRouteShell` →
+ * `usePermissionDataReady`). Triggering again is a cache hit — both
+ * loaders dedupe via the in-flight `*Request` promise or the populated
+ * cache. The point of doing it here is to keep `PermissionGuard` working
+ * if a future caller mounts it outside such a shell (a modal, a
+ * standalone page, a reused widget) so it doesn't sit forever
+ * `disabled={true}` against an empty cache.
+ *
+ * Intentionally does NOT gate `disabled` on a "ready" flag — see the
+ * earlier `usePermissionDataReady` integration we removed: gating
+ * caused `disabled` to flap on parent re-renders, which both flickered
+ * the Tooltip wrapper and silently dropped clicks landing during the
+ * load window.
  */
 function useTriggerPermissionLoad(project?: Project) {
   const loadWorkspacePermissionState = useAppStore(

@@ -1039,6 +1039,13 @@ function TreeRow({
 }) {
   const hoverState = useHoverState();
   const rowRef = useRef<HTMLDivElement | null>(null);
+  // Tracks whether the most recent mousedown started on an interactive
+  // descendant (Checkbox, RequestQueryButton). The row's onMouseUp uses
+  // this to skip the row-activation when the user is interacting with a
+  // child control — even if the cursor drifts between mousedown and
+  // mouseup so the synthesized click never reaches the button (the
+  // failure mode `stopPropagation` on the wrapper alone doesn't cover).
+  const interactiveMouseDownRef = useRef(false);
 
   const handleMouseEnter = (e: React.MouseEvent) => {
     if (node.meta.type !== "database") return;
@@ -1068,13 +1075,28 @@ function TreeRow({
         selected && "bg-accent/10"
       )}
       data-node-key={node.key}
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement;
+        interactiveMouseDownRef.current = !!target.closest(
+          'button, [role="checkbox"], a, input'
+        );
+      }}
       // Use `onMouseUp` instead of `onClick` for the row activation. Safari
       // drops the synthesized `click` event when `mousedown` and `mouseup`
       // resolve to different inner elements (the chevron / engine icon /
       // text span). `mouseup` always fires regardless, so we drive the
       // selection from there, gated to the primary button.
+      //
+      // We also skip when mousedown started on an interactive descendant
+      // — otherwise pressing a button/checkbox and slightly drifting the
+      // cursor before release would connect-and-close the panel before
+      // the button's click ever fires.
       onMouseUp={(e) => {
         if (e.button !== 0) return;
+        if (interactiveMouseDownRef.current) {
+          interactiveMouseDownRef.current = false;
+          return;
+        }
         onClick(e);
       }}
       onMouseEnter={handleMouseEnter}
