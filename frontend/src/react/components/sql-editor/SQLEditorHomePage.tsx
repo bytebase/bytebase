@@ -171,11 +171,7 @@ export function SQLEditorHomePage() {
             transitionDuration: "300ms",
           }}
           onClick={() => setSidebarExpanded((prev) => !prev)}
-          aria-label={t(
-            sidebarExpanded
-              ? "sql-editor.aside.collapse"
-              : "sql-editor.aside.expand"
-          )}
+          aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
           <ChevronLeft
             className={cn(
