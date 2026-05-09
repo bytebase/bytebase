@@ -23,10 +23,17 @@ import { RoleGrantPanel } from "./RoleGrantPanel";
 const SQL_SELECT_PERMISSION = "bb.sql.select";
 
 const getDefaultQueryRole = (
-  roles: readonly Pick<Role, "name" | "permissions">[]
+  roles: readonly Pick<Role, "name" | "permissions">[],
+  requiredPermissions: readonly string[]
 ) => {
+  const permissions =
+    requiredPermissions.length > 0
+      ? requiredPermissions
+      : [SQL_SELECT_PERMISSION];
   const candidates = roles
-    .filter((role) => role.permissions.includes(SQL_SELECT_PERMISSION))
+    .filter((role) =>
+      permissions.every((permission) => role.permissions.includes(permission))
+    )
     .toSorted((a, b) => {
       const permissionCountDelta = a.permissions.length - b.permissions.length;
       if (permissionCountDelta !== 0) {
@@ -41,7 +48,7 @@ const getDefaultQueryRole = (
       return a.name.localeCompare(b.name);
     });
 
-  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_READ_USER;
+  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_USER;
 };
 
 interface Props {
@@ -69,7 +76,10 @@ export function RequestQueryButton({
   const projectName = useVueState(() => editorStore.project);
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const defaultQueryRole = useVueState(() =>
-    getDefaultQueryRole(roleStore.roleList)
+    getDefaultQueryRole(
+      roleStore.roleList,
+      permissionDeniedDetail.requiredPermissions
+    )
   );
 
   const useJIT = useMemo(

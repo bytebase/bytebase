@@ -161,7 +161,7 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
     roleList: [
       {
         name: "roles/sqlEditorUser",
-        permissions: ["bb.sql.select", "bb.sql.explain"],
+        permissions: ["bb.sql.select", "bb.sql.dml", "bb.sql.explain"],
       },
       {
         name: "roles/sqlEditorReadUser",
@@ -205,7 +205,7 @@ describe("RequestQueryButton", () => {
       <RequestQueryButton
         text={false}
         permissionDeniedDetail={makePermissionDeniedDetail({
-          requiredPermissions: ["bb.sql.select", "bb.issues.create"],
+          requiredPermissions: ["bb.sql.select"],
         })}
       />
     );
@@ -262,7 +262,7 @@ describe("RequestQueryButton", () => {
       <RequestQueryButton
         text={false}
         permissionDeniedDetail={makePermissionDeniedDetail({
-          requiredPermissions: ["bb.sql.select", "bb.issues.create"],
+          requiredPermissions: ["bb.sql.select"],
         })}
       />
     );
@@ -278,6 +278,31 @@ describe("RequestQueryButton", () => {
         .querySelector("[data-testid='role-grant-panel']")
         ?.getAttribute("data-role")
     ).toBe("roles/sqlEditorReadUser");
+    unmount();
+  });
+
+  test("non-JIT role request defaults to role covering denied permission", async () => {
+    setupDefaultMocks(false, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        text={false}
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.dml"],
+        })}
+      />
+    );
+    render();
+
+    const btn = container.querySelector("button") as HTMLButtonElement;
+    await act(async () => {
+      btn.click();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='role-grant-panel']")
+        ?.getAttribute("data-role")
+    ).toBe("roles/sqlEditorUser");
     unmount();
   });
 
