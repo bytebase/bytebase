@@ -51,19 +51,34 @@ export function EditorAction({ onExecute }: Props) {
 
   const [shareOpen, setShareOpen] = useState(false);
 
+  // Track each tab field as a separate primitive reactive subscription
+  // — Pinia mutates the tab proxy in place via `Object.assign`, so a
+  // getter that just returns `tabStore.currentTab` would only fire on
+  // tab switches (the proxy reference changing), not on `statement` /
+  // `status` / `connection.*` field flips that happen within the same
+  // tab. Splitting into one `useVueState` per field gives Vue a clean
+  // primitive value to compare on each change, so each individual
+  // mutation fires its own re-render (Run button enables as soon as
+  // the user types, Save button enables on `status` → DIRTY, etc.).
   const currentTab = useVueState(() => tabStore.currentTab);
+  const tabStatement = useVueState(() => tabStore.currentTab?.statement ?? "");
+  const tabStatus = useVueState(() => tabStore.currentTab?.status);
+  const tabMode = useVueState(() => tabStore.currentTab?.mode);
+  const tabWorksheet = useVueState(() => tabStore.currentTab?.worksheet ?? "");
+  const tabConnectionTable = useVueState(
+    () => tabStore.currentTab?.connection.table ?? ""
+  );
   const isDisconnected = useVueState(() => tabStore.isDisconnected);
   const instance = useVueState(() => instanceRef.value);
   const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
   const currentWorksheet = useVueState(() => sheetAndTabStore.currentSheet);
 
-  const mode = currentTab?.mode;
-  const isAdminMode = mode === "ADMIN";
-  const showSheetsFeature = mode === "WORKSHEET";
-  const isEmptyStatement = !currentTab || currentTab.statement === "";
+  const isAdminMode = tabMode === "ADMIN";
+  const showSheetsFeature = tabMode === "WORKSHEET";
+  const isEmptyStatement = !currentTab || tabStatement === "";
 
   const queryTip =
-    instance.engine === Engine.COSMOSDB && !currentTab?.connection.table
+    instance.engine === Engine.COSMOSDB && !tabConnectionTable
       ? t("database.table.select-tip")
       : "";
 
@@ -71,36 +86,36 @@ export function EditorAction({ onExecute }: Props) {
     if (isDisconnected) return false;
     if (isEmptyStatement) return false;
     if (instance.engine === Engine.COSMOSDB) {
-      return !!currentTab?.connection.table;
+      return !!tabConnectionTable;
     }
     return true;
   })();
 
   const canWriteSheet = (() => {
-    if (!currentTab?.worksheet) return false;
-    const sheet = worksheetStore.getWorksheetByName(currentTab.worksheet);
+    if (!tabWorksheet) return false;
+    const sheet = worksheetStore.getWorksheetByName(tabWorksheet);
     return sheet ? isWorksheetWritableV1(sheet) : false;
   })();
 
   const allowSave = (() => {
     if (!showSheetsFeature || !currentTab) return false;
-    if (currentTab.worksheet) {
+    if (tabWorksheet) {
       if (!canWriteSheet) return false;
-      const sheet = worksheetStore.getWorksheetByName(currentTab.worksheet);
+      const sheet = worksheetStore.getWorksheetByName(tabWorksheet);
       if (sheet && sheet.database !== currentTab.connection.database) {
         return true;
       }
     }
     // Only disable when status is CLEAN (nothing to save).
     // SAVING is allowed — manual save will abort auto-save and proceed.
-    return currentTab.status !== "CLEAN";
+    return tabStatus !== "CLEAN";
   })();
 
   const allowShare = (() => {
     if (!currentTab) return false;
-    if (currentTab.status !== "CLEAN") return false;
+    if (tabStatus !== "CLEAN") return false;
     if (isEmptyStatement || isDisconnected) return false;
-    if (currentTab.worksheet && !canWriteSheet) return false;
+    if (tabWorksheet && !canWriteSheet) return false;
     return true;
   })();
 

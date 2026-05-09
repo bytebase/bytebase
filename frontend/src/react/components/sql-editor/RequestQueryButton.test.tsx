@@ -78,14 +78,21 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("./RoleGrantPanel", () => ({
-  RoleGrantPanel: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="role-grant-panel">
-      <button data-close-btn onClick={onClose}>
-        Close
-      </button>
-    </div>
-  ),
+vi.mock("@/react/pages/settings/RequestRoleSheet", () => ({
+  RequestRoleSheet: ({
+    open,
+    onClose,
+  }: {
+    open: boolean;
+    onClose: () => void;
+  }) =>
+    open ? (
+      <div data-testid="request-role-sheet">
+        <button data-close-btn onClick={onClose}>
+          Close
+        </button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("./AccessGrantRequestDrawer", () => ({
@@ -206,7 +213,7 @@ describe("RequestQueryButton", () => {
     unmount();
   });
 
-  test("click in non-JIT mode opens RoleGrantPanel", async () => {
+  test("click in non-JIT mode opens RequestRoleSheet", async () => {
     setupDefaultMocks(false, true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
@@ -219,7 +226,7 @@ describe("RequestQueryButton", () => {
     render();
 
     expect(
-      container.querySelector("[data-testid='role-grant-panel']")
+      container.querySelector("[data-testid='request-role-sheet']")
     ).toBeNull();
 
     const btn = container.querySelector("button") as HTMLButtonElement;
@@ -228,7 +235,7 @@ describe("RequestQueryButton", () => {
     });
 
     expect(
-      container.querySelector("[data-testid='role-grant-panel']")
+      container.querySelector("[data-testid='request-role-sheet']")
     ).not.toBeNull();
     unmount();
   });

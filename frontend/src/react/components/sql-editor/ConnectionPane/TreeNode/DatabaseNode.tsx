@@ -66,7 +66,7 @@ export function DatabaseNode({
   ) : null;
 
   return (
-    <div className="flex items-center max-w-full overflow-hidden gap-x-1">
+    <div className="flex items-center w-full max-w-full overflow-hidden gap-x-1">
       {checkbox}
 
       <div
@@ -86,7 +86,15 @@ export function DatabaseNode({
       </div>
 
       {!canQuery && (
-        <div className="ml-auto">
+        <div
+          className="ml-auto shrink-0"
+          // The row activates on `mouseup` (Safari workaround for click
+          // events split across inner elements). Stop propagation here so
+          // clicking the button doesn't connect to the database first
+          // and unmount the button before its `onClick` can open the drawer.
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+        >
           <RequestQueryButton
             size="sm"
             text

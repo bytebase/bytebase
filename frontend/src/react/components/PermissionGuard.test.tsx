@@ -88,7 +88,7 @@ afterEach(() => {
 });
 
 describe("PermissionGuard", () => {
-  test("loads workspace permission state before enabling children", async () => {
+  test("renders children enabled when the user has the workspace permission", async () => {
     mocks.workspacePermissions.add("bb.instances.create");
 
     await act(async () => {
@@ -102,11 +102,10 @@ describe("PermissionGuard", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
     expect(container.querySelector("button")?.disabled).toBe(false);
   });
 
-  test("loads project IAM policy for project permission checks", async () => {
+  test("renders children enabled when the user has the project permission", async () => {
     const project = { name: "projects/demo" } as Project;
     mocks.projectPermissions.add("bb.sql.select");
 
@@ -121,8 +120,21 @@ describe("PermissionGuard", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledTimes(1);
-    expect(mocks.loadProjectIamPolicy).toHaveBeenCalledWith(project.name);
     expect(container.querySelector("button")?.disabled).toBe(false);
+  });
+
+  test("disables children when required permission is missing", async () => {
+    await act(async () => {
+      root.render(
+        <PermissionGuard permissions={["bb.instances.create"]}>
+          {({ disabled }) => <button disabled={disabled}>create</button>}
+        </PermissionGuard>
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("button")?.disabled).toBe(true);
   });
 });

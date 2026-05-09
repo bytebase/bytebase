@@ -82,7 +82,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
 import { useAIContext } from "@/plugins/ai/logic";
 import { findAncestor } from "@/utils";
-import { useSQLEditorContext } from "@/views/sql-editor/context";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
 import InsertAtCaretIcon from "./InsertAtCaretIcon.vue";
 
 export type CodeBlockProps = {
@@ -96,7 +96,10 @@ const props = defineProps<
 >();
 
 const { events, showHistoryDialog } = useAIContext();
-const { events: editorEvents } = useSQLEditorContext();
+// `sqlEditorEvents` is a module-level singleton — the AI plugin runs
+// inside its own Vue app (via the React→Vue bridge), so a Vue inject
+// of `useSQLEditorContext` wouldn't reach the host's provide chain.
+const editorEvents = sqlEditorEvents;
 const containerRef = ref<HTMLElement>();
 const messageWrapperRef = computed(() =>
   findAncestor(containerRef.value, ".message")

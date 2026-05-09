@@ -1131,7 +1131,7 @@ function LoadMoreButton({
 
 // ---- utilities ---------------------------------------------------------
 
-const ROW_HEIGHT = 24;
+const ROW_HEIGHT = 28;
 
 function toTreeDataNode(
   node: SQLEditorTreeNode

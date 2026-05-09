@@ -198,6 +198,7 @@
   },
   "common": {
     "Default": "デフォルト",
+    "access-denied": "アクセスが拒否されました",
     "action-required": "対応が必要",
     "actions": "アクション",
     "activated": "有効化しました",
@@ -711,6 +712,7 @@
   "data-source.ssl.verify-certificate": "TLS証明書を検証",
   "data-source.ssl.verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません",
   "database": {
+    "access-denied": "データベースにアクセスする権限がありません",
     "all": "すべてのデータベース",
     "change-database": "データベースの変更",
     "checks": "チェック",
@@ -1454,6 +1456,7 @@
     "title": {
       "change-database": "データベースの変更",
       "change-from-sql-editor": "SQL エディタからの変更",
+      "edit-schema": "スキーマを編集",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -1842,6 +1845,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "作成するプロジェクト",
+  "quick-start": {
+    "guide": "クリックしてステップを試してみましょう",
+    "notice": {
+      "desc": "後から右上のメニューから元に戻すことができます",
+      "title": "クイックスタートガイドを終了しました"
+    },
+    "query-data": "クエリデータ",
+    "view-an-issue": "イシューを表示する",
+    "visit-database": "データベースにアクセスする",
+    "visit-environment": "環境にアクセスする",
+    "visit-instance": "インスタンスにアクセスする",
+    "visit-member": "メンバー | メンバーにアクセスする",
+    "visit-project": "プロジェクトにアクセスする"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -2623,6 +2640,7 @@
       "description": "{{project}} の下の {{database}} 個の追加データベースと {{group}} 個のデータベース グループに対してバッチ クエリを実行します。",
       "select-data-source": {
         "admin": "管理者",
+        "not-match": "データ ソースが一致しません。{{expect}} を期待しましたが、{{actual}} を取得しました。",
         "readonly": "読み取り専用",
         "self": "バッチのデータソースを選択",
         "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。"
@@ -2639,6 +2657,7 @@
     "column-display-format": "列の表示形式",
     "connect-in-admin-mode": "管理者モードで接続する",
     "connect-to-a-database": "データベースに接続",
+    "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-name": "名前をコピーする",
     "copy-selected-results": "選択したデータを<action></action>または<button></button>でコピーします",
@@ -2648,6 +2667,8 @@
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "execute-query": "クエリを実行する",
+    "executing-query": "クエリの実行",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
@@ -2682,6 +2703,7 @@
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
+    "pending-query": "保留中のクエリ",
     "preview-table-data": "テーブルデータのプレビュー",
     "previous-row": "前の行",
     "private": "プライベート",
@@ -2742,7 +2764,8 @@
           "multi-select": "複数選択",
           "rename": "名前の変更"
         }
-      }
+      },
+      "unsaved-worksheet": "保存されていないワークシートがあります。"
     },
     "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
     "table-view": "テーブルビュー",
