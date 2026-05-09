@@ -10,10 +10,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
 	omnimssql "github.com/bytebase/omni/mssql"
 	mssqlparser "github.com/bytebase/omni/mssql/parser"
-	tsqlparser "github.com/bytebase/parser/tsql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -25,8 +23,6 @@ func init() {
 }
 
 var (
-	_ tsqlparser.TSqlParserListener = &cteExtractor{}
-
 	tsqlDataTypes = []string{
 		"INT", "BIGINT", "SMALLINT", "TINYINT",
 		"VARCHAR", "NVARCHAR", "CHAR", "NCHAR",
@@ -436,11 +432,8 @@ const (
 )
 
 type Completer struct {
-	ctx     context.Context
-	scene   base.SceneType
-	parser  *tsqlparser.TSqlParser
-	lexer   *tsqlparser.TSqlLexer
-	scanner *base.Scanner
+	ctx   context.Context
+	scene base.SceneType
 
 	sql              string
 	cursorByteOffset int
@@ -465,7 +458,6 @@ type Completer struct {
 
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	completer := NewStandardCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	completer.fetchCommonTableExpression(statement)
 	result, err := completer.complete()
 
 	if err != nil {
@@ -476,31 +468,25 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	}
 
 	trickyCompleter := NewTrickyCompleter(ctx, cCtx, statement, caretLine, caretOffset)
-	trickyCompleter.fetchCommonTableExpression(statement)
 	return trickyCompleter.complete()
 }
 
 func NewStandardCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, false /* tricky */)
-	return newCompleter(ctx, cCtx, parser, lexer, scanner, sql, byteOffset)
+	return newCompleter(ctx, cCtx, sql, byteOffset)
 }
 
 func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) *Completer {
-	parser, lexer, scanner := prepareTrickyParserAndScanner(statement, caretLine, caretOffset)
 	sql, byteOffset := computeSQLAndByteOffset(statement, caretLine, caretOffset, true /* tricky */)
-	return newCompleter(ctx, cCtx, parser, lexer, scanner, sql, byteOffset)
+	return newCompleter(ctx, cCtx, sql, byteOffset)
 }
 
-func newCompleter(ctx context.Context, cCtx base.CompletionContext, parser *tsqlparser.TSqlParser, lexer *tsqlparser.TSqlLexer, scanner *base.Scanner, sql string, byteOffset int) *Completer {
+func newCompleter(ctx context.Context, cCtx base.CompletionContext, sql string, byteOffset int) *Completer {
 	tokens := mssqlparser.Tokenize(sql)
 
 	return &Completer{
 		ctx:                 ctx,
 		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
 		sql:                 sql,
 		cursorByteOffset:    byteOffset,
 		tokens:              tokens,
@@ -551,65 +537,44 @@ func findCaretTokenIndex(tokens []mssqlparser.Token, byteOffset int) int {
 	return len(tokens)
 }
 
-func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := tsqlparser.NewTSqlParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
-func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset int) (*tsqlparser.TSqlParser, *tsqlparser.TSqlLexer, *base.Scanner) {
-	statement, caretLine, caretOffset = skipHeadingSQLs(statement, caretLine, caretOffset)
-	statement, caretLine, caretOffset = skipHeadingSQLWithoutSemicolon(statement, caretLine, caretOffset)
-	input := antlr.NewInputStream(statement)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := tsqlparser.NewTSqlParser(stream)
-	parser.RemoveErrorListeners()
-	lexer.RemoveErrorListeners()
-	scanner := base.NewScanner(stream, true /* fillInput */)
-	scanner.SeekPosition(caretLine, caretOffset)
-	scanner.Push()
-	return parser, lexer, scanner
-}
-
 // caretLine is 1-based and caretOffset is 0-based.
 func skipHeadingSQLWithoutSemicolon(statement string, caretLine int, caretOffset int) (string, int, int) {
-	input := antlr.NewInputStream(statement)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	lexer.RemoveErrorListeners()
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
-	}
-	lexer.AddErrorListener(lexerErrorListener)
-
-	stream.Fill()
-	tokens := stream.GetAllTokens()
+	tokens := mssqlparser.Tokenize(statement)
 	latestSelect := 0
+	latestSelectIndex := 0
 	newCaretLine, newCaretOffset := caretLine, caretOffset
-	for _, token := range tokens {
-		if token.GetLine() > caretLine || (token.GetLine() == caretLine && token.GetColumn() >= caretOffset) {
+	for idx, token := range tokens {
+		line, column := lineColumnAtByteOffset(statement, token.Loc)
+		if line > caretLine || (line == caretLine && column >= caretOffset) {
 			break
 		}
-		if token.GetTokenType() == tsqlparser.TSqlLexerSELECT && token.GetColumn() == 0 {
-			latestSelect = token.GetTokenIndex()
-			newCaretLine = caretLine - token.GetLine() + 1 // convert to 1-based.
+		if token.Type == mssqlparser.SELECT && column == 0 {
+			latestSelect = token.Loc
+			latestSelectIndex = idx
+			newCaretLine = caretLine - line + 1 // convert to 1-based.
 			newCaretOffset = caretOffset
 		}
 	}
 
-	if latestSelect == 0 {
+	if latestSelectIndex == 0 {
 		return statement, caretLine, caretOffset
 	}
-	return stream.GetTextFromInterval(antlr.NewInterval(latestSelect, stream.Size())), newCaretLine, newCaretOffset
+	return statement[latestSelect:], newCaretLine, newCaretOffset
+}
+
+func lineColumnAtByteOffset(sql string, offset int) (int, int) {
+	line, column := 1, 0
+	for i := 0; i < len(sql) && i < offset; {
+		r, size := utf8.DecodeRuneInString(sql[i:])
+		if r == '\n' {
+			line++
+			column = 0
+		} else {
+			column++
+		}
+		i += size
+	}
+	return line, column
 }
 
 func (c *Completer) complete() ([]base.Candidate, error) {
@@ -643,8 +608,8 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 	if completionContext != nil {
 		c.completionPrefix = completionContext.Prefix
 		c.completionIntent = completionContext.Intent
-		c.collectCompletionScopeReferences(completionContext)
 		c.collectCompletionCTEs(completionContext)
+		c.collectCompletionScopeReferences(completionContext)
 	}
 	candidates := (*mssqlparser.CandidateSet)(nil)
 	if completionContext != nil {
@@ -659,7 +624,7 @@ func (c *Completer) complete() ([]base.Candidate, error) {
 
 func (c *Completer) determineObjectNameContext() []*objectRefContext {
 	if c.completionIntent == nil {
-		return c.determineFullTableNameContext()
+		return []*objectRefContext{newObjectRefContext()}
 	}
 	context := newObjectRefContext()
 	qualifier := c.completionIntent.Qualifier
@@ -683,7 +648,7 @@ func (c *Completer) determineObjectNameContext() []*objectRefContext {
 
 func (c *Completer) determineColumnNameContext() []*objectRefContext {
 	if c.completionIntent == nil || !completionIntentHasObjectKind(c.completionIntent, omnimssql.ObjectKindColumn) {
-		return c.determineFullColumnName()
+		return []*objectRefContext{newObjectRefContext(withColumn())}
 	}
 	context := newObjectRefContext(withColumn())
 	qualifier := c.completionIntent.Qualifier
@@ -761,12 +726,15 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 		})
 	}
 
-	c.insertCompletionIntentCandidates(keywordEntries, functionEntries, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries)
+	handledDottedObjectContext := c.insertDottedObjectContextCandidates(databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries)
+	if !handledDottedObjectContext {
+		c.insertCompletionIntentCandidates(keywordEntries, functionEntries, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries)
+	}
 
 	for _, ruleCandidate := range candidates.Rules {
-		c.scanner.PopAndRestore()
-		c.scanner.Push()
-
+		if handledDottedObjectContext && isObjectCompletionRule(ruleCandidate.Rule) {
+			continue
+		}
 		switch ruleCandidate.Rule {
 		case "func_name":
 			functionEntries.insertBuiltinFunctions()
@@ -805,7 +773,7 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 				}
 			}
 		case "asterisk":
-			completionContexts := c.determineAsteriskContext()
+			completionContexts := c.determineObjectNameContext()
 			for _, context := range completionContexts {
 				c.insertObjectCandidates(context, databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries)
 			}
@@ -945,7 +913,6 @@ func (c *Completer) convertCandidates(candidates *mssqlparser.CandidateSet) ([]b
 	c.insertContextualMSSQLKeywords(keywordEntries)
 	c.insertContextualMSSQLCandidates(columnEntries)
 
-	c.scanner.PopAndRestore()
 	var result []base.Candidate
 	result = append(result, keywordEntries.toSlice()...)
 	result = append(result, functionEntries.toSlice()...)
@@ -999,6 +966,153 @@ func (c *Completer) insertCompletionIntentCandidates(keywordEntries, functionEnt
 			default:
 			}
 		}
+	}
+}
+
+func (c *Completer) insertDottedObjectContextCandidates(databaseEntries, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries CompletionMap) bool {
+	if len(databaseEntries) > 0 || len(schemaEntries) > 0 || len(tableEntries) > 0 || len(viewEntries) > 0 || len(sequenceEntries) > 0 || len(routineEntries) > 0 {
+		return false
+	}
+	parts, beforeIdx, ok := c.multipartPartsBeforeDottedObject()
+	if !ok {
+		return false
+	}
+	kind, ok := c.dottedObjectKindBefore(beforeIdx)
+	if !ok {
+		return false
+	}
+	c.insertDottedObjectCandidatesForParts(kind, parts, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries)
+	return true
+}
+
+func isObjectCompletionRule(rule string) bool {
+	switch rule {
+	case "database_ref", "schema_ref", "table_ref", "view_name", "view_ref", "sequence_ref", "proc_ref", "proc_name":
+		return true
+	default:
+		return false
+	}
+}
+
+func (c *Completer) multipartPartsBeforeDottedObject() ([]string, int, bool) {
+	idx := c.previousTokenIndex()
+	if idx < 1 {
+		return nil, -1, false
+	}
+	if c.completionPrefix != "" && mssqlparser.IsIdentTokenType(c.tokens[idx].Type) {
+		idx--
+	}
+	if idx < 1 || !isMultipartSeparator(c.tokenText(idx)) {
+		return nil, -1, false
+	}
+
+	var parts []string
+	for {
+		separator := c.tokenText(idx)
+		partIdx := idx - 1
+		if partIdx < 0 {
+			return nil, -1, false
+		}
+		if c.tokenText(partIdx) == "." {
+			if separator == ".." {
+				return nil, -1, false
+			}
+			parts = append([]string{""}, parts...)
+			idx = partIdx
+			continue
+		}
+		token := c.tokens[partIdx]
+		if !mssqlparser.IsIdentTokenType(token.Type) {
+			return nil, -1, false
+		}
+		part := normalizeCompletionIdentifier(c.tokenText(partIdx))
+		if part == "" {
+			return nil, -1, false
+		}
+		if separator == ".." {
+			parts = append([]string{part, ""}, parts...)
+		} else {
+			parts = append([]string{part}, parts...)
+		}
+		if partIdx-1 < 0 || c.tokenText(partIdx-1) != "." {
+			return parts, partIdx - 1, true
+		}
+		idx = partIdx - 1
+	}
+}
+
+func isMultipartSeparator(text string) bool {
+	return text == "." || text == ".."
+}
+
+type dottedObjectKind int
+
+const (
+	dottedObjectKindRelation dottedObjectKind = iota
+	dottedObjectKindView
+	dottedObjectKindSequence
+	dottedObjectKindRoutine
+)
+
+func (c *Completer) dottedObjectKindBefore(idx int) (dottedObjectKind, bool) {
+	if idx < 0 {
+		return dottedObjectKindRelation, false
+	}
+	if strings.EqualFold(c.tokenText(idx), "EXISTS") && idx >= 1 && strings.EqualFold(c.tokenText(idx-1), "IF") {
+		idx -= 2
+	}
+	if idx < 0 {
+		return dottedObjectKindRelation, false
+	}
+	switch strings.ToUpper(c.tokenText(idx)) {
+	case "VIEW":
+		return dottedObjectKindView, true
+	case "SEQUENCE":
+		return dottedObjectKindSequence, true
+	case "PROCEDURE", "PROC", "EXEC", "EXECUTE":
+		return dottedObjectKindRoutine, true
+	case "FOR":
+		if idx >= 2 && strings.EqualFold(c.tokenText(idx-1), "VALUE") && strings.EqualFold(c.tokenText(idx-2), "NEXT") {
+			return dottedObjectKindSequence, true
+		}
+		return dottedObjectKindRelation, false
+	case "FROM", "JOIN", "APPLY", "INTO", "UPDATE", "USING", "REFERENCES", "TABLE", "TRUNCATE":
+		return dottedObjectKindRelation, true
+	default:
+		return dottedObjectKindRelation, false
+	}
+}
+
+func (c *Completer) insertDottedObjectCandidatesForParts(kind dottedObjectKind, parts []string, schemaEntries, tableEntries, viewEntries, sequenceEntries, routineEntries CompletionMap) {
+	switch len(parts) {
+	case 0:
+		return
+	case 1:
+		schemaEntries.insertMetadataSchemas(c, "", parts[0])
+		c.insertDottedObjectCandidatesForSchema(kind, "", parts[0], tableEntries, viewEntries, sequenceEntries, routineEntries)
+	case 2:
+		if parts[1] == "" {
+			c.insertDottedObjectCandidatesForSchema(kind, parts[0], c.defaultSchema, tableEntries, viewEntries, sequenceEntries, routineEntries)
+			return
+		}
+		c.insertDottedObjectCandidatesForSchema(kind, parts[len(parts)-2], parts[len(parts)-1], tableEntries, viewEntries, sequenceEntries, routineEntries)
+	default:
+		return
+	}
+}
+
+func (c *Completer) insertDottedObjectCandidatesForSchema(kind dottedObjectKind, database string, schema string, tableEntries, viewEntries, sequenceEntries, routineEntries CompletionMap) {
+	switch kind {
+	case dottedObjectKindView:
+		viewEntries.insertMetadataViews(c, "", database, schema)
+	case dottedObjectKindSequence:
+		sequenceEntries.insertMetadataSequences(c, "", database, schema)
+	case dottedObjectKindRoutine:
+		routineEntries.insertMetadataProcedures(c, "", database, schema)
+	default:
+		tableEntries.insertMetadataTables(c, "", database, schema)
+		viewEntries.insertMetadataViews(c, "", database, schema)
+		sequenceEntries.insertMetadataSequences(c, "", database, schema)
 	}
 }
 
@@ -1511,13 +1625,6 @@ func withColumn() objectRefContextOption {
 	}
 }
 
-func withLinkedServer() objectRefContextOption {
-	return func(c *objectRefContext) {
-		c.linkedServer = ""
-		c.flags |= objectFlagShowLinkedServer
-	}
-}
-
 func newObjectRefContext(options ...objectRefContextOption) *objectRefContext {
 	o := &objectRefContext{
 		flags: objectFlagShowDatabase | objectFlagShowSchema | objectFlagShowObject,
@@ -1547,295 +1654,24 @@ func (o *objectRefContext) empty() bool {
 	return o.linkedServer == "" && o.database == "" && o.schema == "" && o.object == "" && o.column == ""
 }
 
-func (o *objectRefContext) clone() *objectRefContext {
-	return &objectRefContext{
-		linkedServer: o.linkedServer,
-		database:     o.database,
-		schema:       o.schema,
-		object:       o.object,
-		column:       o.column,
-		flags:        o.flags,
-	}
-}
-
-func (o *objectRefContext) setLinkedServer(linkedServer string) *objectRefContext {
+func (o *objectRefContext) setLinkedServer(linkedServer string) {
 	o.linkedServer = linkedServer
 	o.flags &= ^objectFlagShowLinkedServer
-	return o
 }
 
-func (o *objectRefContext) setDatabase(database string) *objectRefContext {
+func (o *objectRefContext) setDatabase(database string) {
 	o.database = database
 	o.flags &= ^objectFlagShowDatabase
-	return o
 }
 
-func (o *objectRefContext) setSchema(schema string) *objectRefContext {
+func (o *objectRefContext) setSchema(schema string) {
 	o.schema = schema
 	o.flags &= ^objectFlagShowSchema
-	return o
 }
 
-func (o *objectRefContext) setObject(object string) *objectRefContext {
+func (o *objectRefContext) setObject(object string) {
 	o.object = object
 	o.flags &= ^objectFlagShowObject
-	return o
-}
-
-func (o *objectRefContext) setColumn(column string) *objectRefContext {
-	o.column = column
-	o.flags &= ^objectFlagShowColumn
-	return o
-}
-
-func (c *Completer) determineFullColumnName() []*objectRefContext {
-	tokenIndex := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
-		// Skip to the next non-hidden token.
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenText() != "DELETED" &&
-		c.scanner.GetTokenText() != "INSERTED" && c.scanner.GetTokenText() != "$" &&
-		c.scanner.GetTokenText() != "IDENTITY" && c.scanner.GetTokenText() != "ROWGUID" {
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if tokenIndex > 0 {
-		// Go backward until we hit a non-identifier token.
-		for {
-			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
-			curDOT := c.scanner.GetTokenText() == "." && (c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */)) || c.scanner.GetPreviousTokenText(false /* skipHidden */) == "DELETED" || c.scanner.GetPreviousTokenText(false /* skipHidden */) == "INSERTED")
-			curRowguid := c.scanner.GetTokenText() == "ROWGUID" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "$"
-			curIdentity := c.scanner.GetTokenText() == "IDENTITY" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "$"
-			if curID || curDOT || curRowguid || curIdentity {
-				c.scanner.Backward(true /* skipHidden */)
-				continue
-			}
-			break
-		}
-	}
-
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
-	var candidates []string
-	var temp string
-	var count int
-	for {
-		count++
-		if c.scanner.GetTokenText() == "DELETED" || c.scanner.GetTokenText() == "INSERTED" {
-			candidates = append(candidates, "", "", "", "")
-			count += 3
-			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
-			}
-		} else if c.lexer.IsID_(c.scanner.GetTokenType()) {
-			temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
-			c.scanner.Forward(true /* skipHidden */)
-			if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-				return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
-			}
-			candidates = append(candidates, temp)
-		}
-		c.scanner.Forward(true /* skipHidden */)
-		if count > 4 {
-			break
-		}
-	}
-
-	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, true /* includeColumn */)
-}
-
-func (c *Completer) determineAsteriskContext() []*objectRefContext {
-	tokenIndex := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
-		// Skip to the next non-hidden token.
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) && c.scanner.GetTokenText() != "*" {
-		// We are at the end of an incomplete identifier spec. Jump back.
-		// For example, SELECT * FROM db.| WHERE a = 1, the scanner will be seek to the token ' ', and
-		// forwards to WHERE because we skip to the next non-hidden token in the above code.
-		// Also, for SELECT * FROM |, the scanner will be backward to the token 'FROM'.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if tokenIndex > 0 {
-		// Go backward until we hit a non-identifier token.
-		var count int
-		for {
-			var curAsterisk bool
-			if count == 0 {
-				if c.scanner.GetTokenText() == "*" && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "." {
-					curAsterisk = true
-				}
-			}
-			count++
-			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
-			curDOT := c.scanner.GetTokenText() == "." && c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */))
-			if curID || curDOT || curAsterisk {
-				c.scanner.Backward(true /* skipHidden */)
-				continue
-			}
-			break
-		}
-	}
-
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
-	var candidates []string
-	var temp string
-	var count int
-	for {
-		count++
-		if c.lexer.IsID_(c.scanner.GetTokenType()) {
-			temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
-			c.scanner.Forward(true /* skipHidden */)
-		}
-		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
-		}
-		candidates = append(candidates, temp)
-		c.scanner.Forward(true /* skipHidden */)
-		if count > 2 {
-			break
-		}
-	}
-
-	return deriveObjectRefContextsFromCandidates(candidates, true /* ignoredLinkedServer */, false /* includeColumn */)
-}
-
-func (c *Completer) determineFullTableNameContext() []*objectRefContext {
-	tokenIndex := c.scanner.GetIndex()
-	if c.scanner.GetTokenChannel() != antlr.TokenDefaultChannel {
-		// Skip to the next non-hidden token.
-		c.scanner.Forward(true /* skipHidden */)
-	}
-
-	tokenType := c.scanner.GetTokenType()
-	if c.scanner.GetTokenText() != "." && !c.lexer.IsID_(tokenType) {
-		// We are at the end of an incomplete identifier spec. Jump back.
-		// For example, SELECT * FROM db.| WHERE a = 1, the scanner will be seek to the token ' ', and
-		// forwards to WHERE because we skip to the next non-hidden token in the above code.
-		// Also, for SELECT * FROM |, the scanner will be backward to the token 'FROM'.
-		c.scanner.Backward(true /* skipHidden */)
-	}
-
-	if tokenIndex > 0 {
-		// Go backward until we hit a non-identifier token.
-		for {
-			curID := c.lexer.IsID_(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenText(false /* skipHidden */) == "."
-			curDOT := c.scanner.GetTokenText() == "." && c.lexer.IsID_(c.scanner.GetPreviousTokenType(false /* skipHidden */))
-			if curID || curDOT {
-				c.scanner.Backward(true /* skipHidden */)
-				continue
-			}
-			break
-		}
-	}
-
-	// The c.scanner is now on the leading identifier (or dot?) if there's no leading id.
-	var candidates []string
-	var temp string
-	var count int
-	for {
-		count++
-		if c.lexer.IsID_(c.scanner.GetTokenType()) {
-			temp, _ = NormalizeTSQLIdentifierText(c.scanner.GetTokenText())
-			c.scanner.Forward(true /* skipHidden */)
-		}
-		if !c.scanner.IsTokenType(tsqlparser.TSqlParserDOT) || tokenIndex <= c.scanner.GetIndex() {
-			return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
-		}
-		candidates = append(candidates, temp)
-		c.scanner.Forward(true /* skipHidden */)
-		if count > 3 {
-			break
-		}
-	}
-
-	return deriveObjectRefContextsFromCandidates(candidates, false /* ignoredLinkedServer */, false /* includeColumn */)
-}
-
-// deriveObjectRefContextsFromCandidates derives the object reference contexts from the candidates.
-// The T-SQL grammar's object reference likes [linked_server_name.][database_name.][schema_name.][object_name]
-// The size of candidates is the window size in the object reference,
-// for example, if the candidates are ["a", "b", "c"], the size is 3,
-// and objectRefContext would be [linked_server_name: "a", database_name: "b", schema_name: "c", object_name: ""] or[linked_server_name: "", database_name: "a", schema_name: "b", object_name: "c"].
-func deriveObjectRefContextsFromCandidates(candidates []string, ignoredLinkedServer bool, includeColumn bool) []*objectRefContext {
-	var options []objectRefContextOption
-	if !ignoredLinkedServer {
-		options = append(options, withLinkedServer())
-	}
-	if includeColumn {
-		options = append(options, withColumn())
-	}
-	refCtx := newObjectRefContext(options...)
-	if len(candidates) == 0 {
-		return []*objectRefContext{
-			refCtx.clone(),
-		}
-	}
-
-	var results []*objectRefContext
-	switch len(candidates) {
-	case 1:
-		if !ignoredLinkedServer {
-			results = append(results, refCtx.clone().setLinkedServer(candidates[0]))
-		}
-		results = append(
-			results,
-			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]),
-			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]),
-			refCtx.clone().setLinkedServer("").setDatabase("").setSchema("").setObject(candidates[0]),
-		)
-		if includeColumn {
-			results = append(results, refCtx.clone().setLinkedServer("").setDatabase("").setSchema("").setObject("").setColumn(candidates[0]))
-		}
-	case 2:
-		if !ignoredLinkedServer {
-			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]))
-		}
-		results = append(
-			results,
-			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]),
-			refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject(candidates[1]),
-		)
-		if includeColumn {
-			results = append(results, refCtx.clone().setLinkedServer("").setDatabase("").setSchema(candidates[0]).setObject("").setColumn(candidates[1]))
-		}
-	case 3:
-		if !ignoredLinkedServer {
-			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]))
-		}
-		results = append(
-			results,
-			refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]),
-		)
-		if includeColumn {
-			results = append(results, refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject("").setColumn(candidates[2]))
-		}
-	case 4:
-		if !ignoredLinkedServer {
-			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]))
-		}
-		if includeColumn {
-			results = append(results, refCtx.clone().setLinkedServer("").setDatabase(candidates[0]).setSchema(candidates[1]).setObject(candidates[2]).setColumn(candidates[3]))
-		}
-	case 5:
-		if includeColumn {
-			results = append(results, refCtx.clone().setLinkedServer(candidates[0]).setDatabase(candidates[1]).setSchema(candidates[2]).setObject(candidates[3]).setColumn(candidates[4]))
-		}
-	default:
-		// Other cases
-	}
-
-	if len(results) == 0 {
-		results = append(results, refCtx.clone())
-	}
-
-	return results
 }
 
 // skipHeadingSQLs skips the SQL statements which before the caret position.
@@ -1937,13 +1773,59 @@ func (c *Completer) collectCompletionCTEs(completionContext *omnimssql.Completio
 	if completionContext == nil {
 		return
 	}
+	cteStart := -1
 	for _, reference := range completionContext.CTEs {
 		virtual := c.convertCompletionVirtualReference(reference)
 		if virtual == nil {
 			continue
 		}
+		if cteStart < 0 && reference.Loc.Start >= 0 {
+			cteStart = reference.Loc.Start
+		}
+		if len(virtual.Columns) == 0 {
+			virtual.Columns = c.inferCompletionCTEColumns(reference, cteStart)
+		}
 		c.appendCTEIfMissing(virtual)
 	}
+}
+
+func (c *Completer) inferCompletionCTEColumns(reference omnimssql.RangeReference, cteStart int) []string {
+	if cteStart < 0 || reference.Loc.End < cteStart || reference.Loc.End > len(c.sql) {
+		return nil
+	}
+	table := normalizeCompletionIdentifier(reference.Object)
+	if table == "" {
+		return nil
+	}
+	cteBody := c.sql[cteStart:reference.Loc.End]
+	statement := fmt.Sprintf("WITH %s SELECT * FROM %s", cteBody, quoteIdentifierForSQL(table))
+	span, err := GetQuerySpan(
+		c.ctx,
+		base.GetQuerySpanContext{
+			InstanceID:              c.instanceID,
+			GetDatabaseMetadataFunc: c.metadataGetter,
+			ListDatabaseNamesFunc:   c.databaseNamesLister,
+		},
+		base.Statement{Text: statement},
+		c.defaultDatabase,
+		c.defaultSchema,
+		true,
+	)
+	if err != nil || span.NotFoundError != nil {
+		return nil
+	}
+	columns := make([]string, 0, len(span.Results))
+	for _, column := range span.Results {
+		columns = append(columns, column.Name)
+	}
+	return columns
+}
+
+func quoteIdentifierForSQL(identifier string) string {
+	if isRegularIdentifier(identifier) {
+		return identifier
+	}
+	return fmt.Sprintf("[%s]", strings.ReplaceAll(identifier, "]", "]]"))
 }
 
 func (c *Completer) appendCTEIfMissing(reference *base.VirtualTableReference) {
@@ -2095,90 +1977,6 @@ func (c *Completer) physicalReferenceKey(reference *base.PhysicalTableReference)
 	return fmt.Sprintf("%s.%s.%s", database, schema, reference.Table)
 }
 
-func (c *Completer) fetchCommonTableExpression(statement string) {
-	c.cteTables = nil
-
-	// SQL Server only allows CTEs in the first level, the following statement is invalid:
-	// SELECT * FROM (WITH t AS (SELECT * FROM [Employees]) SELECT * FROM t) t2;
-	// https://stackoverflow.com/questions/1914151/how-we-can-use-cte-in-subquery-in-sql-server
-	// So it's easy for SQL server to find the CTEs than other engines, we only need to construct a listener to find the CTEs.
-	extractor := &cteExtractor{
-		completer: c,
-	}
-	input := antlr.NewInputStream(statement)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	parser := tsqlparser.NewTSqlParser(tokens)
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.Tsql_file()
-	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
-	c.cteTables = extractor.virtualReferences
-}
-
-type cteExtractor struct {
-	*tsqlparser.BaseTSqlParserListener
-
-	completer         *Completer
-	handled           bool
-	virtualReferences []*base.VirtualTableReference
-}
-
-func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionContext) {
-	if c.handled {
-		return
-	}
-	c.handled = true
-
-	for _, cte := range ctx.AllCommon_table_expression() {
-		cteName := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(cte.GetExpression_name())
-		if cteName == "" {
-			continue
-		}
-		if cte.GetColumns() != nil {
-			var columns []string
-			for _, columnID := range cte.GetColumns().AllId_() {
-				columns = append(columns, unquote(columnID.GetText()))
-			}
-			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
-				Table:   unquote(cteName),
-				Columns: columns,
-			})
-			continue
-		}
-
-		cteBody := ctx.GetParser().GetTokenStream().GetTextFromInterval(
-			antlr.Interval{
-				Start: ctx.AllCommon_table_expression()[0].GetStart().GetTokenIndex(),
-				Stop:  cte.GetStop().GetTokenIndex(),
-			},
-		)
-
-		statement := fmt.Sprintf("WITH %s SELECT * FROM %s", cteBody, cteName)
-		if span, err := GetQuerySpan(
-			c.completer.ctx,
-			base.GetQuerySpanContext{
-				InstanceID:              c.completer.instanceID,
-				GetDatabaseMetadataFunc: c.completer.metadataGetter,
-				ListDatabaseNamesFunc:   c.completer.databaseNamesLister,
-			},
-			base.Statement{Text: statement},
-			c.completer.defaultDatabase,
-			c.completer.defaultSchema,
-			true,
-		); err == nil && span.NotFoundError == nil {
-			var columns []string
-			for _, column := range span.Results {
-				columns = append(columns, column.Name)
-			}
-			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{
-				Table:   unquote(cteName),
-				Columns: columns,
-			})
-		}
-	}
-}
-
 func (c *Completer) fetchSelectItemAliases(aliasPositions []int, startOffset int) []string {
 	aliasMap := make(map[string]bool)
 	for _, pos := range aliasPositions {
@@ -2202,34 +2000,15 @@ func (c *Completer) extractAliasText(pos int) string {
 	if pos < 0 || pos >= len(c.sql) {
 		return ""
 	}
-	followingText := c.sql[pos:]
-	if len(followingText) == 0 {
-		return ""
+	for _, token := range c.tokens {
+		if token.Loc == pos && mssqlparser.IsIdentTokenType(token.Type) {
+			return token.Str
+		}
+		if token.Loc > pos {
+			break
+		}
 	}
-
-	input := antlr.NewInputStream(followingText)
-	lexer := tsqlparser.NewTSqlLexer(input)
-	tokens := antlr.NewCommonTokenStream(lexer, 0)
-	parser := tsqlparser.NewTSqlParser(tokens)
-
-	parser.BuildParseTrees = true
-	parser.RemoveErrorListeners()
-	tree := parser.As_column_alias()
-
-	listener := &SelectAliasListener{}
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-
-	return listener.result
-}
-
-type SelectAliasListener struct {
-	*tsqlparser.BaseTSqlParserListener
-
-	result string
-}
-
-func (l *SelectAliasListener) EnterAs_column_alias(ctx *tsqlparser.As_column_aliasContext) {
-	l.result = unquote(ctx.Column_alias().GetText())
+	return ""
 }
 
 func (c *Completer) quotedIdentifierIfNeeded(identifier string) string {
