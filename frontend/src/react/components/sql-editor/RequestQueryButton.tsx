@@ -11,9 +11,10 @@ import {
   useProjectV1Store,
   useRoleStore,
   useSQLEditorStore,
+  useSubscriptionV1Store,
 } from "@/store";
 import type { DatabaseResource, Permission } from "@/types";
-import { PresetRoleType } from "@/types";
+import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -24,13 +25,15 @@ const SQL_SELECT_PERMISSION = "bb.sql.select";
 
 const getDefaultQueryRole = (
   roles: readonly Pick<Role, "name" | "permissions">[],
-  requiredPermissions: readonly string[]
+  requiredPermissions: readonly string[],
+  hasCustomRoleFeature: boolean
 ) => {
   const permissions =
     requiredPermissions.length > 0
       ? requiredPermissions
       : [SQL_SELECT_PERMISSION];
   const candidates = [...roles]
+    .filter((role) => hasCustomRoleFeature || PRESET_ROLES.includes(role.name))
     .filter((role) =>
       permissions.every((permission) => role.permissions.includes(permission))
     )
@@ -72,13 +75,18 @@ export function RequestQueryButton({
   const projectStore = useProjectV1Store();
   const editorStore = useSQLEditorStore();
   const roleStore = useRoleStore();
+  const subscriptionStore = useSubscriptionV1Store();
 
   const projectName = useVueState(() => editorStore.project);
   const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const hasCustomRoleFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  );
   const defaultQueryRole = useVueState(() =>
     getDefaultQueryRole(
       roleStore.roleList,
-      permissionDeniedDetail.requiredPermissions
+      permissionDeniedDetail.requiredPermissions,
+      hasCustomRoleFeature
     )
   );
 

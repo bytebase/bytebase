@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   useProjectV1Store: vi.fn(),
   useRoleStore: vi.fn(),
   useSQLEditorStore: vi.fn(),
+  useSubscriptionV1Store: vi.fn(),
   hasFeature: vi.fn(() => true),
   parseStringToResource: vi.fn((s: string) => ({
     databaseFullName: s,
@@ -32,6 +33,7 @@ vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
   useRoleStore: mocks.useRoleStore,
   useSQLEditorStore: mocks.useSQLEditorStore,
+  useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   hasFeature: mocks.hasFeature,
 }));
 
@@ -40,6 +42,7 @@ vi.mock("@/components/RoleGrantPanel/DatabaseResourceForm/common", () => ({
 }));
 
 vi.mock("@/types", () => ({
+  PRESET_ROLES: ["roles/sqlEditorReadUser", "roles/sqlEditorUser"],
   PresetRoleType: {
     SQL_EDITOR_READ_USER: "roles/sqlEditorReadUser",
     SQL_EDITOR_USER: "roles/sqlEditorUser",
@@ -48,6 +51,7 @@ vi.mock("@/types", () => ({
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   PlanFeature: {
+    FEATURE_CUSTOM_ROLES: 47,
     FEATURE_JIT: 5,
     FEATURE_REQUEST_ROLE_WORKFLOW: 6,
   },
@@ -164,12 +168,19 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
         permissions: ["bb.sql.select", "bb.sql.dml", "bb.sql.explain"],
       },
       {
-        name: "roles/sqlEditorReadUser",
+        name: "roles/queryOnly",
         permissions: ["bb.sql.select"],
+      },
+      {
+        name: "roles/sqlEditorReadUser",
+        permissions: ["bb.sql.select", "bb.sql.explain"],
       },
     ],
   });
   mocks.useSQLEditorStore.mockReturnValue({ project: "projects/proj1" });
+  mocks.useSubscriptionV1Store.mockReturnValue({
+    hasInstanceFeature: vi.fn(() => false),
+  });
   mocks.hasFeature.mockReturnValue(true);
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 };
@@ -303,6 +314,59 @@ describe("RequestQueryButton", () => {
         .querySelector("[data-testid='role-grant-panel']")
         ?.getAttribute("data-role")
     ).toBe("roles/sqlEditorUser");
+    unmount();
+  });
+
+  test("non-JIT role request ignores custom roles when feature is disabled", async () => {
+    setupDefaultMocks(false, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        text={false}
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.select"],
+        })}
+      />
+    );
+    render();
+
+    const btn = container.querySelector("button") as HTMLButtonElement;
+    await act(async () => {
+      btn.click();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='role-grant-panel']")
+        ?.getAttribute("data-role")
+    ).toBe("roles/sqlEditorReadUser");
+    unmount();
+  });
+
+  test("non-JIT role request can default to custom role when feature is enabled", async () => {
+    setupDefaultMocks(false, true);
+    mocks.useSubscriptionV1Store.mockReturnValue({
+      hasInstanceFeature: vi.fn(() => true),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        text={false}
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.select"],
+        })}
+      />
+    );
+    render();
+
+    const btn = container.querySelector("button") as HTMLButtonElement;
+    await act(async () => {
+      btn.click();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='role-grant-panel']")
+        ?.getAttribute("data-role")
+    ).toBe("roles/queryOnly");
     unmount();
   });
 
