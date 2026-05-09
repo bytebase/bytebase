@@ -189,6 +189,29 @@ func (x *TaskRunLog_ReleaseFileExecute) Equal(y *TaskRunLog_ReleaseFileExecute) 
 	return true
 }
 
+func (x *TaskRunLog_GhostMigrationStart) Equal(y *TaskRunLog_GhostMigrationStart) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *TaskRunLog_GhostMigrationEnd) Equal(y *TaskRunLog_GhostMigrationEnd) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
 func (x *TaskRunLog) Equal(y *TaskRunLog) bool {
 	if x == y {
 		return true
@@ -239,6 +262,12 @@ func (x *TaskRunLog) Equal(y *TaskRunLog) bool {
 		return false
 	}
 	if !x.ReleaseFileExecute.Equal(y.ReleaseFileExecute) {
+		return false
+	}
+	if !x.GhostMigrationStart.Equal(y.GhostMigrationStart) {
+		return false
+	}
+	if !x.GhostMigrationEnd.Equal(y.GhostMigrationEnd) {
 		return false
 	}
 	return true

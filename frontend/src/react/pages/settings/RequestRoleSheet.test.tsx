@@ -67,12 +67,15 @@ vi.mock("@/react/components/ui/expiration-picker", () => ({
 }));
 
 vi.mock("@/react/components/ui/alert", () => ({
-  Alert: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  AlertTitle: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  AlertDescription: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
+  Alert: ({
+    children,
+    title,
+    description,
+  }: {
+    children?: ReactNode;
+    title?: ReactNode;
+    description?: ReactNode;
+  }) => createElement("div", {}, title, description, children),
 }));
 
 vi.mock("@/react/components/IssueLabelSelect", () => ({
@@ -155,10 +158,12 @@ vi.mock("@/router/dashboard/projectV1", () => ({
 }));
 
 vi.mock("@/components/ProjectMember/utils", () => ({
-  // PROJECT_OWNER is not a SQL-permission role — these return false, so the
-  // database/environment scope sections stay hidden in the tests.
-  roleHasDatabaseLimitation: () => false,
-  roleHasEnvironmentLimitation: () => false,
+  // Wrap in vi.fn() so per-test overrides (vi.mocked(x).mockReturnValue(...))
+  // work — plain arrow functions can't be re-mocked at runtime.
+  // Default: PROJECT_OWNER is not a SQL-permission role — both return
+  // false / undefined, so the scope sections stay hidden by default.
+  roleHasDatabaseLimitation: vi.fn(() => false),
+  getRoleEnvironmentLimitationKind: vi.fn(() => undefined),
 }));
 
 vi.mock("@/plugins/cel", () => ({
@@ -321,8 +326,13 @@ async function typeReason(text: string): Promise<void> {
 }
 
 // Stub window.open — production handler opens the created issue in a new tab.
-beforeEach(() => {
+beforeEach(async () => {
   vi.spyOn(window, "open").mockImplementation(() => null);
+  // Reset env-kind mock between tests so per-test overrides don't leak.
+  const utilsMock = await import("@/components/ProjectMember/utils");
+  vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockReturnValue(
+    undefined
+  );
 });
 
 describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
@@ -397,5 +407,29 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     await flush();
 
     expect(getSubmitButton().disabled).toBe(false);
+  });
+
+  it("renders DDL/DML warning under env multiselect when role has env limitation", async () => {
+    // Override default helper mock for this case so the env section appears.
+    const utilsMock = await import("@/components/ProjectMember/utils");
+    vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
+      () => "DDL/DML"
+    );
+
+    await renderSheet(false);
+    await selectRole("roles/sqlEditorUser");
+    await flush();
+
+    expect(container.textContent).toContain("project.members.ddl-warning");
+  });
+
+  it("does not render DDL warning when role has no env limitation", async () => {
+    // Default mock returns undefined — no override needed. Confirms the
+    // warning is gated by envKind, not always-rendered.
+    await renderSheet(false);
+    await selectRole("roles/projectOwner");
+    await flush();
+
+    expect(container.textContent).not.toContain("project.members.ddl-warning");
   });
 });

@@ -322,6 +322,34 @@ func (o *ExecuteOptions) LogCommandResponse(affectedRows int64, allAffectedRows 
 	}
 }
 
+func (o *ExecuteOptions) LogGhostMigrationStart() {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type:                storepb.TaskRunLog_GHOST_MIGRATION_START,
+		GhostMigrationStart: &storepb.TaskRunLog_GhostMigrationStart{},
+	})
+	if err != nil {
+		slog.Warn("failed to log gh-ost migration start", log.BBError(err))
+	}
+}
+
+func (o *ExecuteOptions) LogGhostMigrationEnd(rerr string) {
+	if o == nil || o.CreateTaskRunLog == nil {
+		return
+	}
+	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
+		Type: storepb.TaskRunLog_GHOST_MIGRATION_END,
+		GhostMigrationEnd: &storepb.TaskRunLog_GhostMigrationEnd{
+			Error: rerr,
+		},
+	})
+	if err != nil {
+		slog.Warn("failed to log gh-ost migration end", log.BBError(err))
+	}
+}
+
 func (o *ExecuteOptions) LogRetryInfo(err error, retryCount int) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return

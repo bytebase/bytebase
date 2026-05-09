@@ -95,24 +95,27 @@ export function ExecuteHint({ database, onClose }: Props) {
 
   return (
     <div className="w-[28rem]">
-      <Alert variant="info">
-        <section className="flex flex-col gap-y-2">
-          <p>{t("sql-editor.only-select-allowed")}</p>
-          {database && environment && (
-            <p>
-              <Trans
-                t={t}
-                i18nKey="sql-editor.ddl-dml-requires-data-change-plan"
-                components={{
-                  environment: (
-                    <span className="font-medium">{environment.title}</span>
-                  ),
-                }}
-              />
-            </p>
-          )}
-        </section>
-      </Alert>
+      <Alert
+        variant="info"
+        description={
+          <section className="flex flex-col gap-y-2">
+            <p>{t("sql-editor.only-select-allowed")}</p>
+            {database && environment && (
+              <p>
+                <Trans
+                  t={t}
+                  i18nKey="sql-editor.ddl-dml-requires-data-change-plan"
+                  components={{
+                    environment: (
+                      <span className="font-medium">{environment.title}</span>
+                    ),
+                  }}
+                />
+              </p>
+            )}
+          </section>
+        }
+      />
 
       <div className="mt-4 flex justify-between">
         {allowAdmin && (

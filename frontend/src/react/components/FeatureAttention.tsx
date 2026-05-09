@@ -1,11 +1,6 @@
-import { CircleAlert, Info } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
   useServerState,
@@ -124,32 +119,27 @@ export function FeatureAttention({
     router.push(autoSubscriptionRoute());
   };
 
-  const Icon = isWarning ? CircleAlert : Info;
-
   return (
     <>
-      <Alert variant={isWarning ? "warning" : "info"} showIcon={false}>
-        <Icon className="size-5 mt-0.5 shrink-0" />
-        <div className="flex-1 flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <AlertTitle>{title}</AlertTitle>
-            <AlertDescription className="mt-0 whitespace-pre-line">
-              {descriptionText}
-            </AlertDescription>
+      <Alert
+        variant={isWarning ? "warning" : "info"}
+        title={title}
+        description={
+          <span className="whitespace-pre-line">{descriptionText}</span>
+        }
+      >
+        {actionText && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              onClick={onAction}
+            >
+              {actionText}
+            </Button>
           </div>
-          {actionText && (
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0 whitespace-nowrap"
-                onClick={onAction}
-              >
-                {actionText}
-              </Button>
-            </div>
-          )}
-        </div>
+        )}
       </Alert>
       {!hasUnifiedInstanceLicense && (
         <InstanceAssignmentSheet

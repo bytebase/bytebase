@@ -5,7 +5,7 @@ import { DemoSigninForm } from "@/react/components/auth/DemoSigninForm";
 import { EmailCodeSigninForm } from "@/react/components/auth/EmailCodeSigninForm";
 import { PasswordSigninForm } from "@/react/components/auth/PasswordSigninForm";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
-import { Alert, AlertTitle } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import {
   Tabs,
@@ -176,11 +176,11 @@ export function SigninPage(props: SigninPageProps) {
         <BytebaseLogo className="mx-auto mb-8" />
 
         {invitedEmail && (
-          <Alert variant="info" className="mb-4 mt-4">
-            <AlertTitle>
-              {t("auth.sign-in.invited-email", { email: invitedEmail })}
-            </AlertTitle>
-          </Alert>
+          <Alert
+            variant="info"
+            className="mb-4 mt-4"
+            title={t("auth.sign-in.invited-email", { email: invitedEmail })}
+          />
         )}
 
         {showSignInForm && (

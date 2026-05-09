@@ -26,6 +26,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Sheet,
@@ -1064,14 +1065,9 @@ function DatabaseSelector({
             <thead>
               <tr className="border-b text-left text-control-light">
                 <th className="py-2 pr-2 w-8">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={toggleAll}
-                    className="accent-accent"
+                  <Checkbox
+                    checked={someSelected ? "indeterminate" : allSelected}
+                    onCheckedChange={toggleAll}
                   />
                 </th>
                 <th className="py-2 pr-4 font-medium">
@@ -1104,12 +1100,7 @@ function DatabaseSelector({
                     onClick={() => toggleDatabase(db.name)}
                   >
                     <td className="py-2 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="accent-accent"
-                      />
+                      <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">

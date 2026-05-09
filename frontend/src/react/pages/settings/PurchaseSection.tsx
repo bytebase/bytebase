@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { useSubscriptionState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
@@ -399,11 +400,13 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
             </div>
           )}
           {paymentInfo?.cancelAtPeriodEnd ? (
-            <Alert variant="warning" className="my-2">
-              {t("subscription.purchase.cancel-pending", {
+            <Alert
+              variant="warning"
+              className="my-2"
+              description={t("subscription.purchase.cancel-pending", {
                 date: paymentInfo.periodEnd,
               })}
-            </Alert>
+            />
           ) : (
             allowManage && (
               <div className="mt-4">
@@ -508,10 +511,11 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                     ) : card.selfServicePurchase ? (
                       <>
                         <label className="mt-3 flex items-start gap-x-2 text-sm text-control-placeholder cursor-pointer">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={checkPolicy}
-                            onChange={(e) => setCheckPolicy(e.target.checked)}
+                            onCheckedChange={(checked) =>
+                              setCheckPolicy(checked)
+                            }
                             className="mt-0.5"
                           />
                           <span>

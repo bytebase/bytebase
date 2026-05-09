@@ -2,6 +2,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import {
   Table,
@@ -289,22 +290,20 @@ export function TableColumnEditor({
                   />
                 </TableCell>
                 <TableCell className={cn(cellClass, "text-center")}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={!column.nullable}
                     disabled={disabled || isPK}
-                    onChange={(e) =>
-                      handleNullableChange(column, !e.target.checked)
+                    onCheckedChange={(checked) =>
+                      handleNullableChange(column, !checked)
                     }
                   />
                 </TableCell>
                 <TableCell className={cn(cellClass, "text-center")}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isPK}
                     disabled={disabled || !allowChangePrimaryKeys}
-                    onChange={(e) =>
-                      handlePrimaryKeyChange(column, e.target.checked)
+                    onCheckedChange={(checked) =>
+                      handlePrimaryKeyChange(column, checked)
                     }
                   />
                 </TableCell>

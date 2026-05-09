@@ -21,6 +21,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1101,17 +1102,23 @@ function TargetsSection({
           )}
         </div>
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (
-          <Alert className="px-3 py-2" variant="warning">
-            <div>{nonEnvWarning}</div>
-            <div className="mt-1 flex flex-col gap-1 text-sm">
-              {nonEnvDatabaseNames.map((name) => (
-                <div key={name} className="flex items-center gap-2">
-                  <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
-                  <DatabaseTarget target={name} />
+          <Alert
+            className="px-3 py-2"
+            variant="warning"
+            description={
+              <>
+                <div>{nonEnvWarning}</div>
+                <div className="mt-1 flex flex-col gap-1 text-sm">
+                  {nonEnvDatabaseNames.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
+                      <DatabaseTarget target={name} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </Alert>
+              </>
+            }
+          />
         )}
         {isLoadingTargets ? (
           <div className="flex items-center justify-center py-2">
@@ -1472,20 +1479,15 @@ function DatabaseSelector({
             <thead>
               <tr className="border-b text-left text-control-light">
                 <th className="w-8 py-2 pr-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={() =>
+                  <Checkbox
+                    checked={someSelected ? "indeterminate" : allSelected}
+                    onCheckedChange={() =>
                       onSelectedNamesChange(
                         allSelected
                           ? new Set()
                           : new Set(databases.map((db) => db.name))
                       )
                     }
-                    className="accent-accent"
                   />
                 </th>
                 <th className="py-2 pr-4 font-medium">
@@ -1518,12 +1520,7 @@ function DatabaseSelector({
                     onClick={() => toggleDatabase(db.name)}
                   >
                     <td className="py-2 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="accent-accent"
-                      />
+                      <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">

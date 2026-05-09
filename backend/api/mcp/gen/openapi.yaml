@@ -18640,6 +18640,10 @@ components:
           title: release_file_execute
           description: Release file execution details (if type is RELEASE_FILE_EXECUTE).
           $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ReleaseFileExecute'
+        ghostMigration:
+          title: ghost_migration
+          description: gh-ost migration details (if type is GHOST_MIGRATION).
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.GhostMigration'
       title: TaskRunLogEntry
       additionalProperties: false
     bytebase.v1.TaskRunLogEntry.CommandExecute:
@@ -18735,6 +18739,24 @@ components:
       title: DatabaseSync
       additionalProperties: false
       description: Database synchronization details.
+    bytebase.v1.TaskRunLogEntry.GhostMigration:
+      type: object
+      properties:
+        startTime:
+          title: start_time
+          description: When the gh-ost migration started.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endTime:
+          title: end_time
+          description: When the gh-ost migration ended.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        error:
+          type: string
+          title: error
+          description: Error message if the gh-ost migration failed.
+      title: GhostMigration
+      additionalProperties: false
+      description: gh-ost migration details.
     bytebase.v1.TaskRunLogEntry.PriorBackup:
       type: object
       properties:
@@ -18899,6 +18921,7 @@ components:
         - RETRY_INFO
         - COMPUTE_DIFF
         - RELEASE_FILE_EXECUTE
+        - GHOST_MIGRATION
       description: The type of log entry.
     bytebase.v1.TaskRunSession:
       type: object

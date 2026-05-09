@@ -1710,10 +1710,11 @@
       "self": "Masking Exemptions"
     },
     "members": {
-      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
-      "allow-ddl-all-environments": "No environment restrictions. Allow running DDL/DML statements in all environments.",
+      "ddl-current-all": "{{kind}} statements can be directly run in SQL Editor in ALL environments without approval.",
+      "ddl-current-none": "{{kind}} statements require approval before running in SQL Editor.",
+      "ddl-current-some": "{{kind}} statements can be directly run in SQL Editor in the listed environments without approval.",
+      "ddl-warning": "In the selected environments, {{kind}} statements can be directly run in SQL Editor without approval.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
-      "disallow-ddl-all-environments": "Disallow running DDL/DML statements for all environments.",
       "edit-member": "Edit member - {{member}}",
       "never-expires": "Never",
       "request-role": {
@@ -3698,6 +3699,7 @@
   "task-run.log-type.command-execute": "Command Execute",
   "task-run.log-type.compute-diff": "Compute Diff",
   "task-run.log-type.database-sync": "Database Sync",
+  "task-run.log-type.ghost-migration": "gh-ost Migration",
   "task-run.log-type.prior-backup": "Prior Backup",
   "task-run.log-type.release-file-execute": "Release File",
   "task-run.log-type.retry": "Retry",

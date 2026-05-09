@@ -324,6 +324,8 @@
     - [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart)
     - [TaskRunLog.DatabaseSyncEnd](#bytebase-store-TaskRunLog-DatabaseSyncEnd)
     - [TaskRunLog.DatabaseSyncStart](#bytebase-store-TaskRunLog-DatabaseSyncStart)
+    - [TaskRunLog.GhostMigrationEnd](#bytebase-store-TaskRunLog-GhostMigrationEnd)
+    - [TaskRunLog.GhostMigrationStart](#bytebase-store-TaskRunLog-GhostMigrationStart)
     - [TaskRunLog.PriorBackupEnd](#bytebase-store-TaskRunLog-PriorBackupEnd)
     - [TaskRunLog.PriorBackupStart](#bytebase-store-TaskRunLog-PriorBackupStart)
     - [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute)
@@ -5156,6 +5158,8 @@ Table identifies a database table.
 | compute_diff_start | [TaskRunLog.ComputeDiffStart](#bytebase-store-TaskRunLog-ComputeDiffStart) |  |  |
 | compute_diff_end | [TaskRunLog.ComputeDiffEnd](#bytebase-store-TaskRunLog-ComputeDiffEnd) |  |  |
 | release_file_execute | [TaskRunLog.ReleaseFileExecute](#bytebase-store-TaskRunLog-ReleaseFileExecute) |  |  |
+| ghost_migration_start | [TaskRunLog.GhostMigrationStart](#bytebase-store-TaskRunLog-GhostMigrationStart) |  |  |
+| ghost_migration_end | [TaskRunLog.GhostMigrationEnd](#bytebase-store-TaskRunLog-GhostMigrationEnd) |  |  |
 
 
 
@@ -5238,6 +5242,31 @@ Table identifies a database table.
 <a name="bytebase-store-TaskRunLog-DatabaseSyncStart"></a>
 
 ### TaskRunLog.DatabaseSyncStart
+
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-GhostMigrationEnd"></a>
+
+### TaskRunLog.GhostMigrationEnd
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunLog-GhostMigrationStart"></a>
+
+### TaskRunLog.GhostMigrationStart
 
 
 
@@ -5382,6 +5411,8 @@ Table identifies a database table.
 | COMPUTE_DIFF_START | 12 |  |
 | COMPUTE_DIFF_END | 13 |  |
 | RELEASE_FILE_EXECUTE | 14 |  |
+| GHOST_MIGRATION_START | 15 |  |
+| GHOST_MIGRATION_END | 16 |  |
 
 
  

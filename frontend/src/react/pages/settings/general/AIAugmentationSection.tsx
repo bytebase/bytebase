@@ -13,6 +13,7 @@ import { ComponentPermissionGuard } from "@/react/components/ComponentPermission
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -224,19 +225,21 @@ export const AIAugmentationSection = forwardRef<
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <div className="flex-1 lg:px-4">
             {isSaaSMode ? (
-              <Alert variant="info">
-                {t("settings.general.workspace.ai-assistant.enabled-in-saas")}
-              </Alert>
+              <Alert
+                variant="info"
+                description={t(
+                  "settings.general.workspace.ai-assistant.enabled-in-saas"
+                )}
+              />
             ) : (
               <div className="mt-4 lg:mt-0 flex flex-col gap-y-4">
                 {/* Enable toggle */}
                 <div>
                   <div className="flex items-center gap-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={state.enabled}
                       disabled={!canEdit}
-                      onChange={(e) => toggleEnabled(e.target.checked)}
+                      onCheckedChange={(checked) => toggleEnabled(checked)}
                     />
                     <span className="text-base font-semibold">
                       {t(

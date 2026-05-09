@@ -1456,7 +1456,6 @@
       "self": "Masking Exemptions"
     },
     "members": {
-      "allow-ddl": "Allow running DDL/DML statements in the selected environments.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "never-expires": "Never",
       "workspace-level-roles": "Workspace level roles"
@@ -2766,6 +2765,7 @@
       "command-execute": "Command Execute",
       "compute-diff": "Compute Diff",
       "database-sync": "Database Sync",
+      "ghost-migration": "gh-ost Migration",
       "prior-backup": "Prior Backup",
       "release-file-execute": "Release File",
       "retry": "Retry",

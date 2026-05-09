@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytebase/omni/pg/ast"
+	ghostbase "github.com/github/gh-ost/go/base"
 	"github.com/github/gh-ost/go/logic"
 	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
@@ -290,7 +291,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver) error {
+func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver, opts *db.ExecuteOptions) error {
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse ghost directive")
@@ -335,6 +336,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 	// set buffer size to 1 to unblock the sender because there is no listener if the task is canceled.
 	migrationError := make(chan error, 1)
 	migrator := logic.NewMigrator(migrationContext, "bb")
+	opts.LogGhostMigrationStart()
 
 	defer func() {
 		cleanupCtx := context.Background()
@@ -364,10 +366,21 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 
 	select {
 	case err := <-migrationError:
-		return err
+		if err != nil {
+			opts.LogGhostMigrationEnd(err.Error())
+			return err
+		}
+		opts.LogGhostMigrationEnd("")
+		return nil
 	case <-driverCtx.Done():
-		migrationContext.PanicAbort <- errors.New("task canceled")
-		return errors.New("task canceled")
+		err := errors.New("task canceled")
+		opts.LogGhostMigrationEnd(err.Error())
+		abortCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if sendErr := ghostbase.SendWithContext(abortCtx, migrationContext.PanicAbort, err); sendErr != nil {
+			slog.Warn("failed to abort gh-ost migration", log.BBError(sendErr))
+		}
+		return err
 	}
 }
 
@@ -406,7 +419,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
-	migrationErr := executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver)
+	migrationErr := executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
@@ -527,7 +540,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 		// Execute the SQL.
 		if ghost.IsGhostEnabled(sheet.Statement) {
-			err = executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver)
+			err = executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
 		} else {
 			slog.Debug("Start migration...",
 				slog.String("instance", database.InstanceID),

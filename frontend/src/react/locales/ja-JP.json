@@ -1702,10 +1702,11 @@
       "self": "マスキング免除"
     },
     "members": {
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
-      "allow-ddl-all-environments": "環境制限はありません。すべての環境で DDL/DML ステートメントの実行を許可する。",
+      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
+      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
+      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
+      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
       "never-expires": "Never",
       "request-role": {
@@ -3684,6 +3685,7 @@
   "task-run.log-type.command-execute": "コマンド実行",
   "task-run.log-type.compute-diff": "差分計算",
   "task-run.log-type.database-sync": "データベース同期",
+  "task-run.log-type.ghost-migration": "gh-ost Migration",
   "task-run.log-type.prior-backup": "事前のバックアップ",
   "task-run.log-type.release-file-execute": "リリースファイル",
   "task-run.log-type.retry": "リトライ",

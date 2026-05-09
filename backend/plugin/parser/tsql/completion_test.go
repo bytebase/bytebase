@@ -123,6 +123,14 @@ func TestCompletionOmniTableRefRule(t *testing.T) {
 	})
 }
 
+func TestCompletionDoesNotDependOnANTLR(t *testing.T) {
+	content, err := os.ReadFile("completion.go")
+	require.NoError(t, err)
+	source := string(content)
+	require.NotContains(t, source, "github.com/antlr4-go/antlr/v4")
+	require.NotContains(t, source, "github.com/bytebase/parser/tsql")
+}
+
 func getCaretPosition(statement string) (string, int, int) {
 	lines := strings.Split(statement, "\n")
 	for i, line := range lines {

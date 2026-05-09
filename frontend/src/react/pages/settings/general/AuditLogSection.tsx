@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { usePlanFeature } from "@/react/hooks/useAppState";
 import { useSettingV1Store } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -86,15 +87,14 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
         <div className="flex-1 lg:px-4 flex flex-col gap-y-6">
           {/* Audit log stdout toggle */}
           <label className="flex items-start gap-x-3 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
+              checked={state.enableAuditLogStdout}
               className="mt-1"
               disabled={!allowEdit || !hasAuditLogFeature}
-              checked={state.enableAuditLogStdout}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 setState((s) => ({
                   ...s,
-                  enableAuditLogStdout: e.target.checked,
+                  enableAuditLogStdout: checked,
                 }))
               }
             />
@@ -110,15 +110,14 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
 
           {/* Debug mode toggle */}
           <label className="flex items-start gap-x-3 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
+              checked={state.enableDebug}
               className="mt-1"
               disabled={!allowEdit}
-              checked={state.enableDebug}
-              onChange={(e) =>
+              onCheckedChange={(checked) =>
                 setState((s) => ({
                   ...s,
-                  enableDebug: e.target.checked,
+                  enableDebug: checked,
                 }))
               }
             />

@@ -6,6 +6,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Table,
@@ -116,11 +117,11 @@ function PolicyTable({
                 <TableCell>{policy.ruleList.length}</TableCell>
                 <TableCell>
                   {hasUpdatePermission ? (
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={policy.enforce}
-                      onChange={(e) => toggleEnabled(policy, e.target.checked)}
-                      className="h-4 w-4 rounded-xs border-control-border accent-accent"
+                      onCheckedChange={(checked) =>
+                        toggleEnabled(policy, checked)
+                      }
                     />
                   ) : policy.enforce ? (
                     <Check className="w-4 h-4 text-control-light" />

@@ -691,6 +691,25 @@ func (x *TaskRunLogEntry_ComputeDiff) Equal(y *TaskRunLogEntry_ComputeDiff) bool
 	return true
 }
 
+func (x *TaskRunLogEntry_GhostMigration) Equal(y *TaskRunLogEntry_GhostMigration) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if p, q := x.StartTime, y.StartTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if p, q := x.EndTime, y.EndTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
 func (x *TaskRunLogEntry_ReleaseFileExecute) Equal(y *TaskRunLogEntry_ReleaseFileExecute) bool {
 	if x == y {
 		return true
@@ -745,6 +764,9 @@ func (x *TaskRunLogEntry) Equal(y *TaskRunLogEntry) bool {
 		return false
 	}
 	if !x.ReleaseFileExecute.Equal(y.ReleaseFileExecute) {
+		return false
+	}
+	if !x.GhostMigration.Equal(y.GhostMigration) {
 		return false
 	}
 	return true

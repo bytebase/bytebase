@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
         with:
-          version: '10.30.3'
+          version: '10.33.4'
       - uses: actions/setup-node@v6
         with:
-          node-version: '24.14.0'
+          node-version: '24.15.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - name: Install dependencies
@@ -42,12 +42,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6
         with:
-          version: '10.30.3'
+          version: '10.33.4'
       - uses: actions/setup-node@v6
         with:
-          node-version: '24.14.0'
+          node-version: '24.15.0'
           cache: pnpm
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - name: Install dependencies

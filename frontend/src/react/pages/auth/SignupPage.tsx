@@ -5,6 +5,7 @@ import { UserPasswordFields } from "@/react/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/react/components/auth/userPasswordValidation";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -168,11 +169,12 @@ export function SignupPage() {
 
             {needAdminSetup && (
               <div className="w-full flex flex-row justify-start items-start gap-x-2">
-                <input
-                  id="accept-terms"
-                  type="checkbox"
+                <Checkbox
                   checked={acceptTermsAndPolicy}
-                  onChange={(e) => setAcceptTermsAndPolicy(e.target.checked)}
+                  id="accept-terms"
+                  onCheckedChange={(checked) =>
+                    setAcceptTermsAndPolicy(checked)
+                  }
                 />
                 <label
                   htmlFor="accept-terms"

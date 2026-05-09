@@ -243,6 +243,43 @@ describe("task-run-log model", () => {
     expect(sections[1]?.status).toBe("error");
   });
 
+  test("renders gh-ost migration as a timed section", () => {
+    const detailText = {
+      completed: "Completed",
+    } satisfies TaskRunLogDetailText;
+
+    const entries = [
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.GHOST_MIGRATION,
+        logTime: ts(10),
+        ghostMigration: {
+          startTime: ts(10),
+          endTime: ts(13),
+          error: "",
+        },
+      }),
+      create(TaskRunLogEntrySchema, {
+        type: TaskRunLogEntry_Type.GHOST_MIGRATION,
+        logTime: ts(20),
+        ghostMigration: {
+          startTime: ts(20),
+          error: "copy failed",
+        },
+      }),
+    ];
+
+    const sections = buildSectionsFromEntries(entries, {
+      getSectionLabel: (type) => String(type),
+      detailText,
+    });
+
+    expect(sections[0]?.status).toBe("success");
+    expect(sections[0]?.duration).toBe("3.0s");
+    expect(sections[0]?.items[0]?.detail).toBe("Completed");
+    expect(sections[1]?.status).toBe("error");
+    expect(sections[1]?.items[0]?.detail).toBe("copy failed");
+  });
+
   test("uses localized detail text for completed timed entries, prior backup completion, and retries", () => {
     const detailText = {
       completed: "Completed",

@@ -1,6 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import { ArrowUpRight, Check, Copy, LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { rolloutServiceClientConnect } from "@/connect";
 import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
@@ -20,6 +22,11 @@ import {
   Changelog_Status,
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
+import {
+  GetTaskRunLogRequestSchema,
+  type TaskRunLogEntry,
+  TaskRunLogEntry_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import {
   bytesToString,
   extractDatabaseResourceName,
@@ -110,6 +117,44 @@ function ChangelogStatusIndicator({ status }: { status: Changelog_Status }) {
   }
 }
 
+function hasSuccessfulDatabaseSync(entries: TaskRunLogEntry[]): boolean {
+  return entries.some((entry) => {
+    if (entry.type !== TaskRunLogEntry_Type.DATABASE_SYNC) {
+      return false;
+    }
+    return Boolean(entry.databaseSync?.endTime && !entry.databaseSync.error);
+  });
+}
+
+function canShowSchemaSnapshot(
+  changelog: Changelog | undefined,
+  hasTaskRunDatabaseSync: boolean | undefined
+): boolean {
+  if (!changelog) {
+    return false;
+  }
+  if (!changelog.taskRun) {
+    return true;
+  }
+  return hasTaskRunDatabaseSync !== false;
+}
+
+async function fetchHasSuccessfulDatabaseSync(
+  taskRun: string
+): Promise<boolean | undefined> {
+  try {
+    const response = await rolloutServiceClientConnect.getTaskRunLog(
+      create(GetTaskRunLogRequestSchema, {
+        parent: taskRun,
+      })
+    );
+    return hasSuccessfulDatabaseSync(response.entries);
+  } catch (error) {
+    console.error(`Failed to fetch task run log for ${taskRun}:`, error);
+    return undefined;
+  }
+}
+
 function CopyButton({ content }: { content: string }) {
   const { t } = useTranslation();
 
@@ -160,6 +205,9 @@ export function DatabaseChangelogDetailPage({
   const [showDiff, setShowDiff] = useState(true);
   const [resolvedChangelog, setResolvedChangelog] = useState<Changelog>();
   const [previousChangelog, setPreviousChangelog] = useState<Changelog>();
+  const [hasTaskRunDatabaseSync, setHasTaskRunDatabaseSync] = useState<
+    boolean | undefined
+  >(undefined);
 
   const projectId = extractProjectResourceName(project);
   const instanceId = extractInstanceResourceName(instance);
@@ -196,6 +244,7 @@ export function DatabaseChangelogDetailPage({
     setShowDiff(true);
     setResolvedChangelog(undefined);
     setPreviousChangelog(undefined);
+    setHasTaskRunDatabaseSync(undefined);
 
     void Promise.all([
       changelogStore.getOrFetchChangelogByName(
@@ -208,11 +257,13 @@ export function DatabaseChangelogDetailPage({
         if (cancelled) {
           return;
         }
+
         setResolvedChangelog(current);
         setPreviousChangelog(previous);
 
         // Show diff by default only if there is a schema change.
-        const hasDiff = (previous?.schema ?? "") !== (current?.schema ?? "");
+        const currentSchema = current?.schema ?? "";
+        const hasDiff = (previous?.schema ?? "") !== currentSchema;
         setShowDiff(hasDiff);
       })
       .catch((error) => {
@@ -228,6 +279,30 @@ export function DatabaseChangelogDetailPage({
       cancelled = true;
     };
   }, [changelogName, changelogStore, detail.ready]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!resolvedChangelog?.taskRun) {
+      setHasTaskRunDatabaseSync(undefined);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setHasTaskRunDatabaseSync(undefined);
+    void fetchHasSuccessfulDatabaseSync(resolvedChangelog.taskRun).then(
+      (nextHasTaskRunDatabaseSync) => {
+        if (!cancelled) {
+          setHasTaskRunDatabaseSync(nextHasTaskRunDatabaseSync);
+        }
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedChangelog?.taskRun, resolvedChangelog?.status]);
 
   const taskFullLink = useMemo(() => {
     if (!resolvedChangelog?.taskRun) {
@@ -254,6 +329,11 @@ export function DatabaseChangelogDetailPage({
       (previousChangelog?.schema ?? "") !== (resolvedChangelog.schema ?? "")
     );
   }, [resolvedChangelog, previousChangelog]);
+
+  const showSchemaSnapshot = useMemo(
+    () => canShowSchemaSnapshot(resolvedChangelog, hasTaskRunDatabaseSync),
+    [hasTaskRunDatabaseSync, resolvedChangelog]
+  );
 
   const allowRollback = useMemo(() => {
     if (
@@ -443,68 +523,70 @@ export function DatabaseChangelogDetailPage({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-y-2">
-          <p className="flex items-center gap-x-2 text-lg text-main">
-            <span>
-              {t("common.schema")} {t("common.snapshot")}
-            </span>
-            {formattedSchemaSize ? (
-              <span className="text-sm font-normal text-control-light">
-                ({formattedSchemaSize})
+        {showSchemaSnapshot ? (
+          <div className="flex flex-col gap-y-2">
+            <p className="flex items-center gap-x-2 text-lg text-main">
+              <span>
+                {t("common.schema")} {t("common.snapshot")}
               </span>
-            ) : null}
-            <CopyButton content={resolvedChangelog.schema} />
-          </p>
-
-          <div className="flex items-center justify-between gap-x-2">
-            <div className="flex items-center gap-x-2">
-              <div className="flex items-center gap-x-1">
-                <Switch
-                  checked={showDiff}
-                  onCheckedChange={setShowDiff}
-                  size="sm"
-                />
-                <span className="text-sm font-semibold">
-                  {t("changelog.show-diff")}
+              {formattedSchemaSize ? (
+                <span className="text-sm font-normal text-control-light">
+                  ({formattedSchemaSize})
                 </span>
-              </div>
-              <div className="textinfolabel">
-                {t("changelog.schema-snapshot-after-change")}
-              </div>
-              {!hasSchemaDiff && (
-                <div className="text-sm font-normal text-accent">
-                  ({t("changelog.no-schema-change")})
-                </div>
-              )}
-            </div>
-            {allowRollback ? (
-              <Button size="sm" onClick={handleRollback}>
-                {t("common.rollback")}
-              </Button>
-            ) : null}
-          </div>
+              ) : null}
+              <CopyButton content={resolvedChangelog.schema} />
+            </p>
 
-          {showDiff ? (
-            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
-              <ReadonlyDiffMonaco
-                original={previousChangelog?.schema ?? ""}
-                modified={resolvedChangelog.schema}
-                className="relative h-auto max-h-[600px] min-h-[120px]"
-              />
+            <div className="flex items-center justify-between gap-x-2">
+              <div className="flex items-center gap-x-2">
+                <div className="flex items-center gap-x-1">
+                  <Switch
+                    checked={showDiff}
+                    onCheckedChange={setShowDiff}
+                    size="sm"
+                  />
+                  <span className="text-sm font-semibold">
+                    {t("changelog.show-diff")}
+                  </span>
+                </div>
+                <div className="textinfolabel">
+                  {t("changelog.schema-snapshot-after-change")}
+                </div>
+                {!hasSchemaDiff && (
+                  <div className="text-sm font-normal text-accent">
+                    ({t("changelog.no-schema-change")})
+                  </div>
+                )}
+              </div>
+              {allowRollback ? (
+                <Button size="sm" onClick={handleRollback}>
+                  {t("common.rollback")}
+                </Button>
+              ) : null}
             </div>
-          ) : resolvedChangelog.schema ? (
-            <div className="overflow-hidden rounded-sm border border-control-border bg-white">
-              <ReadonlyMonaco
-                content={resolvedChangelog.schema}
-                className="relative h-auto max-h-[600px] min-h-[120px]"
-              />
-            </div>
-          ) : (
-            <div className="text-sm text-control-light">
-              {t("changelog.current-schema-empty")}
-            </div>
-          )}
-        </div>
+
+            {showDiff ? (
+              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+                <ReadonlyDiffMonaco
+                  original={previousChangelog?.schema ?? ""}
+                  modified={resolvedChangelog.schema}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                />
+              </div>
+            ) : resolvedChangelog.schema ? (
+              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+                <ReadonlyMonaco
+                  content={resolvedChangelog.schema}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                />
+              </div>
+            ) : (
+              <div className="text-sm text-control-light">
+                {t("changelog.current-schema-empty")}
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -336,29 +336,32 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
         <h2 className="text-lg font-medium">{t("gitops.checklist.title")}</h2>
 
-        <Alert variant="info">
-          <span>
-            {t("gitops.checklist.wif-notice-text")}{" "}
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
-              target="_blank"
-              rel="noreferrer"
-              className="text-accent hover:underline"
-            >
-              Bitbucket
-            </a>{" "}
-            /{" "}
-            <a
-              href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
-              target="_blank"
-              rel="noreferrer"
-              className="text-accent hover:underline"
-            >
-              Azure DevOps
-            </a>{" "}
-            {t("gitops.checklist.wif-notice-suffix")}
-          </span>
-        </Alert>
+        <Alert
+          variant="info"
+          description={
+            <span>
+              {t("gitops.checklist.wif-notice-text")}{" "}
+              <a
+                href="https://docs.bytebase.com/tutorials/gitops-bitbucket-workflow?source=console"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent hover:underline"
+              >
+                Bitbucket
+              </a>{" "}
+              /{" "}
+              <a
+                href="https://docs.bytebase.com/tutorials/gitops-azure-devops-workflow?source=console"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent hover:underline"
+              >
+                Azure DevOps
+              </a>{" "}
+              {t("gitops.checklist.wif-notice-suffix")}
+            </span>
+          }
+        />
 
         {/* Check 1: External URL */}
         <div className="flex items-start gap-x-3 py-3">
@@ -499,13 +502,15 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
 
           <TabsPanel value="github">
             {providerMismatchGithub && (
-              <Alert variant="error" className="mb-3">
-                {t("gitops.workflow.provider-not-match", {
+              <Alert
+                variant="error"
+                className="mb-3"
+                description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
                     selectedConfig!.providerType
                   ),
                 })}
-              </Alert>
+              />
             )}
             <div className="flex items-center gap-x-2 my-3">
               <span className="text-sm">
@@ -545,13 +550,15 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
 
           <TabsPanel value="gitlab">
             {providerMismatchGitlab && (
-              <Alert variant="error" className="mb-3">
-                {t("gitops.workflow.provider-not-match", {
+              <Alert
+                variant="error"
+                className="mb-3"
+                description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
                     selectedConfig!.providerType
                   ),
                 })}
-              </Alert>
+              />
             )}
             <CollapsibleCode
               label={
@@ -666,22 +673,25 @@ function MissingExternalURLAttention() {
   );
 
   return (
-    <Alert variant="error" className="mt-1">
-      <div className="flex flex-col gap-y-1">
-        <span className="font-medium">{t("banner.external-url")}</span>
-        <span>{t("settings.general.workspace.external-url.description")}</span>
-        {canConfigure && (
+    <Alert
+      variant="error"
+      className="mt-1"
+      title={t("banner.external-url")}
+      description={t("settings.general.workspace.external-url.description")}
+    >
+      {canConfigure && (
+        <div className="mt-1">
           <Button
             size="sm"
-            className="w-fit mt-1"
+            className="w-fit"
             onClick={() =>
               router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL })
             }
           >
             {t("common.configure-now")}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </Alert>
   );
 }

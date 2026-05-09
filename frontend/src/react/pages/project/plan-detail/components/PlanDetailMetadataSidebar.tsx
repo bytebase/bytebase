@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -367,12 +368,7 @@ function IssueLabelsSection({
                     onClick={() => void toggleLabel(option.value)}
                     type="button"
                   >
-                    <input
-                      checked={isSelected}
-                      className="accent-accent"
-                      readOnly
-                      type="checkbox"
-                    />
+                    <Checkbox checked={isSelected} />
                     <span
                       className="size-4 shrink-0 rounded-sm"
                       style={{ backgroundColor: option.color }}

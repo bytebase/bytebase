@@ -219,3 +219,50 @@
         line: 2
         column: 0
       endposition: null
+# TEXT-family parity (Codex P1 catch on batch-8 omni migration):
+# pingcap-tidb's parser unifies TEXT and BLOB under mysql.TypeBlob (TEXT
+# is BLOB with non-binary charset), so the pingcap-typed advisor flagged
+# TEXT-in-INDEX as "is blob". Omni stores TEXT as a distinct DataType.Name
+# ("TEXT", "TINYTEXT", etc.); a mechanical port that only matched
+# blob/tinyblob/mediumblob/longblob silently dropped TEXT coverage. Fixed
+# by extending isBlobType to also match the TEXT family. Advice content
+# now uses the accurate type name ("is text") rather than pingcap's
+# accidental "is blob" rendering.
+- statement: CREATE TABLE t(c TEXT, INDEX(c(10)))
+  changeType: 1
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`c` is text
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(tt TINYTEXT, mt MEDIUMTEXT, lt LONGTEXT, id INT, INDEX(tt(1), mt(2), lt(3), id))
+  changeType: 1
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`lt` is longtext
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`mt` is mediumtext
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`tt` is tinytext
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

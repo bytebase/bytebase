@@ -44,6 +44,9 @@ export function TaskRunLogViewer({ taskRunName }: TaskRunLogViewerProps) {
         [TaskRunLogEntry_Type.COMPUTE_DIFF]: t(
           "task-run.log-type.compute-diff"
         ),
+        [TaskRunLogEntry_Type.GHOST_MIGRATION]: t(
+          "task-run.log-type.ghost-migration"
+        ),
         [TaskRunLogEntry_Type.RELEASE_FILE_EXECUTE]: t(
           "task-run.log-type.release-file-execute"
         ),

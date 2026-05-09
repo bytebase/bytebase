@@ -5,17 +5,17 @@ import {
   Info,
   type LucideIcon,
 } from "lucide-react";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
 
 const alertVariants = cva(
-  "relative rounded-xs border px-4 py-3 text-sm flex gap-x-3 items-start",
+  "relative flex w-full items-start gap-x-3 rounded-xs border px-4 py-3 text-sm leading-5 text-control shadow-xs",
   {
     variants: {
       variant: {
-        info: "border-accent/30 bg-accent/5 text-accent",
-        warning: "border-warning/30 bg-warning/5 text-warning",
-        error: "border-error/30 bg-error/5 text-error",
+        info: "border-info/40 bg-info/10",
+        warning: "border-warning/40 bg-warning/10",
+        error: "border-error/40 bg-error/10",
       },
     },
     defaultVariants: {
@@ -24,14 +24,29 @@ const alertVariants = cva(
   }
 );
 
+const alertIconVariants = cva("mt-0.5 size-5 shrink-0", {
+  variants: {
+    variant: {
+      info: "text-info",
+      warning: "text-warning",
+      error: "text-error",
+    },
+  },
+  defaultVariants: {
+    variant: "info",
+  },
+});
+
 const iconMap: Record<string, LucideIcon> = {
   info: Info,
   warning: AlertTriangle,
   error: AlertCircle,
 };
 
-type AlertProps = ComponentProps<"div"> &
+type AlertProps = Omit<ComponentProps<"div">, "title"> &
   VariantProps<typeof alertVariants> & {
+    title?: ReactNode;
+    description?: ReactNode;
     showIcon?: boolean;
   };
 
@@ -39,33 +54,46 @@ function Alert({
   className,
   variant = "info",
   showIcon = true,
+  title,
+  description,
   children,
   ...props
 }: AlertProps) {
   const Icon = iconMap[variant ?? "info"];
+  const hasStructuredContent = title !== undefined || description !== undefined;
+
   return (
     <div
       role="alert"
       className={cn(alertVariants({ variant, className }))}
       {...props}
     >
-      {showIcon && <Icon className="size-5 shrink-0 mt-0.5" />}
-      <div>{children}</div>
+      {showIcon && <Icon className={alertIconVariants({ variant })} />}
+      <div className="min-w-0 flex-1">
+        {hasStructuredContent ? (
+          <>
+            {title !== undefined && (
+              <h5 className="font-medium leading-6">{title}</h5>
+            )}
+            {description !== undefined && (
+              <div
+                className={cn(
+                  "text-sm text-control-light leading-6",
+                  title !== undefined && "mt-1"
+                )}
+              >
+                {description}
+              </div>
+            )}
+            {children}
+          </>
+        ) : (
+          children
+        )}
+      </div>
     </div>
   );
 }
 
-function AlertTitle({ className, ...props }: ComponentProps<"h5">) {
-  return (
-    <h5 className={cn("font-medium leading-tight", className)} {...props} />
-  );
-}
-
-function AlertDescription({ className, ...props }: ComponentProps<"div">) {
-  return (
-    <div className={cn("mt-1 text-sm opacity-90", className)} {...props} />
-  );
-}
-
-export { Alert, AlertTitle, AlertDescription, alertVariants };
+export { Alert, alertVariants };
 export type { AlertProps };

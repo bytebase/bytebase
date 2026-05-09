@@ -469,6 +469,7 @@
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
     - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
+    - [TaskRunLogEntry.GhostMigration](#bytebase-v1-TaskRunLogEntry-GhostMigration)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
     - [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail)
     - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item)
@@ -7798,6 +7799,7 @@ Information about why a task run is waiting.
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
 | compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  | Compute diff details (if type is COMPUTE_DIFF). |
 | release_file_execute | [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute) |  | Release file execution details (if type is RELEASE_FILE_EXECUTE). |
+| ghost_migration | [TaskRunLogEntry.GhostMigration](#bytebase-v1-TaskRunLogEntry-GhostMigration) |  | gh-ost migration details (if type is GHOST_MIGRATION). |
 
 
 
@@ -7868,6 +7870,23 @@ Database synchronization details.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync started. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync ended. |
 | error | [string](#string) |  | Error message if sync failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-GhostMigration"></a>
+
+### TaskRunLogEntry.GhostMigration
+gh-ost migration details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration ended. |
+| error | [string](#string) |  | Error message if the gh-ost migration failed. |
 
 
 
@@ -8164,6 +8183,7 @@ The type of log entry.
 | RETRY_INFO | 7 | Retry information. |
 | COMPUTE_DIFF | 8 | Schema diff computation. |
 | RELEASE_FILE_EXECUTE | 9 | Release file execution. |
+| GHOST_MIGRATION | 10 | gh-ost online migration. |
 
 
  

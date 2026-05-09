@@ -1702,10 +1702,11 @@
       "self": "脱敏豁免"
     },
     "members": {
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
-      "allow-ddl-all-environments": "无环境限制。允许在所有环境中执行 DDL/DML 语句。",
+      "ddl-current-all": "{{kind}} 语句可在 SQL 编辑器中针对所有（ALL）环境直接执行，无需审批。",
+      "ddl-current-none": "{{kind}} 语句在 SQL 编辑器中运行前需要审批。",
+      "ddl-current-some": "{{kind}} 语句可在 SQL 编辑器中针对所列环境直接执行，无需审批。",
+      "ddl-warning": "在所选环境中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需审批。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
       "edit-member": "编辑成员 - {{member}}",
       "never-expires": "Never",
       "request-role": {
@@ -3684,6 +3685,7 @@
   "task-run.log-type.command-execute": "命令执行",
   "task-run.log-type.compute-diff": "计算差异",
   "task-run.log-type.database-sync": "数据库同步",
+  "task-run.log-type.ghost-migration": "gh-ost 迁移",
   "task-run.log-type.prior-backup": "预备份",
   "task-run.log-type.release-file-execute": "发布包文件",
   "task-run.log-type.retry": "重试",

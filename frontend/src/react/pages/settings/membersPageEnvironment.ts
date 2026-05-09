@@ -1,4 +1,4 @@
-import { roleHasEnvironmentLimitation } from "@/components/ProjectMember/utils";
+import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertFromExpr } from "@/utils/issue/cel";
 
@@ -14,7 +14,7 @@ export type ProjectRoleBindingEnvironmentLimitationState =
 export const getProjectRoleBindingEnvironmentLimitationState = (
   binding: Binding
 ): ProjectRoleBindingEnvironmentLimitationState | undefined => {
-  if (!roleHasEnvironmentLimitation(binding.role)) {
+  if (getRoleEnvironmentLimitationKind(binding.role) === undefined) {
     return undefined;
   }
 

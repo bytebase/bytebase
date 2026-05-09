@@ -96,13 +96,18 @@ export function ProjectReleaseDashboardPage({
   return (
     <div className="py-4 w-full flex flex-col">
       <div className="px-4 flex flex-col gap-y-2 pb-2">
-        <Alert variant="info">
-          <span>{t("release.usage-description")}</span>
-          <LearnMoreLink
-            href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
-            className="ml-1"
-          />
-        </Alert>
+        <Alert
+          variant="info"
+          description={
+            <>
+              <span>{t("release.usage-description")}</span>
+              <LearnMoreLink
+                href="https://docs.bytebase.com/gitops/migration-based-workflow/release/?source=console"
+                className="ml-1"
+              />
+            </>
+          }
+        />
 
         {/* Category filter */}
         <div className="flex items-center gap-x-4">

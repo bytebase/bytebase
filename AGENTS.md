@@ -140,6 +140,14 @@ The frontend is migrating from Vue to React. **All new UI code should be written
 - Use `useTranslation()` from `react-i18next` for i18n
 - Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens shared with the Vue layer
 
+**Shared UI primitives**:
+- For React UI code, prefer shared components from `./frontend/src/react/components/ui/` over native HTML controls or ad hoc styled elements
+- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/react/components/ui/`
+- Use shared UI components for common controls such as buttons, inputs, selects, dialogs, dropdowns, tooltips, tabs, checkboxes, radios, switches, tables, and form controls when available
+- Do not hand-roll native controls with Tailwind classes when a shared component exists
+- Native HTML controls are allowed only when the shared component does not support the required browser behavior, accessibility behavior, or integration pattern
+- When touching existing React UI, opportunistically replace nearby native or ad hoc controls with shared UI components if behavior remains equivalent and the scope stays reasonable
+
 **Tailwind CSS v4**:
 - CSS-first config in `./frontend/src/assets/css/tailwind.css` — no JS config file
 - Custom utilities use `@utility`, design tokens use `@theme`

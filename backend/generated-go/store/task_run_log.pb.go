@@ -24,20 +24,22 @@ const (
 type TaskRunLog_Type int32
 
 const (
-	TaskRunLog_TYPE_UNSPECIFIED     TaskRunLog_Type = 0
-	TaskRunLog_SCHEMA_DUMP_START    TaskRunLog_Type = 1
-	TaskRunLog_SCHEMA_DUMP_END      TaskRunLog_Type = 2
-	TaskRunLog_COMMAND_EXECUTE      TaskRunLog_Type = 3
-	TaskRunLog_COMMAND_RESPONSE     TaskRunLog_Type = 4
-	TaskRunLog_DATABASE_SYNC_START  TaskRunLog_Type = 5
-	TaskRunLog_DATABASE_SYNC_END    TaskRunLog_Type = 6
-	TaskRunLog_TRANSACTION_CONTROL  TaskRunLog_Type = 8
-	TaskRunLog_PRIOR_BACKUP_START   TaskRunLog_Type = 9
-	TaskRunLog_PRIOR_BACKUP_END     TaskRunLog_Type = 10
-	TaskRunLog_RETRY_INFO           TaskRunLog_Type = 11
-	TaskRunLog_COMPUTE_DIFF_START   TaskRunLog_Type = 12
-	TaskRunLog_COMPUTE_DIFF_END     TaskRunLog_Type = 13
-	TaskRunLog_RELEASE_FILE_EXECUTE TaskRunLog_Type = 14
+	TaskRunLog_TYPE_UNSPECIFIED      TaskRunLog_Type = 0
+	TaskRunLog_SCHEMA_DUMP_START     TaskRunLog_Type = 1
+	TaskRunLog_SCHEMA_DUMP_END       TaskRunLog_Type = 2
+	TaskRunLog_COMMAND_EXECUTE       TaskRunLog_Type = 3
+	TaskRunLog_COMMAND_RESPONSE      TaskRunLog_Type = 4
+	TaskRunLog_DATABASE_SYNC_START   TaskRunLog_Type = 5
+	TaskRunLog_DATABASE_SYNC_END     TaskRunLog_Type = 6
+	TaskRunLog_TRANSACTION_CONTROL   TaskRunLog_Type = 8
+	TaskRunLog_PRIOR_BACKUP_START    TaskRunLog_Type = 9
+	TaskRunLog_PRIOR_BACKUP_END      TaskRunLog_Type = 10
+	TaskRunLog_RETRY_INFO            TaskRunLog_Type = 11
+	TaskRunLog_COMPUTE_DIFF_START    TaskRunLog_Type = 12
+	TaskRunLog_COMPUTE_DIFF_END      TaskRunLog_Type = 13
+	TaskRunLog_RELEASE_FILE_EXECUTE  TaskRunLog_Type = 14
+	TaskRunLog_GHOST_MIGRATION_START TaskRunLog_Type = 15
+	TaskRunLog_GHOST_MIGRATION_END   TaskRunLog_Type = 16
 )
 
 // Enum value maps for TaskRunLog_Type.
@@ -57,22 +59,26 @@ var (
 		12: "COMPUTE_DIFF_START",
 		13: "COMPUTE_DIFF_END",
 		14: "RELEASE_FILE_EXECUTE",
+		15: "GHOST_MIGRATION_START",
+		16: "GHOST_MIGRATION_END",
 	}
 	TaskRunLog_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":     0,
-		"SCHEMA_DUMP_START":    1,
-		"SCHEMA_DUMP_END":      2,
-		"COMMAND_EXECUTE":      3,
-		"COMMAND_RESPONSE":     4,
-		"DATABASE_SYNC_START":  5,
-		"DATABASE_SYNC_END":    6,
-		"TRANSACTION_CONTROL":  8,
-		"PRIOR_BACKUP_START":   9,
-		"PRIOR_BACKUP_END":     10,
-		"RETRY_INFO":           11,
-		"COMPUTE_DIFF_START":   12,
-		"COMPUTE_DIFF_END":     13,
-		"RELEASE_FILE_EXECUTE": 14,
+		"TYPE_UNSPECIFIED":      0,
+		"SCHEMA_DUMP_START":     1,
+		"SCHEMA_DUMP_END":       2,
+		"COMMAND_EXECUTE":       3,
+		"COMMAND_RESPONSE":      4,
+		"DATABASE_SYNC_START":   5,
+		"DATABASE_SYNC_END":     6,
+		"TRANSACTION_CONTROL":   8,
+		"PRIOR_BACKUP_START":    9,
+		"PRIOR_BACKUP_END":      10,
+		"RETRY_INFO":            11,
+		"COMPUTE_DIFF_START":    12,
+		"COMPUTE_DIFF_END":      13,
+		"RELEASE_FILE_EXECUTE":  14,
+		"GHOST_MIGRATION_START": 15,
+		"GHOST_MIGRATION_END":   16,
 	}
 )
 
@@ -156,24 +162,26 @@ func (TaskRunLog_TransactionControl_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type TaskRunLog struct {
-	state              protoimpl.MessageState         `protogen:"open.v1"`
-	Type               TaskRunLog_Type                `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.TaskRunLog_Type" json:"type,omitempty"`
-	ReplicaId          string                         `protobuf:"bytes,12,opt,name=replica_id,json=replicaId,proto3" json:"replica_id,omitempty"`
-	SchemaDumpStart    *TaskRunLog_SchemaDumpStart    `protobuf:"bytes,2,opt,name=schema_dump_start,json=schemaDumpStart,proto3" json:"schema_dump_start,omitempty"`
-	SchemaDumpEnd      *TaskRunLog_SchemaDumpEnd      `protobuf:"bytes,3,opt,name=schema_dump_end,json=schemaDumpEnd,proto3" json:"schema_dump_end,omitempty"`
-	CommandExecute     *TaskRunLog_CommandExecute     `protobuf:"bytes,4,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
-	CommandResponse    *TaskRunLog_CommandResponse    `protobuf:"bytes,5,opt,name=command_response,json=commandResponse,proto3" json:"command_response,omitempty"`
-	DatabaseSyncStart  *TaskRunLog_DatabaseSyncStart  `protobuf:"bytes,6,opt,name=database_sync_start,json=databaseSyncStart,proto3" json:"database_sync_start,omitempty"`
-	DatabaseSyncEnd    *TaskRunLog_DatabaseSyncEnd    `protobuf:"bytes,7,opt,name=database_sync_end,json=databaseSyncEnd,proto3" json:"database_sync_end,omitempty"`
-	TransactionControl *TaskRunLog_TransactionControl `protobuf:"bytes,9,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
-	PriorBackupStart   *TaskRunLog_PriorBackupStart   `protobuf:"bytes,10,opt,name=prior_backup_start,json=priorBackupStart,proto3" json:"prior_backup_start,omitempty"`
-	PriorBackupEnd     *TaskRunLog_PriorBackupEnd     `protobuf:"bytes,11,opt,name=prior_backup_end,json=priorBackupEnd,proto3" json:"prior_backup_end,omitempty"`
-	RetryInfo          *TaskRunLog_RetryInfo          `protobuf:"bytes,13,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
-	ComputeDiffStart   *TaskRunLog_ComputeDiffStart   `protobuf:"bytes,14,opt,name=compute_diff_start,json=computeDiffStart,proto3" json:"compute_diff_start,omitempty"`
-	ComputeDiffEnd     *TaskRunLog_ComputeDiffEnd     `protobuf:"bytes,15,opt,name=compute_diff_end,json=computeDiffEnd,proto3" json:"compute_diff_end,omitempty"`
-	ReleaseFileExecute *TaskRunLog_ReleaseFileExecute `protobuf:"bytes,16,opt,name=release_file_execute,json=releaseFileExecute,proto3" json:"release_file_execute,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state               protoimpl.MessageState          `protogen:"open.v1"`
+	Type                TaskRunLog_Type                 `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.TaskRunLog_Type" json:"type,omitempty"`
+	ReplicaId           string                          `protobuf:"bytes,12,opt,name=replica_id,json=replicaId,proto3" json:"replica_id,omitempty"`
+	SchemaDumpStart     *TaskRunLog_SchemaDumpStart     `protobuf:"bytes,2,opt,name=schema_dump_start,json=schemaDumpStart,proto3" json:"schema_dump_start,omitempty"`
+	SchemaDumpEnd       *TaskRunLog_SchemaDumpEnd       `protobuf:"bytes,3,opt,name=schema_dump_end,json=schemaDumpEnd,proto3" json:"schema_dump_end,omitempty"`
+	CommandExecute      *TaskRunLog_CommandExecute      `protobuf:"bytes,4,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
+	CommandResponse     *TaskRunLog_CommandResponse     `protobuf:"bytes,5,opt,name=command_response,json=commandResponse,proto3" json:"command_response,omitempty"`
+	DatabaseSyncStart   *TaskRunLog_DatabaseSyncStart   `protobuf:"bytes,6,opt,name=database_sync_start,json=databaseSyncStart,proto3" json:"database_sync_start,omitempty"`
+	DatabaseSyncEnd     *TaskRunLog_DatabaseSyncEnd     `protobuf:"bytes,7,opt,name=database_sync_end,json=databaseSyncEnd,proto3" json:"database_sync_end,omitempty"`
+	TransactionControl  *TaskRunLog_TransactionControl  `protobuf:"bytes,9,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
+	PriorBackupStart    *TaskRunLog_PriorBackupStart    `protobuf:"bytes,10,opt,name=prior_backup_start,json=priorBackupStart,proto3" json:"prior_backup_start,omitempty"`
+	PriorBackupEnd      *TaskRunLog_PriorBackupEnd      `protobuf:"bytes,11,opt,name=prior_backup_end,json=priorBackupEnd,proto3" json:"prior_backup_end,omitempty"`
+	RetryInfo           *TaskRunLog_RetryInfo           `protobuf:"bytes,13,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
+	ComputeDiffStart    *TaskRunLog_ComputeDiffStart    `protobuf:"bytes,14,opt,name=compute_diff_start,json=computeDiffStart,proto3" json:"compute_diff_start,omitempty"`
+	ComputeDiffEnd      *TaskRunLog_ComputeDiffEnd      `protobuf:"bytes,15,opt,name=compute_diff_end,json=computeDiffEnd,proto3" json:"compute_diff_end,omitempty"`
+	ReleaseFileExecute  *TaskRunLog_ReleaseFileExecute  `protobuf:"bytes,16,opt,name=release_file_execute,json=releaseFileExecute,proto3" json:"release_file_execute,omitempty"`
+	GhostMigrationStart *TaskRunLog_GhostMigrationStart `protobuf:"bytes,17,opt,name=ghost_migration_start,json=ghostMigrationStart,proto3" json:"ghost_migration_start,omitempty"`
+	GhostMigrationEnd   *TaskRunLog_GhostMigrationEnd   `protobuf:"bytes,18,opt,name=ghost_migration_end,json=ghostMigrationEnd,proto3" json:"ghost_migration_end,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *TaskRunLog) Reset() {
@@ -307,6 +315,20 @@ func (x *TaskRunLog) GetComputeDiffEnd() *TaskRunLog_ComputeDiffEnd {
 func (x *TaskRunLog) GetReleaseFileExecute() *TaskRunLog_ReleaseFileExecute {
 	if x != nil {
 		return x.ReleaseFileExecute
+	}
+	return nil
+}
+
+func (x *TaskRunLog) GetGhostMigrationStart() *TaskRunLog_GhostMigrationStart {
+	if x != nil {
+		return x.GhostMigrationStart
+	}
+	return nil
+}
+
+func (x *TaskRunLog) GetGhostMigrationEnd() *TaskRunLog_GhostMigrationEnd {
+	if x != nil {
+		return x.GhostMigrationEnd
 	}
 	return nil
 }
@@ -969,6 +991,86 @@ func (x *TaskRunLog_ReleaseFileExecute) GetFilePath() string {
 	return ""
 }
 
+type TaskRunLog_GhostMigrationStart struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskRunLog_GhostMigrationStart) Reset() {
+	*x = TaskRunLog_GhostMigrationStart{}
+	mi := &file_store_task_run_log_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskRunLog_GhostMigrationStart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLog_GhostMigrationStart) ProtoMessage() {}
+
+func (x *TaskRunLog_GhostMigrationStart) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_run_log_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLog_GhostMigrationStart.ProtoReflect.Descriptor instead.
+func (*TaskRunLog_GhostMigrationStart) Descriptor() ([]byte, []int) {
+	return file_store_task_run_log_proto_rawDescGZIP(), []int{0, 13}
+}
+
+type TaskRunLog_GhostMigrationEnd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TaskRunLog_GhostMigrationEnd) Reset() {
+	*x = TaskRunLog_GhostMigrationEnd{}
+	mi := &file_store_task_run_log_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TaskRunLog_GhostMigrationEnd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TaskRunLog_GhostMigrationEnd) ProtoMessage() {}
+
+func (x *TaskRunLog_GhostMigrationEnd) ProtoReflect() protoreflect.Message {
+	mi := &file_store_task_run_log_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TaskRunLog_GhostMigrationEnd.ProtoReflect.Descriptor instead.
+func (*TaskRunLog_GhostMigrationEnd) Descriptor() ([]byte, []int) {
+	return file_store_task_run_log_proto_rawDescGZIP(), []int{0, 14}
+}
+
+func (x *TaskRunLog_GhostMigrationEnd) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 // Item represents a single backup operation for a table.
 type PriorBackupDetail_Item struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -986,7 +1088,7 @@ type PriorBackupDetail_Item struct {
 
 func (x *PriorBackupDetail_Item) Reset() {
 	*x = PriorBackupDetail_Item{}
-	mi := &file_store_task_run_log_proto_msgTypes[15]
+	mi := &file_store_task_run_log_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -998,7 +1100,7 @@ func (x *PriorBackupDetail_Item) String() string {
 func (*PriorBackupDetail_Item) ProtoMessage() {}
 
 func (x *PriorBackupDetail_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_log_proto_msgTypes[15]
+	mi := &file_store_task_run_log_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1058,7 +1160,7 @@ type PriorBackupDetail_Item_Table struct {
 
 func (x *PriorBackupDetail_Item_Table) Reset() {
 	*x = PriorBackupDetail_Item_Table{}
-	mi := &file_store_task_run_log_proto_msgTypes[16]
+	mi := &file_store_task_run_log_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1070,7 +1172,7 @@ func (x *PriorBackupDetail_Item_Table) String() string {
 func (*PriorBackupDetail_Item_Table) ProtoMessage() {}
 
 func (x *PriorBackupDetail_Item_Table) ProtoReflect() protoreflect.Message {
-	mi := &file_store_task_run_log_proto_msgTypes[16]
+	mi := &file_store_task_run_log_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1111,7 +1213,7 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xa2\x13\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xda\x15\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1d\n" +
@@ -1131,7 +1233,9 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"retry_info\x18\r \x01(\v2$.bytebase.store.TaskRunLog.RetryInfoR\tretryInfo\x12Y\n" +
 	"\x12compute_diff_start\x18\x0e \x01(\v2+.bytebase.store.TaskRunLog.ComputeDiffStartR\x10computeDiffStart\x12S\n" +
 	"\x10compute_diff_end\x18\x0f \x01(\v2).bytebase.store.TaskRunLog.ComputeDiffEndR\x0ecomputeDiffEnd\x12_\n" +
-	"\x14release_file_execute\x18\x10 \x01(\v2-.bytebase.store.TaskRunLog.ReleaseFileExecuteR\x12releaseFileExecute\x1a\x11\n" +
+	"\x14release_file_execute\x18\x10 \x01(\v2-.bytebase.store.TaskRunLog.ReleaseFileExecuteR\x12releaseFileExecute\x12b\n" +
+	"\x15ghost_migration_start\x18\x11 \x01(\v2..bytebase.store.TaskRunLog.GhostMigrationStartR\x13ghostMigrationStart\x12\\\n" +
+	"\x13ghost_migration_end\x18\x12 \x01(\v2,.bytebase.store.TaskRunLog.GhostMigrationEndR\x11ghostMigrationEnd\x1a\x11\n" +
 	"\x0fSchemaDumpStart\x1a%\n" +
 	"\rSchemaDumpEnd\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1a[\n" +
@@ -1168,7 +1272,10 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x1aK\n" +
 	"\x12ReleaseFileExecute\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
-	"\tfile_path\x18\x02 \x01(\tR\bfilePath\"\xc2\x02\n" +
+	"\tfile_path\x18\x02 \x01(\tR\bfilePath\x1a\x15\n" +
+	"\x13GhostMigrationStart\x1a)\n" +
+	"\x11GhostMigrationEnd\x12\x14\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xf6\x02\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11SCHEMA_DUMP_START\x10\x01\x12\x13\n" +
@@ -1185,7 +1292,9 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"RETRY_INFO\x10\v\x12\x16\n" +
 	"\x12COMPUTE_DIFF_START\x10\f\x12\x14\n" +
 	"\x10COMPUTE_DIFF_END\x10\r\x12\x18\n" +
-	"\x14RELEASE_FILE_EXECUTE\x10\x0e\"\xcd\x03\n" +
+	"\x14RELEASE_FILE_EXECUTE\x10\x0e\x12\x19\n" +
+	"\x15GHOST_MIGRATION_START\x10\x0f\x12\x17\n" +
+	"\x13GHOST_MIGRATION_END\x10\x10\"\xcd\x03\n" +
 	"\x11PriorBackupDetail\x12<\n" +
 	"\x05items\x18\x01 \x03(\v2&.bytebase.store.PriorBackupDetail.ItemR\x05items\x1a\xf9\x02\n" +
 	"\x04Item\x12O\n" +
@@ -1212,7 +1321,7 @@ func file_store_task_run_log_proto_rawDescGZIP() []byte {
 }
 
 var file_store_task_run_log_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_store_task_run_log_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_store_task_run_log_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_store_task_run_log_proto_goTypes = []any{
 	(TaskRunLog_Type)(0),                    // 0: bytebase.store.TaskRunLog.Type
 	(TaskRunLog_TransactionControl_Type)(0), // 1: bytebase.store.TaskRunLog.TransactionControl.Type
@@ -1231,10 +1340,12 @@ var file_store_task_run_log_proto_goTypes = []any{
 	(*TaskRunLog_ComputeDiffStart)(nil),     // 14: bytebase.store.TaskRunLog.ComputeDiffStart
 	(*TaskRunLog_ComputeDiffEnd)(nil),       // 15: bytebase.store.TaskRunLog.ComputeDiffEnd
 	(*TaskRunLog_ReleaseFileExecute)(nil),   // 16: bytebase.store.TaskRunLog.ReleaseFileExecute
-	(*PriorBackupDetail_Item)(nil),          // 17: bytebase.store.PriorBackupDetail.Item
-	(*PriorBackupDetail_Item_Table)(nil),    // 18: bytebase.store.PriorBackupDetail.Item.Table
-	(*Range)(nil),                           // 19: bytebase.store.Range
-	(*Position)(nil),                        // 20: bytebase.store.Position
+	(*TaskRunLog_GhostMigrationStart)(nil),  // 17: bytebase.store.TaskRunLog.GhostMigrationStart
+	(*TaskRunLog_GhostMigrationEnd)(nil),    // 18: bytebase.store.TaskRunLog.GhostMigrationEnd
+	(*PriorBackupDetail_Item)(nil),          // 19: bytebase.store.PriorBackupDetail.Item
+	(*PriorBackupDetail_Item_Table)(nil),    // 20: bytebase.store.PriorBackupDetail.Item.Table
+	(*Range)(nil),                           // 21: bytebase.store.Range
+	(*Position)(nil),                        // 22: bytebase.store.Position
 }
 var file_store_task_run_log_proto_depIdxs = []int32{
 	0,  // 0: bytebase.store.TaskRunLog.type:type_name -> bytebase.store.TaskRunLog.Type
@@ -1251,19 +1362,21 @@ var file_store_task_run_log_proto_depIdxs = []int32{
 	14, // 11: bytebase.store.TaskRunLog.compute_diff_start:type_name -> bytebase.store.TaskRunLog.ComputeDiffStart
 	15, // 12: bytebase.store.TaskRunLog.compute_diff_end:type_name -> bytebase.store.TaskRunLog.ComputeDiffEnd
 	16, // 13: bytebase.store.TaskRunLog.release_file_execute:type_name -> bytebase.store.TaskRunLog.ReleaseFileExecute
-	17, // 14: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
-	19, // 15: bytebase.store.TaskRunLog.CommandExecute.range:type_name -> bytebase.store.Range
-	1,  // 16: bytebase.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.store.TaskRunLog.TransactionControl.Type
-	3,  // 17: bytebase.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
-	18, // 18: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	18, // 19: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
-	20, // 20: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
-	20, // 21: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
-	22, // [22:22] is the sub-list for method output_type
-	22, // [22:22] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	17, // 14: bytebase.store.TaskRunLog.ghost_migration_start:type_name -> bytebase.store.TaskRunLog.GhostMigrationStart
+	18, // 15: bytebase.store.TaskRunLog.ghost_migration_end:type_name -> bytebase.store.TaskRunLog.GhostMigrationEnd
+	19, // 16: bytebase.store.PriorBackupDetail.items:type_name -> bytebase.store.PriorBackupDetail.Item
+	21, // 17: bytebase.store.TaskRunLog.CommandExecute.range:type_name -> bytebase.store.Range
+	1,  // 18: bytebase.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.store.TaskRunLog.TransactionControl.Type
+	3,  // 19: bytebase.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
+	20, // 20: bytebase.store.PriorBackupDetail.Item.source_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	20, // 21: bytebase.store.PriorBackupDetail.Item.target_table:type_name -> bytebase.store.PriorBackupDetail.Item.Table
+	22, // 22: bytebase.store.PriorBackupDetail.Item.start_position:type_name -> bytebase.store.Position
+	22, // 23: bytebase.store.PriorBackupDetail.Item.end_position:type_name -> bytebase.store.Position
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_store_task_run_log_proto_init() }
@@ -1278,7 +1391,7 @@ func file_store_task_run_log_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_task_run_log_proto_rawDesc), len(file_store_task_run_log_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

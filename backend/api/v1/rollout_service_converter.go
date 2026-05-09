@@ -529,6 +529,27 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 					FilePath: l.Payload.ReleaseFileExecute.FilePath,
 				},
 			})
+
+		case storepb.TaskRunLog_GHOST_MIGRATION_START:
+			entries = append(entries, &v1pb.TaskRunLogEntry{
+				Type:      v1pb.TaskRunLogEntry_GHOST_MIGRATION,
+				LogTime:   timestamppb.New(l.T),
+				ReplicaId: l.Payload.ReplicaId,
+				GhostMigration: &v1pb.TaskRunLogEntry_GhostMigration{
+					StartTime: timestamppb.New(l.T),
+				},
+			})
+
+		case storepb.TaskRunLog_GHOST_MIGRATION_END:
+			if len(entries) == 0 {
+				continue
+			}
+			prev := entries[len(entries)-1]
+			if prev == nil || prev.Type != v1pb.TaskRunLogEntry_GHOST_MIGRATION {
+				continue
+			}
+			prev.GhostMigration.EndTime = timestamppb.New(l.T)
+			prev.GhostMigration.Error = l.Payload.GhostMigrationEnd.Error
 		default:
 		}
 	}

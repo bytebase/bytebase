@@ -43,9 +43,10 @@ export function IssueDetailSidebar() {
       {showChecks && (
         <div className="flex flex-col gap-2">
           {showChecksManualRolloutHint && (
-            <Alert variant="warning">
-              {t("issue.checks-manual-rollout-hint")}
-            </Alert>
+            <Alert
+              variant="warning"
+              description={t("issue.checks-manual-rollout-hint")}
+            />
           )}
           <IssueDetailChecks />
         </div>

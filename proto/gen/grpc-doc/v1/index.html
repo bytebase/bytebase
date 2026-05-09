@@ -1971,6 +1971,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.GhostMigration"><span class="badge">M</span>TaskRunLogEntry.GhostMigration</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup"><span class="badge">M</span>TaskRunLogEntry.PriorBackup</a>
                 </li>
               
@@ -22161,6 +22165,13 @@ This can only be set when creating the task run calling BatchRunTasks. </p></td>
                   <td><p>Release file execution details (if type is RELEASE_FILE_EXECUTE). </p></td>
                 </tr>
               
+                <tr>
+                  <td>ghost_migration</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.GhostMigration">TaskRunLogEntry.GhostMigration</a></td>
+                  <td></td>
+                  <td><p>gh-ost migration details (if type is GHOST_MIGRATION). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22328,6 +22339,44 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Error message if sync failed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.GhostMigration">TaskRunLogEntry.GhostMigration</h3>
+        <p>gh-ost migration details.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the gh-ost migration started. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the gh-ost migration ended. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Error message if the gh-ost migration failed. </p></td>
                 </tr>
               
             </tbody>
@@ -23094,6 +23143,12 @@ Use payload DatabaseDataExport.</p></td>
                 <td>RELEASE_FILE_EXECUTE</td>
                 <td>9</td>
                 <td><p>Release file execution.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST_MIGRATION</td>
+                <td>10</td>
+                <td><p>gh-ost online migration.</p></td>
               </tr>
             
           </tbody>

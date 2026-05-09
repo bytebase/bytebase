@@ -381,9 +381,13 @@ function EngineSpecificDescription({
   if (engine === Engine.POSTGRES) {
     return (
       <>
-        <Alert variant="warning" className="my-2">
-          {t("instance.sentence.create-user-example.postgresql.warn")}
-        </Alert>
+        <Alert
+          variant="warning"
+          className="my-2"
+          description={t(
+            "instance.sentence.create-user-example.postgresql.warn"
+          )}
+        />
         {authenticationType ===
         DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM ? (
           <p>

@@ -1456,7 +1456,6 @@
       "self": "マスキング免除"
     },
     "members": {
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "never-expires": "有効期限が切れることはありません",
       "workspace-level-roles": "ワークスペースレベルのロール"
@@ -2766,6 +2765,7 @@
       "command-execute": "コマンド実行",
       "compute-diff": "差分計算",
       "database-sync": "データベース同期",
+      "ghost-migration": "gh-ost Migration",
       "prior-backup": "事前のバックアップ",
       "release-file-execute": "リリースファイル",
       "retry": "リトライ",

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useAccessGrantStore,
@@ -114,9 +115,11 @@ export function IssueDetailAccessGrantDetails() {
                 {t("common.statement")}
               </span>
               {accessGrant.unmask && (
-                <Alert variant="warning" showIcon={false}>
-                  {t("sql-editor.unmask-warning")}
-                </Alert>
+                <Alert
+                  variant="warning"
+                  showIcon={false}
+                  description={t("sql-editor.unmask-warning")}
+                />
               )}
               <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
                 <pre className="whitespace-pre-wrap font-mono text-sm">
@@ -124,13 +127,7 @@ export function IssueDetailAccessGrantDetails() {
                 </pre>
               </div>
               <label className="flex items-center gap-2">
-                <input
-                  checked={accessGrant.unmask}
-                  className="h-4 w-4"
-                  disabled
-                  readOnly
-                  type="checkbox"
-                />
+                <Checkbox checked={accessGrant.unmask} disabled />
                 <span className="text-base">
                   {t("sql-editor.access-type-unmask")}
                 </span>

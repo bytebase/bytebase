@@ -27,13 +27,13 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.0'
+          go-version: '1.26.3'
           cache: false # Caching is slow.
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           # renovate: datasource=github-releases depName=golangci/golangci-lint
-          version: v2.10.1
+          version: v2.12.2
           install-only: true
           skip-cache: true
       - name: Verify Go version compatibility

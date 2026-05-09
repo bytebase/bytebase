@@ -1,11 +1,7 @@
 import { Download } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 
 interface RecoveryCodesViewProps {
@@ -34,19 +30,22 @@ export function RecoveryCodesView({
 
   return (
     <div className="w-full flex flex-col gap-y-4 my-8">
-      <Alert variant="info">
-        <AlertTitle>
-          {t("two-factor.setup-steps.download-recovery-codes.keep-safe.self")}
-        </AlertTitle>
-        <AlertDescription>
-          <p>{t("two-factor.setup-steps.download-recovery-codes.tips")}</p>
-          <p>
-            {t(
-              "two-factor.setup-steps.download-recovery-codes.keep-safe.description"
-            )}
-          </p>
-        </AlertDescription>
-      </Alert>
+      <Alert
+        variant="info"
+        title={t(
+          "two-factor.setup-steps.download-recovery-codes.keep-safe.self"
+        )}
+        description={
+          <>
+            <p>{t("two-factor.setup-steps.download-recovery-codes.tips")}</p>
+            <p>
+              {t(
+                "two-factor.setup-steps.download-recovery-codes.keep-safe.description"
+              )}
+            </p>
+          </>
+        }
+      />
       <div className="w-full mx-auto flex flex-col justify-start items-start">
         <ul className="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-24 p-8 px-12 border rounded-xs bg-gray-50">
           {recoveryCodes.map((code) => (

@@ -25,6 +25,7 @@ import {
   setMonacoModelLanguage,
 } from "@/react/components/monaco/core";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
 import {
   Dialog,
@@ -2102,13 +2103,12 @@ function TargetDatabasesSelectPanel({
                 <thead>
                   <tr className="border-b">
                     <th className="py-2 px-2 w-8 text-left">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={
                           filteredDatabases.length > 0 &&
                           filteredDatabases.every((db) => selected.has(db.name))
                         }
-                        onChange={toggleAll}
+                        onCheckedChange={toggleAll}
                       />
                     </th>
                     <th className="py-2 px-2 text-left font-medium">
@@ -2133,10 +2133,9 @@ function TargetDatabasesSelectPanel({
                         className="py-2 px-2"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selected.has(db.name)}
-                          onChange={() => toggleDatabase(db.name)}
+                          onCheckedChange={() => toggleDatabase(db.name)}
                         />
                       </td>
                       <td className="py-2 px-2">

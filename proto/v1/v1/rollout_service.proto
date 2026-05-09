@@ -536,6 +536,8 @@ message TaskRunLogEntry {
     COMPUTE_DIFF = 8;
     // Release file execution.
     RELEASE_FILE_EXECUTE = 9;
+    // gh-ost online migration.
+    GHOST_MIGRATION = 10;
   }
   // The type of this log entry.
   Type type = 1;
@@ -559,6 +561,8 @@ message TaskRunLogEntry {
   ComputeDiff compute_diff = 11;
   // Release file execution details (if type is RELEASE_FILE_EXECUTE).
   ReleaseFileExecute release_file_execute = 12;
+  // gh-ost migration details (if type is GHOST_MIGRATION).
+  GhostMigration ghost_migration = 13;
 
   // Schema dump operation details.
   message SchemaDump {
@@ -687,6 +691,16 @@ message TaskRunLogEntry {
     // When diff computation ended.
     google.protobuf.Timestamp end_time = 2;
     // Error message if computation failed.
+    string error = 3;
+  }
+
+  // gh-ost migration details.
+  message GhostMigration {
+    // When the gh-ost migration started.
+    google.protobuf.Timestamp start_time = 1;
+    // When the gh-ost migration ended.
+    google.protobuf.Timestamp end_time = 2;
+    // Error message if the gh-ost migration failed.
     string error = 3;
   }
 
