@@ -157,7 +157,16 @@ function MemberTable({
   const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
 
-  // Group expand state
+  // Group expand state. The member cache is keyed by group name +
+  // a signature of the group's current member list, so any membership
+  // change (admin edits the group, IAM policy refresh, etc.) yields a
+  // new key and naturally invalidates the cached user list — instead of
+  // rendering stale users until a route remount.
+  const memberCacheKey = (group: GroupBinding) =>
+    `${group.name}#${group.members
+      .map((m) => m.member)
+      .sort()
+      .join(",")}`;
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
     new Map()
@@ -168,8 +177,9 @@ function MemberTable({
 
   const fetchGroupMembers = useCallback(
     (group: GroupBinding) => {
-      if (loadingRef.current.has(group.name)) return;
-      loadingRef.current.add(group.name);
+      const key = memberCacheKey(group);
+      if (loadingRef.current.has(key)) return;
+      loadingRef.current.add(key);
       const memberNames = group.members.map((m) => m.member);
       userStore
         .batchGetOrFetchUsers(memberNames)
@@ -177,14 +187,14 @@ function MemberTable({
           setMemberCache((prev) => {
             const next = new Map(prev);
             next.set(
-              group.name,
+              key,
               users.filter((u): u is User => !!u)
             );
             return next;
           });
         })
         .catch(() => {})
-        .finally(() => loadingRef.current.delete(group.name));
+        .finally(() => loadingRef.current.delete(key));
     },
     [userStore]
   );
@@ -200,7 +210,7 @@ function MemberTable({
         }
         return next;
       });
-      if (!memberCacheRef.current.has(group.name)) {
+      if (!memberCacheRef.current.has(memberCacheKey(group))) {
         fetchGroupMembers(group);
       }
     },
@@ -311,7 +321,7 @@ function MemberTable({
               mb.group &&
               expandedGroups.has(mb.group.name);
             const groupMembers = mb.group
-              ? memberCache.get(mb.group.name)
+              ? memberCache.get(memberCacheKey(mb.group))
               : undefined;
 
             return (
