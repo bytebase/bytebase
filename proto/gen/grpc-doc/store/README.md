@@ -758,6 +758,7 @@ IssuePayloadApproval records the approval template used and approval history for
 | approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  | The approval template being used for this issue. |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
 | approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
+| plan_check_sheet_identity_rerun | [bool](#bool) |  | Whether approval generation has already requested a plan-check rerun to backfill sheet identity. |
 
 
 
@@ -3144,6 +3145,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 | code | [int32](#int32) |  |  |
 | target | [string](#string) |  | Target identification for consolidated results Format: instances/{instance}/databases/{database} |
 | type | [PlanCheckType](#bytebase-store-PlanCheckType) |  |  |
+| sheet_sha256 | [string](#string) |  | sheet_sha256 is the content hash of the SQL sheet used to produce this result. Empty for checks that are not tied to a SQL sheet. |
 | sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
 

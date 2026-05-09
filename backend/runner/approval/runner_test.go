@@ -387,15 +387,11 @@ func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
 	}
 }
 
-func TestShouldRerunLegacyStatementSummaryResultOnce(t *testing.T) {
-	legacyStatementSummaryRerunByPlan.Clear()
-	t.Cleanup(func() {
-		legacyStatementSummaryRerunByPlan.Clear()
-	})
-
-	plan := &store.PlanMessage{
-		ProjectID: "project-a",
-		UID:       1001,
+func TestShouldRerunLegacyStatementSummaryResultUsesIssuePayloadFlag(t *testing.T) {
+	issue := &store.IssueMessage{
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{},
+		},
 	}
 	targets := []specTarget{
 		{
@@ -418,21 +414,27 @@ func TestShouldRerunLegacyStatementSummaryResultOnce(t *testing.T) {
 		},
 	}
 
-	shouldRerun, err := shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	shouldRerun, shouldClear, err := shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
 	require.NoError(t, err)
 	require.True(t, shouldRerun)
+	require.False(t, shouldClear)
+	issue.Payload.Approval.PlanCheckSheetIdentityRerun = true
 
-	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
 	require.Error(t, err)
 	require.False(t, shouldRerun)
+	require.False(t, shouldClear)
 
 	planCheckRun.Result.Results[0].SheetSha256 = "sheet-a"
-	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
 	require.NoError(t, err)
 	require.False(t, shouldRerun)
+	require.True(t, shouldClear)
+	issue.Payload.Approval.PlanCheckSheetIdentityRerun = false
 
 	planCheckRun.Result.Results[0].SheetSha256 = ""
-	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
 	require.NoError(t, err)
 	require.True(t, shouldRerun)
+	require.False(t, shouldClear)
 }

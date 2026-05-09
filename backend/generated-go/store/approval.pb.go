@@ -87,8 +87,10 @@ type IssuePayloadApproval struct {
 	// Whether the system has finished finding a matching approval template.
 	// False means the backend is still searching for matching templates.
 	ApprovalFindingDone bool `protobuf:"varint,3,opt,name=approval_finding_done,json=approvalFindingDone,proto3" json:"approval_finding_done,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Whether approval generation has already requested a plan-check rerun to backfill sheet identity.
+	PlanCheckSheetIdentityRerun bool `protobuf:"varint,4,opt,name=plan_check_sheet_identity_rerun,json=planCheckSheetIdentityRerun,proto3" json:"plan_check_sheet_identity_rerun,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *IssuePayloadApproval) Reset() {
@@ -138,6 +140,13 @@ func (x *IssuePayloadApproval) GetApprovers() []*IssuePayloadApproval_Approver {
 func (x *IssuePayloadApproval) GetApprovalFindingDone() bool {
 	if x != nil {
 		return x.ApprovalFindingDone
+	}
+	return false
+}
+
+func (x *IssuePayloadApproval) GetPlanCheckSheetIdentityRerun() bool {
+	if x != nil {
+		return x.PlanCheckSheetIdentityRerun
 	}
 	return false
 }
@@ -312,11 +321,12 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\xaa\x03\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\"\xf0\x03\n" +
 	"\x14IssuePayloadApproval\x12M\n" +
 	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
-	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x1a\xc1\x01\n" +
+	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x12D\n" +
+	"\x1fplan_check_sheet_identity_rerun\x18\x04 \x01(\bR\x1bplanCheckSheetIdentityRerun\x1a\xc1\x01\n" +
 	"\bApprover\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12\x1c\n" +
 	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +

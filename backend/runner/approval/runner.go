@@ -31,13 +31,6 @@ type Runner struct {
 	licenseService *enterprise.LicenseService
 }
 
-type legacyStatementSummaryRerunKey struct {
-	ProjectID string
-	PlanUID   int64
-}
-
-var legacyStatementSummaryRerunByPlan sync.Map
-
 // NewRunner creates a new runner.
 func NewRunner(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
 	return &Runner{
@@ -594,24 +587,46 @@ func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMes
 	return planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning
 }
 
-func shouldRerunLegacyStatementSummaryResult(plan *store.PlanMessage, planCheckRun *store.PlanCheckRunMessage, targets []specTarget) (bool, error) {
-	key := legacyStatementSummaryRerunKey{
-		ProjectID: plan.ProjectID,
-		PlanUID:   plan.UID,
+func shouldRerunLegacyStatementSummaryResult(issue *store.IssueMessage, planCheckRun *store.PlanCheckRunMessage, targets []specTarget) (bool, bool, error) {
+	var approval *storepb.IssuePayloadApproval
+	if issue.Payload != nil {
+		approval = issue.Payload.GetApproval()
 	}
 	if hasLegacyStatementSummaryResult(planCheckRun, targets) {
-		if _, loaded := legacyStatementSummaryRerunByPlan.LoadOrStore(key, struct{}{}); loaded {
-			return false, errors.Errorf("legacy statement summary result remained after approval plan-check rerun for plan %d", plan.UID)
+		if approval.GetPlanCheckSheetIdentityRerun() {
+			return false, false, errors.Errorf("legacy statement summary result remained after approval plan-check rerun for issue %d", issue.UID)
 		}
-		return true, nil
+		return true, false, nil
 	}
-	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusDone {
-		legacyStatementSummaryRerunByPlan.Delete(key)
+	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusDone && approval.GetPlanCheckSheetIdentityRerun() {
+		return false, true, nil
 	}
-	return false, nil
+	return false, false, nil
 }
 
-func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus.Bus, plan *store.PlanMessage) error {
+func setIssuePlanCheckSheetIdentityRerun(ctx context.Context, stores *store.Store, issue *store.IssueMessage, value bool) error {
+	if issue.Payload == nil {
+		issue.Payload = &storepb.Issue{}
+	}
+	if issue.Payload.Approval == nil {
+		issue.Payload.Approval = &storepb.IssuePayloadApproval{}
+	}
+	issue.Payload.Approval.PlanCheckSheetIdentityRerun = value
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{
+			Approval: issue.Payload.Approval,
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to update issue approval payload")
+	}
+	if updatedIssue != nil {
+		issue.Payload = updatedIssue.Payload
+	}
+	return nil
+}
+
+func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus.Bus, issue *store.IssueMessage, plan *store.PlanMessage) error {
 	if b == nil {
 		return errors.New("approval plan-check rerun requires bus")
 	}
@@ -621,6 +636,9 @@ func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus
 		Result:    &storepb.PlanCheckRunResult{},
 	}); err != nil {
 		return errors.Wrap(err, "failed to create plan check run")
+	}
+	if err := setIssuePlanCheckSheetIdentityRerun(ctx, stores, issue, true); err != nil {
+		return err
 	}
 	select {
 	case b.PlanCheckTickleChan <- 0:
@@ -657,16 +675,17 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
 
-	shouldRerun, err := shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	shouldRerun, shouldClearRerun, err := shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
 	if err != nil {
 		return nil, false, err
 	}
+	if shouldClearRerun {
+		if err := setIssuePlanCheckSheetIdentityRerun(ctx, stores, issue, false); err != nil {
+			return nil, false, err
+		}
+	}
 	if shouldRerun {
-		if err := rerunPlanChecksForApproval(ctx, stores, b, plan); err != nil {
-			legacyStatementSummaryRerunByPlan.Delete(legacyStatementSummaryRerunKey{
-				ProjectID: plan.ProjectID,
-				PlanUID:   plan.UID,
-			})
+		if err := rerunPlanChecksForApproval(ctx, stores, b, issue, plan); err != nil {
 			return nil, false, err
 		}
 		return nil, false, nil
