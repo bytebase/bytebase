@@ -7,6 +7,7 @@ import {
   authServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/connect";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { userNamePrefix, workspaceNamePrefix } from "@/store/modules/v1/common";
@@ -192,6 +193,11 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     });
     const policy = await workspaceServiceClientConnect.setIamPolicy(request);
     _workspaceIamPolicy.value = policy;
+    // Drop the React app store's cached workspace IAM. PermissionGuard
+    // consumers read from that cache (separate from this Vue store), so
+    // without invalidation they evaluate against pre-mutation data
+    // until a full reload.
+    useAppStore.getState().invalidateWorkspacePermissionState();
   };
 
   const findRolesByMember = (member: string): string[] => {

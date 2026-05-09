@@ -131,6 +131,25 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     return request;
   },
 
+  invalidateWorkspacePermissionState: () => {
+    set({
+      roles: [],
+      rolesRequest: undefined,
+      workspacePolicy: undefined,
+      workspacePolicyRequest: undefined,
+    });
+  },
+
+  invalidateProjectIamPolicy: (project) => {
+    set((state) => {
+      const { [project]: _droppedPolicy, ...projectPoliciesByName } =
+        state.projectPoliciesByName;
+      const { [project]: _droppedReq, ...projectPolicyRequests } =
+        state.projectPolicyRequests;
+      return { projectPoliciesByName, projectPolicyRequests };
+    });
+  },
+
   hasWorkspacePermission: (permission) => {
     const user = get().currentUser;
     if (!user) return false;

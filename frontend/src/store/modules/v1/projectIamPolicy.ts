@@ -3,6 +3,7 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, shallowReactive, unref, watch } from "vue";
 import { projectServiceClientConnect } from "@/connect";
+import { useAppStore } from "@/react/stores/app";
 import {
   ALL_USERS_USER_EMAIL,
   groupBindingPrefix,
@@ -95,6 +96,9 @@ export const useProjectIamPolicyStore = defineStore(
       policyMap.set(project, response);
 
       usePermissionStore().invalidCacheByProject(project);
+      // Drop the React app store's cached project IAM so
+      // `PermissionGuard` consumers re-evaluate against the new policy.
+      useAppStore.getState().invalidateProjectIamPolicy(project);
     };
 
     const getProjectIamPolicy = (project: string) => {
