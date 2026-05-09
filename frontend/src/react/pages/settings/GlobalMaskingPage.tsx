@@ -215,7 +215,8 @@ function MaskingRuleConfig({
           <div className="flex items-center h-9">
             {!readonly ? (
               <Input
-                className="w-64 h-8 text-sm"
+                size="sm"
+                className="w-64"
                 placeholder={defaultTitle}
                 value={title}
                 disabled={disabled}
@@ -556,9 +557,10 @@ export function GlobalMaskingPage() {
     <div className="w-full px-4 py-4 flex flex-col gap-y-4">
       <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
       {hasSensitiveDataFeature && (
-        <Alert variant="info">
-          {t("custom-approval.rule.first-match-wins")}
-        </Alert>
+        <Alert
+          variant="info"
+          description={t("custom-approval.rule.first-match-wins")}
+        />
       )}
 
       {/* Toolbar */}

@@ -3,11 +3,8 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/omni/mssql/ast"
-	parser "github.com/bytebase/parser/tsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -171,191 +168,118 @@ type TableReference struct {
 }
 
 type statementInfo struct {
-	offset    int
-	statement string
-	tree      antlr.ParserRuleContext
-	table     *TableReference
+	table *TableReference
 }
 
 func prepareTransformation(databaseName string, parsedStatements []base.ParsedStatement) []statementInfo {
-	extractor := &dmlExtractor{
-		databaseName: databaseName,
-	}
-
+	var dmls []statementInfo
 	for _, stmt := range parsedStatements {
 		if stmt.AST == nil {
 			continue
 		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
+		node, ok := tsqlparser.GetOmniNode(stmt.AST)
+		if !ok || node == nil {
 			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, antlrAST.Tree)
-	}
 
-	return extractor.dmls
-}
-
-type dmlExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	databaseName string
-	dmls         []statementInfo
-	offset       int
-}
-
-func IsTopLevel(ctx antlr.Tree) bool {
-	if ctx == nil {
-		return true
-	}
-	switch ctx := ctx.(type) {
-	case *parser.Dml_clauseContext,
-		*parser.Sql_clausesContext,
-		*parser.Batch_without_goContext:
-		return IsTopLevel(ctx.GetParent())
-	case *parser.Tsql_fileContext:
-		return true
-	default:
-		return false
-	}
-}
-
-func (e *dmlExtractor) ExitBatch(ctx *parser.Batch_without_goContext) {
-	if len(ctx.AllSql_clauses()) == 0 {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) ExitSql_clauses(ctx *parser.Sql_clausesContext) {
-	if IsTopLevel(ctx.GetParent()) {
-		e.offset++
-	}
-}
-
-func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
-	if IsTopLevel(ctx.GetParent()) && ctx.Ddl_object() != nil {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
+		var (
+			table         *TableReference
+			statementType StatementType
+		)
+		switch n := node.(type) {
+		case *ast.UpdateStmt:
+			table = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			statementType = StatementTypeUpdate
+		case *ast.DeleteStmt:
+			table = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			statementType = StatementTypeDelete
+		default:
+			continue
 		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Ddl_object())
-
-		table := extractor.table
-		if extractor.table != nil && ctx.Table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.Table_sources(), extractor.table)
+		if table == nil || table.Table == "" {
+			continue
 		}
-		table.StatementType = StatementTypeUpdate
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
+		table.StatementType = statementType
+		dmls = append(dmls, statementInfo{
+			table: table,
 		})
 	}
+
+	return dmls
 }
 
-func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
-	if IsTopLevel(ctx.GetParent()) {
-		extractor := &tableExtractor{
-			databaseName: e.databaseName,
-		}
-		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx.Delete_statement_from())
-
-		table := extractor.table
-		if extractor.table != nil && ctx.From_table_sources() != nil && table.Database == e.databaseName && table.Schema == defaultSchema {
-			table = extractPhysicalTable(ctx.From_table_sources().Table_sources(), extractor.table)
-		}
-		table.StatementType = StatementTypeDelete
-		e.dmls = append(e.dmls, statementInfo{
-			offset:    e.offset,
-			statement: ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx),
-			tree:      ctx,
-			table:     table,
-		})
-	}
-}
-
-func extractPhysicalTable(ctx antlr.Tree, table *TableReference) *TableReference {
-	if ctx == nil || table == nil {
+func resolveDMLTargetTable(relation ast.TableExpr, fromClause *ast.List, databaseName string) *TableReference {
+	table := tableReferenceFromTableExpr(relation, databaseName, defaultSchema)
+	if table == nil {
 		return table
 	}
-
-	extractor := &physicalTableExtractor{
-		table: table,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
-	if extractor.result != nil {
-		return extractor.result
+	if fromClause != nil && table.Database == databaseName && table.Schema == defaultSchema {
+		if physical := findPhysicalTableForAlias(fromClause, table); physical != nil {
+			return physical
+		}
 	}
 	return table
 }
 
-type physicalTableExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	table  *TableReference
-	result *TableReference
-}
-
-func (e *physicalTableExtractor) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
-	if ctx.As_table_alias() != nil && ctx.Full_table_name() != nil {
-		alias := unquote(ctx.As_table_alias().Table_alias().GetText())
-		if alias == e.table.Table {
-			databaseName, schemaName, tableName := extractFullTableName(ctx.Full_table_name(), e.table.Database, e.table.Schema)
-			e.result = &TableReference{
-				Database:      databaseName,
-				Schema:        schemaName,
-				Table:         tableName,
-				Alias:         alias,
-				StatementType: e.table.StatementType,
-			}
-		}
-	}
-}
-
-func unquote(name string) string {
-	if len(name) < 2 {
-		return name
-	}
-	if name[0] == '[' && name[len(name)-1] == ']' {
-		return name[1 : len(name)-1]
-	}
-
-	if len(name) > 3 && name[0] == 'N' && name[1] == '\'' && name[len(name)-1] == '\'' {
-		return name[2 : len(name)-1]
-	}
-	return name
-}
-
-type tableExtractor struct {
-	*parser.BaseTSqlParserListener
-
-	databaseName string
-	table        *TableReference
-}
-
-func (e *tableExtractor) EnterFull_table_name(ctx *parser.Full_table_nameContext) {
-	databaseName, schemaName, tableName := extractFullTableName(ctx, e.databaseName, defaultSchema)
-	table := TableReference{
-		Database: databaseName,
-		Schema:   schemaName,
-		Table:    tableName,
-	}
-	e.table = &table
-}
-
-func extractFullTableName(ctx parser.IFull_table_nameContext, defaultDatabase string, defaultSchema string) (string, string, string) {
-	name, err := tsqlparser.NormalizeFullTableName(ctx)
-	if err != nil {
-		slog.Debug("Failed to normalize full table name", "error", err)
-		return defaultDatabase, defaultSchema, ""
+func tableReferenceFromTableExpr(expr ast.TableExpr, defaultDatabase, defaultSchema string) *TableReference {
+	ref, ok := expr.(*ast.TableRef)
+	if !ok {
+		return nil
 	}
 	schemaName := defaultSchema
-	if name.Schema != "" {
-		schemaName = name.Schema
+	if ref.Schema != "" {
+		schemaName = ref.Schema
 	}
 	databaseName := defaultDatabase
-	if name.Database != "" {
-		databaseName = name.Database
+	if ref.Database != "" {
+		databaseName = ref.Database
 	}
-	return databaseName, schemaName, name.Table
+	return &TableReference{
+		Database: databaseName,
+		Schema:   schemaName,
+		Table:    ref.Object,
+		Alias:    ref.Alias,
+	}
+}
+
+func findPhysicalTableForAlias(list *ast.List, table *TableReference) *TableReference {
+	if list == nil || table == nil {
+		return nil
+	}
+	for _, item := range list.Items {
+		if result := findPhysicalTableForAliasInNode(item, table); result != nil {
+			return result
+		}
+	}
+	return nil
+}
+
+func findPhysicalTableForAliasInNode(node ast.Node, table *TableReference) *TableReference {
+	switch n := node.(type) {
+	case *ast.TableRef:
+		if n.Alias != "" && n.Alias == table.Table {
+			ref := tableReferenceFromTableExpr(n, table.Database, table.Schema)
+			if ref == nil {
+				return nil
+			}
+			ref.Alias = n.Alias
+			return ref
+		}
+	case *ast.AliasedTableRef:
+		if ref, ok := n.Table.(*ast.TableRef); ok && n.Alias == table.Table {
+			result := tableReferenceFromTableExpr(ref, table.Database, table.Schema)
+			if result == nil {
+				return nil
+			}
+			result.Alias = n.Alias
+			return result
+		}
+	case *ast.JoinClause:
+		if result := findPhysicalTableForAliasInNode(n.Left, table); result != nil {
+			return result
+		}
+		return findPhysicalTableForAliasInNode(n.Right, table)
+	default:
+	}
+	return nil
 }

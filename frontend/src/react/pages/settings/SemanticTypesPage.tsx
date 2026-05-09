@@ -1138,7 +1138,7 @@ function SemanticTypeRow({
         {isEditing ? (
           <Input
             value={row.item.title}
-            className="h-8"
+            size="sm"
             placeholder={t(
               "settings.sensitive-data.semantic-types.table.semantic-type"
             )}
@@ -1154,7 +1154,7 @@ function SemanticTypeRow({
         {isEditing ? (
           <Input
             value={row.item.description}
-            className="h-8"
+            size="sm"
             placeholder={t(
               "settings.sensitive-data.semantic-types.table.description"
             )}

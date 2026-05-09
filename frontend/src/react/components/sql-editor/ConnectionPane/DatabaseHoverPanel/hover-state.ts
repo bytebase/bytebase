@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -25,7 +26,7 @@ export type HoverStateContextValue = {
 };
 
 const DELAY_BEFORE = 1000;
-const DELAY_AFTER = 350;
+const DELAY_AFTER = 100;
 
 const HoverStateContext = createContext<HoverStateContextValue | null>(null);
 
@@ -62,7 +63,17 @@ export function useProvideHoverState(): HoverStateContextValue {
     [cancel]
   );
 
-  return { state, position, setPosition, update };
+  // Memoize the context value so an unrelated parent re-render (e.g.
+  // a Pinia tick triggering a `useVueState` update somewhere up the
+  // tree) doesn't churn the `<HoverStateProvider value={…}>` reference.
+  // Without this, every consumer of `useHoverState()` (every tree row
+  // in `ConnectionPane`) re-renders, which can show up as the hover
+  // panel rapidly toggling visibility / re-positioning while the user
+  // holds the cursor over a row.
+  return useMemo(
+    () => ({ state, position, setPosition, update }),
+    [state, position, setPosition, update]
+  );
 }
 
 export const HoverStateProvider = HoverStateContext.Provider;

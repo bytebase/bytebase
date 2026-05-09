@@ -24,6 +24,7 @@ const (
 	);
 	`
 	mysqlGhostMigrationStatement = `
+	-- gh-ost = {}
 	ALTER TABLE book ADD author VARCHAR(54)
 	`
 )
@@ -119,11 +120,48 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	a.NoError(err)
 	sheet2 := sheet2Response.Msg
 
-	err = ctl.changeDatabase(ctx, ctl.project, database, sheet2, true)
+	rollout, err := ctl.changeDatabaseAndReturnRollout(ctx, ctl.project, database, sheet2)
 	a.NoError(err)
 	dbMetadataResponse, err = ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/schema", database.Name)}))
 	a.NoError(err)
 	dbMetadata = dbMetadataResponse.Msg
 
 	a.Equal(wantDBSchema2, dbMetadata.Schema)
+
+	var taskRunName string
+	for _, stage := range rollout.Stages {
+		for _, task := range stage.Tasks {
+			taskRunsResp, err := ctl.rolloutServiceClient.ListTaskRuns(ctx, connect.NewRequest(&v1pb.ListTaskRunsRequest{
+				Parent: task.Name,
+			}))
+			a.NoError(err)
+			if len(taskRunsResp.Msg.TaskRuns) > 0 {
+				taskRunName = taskRunsResp.Msg.TaskRuns[0].Name
+			}
+		}
+	}
+	a.NotEmpty(taskRunName)
+
+	logResp, err := ctl.rolloutServiceClient.GetTaskRunLog(ctx, connect.NewRequest(&v1pb.GetTaskRunLogRequest{
+		Parent: taskRunName,
+	}))
+	a.NoError(err)
+
+	var ghostEntry *v1pb.TaskRunLogEntry
+	var databaseSyncEntry *v1pb.TaskRunLogEntry
+	for _, entry := range logResp.Msg.Entries {
+		switch entry.Type {
+		case v1pb.TaskRunLogEntry_GHOST_MIGRATION:
+			ghostEntry = entry
+		case v1pb.TaskRunLogEntry_DATABASE_SYNC:
+			databaseSyncEntry = entry
+		default:
+		}
+	}
+	a.NotNil(ghostEntry)
+	a.NotNil(ghostEntry.GetGhostMigration())
+	a.NotNil(ghostEntry.GetGhostMigration().StartTime)
+	a.NotNil(ghostEntry.GetGhostMigration().EndTime)
+	a.Empty(ghostEntry.GetGhostMigration().Error)
+	a.NotNil(databaseSyncEntry)
 }

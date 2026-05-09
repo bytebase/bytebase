@@ -167,7 +167,7 @@ func (g *GenericChecker) GetAdviceList() []*storepb.Advice {
 // getNodeType returns the type name of the parse tree node.
 func (*GenericChecker) getNodeType(ctx antlr.ParserRuleContext) string {
 	t := reflect.TypeOf(ctx)
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	name := t.Name()

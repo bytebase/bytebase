@@ -122,6 +122,23 @@ func TestOmniSDLMigration_DropView(t *testing.T) {
 	require.Contains(t, sql, "active_users")
 }
 
+func TestOmniSDLMigration_RecordReturningFunctionView(t *testing.T) {
+	sdl := `
+CREATE FUNCTION public.record_pair(OUT id integer, OUT name text)
+RETURNS record
+LANGUAGE sql
+AS $$
+	SELECT 1::integer, 'alice'::text;
+$$;
+
+CREATE VIEW public.record_pair_view AS
+SELECT *
+FROM public.record_pair();
+`
+	sql := omniSDLMigration(t, sdl, sdl)
+	require.Empty(t, sql)
+}
+
 func TestOmniSDLMigration_CreateFunction(t *testing.T) {
 	sql := omniSDLMigration(t, "", `
 		CREATE FUNCTION add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER

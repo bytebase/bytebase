@@ -198,6 +198,7 @@
   },
   "common": {
     "Default": "默认",
+    "access-denied": "拒绝访问",
     "action-required": "需要操作",
     "actions": "操作",
     "activated": "已激活",
@@ -336,6 +337,7 @@
     "previous": "上一步",
     "project": "项目",
     "projects": "项目",
+    "query": "查询",
     "read-only": "只读",
     "reason": "理由",
     "refresh": "刷新",
@@ -393,6 +395,7 @@
     "succeed": "成功",
     "system": "系统",
     "table": "表",
+    "text-wrap": "文本折行",
     "title": "标题",
     "to": "到",
     "total": "Total",
@@ -524,7 +527,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "兜底规则",
-      "fallback-rules-hint": "兜底规则仅在没有其他规则匹配时才会被评估。",
+      "fallback-rules-hint": "兜底规则仅在没有来源特定规则匹配时，才会按从上到下的顺序评估。",
       "node": {
         "add": "增加节点",
         "approver": "审批人",
@@ -592,6 +595,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "规则按顺序评估。来源特定规则会先于兜底规则执行。",
+        "multi-target": "对于包含多个目标的计划，只要任一目标满足来源特定规则的条件，该规则就会匹配整个计划，且第一个匹配的规则会决定整个计划的审批流。",
+        "priority": "请将更高风险变更的规则放在较低风险变更的规则之前。对于相似风险，请将更严格或更具体的规则放在更宽泛的规则之前。"
+      },
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。",
       "self": "审批规则"
     },
@@ -600,6 +608,7 @@
   "custom-approval.issue-review.approved-issue": "approved issue",
   "custom-approval.issue-review.re-requested-review": "re-requested issue review",
   "custom-approval.issue-review.rejected-issue": "rejected issue",
+  "custom-approval.issue-review.retry-approval-finding": "重试",
   "data-source": {
     "additional-node-addresses": "附加节点地址",
     "automatic-query-data-source": "自动",
@@ -708,6 +717,7 @@
   "data-source.ssl.verify-certificate": "验证 TLS 证书",
   "data-source.ssl.verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的",
   "database": {
+    "access-denied": "您无权访问该数据库",
     "all": "所有数据库",
     "change-database": "变更数据库",
     "checks": "Check 约束",
@@ -780,6 +790,7 @@
     "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-complete-for-instance": "实例 '{{0}}' 同步完成",
+    "sync-database": "同步数据库",
     "sync-schema": {
       "copy-schema": "粘贴 Schema 文本",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。（支持 MySQL, PostgreSQL, Oracle, MSSQL 以及 TiDB）",
@@ -849,6 +860,7 @@
     "extensions": "扩展",
     "external-tables": "外部表",
     "failed-to-sync-schema": "同步 schema 失败",
+    "failed-to-sync-schema-for-database-database-value-name": "同步数据库 \"{{name}}\" 的 schema 失败。",
     "functions": "函数",
     "n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
     "packages": "包",
@@ -871,6 +883,7 @@
     "start-to-sync-schema": "开始同步 schema",
     "streams": "流",
     "successfully-synced-schema": "成功同步 schema",
+    "successfully-synced-schema-for-database-database-value-name": "成功同步数据库 \"{{name}}\" 的 schema。",
     "syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
     "tables": "表",
     "tasks": "任务",
@@ -1342,7 +1355,8 @@
           "title": "引擎"
         },
         "environment": {
-          "description": "根据环境过滤"
+          "description": "根据环境过滤",
+          "title": "环境"
         },
         "instance": {
           "description": "根据实例过滤",
@@ -1373,6 +1387,10 @@
         },
         "status": {
           "description": "按工单状态搜索"
+        },
+        "table": {
+          "description": "输入值后按下回车",
+          "title": "表"
         },
         "user": {
           "description": "按用户筛选"
@@ -1415,7 +1433,6 @@
     "role-grant": {
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
-      "column-scope-select-disabled": "列级范围的选择不能使用手动选择。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手动选择",
@@ -1448,6 +1465,7 @@
     "title": {
       "change-database": "变更数据库",
       "change-from-sql-editor": "从 SQL 编辑器变更",
+      "edit-schema": "编辑 Schema",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -1696,10 +1714,11 @@
       "self": "脱敏豁免"
     },
     "members": {
-      "allow-ddl": "允许在所选环境中执行 DDL/DML 语句。",
-      "allow-ddl-all-environments": "无环境限制。允许在所有环境中执行 DDL/DML 语句。",
+      "ddl-current-all": "{{kind}} 语句可在 SQL 编辑器中针对所有（ALL）环境直接执行，无需审批。",
+      "ddl-current-none": "{{kind}} 语句在 SQL 编辑器中运行前需要审批。",
+      "ddl-current-some": "{{kind}} 语句可在 SQL 编辑器中针对所列环境直接执行，无需审批。",
+      "ddl-warning": "在所选环境中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需审批。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "disallow-ddl-all-environments": "禁止在所有环境中执行 DDL/DML 语句。",
       "edit-member": "编辑成员 - {{member}}",
       "never-expires": "Never",
       "request-role": {
@@ -1835,6 +1854,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "创建项目",
+  "quick-start": {
+    "guide": "可点击步骤进行尝试",
+    "notice": {
+      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务",
+      "title": "新手任务已关闭"
+    },
+    "query-data": "查询数据",
+    "view-an-issue": "查看工单",
+    "visit-database": "访问数据库",
+    "visit-environment": "访问环境",
+    "visit-instance": "访问实例",
+    "visit-member": "访问成员 | 成员",
+    "visit-project": "访问项目"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
@@ -2026,6 +2059,9 @@
       "search": "搜索分类",
       "select": "选择分类"
     }
+  },
+  "sensitive-data": {
+    "self": "敏感数据"
   },
   "setting": {
     "label": {
@@ -2613,33 +2649,44 @@
       "description": "批量查询 {{project}} 下的 {{database}} 个数据库和 {{group}} 个数据库组。",
       "select-data-source": {
         "admin": "主数据源",
+        "not-match": "数据源不匹配，预期为 {{expect}}，但实际使用 {{actual}}。",
         "readonly": "只读数据源",
         "self": "选择批量查询使用的数据源",
         "tooltip": "将先根据限制策略寻找数据源，然后应用该选择。"
       },
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果"
     },
+    "binary-format": "二进制格式",
+    "boolean-format": "布尔格式",
+    "cancel-selection": "取消选择",
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
     "click-to-sync-now": "点击立即同步",
     "close-sheet": "关闭工作表",
+    "column-display-format": "列显示格式",
     "connect-in-admin-mode": "以管理员模式连接",
     "connect-to-a-database": "连接数据库",
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "copy-all-column-names": "复制所有列名",
     "copy-name": "复制名称",
+    "copy-selected-results": "通过 <action></action> 或 <button></button> 来快速复制选定的数据",
     "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hours": "{{hours}} 小时",
+    "execute-query": "执行查询",
+    "executing-query": "执行查询",
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
     "format": "格式化",
+    "format-default": "默认",
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
     "grant-type-unmask": "脱敏豁免",
+    "hex-format": "十六进制格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "content": "关闭当前工作表会丢失所有未保存的数据？",
@@ -2649,9 +2696,12 @@
     "jit": "即时访问",
     "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",
+    "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
     "manage-connections": "管理连接",
+    "next-row": "下一行",
     "no-access-requests": "暂无访问请求",
+    "no-data-available": "暂无数据",
     "no-database-selected": "未选择数据库",
     "no-history-found": "暂无历史记录",
     "no-project": {
@@ -2662,7 +2712,9 @@
     "no-queriable-database": "没有可查询的数据库",
     "only-select-allowed": "只允许执行只读语句",
     "open-in-new-tab": "在新选项卡中打开",
+    "pending-query": "待处理查询",
     "preview-table-data": "预览表数据",
+    "previous-row": "上一行",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
     "project-read": "项目内可读",
@@ -2672,6 +2724,7 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
+    "query-time": "查询时间",
     "re-request": "重新申请",
     "redis-command": {
       "all-nodes": "所有节点",
@@ -2688,13 +2741,24 @@
     },
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
+    "rows": {
+      "self": "行"
+    },
+    "rows-affected": "行受影响",
+    "rows-upper-limit": "到达查询结果条数上限",
     "save-sheet": "保存工作表",
     "save-sheet-input-placeholder": "请输入工作表名称",
+    "scroll-to-bottom": "滚动到底部",
+    "scroll-to-top": "滚动到顶部",
     "search-history-by-statement": "搜索 SQL 语句",
+    "search-scope-column-description": "{{type}} 类型的列。输入值并按回车跳转到匹配行。",
+    "search-scope-row-number-description": "输入行号跳转到指定行。",
+    "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
+    "show-in-editor": "在编辑器中显示",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {
@@ -2709,15 +2773,21 @@
           "multi-select": "多选",
           "rename": "重命名"
         }
-      }
+      },
+      "unsaved-worksheet": "您有未保存的工作表。"
     },
+    "table-empty-placeholder": "点击 \"运行\" 执行查询",
+    "table-view": "表格视图",
+    "text-format": "文本格式",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "上传文件",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
+    "vertical-display": "竖向展示",
     "view-database-detail": "查看数据库详情",
     "view-detail": "查看详情",
     "view-issue": "查看工单",
     "view-schema-text": "查看文本 Schema",
+    "visualize-explain": "可视化 Explain",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
@@ -3647,6 +3717,7 @@
   "task-run.log-type.command-execute": "命令执行",
   "task-run.log-type.compute-diff": "计算差异",
   "task-run.log-type.database-sync": "数据库同步",
+  "task-run.log-type.ghost-migration": "gh-ost 迁移",
   "task-run.log-type.prior-backup": "预备份",
   "task-run.log-type.release-file-execute": "发布包文件",
   "task-run.log-type.retry": "重试",

@@ -10,6 +10,7 @@ import {
 } from "@/components/ColumnDataTable/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -1195,12 +1196,7 @@ export function TableDetailDialog({
                         {column.defaultValue}
                       </td>
                       <td className="px-4 py-3 text-sm text-control">
-                        <input
-                          checked={column.nullable}
-                          disabled
-                          readOnly
-                          type="checkbox"
-                        />
+                        <Checkbox checked={column.nullable} disabled />
                       </td>
                       {showCharacterSetColumn && (
                         <td className="px-4 py-3 text-sm text-control">

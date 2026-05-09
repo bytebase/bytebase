@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -31,13 +31,6 @@ export function DatabaseRevisionTable({
     revisions.length > 0 && selectedNames.size === revisions.length;
   const someSelected =
     selectedNames.size > 0 && selectedNames.size < revisions.length;
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someSelected;
-    }
-  }, [someSelected]);
-
   const toggleSelectAll = () => {
     if (allSelected) {
       onSelectedNamesChange(new Set());
@@ -67,12 +60,9 @@ export function DatabaseRevisionTable({
       <TableHeader className="bg-control-bg">
         <TableRow>
           <TableHead className="w-12">
-            <input
-              ref={headerCheckboxRef}
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleSelectAll}
-              className="rounded-xs border-control-border"
+            <Checkbox
+              checked={someSelected ? "indeterminate" : allSelected}
+              onCheckedChange={toggleSelectAll}
             />
           </TableHead>
           <TableHead>{t("common.version")}</TableHead>
@@ -91,12 +81,10 @@ export function DatabaseRevisionTable({
             onClick={() => void router.push(revisionLink(revision))}
           >
             <TableCell className="w-12">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={selectedNames.has(revision.name)}
-                onChange={() => toggleSelection(revision.name)}
+                onCheckedChange={() => toggleSelection(revision.name)}
                 onClick={(e) => e.stopPropagation()}
-                className="rounded-xs border-control-border"
               />
             </TableCell>
             <TableCell className="text-main">

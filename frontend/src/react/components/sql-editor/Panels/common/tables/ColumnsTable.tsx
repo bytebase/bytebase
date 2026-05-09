@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { engineSupportsMultiSchema } from "@/react/components/SchemaEditorLite/core/spec";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -138,20 +139,13 @@ export function ColumnsTable({
                 <EllipsisCell content={column.comment} />
               </TableCell>
               <TableCell className="w-20">
-                <input
-                  type="checkbox"
-                  checked={!column.nullable}
-                  disabled
-                  className="accent-accent"
-                />
+                <Checkbox checked={!column.nullable} disabled />
               </TableCell>
               {showPrimary ? (
                 <TableCell className="w-20">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={!!primaryKey?.expressions.includes(column.name)}
                     disabled
-                    className="accent-accent"
                   />
                 </TableCell>
               ) : null}

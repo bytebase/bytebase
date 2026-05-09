@@ -10,6 +10,7 @@ import {
 import { DatabaseGroupTable } from "@/react/components/DatabaseGroupTable";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { Separator } from "@/react/components/ui/separator";
 import {
@@ -592,12 +593,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
             {treeStoreState === "READY" && (
               <div className="flex flex-col gap-y-2 text-sm select-none pt-1">
                 <label className="inline-flex items-center gap-x-2">
-                  <input
-                    type="checkbox"
-                    className="rounded-xs border-control-border"
+                  <Checkbox
                     checked={showMissingQueryDatabases}
-                    onChange={(e) =>
-                      setShowMissingQueryDatabases(e.target.checked)
+                    onCheckedChange={(checked) =>
+                      setShowMissingQueryDatabases(checked)
                     }
                   />
                   {t("sql-editor.show-databases-without-query-permission")}
@@ -1069,7 +1068,15 @@ function TreeRow({
         selected && "bg-accent/10"
       )}
       data-node-key={node.key}
-      onClick={onClick}
+      // Use `onMouseUp` instead of `onClick` for the row activation. Safari
+      // drops the synthesized `click` event when `mousedown` and `mouseup`
+      // resolve to different inner elements (the chevron / engine icon /
+      // text span). `mouseup` always fires regardless, so we drive the
+      // selection from there, gated to the primary button.
+      onMouseUp={(e) => {
+        if (e.button !== 0) return;
+        onClick(e);
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onContextMenu={(e) => {
@@ -1124,7 +1131,7 @@ function LoadMoreButton({
 
 // ---- utilities ---------------------------------------------------------
 
-const ROW_HEIGHT = 24;
+const ROW_HEIGHT = 28;
 
 function toTreeDataNode(
   node: SQLEditorTreeNode

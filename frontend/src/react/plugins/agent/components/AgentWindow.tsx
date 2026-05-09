@@ -973,8 +973,8 @@ export function AgentWindow() {
                   <AgentTooltip content={t("agent.new-chat")}>
                     <Button
                       variant="outline"
-                      size="icon"
-                      className="size-7 text-control-light"
+                      size="sm"
+                      className="text-control-light"
                       aria-label={t("agent.new-chat")}
                       disabled={isChatCreationDisabled}
                       onClick={createChat}
@@ -1222,8 +1222,8 @@ function ConfirmDialog({
           triggerVariant === "icon" ? (
             <Button
               variant="ghost"
-              size="icon"
-              className="size-6 text-control-light hover:bg-background"
+              size="xs"
+              className="text-control-light hover:bg-background"
               aria-label={triggerLabel}
               onClick={(event) => event.stopPropagation()}
               {...triggerProps}
@@ -1296,8 +1296,8 @@ function SidebarIconButton({
     <AgentTooltip content={tooltip}>
       <Button
         variant="ghost"
-        size="icon"
-        className="size-6 text-control-light hover:bg-background"
+        size="xs"
+        className="text-control-light hover:bg-background"
         aria-label={ariaLabel}
         onClick={(event) => {
           event.stopPropagation();

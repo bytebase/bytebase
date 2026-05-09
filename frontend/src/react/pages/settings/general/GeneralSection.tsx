@@ -217,11 +217,13 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                   />
                 </div>
                 {externalUrlFromFlag && (
-                  <Alert variant="info" className="mb-3">
-                    {t(
+                  <Alert
+                    variant="info"
+                    className="mb-3"
+                    description={t(
                       "settings.general.workspace.external-url.cannot-edit-flag"
                     )}
-                  </Alert>
+                  />
                 )}
                 <Input
                   value={state.externalUrl}

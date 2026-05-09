@@ -102,8 +102,19 @@ vi.mock("@/react/components/AccountMultiSelect", () => ({
 }));
 
 vi.mock("@/react/components/DatabaseResourceSelector", () => ({
-  DatabaseResourceSelector: ({ value }: { value: unknown }) => (
-    <div data-testid="database-resource-selector">{JSON.stringify(value)}</div>
+  DatabaseResourceSelector: ({
+    value,
+    includeColumns,
+  }: {
+    value: unknown;
+    includeColumns?: boolean;
+  }) => (
+    <div
+      data-include-columns={String(includeColumns)}
+      data-testid="database-resource-selector"
+    >
+      {JSON.stringify(value)}
+    </div>
   ),
 }));
 
@@ -367,7 +378,7 @@ describe("GrantAccessDialog", () => {
       container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
     );
     expect(radioList[1]?.checked).toBe(true);
-    expect(radioList[2]?.disabled).toBe(true);
+    expect(radioList[2]?.disabled).toBe(false);
 
     const exprEditor = container.querySelector('[data-testid="expr-editor"]');
     expect(exprEditor?.textContent).toContain("serialized-selection");
@@ -375,7 +386,7 @@ describe("GrantAccessDialog", () => {
     unmount();
   });
 
-  test("disables select mode after CEL scope becomes column-scoped", async () => {
+  test("allows select mode after CEL scope becomes column-scoped", async () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
@@ -396,15 +407,19 @@ describe("GrantAccessDialog", () => {
       container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
     );
     expect(radioList[1]?.checked).toBe(true);
-    expect(radioList[2]?.disabled).toBe(true);
+    expect(radioList[2]?.disabled).toBe(false);
 
     await click(radioList[2]!);
 
     radioList = Array.from(
       container.querySelectorAll<HTMLInputElement>('input[type="radio"]')
     );
-    expect(radioList[1]?.checked).toBe(true);
-    expect(container.querySelector('[data-testid="expr-editor"]')).toBeTruthy();
+    expect(radioList[2]?.checked).toBe(true);
+    expect(
+      container
+        .querySelector('[data-testid="database-resource-selector"]')
+        ?.getAttribute("data-include-columns")
+    ).toBe("true");
 
     unmount();
   });

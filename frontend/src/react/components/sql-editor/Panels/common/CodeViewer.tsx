@@ -15,6 +15,7 @@ import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ChatAction } from "@/plugins/ai/types";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorUIStore } from "@/store";
 import { dialectOfEngineV1 } from "@/types";
@@ -180,11 +181,9 @@ export function CodeViewer({
         </div>
         <div className="flex justify-end items-center gap-x-3">
           <label className="flex items-center gap-x-1 text-sm text-control cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={format}
-              onChange={(event) => setFormat(event.target.checked)}
-              className="accent-accent"
+              onCheckedChange={(checked) => setFormat(checked)}
             />
             {t("sql-editor.format")}
           </label>

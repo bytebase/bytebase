@@ -6,6 +6,7 @@ import { getRulePayload } from "@/components/SQLReview/components/RuleConfigComp
 import { payloadValueListToComponentList } from "@/components/SQLReview/components/utils";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -210,11 +211,10 @@ export function RuleConfig({
 
           {config.payload.type === "BOOLEAN" && (
             <label className="flex items-center gap-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={(payload[index] as boolean) ?? false}
                 disabled={disabled}
-                onChange={(e) => updatePayload(index, e.target.checked)}
+                onCheckedChange={(checked) => updatePayload(index, checked)}
               />
               <span>{configTitle(rule, config)}</span>
               {configTooltip(rule, config) && (
@@ -473,10 +473,9 @@ export function RuleLevelFilter({
             key={level}
             className="flex items-center gap-x-2 cursor-pointer"
           >
-            <input
-              type="checkbox"
+            <Checkbox
               checked={isCheckedLevel(level)}
-              onChange={() => onToggleCheckedLevel(level)}
+              onCheckedChange={() => onToggleCheckedLevel(level)}
             />
             <RuleLevelBadge level={level} suffix={`(${count})`} />
           </label>

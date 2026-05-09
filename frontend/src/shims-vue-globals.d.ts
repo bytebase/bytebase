@@ -1,6 +1,6 @@
 import type dayjs from "dayjs";
 import type { Composer } from "vue-i18n";
-import type { humanizeTs, humanizeDate } from "./utils";
+import type { humanizeDate, humanizeTs } from "./utils";
 
 export {};
 

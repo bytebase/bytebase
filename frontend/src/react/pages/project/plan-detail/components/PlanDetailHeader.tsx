@@ -9,6 +9,7 @@ import {
 } from "@/react/components/IssueLabelSelect";
 import { MarkdownEditor } from "@/react/components/MarkdownEditor";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -539,7 +540,7 @@ export function PlanDetailHeader() {
           {page.sidebarMode === "MOBILE" && (
             <Button
               onClick={() => page.setMobileSidebarOpen(true)}
-              size="icon"
+              size="sm"
               variant="ghost"
             >
               <Menu className="h-5 w-5" />
@@ -713,13 +714,11 @@ function ReadyForReviewPopoverContent({
       />
       {showChecksWarning && (
         <label className="flex items-center gap-x-2 text-sm text-control">
-          <input
+          <Checkbox
             checked={checksWarningAcknowledged}
-            className="accent-accent"
-            onChange={(event) =>
-              onChecksWarningAcknowledgedChange(event.target.checked)
+            onCheckedChange={(checked) =>
+              onChecksWarningAcknowledgedChange(checked)
             }
-            type="checkbox"
           />
           <span>
             {t("issue.action-anyway", {

@@ -31,12 +31,9 @@ import {
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain, nextAnimationFrame } from "@/utils";
-import {
-  activeSQLEditorRef,
-  activeStatementRef,
-} from "@/views/sql-editor/EditorPanel/StandardPanel/state";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { useAIActions } from "../Panels/common/useAIActions";
+import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
 
 const AI_ACTIONS: readonly ChatAction[] = [

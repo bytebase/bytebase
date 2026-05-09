@@ -13,8 +13,27 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_ORACLE, SplitSQL)
 }
 
+// consumeTrailingSemicolon walks forward from stopIdx through hidden-channel
+// tokens (whitespace, comments) looking for a trailing ';' that belongs to the
+// statement ending at stopIdx. Returns the index of the ';' if found before any
+// default-channel token, otherwise stopIdx (no consumption). Used by both
+// SplitSQL and ParsePLSQL to keep the two iterations' separator handling in
+// lockstep — divergence between them is what produced BYT-9367's secondary
+// AST-classification leak.
+func consumeTrailingSemicolon(allTokens []antlr.Token, stopIdx int) int {
+	for nextIdx := stopIdx + 1; nextIdx < len(allTokens); nextIdx++ {
+		next := allTokens[nextIdx]
+		if next.GetTokenType() == parser.PlSqlParserSEMICOLON {
+			return nextIdx
+		}
+		if next.GetChannel() == antlr.TokenDefaultChannel {
+			return stopIdx
+		}
+	}
+	return stopIdx
+}
+
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-// TODO(zp): Consolidate with split logic in ParsePLSQL?
 func SplitSQL(statement string) ([]base.Statement, error) {
 	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
@@ -102,14 +121,15 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				},
 			})
 			byteOffsetStart = byteOffsetEnd
-			// Set prevStopTokenIndex to the last token we want to "consume" for this statement.
-			// For statements where the semicolon is a separator (not part of the statement parse tree),
-			// we need to skip past the semicolon so it's not included in the next statement's leadingContent.
-			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
-			if nextIdx := prevStopTokenIndex + 1; nextIdx < len(tokens.GetAllTokens()) {
-				if nextToken := tokens.Get(nextIdx); nextToken.GetTokenType() == parser.PlSqlParserSEMICOLON {
-					prevStopTokenIndex = nextIdx
-				}
+			// If a trailing ';' was consumed across hidden tokens, advance
+			// byteOffsetStart by the BYTE length of the consumed span — len()
+			// is bytes; ANTLR token indices are runes, so multi-byte UTF-8 in
+			// hidden tokens (e.g., a non-ASCII comment) would diverge.
+			stopIdx := stmt.GetStop().GetTokenIndex()
+			allTokens := tokens.GetAllTokens()
+			prevStopTokenIndex = consumeTrailingSemicolon(allTokens, stopIdx)
+			if prevStopTokenIndex > stopIdx {
+				byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[stopIdx+1], allTokens[prevStopTokenIndex]))
 			}
 		}
 	}

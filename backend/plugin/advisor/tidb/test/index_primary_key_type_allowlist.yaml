@@ -180,3 +180,19 @@
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY
   changeType: 1
+# Named CONSTRAINT form pin (empirical cumulative #17 — batch 8): omni emits
+# ATAddConstraint for `ADD CONSTRAINT <name> PRIMARY KEY (...)` (same arm as
+# bare `ADD PRIMARY KEY`). Pins cross-form parity.
+- statement: |-
+    CREATE TABLE t(id VARCHAR(5));
+    ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column `id` in table `t` is one of the primary key, but its type "varchar" is not in allowlist
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { useSettingV1Store } from "@/store";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -73,15 +74,14 @@ export const ProductImprovementSection = forwardRef<
       </div>
       <div className="flex-1 lg:px-4">
         <label className="flex items-start gap-x-3 cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
+            checked={state.enableMetricCollection}
             className="mt-1"
             disabled={!allowEdit}
-            checked={state.enableMetricCollection}
-            onChange={(e) =>
+            onCheckedChange={(checked) =>
               setState((s) => ({
                 ...s,
-                enableMetricCollection: e.target.checked,
+                enableMetricCollection: checked,
               }))
             }
           />

@@ -175,9 +175,12 @@ export function RuleEditSheet({
         <SheetBody className="gap-y-4">
           {/* Fallback hint */}
           {isFallback && (
-            <Alert variant="warning">
-              {t("custom-approval.approval-flow.fallback-rules-hint")}
-            </Alert>
+            <Alert
+              variant="warning"
+              description={t(
+                "custom-approval.approval-flow.fallback-rules-hint"
+              )}
+            />
           )}
 
           {/* Template presets (create mode only) */}

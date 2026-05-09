@@ -396,6 +396,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.RetryIssueApprovalRequest"><span class="badge">M</span>RetryIssueApprovalRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RoleGrant"><span class="badge">M</span>RoleGrant</a>
                 </li>
               
@@ -1964,6 +1968,10 @@
               
                 <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.DatabaseSync"><span class="badge">M</span>TaskRunLogEntry.DatabaseSync</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.GhostMigration"><span class="badge">M</span>TaskRunLogEntry.GhostMigration</a>
                 </li>
               
                 <li>
@@ -5369,6 +5377,31 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
+        <h3 id="bytebase.v1.RetryIssueApprovalRequest">RetryIssueApprovalRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the issue whose approval-finding should be retried.
+Format: projects/{project}/issues/{issue} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RoleGrant">RoleGrant</h3>
         <p></p>
 
@@ -5916,6 +5949,21 @@ Permissions required: None (determined by approval flow)</p></td>
 Permissions required: None (determined by approval flow)</p></td>
               </tr>
             
+              <tr>
+                <td>RetryIssueApproval</td>
+                <td><a href="#bytebase.v1.RetryIssueApprovalRequest">RetryIssueApprovalRequest</a></td>
+                <td><a href="#bytebase.v1.Issue">Issue</a></td>
+                <td><p>Re-runs approval-template finding for an issue stuck in CHECKING.
+Useful when the synchronous post-create finding errored (e.g. against
+a malformed workspace approval rule) and the operator has since
+corrected it — without this, the issue would remain in CHECKING
+indefinitely because there is no other retry path for non-DATABASE_CHANGE
+issue types. Idempotent: returns the existing issue unchanged when
+approval-finding has already completed.
+Permissions required: None (caller must be the issue creator;
+mirrors RequestIssue&#39;s authorization model).</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -6050,6 +6098,16 @@ Permissions required: None (determined by approval flow)</p></td>
                 <td>RequestIssue</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*}:request</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RetryIssueApproval</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/issues/*}:retryApproval</td>
                 <td>*</td>
               </tr>
               
@@ -22107,6 +22165,13 @@ This can only be set when creating the task run calling BatchRunTasks. </p></td>
                   <td><p>Release file execution details (if type is RELEASE_FILE_EXECUTE). </p></td>
                 </tr>
               
+                <tr>
+                  <td>ghost_migration</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.GhostMigration">TaskRunLogEntry.GhostMigration</a></td>
+                  <td></td>
+                  <td><p>gh-ost migration details (if type is GHOST_MIGRATION). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22274,6 +22339,44 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Error message if sync failed. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.GhostMigration">TaskRunLogEntry.GhostMigration</h3>
+        <p>gh-ost migration details.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the gh-ost migration started. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the gh-ost migration ended. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Error message if the gh-ost migration failed. </p></td>
                 </tr>
               
             </tbody>
@@ -23040,6 +23143,12 @@ Use payload DatabaseDataExport.</p></td>
                 <td>RELEASE_FILE_EXECUTE</td>
                 <td>9</td>
                 <td><p>Release file execution.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST_MIGRATION</td>
+                <td>10</td>
+                <td><p>gh-ost online migration.</p></td>
               </tr>
             
           </tbody>

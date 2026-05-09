@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Quy tắc dự phòng",
-      "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
+      "fallback-rules-hint": "Quy tắc dự phòng được đánh giá từ trên xuống dưới chỉ khi không có quy tắc theo nguồn nào khớp.",
       "node": {
         "add": "Thêm nút",
         "approver": "Người phê duyệt",
@@ -527,6 +527,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Các quy tắc được đánh giá theo thứ tự. Quy tắc theo nguồn chạy trước Quy tắc dự phòng.",
+        "multi-target": "Với kế hoạch có nhiều mục tiêu, một quy tắc theo nguồn khớp với toàn bộ kế hoạch nếu bất kỳ mục tiêu nào khớp với điều kiện của quy tắc đó, và quy tắc khớp đầu tiên sẽ chọn luồng phê duyệt cho toàn bộ kế hoạch.",
+        "priority": "Đặt các quy tắc cho thay đổi có rủi ro cao hơn trước các quy tắc cho thay đổi có rủi ro thấp hơn. Với các rủi ro tương tự, đặt các quy tắc chặt chẽ hơn hoặc cụ thể hơn trước các quy tắc rộng hơn."
+      },
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng.",
       "self": "Quy tắc phê duyệt tùy chỉnh"
     },
@@ -789,10 +794,7 @@
     "self": "Trung tâm xuất"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "Số dòng xuất phải lớn hơn 0",
-      "export-rows-required": "Yêu cầu số dòng xuất"
-    },
+    "error": {},
     "export-format": "Định dạng xuất",
     "export-rows": "Xuất số dòng",
     "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất.",
@@ -1179,7 +1181,6 @@
     "role-grant": {
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
-      "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
       "details": "Yêu cầu chi tiết",
       "expired-at": "Hết hạn vào",
       "manually-select": "Chọn thủ công",
@@ -1406,8 +1407,7 @@
         "self": "Trợ lý AI chưa được định cấu hình."
       },
       "send": "Gửi",
-      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL",
-      "text2sql": "Chuyển văn bản thành SQL"
+      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL"
     }
   },
   "policy": {
@@ -1460,7 +1460,6 @@
       "self": "Miễn trừ Che giấu"
     },
     "members": {
-      "allow-ddl": "Cho phép chạy câu lệnh DDL/DML trong các môi trường đã chọn.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
       "never-expires": "Không bao giờ",
       "workspace-level-roles": "Vai trò cấp độ không gian làm việc"
@@ -2414,7 +2413,6 @@
     "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "copy-name": "Sao chép tên",
-    "copy-selected-results": "Sao chép dữ liệu đã chọn bằng {action} hoặc {button}",
     "copy-url": "Sao chép URL",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "duration-day": "{days} day",
@@ -2771,6 +2769,7 @@
       "command-execute": "Lệnh thực thi",
       "compute-diff": "Tính toán chênh lệch",
       "database-sync": "Đồng bộ cơ sở dữ liệu",
+      "ghost-migration": "Di chuyển gh-ost",
       "prior-backup": "Sao lưu trước",
       "release-file-execute": "Tệp phát hành",
       "retry": "Thử lại",

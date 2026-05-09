@@ -38,6 +38,7 @@ import {
   operatorDisplayLabel,
 } from "@/plugins/cel";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -89,7 +90,11 @@ function getOperatorListByFactor(
   return overrideMap?.get(factor) ?? getRawOperatorListByFactor(factor);
 }
 
-function getDefaultValue(factor: Factor): string | number | boolean | Date {
+function getDefaultValue(
+  factor: Factor,
+  operator?: ConditionOperator
+): string | number | boolean | Date | string[] | number[] {
+  if (operator && isCollectionOperator(operator)) return [];
   if (isNumberFactor(factor)) return 0;
   if (isBooleanFactor(factor)) return true;
   if (isStringFactor(factor)) return "";
@@ -397,7 +402,7 @@ function SearchableSelect({
           <div className="p-1 border-b border-control-border">
             <SearchInput
               autoFocus
-              className="h-8"
+              size="sm"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -596,7 +601,7 @@ function MultiSearchableSelect({
           <div className="p-1 border-b border-control-border">
             <SearchInput
               autoFocus
-              className="h-8"
+              size="sm"
               placeholder={t("common.filter-by-name")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -621,11 +626,10 @@ function MultiSearchableSelect({
                 }`}
                 onMouseDown={() => toggleValue(o.value)}
               >
-                <input
-                  type="checkbox"
-                  readOnly
+                <Checkbox
                   checked={value.includes(o.value)}
                   className="pointer-events-none"
+                  onCheckedChange={() => {}}
                 />
                 {o.label}
               </li>
@@ -798,17 +802,15 @@ function MultiCheckSelect({
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
           matchAnchorWidth
-          className="bg-background border border-control-border rounded-sm shadow-md py-1"
+          className="bg-background border border-control-border rounded-sm shadow-md py-1 max-h-48 overflow-y-auto"
         >
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = anySelected && !allSelected;
-              }}
-              onChange={(e) => {
-                if (e.target.checked) {
+            <Checkbox
+              checked={
+                allSelected ? true : anySelected ? "indeterminate" : false
+              }
+              onCheckedChange={(checked) => {
+                if (checked) {
                   onChange(allValues);
                 } else {
                   onChange([]);
@@ -822,10 +824,9 @@ function MultiCheckSelect({
               key={o.value}
               className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-control-bg"
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={value.includes(o.value)}
-                onChange={() => toggleValue(o.value)}
+                onCheckedChange={() => toggleValue(o.value)}
               />
               {renderValue ? renderValue(o.value, o.label) : o.label}
             </label>
@@ -863,7 +864,13 @@ function FactorSelect({
     if (!factorList.includes(factor)) {
       doUpdate((group) => {
         const cond = group.args[operandIndex] as ConditionExpr;
-        (cond.args as unknown[])[0] = factorList[0];
+        const newFactor = factorList[0];
+        (cond.args as unknown[])[0] = newFactor;
+        const operators = getOperatorListByFactor(newFactor, overrideMap);
+        if (operators.length > 0 && !operators.includes(cond.operator)) {
+          cond.operator = operators[0] as ConditionOperator;
+        }
+        (cond.args as unknown[])[1] = getDefaultValue(newFactor, cond.operator);
       });
     }
   }, [factor, factorList]);
@@ -882,6 +889,10 @@ function FactorSelect({
           if (operators.length > 0 && !operators.includes(cond.operator)) {
             cond.operator = operators[0] as ConditionOperator;
           }
+          (cond.args as unknown[])[1] = getDefaultValue(
+            newFactor,
+            cond.operator
+          );
         });
       }}
     >
@@ -932,6 +943,10 @@ function OperatorSelect({
       doUpdate((group) => {
         const cond = group.args[operandIndex] as ConditionExpr;
         cond.operator = operators[0] as ConditionOperator;
+        (cond.args as unknown[])[1] = getDefaultValue(
+          cond.args[0] as Factor,
+          cond.operator
+        );
       });
     }
   }, [operators, expr.operator]);
@@ -944,6 +959,10 @@ function OperatorSelect({
         doUpdate((group) => {
           const cond = group.args[operandIndex] as ConditionExpr;
           cond.operator = val as ConditionOperator;
+          (cond.args as unknown[])[1] = getDefaultValue(
+            cond.args[0] as Factor,
+            cond.operator
+          );
         });
       }}
     >
@@ -1019,30 +1038,16 @@ function ValueInput({
   }
 
   const isNumberValue = isNumberFactor(factor);
+  const isBooleanValue = isBooleanFactor(factor);
 
-  // Reset value when factor or operator changes
-  const prevRef = useRef({ factor, operator });
-  useEffect(() => {
-    const prev = prevRef.current;
-    const changed = prev.factor !== factor || prev.operator !== operator;
-    prevRef.current = { factor, operator };
-    if (!changed) return;
-
+  const getBooleanValue = (): boolean =>
+    typeof expr.args[1] === "boolean" ? (expr.args[1] as boolean) : true;
+  const setBooleanValue = (v: boolean) => {
     doUpdate((group) => {
       const cond = group.args[operandIndex] as ConditionExpr;
-      if (isNumberFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
-          ? []
-          : 0;
-      } else if (isBooleanFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = true;
-      } else if (isStringFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
-          ? []
-          : "";
-      }
+      (cond.args as unknown[])[1] = v;
     });
-  }, [factor, operator]);
+  };
 
   const getStringValue = () => {
     const v = expr.args[1];
@@ -1087,7 +1092,8 @@ function ValueInput({
       return (
         <Input
           type="number"
-          className="h-8 max-w-20"
+          size="sm"
+          className="max-w-20"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}
@@ -1095,9 +1101,33 @@ function ValueInput({
         />
       );
     }
+    if (isBooleanValue) {
+      // BooleanFactors (e.g. `request.unmask`) need a boolean value;
+      // the default text input would store a string and trip
+      // `validateSimpleExpr`'s `typeof value === "boolean"` check,
+      // leaving the parent form's submit button permanently disabled.
+      return (
+        <Select
+          value={String(getBooleanValue())}
+          disabled={readonly}
+          onValueChange={(val) => {
+            if (val != null) setBooleanValue(val === "true");
+          }}
+        >
+          <SelectTrigger className="min-w-24">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">true</SelectItem>
+            <SelectItem value="false">false</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+    }
     return (
       <Input
-        className="h-8 min-w-28 text-sm"
+        size="sm"
+        className="min-w-28"
         value={getStringValue()}
         disabled={readonly}
         onChange={(e) => setStringValue(e.target.value)}
@@ -1118,12 +1148,19 @@ function ValueInput({
         />
       );
     }
+    // BooleanFactors (e.g. `request.unmask`) ship a [true,false] options
+    // list with string-typed values. The Select stores whatever the user
+    // picks via `setStringValue`, but `validateSimpleExpr` requires
+    // `typeof value === "boolean"` for the equality arm — so without
+    // this conversion the parent form's submit button stays disabled.
     return (
       <Select
-        value={getStringValue()}
+        value={isBooleanValue ? String(getBooleanValue()) : getStringValue()}
         disabled={readonly}
         onValueChange={(val) => {
-          if (val != null) setStringValue(val);
+          if (val == null) return;
+          if (isBooleanValue) setBooleanValue(val === "true");
+          else setStringValue(val);
         }}
       >
         <SelectTrigger className="min-w-28">
@@ -1322,13 +1359,13 @@ function ConditionGroup({
     const factor = factorList[0];
     if (!factor) return;
     const operators = getOperatorListByFactor(factor, overrideMap);
-    const op = operators[0];
+    const op = operators[0] as ConditionOperator | undefined;
     if (!op) return;
     doUpdate((group) => {
       group.args.push({
         type: ExprType.Condition,
         operator: op,
-        args: [factor, getDefaultValue(factor)],
+        args: [factor, getDefaultValue(factor, op)],
       } as ConditionExpr);
     });
   };
@@ -1422,7 +1459,7 @@ function ConditionGroup({
                   });
                 }}
               >
-                <SelectTrigger className="shrink-0 px-2">
+                <SelectTrigger size="sm" className="shrink-0">
                   <SelectValue>
                     {(value: string | null) =>
                       value ? logicalLabel(value) : null

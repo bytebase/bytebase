@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef } from "react";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { cn } from "@/react/lib/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import { useSchemaEditorContext } from "./context";
 import type { EditStatus, TabContext } from "./types";
 
@@ -89,7 +90,7 @@ function TabIcon({ type }: { type: TabContext["type"] }) {
 function getTabName(tab: TabContext): string {
   const meta = tab.metadata as Record<string, { name: string }>;
   if (tab.type === "database") {
-    return meta.database.name;
+    return extractDatabaseResourceName(meta.database.name).databaseName;
   }
   const schema = meta.schema?.name;
   const objectName =

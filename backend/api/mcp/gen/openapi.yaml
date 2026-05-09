@@ -3003,6 +3003,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Issue'
+  /bytebase.v1.IssueService/RetryIssueApproval:
+    post:
+      tags:
+        - bytebase.v1.IssueService
+      summary: RetryIssueApproval
+      description: |-
+        Re-runs approval-template finding for an issue stuck in CHECKING.
+         Useful when the synchronous post-create finding errored (e.g. against
+         a malformed workspace approval rule) and the operator has since
+         corrected it — without this, the issue would remain in CHECKING
+         indefinitely because there is no other retry path for non-DATABASE_CHANGE
+         issue types. Idempotent: returns the existing issue unchanged when
+         approval-finding has already completed.
+         Permissions required: None (caller must be the issue creator;
+         mirrors RequestIssue's authorization model).
+      operationId: bytebase.v1.IssueService.RetryIssueApproval
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RetryIssueApprovalRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Issue'
   /bytebase.v1.IssueService/SearchIssues:
     post:
       tags:
@@ -16125,6 +16170,17 @@ components:
              True when the workspace (or deployment) has an email setting configured.
       title: Restriction
       additionalProperties: false
+    bytebase.v1.RetryIssueApprovalRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the issue whose approval-finding should be retried.
+             Format: projects/{project}/issues/{issue}
+      title: RetryIssueApprovalRequest
+      additionalProperties: false
     bytebase.v1.ReviewConfig:
       type: object
       properties:
@@ -18584,6 +18640,10 @@ components:
           title: release_file_execute
           description: Release file execution details (if type is RELEASE_FILE_EXECUTE).
           $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.ReleaseFileExecute'
+        ghostMigration:
+          title: ghost_migration
+          description: gh-ost migration details (if type is GHOST_MIGRATION).
+          $ref: '#/components/schemas/bytebase.v1.TaskRunLogEntry.GhostMigration'
       title: TaskRunLogEntry
       additionalProperties: false
     bytebase.v1.TaskRunLogEntry.CommandExecute:
@@ -18679,6 +18739,24 @@ components:
       title: DatabaseSync
       additionalProperties: false
       description: Database synchronization details.
+    bytebase.v1.TaskRunLogEntry.GhostMigration:
+      type: object
+      properties:
+        startTime:
+          title: start_time
+          description: When the gh-ost migration started.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endTime:
+          title: end_time
+          description: When the gh-ost migration ended.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        error:
+          type: string
+          title: error
+          description: Error message if the gh-ost migration failed.
+      title: GhostMigration
+      additionalProperties: false
+      description: gh-ost migration details.
     bytebase.v1.TaskRunLogEntry.PriorBackup:
       type: object
       properties:
@@ -18843,6 +18921,7 @@ components:
         - RETRY_INFO
         - COMPUTE_DIFF
         - RELEASE_FILE_EXECUTE
+        - GHOST_MIGRATION
       description: The type of log entry.
     bytebase.v1.TaskRunSession:
       type: object

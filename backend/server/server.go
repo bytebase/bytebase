@@ -13,8 +13,6 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
@@ -293,9 +291,13 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	}
 
 	// Create HTTP server with H2C support (Echo v5)
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetUnencryptedHTTP2(true)
 	s.httpServer = &http.Server{
-		Addr:    address,
-		Handler: h2c.NewHandler(s.echoServer, &http2.Server{}),
+		Addr:      address,
+		Handler:   s.echoServer,
+		Protocols: protocols,
 	}
 
 	go func() {

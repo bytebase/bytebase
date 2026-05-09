@@ -2,11 +2,11 @@ package tsql
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/tsql"
+	mssqlomniparser "github.com/bytebase/omni/mssql/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -33,36 +33,24 @@ func parseTSQLStatement(statement string) *base.SyntaxError {
 		// for the last statement in the script.
 		statement += ";"
 	}
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewTSqlLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	p := parser.NewTSqlParser(stream)
-	startPosition := &storepb.Position{Line: 1}
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = false
-
-	_ = p.Tsql_file()
-
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
+	_, err := ParseTSQLOmni(statement)
+	if err == nil {
+		return nil
 	}
 
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
+	var parseErr *mssqlomniparser.ParseError
+	if !errors.As(err, &parseErr) {
+		return &base.SyntaxError{
+			Position: &storepb.Position{Line: 1, Column: 1},
+			Message:  err.Error(),
+		}
 	}
-	return nil
+
+	message := parseErr.Error()
+	return &base.SyntaxError{
+		Position:   ByteOffsetToRunePosition(statement, parseErr.Position),
+		Message:    message,
+		RawMessage: message,
+	}
 }

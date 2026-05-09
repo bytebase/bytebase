@@ -1,7 +1,8 @@
 import { Play, SkipForward, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -42,8 +43,6 @@ export function DeployTaskToolbar({
     PlanDetailTaskRolloutAction | undefined
   >(undefined);
   const [permissionReady, setPermissionReady] = useState(false);
-  const checkboxRef = useRef<HTMLInputElement | null>(null);
-
   useEffect(() => {
     let canceled = false;
     const load = async () => {
@@ -106,14 +105,6 @@ export function DeployTaskToolbar({
     count: selectedTasks.length,
   });
 
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate =
-        selectedTasks.length > 0 &&
-        selectedTasks.length < selectableTasks.length;
-    }
-  }, [selectableTasks.length, selectedTasks.length]);
-
   return (
     <>
       <div className="sticky top-0 z-10 px-4">
@@ -127,19 +118,19 @@ export function DeployTaskToolbar({
               }
             >
               <div>
-                <input
+                <Checkbox
                   checked={
                     selectedTasks.length > 0 &&
-                    selectedTasks.length === selectableTasks.length
+                    selectedTasks.length < selectableTasks.length
+                      ? "indeterminate"
+                      : selectedTasks.length > 0 &&
+                        selectedTasks.length === selectableTasks.length
                   }
-                  className="accent-accent"
                   disabled={selectableTasks.length === 0}
-                  ref={checkboxRef}
-                  onChange={(event) => {
-                    if (event.target.checked) onSelectAll();
+                  onCheckedChange={(checked) => {
+                    if (checked) onSelectAll();
                     else onClearSelection();
                   }}
-                  type="checkbox"
                 />
               </div>
             </Tooltip>

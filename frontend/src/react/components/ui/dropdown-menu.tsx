@@ -160,11 +160,11 @@ function DropdownMenuSeparator({
 
 export {
   DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuSubmenu,
-  DropdownMenuSubmenuContent,
-  DropdownMenuSubmenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSubmenu,
+  DropdownMenuSubmenuContent,
+  DropdownMenuSubmenuTrigger,
+  DropdownMenuTrigger,
 };

@@ -22,6 +22,8 @@ message TaskRunLog {
     COMPUTE_DIFF_START = 12;
     COMPUTE_DIFF_END = 13;
     RELEASE_FILE_EXECUTE = 14;
+    GHOST_MIGRATION_START = 15;
+    GHOST_MIGRATION_END = 16;
   }
   Type type = 1;
   string replica_id = 12;
@@ -38,6 +40,8 @@ message TaskRunLog {
   ComputeDiffStart compute_diff_start = 14;
   ComputeDiffEnd compute_diff_end = 15;
   ReleaseFileExecute release_file_execute = 16;
+  GhostMigrationStart ghost_migration_start = 17;
+  GhostMigrationEnd ghost_migration_end = 18;
 
   message SchemaDumpStart {}
   message SchemaDumpEnd {
@@ -92,6 +96,10 @@ message TaskRunLog {
     string version = 1;
     // The file path within the release (e.g., "2.2/V0001_create_table.sql").
     string file_path = 2;
+  }
+  message GhostMigrationStart {}
+  message GhostMigrationEnd {
+    string error = 1;
   }
 }
 

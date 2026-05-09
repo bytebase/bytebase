@@ -1,6 +1,7 @@
 import { ChevronDown, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { cn } from "@/react/lib/utils";
@@ -119,12 +120,7 @@ export function IssueLabelSelect({
                       className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-control-bg transition-colors"
                       onClick={() => toggleLabel(label.value)}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="rounded-xs border-control-border accent-accent"
-                      />
+                      <Checkbox checked={isSelected} />
                       <span
                         className="size-4 rounded-sm shrink-0"
                         style={{ backgroundColor: label.color }}

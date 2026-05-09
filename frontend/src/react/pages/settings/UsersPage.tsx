@@ -19,6 +19,7 @@ import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
@@ -360,8 +361,8 @@ function UserTable({
                         >
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-error hover:text-error"
+                            size="sm"
+                            className="text-error hover:text-error"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeactivate(user);
@@ -382,8 +383,7 @@ function UserTable({
                         >
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
+                            size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRestore(user);
@@ -1063,10 +1063,9 @@ export function UsersPage() {
         {/* Inactive users toggle (only shown with list permission) */}
         {hasUserListPermission && (
           <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={showInactiveUsers}
-              onChange={(e) => setShowInactiveUsers(e.target.checked)}
+              onCheckedChange={(checked) => setShowInactiveUsers(checked)}
             />
             {t("settings.members.show-inactive")}
           </label>

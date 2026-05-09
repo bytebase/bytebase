@@ -1,6 +1,5 @@
 import { authServiceClientConnect, userServiceClientConnect } from "@/connect";
 import type { AppSliceCreator, AuthSlice } from "./types";
-import { getCurrentUserEmail } from "./utils";
 
 export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   loadCurrentUser: async () => {
@@ -15,7 +14,10 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
         return user;
       })
       .catch(() => {
-        set({ currentUserRequest: undefined });
+        // Don't cache failures — the next call (e.g., after login) should
+        // retry. Without this, a pre-login failure permanently prevents
+        // the React store from loading the authenticated user.
+        set({ currentUser: undefined, currentUserRequest: undefined });
         return undefined;
       });
     set({ currentUserRequest: request });
@@ -23,22 +25,11 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   },
 
   logout: async (signinUrl) => {
-    const email = getCurrentUserEmail(get);
     try {
       await authServiceClientConnect.logout({});
     } catch {
       // Ignore logout errors and clear the local session by redirecting anyway.
     } finally {
-      if (email) {
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.endsWith(`.${email}`)) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach((key) => localStorage.removeItem(key));
-      }
       window.location.href = signinUrl;
     }
   },

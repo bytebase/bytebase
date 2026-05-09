@@ -29,6 +29,10 @@ message PlanCheckRunResult {
     string target = 7;
     PlanCheckType type = 8;
 
+    // sheet_sha256 is the content hash of the SQL sheet used to produce this result.
+    // Empty for checks that are not tied to a SQL sheet.
+    string sheet_sha256 = 9;
+
     oneof report {
       SqlSummaryReport sql_summary_report = 5;
       SqlReviewReport sql_review_report = 6;

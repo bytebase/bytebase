@@ -198,6 +198,7 @@
   },
   "common": {
     "Default": "デフォルト",
+    "access-denied": "アクセスが拒否されました",
     "action-required": "対応が必要",
     "actions": "アクション",
     "activated": "有効化しました",
@@ -336,6 +337,7 @@
     "previous": "Previous",
     "project": "プロジェクト",
     "projects": "プロジェクト",
+    "query": "クエリ",
     "read-only": "読み取り専用",
     "reason": "理由",
     "refresh": "リフレッシュ",
@@ -393,6 +395,7 @@
     "succeed": "成功する",
     "system": "システム",
     "table": "テーブル",
+    "text-wrap": "テキストの折り返し",
     "title": "タイトル",
     "to": "終了",
     "total": "Total",
@@ -524,7 +527,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "フォールバックルール",
-      "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
+      "fallback-rules-hint": "フォールバックルールは、ソース固有のルールが一致しない場合にのみ、上から順に評価されます。",
       "node": {
         "add": "ノードの追加",
         "approver": "承認者",
@@ -592,6 +595,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "ルールは順番に評価されます。ソース固有のルールはフォールバックルールより先に実行されます。",
+        "multi-target": "複数ターゲットのプランでは、いずれかのターゲットがソース固有ルールの条件に一致すると、そのルールはプラン全体に一致し、最初に一致したルールがプラン全体の承認フローを決定します。",
+        "priority": "リスクが高い変更のルールを、リスクが低い変更のルールより上に配置してください。同程度のリスクでは、より厳格または具体的なルールを、より広いルールより上に配置してください。"
+      },
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。",
       "self": "カスタム承認ルール"
     },
@@ -600,6 +608,7 @@
   "custom-approval.issue-review.approved-issue": "approved issue",
   "custom-approval.issue-review.re-requested-review": "re-requested issue review",
   "custom-approval.issue-review.rejected-issue": "rejected issue",
+  "custom-approval.issue-review.retry-approval-finding": "リトライ",
   "data-source": {
     "additional-node-addresses": "追加のノードアドレス",
     "automatic-query-data-source": "自動",
@@ -708,6 +717,7 @@
   "data-source.ssl.verify-certificate": "TLS証明書を検証",
   "data-source.ssl.verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません",
   "database": {
+    "access-denied": "データベースにアクセスする権限がありません",
     "all": "すべてのデータベース",
     "change-database": "データベースの変更",
     "checks": "チェック",
@@ -780,6 +790,7 @@
     "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
+    "sync-database": "データベース同期",
     "sync-schema": {
       "copy-schema": "Copy schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases. (MySQL, PostgreSQL, Oracle, MSSQL, TiDB only)",
@@ -849,6 +860,7 @@
     "extensions": "拡張機能",
     "external-tables": "外部テーブル",
     "failed-to-sync-schema": "スキーマの同期に失敗しました",
+    "failed-to-sync-schema-for-database-database-value-name": "データベース \"{{name}}\" のスキーマの同期に失敗しました。",
     "functions": "関数",
     "n-databases-had-sync-errors": "{{0}} 個のデータベースで同期エラーが発生しました",
     "packages": "パッケージ",
@@ -871,6 +883,7 @@
     "start-to-sync-schema": "スキーマの同期を開始します",
     "streams": "ストリーム",
     "successfully-synced-schema": "スキーマの同期に成功しました",
+    "successfully-synced-schema-for-database-database-value-name": "データベース \"{{name}}\" のスキーマを正常に同期しました。",
     "syncing-databases-for-instance": "{{0}} のデータベースを同期中...",
     "tables": "テーブル",
     "tasks": "タスク",
@@ -1342,7 +1355,8 @@
           "title": "エンジン"
         },
         "environment": {
-          "description": "環境に基づいてフィルタリングする"
+          "description": "環境に基づいてフィルタリングする",
+          "title": "環境"
         },
         "instance": {
           "description": "インスタンスによるフィルター",
@@ -1373,6 +1387,10 @@
         },
         "status": {
           "description": "イシューのステータスで検索"
+        },
+        "table": {
+          "description": "値を入力してEnterを押します",
+          "title": "テーブル"
         },
         "user": {
           "description": "ユーザーでフィルター"
@@ -1415,7 +1433,6 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
-      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "手動選択",
@@ -1448,6 +1465,7 @@
     "title": {
       "change-database": "データベースの変更",
       "change-from-sql-editor": "SQL エディタからの変更",
+      "edit-schema": "スキーマを編集",
       "request-role": "ロールをリクエスト",
       "request-specific-role": "「{{role}}」ロールをリクエスト"
     },
@@ -1696,10 +1714,11 @@
       "self": "マスキング免除"
     },
     "members": {
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
-      "allow-ddl-all-environments": "環境制限はありません。すべての環境で DDL/DML ステートメントの実行を許可する。",
+      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
+      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
+      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
+      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "disallow-ddl-all-environments": "すべての環境で DDL/DML ステートメントの実行を禁止する。",
       "edit-member": "メンバー編集 - {{member}}",
       "never-expires": "Never",
       "request-role": {
@@ -1835,6 +1854,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "作成するプロジェクト",
+  "quick-start": {
+    "guide": "クリックしてステップを試してみましょう",
+    "notice": {
+      "desc": "後から右上のメニューから元に戻すことができます",
+      "title": "クイックスタートガイドを終了しました"
+    },
+    "query-data": "クエリデータ",
+    "view-an-issue": "イシューを表示する",
+    "visit-database": "データベースにアクセスする",
+    "visit-environment": "環境にアクセスする",
+    "visit-instance": "インスタンスにアクセスする",
+    "visit-member": "メンバー | メンバーにアクセスする",
+    "visit-project": "プロジェクトにアクセスする"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -2026,6 +2059,9 @@
       "search": "カテゴリを検索する",
       "select": "分類を選択"
     }
+  },
+  "sensitive-data": {
+    "self": "機密データ"
   },
   "setting": {
     "label": {
@@ -2613,33 +2649,44 @@
       "description": "{{project}} の下の {{database}} 個の追加データベースと {{group}} 個のデータベース グループに対してバッチ クエリを実行します。",
       "select-data-source": {
         "admin": "管理者",
+        "not-match": "データ ソースが一致しません。{{expect}} を期待しましたが、{{actual}} を取得しました。",
         "readonly": "読み取り専用",
         "self": "バッチのデータソースを選択",
         "tooltip": "制限ポリシーが設定された利用可能なデータ ソースを見つけて、選択を適用します。"
       },
       "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示"
     },
+    "binary-format": "バイナリ形式",
+    "boolean-format": "ブール形式",
+    "cancel-selection": "選択をキャンセル",
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
     "click-to-sync-now": "クリックして今すぐ同期します",
     "close-sheet": "ワークシートを閉じる",
+    "column-display-format": "列の表示形式",
     "connect-in-admin-mode": "管理者モードで接続する",
     "connect-to-a-database": "データベースに接続",
+    "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-name": "名前をコピーする",
+    "copy-selected-results": "選択したデータを<action></action>または<button></button>でコピーします",
     "copy-url": "URLをコピー",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{{file}} 形式でダウンロード",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "execute-query": "クエリを実行する",
+    "executing-query": "クエリの実行",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
     "format": "フォーマット",
+    "format-default": "デフォルト",
     "format-sql": "Format SQL",
     "generate-sql": "SQLの生成",
     "grant-type-unmask": "Unmask",
+    "hex-format": "16進形式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "content": "現在のワークシートを閉じると、保存されていないデータはすべて失われますか?",
@@ -2649,9 +2696,12 @@
     "jit": "Just-In-Time Access",
     "last-synced": "最終同期時間: <time></time>",
     "link-access": "リンクアクセス",
+    "loading-data": "データのロード...",
     "loading-databases": "データベース情報をロードしています...",
     "manage-connections": "接続を管理する",
+    "next-row": "次の行",
     "no-access-requests": "No access requests",
+    "no-data-available": "データがありません",
     "no-database-selected": "データベースが選択されていません",
     "no-history-found": "まだ履歴がありません",
     "no-project": {
@@ -2662,7 +2712,9 @@
     "no-queriable-database": "クエリ可能なデータベースがありません",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
+    "pending-query": "保留中のクエリ",
     "preview-table-data": "テーブルデータのプレビュー",
+    "previous-row": "前の行",
     "private": "プライベート",
     "private-desc": "このシートにアクセスできるのはあなただけです",
     "project-read": "プロジェクト内で読み取り可能",
@@ -2672,6 +2724,7 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
+    "query-time": "クエリ時間",
     "re-request": "再申請",
     "redis-command": {
       "all-nodes": "すべてのノード",
@@ -2688,13 +2741,24 @@
     },
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "rows": {
+      "self": "行"
+    },
+    "rows-affected": "行に影響",
+    "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "save-sheet": "ワークシートの保存",
     "save-sheet-input-placeholder": "ワークシート名を入力してください",
+    "scroll-to-bottom": "末尾へスクロール",
+    "scroll-to-top": "先頭へスクロール",
     "search-history-by-statement": "ステートメントで検索",
+    "search-scope-column-description": "{{type}}型の列。値を入力してEnterを押すと一致する行にジャンプします。",
+    "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
+    "search-scope-row-number-title": "行番号",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
     "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
+    "show-in-editor": "エディタに表示",
     "sync-in-progress": "同期中",
     "tab": {
       "context-menu": {
@@ -2709,15 +2773,21 @@
           "multi-select": "複数選択",
           "rename": "名前の変更"
         }
-      }
+      },
+      "unsaved-worksheet": "保存されていないワークシートがあります。"
     },
+    "table-empty-placeholder": "「実行」をクリックしてクエリを実行します。",
+    "table-view": "テーブルビュー",
+    "text-format": "テキスト形式",
     "unmask-warning": "The query result may include unmasked sensitive data.",
     "upload-file": "ファイルをアップロードする",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
+    "vertical-display": "縦型表示",
     "view-database-detail": "データベースの詳細を表示する",
     "view-detail": "詳細を見る",
     "view-issue": "View Issue",
     "view-schema-text": "テキストの表示 スキーマ",
+    "visualize-explain": "視覚化の説明",
     "web-socket": {
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
@@ -3647,6 +3717,7 @@
   "task-run.log-type.command-execute": "コマンド実行",
   "task-run.log-type.compute-diff": "差分計算",
   "task-run.log-type.database-sync": "データベース同期",
+  "task-run.log-type.ghost-migration": "gh-ost Migration",
   "task-run.log-type.prior-backup": "事前のバックアップ",
   "task-run.log-type.release-file-execute": "リリースファイル",
   "task-run.log-type.retry": "リトライ",

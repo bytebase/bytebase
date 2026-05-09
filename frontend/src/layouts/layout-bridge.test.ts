@@ -45,6 +45,9 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
           if (props.page === "DashboardFrameShell") {
             return;
           }
+          if (props.page === "Quickstart") {
+            return;
+          }
           if (props.page === "RoutePermissionGuardShell") {
             props.pageProps?.onReady?.(permissionTarget.value);
             return;
@@ -65,6 +68,14 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
           });
         });
 
+        if (props.page === "Quickstart") {
+          // Match the marker the legacy `<Quickstart />` Vue mock emitted
+          // — this lets the existing teleport assertions keep working
+          // unchanged after the React port replaced the Vue component
+          // with `<ReactPageMount page="Quickstart">` in BodyLayout.vue
+          // and ReactRouteShellBridge.vue.
+          return () => h("div", { "data-testid": "quickstart" }, "quickstart");
+        }
         return () =>
           props.page === "RoutePermissionGuardShell"
             ? h("div", {
@@ -99,18 +110,6 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
                   "data-testid": "shell-quickstart",
                 }),
               ]);
-      },
-    }),
-  };
-});
-
-vi.mock("@/components/Quickstart.vue", async () => {
-  const { defineComponent, h } = await import("vue");
-  return {
-    default: defineComponent({
-      name: "MockQuickstart",
-      setup() {
-        return () => h("div", { "data-testid": "quickstart" }, "quickstart");
       },
     }),
   };

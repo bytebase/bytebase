@@ -1064,6 +1064,13 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
    * @generated from field: bytebase.v1.TaskRunLogEntry.ReleaseFileExecute release_file_execute = 12;
    */
   releaseFileExecute?: TaskRunLogEntry_ReleaseFileExecute;
+
+  /**
+   * gh-ost migration details (if type is GHOST_MIGRATION).
+   *
+   * @generated from field: bytebase.v1.TaskRunLogEntry.GhostMigration ghost_migration = 13;
+   */
+  ghostMigration?: TaskRunLogEntry_GhostMigration;
 };
 
 /**
@@ -1498,6 +1505,40 @@ export declare type TaskRunLogEntry_ComputeDiff = Message<"bytebase.v1.TaskRunLo
 export declare const TaskRunLogEntry_ComputeDiffSchema: GenMessage<TaskRunLogEntry_ComputeDiff>;
 
 /**
+ * gh-ost migration details.
+ *
+ * @generated from message bytebase.v1.TaskRunLogEntry.GhostMigration
+ */
+export declare type TaskRunLogEntry_GhostMigration = Message<"bytebase.v1.TaskRunLogEntry.GhostMigration"> & {
+  /**
+   * When the gh-ost migration started.
+   *
+   * @generated from field: google.protobuf.Timestamp start_time = 1;
+   */
+  startTime?: Timestamp;
+
+  /**
+   * When the gh-ost migration ended.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 2;
+   */
+  endTime?: Timestamp;
+
+  /**
+   * Error message if the gh-ost migration failed.
+   *
+   * @generated from field: string error = 3;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message bytebase.v1.TaskRunLogEntry.GhostMigration.
+ * Use `create(TaskRunLogEntry_GhostMigrationSchema)` to create a new message.
+ */
+export declare const TaskRunLogEntry_GhostMigrationSchema: GenMessage<TaskRunLogEntry_GhostMigration>;
+
+/**
  * Release file execution details.
  *
  * @generated from message bytebase.v1.TaskRunLogEntry.ReleaseFileExecute
@@ -1592,6 +1633,13 @@ export enum TaskRunLogEntry_Type {
    * @generated from enum value: RELEASE_FILE_EXECUTE = 9;
    */
   RELEASE_FILE_EXECUTE = 9,
+
+  /**
+   * gh-ost online migration.
+   *
+   * @generated from enum value: GHOST_MIGRATION = 10;
+   */
+  GHOST_MIGRATION = 10,
 }
 
 /**

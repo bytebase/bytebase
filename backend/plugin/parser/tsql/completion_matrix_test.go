@@ -388,6 +388,28 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want: append(append(tables("Address", "Employees"), schemas("dbo", "MySchema")...), sequences("EmployeeIdSeq", "OrderSeq")...),
 		},
 		{
+			name:    "database qualified schema reference",
+			sql:     "SELECT * FROM Company.|",
+			want:    schemas("dbo", "MySchema"),
+			notWant: append(append(databases("Company", "School"), tables("Address", "Employees")...), sequences("EmployeeIdSeq", "OrderSeq")...),
+		},
+		{
+			name: "database default schema table reference",
+			sql:  "SELECT * FROM School..|",
+			want: tables("Student"),
+			notWant: tables(
+				"Employees",
+			),
+		},
+		{
+			name: "linked server qualified table reference does not use local database",
+			sql:  "SELECT * FROM Linked.Company.dbo.|",
+			notWant: tables(
+				"Address",
+				"Employees",
+			),
+		},
+		{
 			name: "dbo table reference",
 			sql:  "SELECT * FROM dbo.|",
 			want: tables("Address", "Employees"),
@@ -451,6 +473,11 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 		{
 			name: "schema prefix keeps matching schema available",
 			sql:  "SELECT * FROM My|",
+			want: schemas("MySchema"),
+		},
+		{
+			name: "database qualified schema prefix keeps matching schema available",
+			sql:  "SELECT * FROM Company.My|",
 			want: schemas("MySchema"),
 		},
 		{
@@ -942,6 +969,15 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want: tables("Address", "Employees"),
 		},
 		{
+			name: "drop table if exists database qualified schema reference",
+			sql:  "DROP TABLE IF EXISTS School.|",
+			want: schemas("dbo"),
+			notWant: tables(
+				"Address",
+				"Employees",
+			),
+		},
+		{
 			name: "drop schema qualified table reference",
 			sql:  "DROP TABLE dbo.|",
 			want: tables("Address", "Employees"),
@@ -960,6 +996,24 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			name: "drop procedure schema reference",
 			sql:  "DROP PROCEDURE dbo.|",
 			want: routines("SyncEmployees"),
+		},
+		{
+			name: "drop procedure database qualified schema reference",
+			sql:  "DROP PROCEDURE Company.|",
+			want: schemas("dbo", "MySchema"),
+			notWant: routines(
+				"SyncEmployees",
+				"SyncSalary",
+			),
+		},
+		{
+			name: "drop procedure if exists database qualified schema reference",
+			sql:  "DROP PROCEDURE IF EXISTS Company.|",
+			want: schemas("dbo", "MySchema"),
+			notWant: routines(
+				"SyncEmployees",
+				"SyncSalary",
+			),
 		},
 		{
 			name: "drop procedure prefix keeps matching routine available",
@@ -1028,6 +1082,15 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			want: sequences("StudentSeq"),
 			notWant: sequences(
 				"EmployeeIdSeq",
+			),
+		},
+		{
+			name: "database qualified next value for schema reference",
+			sql:  "SELECT NEXT VALUE FOR Company.|",
+			want: schemas("dbo", "MySchema"),
+			notWant: sequences(
+				"EmployeeIdSeq",
+				"OrderSeq",
 			),
 		},
 		{
@@ -1160,6 +1223,15 @@ func TestCompletionCoverageMatrix(t *testing.T) {
 			name: "execute procedure prefix",
 			sql:  "EXEC Sync|",
 			want: routines("SyncEmployees"),
+		},
+		{
+			name: "execute database qualified schema reference",
+			sql:  "EXEC Company.|",
+			want: schemas("dbo", "MySchema"),
+			notWant: routines(
+				"SyncEmployees",
+				"SyncSalary",
+			),
 		},
 		{
 			name: "alternate schema execute procedure reference",

@@ -21,6 +21,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +83,7 @@ import {
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -116,7 +118,10 @@ import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
 } from "../utils/options";
-import { planCheckRunListForSpec } from "../utils/planCheck";
+import {
+  planCheckRunListForSpec,
+  transformReleaseCheckResultsToPlanCheckRuns,
+} from "../utils/planCheck";
 import { getSelectedSpec, getSpecTitle } from "../utils/spec";
 import { updateSpecSheetWithStatement } from "../utils/specMutation";
 import {
@@ -177,6 +182,9 @@ export function PlanDetailChangesBranch({
   const [draftCheckRunsBySpecId, setDraftCheckRunsBySpecId] = useState<
     Record<string, PlanCheckRun[]>
   >({});
+  const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
+    Record<string, CheckReleaseResponse_CheckResult[] | undefined>
+  >({});
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const specs = page.plan.specs ?? [];
   const selectedSpec = useMemo(() => {
@@ -223,6 +231,16 @@ export function PlanDetailChangesBranch({
     [page.isCreating, page.plan, patchState]
   );
 
+  const selectSpec = useCallback(
+    (specId: string) => {
+      onSelectedSpecIdChange(specId);
+      if (!page.isCreating) {
+        void pushSpecDetailRoute(page.projectId, page.planId, specId);
+      }
+    },
+    [onSelectedSpecIdChange, page.isCreating, page.planId, page.projectId]
+  );
+
   const handleSpecCreate = async (targets: string[]) => {
     try {
       const sheetUID = getNextLocalSheetUID();
@@ -252,8 +270,7 @@ export function PlanDetailChangesBranch({
       }
 
       await commitSpecs([...page.plan.specs, spec]);
-      onSelectedSpecIdChange(spec.id);
-      void pushSpecDetailRoute(page.projectId, page.planId, spec.id);
+      selectSpec(spec.id);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -283,8 +300,7 @@ export function PlanDetailChangesBranch({
     try {
       await commitSpecs(nextSpecs);
       if (fallbackSpec) {
-        onSelectedSpecIdChange(fallbackSpec.id);
-        void pushSpecDetailRoute(page.projectId, page.planId, fallbackSpec.id);
+        selectSpec(fallbackSpec.id);
       }
       pushNotification({
         module: "bytebase",
@@ -337,6 +353,26 @@ export function PlanDetailChangesBranch({
       onSelectedSpecIdChange(selectedSpec.id);
     }
   }, [onSelectedSpecIdChange, selectedSpec, selectedSpecId]);
+
+  const selectedSpecIdForDraftChecks = selectedSpec?.id;
+  const handleDraftCheckResultsChange = useCallback(
+    (results: CheckReleaseResponse_CheckResult[] | undefined) => {
+      if (!selectedSpecIdForDraftChecks) return;
+      setDraftCheckResultsBySpecId((prev) => {
+        if (prev[selectedSpecIdForDraftChecks] === results) return prev;
+        return {
+          ...prev,
+          [selectedSpecIdForDraftChecks]: results,
+        };
+      });
+      setDraftCheckRunsBySpecId((prev) => ({
+        ...prev,
+        [selectedSpecIdForDraftChecks]:
+          transformReleaseCheckResultsToPlanCheckRuns(results ?? []),
+      }));
+    },
+    [selectedSpecIdForDraftChecks]
+  );
 
   if (!selectedSpec) {
     return (
@@ -398,8 +434,7 @@ export function PlanDetailChangesBranch({
                 ) : undefined
               }
               onSelect={() => {
-                onSelectedSpecIdChange(spec.id);
-                void pushSpecDetailRoute(page.projectId, page.planId, spec.id);
+                selectSpec(spec.id);
               }}
               selected={isSelected}
             >
@@ -441,13 +476,10 @@ export function PlanDetailChangesBranch({
             (page.isCreating ? (
               selectedSpec.config.case === "changeDatabaseConfig" ? (
                 <PlanDetailDraftChecks
+                  key={selectedSpec.id}
+                  checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
+                  onCheckResultsChange={handleDraftCheckResultsChange}
                   selectedSpec={selectedSpec}
-                  onPlanCheckRunsChange={(runs) =>
-                    setDraftCheckRunsBySpecId((prev) => ({
-                      ...prev,
-                      [selectedSpec.id]: runs,
-                    }))
-                  }
                 />
               ) : null
             ) : (
@@ -1070,17 +1102,23 @@ function TargetsSection({
           )}
         </div>
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (
-          <Alert className="px-3 py-2" variant="warning">
-            <div>{nonEnvWarning}</div>
-            <div className="mt-1 flex flex-col gap-1 text-sm">
-              {nonEnvDatabaseNames.map((name) => (
-                <div key={name} className="flex items-center gap-2">
-                  <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
-                  <DatabaseTarget target={name} />
+          <Alert
+            className="px-3 py-2"
+            variant="warning"
+            description={
+              <>
+                <div>{nonEnvWarning}</div>
+                <div className="mt-1 flex flex-col gap-1 text-sm">
+                  {nonEnvDatabaseNames.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
+                      <DatabaseTarget target={name} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </Alert>
+              </>
+            }
+          />
         )}
         {isLoadingTargets ? (
           <div className="flex items-center justify-center py-2">
@@ -1113,9 +1151,8 @@ function TargetsSection({
             )}
             {targets.length > DEFAULT_VISIBLE_TARGETS && (
               <Button
-                className="h-7 px-2"
                 onClick={() => setShowAllTargetsDialog(true)}
-                size="xs"
+                size="sm"
                 type="button"
                 variant="ghost"
               >
@@ -1215,12 +1252,14 @@ function TargetSelectorSheet({
   const [selectedDatabaseGroup, setSelectedDatabaseGroup] = useState<
     string | undefined
   >();
+  const currentTargetsKey = currentTargets.join("\0");
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    const firstTarget = currentTargets[0];
+    const targets = currentTargetsKey ? currentTargetsKey.split("\0") : [];
+    const firstTarget = targets[0];
     if (firstTarget && isValidDatabaseGroupName(firstTarget)) {
       setChangeSource("GROUP");
       setSelectedDatabaseGroup(firstTarget);
@@ -1228,9 +1267,9 @@ function TargetSelectorSheet({
       return;
     }
     setChangeSource("DATABASE");
-    setSelectedDatabaseNames(new Set(currentTargets));
+    setSelectedDatabaseNames(new Set(targets));
     setSelectedDatabaseGroup(undefined);
-  }, [currentTargets, open]);
+  }, [currentTargetsKey, open]);
 
   const canSubmit =
     changeSource === "DATABASE"
@@ -1440,20 +1479,15 @@ function DatabaseSelector({
             <thead>
               <tr className="border-b text-left text-control-light">
                 <th className="w-8 py-2 pr-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={() =>
+                  <Checkbox
+                    checked={someSelected ? "indeterminate" : allSelected}
+                    onCheckedChange={() =>
                       onSelectedNamesChange(
                         allSelected
                           ? new Set()
                           : new Set(databases.map((db) => db.name))
                       )
                     }
-                    className="accent-accent"
                   />
                 </th>
                 <th className="py-2 pr-4 font-medium">
@@ -1486,12 +1520,7 @@ function DatabaseSelector({
                     onClick={() => toggleDatabase(db.name)}
                   >
                     <td className="py-2 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className="accent-accent"
-                      />
+                      <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center gap-x-1.5">

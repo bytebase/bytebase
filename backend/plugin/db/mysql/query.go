@@ -4,14 +4,18 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/mysql/ast"
+	omnimysqlparser "github.com/bytebase/omni/mysql/parser"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/parser/mysql"
+	antlrmysql "github.com/bytebase/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -120,9 +124,36 @@ func getStatementWithResultLimit(statement string, limit int) string {
 }
 
 func getStatementWithResultLimitInline(statement string, limitCount int) (string, error) {
+	if strings.TrimSpace(statement) == "" {
+		return "", errors.New("empty statement")
+	}
+
+	list, err := mysqlparser.ParseMySQLOmni(statement)
+	if err != nil {
+		if stmt, legacyErr := getStatementWithResultLimitInlineLegacy(statement, limitCount); legacyErr == nil {
+			return stmt, nil
+		}
+		return "", err
+	}
+	if len(list.Items) != 1 {
+		return "", errors.Errorf("expected exactly one statement, got %d", len(list.Items))
+	}
+
+	stmt, ok := list.Items[0].(*ast.SelectStmt)
+	if !ok {
+		return statement, nil
+	}
+
+	return rewriteMySQLSelectLimit(statement, stmt, limitCount)
+}
+
+func getStatementWithResultLimitInlineLegacy(statement string, limitCount int) (string, error) {
 	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return "", err
+	}
+	if len(list) != 1 {
+		return "", errors.Errorf("expected exactly one statement, got %d", len(list))
 	}
 
 	listener := &mysqlRewriter{
@@ -141,7 +172,7 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 }
 
 type mysqlRewriter struct {
-	*mysql.BaseMySQLParserListener
+	*antlrmysql.BaseMySQLParserListener
 
 	rewriter       antlr.TokenStreamRewriter
 	err            error
@@ -149,7 +180,7 @@ type mysqlRewriter struct {
 	limitCount     int
 }
 
-func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+func (r *mysqlRewriter) EnterQueryExpression(ctx *antlrmysql.QueryExpressionContext) {
 	if !r.outerMostQuery {
 		return
 	}
@@ -179,7 +210,136 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		case ctx.QueryExpressionParens() != nil:
 			r.rewriter.InsertAfterDefault(ctx.QueryExpressionParens().GetStop().GetTokenIndex(), fmt.Sprintf(" LIMIT %d", r.limitCount))
 		default:
-			// No action needed for other query expression types
+			// No action needed for other query expression types.
 		}
 	}
+}
+
+func rewriteMySQLSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
+	if stmt.Limit != nil && stmt.Limit.Count != nil {
+		existingLimit := extractMySQLLimit(stmt.Limit.Count)
+		if existingLimit >= 0 && existingLimit <= limitCount {
+			return sql, nil
+		}
+		loc := nodeLocOf(stmt.Limit.Count)
+		loc = trimMySQLLocSpace(sql, loc)
+		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
+			if existingLimit < 0 && stmt.Into == nil {
+				return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
+			}
+			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
+		}
+		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
+	}
+
+	insertPos, beforeClause := findMySQLLimitInsertPosition(sql, stmt)
+	if insertPos < 0 || insertPos > len(sql) {
+		return "", errors.Errorf("invalid LIMIT insert position %d", insertPos)
+	}
+	if beforeClause {
+		return sql[:insertPos] + fmt.Sprintf("LIMIT %d ", limitCount) + sql[insertPos:], nil
+	}
+	return sql[:insertPos] + fmt.Sprintf(" LIMIT %d", limitCount) + sql[insertPos:], nil
+}
+
+func findMySQLLimitInsertPosition(sql string, stmt *ast.SelectStmt) (int, bool) {
+	if stmt.Into != nil && stmt.Into.Loc.Start > 0 {
+		intoStart := findMySQLKeywordBefore(sql, stmt.Into.Loc.Start, "INTO")
+		if intoStart >= maxMySQLLocEndBeforeTailClauses(stmt) {
+			return intoStart, true
+		}
+	}
+	if stmt.ForUpdate != nil && stmt.ForUpdate.Loc.Start > 0 {
+		return stmt.ForUpdate.Loc.Start, true
+	}
+	if stmt.Loc.End > 0 {
+		return stmt.Loc.End, false
+	}
+	return -1, false
+}
+
+func extractMySQLLimit(node ast.Node) int {
+	limit, ok := node.(*ast.IntLit)
+	if !ok {
+		return -1
+	}
+	return int(limit.Value)
+}
+
+func nodeLocOf(node ast.Node) ast.Loc {
+	return mysqlNodeLoc(node)
+}
+
+func trimMySQLLocSpace(sql string, loc ast.Loc) ast.Loc {
+	for loc.Start < loc.End && loc.Start < len(sql) && (sql[loc.Start] == ' ' || sql[loc.Start] == '\t' || sql[loc.Start] == '\n' || sql[loc.Start] == '\r') {
+		loc.Start++
+	}
+	for loc.End > loc.Start && loc.End <= len(sql) && (sql[loc.End-1] == ' ' || sql[loc.End-1] == '\t' || sql[loc.End-1] == '\n' || sql[loc.End-1] == '\r') {
+		loc.End--
+	}
+	return loc
+}
+
+func maxMySQLLocEndBeforeTailClauses(node ast.Node) int {
+	maxEnd := -1
+	ast.Inspect(node, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
+		if n == node {
+			return true
+		}
+		if _, ok := n.(*ast.IntoClause); ok {
+			return false
+		}
+		if _, ok := n.(*ast.ForUpdate); ok {
+			return false
+		}
+		if loc := mysqlNodeLoc(n); loc.End > maxEnd {
+			maxEnd = loc.End
+		}
+		return true
+	})
+	return maxEnd
+}
+
+func mysqlNodeLoc(node ast.Node) ast.Loc {
+	if node == nil {
+		return ast.Loc{Start: -1, End: -1}
+	}
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return ast.Loc{Start: -1, End: -1}
+	}
+	elem := value.Elem()
+	if elem.Kind() != reflect.Struct {
+		return ast.Loc{Start: -1, End: -1}
+	}
+	field := elem.FieldByName("Loc")
+	if !field.IsValid() || !field.CanInterface() {
+		return ast.Loc{Start: -1, End: -1}
+	}
+	loc, ok := field.Interface().(ast.Loc)
+	if !ok {
+		return ast.Loc{Start: -1, End: -1}
+	}
+	return loc
+}
+
+func findMySQLKeywordBefore(sql string, offset int, keyword string) int {
+	if offset > len(sql) {
+		offset = len(sql)
+	}
+	if len(keyword) == 0 {
+		return offset
+	}
+	keyword = strings.ToUpper(keyword)
+	tokens := omnimysqlparser.Tokenize(sql[:offset])
+	for i := len(tokens) - 1; i >= 0; i-- {
+		token := tokens[i]
+		if token.End <= offset && omnimysqlparser.TokenName(token.Type) == keyword {
+			return token.Loc
+		}
+	}
+	return offset
 }

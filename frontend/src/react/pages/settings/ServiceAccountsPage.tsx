@@ -8,6 +8,7 @@ import { RoleSelect } from "@/react/components/RoleSelect";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import {
   Sheet,
@@ -265,8 +266,7 @@ function ServiceAccountTable({
                           {user.serviceKey && !copiedKeys.has(user.name) ? (
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="h-6 text-xs"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCopyKey(user);
@@ -282,8 +282,7 @@ function ServiceAccountTable({
                               </span>
                               <Button
                                 variant="destructive"
-                                size="sm"
-                                className="h-6 text-xs"
+                                size="xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleResetKey(user);
@@ -293,8 +292,7 @@ function ServiceAccountTable({
                               </Button>
                               <Button
                                 variant="outline"
-                                size="sm"
-                                className="h-6 text-xs"
+                                size="xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setResetConfirmUser(undefined);
@@ -306,8 +304,7 @@ function ServiceAccountTable({
                           ) : (
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="h-6 text-xs"
+                              size="xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setResetConfirmUser(user);
@@ -342,8 +339,8 @@ function ServiceAccountTable({
                           >
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-error hover:text-error"
+                              size="sm"
+                              className="text-error hover:text-error"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeactivate(user);
@@ -369,8 +366,7 @@ function ServiceAccountTable({
                           >
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRestore(user);
@@ -832,10 +828,9 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
         {/* Inactive toggle */}
         <label className="flex items-center gap-x-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
+            onCheckedChange={(checked) => setShowInactive(checked)}
           />
           <span className="textinfolabel">
             {t("settings.members.show-inactive")}

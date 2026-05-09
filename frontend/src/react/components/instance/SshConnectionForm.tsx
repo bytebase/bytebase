@@ -22,7 +22,13 @@ interface SshConnectionFormProps {
 }
 
 function guessSshType(value: Partial<SshValue>): SshType {
-  if (value.sshPort) {
+  if (
+    value.sshHost ||
+    value.sshPort ||
+    value.sshUser ||
+    value.sshPassword ||
+    value.sshPrivateKey
+  ) {
     return "TUNNEL+PK";
   }
   return "NONE";

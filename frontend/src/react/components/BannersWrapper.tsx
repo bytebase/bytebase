@@ -69,8 +69,8 @@ function BannerDismissButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon"
-      className="size-8 text-white hover:bg-white/10 hover:text-white"
+      size="sm"
+      className="text-white hover:bg-white/10 hover:text-white"
       onClick={onClick}
     >
       <span className="sr-only">{label}</span>

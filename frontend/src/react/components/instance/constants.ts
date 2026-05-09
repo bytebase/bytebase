@@ -57,6 +57,17 @@ export const defaultPortForEngine = (engine: Engine) => {
   throw new Error("engine port unknown");
 };
 
+export const effectivePortForEngine = (
+  engine: Engine,
+  port: string,
+  srv: boolean
+) => {
+  if (port || (engine === Engine.MONGODB && srv)) {
+    return port;
+  }
+  return defaultPortForEngine(engine);
+};
+
 export const getEngineList = () => supportedEngineV1List();
 
 export const MongoDBConnectionStringSchemaList = [

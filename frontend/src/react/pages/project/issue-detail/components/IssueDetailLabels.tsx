@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -225,12 +226,7 @@ export function IssueDetailLabels() {
                       }}
                       type="button"
                     >
-                      <input
-                        checked={isSelected}
-                        className="accent-accent"
-                        readOnly
-                        type="checkbox"
-                      />
+                      <Checkbox checked={isSelected} />
                       <span
                         className="size-4 shrink-0 rounded-sm"
                         style={{ backgroundColor: option.color }}

@@ -1,9 +1,10 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -126,35 +127,23 @@ export function DatabaseTableView({
   const someSelected =
     (selectedNames?.size ?? 0) > 0 &&
     (selectedNames?.size ?? 0) < databases.length;
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someSelected;
-    }
-  }, [someSelected]);
-
   const columns = useMemo<DatabaseColumn[]>(() => {
     const cols: DatabaseColumn[] = [];
     if (showSelection) {
       cols.push({
         key: "select",
         title: (
-          <input
-            ref={headerCheckboxRef}
-            type="checkbox"
-            checked={allSelected}
-            onChange={toggleSelectAll}
-            className="rounded-xs border-control-border"
+          <Checkbox
+            checked={someSelected ? "indeterminate" : allSelected}
+            onCheckedChange={toggleSelectAll}
           />
         ),
         defaultWidth: 48,
         render: (db) => (
-          <input
-            type="checkbox"
+          <Checkbox
             checked={selectedNames?.has(db.name) ?? false}
-            onChange={() => toggleSelection(db.name)}
+            onCheckedChange={() => toggleSelection(db.name)}
             onClick={(e) => e.stopPropagation()}
-            className="rounded-xs border-control-border"
           />
         ),
       });

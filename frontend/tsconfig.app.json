@@ -9,6 +9,8 @@
   ],
   "exclude": [
     "src/**/__tests__/*",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
     "src/react/**/*.tsx",
     "src/react/components/MarkdownEditor/index.ts",
     "src/react/components/task-run-log/index.ts",
@@ -26,7 +28,8 @@
     "src/react/components/SchemaEditorLite/Panels/TableColumnEditor/index.ts",
     "src/react/components/SchemaEditorLite/Panels/IndexesEditor/index.ts",
     "src/react/components/SchemaEditorLite/Panels/PartitionsEditor/index.ts",
-    "src/react/components/SchemaEditorLite/Panels/TableList/index.ts"
+    "src/react/components/SchemaEditorLite/Panels/TableList/index.ts",
+    "src/react/components/sql-editor/ResultView/index.ts"
   ],
   "compilerOptions": {
     "composite": true,

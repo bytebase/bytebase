@@ -4,8 +4,8 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
-  roleHasEnvironmentLimitation,
 } from "@/components/ProjectMember/utils";
 import { issueServiceClientConnect } from "@/connect";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
@@ -21,11 +21,8 @@ import type { OptionConfig } from "@/react/components/ExprEditor";
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
 import { RoleSelect } from "@/react/components/RoleSelect";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { ExpirationPicker } from "@/react/components/ui/expiration-picker";
 import {
@@ -81,10 +78,27 @@ export interface RequestRoleSheetProps {
   open: boolean;
   project: Project;
   requiredPermissions?: Permission[];
+  /**
+   * Pre-fill the role select. Useful when the sheet is opened from a
+   * surface that already knows which role the user needs (e.g. the SQL
+   * Editor's "Request query" button hard-codes
+   * `PresetRoleType.SQL_EDITOR_USER`). The user can still change the
+   * role from the picker — pass `requiredPermissions` to constrain the
+   * available roles instead of hard-locking the selection.
+   */
+  initialRole?: string;
+  /**
+   * Pre-fill the SELECT-mode database scope. When provided AND the
+   * pre-selected role requires a database scope, the sheet opens in
+   * SELECT mode with these resources already chosen. The user can
+   * switch to ALL or EXPRESSION mode if they want to broaden the scope.
+   */
+  initialDatabaseResources?: DatabaseResource[];
   onClose: () => void;
 }
 
 const EMPTY_REQUIRED_PERMISSIONS: Permission[] = [];
+const EMPTY_DATABASE_RESOURCES: DatabaseResource[] = [];
 
 // i18n key lookup for the three DatabaseMode radio labels. Kept as a flat
 // function to avoid nested ternaries in the render tree.
@@ -117,6 +131,8 @@ export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
 function RequestRoleForm({
   project,
   requiredPermissions = EMPTY_REQUIRED_PERMISSIONS,
+  initialRole = "",
+  initialDatabaseResources = EMPTY_DATABASE_RESOURCES,
   onClose,
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
@@ -127,18 +143,23 @@ function RequestRoleForm({
   // getter produces identical reactive semantics.
   const currentUserRef = useCurrentUserV1();
   const currentUser = useVueState(() => currentUserRef.value);
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(initialRole);
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<
     string | undefined
   >(undefined);
   const [labels, setLabels] = useState<string[]>([]);
   // Role-scope fields — only rendered for roles that require them, but kept
-  // in state so switching roles back and forth preserves user input.
-  const [databaseMode, setDatabaseMode] = useState<DatabaseMode>("ALL");
+  // in state so switching roles back and forth preserves user input. When
+  // the caller pre-fills database resources we open in SELECT mode so the
+  // pre-filled scope is visible (otherwise the radio would default to ALL
+  // and the resources would be ignored).
+  const [databaseMode, setDatabaseMode] = useState<DatabaseMode>(
+    initialDatabaseResources.length > 0 ? "SELECT" : "ALL"
+  );
   const [databaseResources, setDatabaseResources] = useState<
     DatabaseResource[]
-  >([]);
+  >(initialDatabaseResources);
   // CEL expression for EXPRESSION mode is held as a structured group so it
   // can render in ExprEditor (matching the old Vue DatabaseResourceForm).
   const [exprGroup, setExprGroup] = useState<ConditionGroupExpr>(() =>
@@ -248,7 +269,7 @@ function RequestRoleForm({
   // scope). Submitting without one produces a project-wide binding which is
   // broader than the user typically intends.
   const showDatabases = !!role && roleHasDatabaseLimitation(role);
-  const showEnvironments = !!role && roleHasEnvironmentLimitation(role);
+  const envKind = role ? getRoleEnvironmentLimitationKind(role) : undefined;
 
   const databaseScopeComplete =
     !showDatabases ||
@@ -291,7 +312,9 @@ function RequestRoleForm({
         databaseResources.length > 0
           ? databaseResources
           : undefined;
-      const scopedEnvironments = showEnvironments ? environments : undefined;
+      // EnvLimitationKind union has no falsy members, so the truthy check
+      // is equivalent to !== undefined.
+      const scopedEnvironments = envKind ? environments : undefined;
 
       // The backend uses two fields on the RoleGrant message:
       //   1. `condition.expression` — CEL evaluated by
@@ -424,28 +447,27 @@ function RequestRoleForm({
       <SheetBody>
         <div className="flex flex-col gap-y-4">
           {labelsMisconfigured && (
-            <Alert variant="warning">
-              <AlertTitle>
-                {t("project.members.request-role.labels-misconfigured.title")}
-              </AlertTitle>
-              <AlertDescription>
-                {t(
-                  "project.members.request-role.labels-misconfigured.description"
-                )}
-              </AlertDescription>
-            </Alert>
+            <Alert
+              variant="warning"
+              title={t(
+                "project.members.request-role.labels-misconfigured.title"
+              )}
+              description={t(
+                "project.members.request-role.labels-misconfigured.description"
+              )}
+            />
           )}
           {requiredPermissionList.length > 0 && (
-            <Alert>
-              <AlertTitle>{t("common.required-permission")}</AlertTitle>
-              <AlertDescription>
+            <Alert
+              title={t("common.required-permission")}
+              description={
                 <ul className="list-disc pl-4">
                   {requiredPermissionList.map((permission) => (
                     <li key={permission}>{permission}</li>
                   ))}
                 </ul>
-              </AlertDescription>
-            </Alert>
+              }
+            />
           )}
           <div className="flex flex-col gap-y-1">
             <label className="text-sm font-medium">
@@ -533,11 +555,12 @@ function RequestRoleForm({
               )}
             </div>
           )}
-          {showEnvironments && (
-            <div className="flex flex-col gap-y-1">
+          {envKind && (
+            <div className="flex flex-col gap-y-2">
               <label className="text-sm font-medium">
                 {t("common.environments")}
               </label>
+              <DDLWarningCallout type="drawer" kind={envKind} />
               <EnvironmentMultiSelect
                 value={environments}
                 onChange={setEnvironments}

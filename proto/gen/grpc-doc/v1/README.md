@@ -60,6 +60,7 @@
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
+    - [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest)
     - [RoleGrant](#bytebase-v1-RoleGrant)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
@@ -468,6 +469,7 @@
     - [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse)
     - [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff)
     - [TaskRunLogEntry.DatabaseSync](#bytebase-v1-TaskRunLogEntry-DatabaseSync)
+    - [TaskRunLogEntry.GhostMigration](#bytebase-v1-TaskRunLogEntry-GhostMigration)
     - [TaskRunLogEntry.PriorBackup](#bytebase-v1-TaskRunLogEntry-PriorBackup)
     - [TaskRunLogEntry.PriorBackup.PriorBackupDetail](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail)
     - [TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item](#bytebase-v1-TaskRunLogEntry-PriorBackup-PriorBackupDetail-Item)
@@ -1604,6 +1606,21 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 
 
+<a name="bytebase-v1-RetryIssueApprovalRequest"></a>
+
+### RetryIssueApprovalRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the issue whose approval-finding should be retried. Format: projects/{project}/issues/{issue} |
+
+
+
+
+
+
 <a name="bytebase-v1-RoleGrant"></a>
 
 ### RoleGrant
@@ -1795,6 +1812,7 @@ IssueService manages issues for tracking database changes and tasks.
 | ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) | Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
+| RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
 
  
 
@@ -7781,6 +7799,7 @@ Information about why a task run is waiting.
 | retry_info | [TaskRunLogEntry.RetryInfo](#bytebase-v1-TaskRunLogEntry-RetryInfo) |  | Retry information details (if type is RETRY_INFO). |
 | compute_diff | [TaskRunLogEntry.ComputeDiff](#bytebase-v1-TaskRunLogEntry-ComputeDiff) |  | Compute diff details (if type is COMPUTE_DIFF). |
 | release_file_execute | [TaskRunLogEntry.ReleaseFileExecute](#bytebase-v1-TaskRunLogEntry-ReleaseFileExecute) |  | Release file execution details (if type is RELEASE_FILE_EXECUTE). |
+| ghost_migration | [TaskRunLogEntry.GhostMigration](#bytebase-v1-TaskRunLogEntry-GhostMigration) |  | gh-ost migration details (if type is GHOST_MIGRATION). |
 
 
 
@@ -7851,6 +7870,23 @@ Database synchronization details.
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync started. |
 | end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the database sync ended. |
 | error | [string](#string) |  | Error message if sync failed. |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRunLogEntry-GhostMigration"></a>
+
+### TaskRunLogEntry.GhostMigration
+gh-ost migration details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration started. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the gh-ost migration ended. |
+| error | [string](#string) |  | Error message if the gh-ost migration failed. |
 
 
 
@@ -8147,6 +8183,7 @@ The type of log entry.
 | RETRY_INFO | 7 | Retry information. |
 | COMPUTE_DIFF | 8 | Schema diff computation. |
 | RELEASE_FILE_EXECUTE | 9 | Release file execution. |
+| GHOST_MIGRATION | 10 | gh-ost online migration. |
 
 
  

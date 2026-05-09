@@ -23,6 +23,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSwitchDialog } from "@/react/components/header/ProjectSwitchDialog";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Sheet,
   SheetBody,
@@ -392,11 +393,10 @@ function ConfigSheet({
               className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
             >
               <div className="flex items-center gap-x-2">
-                <input
-                  type="checkbox"
-                  checked
+                <Checkbox
+                  checked={true}
                   disabled={selected.length <= 1}
-                  onChange={() => uncheck(item.id)}
+                  onCheckedChange={() => uncheck(item.id)}
                 />
                 <item.icon className="w-5 h-5 text-gray-500" />
                 {item.title}
@@ -413,7 +413,7 @@ function ConfigSheet({
               className="flex items-center gap-x-2 p-2 hover:bg-gray-100 rounded-sm cursor-pointer"
               onClick={() => check(item.id)}
             >
-              <input type="checkbox" checked={false} readOnly />
+              <Checkbox checked={false} />
               <item.icon className="w-5 h-5 text-gray-500" />
               {item.title}
             </div>

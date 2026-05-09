@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -83,20 +84,10 @@ export function IndexesTable({ table, keyword }: IndexesTableProps) {
                 <EllipsisCell content={index.comment} />
               </TableCell>
               <TableCell className="w-20">
-                <input
-                  type="checkbox"
-                  checked={index.primary}
-                  disabled
-                  className="accent-accent"
-                />
+                <Checkbox checked={index.primary} disabled />
               </TableCell>
               <TableCell className="w-20">
-                <input
-                  type="checkbox"
-                  checked={index.unique}
-                  disabled
-                  className="accent-accent"
-                />
+                <Checkbox checked={index.unique} disabled />
               </TableCell>
             </TableRow>
           ))}

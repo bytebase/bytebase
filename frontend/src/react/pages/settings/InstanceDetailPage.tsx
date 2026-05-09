@@ -374,9 +374,11 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
       {/* No environment warning */}
       {!instance.environment && (
-        <Alert variant="warning" className="mb-4">
-          {t("instance.no-environment")}
-        </Alert>
+        <Alert
+          variant="warning"
+          className="mb-4"
+          description={t("instance.no-environment")}
+        />
       )}
 
       {/* Header */}

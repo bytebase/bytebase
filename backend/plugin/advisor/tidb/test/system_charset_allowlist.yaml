@@ -89,3 +89,106 @@
       endposition: null
 - statement: /* this is a comment */
   changeType: 1
+# Cumulative shape divergence #14 pin: omni preserves the user's keyword
+# form on TableOption.Name — `CHARSET ascii` produces Name="CHARSET" and
+# `CHARACTER SET ascii` produces Name="CHARACTER SET" (no canonicalization).
+# Pingcap canonicalized at the enum level (both produced TableOptionCharset).
+# The advisor's accessor matches both forms; this fixture pins the long
+# form (existing fixtures all use CHARSET shorthand).
+- statement: CREATE TABLE t(a int) CHARACTER SET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a int) CHARACTER SET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Pin: column-level scan runs when table-level is in the allowlist.
+# Pingcap parity: if table-level is disabled, "break before column scan"
+# (only one violation reported per top-level stmt). If table-level is OK,
+# column scan must run to find the column-level violation.
+- statement: CREATE TABLE t(a varchar(255) CHARSET ascii) CHARSET utf8mb4
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a varchar(255) CHARSET ascii) CHARSET utf8mb4" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cardinality pin (Codex P2 round-1 catch on PR #20217): a single
+# ALTER TABLE statement emits AT MOST ONE advice regardless of how many
+# commands violate. Pingcap's pattern set state inside the spec loop
+# without break, with one append after — multiple violations overwrite,
+# last violation wins. Mirroring exactly. Without this fixture, a future
+# refactor that emits per-command would silently regress.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CHARSET ascii, MODIFY COLUMN a VARCHAR(10) CHARSET latin1
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER TABLE t CHARSET ascii, MODIFY COLUMN a VARCHAR(10) CHARSET latin1" used disabled charset ''latin1'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# CONVERT TO CHARACTER SET pin (Codex P2 round-2 catch on PR #20217):
+# pingcap parsed `ALTER TABLE t CONVERT TO CHARACTER SET ascii` as
+# AlterTableOption (Tp=1) with the charset in spec.Options, so the
+# pingcap-typed advisor flagged it via its `case ast.AlterTableOption:`.
+# Omni splits this into ATConvertCharset (Type=17), with charset on
+# cmd.Name (and collation on cmd.NewName if specified). cmd.Option is nil.
+# Mechanical migration matching only ATTableOption silently misses the
+# CONVERT form.
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CONVERT TO CHARACTER SET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"ALTER TABLE t CONVERT TO CHARACTER SET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# DEFAULT-prefix normalization pin (peer review on PR #20217). The
+# DEFAULT keyword in `DEFAULT CHARSET <name>` / `DEFAULT CHARACTER SET
+# <name>` is consumed by omni's parser without affecting the TableOption
+# shape — the resulting Name/Value matches the bare `CHARSET <name>` /
+# `CHARACTER SET <name>` form. The three syntactic variants below
+# produce identical advisor output, locking in the normalization claim
+# that the advisor's name-set (CHARACTER SET / CHARSET) catches all
+# DEFAULT-prefixed forms identically. Pingcap-typed and omni-typed
+# advisors agree: all three flag `ascii`.
+- statement: CREATE TABLE t(a int) DEFAULT CHARSET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a int) DEFAULT CHARSET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int) DEFAULT CHARACTER SET ascii
+  changeType: 1
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"CREATE TABLE t(a int) DEFAULT CHARACTER SET ascii" used disabled charset ''ascii'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -82,9 +82,11 @@ export function LabelEditorSheet({
         </SheetHeader>
         <SheetBody>
           {hasMixedValues && (
-            <Alert variant="warning" className="mb-4">
-              {t("database.mixed-label-values-warning")}
-            </Alert>
+            <Alert
+              variant="warning"
+              className="mb-4"
+              description={t("database.mixed-label-values-warning")}
+            />
           )}
           <div className="flex items-center gap-x-2 mb-4">
             <Input

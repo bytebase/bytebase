@@ -4,18 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/bytebase/omni/tidb/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
 var (
 	_ advisor.Advisor = (*TableNoFKAdvisor)(nil)
-	_ ast.Visitor     = (*tableNoFKChecker)(nil)
 )
 
 func init() {
@@ -28,8 +26,7 @@ type TableNoFKAdvisor struct {
 
 // Check checks table disallow foreign key.
 func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getTiDBNodes(checkCtx)
-
+	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +39,8 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		level: level,
 		title: checkCtx.Rule.Type.String(),
 	}
-	for _, stmtNode := range root {
-		(stmtNode).Accept(checker)
+	for _, ostmt := range stmts {
+		checker.checkStmt(ostmt)
 	}
 
 	return checker.adviceList, nil
@@ -55,40 +52,47 @@ type tableNoFKChecker struct {
 	title      string
 }
 
-// Enter implements the ast.Visitor interface.
-func (checker *tableNoFKChecker) Enter(in ast.Node) (ast.Node, bool) {
-	switch node := in.(type) {
+func (c *tableNoFKChecker) checkStmt(ostmt OmniStmt) {
+	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
-		for _, constraint := range node.Constraints {
-			if constraint.Tp == ast.ConstraintForeignKey {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
-					Code:          code.TableHasFK.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(constraint.OriginTextPosition()),
-				})
+		if n.Table == nil {
+			return
+		}
+		for _, constraint := range n.Constraints {
+			if constraint == nil || constraint.Type != ast.ConstrForeignKey {
+				continue
 			}
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
+				Code:          code.TableHasFK.Int32(),
+				Title:         c.title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
+				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(constraint.Loc.Start)),
+			})
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range node.Specs {
-			if spec.Tp == ast.AlterTableAddConstraint && spec.Constraint.Tp == ast.ConstraintForeignKey {
-				checker.adviceList = append(checker.adviceList, &storepb.Advice{
-					Status:        checker.level,
-					Code:          code.TableHasFK.Int32(),
-					Title:         checker.title,
-					Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", node.Table.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(in.OriginTextPosition()),
-				})
+		if n.Table == nil {
+			return
+		}
+		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
+		for _, cmd := range n.Commands {
+			if cmd == nil {
+				continue
 			}
+			if cmd.Type != ast.ATAddConstraint || cmd.Constraint == nil {
+				continue
+			}
+			if cmd.Constraint.Type != ast.ConstrForeignKey {
+				continue
+			}
+			c.adviceList = append(c.adviceList, &storepb.Advice{
+				Status:        c.level,
+				Code:          code.TableHasFK.Int32(),
+				Title:         c.title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
+				StartPosition: common.ConvertANTLRLineToPosition(stmtLine),
+			})
 		}
 	default:
 	}
-
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*tableNoFKChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
 }

@@ -9,8 +9,9 @@ import {
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
-import { Alert, AlertTitle } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Sheet,
   SheetBody,
@@ -320,23 +321,29 @@ export function PlanDetailDeployFuture() {
           </SheetHeader>
           <SheetBody className="gap-y-4">
             {errorMessages.length > 0 ? (
-              <Alert variant="error">
-                <AlertTitle>{t("common.error")}</AlertTitle>
-                <ul className="mt-2 list-inside list-disc text-sm">
-                  {errorMessages.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              </Alert>
+              <Alert
+                variant="error"
+                title={t("common.error")}
+                description={
+                  <ul className="list-inside list-disc text-sm">
+                    {errorMessages.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                }
+              />
             ) : warningMessages.length > 0 ? (
-              <Alert variant="warning">
-                <AlertTitle>{t("common.warning")}</AlertTitle>
-                <ul className="mt-2 list-inside list-disc text-sm">
-                  {warningMessages.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              </Alert>
+              <Alert
+                variant="warning"
+                title={t("common.warning")}
+                description={
+                  <ul className="list-inside list-disc text-sm">
+                    {warningMessages.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                }
+              />
             ) : null}
 
             {page.issue && (
@@ -360,12 +367,10 @@ export function PlanDetailDeployFuture() {
           <SheetFooter className="justify-between">
             {warningMessages.length > 0 && errorMessages.length === 0 ? (
               <label className="flex items-center gap-x-2 text-sm text-control">
-                <input
+                <Checkbox
                   checked={bypassWarnings}
-                  className="accent-accent"
                   disabled={creatingRollout}
-                  onChange={(event) => setBypassWarnings(event.target.checked)}
-                  type="checkbox"
+                  onCheckedChange={(checked) => setBypassWarnings(checked)}
                 />
                 <span>{t("rollout.bypass-stage-requirements")}</span>
               </label>

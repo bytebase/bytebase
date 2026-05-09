@@ -18,14 +18,13 @@
   </teleport>
 
   <teleport v-if="targets.quickstart" :to="targets.quickstart">
-    <Quickstart />
+    <ReactPageMount page="Quickstart" container-class="w-full" />
   </teleport>
 </template>
 
 <script lang="ts" setup>
 import { computed, shallowRef } from "vue";
 import { useRoute } from "vue-router";
-import Quickstart from "@/components/Quickstart.vue";
 import { provideBodyLayoutContext } from "@/layouts/common";
 import type { ReactRouteShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";

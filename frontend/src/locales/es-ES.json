@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
-      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
+      "fallback-rules-hint": "Las reglas de respaldo se evalúan de arriba abajo solo cuando ninguna regla específica de origen coincide.",
       "node": {
         "add": "Agregar nodo",
         "approver": "Aprobador",
@@ -527,6 +527,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Las reglas se evalúan en orden. Las reglas específicas de origen se ejecutan antes que las Reglas de respaldo.",
+        "multi-target": "En un plan con varios destinos, una regla específica de origen coincide con todo el plan si cualquier destino cumple su condición, y la primera regla coincidente selecciona el flujo de aprobación para todo el plan.",
+        "priority": "Coloca las reglas para cambios de mayor riesgo antes que las de menor riesgo. Para riesgos similares, coloca las reglas más estrictas o específicas antes de las más amplias."
+      },
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
       "self": "Regla de aprobación personalizada"
     },
@@ -789,10 +794,7 @@
     "self": "centro de exportacion"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0",
-      "export-rows-required": "Se requieren filas de exportación"
-    },
+    "error": {},
     "export-format": "Formato de exportación",
     "export-rows": "Exportar filas",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación.",
@@ -1179,7 +1181,6 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Detalles de la solicitud",
       "expired-at": "tiempo de caducidad",
       "manually-select": "selección manual",
@@ -1406,8 +1407,7 @@
         "self": "El Asistente AI no está configurado."
       },
       "send": "Enviar",
-      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
-      "text2sql": "Text2SQL"
+      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL"
     }
   },
   "policy": {
@@ -1460,7 +1460,6 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "allow-ddl": "Permitir ejecutar sentencias DDL/DML en los entornos seleccionados.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
       "never-expires": "Nunca caduca",
       "workspace-level-roles": "Roles a nivel de espacio de trabajo"
@@ -2414,7 +2413,6 @@
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "copy-name": "Copiar nombre",
-    "copy-selected-results": "Copiar datos seleccionados por {action} o {button}",
     "copy-url": "Copiar URL",
     "download-as-file": "Descargar como {file}",
     "duration-day": "{days} day",
@@ -2771,6 +2769,7 @@
       "command-execute": "Comando Ejecutar",
       "compute-diff": "Calcular diferencia",
       "database-sync": "Sincronización de bases de datos",
+      "ghost-migration": "Migración gh-ost",
       "prior-backup": "Copia de seguridad previa",
       "release-file-execute": "Archivo de lanzamiento",
       "retry": "Reintentar",

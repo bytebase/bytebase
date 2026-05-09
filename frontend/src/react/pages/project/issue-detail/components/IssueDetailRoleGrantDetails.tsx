@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
+import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import {
   Table,
   TableBody,
@@ -9,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useDatabaseV1Store,
@@ -38,28 +41,22 @@ export function IssueDetailRoleGrantDetails() {
   const [condition, setCondition] = useState<ConditionExpression | undefined>();
 
   useEffect(() => {
-    let canceled = false;
+    // Clear synchronously so a prop change doesn't briefly show the
+    // previous issue's environments while the new CEL expression parses.
+    setCondition(undefined);
 
-    const run = async () => {
-      const expression = issue?.roleGrant?.condition?.expression ?? "";
-      if (!expression) {
-        setCondition(undefined);
-        return;
-      }
+    const expression = issue?.roleGrant?.condition?.expression ?? "";
+    if (!expression) return;
+
+    let canceled = false;
+    void (async () => {
       try {
         const parsed = await convertFromCELString(expression);
-        if (!canceled) {
-          setCondition(parsed);
-        }
+        if (!canceled) setCondition(parsed);
       } catch (error) {
         console.error("Failed to parse CEL expression:", error);
-        if (!canceled) {
-          setCondition(undefined);
-        }
       }
-    };
-
-    void run();
+    })();
     return () => {
       canceled = true;
     };
@@ -73,6 +70,26 @@ export function IssueDetailRoleGrantDetails() {
       );
     }
   }, [condition?.databaseResources, databaseStore]);
+
+  const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
+  const envNames = condition?.environments ?? [];
+  const envList = useEnvironmentList();
+  // Falls back to the raw env resource name (e.g. environments/prod-old) when
+  // the env isn't in the store — happens when an env is renamed or deleted
+  // between request submission and approver review.
+  const envTitles = envNames.map(
+    (n) => envList.find((e) => e.name === n)?.title ?? n
+  );
+
+  // Three-way env scope:
+  //   environments === undefined  → no env clause in CEL → unrestricted (binding-all)
+  //   environments === []         → restricted to empty list (binding-none)
+  //   environments === [list]     → restricted to listed envs (binding-some)
+  // Hide during async parse so we don't briefly show binding-all for an
+  // expression that's about to resolve to binding-some/binding-none.
+  const expression = issue?.roleGrant?.condition?.expression ?? "";
+  const isParsing = expression !== "" && condition === undefined;
+  const envScope = computeEnvScope(envKind, isParsing, condition?.environments);
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -101,6 +118,25 @@ export function IssueDetailRoleGrantDetails() {
           </div>
         )}
 
+        {envScope === "binding-all" && envKind && (
+          <DDLWarningCallout type="binding-all" kind={envKind} />
+        )}
+        {/*
+         * binding-none on the issue page = the request specified an empty
+         * env list (degenerate: the binding would grant no env access at
+         * all). Showing an info box would suggest there's something to
+         * approve here when really the binding grants nothing. Hide.
+         */}
+        {envScope === "binding-some" && envKind && (
+          <div className="flex flex-col gap-y-2">
+            <span className="text-sm text-control-light">
+              {t("common.environments")}
+            </span>
+            <DDLWarningCallout type="binding-some" kind={envKind} />
+            <div className="text-base">{envTitles.join(", ")}</div>
+          </div>
+        )}
+
         {condition?.databaseResources && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">
@@ -108,7 +144,9 @@ export function IssueDetailRoleGrantDetails() {
             </span>
             <div>
               {condition.databaseResources.length === 0 ? (
-                <span>{t("issue.role-grant.all-databases")}</span>
+                <span className="text-base">
+                  {t("issue.role-grant.all-databases")}
+                </span>
               ) : (
                 <IssueDetailDatabaseResourceTable
                   databaseResourceList={condition.databaseResources}
@@ -198,6 +236,17 @@ function IssueDetailDatabaseResourceTable({
       </Table>
     </div>
   );
+}
+
+function computeEnvScope(
+  envKind: ReturnType<typeof getRoleEnvironmentLimitationKind>,
+  isParsing: boolean,
+  environments: string[] | undefined
+): "binding-all" | "binding-some" | "binding-none" | undefined {
+  if (!envKind || isParsing) return undefined;
+  if (environments === undefined) return "binding-all";
+  if (environments.length === 0) return "binding-none";
+  return "binding-some";
 }
 
 function extractTableName(databaseResource: DatabaseResource) {

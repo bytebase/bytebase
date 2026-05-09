@@ -4,6 +4,7 @@ import { EllipsisVertical, Info } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -466,11 +467,10 @@ export function ProjectWebhookForm({
                 <div key={item.activity}>
                   <div className="flex items-center gap-x-1">
                     <label className="flex items-center gap-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={isEventOn(item.activity)}
-                        onChange={(e) =>
-                          toggleEvent(item.activity, e.target.checked)
+                        onCheckedChange={(checked) =>
+                          toggleEvent(item.activity, checked)
                         }
                       />
                       <span className="text-sm">{item.title}</span>
@@ -529,12 +529,11 @@ export function ProjectWebhookForm({
               </span>
               <div className="flex items-center mt-2">
                 <label className="flex items-center gap-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={state.directMessage}
                     disabled={!activitySupportDirectMessage}
-                    onChange={(e) =>
-                      updateField("directMessage", e.target.checked)
+                    onCheckedChange={(checked) =>
+                      updateField("directMessage", checked)
                     }
                   />
                   <span className="text-sm">

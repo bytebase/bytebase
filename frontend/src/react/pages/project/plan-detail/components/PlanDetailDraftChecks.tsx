@@ -45,10 +45,14 @@ import {
 } from "../utils/planCheck";
 
 export function PlanDetailDraftChecks({
-  onPlanCheckRunsChange,
+  checkResults,
+  onCheckResultsChange,
   selectedSpec,
 }: {
-  onPlanCheckRunsChange?: (runs: PlanCheckRun[]) => void;
+  checkResults?: CheckReleaseResponse_CheckResult[];
+  onCheckResultsChange: (
+    results: CheckReleaseResponse_CheckResult[] | undefined
+  ) => void;
   selectedSpec: Plan_Spec;
 }) {
   const { t } = useTranslation();
@@ -57,9 +61,6 @@ export function PlanDetailDraftChecks({
   const [selectedResultStatus, setSelectedResultStatus] = useState<
     Advice_Level | undefined
   >();
-  const [checkResults, setCheckResults] = useState<
-    CheckReleaseResponse_CheckResult[] | undefined
-  >(undefined);
 
   const statement = useMemo(() => {
     if (selectedSpec.config.case !== "changeDatabaseConfig") return "";
@@ -82,10 +83,6 @@ export function PlanDetailDraftChecks({
     );
   }, [checkResults]);
 
-  useEffect(() => {
-    onPlanCheckRunsChange?.(formattedCheckRuns);
-  }, [formattedCheckRuns, onPlanCheckRunsChange]);
-
   const runChecks = async () => {
     if (selectedSpec.config.case !== "changeDatabaseConfig") return;
     setIsRunningChecks(true);
@@ -105,7 +102,7 @@ export function PlanDetailDraftChecks({
           targets: selectedSpec.config.value.targets ?? [],
         })
       );
-      setCheckResults(response.results || []);
+      onCheckResultsChange(response.results || []);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

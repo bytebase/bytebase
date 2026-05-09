@@ -718,7 +718,12 @@ function SchemaTreeRow({
       )}
       data-node-key={node.key}
       data-node-meta-type={node.meta.type}
-      onClick={() => {
+      // Drive the click discriminator off `mouseup` (gated to the primary
+      // button) instead of `onClick`. Safari drops the synthesized `click`
+      // when `mousedown` / `mouseup` resolve to different inner elements
+      // inside the row (chevron, icon, label). `mouseup` always fires.
+      onMouseUp={(e) => {
+        if (e.button !== 0) return;
         if (node.disabled) return;
         onClickNode(node);
       }}

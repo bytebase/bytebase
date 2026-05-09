@@ -58,6 +58,12 @@ interface AdvancedSearchProps {
   scopeOptions?: ScopeOption[];
   placeholder?: string;
   onParamsChange: (params: SearchParams) => void;
+  /**
+   * Fires on Enter while no scope/value dropdown is active. Hosts use this
+   * for "press Enter to advance to the next match" — mirrors the Vue
+   * `@keyup:enter` shortcut on the result-view search bar.
+   */
+  onEnter?: () => void;
 }
 
 const SCROLL_FADE_EPSILON = 1;
@@ -151,6 +157,7 @@ export function AdvancedSearch({
   scopeOptions = [],
   placeholder,
   onParamsChange,
+  onEnter,
 }: AdvancedSearchProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -561,6 +568,10 @@ export function AdvancedSearch({
               : raw;
             if (value) selectValue(value);
           }
+        } else if (onEnter) {
+          // No dropdown open — surface the Enter to the host (used by
+          // result-view search to advance to the next matching row).
+          onEnter();
         }
       }
     },
@@ -578,6 +589,7 @@ export function AdvancedSearch({
       selectScope,
       selectValue,
       onParamsChange,
+      onEnter,
     ]
   );
 

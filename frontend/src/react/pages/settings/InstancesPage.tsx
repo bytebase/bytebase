@@ -22,11 +22,7 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -34,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -404,11 +401,9 @@ function InstanceActionDropdown({
         }}
       >
         <label className="flex items-center gap-x-2 text-sm text-control-light mt-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={forceArchive}
-            onChange={(e) => setForceArchive(e.target.checked)}
-            className="rounded-xs border-control-border"
+            onCheckedChange={(checked) => setForceArchive(checked)}
           />
           {t("instance.force-archive-description")}
         </label>
@@ -1118,35 +1113,24 @@ export function InstancesPage() {
     instances.length > 0 && selectedNames.size === instances.length;
   const someSelected =
     selectedNames.size > 0 && selectedNames.size < instances.length;
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someSelected;
-    }
-  }, [someSelected]);
   const pageSizeOptions = getPageSizeOptions();
 
   const columns: InstanceColumn[] = [
     {
       key: "select",
       title: (
-        <input
-          ref={headerCheckboxRef}
-          type="checkbox"
-          checked={allSelected}
-          onChange={toggleSelectAll}
-          className="rounded-xs border-control-border"
+        <Checkbox
+          checked={someSelected ? "indeterminate" : allSelected}
+          onCheckedChange={toggleSelectAll}
         />
       ),
       defaultWidth: 48,
       cellClassName: "px-4 py-2",
       render: (instance) => (
-        <input
-          type="checkbox"
+        <Checkbox
           checked={selectedNames.has(instance.name)}
-          onChange={() => toggleSelection(instance.name)}
+          onCheckedChange={() => toggleSelection(instance.name)}
           onClick={(e) => e.stopPropagation()}
-          className="rounded-xs border-control-border"
         />
       ),
     },
@@ -1247,16 +1231,14 @@ export function InstancesPage() {
     <div className="py-4 flex flex-col">
       {/* Instance count warning */}
       {quotaExhausted && (
-        <Alert variant="warning" className="mx-4 mb-4">
-          <AlertTitle>
-            {t("subscription.usage.instance-count.title")}
-          </AlertTitle>
-          <AlertDescription>
-            {t("subscription.usage.instance-count.runoutof", {
-              total: instanceCountLimit,
-            })}
-          </AlertDescription>
-        </Alert>
+        <Alert
+          variant="warning"
+          className="mx-4 mb-4"
+          title={t("subscription.usage.instance-count.title")}
+          description={t("subscription.usage.instance-count.runoutof", {
+            total: instanceCountLimit,
+          })}
+        />
       )}
 
       {/* Header: Search + Create */}

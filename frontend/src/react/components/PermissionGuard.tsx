@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useComponentPermissionState,
-  usePermissionDataReady,
-} from "@/react/components/ComponentPermissionGuard";
+import { useComponentPermissionState } from "@/react/components/ComponentPermissionGuard";
 import type { Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { BlockTooltip, Tooltip } from "./ui/tooltip";
@@ -17,13 +14,11 @@ export function usePermissionCheck(
   project?: Project
 ): [boolean, string | undefined] {
   const { t } = useTranslation();
-  const ready = usePermissionDataReady(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,
   });
-  const missed = ready ? missedPermissions : permissions;
-  if (missed.length === 0) return [true, undefined];
+  if (missedPermissions.length === 0) return [true, undefined];
   return [
     false,
     project
@@ -31,7 +26,7 @@ export function usePermissionCheck(
           resource: project.name,
         })
       : t("common.missing-required-permission", {
-          permissions: missed.join(", "),
+          permissions: missedPermissions.join(", "),
         }),
   ];
 }
@@ -79,30 +74,27 @@ export function PermissionGuard({
   display = "inline",
 }: PermissionGuardProps) {
   const { t } = useTranslation();
-  const ready = usePermissionDataReady(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,
   });
-  const missed = ready ? missedPermissions : permissions;
 
-  const disabled = missed.length > 0;
+  const disabled = missedPermissions.length > 0;
 
-  const tooltip =
-    ready && disabled ? (
-      <div className="flex flex-col gap-1">
-        {project
-          ? t("common.missing-required-permission-for-resource", {
-              resource: project.name,
-            })
-          : t("common.missing-required-permission", { permissions: "" })}
-        <ul className="list-disc pl-4">
-          {missed.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      </div>
-    ) : undefined;
+  const tooltip = disabled ? (
+    <div className="flex flex-col gap-1">
+      {project
+        ? t("common.missing-required-permission-for-resource", {
+            resource: project.name,
+          })
+        : t("common.missing-required-permission", { permissions: "" })}
+      <ul className="list-disc pl-4">
+        {missedPermissions.map((p) => (
+          <li key={p}>{p}</li>
+        ))}
+      </ul>
+    </div>
+  ) : undefined;
 
   const content =
     typeof children === "function" ? children({ disabled }) : children;

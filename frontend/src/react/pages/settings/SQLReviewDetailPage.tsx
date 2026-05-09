@@ -8,7 +8,7 @@ import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
 import { ReviewCreation } from "@/react/components/sql-review/ReviewCreation";
 import { RuleTableWithFilter } from "@/react/components/sql-review/RuleTable";
 import { TabsByEngine } from "@/react/components/sql-review/TabsByEngine";
-import { Alert, AlertDescription } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -228,9 +228,11 @@ export function SQLReviewDetailPage({
     <div className="px-4 py-4">
       {/* Disabled warning */}
       {!reviewPolicy.enforce && (
-        <Alert variant="warning" className="mb-4">
-          <AlertDescription>{t("sql-review.disabled")}</AlertDescription>
-        </Alert>
+        <Alert
+          variant="warning"
+          className="mb-4"
+          description={t("sql-review.disabled")}
+        />
       )}
 
       {/* Header: title + actions */}
@@ -301,8 +303,9 @@ export function SQLReviewDetailPage({
       {/* Attached resources */}
       <div className="mt-4 flex flex-col gap-y-4">
         {reviewPolicy.resources.length === 0 && (
-          <Alert variant="warning">
-            <AlertDescription>
+          <Alert
+            variant="warning"
+            description={
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">
@@ -320,8 +323,8 @@ export function SQLReviewDetailPage({
                   {t("sql-review.attach-resource.self")}
                 </Button>
               </div>
-            </AlertDescription>
-          </Alert>
+            }
+          />
         )}
         <div className="flex flex-wrap gap-y-2 gap-x-2">
           {reviewPolicy.resources.map((resource) => (

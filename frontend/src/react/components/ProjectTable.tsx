@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Badge } from "@/react/components/ui/badge";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -142,12 +143,10 @@ export function ProjectTable({
         <TableRow>
           {showSelection ? (
             <TableHead className="w-12">
-              <input
-                type="checkbox"
-                aria-label={t("common.select-all")}
+              <Checkbox
                 checked={allSelected}
-                onChange={handleSelectAll}
-                className="rounded-xs border-control-border"
+                aria-label={t("common.select-all")}
+                onCheckedChange={handleSelectAll}
               />
             </TableHead>
           ) : showLeadingCheck ? (
@@ -210,13 +209,12 @@ export function ProjectTable({
                     className="w-12"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <input
-                      type="checkbox"
-                      aria-label={t("common.select")}
+                    <Checkbox
                       checked={isSelected}
+                      aria-label={t("common.select")}
                       disabled={isDefault}
-                      onChange={() => handleToggleRow(project.name)}
-                      className="rounded-xs border-control-border disabled:opacity-50"
+                      onCheckedChange={() => handleToggleRow(project.name)}
+                      className="disabled:opacity-50"
                     />
                   </TableCell>
                 ) : showLeadingCheck ? (

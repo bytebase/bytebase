@@ -62,8 +62,8 @@ vi.mock("@/react/components/BytebaseLogo", () => ({
   ),
 }));
 
-vi.mock("@/react/components/header/ProjectSwitchPopover", () => ({
-  ProjectSwitchPopover: () => <div data-testid="project-switch-popover" />,
+vi.mock("@/react/components/header/HeaderBreadcrumb", () => ({
+  HeaderBreadcrumb: () => <div data-testid="header-breadcrumb" />,
 }));
 
 vi.mock("@/react/components/header/ProfileMenuTrigger", () => ({
@@ -83,9 +83,12 @@ vi.mock("@/react/router", () => ({
   SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));
 
-vi.mock("@/utils/storage-keys", () => ({
-  STORAGE_KEY_MY_ISSUES_TAB: "bb.components.MY_ISSUES.id",
-}));
+vi.mock("@/utils/storage-keys", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as Record<string, unknown>),
+  };
+});
 
 vi.mock("@/react/plugins/agent/store/agent", () => ({
   useAgentStore: {
@@ -155,7 +158,7 @@ describe("DashboardHeader", () => {
       container.querySelector('[data-testid="bytebase-logo"]')
     ).not.toBeNull();
     expect(
-      container.querySelector('[data-testid="project-switch-popover"]')
+      container.querySelector('[data-testid="header-breadcrumb"]')
     ).not.toBeNull();
     expect(
       container.querySelector('[data-testid="profile-menu-trigger"]')

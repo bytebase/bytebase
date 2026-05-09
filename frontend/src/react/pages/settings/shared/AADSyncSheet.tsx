@@ -3,7 +3,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
-import { Alert, AlertDescription } from "@/react/components/ui/alert";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import {
@@ -124,9 +124,7 @@ export function AADSyncSheet({
 
             {/* Missing external URL warning */}
             {!externalUrl && (
-              <Alert variant="warning">
-                <AlertDescription>{t("banner.external-url")}</AlertDescription>
-              </Alert>
+              <Alert variant="warning" description={t("banner.external-url")} />
             )}
 
             {/* SCIM Endpoint URL */}

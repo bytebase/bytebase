@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -961,18 +962,17 @@ export function SheetTree({
         >
           {/* Multi-select checkbox */}
           {multiSelectMode && (
-            <input
-              type="checkbox"
-              className="size-3.5 shrink-0 cursor-pointer"
+            <Checkbox
               checked={isChecked}
-              onChange={(e) => {
-                e.stopPropagation();
+              className="shrink-0 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+              onCheckedChange={(checked) => {
                 // Checking a folder recursively includes all descendants so
                 // users don't have to tick each child individually.
                 const affected = folderNode.worksheet
                   ? [folderNode]
                   : revealNodes(folderNode, (n) => n);
-                if (e.target.checked) {
+                if (checked) {
                   const existing = new Set(checkedNodes.map((n) => n.key));
                   onCheckedNodesChange?.([
                     ...checkedNodes,
@@ -985,7 +985,6 @@ export function SheetTree({
                   );
                 }
               }}
-              onClick={(e) => e.stopPropagation()}
             />
           )}
 

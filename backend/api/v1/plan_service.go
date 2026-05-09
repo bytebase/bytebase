@@ -359,7 +359,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				// which will trigger approval finding on completion
 				// DATABASE_EXPORT: Re-run approval finding synchronously (no plan checks for export data)
 				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.bus, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 						slog.Error("failed to find approval template after plan update",
 							slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 							slog.String("issue_title", updatedIssue.Title),
@@ -551,6 +551,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	var releaseString string
 	var instanceIDs []string
 	var databaseGroups []string
+	seenDatabaseGroups := map[string]bool{}
 	var databaseNames []string
 	var databaseGroup *v1pb.DatabaseGroup
 
@@ -583,7 +584,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 					databaseGroupTarget++
-					databaseGroups = append(databaseGroups, target)
+					if !seenDatabaseGroups[target] {
+						databaseGroups = append(databaseGroups, target)
+						seenDatabaseGroups[target] = true
+					}
 				} else {
 					return nil, errors.Errorf("invalid target %v", target)
 				}
@@ -609,7 +613,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
 					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-					databaseGroups = append(databaseGroups, target)
+					if !seenDatabaseGroups[target] {
+						databaseGroups = append(databaseGroups, target)
+						seenDatabaseGroups[target] = true
+					}
 				} else {
 					return nil, errors.Errorf("invalid target %v", target)
 				}

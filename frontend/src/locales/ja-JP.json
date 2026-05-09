@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "フォールバックルール",
-      "fallback-rules-hint": "フォールバックルールは、他のルールが一致しない場合にのみ評価されます。",
+      "fallback-rules-hint": "フォールバックルールは、ソース固有のルールが一致しない場合にのみ、上から順に評価されます。",
       "node": {
         "add": "ノードの追加",
         "approver": "承認者",
@@ -527,6 +527,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "ルールは順番に評価されます。ソース固有のルールはフォールバックルールより先に実行されます。",
+        "multi-target": "複数ターゲットのプランでは、いずれかのターゲットがソース固有ルールの条件に一致すると、そのルールはプラン全体に一致し、最初に一致したルールがプラン全体の承認フローを決定します。",
+        "priority": "リスクが高い変更のルールを、リスクが低い変更のルールより上に配置してください。同程度のリスクでは、より厳格または具体的なルールを、より広いルールより上に配置してください。"
+      },
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。",
       "self": "カスタム承認ルール"
     },
@@ -789,10 +794,7 @@
     "self": "エクスポートセンター"
   },
   "export-data": {
-    "error": {
-      "export-rows-must-gt-zero": "エクスポート行の数は 0 より大きくなければなりません",
-      "export-rows-required": "エクスポート行数を指定する必要があります"
-    },
+    "error": {},
     "export-format": "エクスポート形式",
     "export-rows": "エクスポート行数",
     "password-info": "エクスポートされたファイルを暗号化するためのパスワードを入力します",
@@ -1179,7 +1181,6 @@
     "role-grant": {
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
-      "column-scope-select-disabled": "列単位の選択では手動選択を使用できません。",
       "details": "リクエストの詳細",
       "expired-at": "有効期限",
       "manually-select": "手動選択",
@@ -1406,8 +1407,7 @@
         "self": "AI アシスタントが設定されていません。"
       },
       "send": "送信",
-      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。",
-      "text2sql": "Text2SQL"
+      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。"
     }
   },
   "policy": {
@@ -1460,7 +1460,6 @@
       "self": "マスキング免除"
     },
     "members": {
-      "allow-ddl": "選択した環境で DDL/DML ステートメントの実行を許可する。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
       "never-expires": "有効期限が切れることはありません",
       "workspace-level-roles": "ワークスペースレベルのロール"
@@ -2414,7 +2413,6 @@
     "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
     "copy-all-column-names": "すべての列名をコピーします",
     "copy-name": "名前をコピーする",
-    "copy-selected-results": "選択したデータを{action}または{button}でコピーします",
     "copy-url": "URLをコピー",
     "download-as-file": "{file} 形式でダウンロード",
     "duration-day": "{days} day",
@@ -2771,6 +2769,7 @@
       "command-execute": "コマンド実行",
       "compute-diff": "差分計算",
       "database-sync": "データベース同期",
+      "ghost-migration": "gh-ost Migration",
       "prior-backup": "事前のバックアップ",
       "release-file-execute": "リリースファイル",
       "retry": "リトライ",

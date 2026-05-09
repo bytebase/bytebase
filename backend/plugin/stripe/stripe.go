@@ -8,15 +8,15 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	stripego "github.com/stripe/stripe-go/v82"
-	billingportalsession "github.com/stripe/stripe-go/v82/billingportal/session"
-	"github.com/stripe/stripe-go/v82/charge"
-	checkoutsession "github.com/stripe/stripe-go/v82/checkout/session"
-	"github.com/stripe/stripe-go/v82/invoice"
-	"github.com/stripe/stripe-go/v82/price"
-	"github.com/stripe/stripe-go/v82/promotioncode"
-	"github.com/stripe/stripe-go/v82/refund"
-	stripesubscription "github.com/stripe/stripe-go/v82/subscription"
+	stripego "github.com/stripe/stripe-go/v85"
+	billingportalsession "github.com/stripe/stripe-go/v85/billingportal/session"
+	"github.com/stripe/stripe-go/v85/charge"
+	checkoutsession "github.com/stripe/stripe-go/v85/checkout/session"
+	"github.com/stripe/stripe-go/v85/invoice"
+	"github.com/stripe/stripe-go/v85/price"
+	"github.com/stripe/stripe-go/v85/promotioncode"
+	"github.com/stripe/stripe-go/v85/refund"
+	stripesubscription "github.com/stripe/stripe-go/v85/subscription"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/pricing"
@@ -404,10 +404,10 @@ func GetPromotionDiscount(code string) *v1pb.PurchaseDiscount {
 	})
 	for iter.Next() {
 		promo := iter.PromotionCode()
-		if promo.Coupon == nil {
+		if promo.Promotion == nil || promo.Promotion.Coupon == nil {
 			continue
 		}
-		c := promo.Coupon
+		c := promo.Promotion.Coupon
 		if c.PercentOff > 0 {
 			return &v1pb.PurchaseDiscount{
 				Type:  v1pb.PurchaseDiscount_PERCENTAGE_OFF,

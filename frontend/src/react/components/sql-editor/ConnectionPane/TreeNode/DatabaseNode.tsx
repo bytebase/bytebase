@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { RequestQueryButton } from "@/react/components/sql-editor/RequestQueryButton";
+import { Checkbox } from "@/react/components/ui/checkbox";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -53,20 +54,29 @@ export function DatabaseNode({
   const canQuery = isDatabaseV1Queryable(database);
 
   const checkbox = supportBatchMode ? (
-    <Tooltip content={checkTooltip ?? ""}>
-      <input
-        type="checkbox"
-        className="mr-2 size-3.5"
-        checked={!!checked}
-        disabled={checkDisabled}
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) => onCheckedChange?.(e.target.checked)}
-      />
-    </Tooltip>
+    // The row activates on `mouseup` (Safari workaround). Stop the
+    // mouse events here so clicking the checkbox doesn't first connect
+    // to the database (which closes the panel and prevents the toggle
+    // click from registering) — the previous `onClick` stopPropagation
+    // alone wasn't enough because mouseup bubbles before click fires.
+    <div
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+    >
+      <Tooltip content={checkTooltip ?? ""}>
+        <Checkbox
+          checked={!!checked}
+          className="mr-2"
+          disabled={checkDisabled}
+          onClick={(e) => e.stopPropagation()}
+          onCheckedChange={(checked) => onCheckedChange?.(checked)}
+        />
+      </Tooltip>
+    </div>
   ) : null;
 
   return (
-    <div className="flex items-center max-w-full overflow-hidden gap-x-1">
+    <div className="flex items-center w-full max-w-full overflow-hidden gap-x-1">
       {checkbox}
 
       <div
@@ -86,7 +96,15 @@ export function DatabaseNode({
       </div>
 
       {!canQuery && (
-        <div className="ml-auto">
+        <div
+          className="ml-auto shrink-0"
+          // The row activates on `mouseup` (Safari workaround for click
+          // events split across inner elements). Stop propagation here so
+          // clicking the button doesn't connect to the database first
+          // and unmount the button before its `onClick` can open the drawer.
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+        >
           <RequestQueryButton
             size="sm"
             text
