@@ -1,9 +1,38 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useComponentPermissionState } from "@/react/components/ComponentPermissionGuard";
+import { useAppStore } from "@/react/stores/app";
 import type { Permission } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { BlockTooltip, Tooltip } from "./ui/tooltip";
+
+/**
+ * Side-effect-only hook: kick off the workspace + (optional) project
+ * IAM policy fetches so the Zustand caches read by
+ * `useComponentPermissionState` get populated.
+ *
+ * Why a separate hook (vs. just inlining the effect): keeps the
+ * trigger-only behavior callable in isolation without dragging in the
+ * gate-on-readiness semantics of `usePermissionDataReady`. Route shells
+ * still use the gating variant to block their content; inline guards
+ * (`PermissionGuard`) only need the cache populated, not blocked
+ * rendering — gating their disabled state on a "ready" flag flapped
+ * `disabled` between true and false on parent re-renders and was the
+ * root of the stuck-disabled-button bug we previously hit.
+ */
+function useTriggerPermissionLoad(project?: Project) {
+  const loadWorkspacePermissionState = useAppStore(
+    (state) => state.loadWorkspacePermissionState
+  );
+  const loadProjectIamPolicy = useAppStore(
+    (state) => state.loadProjectIamPolicy
+  );
+  const projectName = project?.name;
+  useEffect(() => {
+    void loadWorkspacePermissionState();
+    if (projectName) void loadProjectIamPolicy(projectName);
+  }, [loadWorkspacePermissionState, loadProjectIamPolicy, projectName]);
+}
 
 /**
  * usePermissionCheck returns whether the user has all the required permissions
@@ -14,6 +43,7 @@ export function usePermissionCheck(
   project?: Project
 ): [boolean, string | undefined] {
   const { t } = useTranslation();
+  useTriggerPermissionLoad(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,
@@ -74,6 +104,7 @@ export function PermissionGuard({
   display = "inline",
 }: PermissionGuardProps) {
   const { t } = useTranslation();
+  useTriggerPermissionLoad(project);
   const { missedPermissions } = useComponentPermissionState({
     permissions,
     project,

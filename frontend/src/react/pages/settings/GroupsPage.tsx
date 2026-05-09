@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
+import { UserCell } from "@/react/components/UserCell";
 import { UserSelect } from "@/react/components/UserSelect";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
@@ -400,19 +401,25 @@ function GroupRow({
           return (
             <TableRow key={user.name} className={stripeBg}>
               <TableCell className="py-2 pl-14">
-                <div className="flex items-center gap-x-2">
-                  <span>{user.title}</span>
-                  <span className="textinfolabel text-xs">{user.email}</span>
-                  {isOwner ? (
-                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                      {t("settings.members.groups.form.role.owner")}
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="text-xs px-1.5 py-0">
-                      {t("settings.members.groups.form.role.member")}
-                    </Badge>
-                  )}
-                </div>
+                <UserCell
+                  title={user.title}
+                  subtitle={user.email}
+                  size="sm"
+                  badges={
+                    isOwner ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-xs px-1.5 py-0"
+                      >
+                        {t("settings.members.groups.form.role.owner")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="text-xs px-1.5 py-0">
+                        {t("settings.members.groups.form.role.member")}
+                      </Badge>
+                    )
+                  }
+                />
               </TableCell>
               <TableCell />
             </TableRow>
