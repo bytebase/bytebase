@@ -6,13 +6,43 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
-import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
+import {
+  hasFeature,
+  useProjectV1Store,
+  useRoleStore,
+  useSQLEditorStore,
+} from "@/store";
 import type { DatabaseResource, Permission } from "@/types";
 import { PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
 import { RoleGrantPanel } from "./RoleGrantPanel";
+
+const SQL_SELECT_PERMISSION = "bb.sql.select";
+
+const getDefaultQueryRole = (
+  roles: readonly Pick<Role, "name" | "permissions">[]
+) => {
+  const candidates = roles
+    .filter((role) => role.permissions.includes(SQL_SELECT_PERMISSION))
+    .toSorted((a, b) => {
+      const permissionCountDelta = a.permissions.length - b.permissions.length;
+      if (permissionCountDelta !== 0) {
+        return permissionCountDelta;
+      }
+      if (a.name === PresetRoleType.SQL_EDITOR_READ_USER) {
+        return -1;
+      }
+      if (b.name === PresetRoleType.SQL_EDITOR_READ_USER) {
+        return 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_READ_USER;
+};
 
 interface Props {
   readonly size?: "sm" | "default";
@@ -34,9 +64,13 @@ export function RequestQueryButton({
 
   const projectStore = useProjectV1Store();
   const editorStore = useSQLEditorStore();
+  const roleStore = useRoleStore();
 
   const projectName = useVueState(() => editorStore.project);
   const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const defaultQueryRole = useVueState(() =>
+    getDefaultQueryRole(roleStore.roleList)
+  );
 
   const useJIT = useMemo(
     () =>
@@ -110,7 +144,7 @@ export function RequestQueryButton({
         <RoleGrantPanel
           projectName={projectName}
           databaseResources={missingResources}
-          role={PresetRoleType.SQL_EDITOR_USER}
+          role={defaultQueryRole}
           requiredPermissions={permissionDeniedDetail.requiredPermissions}
           onClose={() => setShowPanel(false)}
         />

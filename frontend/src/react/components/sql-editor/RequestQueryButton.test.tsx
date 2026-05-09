@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useProjectV1Store: vi.fn(),
+  useRoleStore: vi.fn(),
   useSQLEditorStore: vi.fn(),
   hasFeature: vi.fn(() => true),
   parseStringToResource: vi.fn((s: string) => ({
@@ -29,6 +30,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
+  useRoleStore: mocks.useRoleStore,
   useSQLEditorStore: mocks.useSQLEditorStore,
   hasFeature: mocks.hasFeature,
 }));
@@ -38,7 +40,10 @@ vi.mock("@/components/RoleGrantPanel/DatabaseResourceForm/common", () => ({
 }));
 
 vi.mock("@/types", () => ({
-  PresetRoleType: { SQL_EDITOR_USER: "roles/sqlEditorUser" },
+  PresetRoleType: {
+    SQL_EDITOR_READ_USER: "roles/sqlEditorReadUser",
+    SQL_EDITOR_USER: "roles/sqlEditorUser",
+  },
 }));
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
@@ -79,8 +84,14 @@ vi.mock("@/react/components/ui/button", () => ({
 }));
 
 vi.mock("./RoleGrantPanel", () => ({
-  RoleGrantPanel: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="role-grant-panel">
+  RoleGrantPanel: ({
+    onClose,
+    role,
+  }: {
+    onClose: () => void;
+    role: string;
+  }) => (
+    <div data-testid="role-grant-panel" data-role={role}>
       <button data-close-btn onClick={onClose}>
         Close
       </button>
@@ -145,6 +156,18 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
       allowJustInTimeAccess: allowJIT,
       allowRequestRole,
     })),
+  });
+  mocks.useRoleStore.mockReturnValue({
+    roleList: [
+      {
+        name: "roles/sqlEditorUser",
+        permissions: ["bb.sql.select", "bb.sql.explain"],
+      },
+      {
+        name: "roles/sqlEditorReadUser",
+        permissions: ["bb.sql.select"],
+      },
+    ],
   });
   mocks.useSQLEditorStore.mockReturnValue({ project: "projects/proj1" });
   mocks.hasFeature.mockReturnValue(true);
@@ -230,6 +253,31 @@ describe("RequestQueryButton", () => {
     expect(
       container.querySelector("[data-testid='role-grant-panel']")
     ).not.toBeNull();
+    unmount();
+  });
+
+  test("non-JIT role request defaults to least-permission SQL select role", async () => {
+    setupDefaultMocks(false, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        text={false}
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.select", "bb.issues.create"],
+        })}
+      />
+    );
+    render();
+
+    const btn = container.querySelector("button") as HTMLButtonElement;
+    await act(async () => {
+      btn.click();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='role-grant-panel']")
+        ?.getAttribute("data-role")
+    ).toBe("roles/sqlEditorReadUser");
     unmount();
   });
 
