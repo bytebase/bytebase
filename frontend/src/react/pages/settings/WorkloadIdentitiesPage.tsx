@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateWorkloadIdentitySheet } from "@/react/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
-import { UserAvatar } from "@/react/components/UserAvatar";
+import { UserCell } from "@/react/components/UserCell";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -162,23 +162,15 @@ function WorkloadIdentityTable({
                 >
                   {/* Account column */}
                   <TableCell>
-                    <div className="flex items-center gap-x-3">
-                      <UserAvatar title={user.title || user.email} />
-                      <div className="flex flex-col">
-                        <span
-                          className={
-                            isDeleted
-                              ? "line-through text-control-light font-medium"
-                              : "font-medium text-main"
-                          }
-                        >
-                          {user.title || user.email}
-                        </span>
-                        <span className="textinfolabel text-xs">
-                          {user.email}
-                        </span>
-                      </div>
-                    </div>
+                    <UserCell
+                      title={user.title}
+                      subtitle={user.email}
+                      nameClassName={
+                        isDeleted
+                          ? "line-through !text-control-light"
+                          : undefined
+                      }
+                    />
                   </TableCell>
 
                   {/* Operations column — destructive/secondary actions only.
