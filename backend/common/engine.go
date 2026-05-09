@@ -241,6 +241,7 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 	switch e {
 	case
 		storepb.Engine_MYSQL,
+		storepb.Engine_MARIADB,
 		storepb.Engine_TIDB,
 		storepb.Engine_MSSQL,
 		storepb.Engine_ORACLE,
@@ -257,7 +258,6 @@ func EngineSupportPriorBackup(e storepb.Engine) bool {
 		storepb.Engine_SPANNER,
 		storepb.Engine_BIGQUERY,
 		storepb.Engine_REDSHIFT,
-		storepb.Engine_MARIADB,
 		storepb.Engine_OCEANBASE,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
