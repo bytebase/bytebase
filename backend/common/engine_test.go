@@ -11,3 +11,7 @@ import (
 func TestEngineSupportPriorBackupMariaDB(t *testing.T) {
 	require.True(t, EngineSupportPriorBackup(storepb.Engine_MARIADB))
 }
+
+func TestBackupDatabaseNameOfEngineMariaDB(t *testing.T) {
+	require.Equal(t, "bbdataarchive", BackupDatabaseNameOfEngine(storepb.Engine_MARIADB))
+}
