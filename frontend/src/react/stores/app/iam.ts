@@ -88,13 +88,19 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     const pending = get().projectPolicyRequests[project];
     if (pending) return pending;
 
-    await get().loadWorkspacePermissionState();
-
-    const request = projectServiceClientConnect
-      .getIamPolicy(
-        createProto(GetIamPolicyRequestSchema, { resource: project })
-      )
-      .then((policy) => {
+    // Wrap the whole chain (workspace prerequisite + getIamPolicy +
+    // cache write) in a single promise so the in-flight marker can be
+    // set synchronously, before any await yields control to the event
+    // loop. Otherwise concurrent callers that pass the cache/marker
+    // check above and `await loadWorkspacePermissionState()` would each
+    // issue their own `getIamPolicy` RPC after the await, since the
+    // previous version only set the marker AFTER the await returned.
+    const request = (async () => {
+      await get().loadWorkspacePermissionState();
+      try {
+        const policy = await projectServiceClientConnect.getIamPolicy(
+          createProto(GetIamPolicyRequestSchema, { resource: project })
+        );
         set((state) => {
           const { [project]: _, ...projectPolicyRequests } =
             state.projectPolicyRequests;
@@ -107,15 +113,15 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
           };
         });
         return policy;
-      })
-      .catch(() => {
+      } catch {
         set((state) => {
           const { [project]: _, ...projectPolicyRequests } =
             state.projectPolicyRequests;
           return { projectPolicyRequests };
         });
         return undefined;
-      });
+      }
+    })();
     set((state) => ({
       projectPolicyRequests: {
         ...state.projectPolicyRequests,
