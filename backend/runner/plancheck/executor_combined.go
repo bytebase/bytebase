@@ -49,19 +49,16 @@ func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *CheckTarget
 			})
 			continue
 		}
-		tagPlanCheckResults(results, target, checkType)
+		// Tag results with target info
+		for _, r := range results {
+			r.Target = target.Target
+			r.Type = checkType
+			r.SheetSha256 = target.SheetSha256
+		}
 		allResults = append(allResults, results...)
 	}
 
 	return allResults, nil
-}
-
-func tagPlanCheckResults(results []*storepb.PlanCheckRunResult_Result, target *CheckTarget, checkType storepb.PlanCheckType) {
-	for _, r := range results {
-		r.Target = target.Target
-		r.Type = checkType
-		r.SheetSha256 = target.SheetSha256
-	}
 }
 
 func (e *CombinedExecutor) runCheck(ctx context.Context, target *CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
