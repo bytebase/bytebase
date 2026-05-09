@@ -31,6 +31,13 @@ type Runner struct {
 	licenseService *enterprise.LicenseService
 }
 
+type legacyStatementSummaryRerunKey struct {
+	ProjectID string
+	PlanUID   int64
+}
+
+var legacyStatementSummaryRerunByPlan sync.Map
+
 // NewRunner creates a new runner.
 func NewRunner(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
 	return &Runner{
@@ -580,6 +587,30 @@ func hasLegacyStatementSummaryResult(planCheckRun *store.PlanCheckRunMessage, ta
 	return false
 }
 
+func isPlanCheckRunPendingApprovalEvaluation(planCheckRun *store.PlanCheckRunMessage) bool {
+	if planCheckRun == nil {
+		return false
+	}
+	return planCheckRun.Status == store.PlanCheckRunStatusAvailable || planCheckRun.Status == store.PlanCheckRunStatusRunning
+}
+
+func shouldRerunLegacyStatementSummaryResult(plan *store.PlanMessage, planCheckRun *store.PlanCheckRunMessage, targets []specTarget) (bool, error) {
+	key := legacyStatementSummaryRerunKey{
+		ProjectID: plan.ProjectID,
+		PlanUID:   plan.UID,
+	}
+	if hasLegacyStatementSummaryResult(planCheckRun, targets) {
+		if _, loaded := legacyStatementSummaryRerunByPlan.LoadOrStore(key, struct{}{}); loaded {
+			return false, errors.Errorf("legacy statement summary result remained after approval plan-check rerun for plan %d", plan.UID)
+		}
+		return true, nil
+	}
+	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusDone {
+		legacyStatementSummaryRerunByPlan.Delete(key)
+	}
+	return false, nil
+}
+
 func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus.Bus, plan *store.PlanMessage) error {
 	if b == nil {
 		return errors.New("approval plan-check rerun requires bus")
@@ -591,7 +622,10 @@ func rerunPlanChecksForApproval(ctx context.Context, stores *store.Store, b *bus
 	}); err != nil {
 		return errors.Wrap(err, "failed to create plan check run")
 	}
-	b.PlanCheckTickleChan <- 0
+	select {
+	case b.PlanCheckTickleChan <- 0:
+	default:
+	}
 	return nil
 }
 
@@ -612,8 +646,8 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
-	// Wait for plan check to complete if running
-	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusRunning {
+	// Wait for plan check to complete if available or running.
+	if isPlanCheckRunPendingApprovalEvaluation(planCheckRun) {
 		return nil, false, nil // Not ready yet, retry later
 	}
 
@@ -623,8 +657,16 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		return nil, false, errors.Wrap(err, "failed to unfold spec targets")
 	}
 
-	if hasLegacyStatementSummaryResult(planCheckRun, targets) {
+	shouldRerun, err := shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	if err != nil {
+		return nil, false, err
+	}
+	if shouldRerun {
 		if err := rerunPlanChecksForApproval(ctx, stores, b, plan); err != nil {
+			legacyStatementSummaryRerunByPlan.Delete(legacyStatementSummaryRerunKey{
+				ProjectID: plan.ProjectID,
+				PlanUID:   plan.UID,
+			})
 			return nil, false, err
 		}
 		return nil, false, nil

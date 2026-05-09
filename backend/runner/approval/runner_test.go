@@ -216,6 +216,187 @@ func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {
 }
 
 func TestHasLegacyStatementSummaryResultForSheetTarget(t *testing.T) {
+	sheetTargets := []specTarget{
+		{
+			database: &store.DatabaseMessage{
+				InstanceID:   "prod",
+				DatabaseName: "app",
+			},
+			sheetSha256: "sheet-a",
+		},
+	}
+	tests := []struct {
+		name         string
+		planCheckRun *store.PlanCheckRunMessage
+		targets      []specTarget
+		want         bool
+	}{
+		{
+			name: "legacy summary result for sheet target",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "instances/prod/databases/app",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+			want:    true,
+		},
+		{
+			name: "sheet-tagged result is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target:      "instances/prod/databases/app",
+							Type:        storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+							SheetSha256: "sheet-a",
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+		},
+		{
+			name: "non-sheet target is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "instances/prod/databases/app",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+						},
+					},
+				},
+			},
+			targets: []specTarget{
+				{
+					database: &store.DatabaseMessage{
+						InstanceID:   "prod",
+						DatabaseName: "app",
+					},
+				},
+			},
+		},
+		{
+			name: "non-summary result is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "instances/prod/databases/app",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE,
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+		},
+		{
+			name: "invalid target is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "bad-target",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+		},
+		{
+			name: "non-matching target is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusDone,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "instances/prod/databases/other",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+		},
+		{
+			name: "non-DONE status is not legacy",
+			planCheckRun: &store.PlanCheckRunMessage{
+				Status: store.PlanCheckRunStatusAvailable,
+				Result: &storepb.PlanCheckRunResult{
+					Results: []*storepb.PlanCheckRunResult_Result{
+						{
+							Target: "instances/prod/databases/app",
+							Type:   storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+						},
+					},
+				},
+			},
+			targets: sheetTargets,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, hasLegacyStatementSummaryResult(tt.planCheckRun, tt.targets))
+		})
+	}
+}
+
+func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
+	tests := []struct {
+		name         string
+		planCheckRun *store.PlanCheckRunMessage
+		want         bool
+	}{
+		{
+			name:         "nil plan check run is ready to evaluate",
+			planCheckRun: nil,
+		},
+		{
+			name:         "AVAILABLE is not ready",
+			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusAvailable},
+			want:         true,
+		},
+		{
+			name:         "RUNNING is not ready",
+			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusRunning},
+			want:         true,
+		},
+		{
+			name:         "DONE is ready",
+			planCheckRun: &store.PlanCheckRunMessage{Status: store.PlanCheckRunStatusDone},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isPlanCheckRunPendingApprovalEvaluation(tt.planCheckRun))
+		})
+	}
+}
+
+func TestShouldRerunLegacyStatementSummaryResultOnce(t *testing.T) {
+	legacyStatementSummaryRerunByPlan.Clear()
+	t.Cleanup(func() {
+		legacyStatementSummaryRerunByPlan.Clear()
+	})
+
+	plan := &store.PlanMessage{
+		ProjectID: "project-a",
+		UID:       1001,
+	}
 	targets := []specTarget{
 		{
 			database: &store.DatabaseMessage{
@@ -237,8 +418,21 @@ func TestHasLegacyStatementSummaryResultForSheetTarget(t *testing.T) {
 		},
 	}
 
-	require.True(t, hasLegacyStatementSummaryResult(planCheckRun, targets))
+	shouldRerun, err := shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	require.NoError(t, err)
+	require.True(t, shouldRerun)
+
+	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	require.Error(t, err)
+	require.False(t, shouldRerun)
 
 	planCheckRun.Result.Results[0].SheetSha256 = "sheet-a"
-	require.False(t, hasLegacyStatementSummaryResult(planCheckRun, targets))
+	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	require.NoError(t, err)
+	require.False(t, shouldRerun)
+
+	planCheckRun.Result.Results[0].SheetSha256 = ""
+	shouldRerun, err = shouldRerunLegacyStatementSummaryResult(plan, planCheckRun, targets)
+	require.NoError(t, err)
+	require.True(t, shouldRerun)
 }
