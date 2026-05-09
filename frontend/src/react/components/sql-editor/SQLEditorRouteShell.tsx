@@ -51,6 +51,19 @@ import {
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
+// Route-name set for the unsaved-changes leave guard. Vue Router's
+// `beforeEach` is global, so this set scopes the prompt to navigations
+// that actually leave the SQL Editor — internal SQL Editor route sync
+// (`navigate.replace(...)` between worksheet/database/instance modules)
+// must not trigger it.
+const SQL_EDITOR_MODULES = new Set<string>([
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_PROJECT_MODULE,
+  SQL_EDITOR_INSTANCE_MODULE,
+  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_WORKSHEET_MODULE,
+]);
+
 const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
   "SCHEMA",
   "WORKSHEET",
@@ -432,13 +445,24 @@ export function SQLEditorRouteShell() {
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handler);
-    const removeGuard = router.beforeEach((_, _from, next) => {
+    // `router.beforeEach` is a global hook — it fires on every Vue Router
+    // navigation while the SQL Editor shell is mounted, including the
+    // internal `navigate.replace(...)` calls used to sync the URL with
+    // the current connection. Without scoping, every internal route
+    // sync prompts the user when any tab is dirty, which is both an
+    // annoying loop and a regression vs. the prior component-level leave
+    // guard. Only prompt when the destination route is OUTSIDE the SQL
+    // Editor module.
+    const removeGuard = router.beforeEach((to, _from, next) => {
+      const stayingInSqlEditor = SQL_EDITOR_MODULES.has(to.name as string);
+      if (stayingInSqlEditor) {
+        next();
+        return;
+      }
       const dirty = tabStore.openTabList.find((tab) => tab.status !== "CLEAN");
-      if (dirty) {
-        if (!window.confirm(dirtyMsg())) {
-          next(false);
-          return;
-        }
+      if (dirty && !window.confirm(dirtyMsg())) {
+        next(false);
+        return;
       }
       next();
     });
