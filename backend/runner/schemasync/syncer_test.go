@@ -49,3 +49,12 @@ func TestGetOrDefaultSyncIntervalUsesEffectiveActivation(t *testing.T) {
 	instance.Metadata.Activation = true
 	require.Equal(t, customInterval, s.getOrDefaultSyncInterval(ctx, instance))
 }
+
+func TestEngineUsesBackupDatabaseLookupForPriorBackup(t *testing.T) {
+	require.True(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_MYSQL))
+	require.True(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_MARIADB))
+	require.True(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_TIDB))
+	require.True(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_MSSQL))
+	require.False(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_POSTGRES))
+	require.False(t, engineUsesBackupDatabaseLookupForPriorBackup(storepb.Engine_ORACLE))
+}

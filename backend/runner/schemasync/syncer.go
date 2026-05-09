@@ -489,17 +489,6 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 				return true
 			}
 		}
-	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
-		dbName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
-		backupDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &dbName,
-		})
-		if err != nil {
-			slog.Debug("Failed to get backup database", "err", err)
-			return false
-		}
-		return backupDB != nil
 	case storepb.Engine_ORACLE:
 		dbName := common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
 		backupDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
@@ -512,11 +501,32 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		}
 		return backupDB != nil
 	default:
+		if engineUsesBackupDatabaseLookupForPriorBackup(instance.Metadata.GetEngine()) {
+			dbName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
+			backupDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &dbName,
+			})
+			if err != nil {
+				slog.Debug("Failed to get backup database", "err", err)
+				return false
+			}
+			return backupDB != nil
+		}
 		// Unsupported database engine for backup
 		slog.Debug("Unsupported database engine for backup", "engine", instance.Metadata.GetEngine())
 		return false
 	}
 	return false
+}
+
+func engineUsesBackupDatabaseLookupForPriorBackup(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_MSSQL, storepb.Engine_TIDB:
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Syncer) getOrDefaultSyncInterval(ctx context.Context, instance *store.InstanceMessage) time.Duration {
