@@ -159,6 +159,17 @@ describe("SQL Review YAML Templates Validation", () => {
         ).toBe("string");
       });
     });
+
+    test("schema exposes built-in prior backup check for MariaDB", () => {
+      expect(
+        schemaRules.some(
+          (rule) =>
+            rule.engine === "MARIADB" &&
+            rule.type === "BUILTIN_PRIOR_BACKUP_CHECK" &&
+            rule.category === "BUILTIN"
+        )
+      ).toBe(true);
+    });
   });
 
   describe("Cross-template consistency", () => {

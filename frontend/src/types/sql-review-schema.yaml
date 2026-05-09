@@ -2051,6 +2051,9 @@
 - type: BUILTIN_PRIOR_BACKUP_CHECK
   category: BUILTIN
   engine: ORACLE
+- type: BUILTIN_PRIOR_BACKUP_CHECK
+  category: BUILTIN
+  engine: MARIADB
 - type: BUILTIN_WALK_THROUGH_CHECK
   category: BUILTIN
   engine: MYSQL
