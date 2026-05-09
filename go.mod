@@ -63,7 +63,6 @@ require (
 	github.com/jackc/pgtype v1.14.4
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/labstack/echo-contrib/v5 v5.0.1
-	github.com/lestrrat-go/jwx/v3 v3.1.1
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-sqlite3 v1.14.44
@@ -204,8 +203,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/lestrrat-go/httprc/v3 v3.0.5 // indirect
-	github.com/lestrrat-go/option/v2 v2.0.0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
@@ -247,7 +244,6 @@ require (
 	github.com/twpayne/go-kml v1.5.2 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	github.com/valyala/fastjson v1.6.10 // indirect
 	github.com/vcaesar/cedar v0.30.0 // indirect
 	github.com/xuri/efp v0.0.1 // indirect
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9 // indirect
@@ -305,7 +301,6 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.4.3
 	github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
@@ -329,8 +324,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/labstack/echo/v5 v5.1.1
-	github.com/lestrrat-go/blackmagic v1.0.4 // indirect
-	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/opentracing/basictracer-go v1.1.0 // indirect
