@@ -387,12 +387,7 @@ func TestIsPlanCheckRunPendingApprovalEvaluation(t *testing.T) {
 	}
 }
 
-func TestShouldRerunLegacyStatementSummaryResultUsesIssuePayloadFlag(t *testing.T) {
-	issue := &store.IssueMessage{
-		Payload: &storepb.Issue{
-			Approval: &storepb.IssuePayloadApproval{},
-		},
-	}
+func TestShouldRerunLegacyStatementSummaryResult(t *testing.T) {
 	targets := []specTarget{
 		{
 			database: &store.DatabaseMessage{
@@ -414,27 +409,11 @@ func TestShouldRerunLegacyStatementSummaryResultUsesIssuePayloadFlag(t *testing.
 		},
 	}
 
-	shouldRerun, shouldClear, err := shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
-	require.NoError(t, err)
-	require.True(t, shouldRerun)
-	require.False(t, shouldClear)
-	issue.Payload.Approval.PlanCheckSheetIdentityRerun = true
-
-	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
-	require.Error(t, err)
-	require.False(t, shouldRerun)
-	require.False(t, shouldClear)
+	require.True(t, shouldRerunLegacyStatementSummaryResult(planCheckRun, targets))
 
 	planCheckRun.Result.Results[0].SheetSha256 = "sheet-a"
-	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
-	require.NoError(t, err)
-	require.False(t, shouldRerun)
-	require.True(t, shouldClear)
-	issue.Payload.Approval.PlanCheckSheetIdentityRerun = false
+	require.False(t, shouldRerunLegacyStatementSummaryResult(planCheckRun, targets))
 
 	planCheckRun.Result.Results[0].SheetSha256 = ""
-	shouldRerun, shouldClear, err = shouldRerunLegacyStatementSummaryResult(issue, planCheckRun, targets)
-	require.NoError(t, err)
-	require.True(t, shouldRerun)
-	require.False(t, shouldClear)
+	require.True(t, shouldRerunLegacyStatementSummaryResult(planCheckRun, targets))
 }

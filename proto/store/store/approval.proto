@@ -34,9 +34,6 @@ message IssuePayloadApproval {
   // Whether the system has finished finding a matching approval template.
   // False means the backend is still searching for matching templates.
   bool approval_finding_done = 3;
-
-  // Whether approval generation has already requested a plan-check rerun to backfill sheet identity.
-  bool plan_check_sheet_identity_rerun = 4;
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.

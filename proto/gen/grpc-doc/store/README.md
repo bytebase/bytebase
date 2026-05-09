@@ -758,7 +758,6 @@ IssuePayloadApproval records the approval template used and approval history for
 | approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  | The approval template being used for this issue. |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
 | approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
-| plan_check_sheet_identity_rerun | [bool](#bool) |  | Whether approval generation has already requested a plan-check rerun to backfill sheet identity. |
 
 
 
