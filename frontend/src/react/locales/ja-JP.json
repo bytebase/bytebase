@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "この操作は元に戻すことができません。",
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },

@@ -163,6 +163,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "You cannot undo this action.",
       "sure-to-delete": "Are you sure to delete?"
     }
   },

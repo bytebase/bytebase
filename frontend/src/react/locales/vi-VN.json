@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "Bạn không thể hoàn tác hành động này.",
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?"
     }
   },

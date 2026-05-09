@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "Esta acción no se puede deshacer.",
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?"
     }
   },

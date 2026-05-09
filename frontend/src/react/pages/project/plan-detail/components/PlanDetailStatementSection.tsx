@@ -23,6 +23,7 @@ import {
 import { VCSType } from "@/types/proto-es/v1/common_pb";
 import {
   type Plan_Spec,
+  Plan_SpecSchema,
   type PlanCheckRun,
   PlanSchema,
   UpdatePlanRequestSchema,
@@ -154,9 +155,14 @@ export function PlanDetailStatementSection({
   }, [editingScope, isEditing, setEditing]);
 
   useEffect(() => {
-    setIsEditing(page.isCreating);
+    // Pending draft specs (not yet on the backend) start in edit mode so
+    // the user can immediately type the SQL that will commit the spec.
+    const isPendingDraft = !page.plan.specs.some(
+      (candidate) => candidate.id === spec.id
+    );
+    setIsEditing(page.isCreating || isPendingDraft);
     setDraftStatement("");
-  }, [page.isCreating, spec.id]);
+  }, [page.isCreating, page.plan.specs, spec.id]);
 
   useEffect(() => {
     let canceled = false;
@@ -294,10 +300,30 @@ export function PlanDetailStatementSection({
 
   const patchPlanStatement = (nextSheetName: string) => {
     const planPatch = clone(PlanSchema, page.plan);
-    const specToPatch = planPatch.specs.find(
+    const existingIdx = planPatch.specs.findIndex(
       (candidate) => candidate.id === spec.id
     );
-    if (!specToPatch) return undefined;
+    if (existingIdx === -1) {
+      // Pending new spec — append it on the first save so the spec and
+      // its sheet are committed together. This avoids creating an
+      // empty-statement spec on the backend.
+      if (
+        spec.config?.case !== "changeDatabaseConfig" &&
+        spec.config?.case !== "exportDataConfig"
+      ) {
+        return undefined;
+      }
+      const newSpec = clone(Plan_SpecSchema, spec);
+      if (
+        newSpec.config.case === "changeDatabaseConfig" ||
+        newSpec.config.case === "exportDataConfig"
+      ) {
+        newSpec.config.value.sheet = nextSheetName;
+      }
+      planPatch.specs = [...planPatch.specs, newSpec];
+      return planPatch;
+    }
+    const specToPatch = planPatch.specs[existingIdx];
     if (
       specToPatch.config?.case !== "changeDatabaseConfig" &&
       specToPatch.config?.case !== "exportDataConfig"

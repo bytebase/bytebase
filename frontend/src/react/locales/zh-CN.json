@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "此操作无法撤销。",
       "sure-to-delete": "确定要删除吗？"
     }
   },
