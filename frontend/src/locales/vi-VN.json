@@ -527,7 +527,11 @@
       }
     },
     "rule": {
-      "approval-rule-matching": "Các quy tắc được đánh giá theo thứ tự. Quy tắc theo nguồn chạy trước Quy tắc dự phòng. Với kế hoạch có nhiều mục tiêu, một quy tắc theo nguồn khớp với toàn bộ kế hoạch nếu bất kỳ mục tiêu nào khớp với điều kiện của quy tắc đó, và quy tắc khớp đầu tiên sẽ chọn luồng phê duyệt cho toàn bộ kế hoạch. Đặt các quy tắc cho thay đổi có rủi ro cao hơn trước các quy tắc cho thay đổi có rủi ro thấp hơn. Với các rủi ro tương tự, đặt các quy tắc chặt chẽ hơn hoặc cụ thể hơn trước các quy tắc rộng hơn.",
+      "approval-rule-matching": {
+        "evaluation-order": "Các quy tắc được đánh giá theo thứ tự. Quy tắc theo nguồn chạy trước Quy tắc dự phòng.",
+        "multi-target": "Với kế hoạch có nhiều mục tiêu, một quy tắc theo nguồn khớp với toàn bộ kế hoạch nếu bất kỳ mục tiêu nào khớp với điều kiện của quy tắc đó, và quy tắc khớp đầu tiên sẽ chọn luồng phê duyệt cho toàn bộ kế hoạch.",
+        "priority": "Đặt các quy tắc cho thay đổi có rủi ro cao hơn trước các quy tắc cho thay đổi có rủi ro thấp hơn. Với các rủi ro tương tự, đặt các quy tắc chặt chẽ hơn hoặc cụ thể hơn trước các quy tắc rộng hơn."
+      },
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng.",
       "self": "Quy tắc phê duyệt tùy chỉnh"
     },
