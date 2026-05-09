@@ -64,6 +64,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/lestrrat-go/jwx/v3 v3.1.1
+	github.com/lestrrat-go/jwx/v4 v4.0.2
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/mattn/go-sqlite3 v1.14.44
