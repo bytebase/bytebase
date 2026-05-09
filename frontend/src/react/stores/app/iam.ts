@@ -143,23 +143,17 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     return request;
   },
 
-  invalidateWorkspacePermissionState: () => {
-    set({
-      roles: [],
-      rolesRequest: undefined,
-      workspacePolicy: undefined,
-      workspacePolicyRequest: undefined,
-    });
+  setWorkspacePolicy: (policy) => {
+    set({ workspacePolicy: policy });
   },
 
-  invalidateProjectIamPolicy: (project) => {
-    set((state) => {
-      const { [project]: _droppedPolicy, ...projectPoliciesByName } =
-        state.projectPoliciesByName;
-      const { [project]: _droppedReq, ...projectPolicyRequests } =
-        state.projectPolicyRequests;
-      return { projectPoliciesByName, projectPolicyRequests };
-    });
+  setProjectIamPolicy: (project, policy) => {
+    set((state) => ({
+      projectPoliciesByName: {
+        ...state.projectPoliciesByName,
+        [project]: policy,
+      },
+    }));
   },
 
   hasWorkspacePermission: (permission) => {

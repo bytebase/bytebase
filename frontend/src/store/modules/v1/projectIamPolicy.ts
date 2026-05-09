@@ -96,9 +96,12 @@ export const useProjectIamPolicyStore = defineStore(
       policyMap.set(project, response);
 
       usePermissionStore().invalidCacheByProject(project);
-      // Drop the React app store's cached project IAM so
-      // `PermissionGuard` consumers re-evaluate against the new policy.
-      useAppStore.getState().invalidateProjectIamPolicy(project);
+      // Mirror the new policy into the React app store's project IAM
+      // cache so already-mounted `PermissionGuard` consumers see it on
+      // the next render without remounting. Setting in place — rather
+      // than dropping the entry and refetching — avoids a transient
+      // `disabled=true` flash on those guards.
+      useAppStore.getState().setProjectIamPolicy(project, response);
     };
 
     const getProjectIamPolicy = (project: string) => {

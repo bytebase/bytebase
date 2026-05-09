@@ -193,11 +193,13 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     });
     const policy = await workspaceServiceClientConnect.setIamPolicy(request);
     _workspaceIamPolicy.value = policy;
-    // Drop the React app store's cached workspace IAM. PermissionGuard
-    // consumers read from that cache (separate from this Vue store), so
-    // without invalidation they evaluate against pre-mutation data
-    // until a full reload.
-    useAppStore.getState().invalidateWorkspacePermissionState();
+    // Mirror the new policy into the React app store's IAM cache so
+    // already-mounted `PermissionGuard` consumers re-evaluate against
+    // the fresh policy on the next render. Setting it in place — rather
+    // than clearing the cache and waiting for a refetch — avoids a
+    // transient `disabled=true` flash on those guards (their load
+    // effect only fires on mount/project change).
+    useAppStore.getState().setWorkspacePolicy(policy);
   };
 
   const findRolesByMember = (member: string): string[] => {

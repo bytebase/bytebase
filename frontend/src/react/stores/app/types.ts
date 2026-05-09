@@ -101,20 +101,21 @@ export type IamSlice = {
   loadWorkspacePermissionState: () => Promise<void>;
   loadProjectIamPolicy: (project: string) => Promise<IamPolicy | undefined>;
   /**
-   * Drops the cached workspace IAM data so the next
-   * `loadWorkspacePermissionState()` call re-fetches roles and the
-   * workspace IAM policy. Call this from any flow that mutates
-   * workspace IAM (member role grants/revokes, etc.) — otherwise
-   * `PermissionGuard` consumers keep evaluating against the stale
-   * cache until a full page reload.
+   * Replaces the cached workspace IAM policy with `policy`. Call this
+   * from any flow that mutates workspace IAM (member role grants /
+   * revokes, etc.) using the policy returned by `setIamPolicy`.
+   * Updating the cache in place — rather than clearing it and waiting
+   * for a refetch — avoids a transient `disabled=true` state on
+   * already-mounted `PermissionGuard` consumers, since their load
+   * effect only fires on mount/project change.
    */
-  invalidateWorkspacePermissionState: () => void;
+  setWorkspacePolicy: (policy: IamPolicy) => void;
   /**
-   * Drops the cached IAM policy for a single project so the next
-   * `loadProjectIamPolicy(project)` call re-fetches it. Call after a
-   * project IAM mutation (e.g. setIamPolicy on the project).
+   * Replaces the cached IAM policy for `project` with `policy`. Call
+   * after a project IAM mutation, passing the new policy returned by
+   * `setIamPolicy`.
    */
-  invalidateProjectIamPolicy: (project: string) => void;
+  setProjectIamPolicy: (project: string, policy: IamPolicy) => void;
   hasWorkspacePermission: (permission: Permission) => boolean;
   hasProjectPermission: (project: Project, permission: Permission) => boolean;
 };
