@@ -55,10 +55,6 @@ RUN apk add postgresql16
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 #RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
-# Install mongosh.
-RUN apk add --no-cache npm
-RUN npm install -g mongosh@2.5.0
-
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env
 COPY --from=backend /backend-build/bytebase /usr/local/bin/

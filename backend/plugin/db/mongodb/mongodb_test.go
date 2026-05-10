@@ -1,18 +1,11 @@
 package mongodb
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/testing/protocmp"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -170,146 +163,5 @@ func TestIsSystemCollection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, isSystemCollection(tt.name))
 		})
-	}
-}
-
-func TestIsMongoStatement(t *testing.T) {
-	tests := []struct {
-		statement string
-		want      bool
-	}{
-		{
-			statement: `show collections`,
-			want:      false,
-		},
-		{
-			statement: `db.cpl_station_info.find().limit(100)`,
-			want:      true,
-		},
-		{
-			statement: `db["collection"].find().limit(50)`,
-			want:      true,
-		},
-		{
-			statement: `db['collection'].find().limit(50)`,
-			want:      true,
-		},
-		{
-			statement: `db[variableName].find()`,
-			want:      true,
-		},
-		{
-			statement: `DB["COLLECTION"].FIND()`,
-			want:      true,
-		},
-	}
-
-	a := require.New(t)
-	for _, tt := range tests {
-		got := isMongoStatement(tt.statement)
-		a.Equal(tt.want, got, tt.statement)
-	}
-}
-
-func TestBuildMongoshBaseArgsUsesTempDirForTLSFiles(t *testing.T) {
-	driver := &Driver{
-		connCfg: db.ConnectionConfig{
-			DataSource: &storepb.DataSource{
-				Host:                 "localhost",
-				Port:                 "27017",
-				UseSsl:               true,
-				VerifyTlsCertificate: false,
-				SslCa:                "ca-pem",
-				SslCert:              "cert-pem",
-				SslKey:               "key-pem",
-			},
-		},
-	}
-
-	args, cleanup, err := driver.buildMongoshBaseArgs()
-	require.NoError(t, err)
-	defer cleanup()
-
-	var caFile, clientCertFile string
-	for i := 0; i < len(args)-1; i++ {
-		switch args[i] {
-		case "--tlsCAFile":
-			caFile = args[i+1]
-		case "--tlsCertificateKeyFile":
-			clientCertFile = args[i+1]
-		default:
-		}
-	}
-
-	require.NotEmpty(t, caFile)
-	require.NotEmpty(t, clientCertFile)
-	require.Equal(t, filepath.Clean(os.TempDir()), filepath.Clean(filepath.Dir(caFile)))
-	require.Equal(t, filepath.Clean(os.TempDir()), filepath.Clean(filepath.Dir(clientCertFile)))
-	require.FileExists(t, caFile)
-	require.FileExists(t, clientCertFile)
-
-	cleanup()
-	require.NoFileExists(t, caFile)
-	require.NoFileExists(t, clientCertFile)
-}
-
-func TestGetSimpleStatementResult(t *testing.T) {
-	testData1 := `{
-  "_id": {
-    "$oid": "66f62cad7195ccc0dbdfafbb"
-  },
-  "a": {
-    "$numberLong": "1546786128982089728"
-  }
-}`
-	relaxedTestData1 := `{
-  "_id": {
-    "$oid": "66f62cad7195ccc0dbdfafbb"
-  },
-  "a": 1546786128982089728
-}`
-
-	testData2 := `{
-  "_id": {
-    "$oid": "66f6758c30daae815ac8784f"
-  },
-  "name": "dannyyy",
-  "groups": [
-    "123",
-    "222"
-  ]
-}`
-
-	tests := []struct {
-		data string
-		want *v1pb.QueryResult
-	}{
-		{
-			data: fmt.Sprintf(`[%s, %s]`, testData1, testData2),
-			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"result"},
-				ColumnTypeNames: []string{"TEXT"},
-				Rows: []*v1pb.QueryRow{
-					{
-						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_StringValue{StringValue: relaxedTestData1}},
-						},
-					},
-					{
-						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_StringValue{StringValue: testData2}},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	a := require.New(t)
-	for _, tt := range tests {
-		result, err := getSimpleStatementResult([]byte(tt.data))
-		a.NoError(err)
-		diff := cmp.Diff(tt.want, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-		a.Empty(diff)
 	}
 }
