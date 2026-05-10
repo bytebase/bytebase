@@ -158,10 +158,11 @@ function MemberTable({
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
 
   // Group expand state. Mirrors `GroupsPage`'s pattern: cache keyed by
-  // group name, invalidated whole-hog when the upstream `bindings`
-  // reference changes (e.g. after a membership edit or IAM refresh).
-  // Currently-expanded groups are then refetched so the UI stays in
-  // sync without stalling on a stale loading row.
+  // group name, invalidated when the upstream `bindings` reference
+  // changes. The parent stabilizes `memberBindings` via `useMemo` so
+  // its identity only changes on real IAM/group data updates — without
+  // that, `getMemberBindings(...)` would produce a new array every
+  // render and thrash this cache.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
     new Map()
@@ -1822,20 +1823,30 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       : undefined
   );
 
-  const memberBindings = useVueState(() =>
-    getMemberBindings({
-      policies:
-        projectName && projectIamPolicy
-          ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
-          : [
-              {
-                level: "WORKSPACE" as const,
-                policy: workspaceStore.workspaceIamPolicy,
-              },
-            ],
-      searchText: memberSearchText,
-      ignoreRoles: EMPTY_ROLE_SET,
-    })
+  // Subscribe to the underlying Vue reactive policy refs separately so
+  // their identity is preserved across unrelated re-renders, then build
+  // `memberBindings` via `useMemo`. Computing `getMemberBindings(...)`
+  // inside `useVueState`'s getter would yield a fresh array on every
+  // render (the policies argument literal is rebuilt each call), which
+  // makes the table's reference-equality cache-invalidation thrash on
+  // any unrelated state update — selection toggles, drawer open/close,
+  // etc. Memoizing here lets the table mirror `GroupsPage`'s pattern
+  // (its `groups` prop comes from a reducer-backed `usePagedData` and
+  // is stable until real data changes).
+  const workspaceIamPolicy = useVueState(
+    () => workspaceStore.workspaceIamPolicy
+  );
+  const memberBindings = useMemo(
+    () =>
+      getMemberBindings({
+        policies:
+          projectName && projectIamPolicy
+            ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
+            : [{ level: "WORKSPACE" as const, policy: workspaceIamPolicy }],
+        searchText: memberSearchText,
+        ignoreRoles: EMPTY_ROLE_SET,
+      }),
+    [projectName, projectIamPolicy, workspaceIamPolicy, memberSearchText]
   );
 
   const canSetIamPolicy = project
