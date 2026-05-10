@@ -157,16 +157,11 @@ function MemberTable({
   const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
 
-  // Group expand state. The member cache is keyed by group name +
-  // a signature of the group's current member list, so any membership
-  // change (admin edits the group, IAM policy refresh, etc.) yields a
-  // new key and naturally invalidates the cached user list — instead of
-  // rendering stale users until a route remount.
-  const memberCacheKey = (group: GroupBinding) =>
-    `${group.name}#${group.members
-      .map((m) => m.member)
-      .sort()
-      .join(",")}`;
+  // Group expand state. Mirrors `GroupsPage`'s pattern: cache keyed by
+  // group name, invalidated whole-hog when the upstream `bindings`
+  // reference changes (e.g. after a membership edit or IAM refresh).
+  // Currently-expanded groups are then refetched so the UI stays in
+  // sync without stalling on a stale loading row.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
     new Map()
@@ -177,9 +172,8 @@ function MemberTable({
 
   const fetchGroupMembers = useCallback(
     (group: GroupBinding) => {
-      const key = memberCacheKey(group);
-      if (loadingRef.current.has(key)) return;
-      loadingRef.current.add(key);
+      if (loadingRef.current.has(group.name)) return;
+      loadingRef.current.add(group.name);
       const memberNames = group.members.map((m) => m.member);
       userStore
         .batchGetOrFetchUsers(memberNames)
@@ -187,17 +181,43 @@ function MemberTable({
           setMemberCache((prev) => {
             const next = new Map(prev);
             next.set(
-              key,
+              group.name,
               users.filter((u): u is User => !!u)
             );
             return next;
           });
         })
-        .catch(() => {})
-        .finally(() => loadingRef.current.delete(key));
+        .catch(() => {
+          // Allow retry on next expand
+        })
+        .finally(() => loadingRef.current.delete(group.name));
     },
     [userStore]
   );
+
+  // Invalidate the member cache when `bindings` data changes
+  // (e.g. after editing membership) and refetch members for currently
+  // expanded groups.
+  const prevBindingsRef = useRef(bindings);
+  const expandedGroupsRef = useRef(expandedGroups);
+  expandedGroupsRef.current = expandedGroups;
+  const fetchGroupMembersRef = useRef(fetchGroupMembers);
+  fetchGroupMembersRef.current = fetchGroupMembers;
+  useEffect(() => {
+    if (prevBindingsRef.current !== bindings) {
+      prevBindingsRef.current = bindings;
+      setMemberCache(new Map());
+      loadingRef.current = new Set();
+      for (const groupName of expandedGroupsRef.current) {
+        const mb = bindings.find(
+          (b) => b.type === "groups" && b.group?.name === groupName
+        );
+        if (mb?.group) {
+          fetchGroupMembersRef.current(mb.group);
+        }
+      }
+    }
+  }, [bindings]);
 
   const toggleGroupExpand = useCallback(
     (group: GroupBinding) => {
@@ -210,7 +230,9 @@ function MemberTable({
         }
         return next;
       });
-      if (!memberCacheRef.current.has(memberCacheKey(group))) {
+
+      // Fetch members if not cached
+      if (!memberCacheRef.current.has(group.name)) {
         fetchGroupMembers(group);
       }
     },
@@ -321,7 +343,7 @@ function MemberTable({
               mb.group &&
               expandedGroups.has(mb.group.name);
             const groupMembers = mb.group
-              ? memberCache.get(memberCacheKey(mb.group))
+              ? memberCache.get(mb.group.name)
               : undefined;
 
             return (
