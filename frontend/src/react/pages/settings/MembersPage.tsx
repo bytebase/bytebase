@@ -157,12 +157,15 @@ function MemberTable({
   const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
 
-  // Group expand state. Mirrors `GroupsPage`'s pattern: cache keyed by
-  // group name, invalidated when the upstream `bindings` reference
-  // changes. The parent stabilizes `memberBindings` via `useMemo` so
-  // its identity only changes on real IAM/group data updates — without
-  // that, `getMemberBindings(...)` would produce a new array every
-  // render and thrash this cache.
+  // Group expand state. Cache is keyed by group name and invalidated
+  // when the group-binding *content* changes — not on `bindings`
+  // reference change, because the parent rebuilds `memberBindings` via
+  // `useVueState(() => getMemberBindings(...))` and gets a new array
+  // identity on every render. We can't use the `prevBindingsRef.current
+  // !== bindings` shortcut that `GroupsPage` uses (its `groups` comes
+  // from a reducer-backed `usePagedData` with stable identity).
+  // Comparing a content-derived signature instead lets the cache only
+  // reset on real membership changes — same effect, different trigger.
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
     new Map()
@@ -196,29 +199,44 @@ function MemberTable({
     [userStore]
   );
 
-  // Invalidate the member cache when `bindings` data changes
-  // (e.g. after editing membership) and refetch members for currently
-  // expanded groups.
-  const prevBindingsRef = useRef(bindings);
+  // Signature of just the group bindings — that's all the cache cares
+  // about. Recomputed on every render (because `bindings` reference
+  // changes), but yields a stable string when group content is
+  // unchanged, so the effect below only fires on real membership
+  // changes.
+  const groupBindingsSignature = useMemo(() => {
+    const parts: string[] = [];
+    for (const b of bindings) {
+      if (b.type !== "groups" || !b.group) continue;
+      const members = b.group.members
+        .map((m) => m.member)
+        .sort()
+        .join(",");
+      parts.push(`${b.group.name}:${members}`);
+    }
+    return parts.join("|");
+  }, [bindings]);
+
+  // Reset the cache and refetch currently-expanded groups when the
+  // group-bindings signature changes (membership edit, IAM refresh).
   const expandedGroupsRef = useRef(expandedGroups);
   expandedGroupsRef.current = expandedGroups;
+  const bindingsRef = useRef(bindings);
+  bindingsRef.current = bindings;
   const fetchGroupMembersRef = useRef(fetchGroupMembers);
   fetchGroupMembersRef.current = fetchGroupMembers;
   useEffect(() => {
-    if (prevBindingsRef.current !== bindings) {
-      prevBindingsRef.current = bindings;
-      setMemberCache(new Map());
-      loadingRef.current = new Set();
-      for (const groupName of expandedGroupsRef.current) {
-        const mb = bindings.find(
-          (b) => b.type === "groups" && b.group?.name === groupName
-        );
-        if (mb?.group) {
-          fetchGroupMembersRef.current(mb.group);
-        }
+    setMemberCache(new Map());
+    loadingRef.current = new Set();
+    for (const groupName of expandedGroupsRef.current) {
+      const mb = bindingsRef.current.find(
+        (b) => b.type === "groups" && b.group?.name === groupName
+      );
+      if (mb?.group) {
+        fetchGroupMembersRef.current(mb.group);
       }
     }
-  }, [bindings]);
+  }, [groupBindingsSignature]);
 
   const toggleGroupExpand = useCallback(
     (group: GroupBinding) => {
@@ -1823,30 +1841,27 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       : undefined
   );
 
-  // Subscribe to the underlying Vue reactive policy refs separately so
-  // their identity is preserved across unrelated re-renders, then build
-  // `memberBindings` via `useMemo`. Computing `getMemberBindings(...)`
-  // inside `useVueState`'s getter would yield a fresh array on every
-  // render (the policies argument literal is rebuilt each call), which
-  // makes the table's reference-equality cache-invalidation thrash on
-  // any unrelated state update — selection toggles, drawer open/close,
-  // etc. Memoizing here lets the table mirror `GroupsPage`'s pattern
-  // (its `groups` prop comes from a reducer-backed `usePagedData` and
-  // is stable until real data changes).
-  const workspaceIamPolicy = useVueState(
-    () => workspaceStore.workspaceIamPolicy
-  );
-  const memberBindings = useMemo(
-    () =>
-      getMemberBindings({
-        policies:
-          projectName && projectIamPolicy
-            ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
-            : [{ level: "WORKSPACE" as const, policy: workspaceIamPolicy }],
-        searchText: memberSearchText,
-        ignoreRoles: EMPTY_ROLE_SET,
-      }),
-    [projectName, projectIamPolicy, workspaceIamPolicy, memberSearchText]
+  // `useVueState` ensures we re-render whenever any reactive dep
+  // `getMemberBindings(...)` reads from changes — IAM policies, but
+  // also the group / user / service-account / workload-identity stores
+  // it pulls metadata from. The result array reference changes on every
+  // render; the table component handles that with content-based change
+  // detection (a group-bindings signature) so its expand-cache only
+  // resets on real membership changes.
+  const memberBindings = useVueState(() =>
+    getMemberBindings({
+      policies:
+        projectName && projectIamPolicy
+          ? [{ level: "PROJECT" as const, policy: projectIamPolicy }]
+          : [
+              {
+                level: "WORKSPACE" as const,
+                policy: workspaceStore.workspaceIamPolicy,
+              },
+            ],
+      searchText: memberSearchText,
+      ignoreRoles: EMPTY_ROLE_SET,
+    })
   );
 
   const canSetIamPolicy = project
