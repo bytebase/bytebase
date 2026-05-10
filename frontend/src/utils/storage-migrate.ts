@@ -212,3 +212,138 @@ export function migrateUserStorage(oldEmail: string, newEmail: string) {
     }
   }
 }
+
+const UID_MIGRATION_MARKER = "bb.storage-migration-uid-to-email";
+
+// Known bb.* prefixes that historically used a UID as the last dot-segment.
+const UID_SCOPED_PREFIXES = [
+  "bb.recent-visit.",
+  "bb.recent-projects.",
+  "bb.quick-access.",
+  "bb.last-activity.",
+  "bb.collapse-state.",
+  "bb.intro-state.",
+  "bb.iam-remind.",
+  "bb.reset-password.",
+  "bb.sql-editor.tabs.",
+  "bb.sql-editor.current-tab.",
+  "bb.sql-editor.conn-expanded.",
+  "bb.sql-editor.show-missing-query-db.",
+  "bb.sql-editor.worksheet-filter.",
+  "bb.sql-editor.worksheet-tree.",
+  "bb.sql-editor.worksheet-folder.",
+  "bb.sql-editor.ai-suggestion.",
+  "bb.sql-editor-tab.", // old format before centralization
+  "bb.search.",
+];
+
+/**
+ * Detect whether a string looks like a numeric UID (not an email).
+ * UIDs are plain integers; emails always contain "@".
+ */
+function isNumericUID(segment: string): boolean {
+  return /^\d+$/.test(segment);
+}
+
+/**
+ * If both values parse as JSON arrays, merge old entries into the existing
+ * array (append items from old that aren't already present by JSON identity).
+ * For non-array values, the existing (email-keyed, newer) entry wins.
+ */
+function mergeJsonArrays(
+  key: string,
+  existingRaw: string,
+  oldRaw: string
+): void {
+  try {
+    const existing = JSON.parse(existingRaw);
+    const old = JSON.parse(oldRaw);
+    if (!Array.isArray(existing) || !Array.isArray(old)) return;
+
+    // Build a set of serialized existing items for deduplication.
+    const seen = new Set(existing.map((item) => JSON.stringify(item)));
+    let merged = false;
+    for (const item of old) {
+      const serialized = JSON.stringify(item);
+      if (!seen.has(serialized)) {
+        existing.push(item);
+        seen.add(serialized);
+        merged = true;
+      }
+    }
+    if (merged) {
+      localStorage.setItem(key, JSON.stringify(existing));
+    }
+  } catch {
+    // Not valid JSON or not arrays — keep the existing value.
+  }
+}
+
+/**
+ * Post-login migration: rename localStorage keys that used the old
+ * numeric UID as user identifier to use the current user's email.
+ *
+ * This fixes orphaned keys created between v3.13.0 (user.name changed
+ * from users/{uid} to users/{email}) and v3.15.0 (storage keys centralized).
+ *
+ * Must be called after `fetchCurrentUser` so the email is known.
+ * Idempotent — skips if already done for this email.
+ */
+export function migrateUIDStorageKeys(email: string) {
+  if (!email) return;
+  const marker = `${UID_MIGRATION_MARKER}.${email}`;
+  if (localStorage.getItem(marker)) return;
+
+  const keysToMigrate: [string, string][] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+
+    for (const prefix of UID_SCOPED_PREFIXES) {
+      if (!key.startsWith(prefix)) continue;
+
+      // The key is `prefix + rest`. The UID may be the last segment or
+      // appear before additional segments (e.g., `bb.sql-editor.tabs.{project}.{uid}`).
+      // We scan all dot-segments in `rest` for a numeric UID and replace it with email.
+      const rest = key.slice(prefix.length);
+      const parts = rest.split(".");
+      let replaced = false;
+      for (let j = parts.length - 1; j >= 0; j--) {
+        if (isNumericUID(parts[j])) {
+          parts[j] = email;
+          replaced = true;
+          break; // only replace the last numeric segment (the UID)
+        }
+      }
+      if (replaced) {
+        const newKey = prefix + parts.join(".");
+        if (newKey !== key) {
+          keysToMigrate.push([key, newKey]);
+        }
+      }
+      break; // matched a prefix, no need to check others
+    }
+  }
+
+  for (const [oldKey, newKey] of keysToMigrate) {
+    const oldValue = localStorage.getItem(oldKey);
+    if (oldValue === null) {
+      localStorage.removeItem(oldKey);
+      continue;
+    }
+    const existingValue = localStorage.getItem(newKey);
+    if (existingValue === null) {
+      // No email-keyed entry yet — just move the value.
+      localStorage.setItem(newKey, oldValue);
+    } else {
+      // Both exist — try to merge if both are JSON arrays (e.g., tabs,
+      // recent projects). For non-arrays, the email-keyed entry is newer
+      // and wins.
+      mergeJsonArrays(newKey, existingValue, oldValue);
+    }
+    localStorage.removeItem(oldKey);
+  }
+
+  localStorage.setItem(marker, "1");
+}

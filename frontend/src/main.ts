@@ -24,6 +24,7 @@ import {
   isDev,
   isRelease,
   migrateStorageKeys,
+  migrateUIDStorageKeys,
 } from "./utils";
 
 console.debug("dev:", isDev());
@@ -47,6 +48,11 @@ migrateStorageKeys();
   app.use(pinia);
 
   const currentUser = await useAuthStore().fetchCurrentUser();
+    // Migrate old UID-scoped localStorage keys to email-scoped keys.
+  // Must run after fetchCurrentUser so we know the email.
+  if (currentUser?.email) {
+    migrateUIDStorageKeys(currentUser.email);
+  }
   // Initialize stores.
   const initPromises: Promise<unknown>[] = [
     useActuatorV1Store().fetchServerInfo(currentUser?.workspace),
