@@ -653,7 +653,7 @@ export function IssueListItem({
             {issue.title ? (
               <a
                 href={issueUrl}
-                className="font-medium text-main text-base hover:underline min-w-0 flex-1 block"
+                className="font-medium text-main text-base hover:underline min-w-0 block"
                 onClick={(e) => e.stopPropagation()}
               >
                 <EllipsisText text={issue.title}>

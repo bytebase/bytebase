@@ -246,7 +246,7 @@ export function ProjectTable({
                   <div className="flex items-center gap-x-2 min-w-0">
                     <EllipsisText
                       text={project.title || resourceId}
-                      className="min-w-0 flex-1"
+                      className="min-w-0"
                     >
                       <HighlightLabelText
                         text={project.title || resourceId}
