@@ -28,22 +28,29 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
+	// fixture.PlanA already has a rollout (setupCollidingProjects drives A's
+	// rollout to DONE). UpdatePlan rejects spec changes once a plan has a
+	// rollout, so we create a fresh, rollout-free plan + issue in project A
+	// for the action under test. The collision invariant still holds because
+	// both projects share the same plan/issue id allocator — any cross-project
+	// leak would still surface as a delta in project B's snapshot.
+	planA2, issueA2 := createPlanAndIssue(ctx, t, ctl, fixture.ProjectA, fixture.DatabaseA, "collision-audit-test")
+
 	// Snapshot B before the action under test so we can detect any leak.
 	beforeB := snapshotProject(ctx, t, ctl, fixture.ProjectB)
 
-	// In project A, mutate the plan's spec in a way that produces a
-	// PlanSpecUpdate audit row: flip enable_prior_backup from false to true
-	// on the existing CDC spec. (Targets/sheet stay identical so the audit
+	// In project A, mutate the new plan's spec in a way that produces a
+	// PlanUpdate audit row: flip enable_prior_backup from false to true on
+	// the existing CDC spec. (Targets/sheet stay identical so the audit
 	// helper emits exactly one row carrying only the bool diff.)
-	planA := fixture.PlanA
-	a.NotEmpty(planA.Specs, "fixture's plan A must have at least one spec")
-	originalSpec := planA.Specs[0]
+	a.NotEmpty(planA2.Specs, "fresh plan A must have at least one spec")
+	originalSpec := planA2.Specs[0]
 	cdc := originalSpec.GetChangeDatabaseConfig()
-	a.NotNil(cdc, "fixture's plan A spec is expected to be a ChangeDatabaseConfig")
+	a.NotNil(cdc, "fresh plan A spec is expected to be a ChangeDatabaseConfig")
 
 	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
-			Name: planA.Name,
+			Name: planA2.Name,
 			Specs: []*v1pb.Plan_Spec{{
 				Id: originalSpec.Id,
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
@@ -59,9 +66,9 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// Positive sanity: project A's issue gained the audit row.
+	// Positive sanity: the fresh issue in project A gained the audit row.
 	commentsA, err := ctl.issueServiceClient.ListIssueComments(ctx,
-		connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: fixture.IssueA.Name}))
+		connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issueA2.Name}))
 	a.NoError(err)
 	var sawUpdateA bool
 	for _, c := range commentsA.Msg.IssueComments {
@@ -70,7 +77,7 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 			break
 		}
 	}
-	a.True(sawUpdateA, "project A's issue should have received a PlanUpdate audit row")
+	a.True(sawUpdateA, "project A's fresh issue should have received a PlanUpdate audit row")
 
 	// Isolation: project B's snapshot is unchanged across plans, issues,
 	// task_runs, plan_check_runs, and (importantly) issue_comments.
