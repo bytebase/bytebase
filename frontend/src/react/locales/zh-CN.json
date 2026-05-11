@@ -326,6 +326,7 @@
     "more": "更多",
     "n-items-selected": "已选 {{n}} 项",
     "n-more": "+{{n}} 更多",
+    "n-selected": "已选择 {{n}} 项",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",
@@ -793,7 +794,6 @@
       "unspecified": "未指定"
     },
     "select": "选择数据库",
-    "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-complete-for-instance": "实例 '{{0}}' 同步完成",
     "sync-database": "同步数据库",
@@ -1691,9 +1691,7 @@
         "title_one": "删除 {{count}} 个项目？",
         "title_other": "删除 {{count}} 个项目？",
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
-      },
-      "selected_one": "已选择 {{count}} 个项目",
-      "selected_other": "已选择 {{count}} 个项目"
+      }
     },
     "create-modal": {
       "project-name": "项目名称",

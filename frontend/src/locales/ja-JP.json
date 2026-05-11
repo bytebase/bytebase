@@ -685,7 +685,6 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
-    "selected-n-databases": "{n} 個のデータベースが選択されました",
     "successfully-exported-schema": "スキーマのエクスポートに成功しました",
     "successfully-transferred-databases": "データベースの移行が完了しました",
     "sync-complete-for-instance": "インスタンス '{0}' の同期が完了しました",

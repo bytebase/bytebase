@@ -685,7 +685,6 @@
       "unspecified": "No especificado"
     },
     "select": "Seleccionar base de datos",
-    "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "successfully-exported-schema": "Esquema exportado con éxito",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{0}'",

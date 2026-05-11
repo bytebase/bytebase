@@ -685,7 +685,6 @@
       "unspecified": "Không xác định"
     },
     "select": "Chọn cơ sở dữ liệu",
-    "selected-n-databases": "Đã chọn {n} cơ sở dữ liệu | Đã chọn {n} cơ sở dữ liệu",
     "successfully-exported-schema": "Đã xuất schema thành công",
     "successfully-transferred-databases": "Đã chuyển thành công cơ sở dữ liệu",
     "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{0}'",

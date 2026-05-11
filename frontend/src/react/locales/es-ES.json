@@ -326,6 +326,7 @@
     "more": "Más",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
+    "n-selected": "{{n}} seleccionados",
     "name": "Nombre",
     "next": "Siguiente",
     "no-data": "Sin datos",
@@ -793,7 +794,6 @@
       "unspecified": "No especificado"
     },
     "select": "Seleccionar base de datos",
-    "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
     "sync-database": "Sincronizar base de datos",
@@ -1691,9 +1691,7 @@
         "title_one": "¿Eliminar {{count}} Proyecto?",
         "title_other": "¿Eliminar {{count}} Proyectos?",
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
-      },
-      "selected_one": "{{count}} proyecto seleccionado",
-      "selected_other": "{{count}} proyectos seleccionados"
+      }
     },
     "create-modal": {
       "project-name": "Proyecto Nombre",

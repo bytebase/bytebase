@@ -685,7 +685,6 @@
       "unspecified": "未指定"
     },
     "select": "选择数据库",
-    "selected-n-databases": "已选择 {n} 个数据库",
     "successfully-exported-schema": "成功导出 Schema",
     "successfully-transferred-databases": "数据库转移完成",
     "sync-complete-for-instance": "实例 '{0}' 同步完成",

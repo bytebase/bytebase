@@ -326,6 +326,7 @@
     "more": "Thêm",
     "n-items-selected": "Đã chọn {{n}} mục",
     "n-more": "+{{n}} nữa",
+    "n-selected": "Đã chọn {{n}}",
     "name": "Tên",
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
@@ -793,7 +794,6 @@
       "unspecified": "Không xác định"
     },
     "select": "Chọn cơ sở dữ liệu",
-    "selected-n-databases": "Đã chọn {{n}} cơ sở dữ liệu",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
     "sync-database": "Đồng bộ cơ sở dữ liệu",
@@ -1691,9 +1691,7 @@
         "title_one": "Xóa {{count}} Dự án?",
         "title_other": "Xóa {{count}} Dự án?",
         "warning": "Hành động này không thể hoàn tác. Tất cả dữ liệu dự án bao gồm vấn đề, cấu hình và lịch sử sẽ bị xóa vĩnh viễn."
-      },
-      "selected_one": "{{count}} dự án đã chọn",
-      "selected_other": "{{count}} dự án đã chọn"
+      }
     },
     "create-modal": {
       "project-name": "Dự án Tên",

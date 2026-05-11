@@ -331,6 +331,7 @@
     "more": "More",
     "n-items-selected": "{{n}} items selected",
     "n-more": "+{{n}} more",
+    "n-selected": "{{n}} selected",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
@@ -800,7 +801,6 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
-    "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{{0}}'",
     "sync-database": "Sync Database",
@@ -1699,9 +1699,7 @@
         "title_one": "Delete {{count}} Project?",
         "title_other": "Delete {{count}} Projects?",
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
-      },
-      "selected_one": "{{count}} project selected",
-      "selected_other": "{{count}} projects selected"
+      }
     },
     "create-modal": {
       "project-name": "Project Name",

@@ -685,7 +685,6 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
-    "selected-n-databases": "{n} database selected | {n} databases selected",
     "successfully-exported-schema": "Successfully exported schema",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{0}'",

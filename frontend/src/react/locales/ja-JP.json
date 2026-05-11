@@ -326,6 +326,7 @@
     "more": "その他",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
+    "n-selected": "{{n}} 件選択中",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",
@@ -793,7 +794,6 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
-    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
     "sync-database": "データベース同期",
@@ -1691,9 +1691,7 @@
         "title_one": "{{count}} 件のプロジェクトを削除しますか?",
         "title_other": "{{count}} 件のプロジェクトを削除しますか?",
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
-      },
-      "selected_one": "{{count}} 件のプロジェクトが選択されました",
-      "selected_other": "{{count}} 件のプロジェクトが選択されました"
+      }
     },
     "create-modal": {
       "project-name": "プロジェクト名前",
