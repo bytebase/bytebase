@@ -110,6 +110,8 @@ interface InstanceColumn {
   sortKey?: string;
   cellClassName?: string;
   render: (instance: Instance) => React.ReactNode;
+  onCellClick?: (instance: Instance, e: React.MouseEvent) => void;
+  onHeaderClick?: (e: React.MouseEvent) => void;
 }
 
 // ============================================================
@@ -1038,10 +1040,19 @@ export function InstancesPage() {
         <Checkbox
           checked={someSelected ? "indeterminate" : allSelected}
           onCheckedChange={toggleSelectAll}
+          onClick={(e) => e.stopPropagation()}
         />
       ),
       defaultWidth: 48,
       cellClassName: "px-4 py-2",
+      onCellClick: (instance, e) => {
+        e.stopPropagation();
+        toggleSelection(instance.name);
+      },
+      onHeaderClick: (e) => {
+        e.stopPropagation();
+        toggleSelectAll();
+      },
       render: (instance) => (
         <Checkbox
           checked={selectedNames.has(instance.name)}
@@ -1199,6 +1210,8 @@ export function InstancesPage() {
                   onResizeStart={
                     col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
                   }
+                  className={cn(col.onHeaderClick && "cursor-pointer")}
+                  onClick={col.onHeaderClick}
                 >
                   {col.title}
                 </TableHead>
@@ -1237,7 +1250,16 @@ export function InstancesPage() {
                   {columns.map((col) => (
                     <TableCell
                       key={col.key}
-                      className={cn("overflow-hidden", col.cellClassName)}
+                      className={cn(
+                        "overflow-hidden",
+                        col.cellClassName,
+                        col.onCellClick && "cursor-pointer"
+                      )}
+                      onClick={
+                        col.onCellClick
+                          ? (e) => col.onCellClick!(instance, e)
+                          : undefined
+                      }
                     >
                       {col.render(instance)}
                     </TableCell>
