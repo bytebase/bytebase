@@ -842,12 +842,8 @@ func (exec *DatabaseMigrateExecutor) backupData(
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", backupStatement)
 		}
 		switch instance.Metadata.GetEngine() {
-		case storepb.Engine_TIDB:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
-				return nil, errors.Wrap(err, "failed to set table comment")
-			}
-		case storepb.Engine_MYSQL:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
+		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+			if _, err := driver.Execute(driverCtx, buildMySQLFamilyBackupTableCommentStatement(backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MSSQL:
@@ -906,6 +902,10 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	return priorBackupDetail, nil
+}
+
+func buildMySQLFamilyBackupTableCommentStatement(backupDatabaseName, targetTableName, bbSource, databaseName, sourceTableName string) string {
+	return fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, targetTableName, bbSource, databaseName, sourceTableName)
 }
 
 func buildGetDatabaseMetadataFunc(storeInstance *store.Store, workspace string) parserbase.GetDatabaseMetadataFunc {

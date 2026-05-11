@@ -79,3 +79,33 @@ func TestRestore(t *testing.T) {
 		yamltest.Record(t, filepath, tests)
 	}
 }
+
+func TestMariaDBGenerateRestoreSQLRegistration(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+
+	result, err := base.GenerateRestoreSQL(context.Background(), store.Engine_MARIADB, base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, "DELETE FROM test WHERE b1 = 1;", &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_test",
+		},
+		StartPosition: &store.Position{
+			Line:   0,
+			Column: 0,
+		},
+		EndPosition: &store.Position{
+			Line:   math.MaxInt32,
+			Column: 0,
+		},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_test`;", result)
+}

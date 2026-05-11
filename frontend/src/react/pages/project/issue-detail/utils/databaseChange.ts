@@ -6,6 +6,7 @@ import { getInstanceResource, semverCompare } from "@/utils";
 
 export const BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
+  Engine.MARIADB,
   Engine.TIDB,
   Engine.MSSQL,
   Engine.ORACLE,

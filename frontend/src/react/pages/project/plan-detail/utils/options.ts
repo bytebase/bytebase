@@ -3,6 +3,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 
 const BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
+  Engine.MARIADB,
   Engine.TIDB,
   Engine.MSSQL,
   Engine.ORACLE,

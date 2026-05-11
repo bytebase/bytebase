@@ -19,6 +19,7 @@ import (
 
 func init() {
 	base.RegisterTransformDMLToSelect(storepb.Engine_MYSQL, TransformDMLToSelect)
+	base.RegisterTransformDMLToSelect(storepb.Engine_MARIADB, TransformDMLToSelect)
 }
 
 const (
