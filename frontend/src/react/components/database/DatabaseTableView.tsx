@@ -5,6 +5,7 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
   TableBody,
@@ -158,12 +159,11 @@ export function DatabaseTableView({
       sortKey: "name",
       render: (db) => {
         const instanceResource = getInstanceResource(db);
+        const databaseName = extractDatabaseResourceName(db.name).databaseName;
         return (
-          <div className="flex items-center gap-x-2">
+          <div className="flex items-center gap-x-2 min-w-0">
             <EngineIcon engine={instanceResource.engine} className="h-5 w-5" />
-            <span className="truncate">
-              {extractDatabaseResourceName(db.name).databaseName}
-            </span>
+            <EllipsisText text={databaseName} className="min-w-0 flex-1" />
           </div>
         );
       },
