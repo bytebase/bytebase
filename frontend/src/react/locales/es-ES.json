@@ -2376,6 +2376,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "Su nombre",
+      "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
@@ -2385,7 +2387,13 @@
       "phone": "Número de móvil",
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "role": "Rol",
-      "subscription": "(Actualice para habilitar la gestión de roles)"
+      "setup-failed": "Error al actualizar el perfil.",
+      "setup-skip": "Lo haré después",
+      "setup-success": "Perfil actualizado.",
+      "setup-title": "¡Bienvenido! Configure su perfil",
+      "subscription": "(Actualice para habilitar la gestión de roles)",
+      "workspace-name": "Nombre del espacio de trabajo",
+      "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
     },
     "sensitive-data": {
       "algorithms": {

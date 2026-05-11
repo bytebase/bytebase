@@ -27,10 +27,13 @@ export function getInitials(name: string) {
 
 export function UserAvatar({
   title,
+  colorSeed,
   size = "md",
   className,
 }: {
   title: string;
+  /** Stable string for color derivation (e.g. email). Defaults to title. */
+  colorSeed?: string;
   size?: "sm" | "md";
   className?: string;
 }) {
@@ -42,7 +45,7 @@ export function UserAvatar({
         dim,
         className
       )}
-      style={{ backgroundColor: getAvatarColor(title) }}
+      style={{ backgroundColor: getAvatarColor(colorSeed ?? title) }}
     >
       {getInitials(title)}
     </div>

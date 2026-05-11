@@ -2376,6 +2376,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "あなたの名前",
+      "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
@@ -2385,7 +2387,13 @@
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "role": "ロール",
-      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
+      "setup-failed": "プロフィールの更新に失敗しました。",
+      "setup-skip": "後で設定する",
+      "setup-success": "プロフィールが更新されました。",
+      "setup-title": "ようこそ！プロフィールを設定してください",
+      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)",
+      "workspace-name": "ワークスペース名",
+      "workspace-name-placeholder": "ワークスペース名を入力"
     },
     "sensitive-data": {
       "algorithms": {

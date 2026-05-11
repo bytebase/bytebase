@@ -2388,6 +2388,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "Your name",
+      "display-name-placeholder": "Enter your name",
       "email": "Email",
       "password": "Password",
       "password-confirm": "Password Confirm",
@@ -2397,7 +2399,13 @@
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx",
       "role": "Role",
-      "subscription": "(Upgrade to enable role management)"
+      "setup-failed": "Failed to update profile.",
+      "setup-skip": "I'll do this later",
+      "setup-success": "Profile updated.",
+      "setup-title": "Welcome! Set up your profile",
+      "subscription": "(Upgrade to enable role management)",
+      "workspace-name": "Workspace name",
+      "workspace-name-placeholder": "Enter workspace name"
     },
     "sensitive-data": {
       "algorithms": {

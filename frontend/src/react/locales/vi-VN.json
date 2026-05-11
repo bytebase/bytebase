@@ -2376,6 +2376,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "Tên của bạn",
+      "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
@@ -2385,7 +2387,13 @@
       "phone": "Điện thoại",
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
       "role": "Vai trò",
-      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
+      "setup-failed": "Cập nhật hồ sơ thất bại.",
+      "setup-skip": "Để sau",
+      "setup-success": "Hồ sơ đã được cập nhật.",
+      "setup-title": "Chào mừng! Thiết lập hồ sơ của bạn",
+      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)",
+      "workspace-name": "Tên không gian làm việc",
+      "workspace-name-placeholder": "Nhập tên không gian làm việc"
     },
     "sensitive-data": {
       "algorithms": {

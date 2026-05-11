@@ -2376,6 +2376,8 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
+      "display-name": "您的姓名",
+      "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
       "password": "密码",
       "password-confirm": "确认密码",
@@ -2385,7 +2387,13 @@
       "phone": "手机号",
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
       "role": "角色",
-      "subscription": "（升级到付费方案来解锁角色管理）"
+      "setup-failed": "更新个人资料失败。",
+      "setup-skip": "稍后再说",
+      "setup-success": "个人资料已更新。",
+      "setup-title": "欢迎！设置您的个人资料",
+      "subscription": "（升级到付费方案来解锁角色管理）",
+      "workspace-name": "工作空间名称",
+      "workspace-name-placeholder": "输入工作空间名称"
     },
     "sensitive-data": {
       "algorithms": {
