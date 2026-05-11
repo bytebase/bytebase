@@ -3,6 +3,9 @@
 {{- $registryMirrorHost := .Values.bytebase.registryMirrorHost -}}
 {{- $extraSecretMounts := .Values.bytebase.extraSecretMounts -}}
 {{- $extraVolumes := .Values.bytebase.extraVolumes }}
+# imagePullPolicy
+{{- $pullPolicy := .Values.global.azure.images.bytebase.imagePullPolicy | default "Always" -}}
+{{- $initPullPolicy := .Values.bytebase.initImage.initPullPolicy | default "IfNotPresent" -}}
 # bytebase.option
 {{- $port := .Values.bytebase.option.port -}}
 {{- $data := .Values.bytebase.option.data -}}
@@ -60,7 +63,7 @@ spec:
           {{- else }}
           image: busybox
           {{- end }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ $initPullPolicy }}
           env:
           - name: PG_PASSWORD
             {{- if $externalPgExistingPgPasswordSecret }}
@@ -145,7 +148,7 @@ spec:
           {{- else }}
           image: bytebase/bytebase:{{ $version }}
           {{- end }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $pullPolicy }}
           env:
           {{- if $externalPgExistingPgURLSecret }}
           # If user specifies an existing secret, we should read the external pg connection string in that secret.
