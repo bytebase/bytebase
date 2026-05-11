@@ -7285,6 +7285,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.WorksheetOrganizer'
+  /bytebase.v1.WorkspaceService/DeleteWorkspace:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: DeleteWorkspace
+      description: |-
+        Deletes a workspace. SaaS only. Cancels any active subscription and
+         soft-deletes the workspace so all associated data becomes inaccessible.
+         Requires workspace admin permission.
+      operationId: bytebase.v1.WorkspaceService.DeleteWorkspace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DeleteWorkspaceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /bytebase.v1.WorkspaceService/GetIamPolicy:
     post:
       tags:
@@ -7364,6 +7403,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Workspace'
+  /bytebase.v1.WorkspaceService/LeaveWorkspace:
+    post:
+      tags:
+        - bytebase.v1.WorkspaceService
+      summary: LeaveWorkspace
+      description: |-
+        Removes the calling user from a workspace and switches to the next
+         available workspace. Available to any workspace member. Fails if the
+         caller is the last workspace admin.
+      operationId: bytebase.v1.WorkspaceService.LeaveWorkspace
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.LeaveWorkspaceRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /bytebase.v1.WorkspaceService/ListWorkspaces:
     post:
       tags:
@@ -10712,6 +10790,15 @@ components:
              Format: projects/{project}/worksheets/{worksheet}
       title: DeleteWorksheetRequest
       additionalProperties: false
+    bytebase.v1.DeleteWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+      title: DeleteWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.DependencyColumn:
       type: object
       properties:
@@ -12764,6 +12851,15 @@ components:
       title: Label
       additionalProperties: false
       description: A label for categorizing and organizing issues.
+    bytebase.v1.LeaveWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+      title: LeaveWorkspaceRequest
+      additionalProperties: false
     bytebase.v1.ListAccessGrantsRequest:
       type: object
       properties:

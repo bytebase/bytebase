@@ -226,6 +226,27 @@ func (s *Store) UpdateWorkspace(ctx context.Context, patch *UpdateWorkspaceMessa
 	return nil
 }
 
+// DeleteWorkspace soft-deletes a workspace by setting deleted = TRUE.
+func (s *Store) DeleteWorkspace(ctx context.Context, resourceID string) error {
+	q := qb.Q().Space("UPDATE workspace SET deleted = TRUE WHERE resource_id = ? AND deleted = FALSE", resourceID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete workspace")
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return errors.Wrapf(err, "failed to get rows affected")
+	}
+	if rows == 0 {
+		return errors.Errorf("workspace %q not found or already deleted", resourceID)
+	}
+	return nil
+}
+
 // FindWorkspaceMessage is the message for finding workspaces.
 type FindWorkspaceMessage struct {
 	// WorkspaceID filters by a specific workspace. Nil means no filter.

@@ -2140,6 +2140,22 @@
         "branding": "Marca",
         "config-partly-updated": "Configuración parcialmente actualizada.",
         "config-updated": "La configuración se ha actualizado.",
+        "danger-zone": {
+          "confirm-description": "Esto eliminará permanentemente el espacio de trabajo \"{{workspace}}\" y todos sus datos. Esta acción no se puede deshacer. Escriba el nombre del espacio de trabajo para confirmar.",
+          "confirm-title": "¿Eliminar espacio de trabajo?",
+          "delete-failed": "Error al eliminar el espacio de trabajo.",
+          "delete-workspace": "Eliminar espacio de trabajo",
+          "deleted": "Espacio de trabajo eliminado.",
+          "deleting": "Eliminando...",
+          "description": "Una vez que elimine un espacio de trabajo, todos los proyectos, bases de datos, incidencias y configuraciones dentro de él se eliminarán permanentemente. Esta acción no se puede deshacer.",
+          "exit-confirm-description": "Perderá el acceso al espacio de trabajo \"{{workspace}}\". Necesitará ser reinvitado para volver a unirse.",
+          "exit-confirm-title": "¿Salir del espacio de trabajo?",
+          "exit-description": "Abandonar este espacio de trabajo y eliminar su acceso. Necesitará ser reinvitado para volver a unirse.",
+          "exit-failed": "Error al salir del espacio de trabajo.",
+          "exit-workspace": "Salir del espacio de trabajo",
+          "exited": "Ha salido del espacio de trabajo.",
+          "exiting": "Saliendo..."
+        },
         "data-copy": "Habilitar la copia de datos",
         "data-export": "Habilitar la exportación de datos",
         "default-landing-page": {

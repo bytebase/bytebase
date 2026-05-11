@@ -2140,6 +2140,22 @@
         "branding": "Thương hiệu",
         "config-partly-updated": "Cấu hình đã được cập nhật một phần.",
         "config-updated": "Cấu hình được cập nhật.",
+        "danger-zone": {
+          "confirm-description": "Hành động này sẽ xóa vĩnh viễn không gian làm việc \"{{workspace}}\" và tất cả dữ liệu của nó. Không thể hoàn tác. Nhập tên không gian làm việc để xác nhận.",
+          "confirm-title": "Xóa không gian làm việc?",
+          "delete-failed": "Không thể xóa không gian làm việc.",
+          "delete-workspace": "Xóa không gian làm việc",
+          "deleted": "Đã xóa không gian làm việc.",
+          "deleting": "Đang xóa...",
+          "description": "Khi bạn xóa không gian làm việc, tất cả dự án, cơ sở dữ liệu, vấn đề và cài đặt trong đó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
+          "exit-confirm-description": "Bạn sẽ mất quyền truy cập vào không gian làm việc \"{{workspace}}\". Bạn cần được mời lại để tham gia.",
+          "exit-confirm-title": "Rời khỏi không gian làm việc?",
+          "exit-description": "Rời khỏi không gian làm việc này và xóa quyền truy cập của bạn. Bạn cần được mời lại để tham gia.",
+          "exit-failed": "Không thể rời khỏi không gian làm việc.",
+          "exit-workspace": "Rời khỏi không gian làm việc",
+          "exited": "Bạn đã rời khỏi không gian làm việc.",
+          "exiting": "Đang rời..."
+        },
         "data-copy": "Bật sao chép dữ liệu",
         "data-export": "Bật xuất dữ liệu",
         "default-landing-page": {

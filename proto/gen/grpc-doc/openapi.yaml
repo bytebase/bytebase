@@ -15320,6 +15320,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Workspace'
+    delete:
+      tags:
+        - WorkspaceService
+      summary: DeleteWorkspace
+      description: |-
+        Deletes a workspace. SaaS only. Cancels any active subscription and
+         soft-deletes the workspace so all associated data becomes inaccessible.
+         Requires workspace admin permission.
+      operationId: WorkspaceService_DeleteWorkspace
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
     patch:
       tags:
         - WorkspaceService
@@ -16309,6 +16332,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.IamPolicy'
+  /v1/workspaces/{workspace}:leave:
+    post:
+      tags:
+        - WorkspaceService
+      summary: LeaveWorkspace
+      description: |-
+        Removes the calling user from a workspace and switches to the next
+         available workspace. Available to any workspace member. Fails if the
+         caller is the last workspace admin.
+      operationId: WorkspaceService_LeaveWorkspace
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.LoginResponse'
   /v1/workspaces/{workspace}:setIamPolicy:
     post:
       tags:
@@ -19878,6 +19925,17 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.DeleteWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+      title: DeleteWorkspaceRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.DependencyColumn:
       type: object
       properties:
@@ -22019,6 +22077,17 @@ components:
       title: Label
       additionalProperties: false
       description: A label for categorizing and organizing issues.
+    bytebase.v1.LeaveWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: workspaces/{workspace}'
+      title: LeaveWorkspaceRequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.ListAccessGrantsRequest:
       type: object
       properties:

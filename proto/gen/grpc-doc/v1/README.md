@@ -742,7 +742,9 @@
     - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [v1/workspace_service.proto](#v1_workspace_service-proto)
+    - [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest)
     - [GetWorkspaceRequest](#bytebase-v1-GetWorkspaceRequest)
+    - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
@@ -11988,6 +11990,21 @@ WorksheetService manages SQL worksheets for query development.
 
 
 
+<a name="bytebase-v1-DeleteWorkspaceRequest"></a>
+
+### DeleteWorkspaceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: workspaces/{workspace} |
+
+
+
+
+
+
 <a name="bytebase-v1-GetWorkspaceRequest"></a>
 
 ### GetWorkspaceRequest
@@ -11997,6 +12014,21 @@ WorksheetService manages SQL worksheets for query development.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The workspace name, format: workspaces/{workspace}. Use &#34;workspaces/-&#34; to get the current/default workspace. |
+
+
+
+
+
+
+<a name="bytebase-v1-LeaveWorkspaceRequest"></a>
+
+### LeaveWorkspaceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: workspaces/{workspace} |
 
 
 
@@ -12078,6 +12110,8 @@ WorkspaceService manages workspace-level operations and profile.
 | ListWorkspaces | [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest) | [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse) | Lists all workspaces the current user is a member of. |
 | UpdateWorkspace | [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest) | [Workspace](#bytebase-v1-Workspace) | Updates a workspace. Currently only title can be updated. |
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves IAM policy for the workspace. Permissions required: bb.workspaces.getIamPolicy |
+| DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
+| LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
 
  

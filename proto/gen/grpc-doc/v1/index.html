@@ -3006,7 +3006,15 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.DeleteWorkspaceRequest"><span class="badge">M</span>DeleteWorkspaceRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetWorkspaceRequest"><span class="badge">M</span>GetWorkspaceRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.LeaveWorkspaceRequest"><span class="badge">M</span>LeaveWorkspaceRequest</a>
                 </li>
               
                 <li>
@@ -33924,6 +33932,30 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
       <p></p>
 
       
+        <h3 id="bytebase.v1.DeleteWorkspaceRequest">DeleteWorkspaceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: workspaces/{workspace} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetWorkspaceRequest">GetWorkspaceRequest</h3>
         <p></p>
 
@@ -33940,6 +33972,30 @@ Permissions required: bb.worksheets.manage (or creator, or project member for PR
                   <td></td>
                   <td><p>The workspace name, format: workspaces/{workspace}.
 Use &#34;workspaces/-&#34; to get the current/default workspace. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.LeaveWorkspaceRequest">LeaveWorkspaceRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: workspaces/{workspace} </p></td>
                 </tr>
               
             </tbody>
@@ -34097,6 +34153,24 @@ Permissions required: bb.workspaces.getIamPolicy</p></td>
               </tr>
             
               <tr>
+                <td>DeleteWorkspace</td>
+                <td><a href="#bytebase.v1.DeleteWorkspaceRequest">DeleteWorkspaceRequest</a></td>
+                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
+                <td><p>Deletes a workspace. SaaS only. Cancels any active subscription and
+soft-deletes the workspace so all associated data becomes inaccessible.
+Requires workspace admin permission.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LeaveWorkspace</td>
+                <td><a href="#bytebase.v1.LeaveWorkspaceRequest">LeaveWorkspaceRequest</a></td>
+                <td><a href="#bytebase.v1.LoginResponse">LoginResponse</a></td>
+                <td><p>Removes the calling user from a workspace and switches to the next
+available workspace. Available to any workspace member. Fails if the
+caller is the last workspace admin.</p></td>
+              </tr>
+            
+              <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
@@ -34159,6 +34233,26 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
                 <td>GET</td>
                 <td>/v1/{resource=workspaces/*}:getIamPolicy</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteWorkspace</td>
+                <td>DELETE</td>
+                <td>/v1/{name=workspaces/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>LeaveWorkspace</td>
+                <td>POST</td>
+                <td>/v1/{name=workspaces/*}:leave</td>
+                <td>*</td>
               </tr>
               
             

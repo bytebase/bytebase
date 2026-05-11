@@ -2140,6 +2140,22 @@
         "branding": "品牌",
         "config-partly-updated": "配置部分更新。",
         "config-updated": "配置已更新。",
+        "danger-zone": {
+          "confirm-description": "此操作将永久删除工作空间「{{workspace}}」及其所有数据，且无法撤销。请输入工作空间名称以确认。",
+          "confirm-title": "删除工作空间？",
+          "delete-failed": "删除工作空间失败。",
+          "delete-workspace": "删除工作空间",
+          "deleted": "工作空间已删除。",
+          "deleting": "删除中...",
+          "description": "删除工作空间后，其中的所有项目、数据库、工单和设置将被永久移除，且无法恢复。",
+          "exit-confirm-description": "您将失去对工作空间「{{workspace}}」的访问权限。需要重新被邀请才能重新加入。",
+          "exit-confirm-title": "退出工作空间？",
+          "exit-description": "离开此工作空间并移除您的访问权限。需要重新被邀请才能重新加入。",
+          "exit-failed": "退出工作空间失败。",
+          "exit-workspace": "退出工作空间",
+          "exited": "您已退出工作空间。",
+          "exiting": "退出中..."
+        },
         "data-copy": "启用复制数据",
         "data-export": "启用数据导出",
         "default-landing-page": {

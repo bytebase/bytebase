@@ -2151,6 +2151,22 @@
         "branding": "Branding",
         "config-partly-updated": "Configuration partly updated.",
         "config-updated": "Configuration is updated.",
+        "danger-zone": {
+          "confirm-description": "This will permanently delete the workspace \"{{workspace}}\" and all its data. This action cannot be undone. Type the workspace name to confirm.",
+          "confirm-title": "Delete workspace?",
+          "delete-failed": "Failed to delete workspace.",
+          "delete-workspace": "Delete workspace",
+          "deleted": "Workspace deleted.",
+          "deleting": "Deleting...",
+          "description": "Once you delete a workspace, all projects, databases, issues, and settings within it will be permanently removed. This action cannot be undone.",
+          "exit-confirm-description": "You will lose access to workspace \"{{workspace}}\". You will need to be re-invited to rejoin.",
+          "exit-confirm-title": "Exit workspace?",
+          "exit-description": "Leave this workspace and remove your access. You will need to be re-invited to rejoin.",
+          "exit-failed": "Failed to exit workspace.",
+          "exit-workspace": "Exit workspace",
+          "exited": "You have exited the workspace.",
+          "exiting": "Exiting..."
+        },
         "data-copy": "Enable data copying",
         "data-export": "Enable data export",
         "default-landing-page": {

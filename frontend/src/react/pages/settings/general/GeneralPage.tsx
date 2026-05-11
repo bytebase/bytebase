@@ -11,6 +11,7 @@ import { AIAugmentationSection } from "./AIAugmentationSection";
 import { AnnouncementSection } from "./AnnouncementSection";
 import { AuditLogSection } from "./AuditLogSection";
 import { BrandingSection } from "./BrandingSection";
+import { DangerZoneSection } from "./DangerZoneSection";
 import { GeneralSection } from "./GeneralSection";
 import { ProductImprovementSection } from "./ProductImprovementSection";
 import { SecuritySection } from "./SecuritySection";
@@ -224,6 +225,8 @@ export function GeneralPage() {
           />
         </PermissionGuard>
       )}
+
+      {isSaaSMode && <DangerZoneSection />}
 
       {isDirty && (
         <div className="sticky bottom-0 z-10 -mb-4">

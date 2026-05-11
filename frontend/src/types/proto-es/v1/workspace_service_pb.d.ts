@@ -6,6 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
+import type { LoginResponseSchema } from "./auth_service_pb";
 
 /**
  * Describes the file v1/workspace_service.proto.
@@ -90,6 +91,24 @@ export declare type Workspace = Message<"bytebase.v1.Workspace"> & {
 export declare const WorkspaceSchema: GenMessage<Workspace>;
 
 /**
+ * @generated from message bytebase.v1.DeleteWorkspaceRequest
+ */
+export declare type DeleteWorkspaceRequest = Message<"bytebase.v1.DeleteWorkspaceRequest"> & {
+  /**
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DeleteWorkspaceRequest.
+ * Use `create(DeleteWorkspaceRequestSchema)` to create a new message.
+ */
+export declare const DeleteWorkspaceRequestSchema: GenMessage<DeleteWorkspaceRequest>;
+
+/**
  * @generated from message bytebase.v1.UpdateWorkspaceRequest
  */
 export declare type UpdateWorkspaceRequest = Message<"bytebase.v1.UpdateWorkspaceRequest"> & {
@@ -109,6 +128,24 @@ export declare type UpdateWorkspaceRequest = Message<"bytebase.v1.UpdateWorkspac
  * Use `create(UpdateWorkspaceRequestSchema)` to create a new message.
  */
 export declare const UpdateWorkspaceRequestSchema: GenMessage<UpdateWorkspaceRequest>;
+
+/**
+ * @generated from message bytebase.v1.LeaveWorkspaceRequest
+ */
+export declare type LeaveWorkspaceRequest = Message<"bytebase.v1.LeaveWorkspaceRequest"> & {
+  /**
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.LeaveWorkspaceRequest.
+ * Use `create(LeaveWorkspaceRequestSchema)` to create a new message.
+ */
+export declare const LeaveWorkspaceRequestSchema: GenMessage<LeaveWorkspaceRequest>;
 
 /**
  * WorkspaceService manages workspace-level operations and profile.
@@ -160,6 +197,30 @@ export declare const WorkspaceService: GenService<{
     methodKind: "unary";
     input: typeof GetIamPolicyRequestSchema;
     output: typeof IamPolicySchema;
+  },
+  /**
+   * Deletes a workspace. SaaS only. Cancels any active subscription and
+   * soft-deletes the workspace so all associated data becomes inaccessible.
+   * Requires workspace admin permission.
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.DeleteWorkspace
+   */
+  deleteWorkspace: {
+    methodKind: "unary";
+    input: typeof DeleteWorkspaceRequestSchema;
+    output: typeof LoginResponseSchema;
+  },
+  /**
+   * Removes the calling user from a workspace and switches to the next
+   * available workspace. Available to any workspace member. Fails if the
+   * caller is the last workspace admin.
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.LeaveWorkspace
+   */
+  leaveWorkspace: {
+    methodKind: "unary";
+    input: typeof LeaveWorkspaceRequestSchema;
+    output: typeof LoginResponseSchema;
   },
   /**
    * Sets IAM policy for the workspace.

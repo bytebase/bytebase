@@ -2140,6 +2140,22 @@
         "branding": "ブランド",
         "config-partly-updated": "設定が部分的に更新されました。",
         "config-updated": "設定が更新されました。",
+        "danger-zone": {
+          "confirm-description": "ワークスペース「{{workspace}}」とそのすべてのデータが完全に削除されます。この操作は元に戻せません。確認のためワークスペース名を入力してください。",
+          "confirm-title": "ワークスペースを削除しますか？",
+          "delete-failed": "ワークスペースの削除に失敗しました。",
+          "delete-workspace": "ワークスペースを削除",
+          "deleted": "ワークスペースが削除されました。",
+          "deleting": "削除中...",
+          "description": "ワークスペースを削除すると、すべてのプロジェクト、データベース、課題、設定が完全に削除され、元に戻すことはできません。",
+          "exit-confirm-description": "ワークスペース「{{workspace}}」へのアクセスを失います。再参加するには再度招待を受ける必要があります。",
+          "exit-confirm-title": "ワークスペースを退出しますか？",
+          "exit-description": "このワークスペースを離れ、アクセス権を削除します。再参加するには再度招待を受ける必要があります。",
+          "exit-failed": "ワークスペースの退出に失敗しました。",
+          "exit-workspace": "ワークスペースを退出",
+          "exited": "ワークスペースを退出しました。",
+          "exiting": "退出中..."
+        },
         "data-copy": "データのコピーを有効にする",
         "data-export": "データのエクスポートを有効にする",
         "default-landing-page": {

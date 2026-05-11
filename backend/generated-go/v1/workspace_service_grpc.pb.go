@@ -23,6 +23,8 @@ const (
 	WorkspaceService_ListWorkspaces_FullMethodName  = "/bytebase.v1.WorkspaceService/ListWorkspaces"
 	WorkspaceService_UpdateWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/UpdateWorkspace"
 	WorkspaceService_GetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/GetIamPolicy"
+	WorkspaceService_DeleteWorkspace_FullMethodName = "/bytebase.v1.WorkspaceService/DeleteWorkspace"
+	WorkspaceService_LeaveWorkspace_FullMethodName  = "/bytebase.v1.WorkspaceService/LeaveWorkspace"
 	WorkspaceService_SetIamPolicy_FullMethodName    = "/bytebase.v1.WorkspaceService/SetIamPolicy"
 )
 
@@ -45,6 +47,14 @@ type WorkspaceServiceClient interface {
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Deletes a workspace. SaaS only. Cancels any active subscription and
+	// soft-deletes the workspace so all associated data becomes inaccessible.
+	// Requires workspace admin permission.
+	DeleteWorkspace(ctx context.Context, in *DeleteWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// Removes the calling user from a workspace and switches to the next
+	// available workspace. Available to any workspace member. Fails if the
+	// caller is the last workspace admin.
+	LeaveWorkspace(ctx context.Context, in *LeaveWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
@@ -98,6 +108,26 @@ func (c *workspaceServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPol
 	return out, nil
 }
 
+func (c *workspaceServiceClient) DeleteWorkspace(ctx context.Context, in *DeleteWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, WorkspaceService_DeleteWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workspaceServiceClient) LeaveWorkspace(ctx context.Context, in *LeaveWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, WorkspaceService_LeaveWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IamPolicy)
@@ -127,6 +157,14 @@ type WorkspaceServiceServer interface {
 	// Retrieves IAM policy for the workspace.
 	// Permissions required: bb.workspaces.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
+	// Deletes a workspace. SaaS only. Cancels any active subscription and
+	// soft-deletes the workspace so all associated data becomes inaccessible.
+	// Requires workspace admin permission.
+	DeleteWorkspace(context.Context, *DeleteWorkspaceRequest) (*LoginResponse, error)
+	// Removes the calling user from a workspace and switches to the next
+	// available workspace. Available to any workspace member. Fails if the
+	// caller is the last workspace admin.
+	LeaveWorkspace(context.Context, *LeaveWorkspaceRequest) (*LoginResponse, error)
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
@@ -151,6 +189,12 @@ func (UnimplementedWorkspaceServiceServer) UpdateWorkspace(context.Context, *Upd
 }
 func (UnimplementedWorkspaceServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetIamPolicy not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) DeleteWorkspace(context.Context, *DeleteWorkspaceRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWorkspace not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) LeaveWorkspace(context.Context, *LeaveWorkspaceRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveWorkspace not implemented")
 }
 func (UnimplementedWorkspaceServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetIamPolicy not implemented")
@@ -248,6 +292,42 @@ func _WorkspaceService_GetIamPolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkspaceService_DeleteWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).DeleteWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_DeleteWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).DeleteWorkspace(ctx, req.(*DeleteWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkspaceService_LeaveWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).LeaveWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_LeaveWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).LeaveWorkspace(ctx, req.(*LeaveWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WorkspaceService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetIamPolicyRequest)
 	if err := dec(in); err != nil {
@@ -288,6 +368,14 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIamPolicy",
 			Handler:    _WorkspaceService_GetIamPolicy_Handler,
+		},
+		{
+			MethodName: "DeleteWorkspace",
+			Handler:    _WorkspaceService_DeleteWorkspace_Handler,
+		},
+		{
+			MethodName: "LeaveWorkspace",
+			Handler:    _WorkspaceService_LeaveWorkspace_Handler,
 		},
 		{
 			MethodName: "SetIamPolicy",
