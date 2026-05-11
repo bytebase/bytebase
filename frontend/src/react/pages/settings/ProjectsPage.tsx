@@ -675,9 +675,7 @@ export function ProjectsPage() {
       {canDelete && (
         <SelectionActionBar
           count={selectedProjectList.length}
-          label={t("project.batch.selected", {
-            count: selectedProjectList.length,
-          })}
+          label={t("common.n-selected", { n: selectedProjectList.length })}
           allSelected={
             projects.length > 0 &&
             projects.every((p) => selectedNames.has(p.name))

@@ -1313,9 +1313,7 @@ export function InstancesPage() {
         return (
           <SelectionActionBar
             count={selectedInstanceList.length}
-            label={t("instance.selected-n-instances", {
-              count: selectedInstanceList.length,
-            })}
+            label={t("common.n-selected", { n: selectedInstanceList.length })}
             allSelected={allSelected}
             onToggleSelectAll={() => {
               if (allSelected) setSelectedNames(new Set());

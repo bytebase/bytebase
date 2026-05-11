@@ -135,7 +135,7 @@ export function DatabaseBatchOperationsBar({
   return (
     <SelectionActionBar
       count={databases.length}
-      label={t("database.selected-n-databases", { n: databases.length })}
+      label={t("common.n-selected", { n: databases.length })}
       allSelected={allSelected}
       onToggleSelectAll={onToggleSelectAll}
       actions={actions}

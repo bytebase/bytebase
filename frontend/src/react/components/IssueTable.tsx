@@ -928,7 +928,7 @@ export function BatchActionBar({
   return (
     <SelectionActionBar
       count={issues.length}
-      label={`${issues.length} ${t("common.selected")}`}
+      label={t("common.n-selected", { n: issues.length })}
       allSelected={allSelected}
       onToggleSelectAll={onToggleSelectAll}
       actions={[
