@@ -15,6 +15,7 @@ import { SelectionActionBar } from "@/react/components/SelectionActionBar";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
@@ -646,13 +647,15 @@ export function IssueListItem({
             {issue.title ? (
               <a
                 href={issueUrl}
-                className="font-medium text-main text-base truncate hover:underline"
+                className="font-medium text-main text-base hover:underline min-w-0 flex-1 block"
                 onClick={(e) => e.stopPropagation()}
               >
-                <HighlightLabelText
-                  text={issue.title}
-                  keyword={highlightWords}
-                />
+                <EllipsisText text={issue.title}>
+                  <HighlightLabelText
+                    text={issue.title}
+                    keyword={highlightWords}
+                  />
+                </EllipsisText>
               </a>
             ) : (
               <a
