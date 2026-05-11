@@ -6,10 +6,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/react/components/ui/context-menu";
-import {
-  type CloseTabAction,
-  resultTabEvents,
-} from "@/views/sql-editor/EditorPanel/ResultPanel/resultTabContext";
+import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
 interface TabContextMenuProps {
   index: number;

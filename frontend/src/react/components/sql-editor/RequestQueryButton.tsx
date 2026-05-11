@@ -6,6 +6,8 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { cn } from "@/react/lib/utils";
+import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
 import {
   hasFeature,
   useProjectV1Store,
@@ -19,7 +21,7 @@ import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
-import { RoleGrantPanel } from "./RoleGrantPanel";
+import { useRequestDrawerHost } from "./RequestDrawerHost";
 
 const SQL_SELECT_PERMISSION = "bb.sql.select";
 
@@ -69,6 +71,12 @@ export function RequestQueryButton({
 }: Props) {
   const { t } = useTranslation();
 
+  // When the layout-level host is mounted (typical case inside the SQL
+  // Editor), opening the drawer dispatches up to the host so it survives
+  // ancestor unmounts (e.g. the connection panel Sheet closing). Local
+  // state stays as a fallback for standalone callers (tests, isolated
+  // pages without the host).
+  const drawerHost = useRequestDrawerHost();
   const [showPanel, setShowPanel] = useState(false);
   const [showJITDrawer, setShowJITDrawer] = useState(false);
 
@@ -125,9 +133,26 @@ export function RequestQueryButton({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (useJIT) {
-      setShowJITDrawer(true);
-    } else {
-      setShowPanel(true);
+      if (drawerHost) {
+        drawerHost.openAccessGrantDrawer({
+          query: statement,
+          targets: missingResources.map((r) => r.databaseFullName),
+        });
+      } else {
+        setShowJITDrawer(true);
+      }
+    } else if (project) {
+      if (drawerHost) {
+        drawerHost.openRequestRoleSheet({
+          project,
+          requiredPermissions:
+            permissionDeniedDetail.requiredPermissions as Permission[],
+          initialRole: defaultQueryRole,
+          initialDatabaseResources: missingResources,
+        });
+      } else {
+        setShowPanel(true);
+      }
     }
   };
 
@@ -144,7 +169,10 @@ export function RequestQueryButton({
             variant={text ? "ghost" : "default"}
             disabled={disabled || !hasRequestFeature}
             onClick={handleClick}
-            className="gap-x-1"
+            className={cn(
+              "gap-x-1",
+              text && "text-accent hover:bg-transparent hover:text-accent-hover"
+            )}
           >
             {hasRequestFeature ? (
               <ShieldUser className="size-4" />
@@ -158,12 +186,15 @@ export function RequestQueryButton({
         )}
       </PermissionGuard>
 
-      {showPanel && (
-        <RoleGrantPanel
-          projectName={projectName}
-          databaseResources={missingResources}
-          role={defaultQueryRole}
-          requiredPermissions={permissionDeniedDetail.requiredPermissions}
+      {showPanel && project && (
+        <RequestRoleSheet
+          open={showPanel}
+          project={project}
+          requiredPermissions={
+            permissionDeniedDetail.requiredPermissions as Permission[]
+          }
+          initialRole={defaultQueryRole}
+          initialDatabaseResources={missingResources}
           onClose={() => setShowPanel(false)}
         />
       )}

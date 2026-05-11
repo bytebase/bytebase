@@ -64,7 +64,6 @@ export function usePermissionDataReady(project?: Project) {
 
   useEffect(() => {
     let stale = false;
-    setReadyKey("");
 
     const requests: Promise<unknown>[] = [loadWorkspacePermissionState()];
     if (project?.name) {

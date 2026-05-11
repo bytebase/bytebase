@@ -336,6 +336,9 @@ type PlanCheckRunResult_Result struct {
 	// Format: instances/{instance}/databases/{database}
 	Target string        `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
 	Type   PlanCheckType `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.store.PlanCheckType" json:"type,omitempty"`
+	// sheet_sha256 is the content hash of the SQL sheet used to produce this result.
+	// Empty for checks that are not tied to a SQL sheet.
+	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// Types that are valid to be assigned to Report:
 	//
 	//	*PlanCheckRunResult_Result_SqlSummaryReport_
@@ -415,6 +418,13 @@ func (x *PlanCheckRunResult_Result) GetType() PlanCheckType {
 		return x.Type
 	}
 	return PlanCheckType_PLAN_CHECK_TYPE_UNSPECIFIED
+}
+
+func (x *PlanCheckRunResult_Result) GetSheetSha256() string {
+	if x != nil {
+		return x.SheetSha256
+	}
+	return ""
 }
 
 func (x *PlanCheckRunResult_Result) GetReport() isPlanCheckRunResult_Result_Report {
@@ -576,17 +586,18 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\x82\a\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xa5\a\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\x90\x06\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xb3\x06\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12\x16\n" +
 	"\x06target\x18\a \x01(\tR\x06target\x121\n" +
-	"\x04type\x18\b \x01(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x04type\x12j\n" +
+	"\x04type\x18\b \x01(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x04type\x12!\n" +
+	"\fsheet_sha256\x18\t \x01(\tR\vsheetSha256\x12j\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
 	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xce\x01\n" +
 	"\x10SqlSummaryReport\x12F\n" +

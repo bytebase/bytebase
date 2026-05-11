@@ -8,4 +8,11 @@ peerDependencyRules:
 allowBuilds:
   core-js: true
   esbuild: true
-  leveldown: true
+  # `pouchdb` pulls leveldown in transitively (leveldown@5.6.0 via
+  # level@6.0.1, plus leveldown@6.1.1 directly) for Node-side use, but
+  # the frontend only runs pouchdb in the browser via `level-js`/IndexedDB
+  # — the native binding is never loaded at runtime. leveldown@5.6.0 is
+  # deprecated and fails to build on Node 24 / Apple Silicon. Explicit
+  # `false` opts out of the build without triggering pnpm 11's
+  # ERR_PNPM_IGNORED_BUILDS error.
+  leveldown: false

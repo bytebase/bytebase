@@ -10,13 +10,13 @@ import {
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";
-import { activeStatementRef } from "@/views/sql-editor/EditorPanel/StandardPanel/state";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { EditorAction } from "../EditorAction";
 import { ExecutingHintModal } from "../ExecutingHintModal";
 import { SaveSheetModal } from "../SaveSheetModal";
 import { Welcome } from "../Welcome";
 import { SQLEditor } from "./SQLEditor";
+import { activeStatementRef } from "./state";
 
 interface EditorMainProps {
   /** Open the connection drawer (hosted by SQLEditorHomePage). */

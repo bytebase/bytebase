@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ComponentPermissionGuard } from "@/react/components/ComponentPermissionGuard";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { RoleSelect } from "@/react/components/RoleSelect";
-import { UserAvatar } from "@/react/components/UserAvatar";
+import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -290,19 +290,14 @@ function UserTable({
               >
                 {/* Account column */}
                 <TableCell className="py-2">
-                  <div className="flex items-center gap-x-3">
-                    <UserAvatar title={user.title || user.email} />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-x-1.5">
-                        <span
-                          className={
-                            isDeleted
-                              ? "line-through text-control-light"
-                              : "font-medium text-main"
-                          }
-                        >
-                          {user.title}
-                        </span>
+                  <UserCell
+                    title={user.title}
+                    subtitle={user.email}
+                    nameClassName={
+                      isDeleted ? "line-through !text-control-light" : undefined
+                    }
+                    badges={
+                      <>
                         {isSelf && (
                           <Badge
                             variant="secondary"
@@ -329,12 +324,9 @@ function UserTable({
                             {user.profile.source}
                           </Badge>
                         )}
-                      </div>
-                      <span className="textinfolabel text-xs">
-                        {user.email}
-                      </span>
-                    </div>
-                  </div>
+                      </>
+                    }
+                  />
                 </TableCell>
 
                 {/* Groups column */}

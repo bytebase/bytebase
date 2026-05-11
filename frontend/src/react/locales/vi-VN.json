@@ -199,6 +199,7 @@
   },
   "common": {
     "Default": "Mặc định",
+    "access-denied": "Truy cập bị từ chối",
     "action-required": "Cần thực hiện hành động",
     "actions": "Hành động",
     "activated": "Đã kích hoạt",
@@ -717,6 +718,7 @@
   "data-source.ssl.verify-certificate": "Xác minh chứng chỉ TLS",
   "data-source.ssl.verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn",
   "database": {
+    "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",
     "all": "Tất cả cơ sở dữ liệu",
     "change-database": "Thay đổi cơ sở dữ liệu",
     "checks": "Kiểm tra",
@@ -1464,6 +1466,7 @@
     "title": {
       "change-database": "Thay đổi cơ sở dữ liệu",
       "change-from-sql-editor": "Thay đổi từ SQL Editor",
+      "edit-schema": "Chỉnh sửa schema",
       "request-role": "Yêu cầu vai trò",
       "request-specific-role": "Yêu cầu vai trò \"{{role}}\""
     },
@@ -1852,6 +1855,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "Mới Dự án",
+  "quick-start": {
+    "guide": "nhấp vào bước để thử",
+    "notice": {
+      "desc": "Bạn vẫn có thể mang nó trở lại sau từ menu trên cùng bên phải",
+      "title": "Đã bỏ qua hướng dẫn bắt đầu nhanh"
+    },
+    "query-data": "Truy vấn dữ liệu",
+    "view-an-issue": "Xem một vấn đề",
+    "visit-database": "Truy cập Cơ sở dữ liệu",
+    "visit-environment": "Truy cập Môi trường",
+    "visit-instance": "Truy cập Phiên bản",
+    "visit-member": "Truy cập Thành viên | Thành viên",
+    "visit-project": "Truy cập Dự án"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -2633,6 +2650,7 @@
       "description": "Truy vấn hàng loạt {{database}} cơ sở dữ liệu bổ sung và {{group}} nhóm cơ sở dữ liệu trong {{project}}.",
       "select-data-source": {
         "admin": "Quản trị viên",
+        "not-match": "Nguồn dữ liệu không khớp, mong đợi {{expect}} nhưng lại nhận được {{actual}}.",
         "readonly": "Chỉ đọc",
         "self": "Chọn nguồn dữ liệu cho lô",
         "tooltip": "Sẽ tìm các nguồn dữ liệu có sẵn với chính sách hạn chế, sau đó áp dụng lựa chọn."
@@ -2649,6 +2667,7 @@
     "column-display-format": "Định dạng hiển thị cột",
     "connect-in-admin-mode": "Kết nối ở chế độ quản trị",
     "connect-to-a-database": "Kết nối cơ sở dữ liệu",
+    "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
     "copy-all-column-names": "Sao chép tất cả tên cột",
     "copy-name": "Sao chép tên",
     "copy-selected-results": "Sao chép dữ liệu đã chọn bằng <action></action> hoặc <button></button>",
@@ -2658,6 +2677,8 @@
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "execute-query": "Thực hiện truy vấn",
+    "executing-query": "Đang thực hiện truy vấn",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
@@ -2692,6 +2713,7 @@
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
+    "pending-query": "Đang chờ truy vấn",
     "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
     "private": "Riêng tư",
@@ -2752,7 +2774,8 @@
           "multi-select": "Chọn nhiều",
           "rename": "Đổi tên"
         }
-      }
+      },
+      "unsaved-worksheet": "Bạn có bảng tính chưa lưu."
     },
     "table-empty-placeholder": "Nhấp vào Chạy để thực hiện truy vấn.",
     "table-view": "Chế độ xem bảng",

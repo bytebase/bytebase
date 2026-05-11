@@ -37,7 +37,7 @@
   </teleport>
 
   <teleport v-if="quickstartTarget" :to="quickstartTarget">
-    <Quickstart />
+    <ReactPageMount page="Quickstart" container-class="w-full" />
   </teleport>
 
   <AgentWindowMount />
@@ -53,7 +53,6 @@ import { useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AgentWindowMount from "@/components/AgentWindowMount.vue";
-import Quickstart from "@/components/Quickstart.vue";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";

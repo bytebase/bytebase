@@ -199,6 +199,7 @@
   },
   "common": {
     "Default": "默认",
+    "access-denied": "拒绝访问",
     "action-required": "需要操作",
     "actions": "操作",
     "activated": "已激活",
@@ -717,6 +718,7 @@
   "data-source.ssl.verify-certificate": "验证 TLS 证书",
   "data-source.ssl.verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的",
   "database": {
+    "access-denied": "您无权访问该数据库",
     "all": "所有数据库",
     "change-database": "变更数据库",
     "checks": "Check 约束",
@@ -1464,6 +1466,7 @@
     "title": {
       "change-database": "变更数据库",
       "change-from-sql-editor": "从 SQL 编辑器变更",
+      "edit-schema": "编辑 Schema",
       "request-role": "申请角色",
       "request-specific-role": "申请 \"{{role}}\" 角色"
     },
@@ -1852,6 +1855,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "创建项目",
+  "quick-start": {
+    "guide": "可点击步骤进行尝试",
+    "notice": {
+      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务",
+      "title": "新手任务已关闭"
+    },
+    "query-data": "查询数据",
+    "view-an-issue": "查看工单",
+    "visit-database": "访问数据库",
+    "visit-environment": "访问环境",
+    "visit-instance": "访问实例",
+    "visit-member": "访问成员 | 成员",
+    "visit-project": "访问项目"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
@@ -2633,6 +2650,7 @@
       "description": "批量查询 {{project}} 下的 {{database}} 个数据库和 {{group}} 个数据库组。",
       "select-data-source": {
         "admin": "主数据源",
+        "not-match": "数据源不匹配，预期为 {{expect}}，但实际使用 {{actual}}。",
         "readonly": "只读数据源",
         "self": "选择批量查询使用的数据源",
         "tooltip": "将先根据限制策略寻找数据源，然后应用该选择。"
@@ -2649,6 +2667,7 @@
     "column-display-format": "列显示格式",
     "connect-in-admin-mode": "以管理员模式连接",
     "connect-to-a-database": "连接数据库",
+    "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
     "copy-all-column-names": "复制所有列名",
     "copy-name": "复制名称",
     "copy-selected-results": "通过 <action></action> 或 <button></button> 来快速复制选定的数据",
@@ -2658,6 +2677,8 @@
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hours": "{{hours}} 小时",
+    "execute-query": "执行查询",
+    "executing-query": "执行查询",
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
@@ -2692,6 +2713,7 @@
     "no-queriable-database": "没有可查询的数据库",
     "only-select-allowed": "只允许执行只读语句",
     "open-in-new-tab": "在新选项卡中打开",
+    "pending-query": "待处理查询",
     "preview-table-data": "预览表数据",
     "previous-row": "上一行",
     "private": "私有",
@@ -2752,7 +2774,8 @@
           "multi-select": "多选",
           "rename": "重命名"
         }
-      }
+      },
+      "unsaved-worksheet": "您有未保存的工作表。"
     },
     "table-empty-placeholder": "点击 \"运行\" 执行查询",
     "table-view": "表格视图",

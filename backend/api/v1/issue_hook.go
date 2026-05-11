@@ -49,7 +49,7 @@ func postCreateIssue(
 		storepb.Issue_ROLE_GRANT,
 		storepb.Issue_DATABASE_EXPORT:
 
-		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, webhookManager, licenseService, issue); err != nil {
+		if err := approval.FindAndApplyApprovalTemplate(ctx, stores, b, webhookManager, licenseService, issue); err != nil {
 			slog.Error("failed to find approval template",
 				slog.String("project", issue.ProjectID), slog.Int64("issue_uid", issue.UID),
 				slog.String("issue_title", issue.Title),

@@ -87,20 +87,23 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("./RoleGrantPanel", () => ({
-  RoleGrantPanel: ({
+vi.mock("@/react/pages/settings/RequestRoleSheet", () => ({
+  RequestRoleSheet: ({
+    open,
     onClose,
-    role,
+    initialRole,
   }: {
+    open: boolean;
     onClose: () => void;
-    role: string;
-  }) => (
-    <div data-testid="role-grant-panel" data-role={role}>
-      <button data-close-btn onClick={onClose}>
-        Close
-      </button>
-    </div>
-  ),
+    initialRole: string;
+  }) =>
+    open ? (
+      <div data-testid="request-role-sheet" data-role={initialRole}>
+        <button data-close-btn onClick={onClose}>
+          Close
+        </button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("./AccessGrantRequestDrawer", () => ({
@@ -240,7 +243,7 @@ describe("RequestQueryButton", () => {
     unmount();
   });
 
-  test("click in non-JIT mode opens RoleGrantPanel", async () => {
+  test("click in non-JIT mode opens RequestRoleSheet", async () => {
     setupDefaultMocks(false, true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
@@ -253,7 +256,7 @@ describe("RequestQueryButton", () => {
     render();
 
     expect(
-      container.querySelector("[data-testid='role-grant-panel']")
+      container.querySelector("[data-testid='request-role-sheet']")
     ).toBeNull();
 
     const btn = container.querySelector("button") as HTMLButtonElement;
@@ -262,7 +265,7 @@ describe("RequestQueryButton", () => {
     });
 
     expect(
-      container.querySelector("[data-testid='role-grant-panel']")
+      container.querySelector("[data-testid='request-role-sheet']")
     ).not.toBeNull();
     unmount();
   });
@@ -286,7 +289,7 @@ describe("RequestQueryButton", () => {
 
     expect(
       container
-        .querySelector("[data-testid='role-grant-panel']")
+        .querySelector("[data-testid='request-role-sheet']")
         ?.getAttribute("data-role")
     ).toBe("roles/sqlEditorReadUser");
     unmount();
@@ -311,7 +314,7 @@ describe("RequestQueryButton", () => {
 
     expect(
       container
-        .querySelector("[data-testid='role-grant-panel']")
+        .querySelector("[data-testid='request-role-sheet']")
         ?.getAttribute("data-role")
     ).toBe("roles/sqlEditorUser");
     unmount();
@@ -336,7 +339,7 @@ describe("RequestQueryButton", () => {
 
     expect(
       container
-        .querySelector("[data-testid='role-grant-panel']")
+        .querySelector("[data-testid='request-role-sheet']")
         ?.getAttribute("data-role")
     ).toBe("roles/sqlEditorReadUser");
     unmount();
@@ -364,7 +367,7 @@ describe("RequestQueryButton", () => {
 
     expect(
       container
-        .querySelector("[data-testid='role-grant-panel']")
+        .querySelector("[data-testid='request-role-sheet']")
         ?.getAttribute("data-role")
     ).toBe("roles/queryOnly");
     unmount();
@@ -399,7 +402,7 @@ describe("RequestQueryButton", () => {
 
       expect(
         container
-          .querySelector("[data-testid='role-grant-panel']")
+          .querySelector("[data-testid='request-role-sheet']")
           ?.getAttribute("data-role")
       ).toBe("roles/sqlEditorReadUser");
       unmount();
