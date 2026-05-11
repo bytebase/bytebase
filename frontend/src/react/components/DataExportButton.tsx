@@ -355,6 +355,7 @@ export function DataExportButton({
                     value={limit}
                     onChange={setLimit}
                     maximum={presetMax}
+                    className="h-9"
                   />
                 </div>
 
@@ -390,16 +391,11 @@ export function DataExportButton({
               </div>
             </SheetBody>
             <SheetFooter>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDrawer(false)}
-              >
+              <Button variant="outline" onClick={() => setShowDrawer(false)}>
                 {t("common.cancel")}
               </Button>
               <Button
                 variant="default"
-                size="sm"
                 disabled={!formIsValid || isRequesting}
                 onClick={doExport}
               >

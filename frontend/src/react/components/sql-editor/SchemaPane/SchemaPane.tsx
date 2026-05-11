@@ -403,7 +403,16 @@ function SchemaPaneInner() {
   );
 
   return (
-    <div className="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden">
+    <div
+      className="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden"
+      // Fail-safe: hide the hover panel when the cursor leaves the
+      // SchemaPane container entirely (e.g. moves into the main editor
+      // area). Per-row `onMouseLeave` already schedules a hide, but if
+      // the cursor exits through whitespace where no row handler fires
+      // — or crosses through the floating panel itself which keeps
+      // itself alive on hover — the panel can otherwise linger.
+      onMouseLeave={() => hoverState.update(undefined, "after")}
+    >
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
           <Input
