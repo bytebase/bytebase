@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -39,7 +40,7 @@ type IssueService struct {
 }
 
 type filterIssueMessage struct {
-	ApprovalStatus *v1pb.Issue_ApprovalStatus
+	ApprovalStatus *v1pb.ApprovalStatus
 	// Approver is the user who can approve the issue.
 	Approver *store.UserMessage
 }
@@ -130,11 +131,11 @@ func (s *IssueService) getIssueFind(
 				case "labels":
 					issueFind.LabelList = append(issueFind.LabelList, value.(string))
 				case "approval_status":
-					approvalStatusValue, ok := v1pb.Issue_ApprovalStatus_value[value.(string)]
+					approvalStatusValue, ok := v1pb.ApprovalStatus_value[value.(string)]
 					if !ok {
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid approval_status %q`, value))
 					}
-					filterIssue.ApprovalStatus = new(v1pb.Issue_ApprovalStatus(approvalStatusValue))
+					filterIssue.ApprovalStatus = new(v1pb.ApprovalStatus(approvalStatusValue))
 				case "current_approver", "creator":
 					user, err := s.getUserByIdentifier(ctx, value.(string))
 					if err != nil {
@@ -649,7 +650,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Auto-create rollout if this approval completes the approval flow
-	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
+	if issueV1.ApprovalStatus == v1pb.ApprovalStatus_APPROVED {
 		if issue.PlanUID != nil {
 			s.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
 		}
@@ -995,6 +996,11 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			if trimmed == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("title cannot be empty"))
 			}
+			if trimmed == issue.Title {
+				// No-op update — skip both the patch and the audit comment so we
+				// don't pollute the timeline with "changed name from X to X".
+				continue
+			}
 
 			patch.Title = &trimmed
 
@@ -1011,6 +1017,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			})
 
 		case "description":
+			if req.Msg.Issue.Description == issue.Description {
+				continue
+			}
 			patch.Description = &req.Msg.Issue.Description
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
@@ -1026,6 +1035,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			})
 
 		case "labels":
+			if slices.Equal(issue.Payload.Labels, req.Msg.Issue.Labels) {
+				continue
+			}
 			if len(req.Msg.Issue.Labels) == 0 {
 				patch.RemoveLabels = true
 			} else {

@@ -544,21 +544,28 @@ func (x *IssueComment_IssueUpdate) Equal(y *IssueComment_IssueUpdate) bool {
 	return true
 }
 
-func (x *IssueComment_PlanSpecUpdate) Equal(y *IssueComment_PlanSpecUpdate) bool {
+func (x *IssueComment_PlanUpdate) Equal(y *IssueComment_PlanUpdate) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Spec != y.Spec {
+	if len(x.FromSpecs) != len(y.FromSpecs) {
 		return false
 	}
-	if p, q := x.FromSheet, y.FromSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+	for i := 0; i < len(x.FromSpecs); i++ {
+		if !x.FromSpecs[i].Equal(y.FromSpecs[i]) {
+			return false
+		}
+	}
+	if len(x.ToSpecs) != len(y.ToSpecs) {
 		return false
 	}
-	if p, q := x.ToSheet, y.ToSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
+	for i := 0; i < len(x.ToSpecs); i++ {
+		if !x.ToSpecs[i].Equal(y.ToSpecs[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -594,7 +601,7 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	if !x.GetIssueUpdate().Equal(y.GetIssueUpdate()) {
 		return false
 	}
-	if !x.GetPlanSpecUpdate().Equal(y.GetPlanSpecUpdate()) {
+	if !x.GetPlanUpdate().Equal(y.GetPlanUpdate()) {
 		return false
 	}
 	return true

@@ -1,11 +1,7 @@
 import { projectNamePrefix, userNamePrefix } from "@/store";
 import type { IssueFilter } from "@/types";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
-import {
-  Issue_ApprovalStatus,
-  Issue_Type,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { SearchParams } from "../common";
 import {
   getTsRangeFromSearchParams,
@@ -33,9 +29,7 @@ export const buildIssueFilterBySearchParams = (params: SearchParams) => {
       userNamePrefix
     ),
     approvalStatus: approvalStatus
-      ? Issue_ApprovalStatus[
-          approvalStatus as keyof typeof Issue_ApprovalStatus
-        ]
+      ? ApprovalStatus[approvalStatus as keyof typeof ApprovalStatus]
       : undefined,
     statusList: getValuesFromSearchParams(params, "status").map(
       (status) => IssueStatus[status as keyof typeof IssueStatus]

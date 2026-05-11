@@ -1,9 +1,6 @@
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
@@ -64,10 +61,10 @@ const getReviewStatusInfo = (
   }
 
   switch (issue.approvalStatus) {
-    case Issue_ApprovalStatus.APPROVED:
-    case Issue_ApprovalStatus.SKIPPED:
+    case ApprovalStatus.APPROVED:
+    case ApprovalStatus.SKIPPED:
       return { dotClass: "bg-success", label: t("common.approved") };
-    case Issue_ApprovalStatus.REJECTED:
+    case ApprovalStatus.REJECTED:
       return { dotClass: "bg-warning", label: t("common.rejected") };
     default:
       return { dotClass: "bg-accent", label: t("common.in-review") };

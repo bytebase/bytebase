@@ -2,10 +2,8 @@ import { Ban, CheckCircle2, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
 import { IssueDetailTitleInput } from "./IssueDetailTitleInput";
@@ -16,11 +14,11 @@ export function IssueDetailHeader() {
   const showClosedTag = page.issue?.status === IssueStatus.CANCELED;
   const showDoneTag = page.issue?.status === IssueStatus.DONE;
   const doneTagLabel =
-    page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+    page.issue?.approvalStatus === ApprovalStatus.APPROVED
       ? t("common.approved")
       : t("common.skipped");
   const doneTagVariant =
-    page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+    page.issue?.approvalStatus === ApprovalStatus.APPROVED
       ? "success"
       : "default";
   const showMobileSidebarButton = page.sidebarMode === "MOBILE";

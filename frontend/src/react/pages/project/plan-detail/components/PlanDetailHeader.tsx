@@ -156,6 +156,17 @@ export function PlanDetailHeader() {
       return;
     }
 
+    // Skip the API round-trip when nothing changed so we don't pollute the
+    // issue timeline with "changed name from X to X".
+    const trimmed = title.trim();
+    const currentTitle = page.issue?.title ?? page.plan.title;
+    if (trimmed === currentTitle) {
+      setTitle(currentTitle);
+      setEditingTitle(false);
+      setEditing("title", false);
+      return;
+    }
+
     try {
       setUpdating(true);
       if (page.issue) {

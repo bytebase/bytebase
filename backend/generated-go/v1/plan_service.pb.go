@@ -487,7 +487,7 @@ type Plan struct {
 	HasRollout bool `protobuf:"varint,12,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
 	// The approval status of the linked issue.
 	// Unspecified when no linked issue exists.
-	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,13,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
+	ApprovalStatus ApprovalStatus `protobuf:"varint,13,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.ApprovalStatus" json:"approval_status,omitempty"`
 	// Per-stage rollout status summary.
 	// Ordered by environment deployment order. Empty when no rollout exists.
 	RolloutStageSummaries []*Plan_RolloutStageSummary `protobuf:"bytes,14,rep,name=rollout_stage_summaries,json=rolloutStageSummaries,proto3" json:"rollout_stage_summaries,omitempty"`
@@ -602,11 +602,11 @@ func (x *Plan) GetHasRollout() bool {
 	return false
 }
 
-func (x *Plan) GetApprovalStatus() Issue_ApprovalStatus {
+func (x *Plan) GetApprovalStatus() ApprovalStatus {
 	if x != nil {
 		return x.ApprovalStatus
 	}
-	return Issue_APPROVAL_STATUS_UNSPECIFIED
+	return ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED
 }
 
 func (x *Plan) GetRolloutStageSummaries() []*Plan_RolloutStageSummary {
@@ -1636,7 +1636,7 @@ var File_v1_plan_service_proto protoreflect.FileDescriptor
 
 const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/rollout_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
+	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x18v1/rollout_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
 	"\x0eGetPlanRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\"\x9c\x01\n" +
@@ -1658,7 +1658,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd3\x0f\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xcd\x0f\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1674,8 +1674,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"updateTime\x12q\n" +
 	"\x1bplan_check_run_status_count\x18\v \x03(\v2..bytebase.v1.Plan.PlanCheckRunStatusCountEntryB\x03\xe0A\x03R\x17planCheckRunStatusCount\x12$\n" +
 	"\vhas_rollout\x18\f \x01(\bB\x03\xe0A\x03R\n" +
-	"hasRollout\x12O\n" +
-	"\x0fapproval_status\x18\r \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
+	"hasRollout\x12I\n" +
+	"\x0fapproval_status\x18\r \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
 	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x1a\xb4\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
@@ -1819,7 +1819,7 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(*fieldmaskpb.FieldMask)(nil),                // 24: google.protobuf.FieldMask
 	(State)(0),                                   // 25: bytebase.v1.State
 	(*timestamppb.Timestamp)(nil),                // 26: google.protobuf.Timestamp
-	(Issue_ApprovalStatus)(0),                    // 27: bytebase.v1.Issue.ApprovalStatus
+	(ApprovalStatus)(0),                          // 27: bytebase.v1.ApprovalStatus
 	(ExportFormat)(0),                            // 28: bytebase.v1.ExportFormat
 	(Task_Status)(0),                             // 29: bytebase.v1.Task.Status
 	(Advice_Level)(0),                            // 30: bytebase.v1.Advice.Level
@@ -1836,7 +1836,7 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	26, // 6: bytebase.v1.Plan.create_time:type_name -> google.protobuf.Timestamp
 	26, // 7: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
 	15, // 8: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
-	27, // 9: bytebase.v1.Plan.approval_status:type_name -> bytebase.v1.Issue.ApprovalStatus
+	27, // 9: bytebase.v1.Plan.approval_status:type_name -> bytebase.v1.ApprovalStatus
 	19, // 10: bytebase.v1.Plan.rollout_stage_summaries:type_name -> bytebase.v1.Plan.RolloutStageSummary
 	0,  // 11: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
 	21, // 12: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
@@ -1882,7 +1882,6 @@ func file_v1_plan_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_issue_service_proto_init()
 	file_v1_rollout_service_proto_init()
 	file_v1_sql_service_proto_init()
 	file_v1_plan_service_proto_msgTypes[7].OneofWrappers = []any{}

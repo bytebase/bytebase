@@ -340,6 +340,73 @@ func (ExportFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_common_proto_rawDescGZIP(), []int{3}
 }
 
+// Approval workflow status for an issue or a plan.
+// Lives at the top level so both plan_service.proto and issue_service.proto
+// can reference it without a circular import.
+type ApprovalStatus int32
+
+const (
+	// Unspecified approval status.
+	ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED ApprovalStatus = 0
+	// Approval checks are being evaluated.
+	ApprovalStatus_CHECKING ApprovalStatus = 1
+	// Approval is pending.
+	ApprovalStatus_PENDING ApprovalStatus = 2
+	// Issue has been approved.
+	ApprovalStatus_APPROVED ApprovalStatus = 3
+	// Issue has been rejected.
+	ApprovalStatus_REJECTED ApprovalStatus = 4
+	// Approval was skipped.
+	ApprovalStatus_SKIPPED ApprovalStatus = 5
+)
+
+// Enum value maps for ApprovalStatus.
+var (
+	ApprovalStatus_name = map[int32]string{
+		0: "APPROVAL_STATUS_UNSPECIFIED",
+		1: "CHECKING",
+		2: "PENDING",
+		3: "APPROVED",
+		4: "REJECTED",
+		5: "SKIPPED",
+	}
+	ApprovalStatus_value = map[string]int32{
+		"APPROVAL_STATUS_UNSPECIFIED": 0,
+		"CHECKING":                    1,
+		"PENDING":                     2,
+		"APPROVED":                    3,
+		"REJECTED":                    4,
+		"SKIPPED":                     5,
+	}
+)
+
+func (x ApprovalStatus) Enum() *ApprovalStatus {
+	p := new(ApprovalStatus)
+	*p = x
+	return p
+}
+
+func (x ApprovalStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ApprovalStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_common_proto_enumTypes[4].Descriptor()
+}
+
+func (ApprovalStatus) Type() protoreflect.EnumType {
+	return &file_v1_common_proto_enumTypes[4]
+}
+
+func (x ApprovalStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ApprovalStatus.Descriptor instead.
+func (ApprovalStatus) EnumDescriptor() ([]byte, []int) {
+	return file_v1_common_proto_rawDescGZIP(), []int{4}
+}
+
 // RiskLevel is the risk level.
 type RiskLevel int32
 
@@ -381,11 +448,11 @@ func (x RiskLevel) String() string {
 }
 
 func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[4].Descriptor()
+	return file_v1_common_proto_enumTypes[5].Descriptor()
 }
 
 func (RiskLevel) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[4]
+	return &file_v1_common_proto_enumTypes[5]
 }
 
 func (x RiskLevel) Number() protoreflect.EnumNumber {
@@ -394,7 +461,7 @@ func (x RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RiskLevel.Descriptor instead.
 func (RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{4}
+	return file_v1_common_proto_rawDescGZIP(), []int{5}
 }
 
 // Webhook integration type.
@@ -458,11 +525,11 @@ func (x WebhookType) String() string {
 }
 
 func (WebhookType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[5].Descriptor()
+	return file_v1_common_proto_enumTypes[6].Descriptor()
 }
 
 func (WebhookType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[5]
+	return &file_v1_common_proto_enumTypes[6]
 }
 
 func (x WebhookType) Number() protoreflect.EnumNumber {
@@ -471,7 +538,7 @@ func (x WebhookType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WebhookType.Descriptor instead.
 func (WebhookType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
 // StatementType represents the type of SQL statement.
@@ -627,11 +694,11 @@ func (x StatementType) String() string {
 }
 
 func (StatementType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_common_proto_enumTypes[6].Descriptor()
+	return file_v1_common_proto_enumTypes[7].Descriptor()
 }
 
 func (StatementType) Type() protoreflect.EnumType {
-	return &file_v1_common_proto_enumTypes[6]
+	return &file_v1_common_proto_enumTypes[7]
 }
 
 func (x StatementType) Number() protoreflect.EnumNumber {
@@ -640,7 +707,7 @@ func (x StatementType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StatementType.Descriptor instead.
 func (StatementType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -907,7 +974,14 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x03CSV\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
 	"\x03SQL\x10\x03\x12\b\n" +
-	"\x04XLSX\x10\x04*H\n" +
+	"\x04XLSX\x10\x04*u\n" +
+	"\x0eApprovalStatus\x12\x1f\n" +
+	"\x1bAPPROVAL_STATUS_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bCHECKING\x10\x01\x12\v\n" +
+	"\aPENDING\x10\x02\x12\f\n" +
+	"\bAPPROVED\x10\x03\x12\f\n" +
+	"\bREJECTED\x10\x04\x12\v\n" +
+	"\aSKIPPED\x10\x05*H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
@@ -990,19 +1064,20 @@ func file_v1_common_proto_rawDescGZIP() []byte {
 	return file_v1_common_proto_rawDescData
 }
 
-var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_v1_common_proto_goTypes = []any{
 	(State)(0),                     // 0: bytebase.v1.State
 	(Engine)(0),                    // 1: bytebase.v1.Engine
 	(VCSType)(0),                   // 2: bytebase.v1.VCSType
 	(ExportFormat)(0),              // 3: bytebase.v1.ExportFormat
-	(RiskLevel)(0),                 // 4: bytebase.v1.RiskLevel
-	(WebhookType)(0),               // 5: bytebase.v1.WebhookType
-	(StatementType)(0),             // 6: bytebase.v1.StatementType
-	(*Position)(nil),               // 7: bytebase.v1.Position
-	(*Range)(nil),                  // 8: bytebase.v1.Range
-	(*PermissionDeniedDetail)(nil), // 9: bytebase.v1.PermissionDeniedDetail
+	(ApprovalStatus)(0),            // 4: bytebase.v1.ApprovalStatus
+	(RiskLevel)(0),                 // 5: bytebase.v1.RiskLevel
+	(WebhookType)(0),               // 6: bytebase.v1.WebhookType
+	(StatementType)(0),             // 7: bytebase.v1.StatementType
+	(*Position)(nil),               // 8: bytebase.v1.Position
+	(*Range)(nil),                  // 9: bytebase.v1.Range
+	(*PermissionDeniedDetail)(nil), // 10: bytebase.v1.PermissionDeniedDetail
 }
 var file_v1_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -1022,7 +1097,7 @@ func file_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_common_proto_rawDesc), len(file_v1_common_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

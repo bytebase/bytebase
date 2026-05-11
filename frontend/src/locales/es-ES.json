@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "añadió",
       "canceled-issue": "cerró la incidencia",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "changed-labels": "etiquetas cambiadas",
+      "changed-targets-of": "cambió los targets de",
       "created-issue": "incidencia creado",
+      "disabled-prior-backup-on": "desactivó prior backup en",
+      "enabled-prior-backup-on": "activó prior backup en",
+      "modified-sql-of": "modificó el SQL de",
+      "removed-spec": "eliminó",
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "aprobó la incidencia"
     }

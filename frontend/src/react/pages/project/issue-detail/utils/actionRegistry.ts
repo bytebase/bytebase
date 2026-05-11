@@ -1,10 +1,9 @@
 import type { TFunction } from "i18next";
 import { first, orderBy } from "lodash-es";
 import { candidatesOfApprovalStepV1, extractUserEmail } from "@/store";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  Issue_ApprovalStatus,
   Issue_Approver_Status,
   Issue_Type,
   IssueStatus,
@@ -69,7 +68,7 @@ export interface ActionContext {
   project: Project;
   planState: State;
   issueStatus: IssueStatus | undefined;
-  approvalStatus: Issue_ApprovalStatus | undefined;
+  approvalStatus: ApprovalStatus | undefined;
   isCreating: boolean;
   isIssueOnly: boolean;
   isExportPlan: boolean;
@@ -367,8 +366,8 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
       priority: 30,
       isVisible: (ctx) =>
         ctx.issueStatus === IssueStatus.OPEN &&
-        ctx.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-        ctx.approvalStatus !== Issue_ApprovalStatus.SKIPPED &&
+        ctx.approvalStatus !== ApprovalStatus.APPROVED &&
+        ctx.approvalStatus !== ApprovalStatus.SKIPPED &&
         ctx.permissions.isApprovalCandidate,
       isDisabled: () => false,
       disabledReason: () => undefined,

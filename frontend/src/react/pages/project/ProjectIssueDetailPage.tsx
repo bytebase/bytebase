@@ -1,8 +1,10 @@
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { router } from "@/router";
 import { IssueDetailActivity } from "./issue-detail/components/IssueDetailActivity";
 import { IssueDetailBranchContent } from "./issue-detail/components/IssueDetailBranchContent";
 import { IssueDetailHeader } from "./issue-detail/components/IssueDetailHeader";
@@ -20,8 +22,18 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
   const [databaseExportTasksExpanded, setDatabaseExportTasksExpanded] =
     useState(false);
   const [pageHost, setPageHost] = useState<HTMLDivElement | null>(null);
-  const [databaseChangeSelectedSpecId, setDatabaseChangeSelectedSpecId] =
-    useState("");
+  // Selected spec id is mirrored to the URL as ?spec=<id> so that links
+  // (e.g. from audit rows in the comment list) can deep-link a spec without
+  // navigating away from the issue detail page.
+  const databaseChangeSelectedSpecId = useVueState(() => {
+    const v = router.currentRoute.value.query.spec;
+    return typeof v === "string" ? v : "";
+  });
+  const setDatabaseChangeSelectedSpecId = useCallback((id: string) => {
+    void router.replace({
+      query: { ...router.currentRoute.value.query, spec: id || undefined },
+    });
+  }, []);
   const page = useIssueDetailPage({ ...props, pageHost });
   const showDesktopSidebar = page.sidebarMode === "DESKTOP";
   const showMobileSidebar = page.sidebarMode === "MOBILE";

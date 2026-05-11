@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "追加しました",
       "canceled-issue": "イシューを閉じた",
       "changed-description": "説明の変更",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "changed-labels": "ラベルを変更しました",
+      "changed-targets-of": "ターゲットを変更しました",
       "created-issue": "イシューを作成する",
+      "disabled-prior-backup-on": "事前バックアップを無効化しました",
+      "enabled-prior-backup-on": "事前バックアップを有効化しました",
+      "modified-sql-of": "SQL を変更しました",
+      "removed-spec": "削除しました",
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを承認した"
     }

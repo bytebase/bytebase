@@ -17355,6 +17355,20 @@ components:
           description: The roles required for approval in order.
       title: ApprovalFlow
       additionalProperties: false
+    bytebase.v1.ApprovalStatus:
+      type: string
+      title: ApprovalStatus
+      enum:
+        - APPROVAL_STATUS_UNSPECIFIED
+        - CHECKING
+        - PENDING
+        - APPROVED
+        - REJECTED
+        - SKIPPED
+      description: |-
+        Approval workflow status for an issue or a plan.
+         Lives at the top level so both plan_service.proto and issue_service.proto
+         can reference it without a circular import.
     bytebase.v1.ApprovalTemplate:
       type: object
       properties:
@@ -21688,8 +21702,9 @@ components:
           description: Labels attached to the issue for categorization and filtering.
         approvalStatus:
           title: approval_status
+          description: The overall approval status for the issue.
           readOnly: true
-          $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+          $ref: '#/components/schemas/bytebase.v1.ApprovalStatus'
         accessGrant:
           type: string
           title: access_grant
@@ -21699,17 +21714,6 @@ components:
           readOnly: true
       title: Issue
       additionalProperties: false
-    bytebase.v1.Issue.ApprovalStatus:
-      type: string
-      title: ApprovalStatus
-      enum:
-        - APPROVAL_STATUS_UNSPECIFIED
-        - CHECKING
-        - PENDING
-        - APPROVED
-        - REJECTED
-        - SKIPPED
-      description: The overall approval status for the issue.
     bytebase.v1.Issue.Approver:
       type: object
       properties:
@@ -21794,13 +21798,13 @@ components:
                 - issueUpdate
             - type: object
               properties:
-                planSpecUpdate:
-                  title: plan_spec_update
-                  description: Plan spec update event.
-                  $ref: '#/components/schemas/bytebase.v1.IssueComment.PlanSpecUpdate'
-              title: plan_spec_update
+                planUpdate:
+                  title: plan_update
+                  description: Plan update event.
+                  $ref: '#/components/schemas/bytebase.v1.IssueComment.PlanUpdate'
+              title: plan_update
               required:
-                - planSpecUpdate
+                - planUpdate
       title: IssueComment
       additionalProperties: false
       description: A comment on an issue.
@@ -21869,34 +21873,24 @@ components:
       title: IssueUpdate
       additionalProperties: false
       description: Issue update event information.
-    bytebase.v1.IssueComment.PlanSpecUpdate:
+    bytebase.v1.IssueComment.PlanUpdate:
       type: object
       properties:
-        spec:
-          type: string
-          title: spec
-          description: |-
-            The spec that was updated.
-             Format: projects/{project}/plans/{plan}/specs/{spec}
-        fromSheet:
-          type:
-            - string
-            - "null"
-          title: from_sheet
-          description: |-
-            The previous sheet.
-             Format: projects/{project}/sheets/{sheet}
-        toSheet:
-          type:
-            - string
-            - "null"
-          title: to_sheet
-          description: |-
-            The new sheet.
-             Format: projects/{project}/sheets/{sheet}
-      title: PlanSpecUpdate
+        fromSpecs:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Plan.Spec'
+          title: from_specs
+        toSpecs:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Plan.Spec'
+          title: to_specs
+      title: PlanUpdate
       additionalProperties: false
-      description: Plan spec update event information (tracks sheet changes to plan specs).
+      description: |-
+        Plan update event information (snapshot of plan.config.specs before
+         and after a PlanService.UpdatePlan call that mutated specs).
     bytebase.v1.IssueStatus:
       type: string
       title: IssueStatus
@@ -23974,7 +23968,7 @@ components:
             The approval status of the linked issue.
              Unspecified when no linked issue exists.
           readOnly: true
-          $ref: '#/components/schemas/bytebase.v1.Issue.ApprovalStatus'
+          $ref: '#/components/schemas/bytebase.v1.ApprovalStatus'
         rolloutStageSummaries:
           type: array
           items:
@@ -30998,6 +30992,18 @@ security: []
 tags:
   - name: AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
+  - name: RolloutService
+    description: RolloutService manages the execution of deployment plans.
+  - name: InstanceRoleService
+    description: InstanceRoleService manages database roles within instances.
+  - name: InstanceService
+    description: InstanceService manages database instances and their connections.
+  - name: DatabaseService
+    description: DatabaseService manages databases and their schemas.
+  - name: SQLService
+    description: SQLService executes SQL queries and manages query operations.
+  - name: PlanService
+    description: PlanService manages deployment plans for database changes.
   - name: IssueService
     description: IssueService manages issues for tracking database changes and tasks.
   - name: SettingService
@@ -31018,24 +31024,12 @@ tags:
     description: DatabaseCatalogService manages database schema metadata and classification.
   - name: DatabaseGroupService
     description: DatabaseGroupService manages database groups for organizing databases by criteria.
-  - name: InstanceRoleService
-    description: InstanceRoleService manages database roles within instances.
-  - name: InstanceService
-    description: InstanceService manages database instances and their connections.
-  - name: DatabaseService
-    description: DatabaseService manages databases and their schemas.
   - name: GroupService
     description: GroupService manages user groups for organizing users and permissions.
   - name: IdentityProviderService
     description: IdentityProviderService manages external identity providers for SSO authentication.
   - name: OrgPolicyService
     description: OrgPolicyService manages organizational policies at various resource levels.
-  - name: RolloutService
-    description: RolloutService manages the execution of deployment plans.
-  - name: SQLService
-    description: SQLService executes SQL queries and manages query operations.
-  - name: PlanService
-    description: PlanService manages deployment plans for database changes.
   - name: ProjectService
     description: ProjectService manages projects that group databases and changes.
   - name: ReleaseService

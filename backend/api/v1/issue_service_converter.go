@@ -122,16 +122,16 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 	return issueV1, nil
 }
 
-func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_ApprovalStatus {
+func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.ApprovalStatus {
 	// If approval finding is not done, status is checking
 	// Note: approval.GetApprovalFindingDone() returns false when approval is nil
 	if !approval.GetApprovalFindingDone() {
-		return v1pb.Issue_CHECKING
+		return v1pb.ApprovalStatus_CHECKING
 	}
 
 	// If no approval template, approval is skipped (not required)
 	if approval.GetApprovalTemplate() == nil {
-		return v1pb.Issue_SKIPPED
+		return v1pb.ApprovalStatus_SKIPPED
 	}
 
 	approvalTemplate := approval.GetApprovalTemplate()
@@ -140,14 +140,14 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 
 	// If no approvers are assigned yet, it's pending
 	if len(approvers) == 0 {
-		return v1pb.Issue_PENDING
+		return v1pb.ApprovalStatus_PENDING
 	}
 
 	// Check approver statuses
 	for _, approver := range approvers {
 		if approver.GetStatus() == storepb.IssuePayloadApproval_Approver_REJECTED {
 			// Short-circuit: if any approver rejected, overall status is rejected
-			return v1pb.Issue_REJECTED
+			return v1pb.ApprovalStatus_REJECTED
 		}
 	}
 
@@ -165,12 +165,12 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 			}
 		}
 		if allApproved {
-			return v1pb.Issue_APPROVED
+			return v1pb.ApprovalStatus_APPROVED
 		}
 	}
 
 	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
-	return v1pb.Issue_PENDING
+	return v1pb.ApprovalStatus_PENDING
 }
 
 func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
@@ -305,9 +305,9 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		r.Event = convertToIssueCommentEventApproval(e)
 	case *storepb.IssueCommentPayload_IssueUpdate_:
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
-	case *storepb.IssueCommentPayload_PlanSpecUpdate_:
+	case *storepb.IssueCommentPayload_PlanUpdate_:
 		projectID, _, _ := common.GetProjectIDIssueUID(issueName)
-		r.Event = convertToIssueCommentEventPlanSpecUpdate(projectID, e)
+		r.Event = convertToIssueCommentEventPlanUpdate(projectID, e)
 	default:
 	}
 
@@ -372,19 +372,11 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssuePayloadApproval_App
 	}
 }
 
-func convertToIssueCommentEventPlanSpecUpdate(projectID string, u *storepb.IssueCommentPayload_PlanSpecUpdate_) *v1pb.IssueComment_PlanSpecUpdate_ {
-	result := &v1pb.IssueComment_PlanSpecUpdate_{
-		PlanSpecUpdate: &v1pb.IssueComment_PlanSpecUpdate{
-			Spec: u.PlanSpecUpdate.Spec,
+func convertToIssueCommentEventPlanUpdate(projectID string, u *storepb.IssueCommentPayload_PlanUpdate_) *v1pb.IssueComment_PlanUpdate_ {
+	return &v1pb.IssueComment_PlanUpdate_{
+		PlanUpdate: &v1pb.IssueComment_PlanUpdate{
+			FromSpecs: convertToPlanSpecs(projectID, u.PlanUpdate.GetFromSpecs()),
+			ToSpecs:   convertToPlanSpecs(projectID, u.PlanUpdate.GetToSpecs()),
 		},
 	}
-	if fromSha256 := u.PlanSpecUpdate.GetFromSheetSha256(); fromSha256 != "" {
-		fromSheet := common.FormatSheet(projectID, fromSha256)
-		result.PlanSpecUpdate.FromSheet = &fromSheet
-	}
-	if toSha256 := u.PlanSpecUpdate.GetToSheetSha256(); toSha256 != "" {
-		toSheet := common.FormatSheet(projectID, toSha256)
-		result.PlanSpecUpdate.ToSheet = &toSheet
-	}
-	return result
 }

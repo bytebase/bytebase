@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "đã thêm",
       "canceled-issue": "đã đóng vấn đề",
       "changed-description": "đã thay đổi mô tả",
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "changed-labels": "đã thay đổi nhãn",
+      "changed-targets-of": "đã thay đổi targets của",
       "created-issue": "đã tạo vấn đề",
+      "disabled-prior-backup-on": "đã tắt prior backup trên",
+      "enabled-prior-backup-on": "đã bật prior backup trên",
+      "modified-sql-of": "đã sửa đổi SQL của",
+      "removed-spec": "đã xóa",
       "reopened-issue": "đã mở lại vấn đề",
       "resolved-issue": "đã phê duyệt vấn đề"
     }

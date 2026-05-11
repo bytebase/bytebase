@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "添加了",
       "canceled-issue": "关闭工单",
       "changed-description": "修改描述",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "changed-labels": "改变标签",
+      "changed-targets-of": "修改了 targets：",
       "created-issue": "创建工单",
+      "disabled-prior-backup-on": "禁用了 prior backup",
+      "enabled-prior-backup-on": "启用了 prior backup",
+      "modified-sql-of": "修改了 SQL",
+      "removed-spec": "移除了",
       "reopened-issue": "重开工单",
       "resolved-issue": "批准工单"
     }

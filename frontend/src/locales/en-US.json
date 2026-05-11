@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "added",
       "canceled-issue": "closed the issue",
       "changed-description": "changed description",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "changed-labels": "changed labels",
+      "changed-targets-of": "changed targets of",
       "created-issue": "created issue",
+      "disabled-prior-backup-on": "disabled prior backup on",
+      "enabled-prior-backup-on": "enabled prior backup on",
+      "modified-sql-of": "modified SQL of",
+      "removed-spec": "removed",
       "reopened-issue": "reopened issue",
       "resolved-issue": "approved the issue"
     }

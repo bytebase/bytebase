@@ -5,8 +5,9 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { RiskLevel } from "./common_pb";
+import type { ApprovalStatus, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
+import type { Plan_Spec } from "./plan_service_pb";
 
 /**
  * Describes the file v1/issue_service.proto.
@@ -559,9 +560,11 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   labels: string[];
 
   /**
-   * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 18;
+   * The overall approval status for the issue.
+   *
+   * @generated from field: bytebase.v1.ApprovalStatus approval_status = 18;
    */
-  approvalStatus: Issue_ApprovalStatus;
+  approvalStatus: ApprovalStatus;
 
   /**
    * The access grant associated with this issue.
@@ -691,60 +694,6 @@ export enum Issue_Type {
  * Describes the enum bytebase.v1.Issue.Type.
  */
 export declare const Issue_TypeSchema: GenEnum<Issue_Type>;
-
-/**
- * The overall approval status for the issue.
- *
- * @generated from enum bytebase.v1.Issue.ApprovalStatus
- */
-export enum Issue_ApprovalStatus {
-  /**
-   * Unspecified approval status.
-   *
-   * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
-   */
-  APPROVAL_STATUS_UNSPECIFIED = 0,
-
-  /**
-   * Approval checks are being evaluated.
-   *
-   * @generated from enum value: CHECKING = 1;
-   */
-  CHECKING = 1,
-
-  /**
-   * Approval is pending.
-   *
-   * @generated from enum value: PENDING = 2;
-   */
-  PENDING = 2,
-
-  /**
-   * Issue has been approved.
-   *
-   * @generated from enum value: APPROVED = 3;
-   */
-  APPROVED = 3,
-
-  /**
-   * Issue has been rejected.
-   *
-   * @generated from enum value: REJECTED = 4;
-   */
-  REJECTED = 4,
-
-  /**
-   * Approval was skipped.
-   *
-   * @generated from enum value: SKIPPED = 5;
-   */
-  SKIPPED = 5,
-}
-
-/**
- * Describes the enum bytebase.v1.Issue.ApprovalStatus.
- */
-export declare const Issue_ApprovalStatusSchema: GenEnum<Issue_ApprovalStatus>;
 
 /**
  * @generated from message bytebase.v1.RoleGrant
@@ -1036,12 +985,12 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     case: "issueUpdate";
   } | {
     /**
-     * Plan spec update event.
+     * Plan update event.
      *
-     * @generated from field: bytebase.v1.IssueComment.PlanSpecUpdate plan_spec_update = 12;
+     * @generated from field: bytebase.v1.IssueComment.PlanUpdate plan_update = 12;
      */
-    value: IssueComment_PlanSpecUpdate;
-    case: "planSpecUpdate";
+    value: IssueComment_PlanUpdate;
+    case: "planUpdate";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1165,41 +1114,28 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
 export declare const IssueComment_IssueUpdateSchema: GenMessage<IssueComment_IssueUpdate>;
 
 /**
- * Plan spec update event information (tracks sheet changes to plan specs).
+ * Plan update event information (snapshot of plan.config.specs before
+ * and after a PlanService.UpdatePlan call that mutated specs).
  *
- * @generated from message bytebase.v1.IssueComment.PlanSpecUpdate
+ * @generated from message bytebase.v1.IssueComment.PlanUpdate
  */
-export declare type IssueComment_PlanSpecUpdate = Message<"bytebase.v1.IssueComment.PlanSpecUpdate"> & {
+export declare type IssueComment_PlanUpdate = Message<"bytebase.v1.IssueComment.PlanUpdate"> & {
   /**
-   * The spec that was updated.
-   * Format: projects/{project}/plans/{plan}/specs/{spec}
-   *
-   * @generated from field: string spec = 1;
+   * @generated from field: repeated bytebase.v1.Plan.Spec from_specs = 1;
    */
-  spec: string;
+  fromSpecs: Plan_Spec[];
 
   /**
-   * The previous sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: optional string from_sheet = 2;
+   * @generated from field: repeated bytebase.v1.Plan.Spec to_specs = 2;
    */
-  fromSheet?: string;
-
-  /**
-   * The new sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: optional string to_sheet = 3;
-   */
-  toSheet?: string;
+  toSpecs: Plan_Spec[];
 };
 
 /**
- * Describes the message bytebase.v1.IssueComment.PlanSpecUpdate.
- * Use `create(IssueComment_PlanSpecUpdateSchema)` to create a new message.
+ * Describes the message bytebase.v1.IssueComment.PlanUpdate.
+ * Use `create(IssueComment_PlanUpdateSchema)` to create a new message.
  */
-export declare const IssueComment_PlanSpecUpdateSchema: GenMessage<IssueComment_PlanSpecUpdate>;
+export declare const IssueComment_PlanUpdateSchema: GenMessage<IssueComment_PlanUpdate>;
 
 /**
  * The status of an issue.

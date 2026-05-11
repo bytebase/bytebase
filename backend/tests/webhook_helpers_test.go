@@ -636,7 +636,7 @@ func waitForApprovalFindingDone(ctx context.Context, t *testing.T, ctl *controll
 			Name: issue.Name,
 		}))
 		require.NoError(t, err)
-		if resp.Msg.ApprovalStatus != v1pb.Issue_CHECKING {
+		if resp.Msg.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -665,7 +665,7 @@ func waitForIssueApproved(ctx context.Context, t *testing.T, ctl *controller, is
 			Name: issue.Name,
 		}))
 		require.NoError(t, err)
-		if resp.Msg.ApprovalStatus == v1pb.Issue_APPROVED {
+		if resp.Msg.ApprovalStatus == v1pb.ApprovalStatus_APPROVED {
 			return
 		}
 		if time.Now().After(deadline) {
@@ -689,9 +689,9 @@ func waitForIssuePending(ctx context.Context, t *testing.T, ctl *controller, iss
 		}))
 		require.NoError(t, err)
 		switch resp.Msg.ApprovalStatus {
-		case v1pb.Issue_PENDING:
+		case v1pb.ApprovalStatus_PENDING:
 			return
-		case v1pb.Issue_CHECKING:
+		case v1pb.ApprovalStatus_CHECKING:
 			// keep waiting
 		default:
 			t.Fatalf("issue %s reached unexpected approval status %s while waiting for PENDING",

@@ -68,14 +68,13 @@ import {
   isValidDatabaseGroupName,
   unknownUser,
 } from "@/types";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   type Database,
   SyncStatus,
 } from "@/types/proto-es/v1/database_service_pb";
-import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Plan,
   Plan_RolloutStageSummary,
@@ -504,18 +503,18 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   const approvalTag = useMemo(() => {
     if (plan.issue === "") return undefined;
     switch (plan.approvalStatus) {
-      case Issue_ApprovalStatus.CHECKING:
+      case ApprovalStatus.CHECKING:
         return { label: t("task.checking"), variant: "default" as const };
-      case Issue_ApprovalStatus.APPROVED:
+      case ApprovalStatus.APPROVED:
         return {
           label: t("issue.table.approved"),
           variant: "success" as const,
         };
-      case Issue_ApprovalStatus.SKIPPED:
+      case ApprovalStatus.SKIPPED:
         return { label: t("common.skipped"), variant: "default" as const };
-      case Issue_ApprovalStatus.REJECTED:
+      case ApprovalStatus.REJECTED:
         return { label: t("common.rejected"), variant: "warning" as const };
-      case Issue_ApprovalStatus.PENDING:
+      case ApprovalStatus.PENDING:
         return { label: t("common.under-review"), variant: "info" as const };
       default:
         return undefined;

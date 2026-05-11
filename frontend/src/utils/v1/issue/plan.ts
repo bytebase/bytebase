@@ -1,4 +1,4 @@
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types/const";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
@@ -9,6 +9,22 @@ export const sheetNameOfSpec = (spec: Plan_Spec): string => {
     return spec.config.value.sheet ?? "";
   }
   return "";
+};
+
+export const targetsOfSpec = (spec: Plan_Spec): string[] => {
+  if (spec.config?.case === "changeDatabaseConfig") {
+    return spec.config.value.targets ?? [];
+  }
+  if (spec.config?.case === "exportDataConfig") {
+    return spec.config.value.targets ?? [];
+  }
+  return [];
+};
+
+export const enablePriorBackupOfSpec = (spec: Plan_Spec): boolean => {
+  return spec.config?.case === "changeDatabaseConfig"
+    ? (spec.config.value.enablePriorBackup ?? false)
+    : false;
 };
 
 export const extractPlanUID = (name: string) => {

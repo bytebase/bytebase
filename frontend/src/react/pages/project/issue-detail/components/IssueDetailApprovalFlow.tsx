@@ -25,10 +25,13 @@ import {
   useUserStore,
 } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
-import { RiskLevel, State } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  RiskLevel,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  Issue_ApprovalStatus,
   Issue_Approver_Status,
   RequestIssueRequestSchema,
   RetryIssueApprovalRequestSchema,
@@ -98,7 +101,7 @@ export function IssueDetailApprovalFlow() {
       </div>
 
       <div className="mt-2">
-        {issue.approvalStatus === Issue_ApprovalStatus.CHECKING ? (
+        {issue.approvalStatus === ApprovalStatus.CHECKING ? (
           <CheckingState issue={issue} />
         ) : approvalSteps.length > 0 ? (
           <div className="mt-1 flex flex-col gap-y-4 pl-1">
@@ -473,19 +476,19 @@ function getStatusTag(
   if (approvalStepCount === 0) {
     return undefined;
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.APPROVED) {
+  if (issue.approvalStatus === ApprovalStatus.APPROVED) {
     return {
       className: "bg-success/10 text-success",
       label: t("issue.table.approved"),
     };
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.REJECTED) {
+  if (issue.approvalStatus === ApprovalStatus.REJECTED) {
     return {
       className: "bg-warning/10 text-warning",
       label: t("common.rejected"),
     };
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.PENDING) {
+  if (issue.approvalStatus === ApprovalStatus.PENDING) {
     return {
       className: "bg-accent/10 text-accent",
       label: t("common.under-review"),

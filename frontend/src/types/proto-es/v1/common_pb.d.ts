@@ -443,6 +443,62 @@ export enum ExportFormat {
 export declare const ExportFormatSchema: GenEnum<ExportFormat>;
 
 /**
+ * Approval workflow status for an issue or a plan.
+ * Lives at the top level so both plan_service.proto and issue_service.proto
+ * can reference it without a circular import.
+ *
+ * @generated from enum bytebase.v1.ApprovalStatus
+ */
+export enum ApprovalStatus {
+  /**
+   * Unspecified approval status.
+   *
+   * @generated from enum value: APPROVAL_STATUS_UNSPECIFIED = 0;
+   */
+  APPROVAL_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * Approval checks are being evaluated.
+   *
+   * @generated from enum value: CHECKING = 1;
+   */
+  CHECKING = 1,
+
+  /**
+   * Approval is pending.
+   *
+   * @generated from enum value: PENDING = 2;
+   */
+  PENDING = 2,
+
+  /**
+   * Issue has been approved.
+   *
+   * @generated from enum value: APPROVED = 3;
+   */
+  APPROVED = 3,
+
+  /**
+   * Issue has been rejected.
+   *
+   * @generated from enum value: REJECTED = 4;
+   */
+  REJECTED = 4,
+
+  /**
+   * Approval was skipped.
+   *
+   * @generated from enum value: SKIPPED = 5;
+   */
+  SKIPPED = 5,
+}
+
+/**
+ * Describes the enum bytebase.v1.ApprovalStatus.
+ */
+export declare const ApprovalStatusSchema: GenEnum<ApprovalStatus>;
+
+/**
  * RiskLevel is the risk level.
  *
  * @generated from enum bytebase.v1.RiskLevel
