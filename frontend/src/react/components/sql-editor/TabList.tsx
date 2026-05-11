@@ -274,7 +274,7 @@ export function TabList() {
             items={tabs.map((tab) => tab.id)}
             strategy={horizontalListSortingStrategy}
           >
-            <div className="relative flex flex-nowrap overflow-hidden h-9 pt-0.5">
+            <div className="relative flex flex-nowrap h-9 pt-0.5">
               {tabs.map((tab, index) => (
                 <TabItem
                   key={tab.id}
