@@ -226,7 +226,9 @@ export function ProjectTable({
                   </TableCell>
                 ) : null}
                 <TableCell>
-                  <HighlightLabelText text={resourceId} keyword={keyword} />
+                  <EllipsisText text={resourceId}>
+                    <HighlightLabelText text={resourceId} keyword={keyword} />
+                  </EllipsisText>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-x-2 min-w-0">
