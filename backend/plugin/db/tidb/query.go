@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
@@ -43,19 +41,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any) *v1pb.
 		if raw.Valid {
 			_, scale, _ := columnType.DecimalSize()
 			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
-				t, err := time.Parse(time.DateTime, raw.String)
-				if err != nil {
-					slog.Error("failed to parse time value", log.BBError(err))
-					return util.NullRowValue
-				}
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: &v1pb.RowValue_Timestamp{
-							GoogleTimestamp: timestamppb.New(t),
-							Accuracy:        int32(scale),
-						},
-					},
-				}
+				return util.BuildTimestampOrStringRowValue(raw.String, scale)
 			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
