@@ -258,16 +258,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 		return resp, nil
 	}
 
-	// Delegate to AuthService.SwitchWorkspace for token generation and cookie setting.
-	switchReq := connect.NewRequest(&v1pb.SwitchWorkspaceRequest{
-		Workspace: common.FormatWorkspace(nextWS.ResourceID),
-		Web:       true,
-	})
-	switchReq.Header().Set("Cookie", req.Header().Get("Cookie"))
-	switchReq.Header().Set("Origin", req.Header().Get("Origin"))
-	switchReq.Header().Set("Authorization", req.Header().Get("Authorization"))
-
-	return s.authService.SwitchWorkspace(ctx, switchReq)
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, true, req.Header())
 }
 
 // LeaveWorkspace removes the calling user from a workspace's IAM bindings,
@@ -371,16 +362,7 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		return resp, nil
 	}
 
-	// Delegate to AuthService.SwitchWorkspace for token generation and cookie setting.
-	switchReq := connect.NewRequest(&v1pb.SwitchWorkspaceRequest{
-		Workspace: common.FormatWorkspace(nextWS.ResourceID),
-		Web:       true,
-	})
-	switchReq.Header().Set("Cookie", req.Header().Get("Cookie"))
-	switchReq.Header().Set("Origin", req.Header().Get("Origin"))
-	switchReq.Header().Set("Authorization", req.Header().Get("Authorization"))
-
-	return s.authService.SwitchWorkspace(ctx, switchReq)
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, true, req.Header())
 }
 
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {

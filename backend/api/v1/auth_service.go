@@ -1229,7 +1229,13 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		}
 	}
 
-	// Generate new token with target workspace.
+	return s.switchWorkspaceInternal(ctx, user, workspaceID, request.Web, req.Header())
+}
+
+// switchWorkspaceInternal generates new tokens for the target workspace and
+// returns a LoginResponse with cookies set. Used by SwitchWorkspace,
+// LeaveWorkspace, and DeleteWorkspace.
+func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.UserMessage, workspaceID string, web bool, reqHeaders http.Header) (*connect.Response[v1pb.LoginResponse], error) {
 	token, err := s.generateLoginToken(ctx, user, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate token"))
@@ -1247,14 +1253,11 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		slog.Error("failed to update user profile", log.BBError(err))
 	}
 
-	// Build response.
 	response := &v1pb.LoginResponse{}
 	resp := connect.NewResponse(response)
 
-	if request.Web {
-		// Require a valid refresh token cookie — prevents non-web clients from
-		// upgrading a short-lived bearer token into a long-lived web session.
-		oldRefreshToken := auth.GetRefreshTokenFromCookie(req.Header())
+	if web {
+		oldRefreshToken := auth.GetRefreshTokenFromCookie(reqHeaders)
 		if oldRefreshToken == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("refresh token cookie required for web workspace switch"))
 		}
@@ -1273,7 +1276,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
 		}
 
-		origin := req.Header().Get("Origin")
+		origin := reqHeaders.Get("Origin")
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 
