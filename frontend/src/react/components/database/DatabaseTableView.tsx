@@ -58,6 +58,8 @@ interface DatabaseColumn {
   sortKey?: DatabaseTableSort["key"];
   cellClassName?: string;
   render: (database: Database) => React.ReactNode;
+  onCellClick?: (database: Database, e: React.MouseEvent) => void;
+  onHeaderClick?: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -136,9 +138,18 @@ export function DatabaseTableView({
           <Checkbox
             checked={someSelected ? "indeterminate" : allSelected}
             onCheckedChange={toggleSelectAll}
+            onClick={(e) => e.stopPropagation()}
           />
         ),
         defaultWidth: 48,
+        onCellClick: (db, e) => {
+          e.stopPropagation();
+          toggleSelection(db.name);
+        },
+        onHeaderClick: (e) => {
+          e.stopPropagation();
+          toggleSelectAll();
+        },
         render: (db) => (
           <Checkbox
             checked={selectedNames?.has(db.name) ?? false}
@@ -301,6 +312,8 @@ export function DatabaseTableView({
                   onResizeStart={
                     col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
                   }
+                  className={cn(col.onHeaderClick && "cursor-pointer")}
+                  onClick={col.onHeaderClick}
                 >
                   {col.title}
                 </TableHead>
@@ -340,7 +353,16 @@ export function DatabaseTableView({
                 {columns.map((col) => (
                   <TableCell
                     key={col.key}
-                    className={cn("overflow-hidden", col.cellClassName)}
+                    className={cn(
+                      "overflow-hidden",
+                      col.cellClassName,
+                      col.onCellClick && "cursor-pointer"
+                    )}
+                    onClick={
+                      col.onCellClick
+                        ? (e) => col.onCellClick!(db, e)
+                        : undefined
+                    }
                   >
                     {col.render(db)}
                   </TableCell>
