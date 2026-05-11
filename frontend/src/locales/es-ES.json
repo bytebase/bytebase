@@ -330,6 +330,7 @@
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
+    "more": "Más",
     "n-items-selected": "{n} elementos seleccionados",
     "n-more": "+{n} más",
     "n-selected": "{n} seleccionados",

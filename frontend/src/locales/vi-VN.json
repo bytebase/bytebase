@@ -330,6 +330,7 @@
     "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
+    "more": "Thêm",
     "n-items-selected": "Đã chọn {n} mục",
     "n-more": "+{n} nữa",
     "n-selected": "Đã chọn {n}",

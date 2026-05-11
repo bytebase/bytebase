@@ -330,6 +330,7 @@
     "minutes": "Minutes",
     "missing-required-permission": "Missing required permissions {permissions}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
+    "more": "More",
     "n-items-selected": "{n} items selected",
     "n-more": "+{n} more",
     "n-selected": "{n} selected",
