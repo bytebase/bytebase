@@ -12,8 +12,11 @@ global:
         tag: latest
         image: bytebase/bytebase
         registry: docker.io
+        imagePullPolicy: "Always"
 
 bytebase:
+  initImage:
+    initPullPolicy: "IfNotPresent"
   version: latest
   registryMirrorHost: ""
   option:
