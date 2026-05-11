@@ -51,7 +51,7 @@ export function EllipsisText({ text, className, children }: EllipsisTextProps) {
             sideOffset={4}
             className={LAYER_SURFACE_CLASS}
           >
-            <BaseTooltip.Popup className="max-w-80 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md whitespace-normal">
+            <BaseTooltip.Popup className="rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md whitespace-nowrap">
               {text}
               <BaseTooltip.Arrow className="fill-main" />
             </BaseTooltip.Popup>
