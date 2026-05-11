@@ -143,6 +143,36 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 	}
 }
 
+func TestIsSystemCollection(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			name: "users",
+			want: false,
+		},
+		{
+			name: "system.namespaces",
+			want: true,
+		},
+		{
+			name: "system.users",
+			want: true,
+		},
+		{
+			name: "system.buckets.events",
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isSystemCollection(tt.name))
+		})
+	}
+}
+
 func TestIsMongoStatement(t *testing.T) {
 	tests := []struct {
 		statement string

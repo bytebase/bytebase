@@ -16,14 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-var systemCollection = map[string]bool{
-	"system.namespaces": true,
-	"system.indexes":    true,
-	"system.profile":    true,
-	"system.js":         true,
-	"system.views":      true,
-}
-
 var systemDatabase = map[string]bool{
 	"admin":    true,
 	"config":   true,
@@ -142,7 +134,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	slices.Sort(viewNames)
 
 	for _, collectionName := range collectionNames {
-		if systemCollection[collectionName] {
+		if isSystemCollection(collectionName) {
 			continue
 		}
 
@@ -258,6 +250,10 @@ func getIndexes(ctx context.Context, collection *mongo.Collection) ([]*storepb.I
 		indexes = append(indexes, indexMap[name])
 	}
 	return indexes, nil
+}
+
+func isSystemCollection(collectionName string) bool {
+	return strings.HasPrefix(collectionName, "system.")
 }
 
 // getVersion returns the version of mongod or mongos instance.
