@@ -19,7 +19,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { groupProjectRoleBindings } from "@/components/Member/projectRoleBindings";
-import type { MemberBinding } from "@/components/Member/types";
+import type { GroupBinding, MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
 import {
   getRoleEnvironmentLimitationKind,
@@ -33,7 +33,7 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
-import { UserAvatar } from "@/react/components/UserAvatar";
+import { UserCell } from "@/react/components/UserCell";
 import { Alert } from "@/react/components/ui/alert";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -67,6 +67,11 @@ import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
+  useNavigate,
+  WORKSPACE_ROUTE_GROUPS,
+  WORKSPACE_ROUTE_USER_PROFILE,
+} from "@/react/router";
+import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
@@ -75,6 +80,7 @@ import {
   useRoleStore,
   useSettingV1Store,
   useSubscriptionV1Store,
+  useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -89,6 +95,7 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   displayRoleTitle,
@@ -145,6 +152,111 @@ function MemberTable({
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const userStore = useUserStore();
+  const navigate = useNavigate();
+  const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
+  const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
+
+  // Group expand state. Cache is keyed by group name and invalidated
+  // when the group-binding *content* changes — not on `bindings`
+  // reference change, because the parent rebuilds `memberBindings` via
+  // `useVueState(() => getMemberBindings(...))` and gets a new array
+  // identity on every render. We can't use the `prevBindingsRef.current
+  // !== bindings` shortcut that `GroupsPage` uses (its `groups` comes
+  // from a reducer-backed `usePagedData` with stable identity).
+  // Comparing a content-derived signature instead lets the cache only
+  // reset on real membership changes — same effect, different trigger.
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
+    new Map()
+  );
+  const memberCacheRef = useRef(memberCache);
+  memberCacheRef.current = memberCache;
+  const loadingRef = useRef<Set<string>>(new Set());
+
+  const fetchGroupMembers = useCallback(
+    (group: GroupBinding) => {
+      if (loadingRef.current.has(group.name)) return;
+      loadingRef.current.add(group.name);
+      const memberNames = group.members.map((m) => m.member);
+      userStore
+        .batchGetOrFetchUsers(memberNames)
+        .then((users: (User | undefined)[]) => {
+          setMemberCache((prev) => {
+            const next = new Map(prev);
+            next.set(
+              group.name,
+              users.filter((u): u is User => !!u)
+            );
+            return next;
+          });
+        })
+        .catch(() => {
+          // Allow retry on next expand
+        })
+        .finally(() => loadingRef.current.delete(group.name));
+    },
+    [userStore]
+  );
+
+  // Signature of just the group bindings — that's all the cache cares
+  // about. Recomputed on every render (because `bindings` reference
+  // changes), but yields a stable string when group content is
+  // unchanged, so the effect below only fires on real membership
+  // changes.
+  const groupBindingsSignature = useMemo(() => {
+    const parts: string[] = [];
+    for (const b of bindings) {
+      if (b.type !== "groups" || !b.group) continue;
+      const members = b.group.members
+        .map((m) => m.member)
+        .sort()
+        .join(",");
+      parts.push(`${b.group.name}:${members}`);
+    }
+    return parts.join("|");
+  }, [bindings]);
+
+  // Reset the cache and refetch currently-expanded groups when the
+  // group-bindings signature changes (membership edit, IAM refresh).
+  const expandedGroupsRef = useRef(expandedGroups);
+  expandedGroupsRef.current = expandedGroups;
+  const bindingsRef = useRef(bindings);
+  bindingsRef.current = bindings;
+  const fetchGroupMembersRef = useRef(fetchGroupMembers);
+  fetchGroupMembersRef.current = fetchGroupMembers;
+  useEffect(() => {
+    setMemberCache(new Map());
+    loadingRef.current = new Set();
+    for (const groupName of expandedGroupsRef.current) {
+      const mb = bindingsRef.current.find(
+        (b) => b.type === "groups" && b.group?.name === groupName
+      );
+      if (mb?.group) {
+        fetchGroupMembersRef.current(mb.group);
+      }
+    }
+  }, [groupBindingsSignature]);
+
+  const toggleGroupExpand = useCallback(
+    (group: GroupBinding) => {
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(group.name)) {
+          next.delete(group.name);
+        } else {
+          next.add(group.name);
+        }
+        return next;
+      });
+
+      // Fetch members if not cached
+      if (!memberCacheRef.current.has(group.name)) {
+        fetchGroupMembers(group);
+      }
+    },
+    [fetchGroupMembers]
+  );
 
   const selectableBindings = useMemo(
     () =>
@@ -244,123 +356,222 @@ function MemberTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {bindings.map((mb) => (
-            <TableRow key={mb.binding}>
-              {allowEdit && (
-                <TableCell>
-                  <Checkbox
-                    checked={selectedBindings.includes(mb.binding)}
-                    disabled={isSelectDisabled(mb)}
-                    onCheckedChange={() => toggleOne(mb.binding)}
-                  />
-                </TableCell>
-              )}
-              <TableCell>
-                <div className="flex items-center gap-x-3">
-                  {mb.type === "users" ? (
-                    <UserAvatar title={mb.title || mb.user?.email || "?"} />
-                  ) : (
-                    <div className="size-9 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
-                      <Users className="size-4 text-control-light" />
-                    </div>
-                  )}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-x-1.5">
-                      <span className="font-medium text-accent">
-                        {mb.title}
-                      </span>
-                      {mb.type === "users" &&
-                        mb.user?.name === currentUser.name && (
-                          <Badge className="text-xs">{t("common.you")}</Badge>
-                        )}
-                      {isSaaSMode && mb.type === "users" && mb.pending && (
-                        <Badge variant="warning" className="text-xs">
-                          {t("settings.members.pending-invite")}
-                        </Badge>
-                      )}
-                      {mb.type === "users" &&
-                        mb.user?.email &&
-                        getAccountTypeByEmail(mb.user.email) ===
-                          AccountType.SERVICE_ACCOUNT && (
-                          <Badge variant="secondary" className="text-xs">
-                            {t("settings.members.service-account")}
-                          </Badge>
-                        )}
-                      {mb.type === "users" &&
-                        mb.user?.email &&
-                        getAccountTypeByEmail(mb.user.email) ===
-                          AccountType.WORKLOAD_IDENTITY && (
-                          <Badge variant="secondary" className="text-xs">
-                            {t("settings.members.workload-identity")}
-                          </Badge>
-                        )}
-                      {mb.group && (
-                        <span className="text-control-light text-xs">
-                          ({mb.group.members.length}{" "}
-                          {t("common.members", {
-                            count: mb.group.members.length,
-                          })}
-                          )
-                        </span>
-                      )}
-                      {mb.group?.deleted && (
-                        <Badge variant="destructive" className="text-xs">
-                          {t("common.deleted")}
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="text-control-light text-xs">
-                      {mb.type === "users"
-                        ? mb.user?.email
-                        : mb.binding.replace("group:", "groups/")}
-                    </span>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {scope === "project"
-                    ? renderProjectRoleSummary(mb.projectRoleBindings)
-                    : sortRoles([...mb.workspaceLevelRoles]).map((role) => (
-                        <Badge key={role} className="text-xs gap-x-1">
-                          <Building2 className="h-3 w-3" />
-                          {displayRoleTitle(role)}
-                        </Badge>
-                      ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-x-1">
-                  {allowEdit && canEdit(mb) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onUpdateBinding(mb)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
+          {bindings.map((mb) => {
+            const isGroupExpanded =
+              mb.type === "groups" &&
+              mb.group &&
+              expandedGroups.has(mb.group.name);
+            const groupMembers = mb.group
+              ? memberCache.get(mb.group.name)
+              : undefined;
+
+            return (
+              <React.Fragment key={mb.binding}>
+                <TableRow>
                   {allowEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            t("settings.members.revoke-access-alert")
-                          )
-                        ) {
-                          onRevokeBinding(mb);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedBindings.includes(mb.binding)}
+                        disabled={isSelectDisabled(mb)}
+                        onCheckedChange={() => toggleOne(mb.binding)}
+                      />
+                    </TableCell>
                   )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                  <TableCell>
+                    <UserCell
+                      title={mb.title}
+                      subtitle={
+                        mb.type === "users"
+                          ? mb.user?.email
+                          : mb.binding.replace("group:", "groups/")
+                      }
+                      avatar={
+                        mb.type === "groups" ? (
+                          <>
+                            <button
+                              type="button"
+                              className="flex size-5 shrink-0 items-center justify-center cursor-pointer"
+                              onClick={() =>
+                                mb.group && toggleGroupExpand(mb.group)
+                              }
+                            >
+                              {isGroupExpanded ? (
+                                <ChevronDown className="size-4 text-control-light" />
+                              ) : (
+                                <ChevronRight className="size-4 text-control-light" />
+                              )}
+                            </button>
+                            <div className="size-9 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
+                              <Users className="size-4 text-control-light" />
+                            </div>
+                          </>
+                        ) : undefined
+                      }
+                      nameLink={
+                        mb.type === "users" && canGetUsers && mb.user?.email
+                          ? {
+                              onClick: () =>
+                                void navigate.push({
+                                  name: WORKSPACE_ROUTE_USER_PROFILE,
+                                  params: {
+                                    principalEmail: mb.user!.email,
+                                  },
+                                }),
+                            }
+                          : mb.type === "groups" && canGetGroups
+                            ? {
+                                onClick: () =>
+                                  void navigate.push({
+                                    name: WORKSPACE_ROUTE_GROUPS,
+                                  }),
+                              }
+                            : undefined
+                      }
+                      badges={
+                        <>
+                          {mb.type === "users" &&
+                            mb.user?.name === currentUser.name && (
+                              <Badge className="text-xs">
+                                {t("common.you")}
+                              </Badge>
+                            )}
+                          {isSaaSMode && mb.type === "users" && mb.pending && (
+                            <Badge variant="warning" className="text-xs">
+                              {t("settings.members.pending-invite")}
+                            </Badge>
+                          )}
+                          {mb.type === "users" &&
+                            mb.user?.email &&
+                            getAccountTypeByEmail(mb.user.email) ===
+                              AccountType.SERVICE_ACCOUNT && (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("settings.members.service-account")}
+                              </Badge>
+                            )}
+                          {mb.type === "users" &&
+                            mb.user?.email &&
+                            getAccountTypeByEmail(mb.user.email) ===
+                              AccountType.WORKLOAD_IDENTITY && (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("settings.members.workload-identity")}
+                              </Badge>
+                            )}
+                          {mb.group && (
+                            <span className="text-control-light text-xs">
+                              ({mb.group.members.length}{" "}
+                              {t("common.members", {
+                                count: mb.group.members.length,
+                              })}
+                              )
+                            </span>
+                          )}
+                          {mb.group?.deleted && (
+                            <Badge variant="destructive" className="text-xs">
+                              {t("common.deleted")}
+                            </Badge>
+                          )}
+                        </>
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {scope === "project"
+                        ? renderProjectRoleSummary(mb.projectRoleBindings)
+                        : sortRoles([...mb.workspaceLevelRoles]).map((role) => (
+                            <Badge key={role} className="text-xs gap-x-1">
+                              <Building2 className="h-3 w-3" />
+                              {displayRoleTitle(role)}
+                            </Badge>
+                          ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-x-1">
+                      {allowEdit && canEdit(mb) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onUpdateBinding(mb)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {allowEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                t("settings.members.revoke-access-alert")
+                              )
+                            ) {
+                              onRevokeBinding(mb);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+                {/* Expanded group members */}
+                {isGroupExpanded &&
+                  (groupMembers ? (
+                    groupMembers.map((user) => (
+                      <TableRow key={`${mb.binding}-${user.name}`}>
+                        {allowEdit && <TableCell />}
+                        <TableCell>
+                          <UserCell
+                            title={user.title}
+                            subtitle={user.email}
+                            size="sm"
+                            className="pl-12"
+                            nameLink={
+                              canGetUsers
+                                ? {
+                                    onClick: () =>
+                                      void navigate.push({
+                                        name: WORKSPACE_ROUTE_USER_PROFILE,
+                                        params: {
+                                          principalEmail: user.email,
+                                        },
+                                      }),
+                                  }
+                                : undefined
+                            }
+                            badges={
+                              user.name === currentUser.name ? (
+                                <Badge className="text-xs">
+                                  {t("common.you")}
+                                </Badge>
+                              ) : undefined
+                            }
+                          />
+                        </TableCell>
+                        <TableCell />
+                        <TableCell />
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      {allowEdit && <TableCell />}
+                      <TableCell>
+                        <div className="flex items-center gap-x-3 pl-12">
+                          <span className="text-sm text-control-light">
+                            {t("common.loading")}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell />
+                      <TableCell />
+                    </TableRow>
+                  ))}
+              </React.Fragment>
+            );
+          })}
           {bindings.length === 0 && (
             <TableRow>
               <TableCell
@@ -502,27 +713,26 @@ function MemberTableByRole({
                       className={cn(allExpired && "opacity-60")}
                     >
                       <TableCell className="pl-10">
-                        <div className="flex items-center gap-x-3">
-                          {mb.type === "users" ? (
-                            <UserAvatar
-                              title={mb.title || mb.user?.email || "?"}
-                              size="sm"
-                            />
-                          ) : (
-                            <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
-                              <Users className="size-3.5 text-control-light" />
-                            </div>
-                          )}
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-x-1.5">
-                              <span
-                                className={cn(
-                                  "font-medium text-accent",
-                                  allExpired && "line-through"
-                                )}
-                              >
-                                {mb.title}
-                              </span>
+                        <UserCell
+                          title={mb.title}
+                          subtitle={
+                            mb.type === "users"
+                              ? mb.user?.email
+                              : mb.binding.replace("group:", "groups/")
+                          }
+                          size="sm"
+                          avatar={
+                            mb.type === "groups" ? (
+                              <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
+                                <Users className="size-3.5 text-control-light" />
+                              </div>
+                            ) : undefined
+                          }
+                          nameClassName={
+                            allExpired ? "line-through" : undefined
+                          }
+                          badges={
+                            <>
                               {allExpired && (
                                 <Badge
                                   variant="destructive"
@@ -574,14 +784,9 @@ function MemberTableByRole({
                                   {t("common.deleted")}
                                 </Badge>
                               )}
-                            </div>
-                            <span className="text-control-light text-xs">
-                              {mb.type === "users"
-                                ? mb.user?.email
-                                : mb.binding.replace("group:", "groups/")}
-                            </span>
-                          </div>
-                        </div>
+                            </>
+                          }
+                        />
                       </TableCell>
                       <TableCell />
                       <TableCell className="w-24">
@@ -1636,6 +1841,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       : undefined
   );
 
+  // `useVueState` ensures we re-render whenever any reactive dep
+  // `getMemberBindings(...)` reads from changes — IAM policies, but
+  // also the group / user / service-account / workload-identity stores
+  // it pulls metadata from. The result array reference changes on every
+  // render; the table component handles that with content-based change
+  // detection (a group-bindings signature) so its expand-cache only
+  // resets on real membership changes.
   const memberBindings = useVueState(() =>
     getMemberBindings({
       policies:

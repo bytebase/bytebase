@@ -50,6 +50,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
@@ -217,6 +218,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   // Selection state
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
 
   const selectedDatabases = useMemo(() => {
     if (selectedNames.size === 0) return [];
@@ -408,46 +410,55 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-y-4">
-        <DatabaseBatchOperationsBar
-          databases={selectedDatabases}
-          project={project}
-          onSyncSchema={handleSyncSchema}
-          onEditLabels={() => setShowLabelEditor(true)}
-          onEditEnvironment={() => setShowEditEnvDrawer(true)}
-          onUnassign={
-            isDefault ? undefined : () => setShowUnassignConfirm(true)
-          }
-          onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
-          onExportData={isDefault ? undefined : handleExportData}
-        />
+      <DatabaseTable
+        filter={filter}
+        parent={projectName}
+        mode="PROJECT"
+        selectedNames={selectedNames}
+        onSelectedNamesChange={setSelectedNames}
+        onDatabasesChange={setVisibleDatabases}
+        refreshToken={refreshToken}
+      />
 
-        <EditEnvironmentSheet
-          open={showEditEnvDrawer}
-          onClose={() => setShowEditEnvDrawer(false)}
-          onUpdate={handleEnvironmentUpdate}
-        />
-        <LabelEditorSheet
-          open={showLabelEditor}
-          databases={selectedDatabases}
-          onClose={() => setShowLabelEditor(false)}
-          onApply={handleLabelsApply}
-        />
+      {/* Batch operations bar */}
+      <DatabaseBatchOperationsBar
+        databases={selectedDatabases}
+        project={project}
+        onSyncSchema={handleSyncSchema}
+        onEditLabels={() => setShowLabelEditor(true)}
+        onEditEnvironment={() => setShowEditEnvDrawer(true)}
+        onUnassign={isDefault ? undefined : () => setShowUnassignConfirm(true)}
+        onChangeDatabase={isDefault ? undefined : handleChangeDatabase}
+        onExportData={isDefault ? undefined : handleExportData}
+        allSelected={
+          visibleDatabases.length > 0 &&
+          visibleDatabases.every((d) => selectedNames.has(d.name))
+        }
+        onToggleSelectAll={() => {
+          const allOnPage =
+            visibleDatabases.length > 0 &&
+            visibleDatabases.every((d) => selectedNames.has(d.name));
+          if (allOnPage) setSelectedNames(new Set());
+          else setSelectedNames(new Set(visibleDatabases.map((d) => d.name)));
+        }}
+      />
 
-        <DatabaseTable
-          filter={filter}
-          parent={projectName}
-          mode="PROJECT"
-          selectedNames={selectedNames}
-          onSelectedNamesChange={setSelectedNames}
-          refreshToken={refreshToken}
-        />
-      </div>
-
+      {/* Modals (portaled, position-independent) */}
       <CreateDatabaseSheet
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         projectName={projectName}
+      />
+      <EditEnvironmentSheet
+        open={showEditEnvDrawer}
+        onClose={() => setShowEditEnvDrawer(false)}
+        onUpdate={handleEnvironmentUpdate}
+      />
+      <LabelEditorSheet
+        open={showLabelEditor}
+        databases={selectedDatabases}
+        onClose={() => setShowLabelEditor(false)}
+        onApply={handleLabelsApply}
       />
 
       <DataExportPrepSheet

@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "この操作は元に戻すことができません。",
       "sure-to-delete": "本当に削除してもよろしいですか?"
     }
   },
@@ -1580,6 +1581,7 @@
     }
   },
   "plan.add-spec": "変更を追加",
+  "plan.add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
   "plan.checks.failed-to-run": "プランチェックの実行に失敗しました",
   "plan.checks.no-check-results": "チェック結果はありません",
   "plan.checks.no-results-match-filters": "フィルターに一致する結果はありません",

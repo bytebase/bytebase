@@ -212,7 +212,6 @@ export function MyIssuesPage() {
             />
           ))
         )}
-
         {paged.dataList.length > 0 && (
           <div className="mt-4 mx-2">
             <PagedTableFooter
@@ -239,6 +238,7 @@ export function MyIssuesPage() {
         />
       )}
 
+      {/* Modals (portaled, position-independent) */}
       <BatchIssueStatusActionDrawer
         issues={selectedIssues}
         action={batchAction}

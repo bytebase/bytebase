@@ -8,6 +8,12 @@ import { BlockTooltip, Tooltip } from "./ui/tooltip";
 /**
  * usePermissionCheck returns whether the user has all the required permissions
  * and a tooltip message listing missing ones.
+ *
+ * Reads directly from the Zustand IAM caches without triggering a load —
+ * every current caller mounts inside a route shell that already preloads
+ * (`BannersWrapper` → `useWorkspacePermission` for workspace,
+ * `ProjectRouteShell` / `SQLEditorRouteShell` → `usePermissionDataReady`
+ * for project). If a future orphan caller appears, add the trigger then.
  */
 export function usePermissionCheck(
   permissions: Permission[],

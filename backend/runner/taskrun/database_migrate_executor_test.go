@@ -290,3 +290,11 @@ func TestGetPrependStatements(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildMySQLFamilyBackupTableCommentStatement(t *testing.T) {
+	require.Equal(
+		t,
+		"ALTER TABLE `bbdataarchive`.`_rollback_test_db` COMMENT = 'task 101, source table (app, test)'",
+		buildMySQLFamilyBackupTableCommentStatement("bbdataarchive", "_rollback_test_db", "task 101", "app", "test"),
+	)
+}

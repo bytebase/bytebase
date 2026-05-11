@@ -50,7 +50,7 @@ export const i18nReady = i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
-  initImmediate: false,
+  initAsync: false,
 });
 
 export default i18n;

@@ -24,6 +24,16 @@ export interface DatabaseTableProps {
   mode?: DatabaseTableMode;
   selectedNames?: Set<string>;
   onSelectedNamesChange?: (names: Set<string>) => void;
+  /**
+   * Fires when the visible-page database list changes. Lets a caller
+   * compute "all selected on this page" for an external selection toolbar.
+   *
+   * Pass a stable callback reference (e.g. `setVisibleDatabases` directly,
+   * not `(d) => setVisibleDatabases(d)` inline) — the effect that fires
+   * this depends on the function identity, so an inline arrow recreates
+   * it every render and re-fires the effect on every parent re-render.
+   */
+  onDatabasesChange?: (databases: Database[]) => void;
   refreshToken?: number;
 }
 
@@ -40,6 +50,7 @@ export function DatabaseTable({
   mode = "ALL",
   selectedNames,
   onSelectedNamesChange,
+  onDatabasesChange,
   refreshToken,
 }: DatabaseTableProps) {
   const databaseStore = useDatabaseV1Store();
@@ -132,6 +143,11 @@ export function DatabaseTable({
     }
   }, [isFetchingMore, fetchDatabases]);
 
+  // Notify caller whenever the visible-page database list changes.
+  useEffect(() => {
+    onDatabasesChange?.(databases);
+  }, [databases, onDatabasesChange]);
+
   const handleRowClick = useCallback((db: Database, e: React.MouseEvent) => {
     const url = router.resolve(autoDatabaseRoute(db)).fullPath;
     if (e.ctrlKey || e.metaKey) {
@@ -155,7 +171,7 @@ export function DatabaseTable({
         onSortChange={setSort}
         onRowClick={handleRowClick}
       />
-      <div className="mx-2">
+      <div className="mt-4 mx-2">
         <PagedTableFooter
           pageSize={pageSize}
           pageSizeOptions={pageSizeOptions}
