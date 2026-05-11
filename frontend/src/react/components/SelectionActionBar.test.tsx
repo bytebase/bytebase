@@ -189,26 +189,6 @@ describe("SelectionActionBar", () => {
     expect(btn.className).toContain("text-error");
   });
 
-  test("children render after declarative actions", async () => {
-    await act(async () => {
-      root.render(
-        <SelectionActionBar
-          count={1}
-          label="1 selected"
-          allSelected={true}
-          onToggleSelectAll={() => {}}
-          actions={[{ key: "a", label: "InlineAction", onClick: () => {} }]}
-        >
-          <span data-testid="custom-slot">CustomSlot</span>
-        </SelectionActionBar>
-      );
-    });
-    expect(
-      container.querySelector('[data-testid="custom-slot"]')
-    ).not.toBeNull();
-    expect(container.textContent).toContain("CustomSlot");
-  });
-
   test("at lg breakpoint, shows first 5 actions inline and rest in More menu", async () => {
     mockMatchMedia(() => true);
     await act(async () => {
@@ -230,7 +210,13 @@ describe("SelectionActionBar", () => {
         />
       );
     });
-    for (const label of ["Action1", "Action2", "Action3", "Action4", "Action5"]) {
+    for (const label of [
+      "Action1",
+      "Action2",
+      "Action3",
+      "Action4",
+      "Action5",
+    ]) {
       expect(container.textContent ?? "").toContain(label);
     }
     expect(container.textContent ?? "").not.toContain("Action6");
@@ -249,7 +235,12 @@ describe("SelectionActionBar", () => {
           allSelected={false}
           onToggleSelectAll={() => {}}
           actions={[
-            { key: "a1", label: "InlineOnly", icon: Archive, onClick: () => {} },
+            {
+              key: "a1",
+              label: "InlineOnly",
+              icon: Archive,
+              onClick: () => {},
+            },
             { key: "a2", label: "Overflow1", icon: Archive, onClick: () => {} },
             { key: "a3", label: "Overflow2", icon: Archive, onClick: () => {} },
           ]}
@@ -271,7 +262,13 @@ describe("SelectionActionBar", () => {
           allSelected={false}
           onToggleSelectAll={() => {}}
           actions={[
-            { key: "h", label: "HiddenA", icon: Archive, onClick: () => {}, hidden: true },
+            {
+              key: "h",
+              label: "HiddenA",
+              icon: Archive,
+              onClick: () => {},
+              hidden: true,
+            },
             { key: "v", label: "VisibleA", icon: Archive, onClick: () => {} },
           ]}
         />
@@ -294,9 +291,24 @@ describe("SelectionActionBar", () => {
           onToggleSelectAll={() => {}}
           maxVisibleActions={99}
           actions={[
-            { key: "a1", label: "ActionAlpha", icon: Archive, onClick: () => {} },
-            { key: "a2", label: "ActionBeta", icon: Archive, onClick: () => {} },
-            { key: "a3", label: "ActionGamma", icon: Archive, onClick: () => {} },
+            {
+              key: "a1",
+              label: "ActionAlpha",
+              icon: Archive,
+              onClick: () => {},
+            },
+            {
+              key: "a2",
+              label: "ActionBeta",
+              icon: Archive,
+              onClick: () => {},
+            },
+            {
+              key: "a3",
+              label: "ActionGamma",
+              icon: Archive,
+              onClick: () => {},
+            },
           ]}
         />
       );

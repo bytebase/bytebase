@@ -517,50 +517,6 @@ function EditEnvironmentSheet({
 }
 
 // ============================================================
-// SyncDropdown
-// ============================================================
-
-function SyncDropdown({
-  disabled,
-  onSync,
-}: {
-  disabled: boolean;
-  onSync: (enableFullSync: boolean) => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full"
-            disabled={disabled}
-          >
-            <RefreshCw className={cn("size-4", disabled && "animate-spin")} />
-            {disabled ? t("instance.syncing") : t("instance.sync.self")}
-            <ChevronDown className="size-3" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="start" className="min-w-[200px]">
-        <DropdownMenuItem
-          title={t("instance.sync.sync-all-tip")}
-          onClick={() => onSync(true)}
-        >
-          {t("instance.sync.sync-all")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSync(false)}>
-          {t("instance.sync.sync-new")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-// ============================================================
 // InstancesPage (main)
 // ============================================================
 
@@ -1287,7 +1243,24 @@ export function InstancesPage() {
       {(() => {
         const canSync = hasWorkspacePermissionV2("bb.instances.sync");
         const canUpdate = hasWorkspacePermissionV2("bb.instances.update");
+        const syncDisabled = !canSync || syncing;
         const instanceActions: SelectionAction[] = [
+          {
+            key: "sync-new",
+            label: syncing
+              ? t("instance.syncing")
+              : t("instance.sync.sync-new"),
+            icon: RefreshCw,
+            onClick: () => handleSync(false),
+            disabled: syncDisabled,
+          },
+          {
+            key: "sync-all",
+            label: t("instance.sync.sync-all"),
+            icon: RefreshCw,
+            onClick: () => handleSync(true),
+            disabled: syncDisabled,
+          },
           {
             key: "edit-env",
             label: t("database.edit-environment"),
@@ -1320,9 +1293,7 @@ export function InstancesPage() {
               else setSelectedNames(new Set(instances.map((i) => i.name)));
             }}
             actions={instanceActions}
-          >
-            <SyncDropdown disabled={!canSync || syncing} onSync={handleSync} />
-          </SelectionActionBar>
+          />
         );
       })()}
 

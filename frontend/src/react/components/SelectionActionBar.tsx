@@ -1,5 +1,5 @@
-import { MoreHorizontal, type LucideIcon } from "lucide-react";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { type LucideIcon, MoreHorizontal } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -56,21 +56,11 @@ export interface SelectionActionBarProps {
   /** Declarative actions. Rendered in order. Hidden actions are omitted. */
   actions?: SelectionAction[];
   /**
-   * Custom action nodes rendered after `actions`. Used for actions that
-   * require richer UI (e.g. InstancesPage's split-dropdown Sync).
-   *
-   * Style note: declarative `actions` get `rounded-full` automatically so
-   * they match the pill surface. Custom buttons rendered here should also
-   * use `rounded-full` (or a wrapper Button with `className="rounded-full"`)
-   * to stay visually consistent.
-   */
-  /**
    * Override the default responsive cap (1 / 3 / 5 by viewport).
    * Useful when a call site has only 1–2 actions and never wants a
    * More menu — set this to a high number like 99.
    */
   maxVisibleActions?: number;
-  children?: ReactNode;
 }
 
 const MQ_SM = "(min-width: 640px)";
@@ -116,7 +106,6 @@ export function SelectionActionBar({
   onToggleSelectAll,
   actions,
   maxVisibleActions,
-  children,
 }: SelectionActionBarProps) {
   const { t } = useTranslation();
   const defaultMaxVisible = useSelectionMaxVisible();
@@ -146,15 +135,11 @@ export function SelectionActionBar({
       <span className="shrink-0 text-sm font-medium text-control whitespace-nowrap">
         {label}
       </span>
-      {(inlineActions.length > 0 ||
-        overflowActions.length > 0 ||
-        children) && (
+      {(inlineActions.length > 0 || overflowActions.length > 0) && (
         <Separator orientation="vertical" className="h-5 shrink-0" />
       )}
-      {/* Actions cluster — inline buttons + optional More dropdown.
-          `min-w-0` lets flex shrink the container so any leftover overflow
-          (e.g. very long custom children) can still scroll. */}
-      <div className="flex items-center gap-x-3 min-w-0 overflow-x-auto">
+      {/* Actions cluster — inline buttons + optional trailing More dropdown. */}
+      <div className="flex items-center gap-x-3 shrink-0">
         {inlineActions.map((action) => {
           const Icon = action.icon;
           const button = (
@@ -224,7 +209,6 @@ export function SelectionActionBar({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        {children}
       </div>
     </div>
   );
