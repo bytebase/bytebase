@@ -221,6 +221,9 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	if contextWorkspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != contextWorkspaceID {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
+	}
 
 	// Cancel active Stripe subscription if any.
 	sub, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)

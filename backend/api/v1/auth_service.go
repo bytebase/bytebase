@@ -106,7 +106,12 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		return nil, err
 	}
 
-	// 2. Resolve workspace early so all subsequent checks can use it.
+	// 2. Reject deactivated users before any workspace provisioning.
+	if loginUser.MemberDeleted {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user has been deactivated"))
+	}
+
+	// 3. Resolve workspace early so all subsequent checks can use it.
 	// Login is allow_without_credential, so workspace is NOT in the context from auth middleware.
 	preferredWS, _ := parseOptionalWorkspace(request.Workspace)
 	workspaceID, err := s.resolveWorkspaceForLogin(ctx, loginUser, preferredWS)
