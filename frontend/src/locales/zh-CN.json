@@ -332,6 +332,7 @@
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
     "n-items-selected": "已选 {n} 项",
     "n-more": "+{n} 更多",
+    "n-selected": "已选择 {n} 项",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",

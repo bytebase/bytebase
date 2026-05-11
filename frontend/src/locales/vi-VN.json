@@ -332,6 +332,7 @@
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
     "n-items-selected": "Đã chọn {n} mục",
     "n-more": "+{n} nữa",
+    "n-selected": "Đã chọn {n}",
     "name": "Tên",
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",

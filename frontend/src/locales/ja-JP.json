@@ -332,6 +332,7 @@
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
     "n-items-selected": "{n} 件選択済み",
     "n-more": "+{n} もっと",
+    "n-selected": "{n} 件選択中",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",

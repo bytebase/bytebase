@@ -332,6 +332,7 @@
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
     "n-items-selected": "{n} items selected",
     "n-more": "+{n} more",
+    "n-selected": "{n} selected",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
