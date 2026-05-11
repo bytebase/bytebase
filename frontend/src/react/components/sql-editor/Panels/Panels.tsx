@@ -77,6 +77,13 @@ export function Panels() {
   const { database: databaseRef } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useVueState(() => tabStore.currentTab);
+  // Subscribe to `mode` as its own primitive — Pinia's tabStore mutates
+  // the tab proxy in place via `Object.assign`, so `() => tabStore
+  // .currentTab` only fires Vue's watch on tab-switches (proxy
+  // reference changes), not on `mode` flipping between "WORKSHEET" and
+  // "ADMIN" within the same tab. Without this, clicking the admin-mode
+  // button doesn't swap to the `TerminalPanel`.
+  const tabMode = useVueState(() => tabStore.currentTab?.mode);
   const databaseName = useVueState(() => databaseRef.value.name);
   const view = useVueState(() => tabStore.currentTab?.viewState?.view);
   const showAIPanel = useVueState(() => uiStore.showAIPanel);
@@ -160,10 +167,10 @@ export function Panels() {
   }, [tabId, databaseMetadata, currentSchema, setSchema]);
 
   const codePanel = useMemo(() => {
-    if (!tab || tab.mode === "WORKSHEET") {
+    if (!tab || tabMode === "WORKSHEET") {
       return <StandardPanel key={`standard-${tab?.id ?? "default"}`} />;
     }
-    if (tab.mode === "ADMIN") {
+    if (tabMode === "ADMIN") {
       return <TerminalPanel key={`terminal-${tab.id}`} />;
     }
     return (
@@ -172,7 +179,7 @@ export function Panels() {
         <div>{t("database.access-denied")}</div>
       </Alert>
     );
-  }, [tab, t]);
+  }, [tab, tabMode, t]);
 
   const subPanel = view ? renderSubPanel(view, tab?.id) : null;
 
