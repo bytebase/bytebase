@@ -27,12 +27,21 @@ export function DangerZoneSection() {
   const canDelete = hasWorkspacePermissionV2("bb.workspaces.delete");
 
   // Check if there are other admins in the workspace besides the current user.
+  // Group bindings (group:...) are treated as "other admin" since they may
+  // contain other users — the backend does the definitive check.
   const hasOtherAdmin = useMemo(() => {
     const currentBinding = `${userBindingPrefix}${currentUser.email}`;
     for (const binding of workspacePolicy.bindings) {
       if (binding.role !== PresetRoleType.WORKSPACE_ADMIN) continue;
       for (const member of binding.members) {
-        if (member !== currentBinding) return true;
+        if (member === currentBinding) continue;
+        // A group binding counts as "other admin" — it may contain
+        // other users who are admins through the group.
+        if (member.startsWith("group:") || member.startsWith("groups/")) {
+          return true;
+        }
+        // A different direct user binding.
+        return true;
       }
     }
     return false;

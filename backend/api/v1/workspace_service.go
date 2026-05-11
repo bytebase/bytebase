@@ -278,14 +278,32 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	workspaceID, err := common.GetWorkspaceID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 
-	// Check that at least one active admin would remain after removal.
+	// Verify the user is a member of the target workspace.
+	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID: &workspaceID,
+		Email:       user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify workspace membership"))
+	}
+	if ws == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("not a member of workspace %q", workspaceID))
+	}
+
+	memberIdentifier := common.FormatUserEmail(user.Email)
+
+	// Simulate removing the user from all direct IAM bindings and check
+	// that at least one active admin would remain. We exclude the caller
+	// from the admin list to also account for admin-via-group bindings.
 	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
 	}
-	memberIdentifier := common.FormatUserEmail(user.Email)
 	simulatedPolicy := &storepb.IamPolicy{}
 	for _, binding := range policyMessage.Policy.Bindings {
 		var filtered []string
@@ -303,11 +321,24 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		}
 	}
 	admins := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, workspaceID, store.WorkspaceAdminRole, !s.profile.SaaS, simulatedPolicy)
-	if !containsActiveEndUser(admins) {
+	// Filter out the caller — they may still appear as admin via group bindings
+	// that haven't been removed yet.
+	var otherAdmins []*store.UserMessage
+	for _, admin := range admins {
+		if admin.Email != user.Email {
+			otherAdmins = append(otherAdmins, admin)
+		}
+	}
+	if !containsActiveEndUser(otherAdmins) {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot leave workspace: you are the last admin"))
 	}
 
-	// Remove the user from all IAM bindings.
+	// Remove the user from all groups in this workspace.
+	if err := s.store.RemoveMemberFromAllGroups(ctx, workspaceID, memberIdentifier); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to remove user from groups"))
+	}
+
+	// Remove the user from all direct IAM bindings.
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Workspace: workspaceID,
 		Member:    memberIdentifier,
@@ -316,13 +347,15 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update IAM policy"))
 	}
 
-	// Remove the user from all groups in this workspace.
-	if err := s.store.RemoveMemberFromAllGroups(ctx, workspaceID, memberIdentifier); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to remove user from groups"))
-	}
-
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, err
+	}
+
+	// Only switch workspace if the user is leaving their current workspace.
+	currentWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID != currentWorkspaceID {
+		// Leaving a different workspace — no token switch needed.
+		return connect.NewResponse(&v1pb.LoginResponse{}), nil
 	}
 
 	// Find the next workspace to switch to.
