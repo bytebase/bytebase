@@ -631,7 +631,7 @@ export function IssueListItem({
       onClick={onRowClick}
     >
       <div
-        className="shrink-0 self-stretch pt-1 cursor-pointer"
+        className="shrink-0 self-stretch cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelection();
