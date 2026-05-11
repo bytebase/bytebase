@@ -12,8 +12,6 @@ import (
 	"unicode"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/mysql"
-	"github.com/pingcap/tidb/pkg/parser/types"
 	"github.com/pkg/errors"
 
 	omniast "github.com/bytebase/omni/tidb/ast"
@@ -57,28 +55,6 @@ func (t tablePK) tableList() []string {
 	}
 	slices.Sort(tableList)
 	return tableList
-}
-
-func needDefault(column *ast.ColumnDef) bool {
-	for _, option := range column.Options {
-		switch option.Tp {
-		case ast.ColumnOptionAutoIncrement, ast.ColumnOptionPrimaryKey, ast.ColumnOptionGenerated:
-			return false
-		default:
-			// Other options
-		}
-	}
-
-	if types.IsTypeBlob(column.Tp.GetType()) {
-		return false
-	}
-	switch column.Tp.GetType() {
-	case mysql.TypeJSON, mysql.TypeGeometry:
-		return false
-	default:
-		// Other types can have default values
-	}
-	return true
 }
 
 // getTiDBNodes extracts pingcap-AST nodes for un-migrated advisors.
@@ -424,11 +400,6 @@ func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 //   - column type is BLOB/TEXT (omni stores TEXT as a separate name from
 //     BLOB; pingcap unified them under TypeBlob — both must be checked)
 //   - column type is JSON or geometry (no meaningful default)
-//
-// Mirror of pingcap-typed needDefault (still in utils.go for the
-// un-migrated advisor_column_require_default.go consumer).
-// When that advisor migrates, switch its calls here and delete needDefault.
-// Tracked: https://linear.app/bytebase/issue/BYT-9414
 func omniNeedDefault(col *omniast.ColumnDef) bool {
 	if col == nil {
 		return false
