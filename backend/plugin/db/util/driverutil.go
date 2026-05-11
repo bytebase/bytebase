@@ -7,11 +7,13 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -46,6 +48,42 @@ var NullRowValue = &v1pb.RowValue{
 	Kind: &v1pb.RowValue_NullValue{
 		NullValue: structpb.NullValue_NULL_VALUE,
 	},
+}
+
+func BuildStringRowValue(value string) *v1pb.RowValue {
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_StringValue{
+			StringValue: value,
+		},
+	}
+}
+
+func BuildTimestampOrStringRowValue(value string, scale int64) *v1pb.RowValue {
+	t, err := parseSQLTimestamp(value)
+	if err != nil {
+		return BuildStringRowValue(value)
+	}
+
+	ts := timestamppb.New(t)
+	if err := ts.CheckValid(); err != nil {
+		return BuildStringRowValue(value)
+	}
+
+	return &v1pb.RowValue{
+		Kind: &v1pb.RowValue_TimestampValue{
+			TimestampValue: &v1pb.RowValue_Timestamp{
+				GoogleTimestamp: ts,
+				Accuracy:        int32(scale),
+			},
+		},
+	}
+}
+
+func parseSQLTimestamp(value string) (time.Time, error) {
+	if strings.Contains(value, ".") {
+		return time.Parse("2006-01-02 15:04:05.999999999", value)
+	}
+	return time.Parse(time.DateTime, value)
 }
 
 func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
