@@ -630,12 +630,19 @@ export function IssueListItem({
       className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-control-bg hover:bg-control-bg"
       onClick={onRowClick}
     >
-      <Checkbox
-        className="shrink-0 mt-1"
-        checked={selected}
-        onCheckedChange={() => onToggleSelection()}
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div
+        className="shrink-0 self-stretch pt-1 cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelection();
+        }}
+      >
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelection()}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
 
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-start sm:gap-x-2">
         <div className="flex-1 min-w-0">
