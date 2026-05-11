@@ -84,7 +84,7 @@ const authRoutes: RouteRecordRaw[] = [
       {
         path: "profile-setup",
         name: AUTH_PROFILE_SETUP_MODULE,
-        meta: { title: () => "Profile Setup" },
+        meta: { title: () => t("auth.profile-setup") },
         component: reactPage,
         props: { page: "ProfileSetupPage" },
       },

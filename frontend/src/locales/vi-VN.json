@@ -117,6 +117,7 @@
       "invalid-or-expired-code": "Mã không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
       "title": "Đặt lại mật khẩu của bạn"
     },
+    "profile-setup": "Thiết lập hồ sơ",
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {email}.",
       "demo-account": "Demo Account",

@@ -117,6 +117,7 @@
       "invalid-or-expired-code": "Invalid or expired code. Please request a new one.",
       "title": "Reset your password"
     },
+    "profile-setup": "Profile Setup",
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {email}.",
       "demo-account": "Demo Account",

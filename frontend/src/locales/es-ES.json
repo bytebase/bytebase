@@ -117,6 +117,7 @@
       "invalid-or-expired-code": "Código inválido o caducado. Por favor solicita uno nuevo.",
       "title": "Restablecer su contraseña"
     },
+    "profile-setup": "Configurar perfil",
     "sign-in": {
       "code-sent-hint": "Se ha enviado un código de verificación a {email}.",
       "demo-account": "Demo Account",

@@ -117,6 +117,7 @@
       "invalid-or-expired-code": "验证码无效或已过期，请重新申请。",
       "title": "重置您的密码"
     },
+    "profile-setup": "设置个人资料",
     "sign-in": {
       "code-sent-hint": "验证码已发送至 {email}。",
       "demo-account": "Demo Account",

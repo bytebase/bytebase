@@ -117,6 +117,7 @@
       "invalid-or-expired-code": "コードが無効または期限切れです。新しいコードをリクエストしてください。",
       "title": "あなたのパスワードをリセット"
     },
+    "profile-setup": "プロフィール設定",
     "sign-in": {
       "code-sent-hint": "{email} に認証コードを送信しました。",
       "demo-account": "Demo Account",
