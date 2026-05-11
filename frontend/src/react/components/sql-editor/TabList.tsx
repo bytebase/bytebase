@@ -260,7 +260,7 @@ export function TabList() {
         ref={scrollRef}
         onScroll={recalculateScrollState}
         className={cn(
-          "flex-1 overflow-x-auto scrollbar-thin",
+          "flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin",
           scrollState.moreLeft && "more-left",
           scrollState.moreRight && "more-right"
         )}

@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -198,12 +199,21 @@ export function DataExportButton({
     setPassword("");
   }, [defaultLimit, supportFormats]);
 
-  // Reset form whenever the drawer opens, mirroring the Vue watcher.
+  // Reset form whenever the drawer transitions to OPEN. Depending on
+  // `resetForm` here would re-fire the reset on every parent re-render
+  // because `supportFormats` typically arrives as a fresh inline array
+  // (e.g. `supportFormats={[CSV, JSON, SQL, XLSX]}` from
+  // `SingleResultView`), which churns `resetForm`'s identity and would
+  // clobber the user's just-changed `limit` / `format` / `password`.
+  // Drive the reset off `showDrawer` alone via a ref to the latest
+  // `resetForm`.
+  const resetFormRef = useRef(resetForm);
+  resetFormRef.current = resetForm;
   useEffect(() => {
     if (showDrawer) {
-      resetForm();
+      resetFormRef.current();
     }
-  }, [showDrawer, resetForm]);
+  }, [showDrawer]);
 
   // Clear password each time the password dialog opens.
   useEffect(() => {
