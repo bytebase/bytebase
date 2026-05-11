@@ -480,13 +480,20 @@ export function PlanDetailChangesBranch({
       <PlanDetailTabStrip
         action={
           canModifySpecs ? (
-            <Button
-              onClick={() => setShowAddSpecSheet(true)}
-              size="xs"
-              variant="outline"
+            <Tooltip
+              content={
+                pendingNewSpec ? t("plan.add-spec-pending-draft") : undefined
+              }
             >
-              {t("plan.add-spec")}
-            </Button>
+              <Button
+                disabled={Boolean(pendingNewSpec)}
+                onClick={() => setShowAddSpecSheet(true)}
+                size="xs"
+                variant="outline"
+              >
+                {t("plan.add-spec")}
+              </Button>
+            </Tooltip>
           ) : undefined
         }
       >

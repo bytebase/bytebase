@@ -485,7 +485,11 @@ export const usePlanDetailPage = ({
     setPendingLeaveConfirm(false);
     if (target) {
       bypassLeaveGuardOnceRef.current = true;
-      void router.push(target);
+      // Replace (not push) so a confirmed-discard navigation doesn't leave
+      // an extra entry that lets Back return to the discarded plan. Works
+      // correctly whether the original navigation was push, replace, or
+      // browser back/forward.
+      void router.replace(target);
     }
   }, []);
 

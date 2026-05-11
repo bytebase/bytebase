@@ -154,15 +154,18 @@ export function PlanDetailStatementSection({
     return () => setEditing(editingScope, false);
   }, [editingScope, isEditing, setEditing]);
 
+  // Pending draft specs (not yet on the backend) start in edit mode so the
+  // user can immediately type the SQL that will commit the spec.
+  const isPendingDraft = !page.plan.specs.some(
+    (candidate) => candidate.id === spec.id
+  );
   useEffect(() => {
-    // Pending draft specs (not yet on the backend) start in edit mode so
-    // the user can immediately type the SQL that will commit the spec.
-    const isPendingDraft = !page.plan.specs.some(
-      (candidate) => candidate.id === spec.id
-    );
+    // Depend on the boolean (not the specs array) so poll-driven refreshes
+    // — which produce a new specs reference but the same membership — don't
+    // wipe the user's in-progress edits.
     setIsEditing(page.isCreating || isPendingDraft);
     setDraftStatement("");
-  }, [page.isCreating, page.plan.specs, spec.id]);
+  }, [page.isCreating, isPendingDraft, spec.id]);
 
   useEffect(() => {
     let canceled = false;
