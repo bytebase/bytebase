@@ -163,6 +163,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "You cannot undo this action.",
       "sure-to-delete": "Are you sure to delete?"
     }
   },
@@ -1588,6 +1589,7 @@
     }
   },
   "plan.add-spec": "Add Change",
+  "plan.add-spec-pending-draft": "Save or discard the pending change before adding another",
   "plan.checks.failed-to-run": "Failed to run plan checks",
   "plan.checks.no-check-results": "No check results",
   "plan.checks.no-results-match-filters": "No results match your filters",

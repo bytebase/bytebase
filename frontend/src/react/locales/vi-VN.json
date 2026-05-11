@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "Bạn không thể hoàn tác hành động này.",
       "sure-to-delete": "Bạn có chắc chắn muốn xóa?"
     }
   },
@@ -1580,6 +1581,7 @@
     }
   },
   "plan.add-spec": "Thêm thay đổi",
+  "plan.add-spec-pending-draft": "Lưu hoặc hủy thay đổi đang chờ trước khi thêm thay đổi khác",
   "plan.checks.failed-to-run": "Không thể chạy kiểm tra kế hoạch",
   "plan.checks.no-check-results": "Không có kết quả kiểm tra",
   "plan.checks.no-results-match-filters": "Không có kết quả khớp với bộ lọc",

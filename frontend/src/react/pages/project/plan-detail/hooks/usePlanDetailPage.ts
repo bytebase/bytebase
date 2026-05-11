@@ -323,10 +323,9 @@ export const usePlanDetailPage = ({
   const latestSnapshotRef = useRef(snapshot);
   const bypassLeaveGuardOnceRef = useRef(false);
   const pollTimerRef = useRef<number | undefined>(undefined);
-  // Resolver for the most recent in-flight navigation guard. Vue Router's
-  // beforeEach is synchronous; we capture next() and resolve it after the
-  // user answers the leave-confirmation dialog.
-  const leaveResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
+  // Target route captured when the guard intercepts a navigation. We cancel
+  // that navigation synchronously and re-issue it after the user confirms.
+  const pendingLeaveTargetRef = useRef<string | null>(null);
   const isEditing = Object.keys(editingScopes).length > 0;
 
   // routeQuery is a fresh object on every router navigation. Stash the latest
@@ -481,14 +480,27 @@ export const usePlanDetailPage = ({
   }, [patchState, planId, projectId, specId]);
 
   const resolveLeaveConfirm = useCallback((confirmed: boolean) => {
-    const resolver = leaveResolverRef.current;
-    leaveResolverRef.current = null;
+    const target = confirmed ? pendingLeaveTargetRef.current : null;
+    pendingLeaveTargetRef.current = null;
     setPendingLeaveConfirm(false);
-    resolver?.(confirmed);
+    if (target) {
+      bypassLeaveGuardOnceRef.current = true;
+      // Replace (not push) so a confirmed-discard navigation doesn't leave
+      // an extra entry that lets Back return to the discarded plan. Works
+      // correctly whether the original navigation was push, replace, or
+      // browser back/forward.
+      void router.replace(target);
+    }
   }, []);
 
   useEffect(() => {
     if (!isEditing) {
+      // Editing scope ended (e.g. async save completed) while a leave
+      // prompt is open — there's nothing unsaved anymore, so navigate to
+      // the captured target without further confirmation.
+      if (pendingLeaveTargetRef.current) {
+        resolveLeaveConfirm(true);
+      }
       return;
     }
 
@@ -497,35 +509,25 @@ export const usePlanDetailPage = ({
       event.preventDefault();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
-    const removeGuard = router.beforeEach((_to, _from, next) => {
+    const removeGuard = router.beforeEach((to, _from, next) => {
       if (bypassLeaveGuardOnceRef.current) {
         bypassLeaveGuardOnceRef.current = false;
         next();
         return;
       }
-      // If a previous prompt is still open, cancel this navigation.
-      if (leaveResolverRef.current) {
-        next(false);
-        return;
-      }
-      leaveResolverRef.current = (confirmed: boolean) => {
-        next(confirmed ? undefined : false);
-      };
+      // Cancel the navigation synchronously and remember the target so we
+      // can re-issue it from resolveLeaveConfirm after the user confirms.
+      // Always overwrite the pending target — the latest navigation wins.
+      pendingLeaveTargetRef.current = to.fullPath;
       setPendingLeaveConfirm(true);
+      next(false);
     });
 
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
       removeGuard();
-      // If the guard tears down with a prompt still open (e.g. user stops
-      // editing while the dialog is up), release the pending navigation.
-      if (leaveResolverRef.current) {
-        leaveResolverRef.current(false);
-        leaveResolverRef.current = null;
-        setPendingLeaveConfirm(false);
-      }
     };
-  }, [isEditing, t]);
+  }, [isEditing, resolveLeaveConfirm, t]);
 
   useEffect(() => {
     if (snapshot.isCreating) {

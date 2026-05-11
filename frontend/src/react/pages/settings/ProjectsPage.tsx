@@ -11,6 +11,10 @@ import { ProjectCreateDialog } from "@/react/components/header/ProjectCreateDial
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { ProjectTable } from "@/react/components/ProjectTable";
 import {
+  type SelectionAction,
+  SelectionActionBar,
+} from "@/react/components/SelectionActionBar";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
@@ -110,211 +114,6 @@ function ConfirmDialog({
         </div>
       </AlertDialogContent>
     </AlertDialog>
-  );
-}
-
-// ============================================================
-// BatchOperationsBar
-// ============================================================
-
-function BatchOperationsBar({
-  selectedProjects,
-  onUpdate,
-}: {
-  selectedProjects: Project[];
-  onUpdate: () => void;
-}) {
-  const { t } = useTranslation();
-  const projectStore = useProjectV1Store();
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // Determine which actions to show based on selected projects' actual state
-  const hasActiveProjects = selectedProjects.some(
-    (p) => p.state === State.ACTIVE
-  );
-  const hasArchivedProjects = selectedProjects.some(
-    (p) => p.state === State.DELETED
-  );
-
-  const handleBatchArchive = useCallback(async () => {
-    try {
-      const activeProjects = selectedProjects.filter(
-        (p) => p.state === State.ACTIVE
-      );
-      await projectStore.batchDeleteProjects(activeProjects.map((p) => p.name));
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("project.batch.archive.success", {
-          count: activeProjects.length,
-        }),
-      });
-      setShowArchiveConfirm(false);
-      onUpdate();
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("project.batch.archive.error"),
-        description: err.message,
-      });
-    }
-  }, [selectedProjects, projectStore, t, onUpdate]);
-
-  const handleBatchRestore = useCallback(async () => {
-    try {
-      const archivedProjects = selectedProjects.filter(
-        (p) => p.state === State.DELETED
-      );
-      await Promise.all(
-        archivedProjects.map((project) => projectStore.restoreProject(project))
-      );
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.restored"),
-      });
-      setShowRestoreConfirm(false);
-      onUpdate();
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("common.restore"),
-        description: err.message,
-      });
-    }
-  }, [selectedProjects, projectStore, t, onUpdate]);
-
-  const handleBatchDelete = useCallback(async () => {
-    try {
-      await projectStore.batchPurgeProjects(
-        selectedProjects.map((p) => p.name)
-      );
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("project.batch.delete.success", {
-          count: selectedProjects.length,
-        }),
-      });
-      setShowDeleteConfirm(false);
-      onUpdate();
-    } catch (error: unknown) {
-      const err = error as { message?: string };
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("project.batch.delete.error"),
-        description: err.message,
-      });
-    }
-  }, [selectedProjects, projectStore, t, onUpdate]);
-
-  if (selectedProjects.length === 0) return null;
-
-  return (
-    <>
-      <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto">
-        <span className="whitespace-nowrap text-sm">
-          {t("project.batch.selected", {
-            count: selectedProjects.length,
-          })}
-        </span>
-        <div className="flex items-center">
-          {hasActiveProjects && (
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => setShowArchiveConfirm(true)}
-            >
-              <Archive className="h-4 w-4 mr-1" />
-              {t("common.archive")}
-            </Button>
-          )}
-          {hasArchivedProjects && (
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => setShowRestoreConfirm(true)}
-            >
-              {t("common.restore")}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="md"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            {t("common.delete")}
-          </Button>
-        </div>
-      </div>
-
-      <ConfirmDialog
-        open={showArchiveConfirm}
-        variant="warning"
-        title={t("project.batch.archive.title", {
-          count: selectedProjects.length,
-        })}
-        description={t("project.batch.archive.description")}
-        okText={t("common.archive")}
-        onOk={handleBatchArchive}
-        onCancel={() => setShowArchiveConfirm(false)}
-      >
-        <ProjectListPreview
-          projects={selectedProjects}
-          iconColor="text-success"
-        />
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={showRestoreConfirm}
-        variant="warning"
-        title={t("common.restore")}
-        description={t("common.restore")}
-        okText={t("common.restore")}
-        onOk={handleBatchRestore}
-        onCancel={() => setShowRestoreConfirm(false)}
-      >
-        <ProjectListPreview
-          projects={selectedProjects}
-          iconColor="text-success"
-        />
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        variant="error"
-        title={t("project.batch.delete.title", {
-          count: selectedProjects.length,
-        })}
-        description={t("project.batch.delete.description")}
-        okText={t("common.delete")}
-        onOk={handleBatchDelete}
-        onCancel={() => setShowDeleteConfirm(false)}
-      >
-        <div className="flex flex-col gap-y-3">
-          <ProjectListPreview
-            projects={selectedProjects}
-            iconColor="text-error"
-          />
-          <div className="rounded-sm border border-error bg-error/5 p-3">
-            <p className="text-sm font-medium text-error">
-              {t("common.cannot-undo-this-action")}
-            </p>
-            <p className="text-sm text-error/80 mt-1">
-              {t("project.batch.delete.warning")}
-            </p>
-          </div>
-        </div>
-      </ConfirmDialog>
-    </>
   );
 }
 
@@ -676,6 +475,118 @@ export function ProjectsPage() {
     fetchProjects(true);
   }, [fetchProjects]);
 
+  // Batch confirm dialog state + handlers (lifted from old BatchOperationsBar)
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const hasActiveProjects = selectedProjectList.some(
+    (p) => p.state === State.ACTIVE
+  );
+  const hasArchivedProjects = selectedProjectList.some(
+    (p) => p.state === State.DELETED
+  );
+
+  const handleBatchArchive = useCallback(async () => {
+    try {
+      const activeProjects = selectedProjectList.filter(
+        (p) => p.state === State.ACTIVE
+      );
+      await projectStore.batchDeleteProjects(activeProjects.map((p) => p.name));
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.batch.archive.success", {
+          count: activeProjects.length,
+        }),
+      });
+      setShowArchiveConfirm(false);
+      handleBatchOperation();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.batch.archive.error"),
+        description: err.message,
+      });
+    }
+  }, [selectedProjectList, projectStore, t, handleBatchOperation]);
+
+  const handleBatchRestore = useCallback(async () => {
+    try {
+      const archivedProjects = selectedProjectList.filter(
+        (p) => p.state === State.DELETED
+      );
+      await Promise.all(
+        archivedProjects.map((project) => projectStore.restoreProject(project))
+      );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.restored"),
+      });
+      setShowRestoreConfirm(false);
+      handleBatchOperation();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.restore"),
+        description: err.message,
+      });
+    }
+  }, [selectedProjectList, projectStore, t, handleBatchOperation]);
+
+  const handleBatchDelete = useCallback(async () => {
+    try {
+      await projectStore.batchPurgeProjects(
+        selectedProjectList.map((p) => p.name)
+      );
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("project.batch.delete.success", {
+          count: selectedProjectList.length,
+        }),
+      });
+      setShowDeleteConfirm(false);
+      handleBatchOperation();
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("project.batch.delete.error"),
+        description: err.message,
+      });
+    }
+  }, [selectedProjectList, projectStore, t, handleBatchOperation]);
+
+  const batchActions: SelectionAction[] = [
+    {
+      key: "archive",
+      label: t("common.archive"),
+      icon: Archive,
+      onClick: () => setShowArchiveConfirm(true),
+      hidden: !hasActiveProjects,
+    },
+    {
+      key: "restore",
+      label: t("common.restore"),
+      onClick: () => setShowRestoreConfirm(true),
+      hidden: !hasArchivedProjects,
+    },
+    {
+      key: "delete",
+      label: t("common.delete"),
+      icon: Trash2,
+      onClick: () => setShowDeleteConfirm(true),
+      tone: "destructive",
+    },
+  ];
+
   // Create drawer
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const canCreate = hasWorkspacePermissionV2("bb.projects.create");
@@ -724,15 +635,6 @@ export function ProjectsPage() {
         </PermissionGuard>
       </div>
 
-      {/* Batch operations */}
-      {canDelete && (
-        <BatchOperationsBar
-          selectedProjects={selectedProjectList}
-          onUpdate={handleBatchOperation}
-        />
-      )}
-
-      {/* Table */}
       <div className="overflow-x-auto border-y border-block-border">
         <ProjectTable
           className="min-w-[700px]"
@@ -757,7 +659,6 @@ export function ProjectsPage() {
         />
       </div>
 
-      {/* Pagination footer */}
       <div className="mt-4 mx-2">
         <PagedTableFooter
           pageSize={pageSize}
@@ -769,12 +670,94 @@ export function ProjectsPage() {
         />
       </div>
 
-      {/* Create drawer */}
+      {/* Batch operations bar (sticky at bottom; rendered after the
+          table so selection doesn't shift table position) */}
+      {canDelete && (
+        <SelectionActionBar
+          count={selectedProjectList.length}
+          label={t("project.batch.selected", {
+            count: selectedProjectList.length,
+          })}
+          allSelected={
+            projects.length > 0 &&
+            projects.every((p) => selectedNames.has(p.name))
+          }
+          onToggleSelectAll={() => {
+            const allOnPage =
+              projects.length > 0 &&
+              projects.every((p) => selectedNames.has(p.name));
+            if (allOnPage) setSelectedNames(new Set());
+            else setSelectedNames(new Set(projects.map((p) => p.name)));
+          }}
+          actions={batchActions}
+        />
+      )}
+
+      {/* Modals (portaled, position-independent) */}
       <ProjectCreateDialog
         open={showCreateDrawer}
         onClose={() => setShowCreateDrawer(false)}
         onCreated={handleCreated}
       />
+
+      <ConfirmDialog
+        open={showArchiveConfirm}
+        variant="warning"
+        title={t("project.batch.archive.title", {
+          count: selectedProjectList.length,
+        })}
+        description={t("project.batch.archive.description")}
+        okText={t("common.archive")}
+        onOk={handleBatchArchive}
+        onCancel={() => setShowArchiveConfirm(false)}
+      >
+        <ProjectListPreview
+          projects={selectedProjectList}
+          iconColor="text-success"
+        />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={showRestoreConfirm}
+        variant="warning"
+        title={t("common.restore")}
+        description={t("common.restore")}
+        okText={t("common.restore")}
+        onOk={handleBatchRestore}
+        onCancel={() => setShowRestoreConfirm(false)}
+      >
+        <ProjectListPreview
+          projects={selectedProjectList}
+          iconColor="text-success"
+        />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        variant="error"
+        title={t("project.batch.delete.title", {
+          count: selectedProjectList.length,
+        })}
+        description={t("project.batch.delete.description")}
+        okText={t("common.delete")}
+        onOk={handleBatchDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      >
+        <div className="flex flex-col gap-y-3">
+          <ProjectListPreview
+            projects={selectedProjectList}
+            iconColor="text-error"
+          />
+          <div className="rounded-sm border border-error bg-error/5 p-3">
+            <p className="text-sm font-medium text-error">
+              {t("common.cannot-undo-this-action")}
+            </p>
+            <p className="text-sm text-error/80 mt-1">
+              {t("project.batch.delete.warning")}
+            </p>
+          </div>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

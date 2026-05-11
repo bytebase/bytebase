@@ -8,7 +8,10 @@ import {
   Unlink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/react/components/ui/button";
+import {
+  type SelectionAction,
+  SelectionActionBar,
+} from "@/react/components/SelectionActionBar";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -34,6 +37,15 @@ export interface DatabaseBatchOperationsBarProps {
   onChangeDatabase?: () => void;
   // Project context: export data
   onExportData?: () => void;
+  /**
+   * True when every visible database on the current page is selected.
+   * Drives the leading checkbox's checked vs. indeterminate state.
+   */
+  allSelected: boolean;
+  /**
+   * Toggles between "select every visible database" and "clear selection".
+   */
+  onToggleSelectAll: () => void;
 }
 
 export function DatabaseBatchOperationsBar({
@@ -46,6 +58,8 @@ export function DatabaseBatchOperationsBar({
   onUnassign,
   onChangeDatabase,
   onExportData,
+  allSelected,
+  onToggleSelectAll,
 }: DatabaseBatchOperationsBarProps) {
   const { t } = useTranslation();
 
@@ -62,85 +76,69 @@ export function DatabaseBatchOperationsBar({
   const canExportData =
     PERMISSIONS_FOR_DATABASE_EXPORT_ISSUE.every(hasPermission);
 
-  if (databases.length === 0) return null;
+  const actions: SelectionAction[] = [
+    {
+      key: "change-database",
+      label: t("database.change-database"),
+      icon: Pencil,
+      onClick: () => onChangeDatabase?.(),
+      disabled: !canChangeDatabase,
+      hidden: !onChangeDatabase,
+    },
+    {
+      key: "export-data",
+      label: t("custom-approval.risk-rule.risk.namespace.data_export"),
+      icon: Download,
+      onClick: () => onExportData?.(),
+      disabled: !canExportData,
+      hidden: !onExportData,
+    },
+    {
+      key: "sync-schema",
+      label: t("database.sync-schema-button"),
+      icon: RefreshCw,
+      onClick: onSyncSchema,
+      disabled: !canSync,
+    },
+    {
+      key: "edit-labels",
+      label: t("database.edit-labels"),
+      icon: Tag,
+      onClick: onEditLabels,
+      disabled: !canUpdate,
+    },
+    {
+      key: "edit-environment",
+      label: t("database.edit-environment"),
+      icon: SquareStack,
+      onClick: onEditEnvironment,
+      disabled: !canUpdate || !canGetEnvironment,
+    },
+    {
+      key: "transfer-project",
+      label: t("database.transfer-project"),
+      icon: ArrowRightLeft,
+      onClick: () => onTransferProject?.(),
+      disabled: !canUpdate,
+      hidden: !onTransferProject,
+    },
+    {
+      key: "unassign",
+      label: t("database.unassign"),
+      icon: Unlink,
+      onClick: () => onUnassign?.(),
+      disabled: !canUpdate,
+      hidden: !onUnassign,
+    },
+  ];
+
   return (
-    <div className="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4">
-      <span className="whitespace-nowrap text-sm">
-        {t("database.selected-n-databases", { n: databases.length })}
-      </span>
-      <div className="flex items-center flex-wrap">
-        {onChangeDatabase && (
-          <Button
-            variant="ghost"
-            size="md"
-            disabled={!canChangeDatabase}
-            onClick={onChangeDatabase}
-          >
-            <Pencil className="h-4 w-4 mr-1" />
-            {t("database.change-database")}
-          </Button>
-        )}
-        {onExportData && (
-          <Button
-            variant="ghost"
-            size="md"
-            disabled={!canExportData}
-            onClick={onExportData}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            {t("custom-approval.risk-rule.risk.namespace.data_export")}
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="md"
-          disabled={!canSync}
-          onClick={onSyncSchema}
-        >
-          <RefreshCw className="h-4 w-4 mr-1" />
-          {t("database.sync-schema-button")}
-        </Button>
-        <Button
-          variant="ghost"
-          size="md"
-          disabled={!canUpdate}
-          onClick={onEditLabels}
-        >
-          <Tag className="h-4 w-4 mr-1" />
-          {t("database.edit-labels")}
-        </Button>
-        <Button
-          variant="ghost"
-          size="md"
-          disabled={!canUpdate || !canGetEnvironment}
-          onClick={onEditEnvironment}
-        >
-          <SquareStack className="h-4 w-4 mr-1" />
-          {t("database.edit-environment")}
-        </Button>
-        {onTransferProject && (
-          <Button
-            variant="ghost"
-            size="md"
-            disabled={!canUpdate}
-            onClick={onTransferProject}
-          >
-            <ArrowRightLeft className="h-4 w-4 mr-1" />
-            {t("database.transfer-project")}
-          </Button>
-        )}
-        {onUnassign && (
-          <Button
-            variant="ghost"
-            size="md"
-            disabled={!canUpdate}
-            onClick={onUnassign}
-          >
-            <Unlink className="h-4 w-4 mr-1" />
-            {t("database.unassign")}
-          </Button>
-        )}
-      </div>
-    </div>
+    <SelectionActionBar
+      count={databases.length}
+      label={t("database.selected-n-databases", { n: databases.length })}
+      allSelected={allSelected}
+      onToggleSelectAll={onToggleSelectAll}
+      actions={actions}
+    />
   );
 }

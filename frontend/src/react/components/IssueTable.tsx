@@ -11,6 +11,7 @@ import {
 } from "@/react/components/AdvancedSearch";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
+import { SelectionActionBar } from "@/react/components/SelectionActionBar";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -916,51 +917,36 @@ export function BatchActionBar({
     !statuses.has(IssueStatus.OPEN) && !statuses.has(IssueStatus.DONE);
 
   return (
-    <div className="sticky bottom-0 w-full bg-background flex items-center gap-x-2 px-3 sm:px-4 py-2 border-y">
-      <Checkbox
-        checked={allSelected ? true : "indeterminate"}
-        onCheckedChange={() => onToggleSelectAll()}
-      />
-      <span className="text-sm text-control-light">
-        {issues.length} {t("common.selected")}
-      </span>
-      <Tooltip
-        content={
-          !canClose
-            ? t("issue.batch-transition.not-allowed-tips", {
+    <SelectionActionBar
+      count={issues.length}
+      label={`${issues.length} ${t("common.selected")}`}
+      allSelected={allSelected}
+      onToggleSelectAll={onToggleSelectAll}
+      actions={[
+        {
+          key: "close",
+          label: t("issue.batch-transition.close"),
+          onClick: () => onStartAction("CLOSE"),
+          disabled: !canClose,
+          disabledReason: canClose
+            ? undefined
+            : t("issue.batch-transition.not-allowed-tips", {
                 operation: t("issue.batch-transition.closed"),
-              })
-            : undefined
-        }
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!canClose}
-          onClick={() => onStartAction("CLOSE")}
-        >
-          {t("issue.batch-transition.close")}
-        </Button>
-      </Tooltip>
-      <Tooltip
-        content={
-          !canReopen
-            ? t("issue.batch-transition.not-allowed-tips", {
+              }),
+        },
+        {
+          key: "reopen",
+          label: t("issue.batch-transition.reopen"),
+          onClick: () => onStartAction("REOPEN"),
+          disabled: !canReopen,
+          disabledReason: canReopen
+            ? undefined
+            : t("issue.batch-transition.not-allowed-tips", {
                 operation: t("issue.batch-transition.reopened"),
-              })
-            : undefined
-        }
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!canReopen}
-          onClick={() => onStartAction("REOPEN")}
-        >
-          {t("issue.batch-transition.reopen")}
-        </Button>
-      </Tooltip>
-    </div>
+              }),
+        },
+      ]}
+    />
   );
 }
 

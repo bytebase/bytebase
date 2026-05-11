@@ -162,6 +162,7 @@
   },
   "bbkit": {
     "confirm-button": {
+      "cannot-undo": "Esta acción no se puede deshacer.",
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?"
     }
   },
@@ -1580,6 +1581,7 @@
     }
   },
   "plan.add-spec": "Agregar cambio",
+  "plan.add-spec-pending-draft": "Guarda o descarta el cambio pendiente antes de agregar otro",
   "plan.checks.failed-to-run": "No se pudieron ejecutar las verificaciones del plan",
   "plan.checks.no-check-results": "No hay resultados de verificación",
   "plan.checks.no-results-match-filters": "No hay resultados que coincidan con los filtros",

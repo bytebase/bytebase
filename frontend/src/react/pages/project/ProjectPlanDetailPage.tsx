@@ -251,15 +251,22 @@ export function ProjectPlanDetailPage({
     };
   }, [page.isCreating, page.issue, page.rollout, t]);
 
+  // Mirror the URL specId into local state. We deliberately don't include
+  // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
+  // set selectedSpecId to a draft spec that has no URL yet, and snapping it
+  // back to specId here would defeat the selection.
   useEffect(() => {
     if (!page.isCreating && specId) {
       setSelectedSpecId(specId);
-      return;
     }
+  }, [page.isCreating, specId]);
+
+  // Default to the first spec when nothing is selected.
+  useEffect(() => {
     if (!selectedSpecId && page.plan.specs.length > 0) {
       setSelectedSpecId(page.plan.specs[0].id);
     }
-  }, [page.isCreating, page.plan.specs, selectedSpecId, specId]);
+  }, [page.plan.specs, selectedSpecId]);
 
   return (
     <PlanDetailProvider value={page}>

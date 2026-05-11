@@ -19,6 +19,13 @@ import {
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Alert } from "@/react/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/react/components/ui/alert-dialog";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -109,11 +116,7 @@ import {
   updateRoleSetter,
   updateTransactionMode,
 } from "../utils/directiveUtils";
-import {
-  getLocalSheetByName,
-  getNextLocalSheetUID,
-  removeLocalSheet,
-} from "../utils/localSheet";
+import { getLocalSheetByName, getNextLocalSheetUID } from "../utils/localSheet";
 import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
@@ -177,20 +180,40 @@ export function PlanDetailChangesBranch({
   const project = useVueState(() =>
     projectStore.getProjectByName(`projects/${page.projectId}`)
   );
-  const sheetStore = useSheetV1Store();
   const [showAddSpecSheet, setShowAddSpecSheet] = useState(false);
   const [showTargetSelectorSheet, setShowTargetSelectorSheet] = useState(false);
+  const [specPendingDelete, setSpecPendingDelete] = useState<Plan_Spec | null>(
+    null
+  );
+  // Locally-held new spec for an already-created plan. We don't persist a new
+  // spec to the backend at the "pick targets" step — that would create a spec
+  // with an empty SQL statement. The spec lives here until the user fills in
+  // a statement and saves; that single save commits the sheet and the spec
+  // together via PlanDetailStatementSection's existing save flow.
+  const [pendingNewSpec, setPendingNewSpec] = useState<Plan_Spec | null>(null);
+  // Whether the draft tab is the active selection. Tracked separately from
+  // selectedSpecId (which mirrors the URL) so a draft can be selected even
+  // when the URL still points at a real spec.
+  const [isPendingSelected, setIsPendingSelected] = useState(false);
   const [draftCheckRunsBySpecId, setDraftCheckRunsBySpecId] = useState<
     Record<string, PlanCheckRun[]>
   >({});
   const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
     Record<string, CheckReleaseResponse_CheckResult[] | undefined>
   >({});
-  const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
   const specs = page.plan.specs ?? [];
+  // Specs visible in the tab strip — real specs plus any pending draft.
+  const visibleSpecs = useMemo(
+    () => (pendingNewSpec ? [...specs, pendingNewSpec] : specs),
+    [specs, pendingNewSpec]
+  );
+  const { emptySpecIdSet } = usePlanDetailSpecValidation(visibleSpecs);
   const selectedSpec = useMemo(() => {
+    if (pendingNewSpec && isPendingSelected) {
+      return pendingNewSpec;
+    }
     return getSelectedSpec({ selectedSpecId, specs });
-  }, [selectedSpecId, specs]);
+  }, [pendingNewSpec, isPendingSelected, selectedSpecId, specs]);
   const canModifySpecs = useMemo(() => {
     if (page.plan.state === State.DELETED) return false;
     if (page.readonly) return false;
@@ -234,10 +257,15 @@ export function PlanDetailChangesBranch({
 
   const selectSpec = useCallback(
     (specId: string) => {
-      onSelectedSpecIdChange(specId);
-      if (!page.isCreating) {
-        void pushSpecDetailRoute(page.projectId, page.planId, specId);
+      if (page.isCreating) {
+        // No URL drives the selection during plan creation.
+        onSelectedSpecIdChange(specId);
+        return;
       }
+      // Let the URL change drive selectedSpecId via the sync effect in the
+      // parent. Updating local state optimistically would bypass the leave
+      // confirm dialog when the navigation is cancelled.
+      void pushSpecDetailRoute(page.projectId, page.planId, specId);
     },
     [onSelectedSpecIdChange, page.isCreating, page.planId, page.projectId]
   );
@@ -259,24 +287,24 @@ export function PlanDetailChangesBranch({
         },
       });
 
-      if (!page.isCreating) {
-        const createdSheet = await sheetStore.createSheet(
-          project.name,
-          localSheet
-        );
-        removeLocalSheet(localSheet.name);
-        if (spec.config.case === "changeDatabaseConfig") {
-          spec.config.value.sheet = createdSheet.name;
-        }
+      if (page.isCreating) {
+        // The whole plan is local during creation; just append to plan.specs.
+        await commitSpecs([...page.plan.specs, spec]);
+        selectSpec(spec.id);
+        pushNotification({
+          module: "bytebase",
+          style: "SUCCESS",
+          title: t("common.updated"),
+        });
+        setShowAddSpecSheet(false);
+        return;
       }
 
-      await commitSpecs([...page.plan.specs, spec]);
-      selectSpec(spec.id);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
+      // Already-created plan: hold the spec as a draft. The first statement
+      // save commits the sheet and the spec together, so we never persist an
+      // empty-statement spec to the backend.
+      setPendingNewSpec(spec);
+      setIsPendingSelected(true);
       setShowAddSpecSheet(false);
       return;
     } catch (error) {
@@ -290,10 +318,12 @@ export function PlanDetailChangesBranch({
     }
   };
 
-  const handleDeleteSpec = async (specToDelete?: Plan_Spec) => {
-    const targetSpec = specToDelete ?? selectedSpec;
-    if (!targetSpec || page.plan.specs.length <= 1) return;
-    if (!window.confirm(t("common.delete"))) return;
+  const handleDeleteSpec = async () => {
+    const targetSpec = specPendingDelete;
+    if (!targetSpec || page.plan.specs.length <= 1) {
+      setSpecPendingDelete(null);
+      return;
+    }
     const nextSpecs = page.plan.specs.filter(
       (spec) => spec.id !== targetSpec.id
     );
@@ -315,11 +345,26 @@ export function PlanDetailChangesBranch({
         title: t("common.error"),
         description: String(error),
       });
+    } finally {
+      setSpecPendingDelete(null);
     }
   };
 
   const handleTargetsUpdate = async (targets: string[]) => {
     if (!selectedSpec) return;
+    // Pending draft is local only — update in place without hitting the API.
+    if (pendingNewSpec && selectedSpec.id === pendingNewSpec.id) {
+      const patched = clone(Plan_SpecSchema, pendingNewSpec);
+      if (
+        patched.config.case === "changeDatabaseConfig" ||
+        patched.config.case === "exportDataConfig"
+      ) {
+        patched.config.value.targets = targets;
+      }
+      setPendingNewSpec(patched);
+      setShowTargetSelectorSheet(false);
+      return;
+    }
     const nextSpecs = page.plan.specs.map((spec) => {
       if (spec.id !== selectedSpec.id) return spec;
       const patched = clone(Plan_SpecSchema, spec);
@@ -350,10 +395,48 @@ export function PlanDetailChangesBranch({
   };
 
   useEffect(() => {
-    if (selectedSpec && selectedSpec.id !== selectedSpecId) {
+    // Skip when the draft is the active selection — the parent's
+    // selectedSpecId mirrors the URL, and the draft has no URL yet.
+    if (
+      selectedSpec &&
+      selectedSpec.id !== selectedSpecId &&
+      selectedSpec.id !== pendingNewSpec?.id
+    ) {
       onSelectedSpecIdChange(selectedSpec.id);
     }
-  }, [onSelectedSpecIdChange, selectedSpec, selectedSpecId]);
+  }, [onSelectedSpecIdChange, pendingNewSpec, selectedSpec, selectedSpecId]);
+
+  // Once the URL (and therefore selectedSpecId) lands on a real spec, the
+  // draft is no longer the active selection. We don't clear pending eagerly
+  // on tab click so the leave-confirm dialog can intercept and keep the
+  // draft visible until the user discards.
+  useEffect(() => {
+    setIsPendingSelected(false);
+  }, [selectedSpecId]);
+
+  // Once the draft spec has been committed (the statement save adds it to
+  // page.plan.specs), drop the local pending state so it's no longer rendered
+  // as a separate tab. Selection follows the freshly-persisted spec.
+  useEffect(() => {
+    if (
+      pendingNewSpec &&
+      page.plan.specs.some((spec) => spec.id === pendingNewSpec.id)
+    ) {
+      const committedId = pendingNewSpec.id;
+      setPendingNewSpec(null);
+      setIsPendingSelected(false);
+      // Push the URL now that the spec is persisted, so refresh keeps state.
+      if (!page.isCreating) {
+        void pushSpecDetailRoute(page.projectId, page.planId, committedId);
+      }
+    }
+  }, [
+    page.isCreating,
+    page.plan.specs,
+    page.planId,
+    page.projectId,
+    pendingNewSpec,
+  ]);
 
   const selectedSpecIdForDraftChecks = selectedSpec?.id;
   const handleDraftCheckResultsChange = useCallback(
@@ -398,23 +481,31 @@ export function PlanDetailChangesBranch({
       <PlanDetailTabStrip
         action={
           canModifySpecs ? (
-            <Button
-              onClick={() => setShowAddSpecSheet(true)}
-              size="xs"
-              variant="outline"
+            <Tooltip
+              content={
+                pendingNewSpec ? t("plan.add-spec-pending-draft") : undefined
+              }
             >
-              {t("plan.add-spec")}
-            </Button>
+              <Button
+                disabled={Boolean(pendingNewSpec)}
+                onClick={() => setShowAddSpecSheet(true)}
+                size="xs"
+                variant="outline"
+              >
+                {t("plan.add-spec")}
+              </Button>
+            </Tooltip>
           ) : undefined
         }
       >
-        {specs.map((spec, index) => {
+        {visibleSpecs.map((spec, index) => {
           const isSelected = selectedSpec.id === spec.id;
+          const isPending = pendingNewSpec?.id === spec.id;
           return (
             <PlanDetailTabItem
               key={spec.id}
               action={
-                canModifySpecs && specs.length > 1 ? (
+                canModifySpecs && visibleSpecs.length > 1 ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       className={cn(
@@ -426,7 +517,16 @@ export function PlanDetailChangesBranch({
                     <DropdownMenuContent>
                       <DropdownMenuItem
                         className="text-error"
-                        onClick={() => void handleDeleteSpec(spec)}
+                        onClick={() => {
+                          if (isPending) {
+                            // Drafts only live in local state; clear and
+                            // fall back to the first real spec.
+                            setPendingNewSpec(null);
+                            setIsPendingSelected(false);
+                            return;
+                          }
+                          setSpecPendingDelete(spec);
+                        }}
                       >
                         {t("common.delete")}
                       </DropdownMenuItem>
@@ -435,6 +535,15 @@ export function PlanDetailChangesBranch({
                 ) : undefined
               }
               onSelect={() => {
+                if (isPending) {
+                  // Draft has no backend URL — only update local selection.
+                  setIsPendingSelected(true);
+                  return;
+                }
+                // Don't clear isPendingSelected here — if a leave-confirm
+                // dialog intercepts the navigation, we want the draft to
+                // stay visible behind the dialog. The URL-sync effect
+                // below clears it once selectedSpecId actually changes.
                 selectSpec(spec.id);
               }}
               selected={isSelected}
@@ -506,6 +615,36 @@ export function PlanDetailChangesBranch({
         projectName={project.name}
         title={t("plan.add-spec")}
       />
+
+      <AlertDialog
+        open={specPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setSpecPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {t("bbkit.confirm-button.sure-to-delete")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("bbkit.confirm-button.cannot-undo")}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSpecPendingDelete(null)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleDeleteSpec()}
+            >
+              {t("common.delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

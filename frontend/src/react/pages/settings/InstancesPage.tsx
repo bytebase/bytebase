@@ -9,7 +9,6 @@ import {
   RefreshCw,
   SquareStack,
 } from "lucide-react";
-import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -22,6 +21,10 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
+import {
+  type SelectionAction,
+  SelectionActionBar,
+} from "@/react/components/SelectionActionBar";
 import { Alert } from "@/react/components/ui/alert";
 import {
   AlertDialog,
@@ -107,26 +110,6 @@ interface InstanceColumn {
   sortKey?: string;
   cellClassName?: string;
   render: (instance: Instance) => React.ReactNode;
-}
-
-// Shared hooks
-// ============================================================
-
-function useClickOutside(
-  ref: RefObject<HTMLElement | null>,
-  active: boolean,
-  onClose: () => void
-) {
-  useEffect(() => {
-    if (!active) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [ref, active, onClose]);
 }
 
 // ============================================================
@@ -532,7 +515,7 @@ function EditEnvironmentSheet({
 }
 
 // ============================================================
-// BatchOperationsBar
+// SyncDropdown
 // ============================================================
 
 function SyncDropdown({
@@ -543,102 +526,35 @@ function SyncDropdown({
   onSync: (enableFullSync: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const closeDropdown = useCallback(() => setOpen(false), []);
-  useClickOutside(dropdownRef, open, closeDropdown);
 
   return (
-    <div ref={dropdownRef} className="relative">
-      <Button
-        variant="ghost"
-        size="md"
-        disabled={disabled}
-        onClick={() => setOpen(!open)}
-      >
-        <RefreshCw className={cn("h-4 w-4 mr-1", disabled && "animate-spin")} />
-        {disabled ? t("instance.syncing") : t("instance.sync.self")}
-        <ChevronDown className="h-3 w-3 ml-1" />
-      </Button>
-      {open && (
-        <div className="absolute left-0 top-full mt-1 bg-background border border-control-border rounded-sm shadow-lg z-10 min-w-[200px]">
-          <button
-            className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg"
-            title={t("instance.sync.sync-all-tip")}
-            onClick={() => {
-              setOpen(false);
-              onSync(true);
-            }}
-          >
-            {t("instance.sync.sync-all")}
-          </button>
-          <button
-            className="w-full text-left px-3 py-2 text-sm hover:bg-control-bg"
-            onClick={() => {
-              setOpen(false);
-              onSync(false);
-            }}
-          >
-            {t("instance.sync.sync-new")}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BatchOperationsBar({
-  selectedInstances,
-  syncing,
-  onSync,
-  onEditEnvironment,
-  onAssignLicense,
-  showAssignLicense,
-}: {
-  selectedInstances: Instance[];
-  syncing: boolean;
-  onSync: (enableFullSync: boolean) => void;
-  onEditEnvironment: () => void;
-  onAssignLicense: () => void;
-  showAssignLicense?: boolean;
-}) {
-  const { t } = useTranslation();
-  const canSync = hasWorkspacePermissionV2("bb.instances.sync");
-  const canUpdate = hasWorkspacePermissionV2("bb.instances.update");
-
-  if (selectedInstances.length === 0) return null;
-
-  return (
-    <div className="relative z-10 text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-visible">
-      <span className="whitespace-nowrap text-sm">
-        {t("instance.selected-n-instances", {
-          count: selectedInstances.length,
-        })}
-      </span>
-      <div className="flex items-center">
-        <SyncDropdown disabled={!canSync || syncing} onSync={onSync} />
-        <Button
-          variant="ghost"
-          size="md"
-          disabled={!canUpdate}
-          onClick={onEditEnvironment}
-        >
-          <SquareStack className="h-4 w-4 mr-1" />
-          {t("database.edit-environment")}
-        </Button>
-        {showAssignLicense && (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
           <Button
-            variant="ghost"
-            size="md"
-            disabled={!canUpdate}
-            onClick={onAssignLicense}
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            disabled={disabled}
           >
-            <GraduationCap className="h-4 w-4 mr-1" />
-            {t("subscription.instance-assignment.assign-license")}
+            <RefreshCw className={cn("size-4", disabled && "animate-spin")} />
+            {disabled ? t("instance.syncing") : t("instance.sync.self")}
+            <ChevronDown className="size-3" />
           </Button>
-        )}
-      </div>
-    </div>
+        }
+      />
+      <DropdownMenuContent align="start" className="min-w-[200px]">
+        <DropdownMenuItem
+          title={t("instance.sync.sync-all-tip")}
+          onClick={() => onSync(true)}
+        >
+          {t("instance.sync.sync-all")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSync(false)}>
+          {t("instance.sync.sync-new")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -1257,35 +1173,6 @@ export function InstancesPage() {
         </PermissionGuard>
       </div>
 
-      {/* Batch operations */}
-      <BatchOperationsBar
-        selectedInstances={selectedInstanceList}
-        syncing={syncing}
-        onSync={handleSync}
-        onEditEnvironment={() => setShowEditEnvDrawer(true)}
-        onAssignLicense={() =>
-          handleAssignLicense(
-            selectedInstanceList.map((instance) => instance.name)
-          )
-        }
-        showAssignLicense={hasSplitInstanceLicense}
-      />
-
-      <EditEnvironmentSheet
-        open={showEditEnvDrawer}
-        onClose={() => setShowEditEnvDrawer(false)}
-        onUpdate={handleEnvironmentUpdate}
-      />
-      {hasSplitInstanceLicense && (
-        <InstanceAssignmentSheet
-          open={showAssignLicenseSheet}
-          selectedInstanceList={assignLicenseNames}
-          onOpenChange={setShowAssignLicenseSheet}
-          onUpdated={handleRowAction}
-        />
-      )}
-
-      {/* Table */}
       <div className="overflow-x-auto border-y border-block-border">
         <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
           <colgroup>
@@ -1362,7 +1249,6 @@ export function InstancesPage() {
         </Table>
       </div>
 
-      {/* Pagination footer */}
       <div className="mt-4 mx-2">
         <PagedTableFooter
           pageSize={pageSize}
@@ -1373,6 +1259,67 @@ export function InstancesPage() {
           onLoadMore={loadMore}
         />
       </div>
+
+      {/* Batch operations bar (sticky at bottom; rendered after the
+          table so selection doesn't shift table position) */}
+      {(() => {
+        const canSync = hasWorkspacePermissionV2("bb.instances.sync");
+        const canUpdate = hasWorkspacePermissionV2("bb.instances.update");
+        const instanceActions: SelectionAction[] = [
+          {
+            key: "edit-env",
+            label: t("database.edit-environment"),
+            icon: SquareStack,
+            onClick: () => setShowEditEnvDrawer(true),
+            disabled: !canUpdate,
+          },
+          {
+            key: "assign-license",
+            label: t("subscription.instance-assignment.assign-license"),
+            icon: GraduationCap,
+            onClick: () =>
+              handleAssignLicense(
+                selectedInstanceList.map((instance) => instance.name)
+              ),
+            disabled: !canUpdate,
+            hidden: !hasSplitInstanceLicense,
+          },
+        ];
+        const allSelected =
+          instances.length > 0 &&
+          instances.every((i) => selectedNames.has(i.name));
+        return (
+          <SelectionActionBar
+            count={selectedInstanceList.length}
+            label={t("instance.selected-n-instances", {
+              count: selectedInstanceList.length,
+            })}
+            allSelected={allSelected}
+            onToggleSelectAll={() => {
+              if (allSelected) setSelectedNames(new Set());
+              else setSelectedNames(new Set(instances.map((i) => i.name)));
+            }}
+            actions={instanceActions}
+          >
+            <SyncDropdown disabled={!canSync || syncing} onSync={handleSync} />
+          </SelectionActionBar>
+        );
+      })()}
+
+      {/* Modals (portaled, position-independent) */}
+      <EditEnvironmentSheet
+        open={showEditEnvDrawer}
+        onClose={() => setShowEditEnvDrawer(false)}
+        onUpdate={handleEnvironmentUpdate}
+      />
+      {hasSplitInstanceLicense && (
+        <InstanceAssignmentSheet
+          open={showAssignLicenseSheet}
+          selectedInstanceList={assignLicenseNames}
+          onOpenChange={setShowAssignLicenseSheet}
+          onUpdated={handleRowAction}
+        />
+      )}
     </div>
   );
 }

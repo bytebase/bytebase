@@ -54,6 +54,7 @@ import {
   unknownEnvironment,
 } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
@@ -89,6 +90,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 
   // Selection / batch operations
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
+  const [visibleDatabases, setVisibleDatabases] = useState<Database[]>([]);
   const [refreshToken, setRefreshToken] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [showLabelEditor, setShowLabelEditor] = useState(false);
@@ -424,13 +426,6 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               placeholder={t("database.filter-database")}
               scopeOptions={scopeOptions}
             />
-            <DatabaseBatchOperationsBar
-              databases={selectedDatabases}
-              onSyncSchema={handleSyncSchema}
-              onEditLabels={() => setShowLabelEditor(true)}
-              onEditEnvironment={() => setShowEditEnvDrawer(true)}
-              onTransferProject={() => setShowTransferDrawer(true)}
-            />
             <EditEnvironmentSheet
               open={showEditEnvDrawer}
               onClose={() => setShowEditEnvDrawer(false)}
@@ -454,7 +449,31 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
               mode="ALL"
               selectedNames={selectedNames}
               onSelectedNamesChange={setSelectedNames}
+              onDatabasesChange={setVisibleDatabases}
               refreshToken={refreshToken}
+            />
+            {/* Batch operations bar (sticky at bottom; rendered after the
+                table so selection doesn't shift table position) */}
+            <DatabaseBatchOperationsBar
+              databases={selectedDatabases}
+              onSyncSchema={handleSyncSchema}
+              onEditLabels={() => setShowLabelEditor(true)}
+              onEditEnvironment={() => setShowEditEnvDrawer(true)}
+              onTransferProject={() => setShowTransferDrawer(true)}
+              allSelected={
+                visibleDatabases.length > 0 &&
+                visibleDatabases.every((d) => selectedNames.has(d.name))
+              }
+              onToggleSelectAll={() => {
+                const allOnPage =
+                  visibleDatabases.length > 0 &&
+                  visibleDatabases.every((d) => selectedNames.has(d.name));
+                if (allOnPage) setSelectedNames(new Set());
+                else
+                  setSelectedNames(
+                    new Set(visibleDatabases.map((d) => d.name))
+                  );
+              }}
             />
           </div>
         </TabsPanel>
