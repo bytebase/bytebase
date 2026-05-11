@@ -142,11 +142,18 @@ export function ProjectTable({
       <TableHeader>
         <TableRow>
           {showSelection ? (
-            <TableHead className="w-12">
+            <TableHead
+              className="w-12 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelectAll();
+              }}
+            >
               <Checkbox
                 checked={allSelected}
                 aria-label={t("common.select-all")}
                 onCheckedChange={handleSelectAll}
+                onClick={(e) => e.stopPropagation()}
               />
             </TableHead>
           ) : showLeadingCheck ? (
@@ -206,14 +213,19 @@ export function ProjectTable({
               >
                 {showSelection ? (
                   <TableCell
-                    className="w-12"
-                    onClick={(e) => e.stopPropagation()}
+                    className={cn("w-12", !isDefault && "cursor-pointer")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isDefault) return;
+                      handleToggleRow(project.name);
+                    }}
                   >
                     <Checkbox
                       checked={isSelected}
                       aria-label={t("common.select")}
                       disabled={isDefault}
                       onCheckedChange={() => handleToggleRow(project.name)}
+                      onClick={(e) => e.stopPropagation()}
                       className="disabled:opacity-50"
                     />
                   </TableCell>
