@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -258,7 +259,8 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 		return resp, nil
 	}
 
-	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, true, req.Header())
+	isWeb := auth.GetRefreshTokenFromCookie(req.Header()) != ""
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
 }
 
 // LeaveWorkspace removes the calling user from a workspace's IAM bindings,
@@ -362,7 +364,8 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		return resp, nil
 	}
 
-	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, true, req.Header())
+	isWeb := auth.GetRefreshTokenFromCookie(req.Header()) != ""
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
 }
 
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
