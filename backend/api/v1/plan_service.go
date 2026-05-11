@@ -359,7 +359,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				// which will trigger approval finding on completion
 				// DATABASE_EXPORT: Re-run approval finding synchronously (no plan checks for export data)
 				if updatedIssue.Type == storepb.Issue_DATABASE_EXPORT {
-					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.webhookManager, s.licenseService, updatedIssue); err != nil {
+					if err := approval.FindAndApplyApprovalTemplate(ctx, s.store, s.bus, s.webhookManager, s.licenseService, updatedIssue); err != nil {
 						slog.Error("failed to find approval template after plan update",
 							slog.String("project", updatedIssue.ProjectID), slog.Int64("issue_uid", updatedIssue.UID),
 							slog.String("issue_title", updatedIssue.Title),

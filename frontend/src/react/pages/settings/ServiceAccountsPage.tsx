@@ -5,7 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { RoleSelect } from "@/react/components/RoleSelect";
-import { UserAvatar } from "@/react/components/UserAvatar";
+import { UserCell } from "@/react/components/UserCell";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -241,26 +241,20 @@ function ServiceAccountTable({
                   {/* Account column */}
                   <TableCell>
                     <div className="flex items-center gap-x-3">
-                      <UserAvatar title={user.title || user.email} />
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-x-1.5">
-                          <span
-                            className={
-                              isDeleted
-                                ? "line-through text-control-light"
-                                : "font-medium text-main"
-                            }
-                          >
-                            {user.title}
-                          </span>
+                      <UserCell
+                        title={user.title}
+                        subtitle={user.email}
+                        nameClassName={
+                          isDeleted
+                            ? "line-through !text-control-light"
+                            : undefined
+                        }
+                        badges={
                           <Badge className="text-xs px-1.5 py-0">
                             {t("settings.members.service-account")}
                           </Badge>
-                        </div>
-                        <span className="textinfolabel text-xs">
-                          {user.email}
-                        </span>
-                      </div>
+                        }
+                      />
                       {!isDeleted && (
                         <div className="ml-auto text-xs shrink-0">
                           {user.serviceKey && !copiedKeys.has(user.name) ? (

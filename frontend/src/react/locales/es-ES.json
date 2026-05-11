@@ -198,6 +198,7 @@
   },
   "common": {
     "Default": "Predeterminado",
+    "access-denied": "Acceso denegado",
     "action-required": "Acción requerida",
     "actions": "Acciones",
     "activated": "Activado",
@@ -526,7 +527,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
-      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
+      "fallback-rules-hint": "Las reglas de respaldo se evalúan de arriba abajo solo cuando ninguna regla específica de origen coincide.",
       "node": {
         "add": "Agregar nodo",
         "approver": "Aprobador",
@@ -594,6 +595,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Las reglas se evalúan en orden. Las reglas específicas de origen se ejecutan antes que las Reglas de respaldo.",
+        "multi-target": "En un plan con varios destinos, una regla específica de origen coincide con todo el plan si cualquier destino cumple su condición, y la primera regla coincidente selecciona el flujo de aprobación para todo el plan.",
+        "priority": "Coloca las reglas para cambios de mayor riesgo antes que las de menor riesgo. Para riesgos similares, coloca las reglas más estrictas o específicas antes de las más amplias."
+      },
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente.",
       "self": "Regla de aprobación personalizada"
     },
@@ -711,6 +717,7 @@
   "data-source.ssl.verify-certificate": "Verificar certificado TLS",
   "data-source.ssl.verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro",
   "database": {
+    "access-denied": "No tiene permiso para acceder a esta base de datos.",
     "all": "Todas las bases de datos",
     "change-database": "Modificar base de datos",
     "checks": "Verificaciones",
@@ -1348,7 +1355,8 @@
           "title": "Motor"
         },
         "environment": {
-          "description": "Filtrar por entorno"
+          "description": "Filtrar por entorno",
+          "title": "Ambiente"
         },
         "instance": {
           "description": "Filtrar por instancia",
@@ -1379,6 +1387,10 @@
         },
         "status": {
           "description": "Buscar por el estado del issue"
+        },
+        "table": {
+          "description": "Ingrese el valor y luego presione Enter",
+          "title": "Tabla"
         },
         "user": {
           "description": "Filtrar por usuario"
@@ -1421,7 +1433,6 @@
     "role-grant": {
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
-      "column-scope-select-disabled": "La selección manual no está disponible para selecciones con alcance de columna.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "selección manual",
@@ -1454,6 +1465,7 @@
     "title": {
       "change-database": "Modificar base de datos",
       "change-from-sql-editor": "Modificar desde el editor SQL",
+      "edit-schema": "Editar esquema",
       "request-role": "Solicitar rol",
       "request-specific-role": "Solicitar rol \"{{role}}\""
     },
@@ -1842,6 +1854,20 @@
   },
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "Nuevo Proyecto",
+  "quick-start": {
+    "guide": "haga clic en el paso para probarlo",
+    "notice": {
+      "desc": "Todavía puede volver a abrirla más tarde desde el menú en la parte superior derecha",
+      "title": "Guía de inicio rápido omitida"
+    },
+    "query-data": "Consultar datos",
+    "view-an-issue": "Ver una incidencia",
+    "visit-database": "Visitar Bases de datos",
+    "visit-environment": "Visitar Entornos",
+    "visit-instance": "Visitar Instancias",
+    "visit-member": "Visitar Miembro | Miembros",
+    "visit-project": "Visitar Proyectos"
+  },
   "quick-start.self": "Quick Start",
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -2623,6 +2649,7 @@
       "description": "Consulta por lotes {{database}} bases de datos adicionales y {{group}} grupos de bases de datos bajo {{project}}.",
       "select-data-source": {
         "admin": "Administración",
+        "not-match": "La fuente de datos no coincide, se esperaba {{expect}} pero se obtuvo {{actual}}.",
         "readonly": "Sólo lectura",
         "self": "Seleccionar la fuente de datos para el lote",
         "tooltip": "Encontrará fuentes de datos disponibles con política de restricción y luego aplicará la selección."
@@ -2639,6 +2666,7 @@
     "column-display-format": "Formato de visualización de columna",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "connect-to-a-database": "Conectar a base de datos",
+    "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
     "copy-all-column-names": "Copiar todos los nombres de las columnas",
     "copy-name": "Copiar nombre",
     "copy-selected-results": "Copiar datos seleccionados por <action></action> o <button></button>",
@@ -2648,6 +2676,8 @@
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "execute-query": "Ejecutar consulta",
+    "executing-query": "Ejecutando consulta",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
@@ -2682,6 +2712,7 @@
     "no-queriable-database": "No hay base de datos consultable",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "open-in-new-tab": "Abrir en nueva pestaña",
+    "pending-query": "Consulta pendiente",
     "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
     "private": "Privado",
@@ -2742,7 +2773,8 @@
           "multi-select": "Selección múltiple",
           "rename": "Renombrar"
         }
-      }
+      },
+      "unsaved-worksheet": "Tiene una hoja de trabajo sin guardar."
     },
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
     "table-view": "Vista de tabla",

@@ -37,7 +37,7 @@ export type HoverStateContextValue = {
 };
 
 const DELAY_BEFORE = 1000;
-const DELAY_AFTER = 350;
+const DELAY_AFTER = 100;
 
 const HoverStateContext = createContext<HoverStateContextValue | null>(null);
 

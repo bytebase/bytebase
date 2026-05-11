@@ -199,6 +199,7 @@
   },
   "common": {
     "Default": "Default",
+    "access-denied": "Access denied",
     "action-required": "Action Required",
     "actions": "Actions",
     "activated": "Activated",
@@ -533,7 +534,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Fallback Rules",
-      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
+      "fallback-rules-hint": "Fallback rules are evaluated from top to bottom only when no source-specific rule matches.",
       "node": {
         "add": "Add node",
         "approver": "Approver",
@@ -601,6 +602,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Rules are evaluated in order. Source-specific rules run before Fallback Rules.",
+        "multi-target": "For a multi-target plan, a source-specific rule matches the whole plan if any target matches its condition, and the first matching rule selects the approval flow for the whole plan.",
+        "priority": "Place rules for higher risk changes before those for lower-risk changes. For similar risks, place stricter or more specific rules before broader rules."
+      },
       "first-match-wins": "Rules are evaluated in order. First matching rule applies.",
       "self": "Custom Approval Rule"
     },
@@ -718,6 +724,7 @@
   "data-source.ssl.verify-certificate": "Verify TLS certificate",
   "data-source.ssl.verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure",
   "database": {
+    "access-denied": "You don't have the permission to access this database.",
     "all": "All databases",
     "change-database": "Change Database",
     "checks": "Checks",
@@ -1355,7 +1362,8 @@
           "title": "Engine"
         },
         "environment": {
-          "description": "Filter by environment"
+          "description": "Filter by environment",
+          "title": "Environment"
         },
         "instance": {
           "description": "Filter by instance",
@@ -1386,6 +1394,10 @@
         },
         "status": {
           "description": "Search by the issue status"
+        },
+        "table": {
+          "description": "Input the value then press Enter",
+          "title": "Table"
         },
         "user": {
           "description": "Filter by user"
@@ -1429,7 +1441,6 @@
     "role-grant": {
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
-      "column-scope-select-disabled": "Manually select is unavailable for column-scoped selections.",
       "details": "Role Grant Details",
       "expired-at": "Expired at",
       "manually-select": "Manually select",
@@ -1462,6 +1473,7 @@
     "title": {
       "change-database": "Change database",
       "change-from-sql-editor": "Change from SQL Editor",
+      "edit-schema": "Edit schema",
       "request-role": "Request role",
       "request-specific-role": "Request \"{{role}}\" role"
     },
@@ -1853,7 +1865,19 @@
   "quick-action.create-project": "Create project",
   "quick-action.new-project": "New Project",
   "quick-start": {
-    "self": "Quick Start"
+    "guide": "click on the step to try it out",
+    "notice": {
+      "desc": "You can still bring it back later from the top right menu",
+      "title": "Quickstart guide dismissed"
+    },
+    "query-data": "Query data",
+    "self": "Quick Start",
+    "view-an-issue": "View an issue",
+    "visit-database": "Visit Databases",
+    "visit-environment": "Visit Environments",
+    "visit-instance": "Visit Instances",
+    "visit-member": "Visit Member | Members",
+    "visit-project": "Visit Projects"
   },
   "quick-start.self": "Quick Start",
   "release": {
@@ -2637,6 +2661,7 @@
       "description": "Batch query {{database}} additional databases and {{group}} database groups under {{project}}.",
       "select-data-source": {
         "admin": "Admin",
+        "not-match": "Data source mismatch, expect {{expect}} but got {{actual}}.",
         "readonly": "Read-only",
         "self": "Select data source for batch",
         "tooltip": "Will find available data sources with restriction policy, then apply the selection."
@@ -2653,6 +2678,7 @@
     "column-display-format": "Column Display Format",
     "connect-in-admin-mode": "Connect in admin mode",
     "connect-to-a-database": "Connect to database",
+    "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
     "copy-all-column-names": "Copy all column names",
     "copy-name": "Copy name",
     "copy-selected-results": "Copy selected data by <action></action> or <button></button>",
@@ -2662,6 +2688,8 @@
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "execute-query": "Execute query",
+    "executing-query": "Executing query",
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
@@ -2696,6 +2724,7 @@
     "no-queriable-database": "No queriable database",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
+    "pending-query": "Pending query",
     "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
     "private": "Private",
@@ -2756,7 +2785,8 @@
           "multi-select": "Multi-select",
           "rename": "Rename"
         }
-      }
+      },
+      "unsaved-worksheet": "You have unsaved worksheet."
     },
     "table-empty-placeholder": "Click Run to execute the query.",
     "table-view": "Table view",

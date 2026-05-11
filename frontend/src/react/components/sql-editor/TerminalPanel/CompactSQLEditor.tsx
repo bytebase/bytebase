@@ -18,13 +18,13 @@ import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain } from "@/utils";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
 import {
   checkCursorAtFirstLine,
   checkCursorAtLast,
   checkCursorAtLastLine,
   checkIsEnterEndsStatement,
-} from "@/views/sql-editor/EditorPanel/TerminalPanel/utils";
-import { sqlEditorEvents } from "@/views/sql-editor/events";
+} from "./utils";
 
 const MIN_EDITOR_HEIGHT = 40;
 const MAX_EDITOR_HEIGHT = 360;

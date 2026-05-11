@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { RulesSection } from "@/react/components/CustomApproval/RulesSection";
 import { APPROVAL_SOURCES } from "@/react/components/CustomApproval/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
+import { Alert } from "@/react/components/ui/alert";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useSubscriptionV1Store,
@@ -43,9 +44,19 @@ export function CustomApprovalPage() {
       </div>
 
       {hasFeature && (
-        <div className="textinfolabel">
-          {t("custom-approval.rule.first-match-wins")}
-        </div>
+        <Alert variant="info">
+          <ul className="flex flex-col gap-y-1 list-disc pl-5">
+            <li>
+              {t(
+                "custom-approval.rule.approval-rule-matching.evaluation-order"
+              )}
+            </li>
+            <li>
+              {t("custom-approval.rule.approval-rule-matching.multi-target")}
+            </li>
+            <li>{t("custom-approval.rule.approval-rule-matching.priority")}</li>
+          </ul>
+        </Alert>
       )}
 
       {!ready ? (

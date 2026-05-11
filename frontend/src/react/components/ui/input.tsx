@@ -39,5 +39,5 @@ function Input({ className, size, ref, ...props }: InputProps) {
   );
 }
 
-export { Input };
 export type { InputProps };
+export { Input };

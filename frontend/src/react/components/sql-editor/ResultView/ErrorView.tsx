@@ -2,11 +2,11 @@ import { type IRange, Selection } from "monaco-editor";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { positionWithOffset } from "@/components/MonacoEditor/utils";
+import { activeSQLEditorRef } from "@/react/components/sql-editor/StandardPanel/state";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { cn } from "@/react/lib/utils";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
-import { activeSQLEditorRef } from "@/views/sql-editor/EditorPanel/StandardPanel/state";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { PostgresError } from "./PostgresError";
 

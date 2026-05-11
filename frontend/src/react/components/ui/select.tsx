@@ -108,4 +108,4 @@ function SelectItem({
   );
 }
 
-export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };

@@ -90,7 +90,11 @@ function getOperatorListByFactor(
   return overrideMap?.get(factor) ?? getRawOperatorListByFactor(factor);
 }
 
-function getDefaultValue(factor: Factor): string | number | boolean | Date {
+function getDefaultValue(
+  factor: Factor,
+  operator?: ConditionOperator
+): string | number | boolean | Date | string[] | number[] {
+  if (operator && isCollectionOperator(operator)) return [];
   if (isNumberFactor(factor)) return 0;
   if (isBooleanFactor(factor)) return true;
   if (isStringFactor(factor)) return "";
@@ -798,7 +802,7 @@ function MultiCheckSelect({
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
           matchAnchorWidth
-          className="bg-background border border-control-border rounded-sm shadow-md py-1"
+          className="bg-background border border-control-border rounded-sm shadow-md py-1 max-h-48 overflow-y-auto"
         >
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer border-b border-control-border hover:bg-control-bg">
             <Checkbox
@@ -860,7 +864,13 @@ function FactorSelect({
     if (!factorList.includes(factor)) {
       doUpdate((group) => {
         const cond = group.args[operandIndex] as ConditionExpr;
-        (cond.args as unknown[])[0] = factorList[0];
+        const newFactor = factorList[0];
+        (cond.args as unknown[])[0] = newFactor;
+        const operators = getOperatorListByFactor(newFactor, overrideMap);
+        if (operators.length > 0 && !operators.includes(cond.operator)) {
+          cond.operator = operators[0] as ConditionOperator;
+        }
+        (cond.args as unknown[])[1] = getDefaultValue(newFactor, cond.operator);
       });
     }
   }, [factor, factorList]);
@@ -879,6 +889,10 @@ function FactorSelect({
           if (operators.length > 0 && !operators.includes(cond.operator)) {
             cond.operator = operators[0] as ConditionOperator;
           }
+          (cond.args as unknown[])[1] = getDefaultValue(
+            newFactor,
+            cond.operator
+          );
         });
       }}
     >
@@ -929,6 +943,10 @@ function OperatorSelect({
       doUpdate((group) => {
         const cond = group.args[operandIndex] as ConditionExpr;
         cond.operator = operators[0] as ConditionOperator;
+        (cond.args as unknown[])[1] = getDefaultValue(
+          cond.args[0] as Factor,
+          cond.operator
+        );
       });
     }
   }, [operators, expr.operator]);
@@ -941,6 +959,10 @@ function OperatorSelect({
         doUpdate((group) => {
           const cond = group.args[operandIndex] as ConditionExpr;
           cond.operator = val as ConditionOperator;
+          (cond.args as unknown[])[1] = getDefaultValue(
+            cond.args[0] as Factor,
+            cond.operator
+          );
         });
       }}
     >
@@ -1026,30 +1048,6 @@ function ValueInput({
       (cond.args as unknown[])[1] = v;
     });
   };
-
-  // Reset value when factor or operator changes
-  const prevRef = useRef({ factor, operator });
-  useEffect(() => {
-    const prev = prevRef.current;
-    const changed = prev.factor !== factor || prev.operator !== operator;
-    prevRef.current = { factor, operator };
-    if (!changed) return;
-
-    doUpdate((group) => {
-      const cond = group.args[operandIndex] as ConditionExpr;
-      if (isNumberFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
-          ? []
-          : 0;
-      } else if (isBooleanFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = true;
-      } else if (isStringFactor(cond.args[0] as Factor)) {
-        (cond.args as unknown[])[1] = isCollectionOperator(cond.operator)
-          ? []
-          : "";
-      }
-    });
-  }, [factor, operator]);
 
   const getStringValue = () => {
     const v = expr.args[1];
@@ -1361,13 +1359,13 @@ function ConditionGroup({
     const factor = factorList[0];
     if (!factor) return;
     const operators = getOperatorListByFactor(factor, overrideMap);
-    const op = operators[0];
+    const op = operators[0] as ConditionOperator | undefined;
     if (!op) return;
     doUpdate((group) => {
       group.args.push({
         type: ExprType.Condition,
         operator: op,
-        args: [factor, getDefaultValue(factor)],
+        args: [factor, getDefaultValue(factor, op)],
       } as ConditionExpr);
     });
   };

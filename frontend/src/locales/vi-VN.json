@@ -456,7 +456,7 @@
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Quy tắc dự phòng",
-      "fallback-rules-hint": "Quy tắc dự phòng chỉ được đánh giá khi không có quy tắc nào khác khớp.",
+      "fallback-rules-hint": "Quy tắc dự phòng được đánh giá từ trên xuống dưới chỉ khi không có quy tắc theo nguồn nào khớp.",
       "node": {
         "add": "Thêm nút",
         "approver": "Người phê duyệt",
@@ -527,6 +527,11 @@
       }
     },
     "rule": {
+      "approval-rule-matching": {
+        "evaluation-order": "Các quy tắc được đánh giá theo thứ tự. Quy tắc theo nguồn chạy trước Quy tắc dự phòng.",
+        "multi-target": "Với kế hoạch có nhiều mục tiêu, một quy tắc theo nguồn khớp với toàn bộ kế hoạch nếu bất kỳ mục tiêu nào khớp với điều kiện của quy tắc đó, và quy tắc khớp đầu tiên sẽ chọn luồng phê duyệt cho toàn bộ kế hoạch.",
+        "priority": "Đặt các quy tắc cho thay đổi có rủi ro cao hơn trước các quy tắc cho thay đổi có rủi ro thấp hơn. Với các rủi ro tương tự, đặt các quy tắc chặt chẽ hơn hoặc cụ thể hơn trước các quy tắc rộng hơn."
+      },
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng.",
       "self": "Quy tắc phê duyệt tùy chỉnh"
     },
@@ -1176,7 +1181,6 @@
     "role-grant": {
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
-      "column-scope-select-disabled": "Không thể chọn thủ công cho phạm vi ở mức cột.",
       "details": "Yêu cầu chi tiết",
       "expired-at": "Hết hạn vào",
       "manually-select": "Chọn thủ công",

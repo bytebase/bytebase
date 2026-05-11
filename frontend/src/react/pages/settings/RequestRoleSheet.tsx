@@ -78,10 +78,27 @@ export interface RequestRoleSheetProps {
   open: boolean;
   project: Project;
   requiredPermissions?: Permission[];
+  /**
+   * Pre-fill the role select. Useful when the sheet is opened from a
+   * surface that already knows which role the user needs (e.g. the SQL
+   * Editor's "Request query" button hard-codes
+   * `PresetRoleType.SQL_EDITOR_USER`). The user can still change the
+   * role from the picker — pass `requiredPermissions` to constrain the
+   * available roles instead of hard-locking the selection.
+   */
+  initialRole?: string;
+  /**
+   * Pre-fill the SELECT-mode database scope. When provided AND the
+   * pre-selected role requires a database scope, the sheet opens in
+   * SELECT mode with these resources already chosen. The user can
+   * switch to ALL or EXPRESSION mode if they want to broaden the scope.
+   */
+  initialDatabaseResources?: DatabaseResource[];
   onClose: () => void;
 }
 
 const EMPTY_REQUIRED_PERMISSIONS: Permission[] = [];
+const EMPTY_DATABASE_RESOURCES: DatabaseResource[] = [];
 
 // i18n key lookup for the three DatabaseMode radio labels. Kept as a flat
 // function to avoid nested ternaries in the render tree.
@@ -114,6 +131,8 @@ export function RequestRoleSheet(props: Readonly<RequestRoleSheetProps>) {
 function RequestRoleForm({
   project,
   requiredPermissions = EMPTY_REQUIRED_PERMISSIONS,
+  initialRole = "",
+  initialDatabaseResources = EMPTY_DATABASE_RESOURCES,
   onClose,
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
@@ -124,18 +143,23 @@ function RequestRoleForm({
   // getter produces identical reactive semantics.
   const currentUserRef = useCurrentUserV1();
   const currentUser = useVueState(() => currentUserRef.value);
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(initialRole);
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<
     string | undefined
   >(undefined);
   const [labels, setLabels] = useState<string[]>([]);
   // Role-scope fields — only rendered for roles that require them, but kept
-  // in state so switching roles back and forth preserves user input.
-  const [databaseMode, setDatabaseMode] = useState<DatabaseMode>("ALL");
+  // in state so switching roles back and forth preserves user input. When
+  // the caller pre-fills database resources we open in SELECT mode so the
+  // pre-filled scope is visible (otherwise the radio would default to ALL
+  // and the resources would be ignored).
+  const [databaseMode, setDatabaseMode] = useState<DatabaseMode>(
+    initialDatabaseResources.length > 0 ? "SELECT" : "ALL"
+  );
   const [databaseResources, setDatabaseResources] = useState<
     DatabaseResource[]
-  >([]);
+  >(initialDatabaseResources);
   // CEL expression for EXPRESSION mode is held as a structured group so it
   // can render in ExprEditor (matching the old Vue DatabaseResourceForm).
   const [exprGroup, setExprGroup] = useState<ConditionGroupExpr>(() =>

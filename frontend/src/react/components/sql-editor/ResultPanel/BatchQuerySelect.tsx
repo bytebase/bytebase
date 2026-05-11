@@ -32,11 +32,8 @@ import {
   getInstanceResource,
   hexToRgb,
 } from "@/utils";
-import {
-  type CloseTabAction,
-  resultTabEvents,
-} from "@/views/sql-editor/EditorPanel/ResultPanel/resultTabContext";
 import { TabContextMenu } from "./ContextMenu";
+import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
 const MAX_EXPORT = 20;
 

@@ -44,5 +44,5 @@ function Button({ className, variant, size, ref, ...props }: ButtonProps) {
   );
 }
 
-export { Button, buttonVariants };
 export type { ButtonProps };
+export { Button, buttonVariants };

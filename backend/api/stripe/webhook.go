@@ -12,9 +12,9 @@ import (
 
 	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
-	stripego "github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/customer"
-	"github.com/stripe/stripe-go/v82/webhook"
+	stripego "github.com/stripe/stripe-go/v85"
+	"github.com/stripe/stripe-go/v85/customer"
+	"github.com/stripe/stripe-go/v85/webhook"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/log"

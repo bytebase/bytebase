@@ -6,13 +6,55 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
-import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
+import { cn } from "@/react/lib/utils";
+import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
+import {
+  hasFeature,
+  useProjectV1Store,
+  useRoleStore,
+  useSQLEditorStore,
+  useSubscriptionV1Store,
+} from "@/store";
 import type { DatabaseResource, Permission } from "@/types";
-import { PresetRoleType } from "@/types";
+import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
+import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
-import { RoleGrantPanel } from "./RoleGrantPanel";
+import { useRequestDrawerHost } from "./RequestDrawerHost";
+
+const SQL_SELECT_PERMISSION = "bb.sql.select";
+
+const getDefaultQueryRole = (
+  roles: readonly Pick<Role, "name" | "permissions">[],
+  requiredPermissions: readonly string[],
+  hasCustomRoleFeature: boolean
+) => {
+  const permissions =
+    requiredPermissions.length > 0
+      ? requiredPermissions
+      : [SQL_SELECT_PERMISSION];
+  const candidates = [...roles]
+    .filter((role) => hasCustomRoleFeature || PRESET_ROLES.includes(role.name))
+    .filter((role) =>
+      permissions.every((permission) => role.permissions.includes(permission))
+    )
+    .sort((a, b) => {
+      const permissionCountDelta = a.permissions.length - b.permissions.length;
+      if (permissionCountDelta !== 0) {
+        return permissionCountDelta;
+      }
+      if (a.name === PresetRoleType.SQL_EDITOR_READ_USER) {
+        return -1;
+      }
+      if (b.name === PresetRoleType.SQL_EDITOR_READ_USER) {
+        return 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_USER;
+};
 
 interface Props {
   readonly size?: "sm" | "default";
@@ -29,14 +71,32 @@ export function RequestQueryButton({
 }: Props) {
   const { t } = useTranslation();
 
+  // When the layout-level host is mounted (typical case inside the SQL
+  // Editor), opening the drawer dispatches up to the host so it survives
+  // ancestor unmounts (e.g. the connection panel Sheet closing). Local
+  // state stays as a fallback for standalone callers (tests, isolated
+  // pages without the host).
+  const drawerHost = useRequestDrawerHost();
   const [showPanel, setShowPanel] = useState(false);
   const [showJITDrawer, setShowJITDrawer] = useState(false);
 
   const projectStore = useProjectV1Store();
   const editorStore = useSQLEditorStore();
+  const roleStore = useRoleStore();
+  const subscriptionStore = useSubscriptionV1Store();
 
   const projectName = useVueState(() => editorStore.project);
   const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const hasCustomRoleFeature = useVueState(() =>
+    subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+  );
+  const defaultQueryRole = useVueState(() =>
+    getDefaultQueryRole(
+      roleStore.roleList,
+      permissionDeniedDetail.requiredPermissions,
+      hasCustomRoleFeature
+    )
+  );
 
   const useJIT = useMemo(
     () =>
@@ -73,9 +133,26 @@ export function RequestQueryButton({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (useJIT) {
-      setShowJITDrawer(true);
-    } else {
-      setShowPanel(true);
+      if (drawerHost) {
+        drawerHost.openAccessGrantDrawer({
+          query: statement,
+          targets: missingResources.map((r) => r.databaseFullName),
+        });
+      } else {
+        setShowJITDrawer(true);
+      }
+    } else if (project) {
+      if (drawerHost) {
+        drawerHost.openRequestRoleSheet({
+          project,
+          requiredPermissions:
+            permissionDeniedDetail.requiredPermissions as Permission[],
+          initialRole: defaultQueryRole,
+          initialDatabaseResources: missingResources,
+        });
+      } else {
+        setShowPanel(true);
+      }
     }
   };
 
@@ -92,7 +169,10 @@ export function RequestQueryButton({
             variant={text ? "ghost" : "default"}
             disabled={disabled || !hasRequestFeature}
             onClick={handleClick}
-            className="gap-x-1"
+            className={cn(
+              "gap-x-1",
+              text && "text-accent hover:bg-transparent hover:text-accent-hover"
+            )}
           >
             {hasRequestFeature ? (
               <ShieldUser className="size-4" />
@@ -106,12 +186,15 @@ export function RequestQueryButton({
         )}
       </PermissionGuard>
 
-      {showPanel && (
-        <RoleGrantPanel
-          projectName={projectName}
-          databaseResources={missingResources}
-          role={PresetRoleType.SQL_EDITOR_USER}
-          requiredPermissions={permissionDeniedDetail.requiredPermissions}
+      {showPanel && project && (
+        <RequestRoleSheet
+          open={showPanel}
+          project={project}
+          requiredPermissions={
+            permissionDeniedDetail.requiredPermissions as Permission[]
+          }
+          initialRole={defaultQueryRole}
+          initialDatabaseResources={missingResources}
           onClose={() => setShowPanel(false)}
         />
       )}
