@@ -131,7 +131,7 @@ export function SelectionActionBar({
   return (
     <div
       className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 max-w-[90vw]",
+        "sticky bottom-6 mx-auto w-fit max-w-full",
         "flex items-center gap-x-3 rounded-full bg-background border border-control-border shadow-lg",
         "px-4 py-2",
         LAYER_SURFACE_CLASS
