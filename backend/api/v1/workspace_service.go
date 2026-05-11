@@ -307,13 +307,18 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot leave workspace: you are the last admin"))
 	}
 
-	// Remove the user from all bindings.
+	// Remove the user from all IAM bindings.
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Workspace: workspaceID,
 		Member:    memberIdentifier,
 		Roles:     []string{},
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update IAM policy"))
+	}
+
+	// Remove the user from all groups in this workspace.
+	if err := s.store.RemoveMemberFromAllGroups(ctx, workspaceID, memberIdentifier); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to remove user from groups"))
 	}
 
 	if err := s.iamManager.ReloadCache(ctx); err != nil {

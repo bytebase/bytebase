@@ -325,6 +325,31 @@ func (s *Store) DeleteGroup(ctx context.Context, workspace string, id string) er
 	return nil
 }
 
+// RemoveMemberFromAllGroups removes a user from all groups in a workspace via a single SQL update.
+// member format is "users/{email}".
+func (s *Store) RemoveMemberFromAllGroups(ctx context.Context, workspaceID string, member string) error {
+	query := `
+		UPDATE user_group
+		SET payload = jsonb_set(
+			payload,
+			'{members}',
+			COALESCE(
+				(SELECT jsonb_agg(m) FROM jsonb_array_elements(payload->'members') m WHERE m->>'member' != $1),
+				'[]'::jsonb
+			)
+		)
+		WHERE workspace = $2
+		AND EXISTS (SELECT 1 FROM jsonb_array_elements(payload->'members') m WHERE m->>'member' = $1)`
+	if _, err := s.GetDB().ExecContext(ctx, query, member, workspaceID); err != nil {
+		return errors.Wrapf(err, "failed to remove member %q from groups in workspace %q", member, workspaceID)
+	}
+	// Purge caches since we can't know which groups were affected.
+	s.groupCache.Purge()
+	s.groupMembersCache.Purge()
+	s.memberGroupsCache.Purge()
+	return nil
+}
+
 // GetUserGroupsSnapshot returns groups for a user with snapshot reads (with cache).
 // userName format is "users/{email}".
 // Trades consistency for performance.
