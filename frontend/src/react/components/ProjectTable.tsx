@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Badge } from "@/react/components/ui/badge";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
   TableBody,
@@ -228,13 +229,18 @@ export function ProjectTable({
                   <HighlightLabelText text={resourceId} keyword={keyword} />
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-x-2">
-                    <HighlightLabelText
+                  <div className="flex items-center gap-x-2 min-w-0">
+                    <EllipsisText
                       text={project.title || resourceId}
-                      keyword={keyword}
-                    />
+                      className="min-w-0 flex-1"
+                    >
+                      <HighlightLabelText
+                        text={project.title || resourceId}
+                        keyword={keyword}
+                      />
+                    </EllipsisText>
                     {project.state === State.DELETED ? (
-                      <Badge variant="warning" className="text-xs">
+                      <Badge variant="warning" className="text-xs shrink-0">
                         {t("common.archived")}
                       </Badge>
                     ) : null}
