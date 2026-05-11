@@ -3,6 +3,7 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
 
@@ -67,12 +68,15 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 		tableName := n.Table.Name
 		// Table-level PK columns are exempt. Column-level PK is handled
 		// inside omniNeedDefault via the column's own Constraints.
+		// Names are lowercased on both sides — omni preserves user case,
+		// but SQL identifier matching is case-insensitive for unquoted
+		// names (and the pingcap-typed predecessor used `.L` normalization).
 		pkColumns := tablePKColumnsFromConstraints(n.Constraints)
 		for _, column := range n.Columns {
 			if column == nil {
 				continue
 			}
-			if pkColumns[column.Name] {
+			if pkColumns[strings.ToLower(column.Name)] {
 				continue
 			}
 			if !omniHasDefaultValue(column) && omniNeedDefault(column) {
@@ -130,10 +134,14 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 }
 
 // tablePKColumnsFromConstraints returns the set of column names that appear
-// in any table-level PRIMARY KEY constraint. Mirrors pingcap-typed
-// getPkColumnsFromConstraints. Column-level PK is handled separately by
-// omniNeedDefault via the column's own Constraints — this function only
-// covers the table-level constraint list.
+// in any table-level PRIMARY KEY constraint, lowercased for case-insensitive
+// SQL identifier matching. Mirrors pingcap-typed getPkColumnsFromConstraints
+// which used `.L` (lowercase) form for the same purpose. Callers must
+// lowercase the lookup key before consulting the map (omni preserves the
+// user's literal case on both column.Name and constraint.Columns, so two
+// references to the same column at different casings won't match without
+// normalization). Column-level PK is handled separately by omniNeedDefault
+// via the column's own Constraints.
 func tablePKColumnsFromConstraints(constraints []*ast.Constraint) map[string]bool {
 	pkColumns := make(map[string]bool)
 	for _, constraint := range constraints {
@@ -141,7 +149,7 @@ func tablePKColumnsFromConstraints(constraints []*ast.Constraint) map[string]boo
 			continue
 		}
 		for _, columnName := range constraint.Columns {
-			pkColumns[columnName] = true
+			pkColumns[strings.ToLower(columnName)] = true
 		}
 	}
 	return pkColumns
