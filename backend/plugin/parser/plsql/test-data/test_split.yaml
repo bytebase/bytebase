@@ -25,6 +25,148 @@
         start: 17
         end: 34
       empty: false
+- description: modern Oracle DDL supported by omni splitter
+  input: "CREATE VECTOR INDEX vec_idx ON docs (embedding);\nCREATE JSON RELATIONAL DUALITY VIEW emp_dv AS SELECT employee_id FROM employees;"
+  result:
+    - text: CREATE VECTOR INDEX vec_idx ON docs (embedding)
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 48
+      range:
+        start: 0
+        end: 47
+      empty: false
+    - text: "\nCREATE JSON RELATIONAL DUALITY VIEW emp_dv AS SELECT employee_id FROM employees"
+      baseline: 0
+      start:
+        line: 1
+        column: 49
+      end:
+        line: 2
+        column: 80
+      range:
+        start: 48
+        end: 128
+      empty: false
+- description: SQLPlus line commands are skipped
+  input: "SET DEFINE OFF\nPROMPT creating table\nSELECT 1 FROM dual;\nSPOOL install.log\nSELECT 2 FROM dual;\nSPOOL OFF"
+  result:
+    - text: SELECT 1 FROM dual
+      baseline: 2
+      start:
+        line: 3
+        column: 1
+      end:
+        line: 3
+        column: 19
+      range:
+        start: 37
+        end: 55
+      empty: false
+    - text: SELECT 2 FROM dual
+      baseline: 4
+      start:
+        line: 5
+        column: 1
+      end:
+        line: 5
+        column: 19
+      range:
+        start: 75
+        end: 93
+      empty: false
+- description: SQLPlus script commands are skipped
+  input: "@preflight.sql\n@@nested/install.sql arg1 arg2\nSTART post.sql\nSELECT 1 FROM dual;\nEXIT SUCCESS"
+  result:
+    - text: SELECT 1 FROM dual
+      baseline: 3
+      start:
+        line: 4
+        column: 1
+      end:
+        line: 4
+        column: 19
+      range:
+        start: 61
+        end: 79
+      empty: false
+- description: SQLPlus command words inside SQL are retained
+  input: "SELECT 'SET DEFINE OFF' AS txt FROM dual; SELECT prompt FROM t;"
+  result:
+    - text: SELECT 'SET DEFINE OFF' AS txt FROM dual
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 41
+      range:
+        start: 0
+        end: 40
+      empty: false
+    - text: " SELECT prompt FROM t"
+      baseline: 0
+      start:
+        line: 1
+        column: 42
+      end:
+        line: 1
+        column: 63
+      range:
+        start: 41
+        end: 62
+      empty: false
+- description: package spec and body without slash separators
+  input: |-
+    CREATE PACKAGE pkg IS
+      PROCEDURE p;
+    END pkg;
+    CREATE PACKAGE BODY pkg IS
+      PROCEDURE p IS
+      BEGIN
+        NULL;
+      END;
+    END pkg;
+  result:
+    - text: |-
+        CREATE PACKAGE pkg IS
+          PROCEDURE p;
+        END pkg;
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 3
+        column: 9
+      range:
+        start: 0
+        end: 45
+      empty: false
+    - text: |-
+
+        CREATE PACKAGE BODY pkg IS
+          PROCEDURE p IS
+          BEGIN
+            NULL;
+          END;
+        END pkg;
+      baseline: 2
+      start:
+        line: 3
+        column: 9
+      end:
+        line: 9
+        column: 9
+      range:
+        start: 45
+        end: 123
+      empty: false
 - description: multiple statements with newlines
   input: "\n\t\t\t\tselect * from t;\n\t\t\t\tcreate table table$1 (id int)\n\t\t\t"
   result:
@@ -232,12 +374,48 @@
         start: 0
         end: 58
       empty: false
-- description: DROP TABLESPACE CASCADE alone should error
+- description: DROP TABLESPACE CASCADE alone is split lexically
   input: DROP TABLESPACE xxx CASCADE
-  error: "Syntax error at line 1:28 \nrelated text: DROP TABLESPACE xxx CASCADE;"
-- description: DROP TABLESPACE then CASCADE should error
+  result:
+    - text: DROP TABLESPACE xxx CASCADE
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 28
+      range:
+        start: 0
+        end: 27
+      empty: false
+- description: DROP TABLESPACE then CASCADE is split lexically
   input: DROP TABLESPACE xxx; CASCADE
-  error: "Syntax error at line 1:29 \nrelated text: DROP TABLESPACE xxx; CASCADE;"
+  result:
+    - text: DROP TABLESPACE xxx
+      baseline: 0
+      start:
+        line: 1
+        column: 1
+      end:
+        line: 1
+        column: 20
+      range:
+        start: 0
+        end: 19
+      empty: false
+    - text: " CASCADE"
+      baseline: 0
+      start:
+        line: 1
+        column: 21
+      end:
+        line: 1
+        column: 29
+      range:
+        start: 20
+        end: 28
+      empty: false
 - description: CREATE TABLE with ROW STORE COMPRESS ADVANCED
   input: |-
     CREATE TABLE DATA.SMY_LAO_ACCOUNT_BLK_TXN_MTH (

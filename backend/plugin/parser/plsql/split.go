@@ -2,6 +2,7 @@ package plsql
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+	oracleparser "github.com/bytebase/omni/oracle/parser"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -16,10 +17,8 @@ func init() {
 // consumeTrailingSemicolon walks forward from stopIdx through hidden-channel
 // tokens (whitespace, comments) looking for a trailing ';' that belongs to the
 // statement ending at stopIdx. Returns the index of the ';' if found before any
-// default-channel token, otherwise stopIdx (no consumption). Used by both
-// SplitSQL and ParsePLSQL to keep the two iterations' separator handling in
-// lockstep — divergence between them is what produced BYT-9367's secondary
-// AST-classification leak.
+// default-channel token, otherwise stopIdx (no consumption). ParsePLSQL uses
+// this to avoid BYT-9367's secondary AST-classification leak.
 func consumeTrailingSemicolon(allTokens []antlr.Token, stopIdx int) int {
 	for nextIdx := stopIdx + 1; nextIdx < len(allTokens); nextIdx++ {
 		next := allTokens[nextIdx]
@@ -34,106 +33,47 @@ func consumeTrailingSemicolon(allTokens []antlr.Token, stopIdx int) int {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
+//
+// It uses omni's lexical Oracle splitter, which handles strings, comments,
+// SQL*Plus separators, and PL/SQL blocks without requiring valid SQL.
 func SplitSQL(statement string) ([]base.Statement, error) {
-	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
-	if err != nil {
-		return nil, err
-	}
-	if tree == nil {
-		return nil, nil
-	}
-	tokens, ok := stream.(*antlr.CommonTokenStream)
-	if !ok {
-		return nil, nil
-	}
+	segments := oracleparser.Split(statement)
 
-	byteOffsetStart := 0
-	prevStopTokenIndex := -1
-	var result []base.Statement
-	for _, item := range tree.GetChildren() {
-		// Skip past sql_plus_command (like "/" block terminator) to prevent it from being
-		// included in the next statement's leadingContent.
-		if sqlPlusCmd, ok := item.(parser.ISql_plus_commandContext); ok {
-			// Calculate the leading whitespace/comments before this sql_plus_command
-			leadingContent := ""
-			if startTokenIndex := sqlPlusCmd.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
-				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(sqlPlusCmd.GetStart().GetTokenIndex()-1))
-			}
-			// Skip past both the leading content and the command itself
-			cmdText := tokens.GetTextFromTokens(sqlPlusCmd.GetStart(), sqlPlusCmd.GetStop())
-			byteOffsetStart += len(leadingContent) + len(cmdText)
-			prevStopTokenIndex = sqlPlusCmd.GetStop().GetTokenIndex()
+	result := make([]base.Statement, 0, len(segments))
+	for _, seg := range segments {
+		if seg.Kind == oracleparser.SegmentSQLPlusCommand {
 			continue
 		}
-
-		if stmt, ok := item.(parser.IUnit_statementContext); ok {
-			text := ""
-			var lastToken antlr.Token
-
-			// Calculate the leading whitespace/comments before this statement
-			leadingContent := ""
-			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
-				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1))
-			}
-
-			// The go-ora driver requires semicolon for anonymous blocks/procedures/functions,
-			// but does NOT support semicolon for other statements (CREATE TABLE, SELECT, etc.).
-			stopTokenIndex := stmt.GetStop().GetTokenIndex()
-			if needSemicolon(stmt) {
-				// For procedures/functions/anonymous blocks: include semicolon if present, add if missing
-				lastToken = tokens.Get(stopTokenIndex)
-				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
-					text += ";"
-				}
-			} else {
-				// For regular statements: EXCLUDE the semicolon (go-ora doesn't support it)
-				if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
-					stopTokenIndex--
-				}
-				lastToken = tokens.Get(stopTokenIndex)
-				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-			}
-
-			// Calculate byte offsets using lastToken (which includes semicolon if present)
-			// byteOffsetStart is where the previous statement ended (including any leading whitespace)
-			tokenByteOffset := byteOffsetStart + len(leadingContent)
-			byteOffsetEnd := tokenByteOffset + len(tokens.GetTextFromTokens(stmt.GetStart(), lastToken))
-
-			// Calculate start position based on byteOffsetStart (including leading whitespace)
-			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
-
-			result = append(result, base.Statement{
-				Text: text,
-				Start: &storepb.Position{
-					Line:   int32(startLine + 1),
-					Column: int32(startColumn + 1),
-				},
-				End: common.ConvertANTLRTokenToExclusiveEndPosition(
-					int32(lastToken.GetLine()),
-					int32(lastToken.GetColumn()),
-					lastToken.GetText(),
-				),
-				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-				Range: &storepb.Range{
-					Start: int32(byteOffsetStart),
-					End:   int32(byteOffsetEnd),
-				},
-			})
-			byteOffsetStart = byteOffsetEnd
-			// If a trailing ';' was consumed across hidden tokens, advance
-			// byteOffsetStart by the BYTE length of the consumed span — len()
-			// is bytes; ANTLR token indices are runes, so multi-byte UTF-8 in
-			// hidden tokens (e.g., a non-ASCII comment) would diverge.
-			stopIdx := stmt.GetStop().GetTokenIndex()
-			allTokens := tokens.GetAllTokens()
-			prevStopTokenIndex = consumeTrailingSemicolon(allTokens, stopIdx)
-			if prevStopTokenIndex > stopIdx {
-				byteOffsetStart += len(tokens.GetTextFromTokens(allTokens[stopIdx+1], allTokens[prevStopTokenIndex]))
-			}
-		}
+		byteEnd := seg.ByteStart + trimOracleSegmentTrailingHidden(seg.Text)
+		text := statement[seg.ByteStart:byteEnd]
+		result = append(result, base.Statement{
+			Text:  text,
+			Start: ByteOffsetToRunePosition(statement, seg.ByteStart),
+			End:   ByteOffsetToRunePosition(statement, byteEnd),
+			Empty: seg.Empty(),
+			Range: &storepb.Range{
+				Start: int32(seg.ByteStart),
+				End:   int32(byteEnd),
+			},
+		})
 	}
 	return result, nil
+}
+
+func trimOracleSegmentTrailingHidden(text string) int {
+	lexer := oracleparser.NewLexer(text)
+	lastTokenEnd := 0
+	for {
+		token := lexer.NextToken()
+		if token.Type == 0 {
+			break
+		}
+		lastTokenEnd = token.End
+	}
+	if lexer.Err != nil || lastTokenEnd == 0 {
+		return len(text)
+	}
+	return lastTokenEnd
 }
 
 func SplitSQLForCompletion(statement string) ([]base.Statement, error) {
@@ -192,21 +132,4 @@ func isCallStatement(item antlr.Tree) bool {
 	}
 	// BYT-8268: Changed from Call_statement to Sql_call_statement
 	return unitStmt.Sql_call_statement() != nil
-}
-
-// needSemicolon returns true if the given statement needs a semicolon.
-// The go-ora driver requires semicolon for anonymous block and create procedure/function/package/trigger type of statements,
-// but does not support semicolon for other statements.
-func needSemicolon(stmt parser.IUnit_statementContext) bool {
-	switch {
-	case stmt.Anonymous_block() != nil,
-		stmt.Create_procedure_body() != nil,
-		stmt.Create_function_body() != nil,
-		stmt.Create_package() != nil,
-		stmt.Create_package_body() != nil,
-		stmt.Create_trigger() != nil:
-		return true
-	default:
-		return false
-	}
 }
