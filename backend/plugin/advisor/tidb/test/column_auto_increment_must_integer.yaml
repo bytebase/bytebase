@@ -64,3 +64,27 @@
   changeType: 1
 - statement: CREATE TABLE t(a TINYINT AUTO_INCREMENT, KEY(a))
   changeType: 1
+# Multi-line CREATE TABLE line-position pin (batch 10, Codex round-2):
+# pingcap-tidb captured column.OriginTextPosition() into columnData.line
+# but then emitted checker.line (statement line) in the advice — column
+# line was dead code. The omni port actually uses column line via
+# ostmt.AbsoluteLine(column.Loc.Start), so multi-line CREATE TABLE advice
+# now points at the OFFENDING COLUMN's line rather than the CREATE TABLE
+# keyword's line. UX improvement; same shape as batch 9
+# column_require_default's column-line behavior. Pin locks the new
+# contract — future refactor that reverts to statement-line will fail
+# this fixture.
+- statement: |-
+    CREATE TABLE t(
+      a varchar(255) AUTO_INCREMENT
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`a` requires integer type
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
