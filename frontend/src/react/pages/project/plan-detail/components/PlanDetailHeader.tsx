@@ -440,7 +440,7 @@ export function PlanDetailHeader() {
         <div className="min-w-0 flex-1">
           <input
             className={cn(
-              "h-9 w-full bg-transparent text-[18px] font-bold text-main outline-hidden",
+              "h-9 w-full bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle
                 ? "border border-control-border px-3"
                 : "border border-transparent px-0",

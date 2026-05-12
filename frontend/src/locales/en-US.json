@@ -2708,12 +2708,10 @@
         "description": "Estimated by statistical information.",
         "self": "Affected rows"
       },
-      "ghost-sync": "gh-ost sync",
       "sql-review": {
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
         "self": "SQL review"
-      },
-      "summary-report": "Summary report"
+      }
     },
     "checking": "Checking...",
     "created": "Created",

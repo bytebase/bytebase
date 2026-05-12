@@ -1,14 +1,9 @@
 import { create } from "@bufbuild/protobuf";
-import {
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
+import { PlanCheckSection } from "@/react/components/plan-check/PlanCheckSection";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -37,6 +32,8 @@ import {
   humanizeTs,
 } from "@/utils";
 import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanCheckActions } from "../hooks/usePlanCheckActions";
+import { getPlanCheckSummaryWithFallback } from "../utils/planCheck";
 import { getPlanDetailSidebarStatusInfo } from "../utils/sidebarStatus";
 import { PlanDetailSidebarApprovalFlow } from "./PlanDetailApprovalFlow";
 
@@ -72,14 +69,16 @@ export function PlanDetailMetadataSidebar() {
       t,
     });
   }, [page.isCreating, page.issue, page.plan.state, page.rollout, t]);
-  const planCheckSummary = useMemo(() => {
-    const counts = page.plan.planCheckRunStatusCount || {};
-    const running = counts.RUNNING || 0;
-    const success = counts.SUCCESS || 0;
-    const warning = counts.WARNING || 0;
-    const error = (counts.ERROR || 0) + (counts.FAILED || 0);
-    return { error, running, success, warning };
-  }, [page.plan.planCheckRunStatusCount]);
+  const planCheckSummary = useMemo(
+    () =>
+      getPlanCheckSummaryWithFallback(
+        page.planCheckRuns,
+        page.plan.planCheckRunStatusCount
+      ),
+    [page.plan.planCheckRunStatusCount, page.planCheckRuns]
+  );
+  const { allowRunChecks, isRunningChecks, refreshChecks, runChecks } =
+    usePlanCheckActions();
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -122,43 +121,17 @@ export function PlanDetailMetadataSidebar() {
           </div>
         </div>
 
-        {(planCheckSummary.running > 0 ||
-          planCheckSummary.success > 0 ||
-          planCheckSummary.warning > 0 ||
-          planCheckSummary.error > 0) && (
-          <div>
-            <h4 className="mb-1 textinfolabel">{t("plan.navigator.checks")}</h4>
-            <div className="flex flex-wrap items-center gap-3">
-              {planCheckSummary.running > 0 && (
-                <span className="flex items-center gap-1 text-control">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>{t("common.running")}</span>
-                  <span>{planCheckSummary.running}</span>
-                </span>
-              )}
-              {planCheckSummary.error > 0 && (
-                <span className="flex items-center gap-1 text-error">
-                  <XCircle className="size-4" />
-                  <span>{t("common.error")}</span>
-                  <span>{planCheckSummary.error}</span>
-                </span>
-              )}
-              {planCheckSummary.warning > 0 && (
-                <span className="flex items-center gap-1 text-warning">
-                  <AlertCircle className="size-4" />
-                  <span>{t("common.warning")}</span>
-                  <span>{planCheckSummary.warning}</span>
-                </span>
-              )}
-              {planCheckSummary.success > 0 && (
-                <span className="flex items-center gap-1 text-success">
-                  <CheckCircle className="size-4" />
-                  <span>{t("common.success")}</span>
-                  <span>{planCheckSummary.success}</span>
-                </span>
-              )}
-            </div>
-          </div>
+        {planCheckSummary.total > 0 && (
+          <PlanCheckSection
+            canRun={allowRunChecks}
+            headingClassName="textinfolabel"
+            includeRunFailure
+            isRunning={isRunningChecks}
+            onRefreshOnOpen={refreshChecks}
+            onRun={runChecks}
+            planCheckRuns={page.planCheckRuns}
+            summaryOverride={planCheckSummary}
+          />
         )}
       </div>
 

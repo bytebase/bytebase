@@ -1,11 +1,15 @@
 import { create } from "@bufbuild/protobuf";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
-import { PlanCheckSection } from "@/react/components/plan-check/PlanCheckSection";
 import { useVueState } from "@/react/hooks/useVueState";
-import { pushNotification, useCurrentUserV1, useProjectV1Store } from "@/store";
-import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
+import {
+  projectNamePrefix,
+  pushNotification,
+  useCurrentUserV1,
+  useProjectV1Store,
+} from "@/store";
+import { extractUserEmail } from "@/store/modules/v1/common";
 import {
   GetPlanCheckRunRequestSchema,
   GetPlanRequestSchema,
@@ -13,58 +17,47 @@ import {
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { getPlanCheckSummaryWithFallback } from "../../plan-detail/utils/planCheck";
-import { useIssueDetailContext } from "../context/IssueDetailContext";
+import { usePlanDetailContext } from "../context/PlanDetailContext";
 
-export function IssueDetailChecks() {
+// Wraps the run / refresh logic shared between PlanDetailChecks (per-spec
+// section in the body) and the plan-level summary in PlanDetailMetadataSidebar.
+// The running flag lives on the page context so both surfaces disable their
+// Run buttons together — otherwise the user could trigger two concurrent
+// runPlanChecks calls from the same page.
+export function usePlanCheckActions() {
   const { t } = useTranslation();
-  const page = useIssueDetailContext();
+  const page = usePlanDetailContext();
+  const { patchState, isRunningChecks, setIsRunningChecks } = page;
   const projectStore = useProjectV1Store();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
-  const [isRunningChecks, setIsRunningChecks] = useState(false);
+  const currentUser = useCurrentUserV1().value;
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
-  const summary = useMemo(
-    () =>
-      getPlanCheckSummaryWithFallback(
-        page.planCheckRuns,
-        page.plan?.planCheckRunStatusCount
-      ),
-    [page.planCheckRuns, page.plan?.planCheckRunStatusCount]
-  );
-
   const allowRunChecks = useMemo(() => {
-    if (!page.plan) return false;
-    // Once a rollout exists the plan is frozen — re-running checks would only
-    // produce the same results and misleads the user.
     if (page.plan.hasRollout) return false;
     if (extractUserEmail(page.plan.creator) === currentUser.email) return true;
     return hasProjectPermissionV2(project, "bb.planCheckRuns.run");
-  }, [currentUser.email, page.plan, project]);
+  }, [currentUser.email, page.plan.creator, page.plan.hasRollout, project]);
 
   const refreshChecks = useCallback(async (): Promise<PlanCheckRun[]> => {
-    const planName = page.plan?.name;
-    if (!planName) return [];
     const [nextPlan, runOrNull] = await Promise.all([
       planServiceClientConnect.getPlan(
-        create(GetPlanRequestSchema, { name: planName })
+        create(GetPlanRequestSchema, { name: page.plan.name })
       ),
       planServiceClientConnect
         .getPlanCheckRun(
           create(GetPlanCheckRunRequestSchema, {
-            name: `${planName}/planCheckRun`,
+            name: `${page.plan.name}/planCheckRun`,
           })
         )
         .catch(() => null),
     ]);
     const nextPlanCheckRuns = runOrNull ? [runOrNull] : [];
-    page.patchState({ plan: nextPlan, planCheckRuns: nextPlanCheckRuns });
+    patchState({ plan: nextPlan, planCheckRuns: nextPlanCheckRuns });
     return nextPlanCheckRuns;
-  }, [page.plan?.name, page.patchState]);
+  }, [page.plan.name, patchState]);
 
   const runChecks = useCallback(async () => {
-    if (!page.plan?.name) return;
     try {
       setIsRunningChecks(true);
       await planServiceClientConnect.runPlanChecks(
@@ -86,20 +79,12 @@ export function IssueDetailChecks() {
     } finally {
       setIsRunningChecks(false);
     }
-  }, [page.plan?.name, refreshChecks, t]);
+  }, [page.plan.name, refreshChecks, t]);
 
-  if (!page.plan) return null;
-
-  return (
-    <PlanCheckSection
-      canRun={allowRunChecks}
-      headingClassName="textlabel"
-      includeRunFailure
-      isRunning={isRunningChecks}
-      onRefreshOnOpen={refreshChecks}
-      onRun={runChecks}
-      planCheckRuns={page.planCheckRuns}
-      summaryOverride={summary}
-    />
-  );
+  return {
+    allowRunChecks,
+    isRunningChecks,
+    refreshChecks,
+    runChecks,
+  };
 }

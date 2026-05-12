@@ -2708,12 +2708,10 @@
         "description": "統計情報から推定。",
         "self": "影響を受ける行"
       },
-      "ghost-sync": "gh-ost同期",
       "sql-review": {
         "description": "SQL文を分析し、潜在的な問題点を特定し、推奨事項を提示します。組み込みルールとカスタムルールが含まれます。",
         "self": "SQL レビュー"
-      },
-      "summary-report": "概略報告"
+      }
     },
     "checking": "検査中…",
     "created": "内蔵",
