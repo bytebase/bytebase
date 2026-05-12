@@ -318,6 +318,7 @@
     "logout": "登出",
     "manage": "管理",
     "manually-select": "Manually select",
+    "maximize": "最大化",
     "members_one": "成员",
     "members_other": "成员",
     "minutes": "分钟",
@@ -1997,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外键",
       "name": "Name",
+      "name-placeholder": "列名",
       "not-null": "Not Null",
       "on-update": "更新时",
       "operations": "Operations",
@@ -2044,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "选择 schema"
     },
+    "select-object-hint": "从左侧树中选择一个数据库对象进行编辑",
     "self": "Schema 编辑器",
     "table": {
       "duplicate-name": "Table name already exists",

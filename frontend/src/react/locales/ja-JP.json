@@ -318,6 +318,7 @@
     "logout": "サインアウト",
     "manage": "管理",
     "manually-select": "Manually select",
+    "maximize": "最大化",
     "members_one": "メンバー",
     "members_other": "メンバー",
     "minutes": "分",
@@ -1997,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外部キー",
       "name": "Name",
+      "name-placeholder": "カラム名",
       "not-null": "Not Null",
       "on-update": "アップデート時",
       "operations": "Operations",
@@ -2044,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "スキーマの選択"
     },
+    "select-object-hint": "編集するデータベースオブジェクトをツリーから選択してください",
     "self": "スキーマエディタ",
     "table": {
       "duplicate-name": "Table name already exists",

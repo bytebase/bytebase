@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSchemaEditorContext } from "./context";
 import { DatabaseEditor } from "./Panels/DatabaseEditor";
 import { FunctionEditor } from "./Panels/FunctionEditor";
@@ -8,6 +9,7 @@ import { ViewEditor } from "./Panels/ViewEditor";
 import { TabsContainer } from "./TabsContainer";
 
 export function EditorPanel() {
+  const { t } = useTranslation();
   const { tabs } = useSchemaEditorContext();
   const { currentTab } = tabs;
 
@@ -38,7 +40,7 @@ export function EditorPanel() {
       <div className="flex-1 overflow-y-hidden" key={currentTab?.id ?? "empty"}>
         {!currentTab && (
           <div className="flex size-full items-center justify-center text-sm text-control-light">
-            Select a database object from the tree to edit
+            {t("schema-editor.select-object-hint")}
           </div>
         )}
         {currentTab?.type === "database" && (

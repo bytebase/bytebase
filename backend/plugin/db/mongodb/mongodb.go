@@ -2,15 +2,12 @@
 package mongodb
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/url"
-	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -21,9 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/telemetry"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -92,13 +87,11 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// Execute executes MongoDB statements one by one, trying gomongo first and
-// falling back to mongosh for unsupported operations.
+// Execute executes MongoDB statements one by one via gomongo.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	stmts, err := mongodbparser.SplitSQL(statement)
 	if err != nil {
-		// If parsing fails, fall back to executing the entire statement via mongosh.
-		return d.executeWithMongosh(ctx, statement)
+		return 0, errors.Wrap(err, "failed to split MongoDB statement")
 	}
 
 	stmts = base.FilterEmptyStatements(stmts)
@@ -111,143 +104,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	for _, stmt := range stmts {
 		opts.LogCommandExecute(stmt.Range, stmt.Text)
 
-		_, gomongoErr := gmClient.Execute(ctx, d.databaseName, stmt.Text)
-		if gomongoErr != nil && isFallbackError(gomongoErr) {
-			// gomongo doesn't support this operation; fall back to mongosh.
-			if mongoshErr := d.executeWithMongoshSingle(ctx, stmt.Text); mongoshErr == nil {
-				slog.Debug("executed statement with mongosh fallback", slog.String("statement", stmt.Text), log.BBError(gomongoErr))
-				telemetry.ReportGomongoFallback(ctx, "", stmt.Text, gomongoErr.Error())
-				gomongoErr = nil
-			} else {
-				gomongoErr = mongoshErr
-			}
-		}
-		if gomongoErr != nil {
-			opts.LogCommandResponse(0, nil, gomongoErr.Error())
-			return 0, gomongoErr
+		if _, err := gmClient.Execute(ctx, d.databaseName, stmt.Text); err != nil {
+			opts.LogCommandResponse(0, nil, err.Error())
+			return 0, err
 		}
 		opts.LogCommandResponse(0, nil, "")
 	}
 
-	return 0, nil
-}
-
-// isFallbackError returns true if the error from gomongo indicates the
-// operation should be retried with mongosh.
-func isFallbackError(err error) bool {
-	var parseErr *gomongo.ParseError
-	var unsupported *gomongo.UnsupportedOperationError
-	var planned *gomongo.PlannedOperationError
-	var unsupportedOpt *gomongo.UnsupportedOptionError
-	return errors.As(err, &parseErr) ||
-		errors.As(err, &unsupported) ||
-		errors.As(err, &planned) ||
-		errors.As(err, &unsupportedOpt)
-}
-
-// buildMongoshBaseArgs returns the base mongosh arguments (connection URI, TLS
-// flags) and a cleanup function that removes any temporary certificate files.
-func (d *Driver) buildMongoshBaseArgs() (args []string, cleanup func(), err error) {
-	connectionURI := getBasicMongoDBConnectionURI(d.connCfg)
-	args = []string{
-		connectionURI,
-		"--retryWrites", "false",
-		"--quiet",
-	}
-
-	var cleanups []string
-	cleanup = func() {
-		for _, f := range cleanups {
-			_ = os.Remove(f)
-		}
-	}
-
-	if d.connCfg.DataSource.GetUseSsl() {
-		args = append(args, "--tls")
-		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
-			args = append(args, "--tlsAllowInvalidHostnames", "--tlsAllowInvalidCertificates")
-		}
-
-		if d.connCfg.DataSource.GetSslCa() == "" {
-			args = append(args, "--tlsUseSystemCA")
-		} else {
-			caFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-ca-%s-*", d.connCfg.ConnectionContext.DatabaseName))
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to create tlsCAFile temporary file")
-			}
-			if _, err := caFile.WriteString(d.connCfg.DataSource.GetSslCa()); err != nil {
-				_ = caFile.Close()
-				_ = os.Remove(caFile.Name())
-				return nil, nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
-			}
-			if err := caFile.Close(); err != nil {
-				_ = os.Remove(caFile.Name())
-				return nil, nil, errors.Wrap(err, "failed to close tlsCAFile temporary file")
-			}
-			cleanups = append(cleanups, caFile.Name())
-			args = append(args, "--tlsCAFile", caFile.Name())
-		}
-
-		if d.connCfg.DataSource.GetSslKey() != "" && d.connCfg.DataSource.GetSslCert() != "" {
-			clientCertFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-client-cert-%s-*", d.connCfg.ConnectionContext.DatabaseName))
-			if err != nil {
-				cleanup()
-				return nil, nil, errors.Wrap(err, "failed to create client certificate temporary file")
-			}
-			certContent := d.connCfg.DataSource.GetSslKey() + "\n" + d.connCfg.DataSource.GetSslCert()
-			if _, err := clientCertFile.WriteString(certContent); err != nil {
-				_ = clientCertFile.Close()
-				_ = os.Remove(clientCertFile.Name())
-				cleanup()
-				return nil, nil, errors.Wrap(err, "failed to write client certificate to temporary file")
-			}
-			if err := clientCertFile.Close(); err != nil {
-				_ = os.Remove(clientCertFile.Name())
-				cleanup()
-				return nil, nil, errors.Wrap(err, "failed to close client certificate temporary file")
-			}
-			cleanups = append(cleanups, clientCertFile.Name())
-			args = append(args, "--tlsCertificateKeyFile", clientCertFile.Name())
-		}
-	}
-
-	return args, cleanup, nil
-}
-
-// executeWithMongoshSingle executes a single statement via mongosh --file.
-func (d *Driver) executeWithMongoshSingle(ctx context.Context, statement string) error {
-	_, err := d.executeWithMongosh(ctx, statement)
-	return err
-}
-
-// executeWithMongosh executes a statement via mongosh --file.
-func (d *Driver) executeWithMongosh(ctx context.Context, statement string) (int64, error) {
-	mongoshArgs, cleanup, err := d.buildMongoshBaseArgs()
-	if err != nil {
-		return 0, err
-	}
-	defer cleanup()
-
-	tempFile, err := os.CreateTemp(os.TempDir(), "mongodb-statement")
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to create temporary file")
-	}
-	defer os.Remove(tempFile.Name())
-	if _, err := tempFile.WriteString(statement); err != nil {
-		return 0, errors.Wrap(err, "failed to write statement to temporary file")
-	}
-	if err := tempFile.Close(); err != nil {
-		return 0, errors.Wrap(err, "failed to close temporary file")
-	}
-	mongoshArgs = append(mongoshArgs, "--file", tempFile.Name())
-
-	mongoshCmd := exec.CommandContext(ctx, "mongosh", mongoshArgs...)
-	var errContent, outContent bytes.Buffer
-	mongoshCmd.Stderr = &errContent
-	mongoshCmd.Stdout = &outContent
-	if err := mongoshCmd.Run(); err != nil {
-		return 0, errors.Wrapf(err, "failed to execute statement in mongosh:\nstdout: %s\nstderr: %s", outContent.String(), errContent.String())
-	}
 	return 0, nil
 }
 
@@ -261,10 +124,10 @@ func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMet
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	u := &url.URL{
-		Scheme: "mongodb",
 		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
-		// For mongosh, it can handle this case correctly, but for driver, it will throw the error likes "error parsing uri: must have a / before the query ?".
-		Path: "/",
+		// The Go driver throws "error parsing uri: must have a / before the query ?" without it.
+		Scheme: "mongodb",
+		Path:   "/",
 	}
 	if connConfig.DataSource.GetSrv() {
 		u.Scheme = "mongodb+srv"
@@ -321,26 +184,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	startTime := time.Now()
 
-	var gomongoErr error
-	if d.client != nil {
-		gmClient := gomongo.NewClient(d.client)
-		var gmResult *gomongo.Result
-		var opts []gomongo.ExecuteOption
-		if queryContext.Limit > 0 {
-			opts = append(opts, gomongo.WithMaxRows(int64(queryContext.Limit)))
-		}
-		gmResult, gomongoErr = gmClient.Execute(ctx, d.databaseName, statement, opts...)
-		if gomongoErr == nil {
-			return d.convertGomongoResult(gmResult, statement, startTime), nil
-		}
+	gmClient := gomongo.NewClient(d.client)
+	var gmOpts []gomongo.ExecuteOption
+	if queryContext.Limit > 0 {
+		gmOpts = append(gmOpts, gomongo.WithMaxRows(int64(queryContext.Limit)))
 	}
-
-	results, err := d.queryConnWithMongosh(ctx, statement, queryContext, startTime)
-	if err == nil && gomongoErr != nil {
-		slog.Debug("executed query with mongosh fallback", slog.String("statement", statement), log.BBError(gomongoErr))
-		telemetry.ReportGomongoFallback(ctx, "", statement, gomongoErr.Error())
+	result, err := gmClient.Execute(ctx, d.databaseName, statement, gmOpts...)
+	if err != nil {
+		return nil, err
 	}
-	return results, err
+	return d.convertGomongoResult(result, statement, startTime), nil
 }
 
 func (*Driver) convertGomongoResult(res *gomongo.Result, statement string, startTime time.Time) []*v1pb.QueryResult {
@@ -385,241 +238,4 @@ func marshalValueToExtJSON(v any) (string, error) {
 		return "", err
 	}
 	return string(jsonBytes), nil
-}
-
-func (d *Driver) queryConnWithMongosh(ctx context.Context, statement string, queryContext db.QueryContext, startTime time.Time) ([]*v1pb.QueryResult, error) {
-	simpleStatement := isMongoStatement(statement)
-	connectionURI := getBasicMongoDBConnectionURI(d.connCfg)
-	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
-	// 1. Query always short, so it's safe to execute in the command line.
-	// 2. We cannot catch the output if we use the --file option.
-
-	evalArg := statement
-	if simpleStatement {
-		limit := ""
-		if queryContext.Limit > 0 {
-			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
-		}
-		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {a.toArray()%s;} else {a;}`, statement, limit)
-	}
-	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
-	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
-	evalArg = fmt.Sprintf(`'%s'`, evalArg)
-
-	mongoshArgs := []string{
-		"mongosh",
-		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
-		fmt.Sprintf(`"%s"`, connectionURI),
-		"--quiet",
-		"--json",
-		"canonical",
-		"--eval",
-		evalArg,
-		// DocumentDB do not support retryWrites, so we set it to false.
-		"--retryWrites",
-		"false",
-	}
-	var tlsTempFiles []string
-	defer func() {
-		for _, fileName := range tlsTempFiles {
-			_ = os.Remove(fileName)
-		}
-	}()
-
-	if d.connCfg.DataSource.GetUseSsl() {
-		mongoshArgs = append(mongoshArgs, "--tls")
-
-		// Only allow invalid hostnames/certificates if certificate verification is disabled
-		if !d.connCfg.DataSource.GetVerifyTlsCertificate() {
-			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
-			mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidCertificates")
-		}
-
-		if d.connCfg.DataSource.GetSslCa() == "" {
-			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
-		} else {
-			caFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-ca-%s-*", d.connCfg.ConnectionContext.DatabaseName))
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create tlsCAFile temporary file")
-			}
-			if _, err := caFile.WriteString(d.connCfg.DataSource.GetSslCa()); err != nil {
-				_ = caFile.Close()
-				_ = os.Remove(caFile.Name())
-				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
-			}
-			if err := caFile.Close(); err != nil {
-				_ = os.Remove(caFile.Name())
-				return nil, errors.Wrap(err, "failed to close tlsCAFile temporary file")
-			}
-			tlsTempFiles = append(tlsTempFiles, caFile.Name())
-			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFile.Name())
-		}
-
-		if d.connCfg.DataSource.GetSslKey() != "" && d.connCfg.DataSource.GetSslCert() != "" {
-			clientCertFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-tls-client-cert-%s-*", d.connCfg.ConnectionContext.DatabaseName))
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create client certificate temporary file")
-			}
-			var sb strings.Builder
-			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslKey()); err != nil {
-				_ = clientCertFile.Close()
-				_ = os.Remove(clientCertFile.Name())
-				return nil, errors.Wrapf(err, "failed to write ssl key into string builder")
-			}
-			if _, err := sb.WriteString("\n"); err != nil {
-				_ = clientCertFile.Close()
-				_ = os.Remove(clientCertFile.Name())
-				return nil, errors.Wrapf(err, "failed to write new line into string builder")
-			}
-			if _, err := sb.WriteString(d.connCfg.DataSource.GetSslCert()); err != nil {
-				_ = clientCertFile.Close()
-				_ = os.Remove(clientCertFile.Name())
-				return nil, errors.Wrapf(err, "failed to write ssl cert into string builder")
-			}
-			if _, err := clientCertFile.WriteString(sb.String()); err != nil {
-				_ = clientCertFile.Close()
-				_ = os.Remove(clientCertFile.Name())
-				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
-			}
-			if err := clientCertFile.Close(); err != nil {
-				_ = os.Remove(clientCertFile.Name())
-				return nil, errors.Wrap(err, "failed to close client certificate temporary file")
-			}
-			tlsTempFiles = append(tlsTempFiles, clientCertFile.Name())
-			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertFile.Name())
-		}
-	}
-
-	queryResultFile, err := os.CreateTemp(os.TempDir(), fmt.Sprintf("mongodb-query-%s-*", d.connCfg.ConnectionContext.DatabaseName))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create query result temporary file")
-	}
-	if err := queryResultFile.Close(); err != nil {
-		_ = os.Remove(queryResultFile.Name())
-		return nil, errors.Wrap(err, "failed to close query result temporary file")
-	}
-	defer func() {
-		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-		_ = os.Remove(queryResultFile.Name())
-	}()
-	mongoshArgs = append(mongoshArgs, ">", queryResultFile.Name())
-
-	shellArgs := []string{
-		"-c",
-		strings.Join(mongoshArgs, " "),
-	}
-	shCmd := exec.CommandContext(ctx, "sh", shellArgs...)
-	var errContent bytes.Buffer
-	var outContent bytes.Buffer
-	shCmd.Stderr = &errContent
-	shCmd.Stdout = &outContent
-	if err := shCmd.Run(); err != nil {
-		f, ferr := os.OpenFile(queryResultFile.Name(), os.O_RDONLY, 0644)
-		if ferr == nil {
-			defer f.Close()
-			if content, ferr := io.ReadAll(f); ferr == nil {
-				return []*v1pb.QueryResult{{
-					Latency:   durationpb.New(time.Since(startTime)),
-					Statement: statement,
-					Error:     string(content),
-				}}, nil
-			}
-		}
-		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
-	}
-
-	f, err := os.OpenFile(queryResultFile.Name(), os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFile.Name())
-	}
-	defer f.Close()
-
-	fileInfo, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if int64(fileInfo.Size()) > queryContext.MaximumSQLResultSize {
-		return []*v1pb.QueryResult{{
-			Latency:   durationpb.New(time.Since(startTime)),
-			Statement: statement,
-			Error:     common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize),
-		}}, nil
-	}
-
-	content, err := io.ReadAll(f)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file: %s", queryResultFile.Name())
-	}
-
-	if simpleStatement {
-		// We make best-effort attempt to parse the content and fallback to single bulk result on failure.
-		result, err := getSimpleStatementResult(content)
-		if err != nil {
-			slog.Error("failed to get simple statement result", slog.String("content", string(content)), log.BBError(err))
-		} else {
-			result.Latency = durationpb.New(time.Since(startTime))
-			result.Statement = statement
-			return []*v1pb.QueryResult{result}, nil
-		}
-	}
-
-	return []*v1pb.QueryResult{{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
-		Rows: []*v1pb.QueryRow{{
-			Values: []*v1pb.RowValue{{
-				Kind: &v1pb.RowValue_StringValue{StringValue: string(content)},
-			}},
-		}},
-		Latency:   durationpb.New(time.Since(startTime)),
-		Statement: statement,
-		RowsCount: 0, /* unknown */
-	}}, nil
-}
-
-func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
-	rows, err := convertRows(data)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &v1pb.QueryResult{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
-	}
-
-	for _, v := range rows {
-		r, err := bson.MarshalExtJSONIndent(v, false, false, "", "  ")
-		if err != nil {
-			return nil, err
-		}
-		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}},
-			},
-		})
-	}
-	return result, nil
-}
-
-func convertRows(data []byte) ([]any, error) {
-	var a any
-	// Set canonical to false in order to accept both canonical and relaxed format.
-	// https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/
-	if err := bson.UnmarshalExtJSON(data, false, &a); err != nil {
-		return nil, err
-	}
-
-	if aa, ok := a.(bson.A); ok {
-		return []any(aa), nil
-	}
-	return []any{a}, nil
-}
-
-func isMongoStatement(statement string) bool {
-	statement = strings.ToLower(statement)
-	if strings.HasPrefix(statement, "db.") {
-		return true
-	}
-	return strings.HasPrefix(statement, "db[")
 }

@@ -1,5 +1,5 @@
 import { cloneDeep } from "lodash-es";
-import { Loader2 } from "lucide-react";
+import { Loader2, Maximize2, Minimize2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SchemaEditorLite } from "@/react/components/SchemaEditorLite";
@@ -10,9 +10,9 @@ import { Button } from "@/react/components/ui/button";
 import { Combobox } from "@/react/components/ui/combobox";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetFooter,
-  SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -41,19 +41,30 @@ export function SchemaEditorSheet({
   project,
   onInsert,
 }: Props) {
-  const { t } = useTranslation();
+  // Resets on each open: every close path routes through handleOpenChange,
+  // which clears the flag, so reopening always starts un-maximized.
+  const [maximized, setMaximized] = useState(false);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) setMaximized(false);
+      onOpenChange(next);
+    },
+    [onOpenChange]
+  );
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent width="xlarge" className="flex flex-col">
-        <SheetHeader>
-          <SheetTitle>{t("schema-editor.self")}</SheetTitle>
-        </SheetHeader>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetContent
+        width={maximized ? "huge" : "xlarge"}
+        className="flex flex-col"
+      >
         {open && (
           <SchemaEditorSheetBody
             databaseNames={databaseNames}
             project={project}
             onInsert={onInsert}
-            onCancel={() => onOpenChange(false)}
+            onCancel={() => handleOpenChange(false)}
+            maximized={maximized}
+            onMaximizedChange={setMaximized}
           />
         )}
       </SheetContent>
@@ -66,6 +77,8 @@ interface BodyProps {
   project: Project;
   onInsert: (sql: string) => void;
   onCancel: () => void;
+  maximized: boolean;
+  onMaximizedChange: (next: boolean) => void;
 }
 
 function SchemaEditorSheetBody({
@@ -73,6 +86,8 @@ function SchemaEditorSheetBody({
   project,
   onInsert,
   onCancel,
+  maximized,
+  onMaximizedChange,
 }: BodyProps) {
   const { t } = useTranslation();
   const dbSchemaStore = useDBSchemaV1Store();
@@ -207,12 +222,21 @@ function SchemaEditorSheetBody({
     }
   }, [targets, onInsert, onCancel, t]);
 
+  const MaximizeIcon = maximized ? Minimize2 : Maximize2;
+  const maximizeLabel = maximized ? t("common.restore") : t("common.maximize");
+
   return (
     <>
-      <div className="flex flex-1 flex-col gap-y-3 overflow-hidden px-4 pb-2">
+      {/* Compact single-row toolbar — title, template-database picker, and
+          window controls share one line so the editor below gets back the
+          ~50px we used to spend on a separate combobox row. */}
+      <div className="flex items-center gap-x-3 border-b border-control-border px-4 py-2">
+        <SheetTitle className="text-base font-semibold">
+          {t("schema-editor.self")}
+        </SheetTitle>
         {databaseNames.length > 1 && (
-          <div className="flex items-center gap-x-2">
-            <span className="text-sm text-control-light">
+          <div className="flex min-w-0 items-center gap-x-2">
+            <span className="shrink-0 text-xs text-control-light">
               {t("schema-editor.template-database")}:
             </span>
             <Combobox
@@ -221,19 +245,37 @@ function SchemaEditorSheetBody({
               options={databaseOptions}
               disabled={isPreparingMetadata}
               clearable={false}
-              className="w-80"
+              size="sm"
+              className="w-56"
               portal
             />
           </div>
         )}
-        <div className="relative flex-1 overflow-hidden">
-          <SchemaEditorLite
-            ref={schemaEditorRef}
-            project={project}
-            targets={targets}
-            loading={isPreparingMetadata}
-          />
+        <div className="ml-auto flex items-center gap-x-1">
+          <button
+            type="button"
+            aria-label={maximizeLabel}
+            title={maximizeLabel}
+            onClick={() => onMaximizedChange(!maximized)}
+            className="shrink-0 cursor-pointer rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <MaximizeIcon className="size-4" />
+          </button>
+          <SheetClose
+            aria-label={t("common.close")}
+            className="shrink-0 cursor-pointer rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <X className="size-4" />
+          </SheetClose>
         </div>
+      </div>
+      <div className="relative flex-1 overflow-hidden px-4 pt-2 pb-2">
+        <SchemaEditorLite
+          ref={schemaEditorRef}
+          project={project}
+          targets={targets}
+          loading={isPreparingMetadata}
+        />
       </div>
       <SheetFooter>
         <div className="flex w-full items-center justify-end gap-x-2">

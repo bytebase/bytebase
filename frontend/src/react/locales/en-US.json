@@ -323,6 +323,7 @@
     "logout": "Logout",
     "manage": "Manage",
     "manually-select": "Manually select",
+    "maximize": "Maximize",
     "members_one": "Member",
     "members_other": "Members",
     "minutes": "Minutes",
@@ -2008,6 +2009,7 @@
       "default": "Default",
       "foreign-key": "Foreign Key",
       "name": "Name",
+      "name-placeholder": "Column name",
       "not-null": "Not Null",
       "on-update": "On Update",
       "operations": "Operations",
@@ -2055,6 +2057,7 @@
       "name-placeholder": "Schema name",
       "select": "Select schema"
     },
+    "select-object-hint": "Select a database object from the tree to edit",
     "self": "Schema editor",
     "table": {
       "duplicate-name": "Table name already exists",

@@ -318,6 +318,7 @@
     "logout": "Đăng xuất",
     "manage": "Quản lý",
     "manually-select": "Manually select",
+    "maximize": "Phóng to",
     "members_one": "Thành viên",
     "members_other": "Thành viên",
     "minutes": "Phút",
@@ -1997,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "Khóa ngoại",
       "name": "Name",
+      "name-placeholder": "Tên cột",
       "not-null": "Not Null",
       "on-update": "Khi cập nhật",
       "operations": "Operations",
@@ -2044,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "Chọn lược đồ"
     },
+    "select-object-hint": "Chọn một đối tượng cơ sở dữ liệu từ cây để chỉnh sửa",
     "self": "Trình chỉnh sửa lược đồ",
     "table": {
       "duplicate-name": "Table name already exists",

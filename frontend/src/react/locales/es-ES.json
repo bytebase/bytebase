@@ -318,6 +318,7 @@
     "logout": "Cerrar sesión",
     "manage": "Administrar",
     "manually-select": "Manually select",
+    "maximize": "Maximizar",
     "members_one": "Miembro",
     "members_other": "Miembros",
     "minutes": "Minutos",
@@ -1997,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "Clave foránea",
       "name": "Name",
+      "name-placeholder": "Nombre de la columna",
       "not-null": "Not Null",
       "on-update": "En actualización",
       "operations": "Operations",
@@ -2044,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "Seleccionar esquema"
     },
+    "select-object-hint": "Selecciona un objeto de base de datos del árbol para editarlo",
     "self": "Editor de esquema",
     "table": {
       "duplicate-name": "Table name already exists",

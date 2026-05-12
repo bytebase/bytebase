@@ -1,7 +1,7 @@
 FROM node:24.15.0-slim AS frontend
 ARG GIT_COMMIT
 
-RUN npm i -g pnpm@10.30.3
+RUN npm i -g pnpm@11.0.9
 
 WORKDIR /frontend-build
 
@@ -54,10 +54,6 @@ RUN apk add postgresql16
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 #RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-
-# Install mongosh.
-RUN apk add --no-cache npm
-RUN npm install -g mongosh@2.5.0
 
 # The file indicates running in docker environment.
 RUN touch /etc/bb.env

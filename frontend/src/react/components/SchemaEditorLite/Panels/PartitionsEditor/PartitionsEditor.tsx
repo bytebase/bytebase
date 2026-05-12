@@ -1,5 +1,4 @@
-import { create } from "@bufbuild/protobuf";
-import { Plus, RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
@@ -20,10 +19,7 @@ import type {
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  TablePartitionMetadata_Type,
-  TablePartitionMetadataSchema,
-} from "@/types/proto-es/v1/database_service_pb";
+import { TablePartitionMetadata_Type } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../../context";
 
 interface Props {
@@ -43,19 +39,6 @@ export function PartitionsEditor({
 }: Props) {
   const { t } = useTranslation();
   const { editStatus } = useSchemaEditorContext();
-
-  const handleAddPartition = useCallback(() => {
-    const firstPartition = table.partitions[0];
-    const partition = create(TablePartitionMetadataSchema, {
-      name: `p${table.partitions.length}`,
-      type: firstPartition?.type ?? TablePartitionMetadata_Type.RANGE,
-      expression: firstPartition?.expression ?? "",
-      value: "",
-      subpartitions: [],
-    });
-    table.partitions.push(partition);
-    editStatus.markEditStatus(db, { schema, table }, "updated");
-  }, [table, editStatus, db, schema]);
 
   const handleDropPartition = useCallback(
     (partition: TablePartitionMetadata) => {
@@ -98,14 +81,6 @@ export function PartitionsEditor({
 
   return (
     <div className="flex size-full flex-col gap-y-2 overflow-auto">
-      {!isReadonly && (
-        <div>
-          <Button variant="outline" size="sm" onClick={handleAddPartition}>
-            <Plus className="mr-1 size-4" />
-            {t("schema-editor.actions.add-partition")}
-          </Button>
-        </div>
-      )}
       <Table>
         <TableHeader>
           <TableRow>

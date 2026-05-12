@@ -246,17 +246,29 @@ export function TableColumnEditor({
               <TableRow
                 key={key}
                 className={cn(
-                  status === "created" && "text-success",
-                  status === "updated" && "text-warning",
-                  status === "dropped" && "text-error line-through"
+                  // Soft per-status background tint instead of coloring every
+                  // input's text — far easier to read at a glance. Line-through
+                  // on dropped survives so the row reads as "going away."
+                  status === "created" && "bg-success/5",
+                  status === "updated" && "bg-warning/5",
+                  status === "dropped" && "bg-error/5 line-through",
+                  // Hover only on rows with no status tint so we don't fight
+                  // the colored backgrounds above.
+                  status === "normal" && "hover:bg-control-bg-hover"
                 )}
               >
                 <TableCell className={cellClass}>
                   <Input
+                    // Newly-created, unnamed rows autofocus on mount so the
+                    // user can type immediately. `autoFocus` fires only on
+                    // the initial mount of a row, so clearing the name on
+                    // an existing column won't re-steal focus.
+                    autoFocus={status === "created" && column.name === ""}
+                    placeholder={t("schema-editor.column.name-placeholder")}
                     value={column.name}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
+                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
                     onChange={(e) =>
                       handleColumnNameChange(column, e.target.value)
                     }
@@ -283,7 +295,7 @@ export function TableColumnEditor({
                     value={column.comment}
                     disabled={disabled}
                     size="xs"
-                    className="border-none bg-transparent shadow-none focus-visible:ring-1"
+                    className="border-none bg-transparent shadow-none enabled:hover:bg-control-bg/60 focus-visible:ring-1"
                     onChange={(e) =>
                       handleCommentChange(column, e.target.value)
                     }
@@ -322,7 +334,7 @@ export function TableColumnEditor({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="size-7 p-0 text-error hover:text-error"
+                        className="size-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
                         disabled={disableChangeTable}
                         onClick={() => handleDropColumn(column)}
                       >

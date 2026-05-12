@@ -1,5 +1,4 @@
-import { create } from "@bufbuild/protobuf";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
@@ -21,7 +20,6 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { IndexMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../../context";
 
 interface Props {
@@ -47,18 +45,6 @@ export function IndexesEditor({
     value: col.name,
   }));
 
-  const handleAddIndex = useCallback(() => {
-    const index = create(IndexMetadataSchema, {
-      name: `idx_${table.name}_${Date.now()}`,
-      expressions: [],
-      primary: false,
-      unique: false,
-      comment: "",
-    });
-    table.indexes.push(index);
-    editStatus.markEditStatus(db, { schema, table }, "updated");
-  }, [table, editStatus, db, schema]);
-
   const handleDropIndex = useCallback(
     (index: IndexMetadata) => {
       const idx = table.indexes.indexOf(index);
@@ -74,14 +60,6 @@ export function IndexesEditor({
 
   return (
     <div className="flex size-full flex-col gap-y-2 overflow-auto">
-      {!isReadonly && (
-        <div>
-          <Button variant="outline" size="sm" onClick={handleAddIndex}>
-            <Plus className="mr-1 size-4" />
-            {t("schema-editor.actions.add-index")}
-          </Button>
-        </div>
-      )}
       <Table>
         <TableHeader>
           <TableRow>
