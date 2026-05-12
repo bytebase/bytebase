@@ -38,3 +38,32 @@
         line: 1
         column: 0
       endposition: null
+# Batch 14: HASH partition positive — verifies the rule covers
+# non-RANGE partition methods too. CreateTableStmt.Partitions is
+# non-nil for any PARTITION BY ... clause regardless of method.
+- statement: CREATE TABLE t(a int) PARTITION BY HASH(a) PARTITIONS 4
+  changeType: 1
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: 'Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY HASH(a) PARTITIONS 4" creates'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 14 negative: ALTER TABLE ... ADD PARTITION is a partition-
+# management operation that the pre-omni pingcap rule did NOT cover —
+# only `spec.Tp == AlterTablePartition` (the REPARTITION form, omni's
+# ATPartitionBy) triggered. Mysql analog has the same scope. This
+# fixture pins the long-standing behavior to prevent accidental
+# scope expansion via mechanical edits. If a user reports the rule
+# should also catch ADD PARTITION, it's a feature ticket, not a
+# regression.
+- statement: ALTER TABLE tech_book ADD PARTITION (PARTITION p2 VALUES LESS THAN (20))
+  changeType: 1
+# Batch 14 negative: ALTER TABLE ... DROP PARTITION — same scope
+# pin as ADD PARTITION above. Not caught by either pingcap-tidb or
+# the omni port.
+- statement: ALTER TABLE tech_book DROP PARTITION p0
+  changeType: 1

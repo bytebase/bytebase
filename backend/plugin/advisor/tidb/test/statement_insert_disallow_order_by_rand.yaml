@@ -11,3 +11,27 @@
         line: 1
         column: 0
       endposition: null
+# Batch 14: uppercase RAND positive — pingcap canonicalized to
+# lowercase via FnName.L; omni preserves user case in FuncCallExpr.Name.
+# omniIsRandFuncCall uses EqualFold to match both forms.
+- statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND()
+  changeType: 1
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND()" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 14 negative: INSERT ... SELECT with ORDER BY on a column
+# (not RAND) — the rule should NOT fire. Distinguishes "any ORDER BY"
+# (would be a different rule) from "ORDER BY RAND() specifically".
+- statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY id
+  changeType: 1
+# Batch 14 negative: INSERT ... SET form (cumulative #1 territory) —
+# ins.Select is nil; rule short-circuits before checking OrderBy.
+# Pins the "SET-form has no SELECT to inspect" semantic.
+- statement: INSERT INTO tech_book SET id = 1, name = "a"
+  changeType: 1
