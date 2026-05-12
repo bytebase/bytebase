@@ -636,7 +636,18 @@ export function AdvancedSearch({
         className="flex min-w-0 items-center h-9 overflow-hidden border border-control-border rounded-xs bg-background transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
-        <div className="flex min-w-0 max-w-[60%] items-center shrink">
+        {/*
+         * No hard `max-w-[60%]` here on purpose. The tags container is a
+         * flex item with `shrink` and the input sibling already declares
+         * `min-w-[120px] flex-1`, so flexbox guarantees the input keeps
+         * its minimum typing width and the tags only have to shrink (and
+         * scroll horizontally) when their natural size truly exceeds
+         * what's left. A 60% cap forced the tags to clip even when the
+         * bar had plenty of unused space on the right — visible in the
+         * AccessPane where two short scope tags read as "status: 开启
+         * × stat…".
+         */}
+        <div className="flex min-w-0 items-center shrink">
           <div className="shrink-0 pl-2">
             <Filter className="h-4 w-4 text-control-placeholder" />
           </div>
@@ -695,10 +706,24 @@ export function AdvancedSearch({
           </div>
         </div>
 
-        {/* Input */}
+        {/*
+         * Input min-width is conditional on whether any tags are
+         * present:
+         *   - No tags: reserve 120px so the placeholder text is fully
+         *     legible.
+         *   - Has tags: the placeholder is hidden anyway (see below),
+         *     so we only need room for the cursor — 40px. Without this
+         *     the previous fixed `min-w-[120px]` forced the tags
+         *     container to shrink even when the bar had visible empty
+         *     space, which is what made scope tags clip in panels like
+         *     AccessPane.
+         */}
         <input
           ref={inputRef}
-          className="min-w-[120px] flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none"
+          className={cn(
+            "flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none",
+            visibleTags.length > 0 ? "min-w-[40px]" : "min-w-[120px]"
+          )}
           value={inputText}
           placeholder={visibleTags.length > 0 ? "" : placeholder}
           onClick={handleInputClick}

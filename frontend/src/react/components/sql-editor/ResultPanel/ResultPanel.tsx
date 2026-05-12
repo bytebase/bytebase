@@ -189,31 +189,38 @@ export function ResultPanel() {
             isBatchQuery ? "pt-0" : "pt-2"
           )}
         >
-          <TabsList className="shrink-0 gap-x-1 border-b border-control-border">
+          <TabsList className="shrink-0 gap-x-1 border-b border-control-border overflow-x-auto overflow-y-hidden">
             {queryContexts.map((context) => (
-              <TabContextMenu
-                key={context.id}
-                onSelect={(action) => {
-                  switch (action) {
-                    case "CLOSE":
-                      closeTab(context.id);
-                      break;
-                    case "CLOSE_OTHERS":
-                      closeOthers(context.id);
-                      break;
-                    case "CLOSE_TO_THE_RIGHT":
-                      closeToTheRight(context.id);
-                      break;
-                    case "CLOSE_ALL":
-                      closeAll();
-                      break;
-                  }
-                }}
-              >
-                <Tooltip content={context.params.statement}>
+              // Order matters: `Tooltip` MUST wrap `TabContextMenu`, not the
+              // other way around. `ContextMenuTrigger` uses Base UI's
+              // `render` prop, which clones the given element and attaches
+              // `onContextMenu` / `ref` to it — that only works when the
+              // rendered element forwards unknown props onto its DOM
+              // (`TabsTrigger` does, our `Tooltip` wrapper doesn't). With
+              // Tooltip on the outside, the trigger renders `TabsTrigger`
+              // directly and the right-click handler reaches the DOM.
+              <Tooltip key={context.id} content={context.params.statement}>
+                <TabContextMenu
+                  onSelect={(action) => {
+                    switch (action) {
+                      case "CLOSE":
+                        closeTab(context.id);
+                        break;
+                      case "CLOSE_OTHERS":
+                        closeOthers(context.id);
+                        break;
+                      case "CLOSE_TO_THE_RIGHT":
+                        closeToTheRight(context.id);
+                        break;
+                      case "CLOSE_ALL":
+                        closeAll();
+                        break;
+                    }
+                  }}
+                >
                   <TabsTrigger
                     value={context.id}
-                    className="flex items-center gap-x-2 px-3 py-1"
+                    className="flex items-center gap-x-2 px-3 py-1 shrink-0"
                   >
                     <span className="truncate">{tabName(context)}</span>
                     {context.resultSet?.error && (
@@ -232,8 +239,8 @@ export function ResultPanel() {
                       />
                     )}
                   </TabsTrigger>
-                </Tooltip>
-              </TabContextMenu>
+                </TabContextMenu>
+              </Tooltip>
             ))}
           </TabsList>
           {queryContexts.map((context, i) => (

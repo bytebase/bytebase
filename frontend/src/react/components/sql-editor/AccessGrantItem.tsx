@@ -93,8 +93,19 @@ export function AccessGrantItem({
           : "transition-colors duration-1000"
       )}
     >
-      <div className="w-full flex flex-row justify-between items-center gap-x-2">
-        <div className="flex items-center gap-x-1">
+      {/*
+       * `flex-wrap` + `justify-between` keeps the original "badges left,
+       * expiration right" layout when both fit on the row, but lets the
+       * row wrap when the panel is narrow. Pairing it with `shrink-0`
+       * on the badges container preserves each pill at its natural size
+       * so the label never wraps inside the pill (`脱敏豁免` → "脱敏豁
+       * \n免"). When the expiration wraps to a second row it falls back
+       * to the row's start alignment (justify-between has no effect on
+       * a single-item row), so it reads naturally left-to-right under
+       * the badges instead of being stranded on the right.
+       */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div className="flex items-center gap-x-1 shrink-0">
           <Badge
             variant={badgeVariant}
             className="text-[10px] px-1.5 py-0 rounded-full"
@@ -111,7 +122,7 @@ export function AccessGrantItem({
           )}
         </div>
         {expirationText && (
-          <span className="text-xs text-control-placeholder shrink-0 truncate">
+          <span className="text-xs text-control-placeholder shrink-0">
             {expirationText}
           </span>
         )}

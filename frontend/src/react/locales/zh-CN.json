@@ -2704,6 +2704,7 @@
     "download-as-file": "下载为 {{file}} 格式",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
+    "duration-hour": "{{hours}} 小时",
     "duration-hours": "{{hours}} 小时",
     "execute-query": "执行查询",
     "executing-query": "执行查询",

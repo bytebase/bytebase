@@ -145,7 +145,7 @@ function AccessGrantRequestDrawerInner({
 
   const durationOptions = useMemo(
     () => [
-      { value: "1", label: t("sql-editor.duration-hours", { hours: 1 }) },
+      { value: "1", label: t("sql-editor.duration-hour", { hours: 1 }) },
       { value: "4", label: t("sql-editor.duration-hours", { hours: 4 }) },
       { value: "24", label: t("sql-editor.duration-day", { days: 1 }) },
       { value: "168", label: t("sql-editor.duration-days", { days: 7 }) },

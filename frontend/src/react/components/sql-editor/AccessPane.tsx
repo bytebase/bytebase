@@ -290,7 +290,7 @@ export function AccessPane() {
         >
           {({ disabled }) => (
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               style={{ width: useSmallLayout ? "100%" : "auto" }}
               disabled={!hasJITFeature || disabled}

@@ -1332,6 +1332,7 @@ export function SheetTree({
         }}
       >
         <PopoverTrigger
+          nativeButton={false}
           render={
             <div
               aria-hidden
