@@ -14,9 +14,6 @@ export function useScrollStatus(): ScrollStatusContext {
   const [pendingScrollToColumn, setPendingScrollToColumn] = useState<
     RichMetadataWithDB<RichColumnMetadata> | undefined
   >();
-  const [pendingFocusColumn, setPendingFocusColumn] = useState<
-    RichMetadataWithDB<RichColumnMetadata> | undefined
-  >();
 
   const queuePendingScrollToTable = useCallback(
     (params: RichMetadataWithDB<RichTableMetadata>) => {
@@ -36,15 +33,6 @@ export function useScrollStatus(): ScrollStatusContext {
     []
   );
 
-  const queuePendingFocusToColumn = useCallback(
-    (params: RichMetadataWithDB<RichColumnMetadata>) => {
-      requestAnimationFrame(() => {
-        setPendingFocusColumn(params);
-      });
-    },
-    []
-  );
-
   const consumePendingScrollToTable = useCallback(() => {
     setPendingScrollToTable(undefined);
   }, []);
@@ -53,20 +41,13 @@ export function useScrollStatus(): ScrollStatusContext {
     setPendingScrollToColumn(undefined);
   }, []);
 
-  const consumePendingFocusToColumn = useCallback(() => {
-    setPendingFocusColumn(undefined);
-  }, []);
-
   return {
     pendingScrollToTable,
     pendingScrollToColumn,
-    pendingFocusColumn,
     queuePendingScrollToTable,
     queuePendingScrollToColumn,
-    queuePendingFocusToColumn,
     consumePendingScrollToTable,
     consumePendingScrollToColumn,
-    consumePendingFocusToColumn,
   };
 }
 

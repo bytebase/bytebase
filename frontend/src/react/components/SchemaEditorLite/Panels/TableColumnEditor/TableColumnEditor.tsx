@@ -1,5 +1,5 @@
 import { RotateCcw, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -56,31 +56,7 @@ export function TableColumnEditor({
   onMarkTableStatus,
 }: Props) {
   const { t } = useTranslation();
-  const { editStatus, scrollStatus } = useSchemaEditorContext();
-
-  // Per-row Name input refs so we can focus the newly added column's input
-  // once its row renders. Keyed by column UUID (stable across re-renders).
-  const nameInputRefs = useRef<Map<string, HTMLInputElement | null>>(new Map());
-  // Row currently being flashed via the row-flash keyframe. We track it
-  // here (not via a data attribute) so onAnimationEnd can clear it cleanly.
-  const [flashKey, setFlashKey] = useState<string | null>(null);
-
-  // Consume the "just-added column" signal. Match against this table's
-  // identity so a queued focus for table A doesn't fire when table B mounts.
-  useEffect(() => {
-    const pending = scrollStatus.pendingFocusColumn;
-    if (!pending) return;
-    if (pending.db.name !== db.name) return;
-    if (pending.metadata.schema.name !== schema.name) return;
-    if (pending.metadata.table.name !== table.name) return;
-    const key = markUUID(pending.metadata.column);
-    // Defer to the next frame so the just-pushed row is in the DOM.
-    requestAnimationFrame(() => {
-      nameInputRefs.current.get(key)?.focus();
-      setFlashKey(key);
-    });
-    scrollStatus.consumePendingFocusToColumn();
-  }, [scrollStatus, db.name, schema.name, table.name]);
+  const { editStatus } = useSchemaEditorContext();
 
   const primaryKey = useMemo(() => {
     return table.indexes.find((idx) => idx.primary);
@@ -272,18 +248,16 @@ export function TableColumnEditor({
                 className={cn(
                   status === "created" && "text-success",
                   status === "updated" && "text-warning",
-                  status === "dropped" && "text-error line-through",
-                  flashKey === key && "animate-row-flash"
+                  status === "dropped" && "text-error line-through"
                 )}
-                onAnimationEnd={() => {
-                  if (flashKey === key) setFlashKey(null);
-                }}
               >
                 <TableCell className={cellClass}>
                   <Input
-                    ref={(el) => {
-                      nameInputRefs.current.set(key, el);
-                    }}
+                    // Newly-created, unnamed rows autofocus on mount so the
+                    // user can type immediately. `autoFocus` fires only on
+                    // the initial mount of a row, so clearing the name on
+                    // an existing column won't re-steal focus.
+                    autoFocus={status === "created" && column.name === ""}
                     value={column.name}
                     disabled={disabled}
                     size="xs"

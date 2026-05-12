@@ -394,19 +394,6 @@
   }
 }
 
-@keyframes row-flash {
-  0% {
-    background-color: color-mix(in oklch, var(--color-success) 18%, transparent);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@utility animate-row-flash {
-  animation: row-flash 1.2s ease-out forwards;
-}
-
 .fade-slide-up-leave-active {
   transition-property: opacity, transform;
   transition-duration: 100ms;

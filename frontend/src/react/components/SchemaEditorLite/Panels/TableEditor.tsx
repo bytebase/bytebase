@@ -83,12 +83,6 @@ export function TableEditor({
       db,
       metadata: { database, schema, table, column },
     });
-    // Tell TableColumnEditor to focus the new row's Name input and flash
-    // it briefly — without this the row was silently appended (BYT-9473).
-    scrollStatus.queuePendingFocusToColumn({
-      db,
-      metadata: { database, schema, table, column },
-    });
   }, [db, database, schema, table, editStatus, rebuildTree, scrollStatus]);
 
   const markTableStatus = useCallback(
