@@ -1,7 +1,7 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
 import {
@@ -68,6 +68,10 @@ const sheetContentVariants = cva(
         wide: "w-[52rem]",
         large: "w-[64rem]",
         xlarge: "w-[70rem]",
+        // Maximized editor surfaces (e.g. plan-detail schema editor). Leaves
+        // a ~5vw strip on the left as a visual anchor; clicking the strip
+        // closes the sheet like any other scrim click.
+        huge: "w-[95vw]",
         workspace: "w-[calc(100vw-8rem)] lg:w-240 max-w-[calc(100vw-8rem)]",
       },
     },
@@ -112,8 +116,15 @@ function SheetContent({
 // Sticky top region with a bottom border, laid out as a row so the built-in
 // close button sits on the right. Typically contains a `SheetTitle` and an
 // optional `SheetDescription` — both are wrapped in a flex-col for the
-// vertical stack layout while the close button remains flush right.
-function SheetHeader({ className, children, ...props }: ComponentProps<"div">) {
+// vertical stack layout while the close button remains flush right. `actions`
+// renders secondary icon-buttons (maximize, settings, etc.) immediately
+// before the close button.
+function SheetHeader({
+  className,
+  children,
+  actions,
+  ...props
+}: ComponentProps<"div"> & { actions?: ReactNode }) {
   const { t } = useTranslation();
 
   return (
@@ -125,6 +136,9 @@ function SheetHeader({ className, children, ...props }: ComponentProps<"div">) {
       {...props}
     >
       <div className="flex flex-col gap-y-1 min-w-0 flex-1">{children}</div>
+      {actions ? (
+        <div className="flex items-center gap-x-1 shrink-0">{actions}</div>
+      ) : null}
       {/* Built-in close affordance. Callers should not render their own close
           button — Base UI's Close dismisses the Sheet via Root's onOpenChange. */}
       <BaseDialog.Close
