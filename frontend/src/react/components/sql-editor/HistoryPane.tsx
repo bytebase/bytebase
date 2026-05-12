@@ -70,6 +70,23 @@ export function HistoryPane() {
     };
   }, [historyQuery]);
 
+  // Refetch on every post-execute event. Both `useExecuteSQL` and
+  // `webTerminal` emit `query-executed` once a statement completes.
+  // We can't reliably depend on the store's reactive cache: the React
+  // `useVueState` watch tracks `map.get(key)` only, and the cache's
+  // in-place field writes after the fetch don't fire that watcher. An
+  // explicit event + refetch sidesteps all of that.
+  useEffect(() => {
+    const refetch = async () => {
+      queryHistoryStore.resetPageToken(historyQuery);
+      await fetchHistory();
+    };
+    sqlEditorEvents.on("query-executed", refetch);
+    return () => {
+      sqlEditorEvents.off("query-executed", refetch);
+    };
+  }, [queryHistoryStore, historyQuery, fetchHistory]);
+
   const onSearchUpdate = useCallback(
     (next: string) => {
       queryHistoryStore.resetPageToken({ ...historyQuery, statement: next });

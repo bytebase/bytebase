@@ -35,6 +35,8 @@ vi.mock("@/store", () => ({
 vi.mock("@/views/sql-editor/events", () => ({
   sqlEditorEvents: {
     emit: mocks.sqlEditorEventsEmit,
+    on: vi.fn().mockReturnValue(() => {}),
+    off: vi.fn(),
   },
 }));
 

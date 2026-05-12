@@ -9,6 +9,7 @@ import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
 import { pushNotification, useDatabaseV1Store } from "@/store";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,
@@ -265,6 +266,10 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
         });
       }
     }
+    // Admin-mode queries don't go through `useExecuteSQL` (it bails on
+    // `mode === "ADMIN"`), so emit the post-exec event from here too.
+    // `HistoryPane` listens and refetches.
+    void sqlEditorEvents.emit("query-executed");
     cleanup();
   });
 };

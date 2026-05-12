@@ -38,6 +38,7 @@ import {
   getValidDataSourceByPolicy,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { flattenNoSQLResult } from "./utils";
 
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
@@ -303,6 +304,10 @@ const useExecuteSQL = () => {
       .catch(() => {
         /* nothing */
       });
+    // Tell the HistoryPane to refetch. The store-cache reactivity
+    // doesn't reliably propagate the in-place writes above into the
+    // React `useVueState` subscriber; an explicit event always does.
+    void sqlEditorEvents.emit("query-executed");
 
     const instanceResource = getInstanceResource(database);
     if (instanceResource.engine === Engine.COSMOSDB) {
