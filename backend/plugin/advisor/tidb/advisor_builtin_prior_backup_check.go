@@ -43,6 +43,9 @@ func init() {
 //	UPDATE t WHERE id=5 × 10        — pre: skips. new: skips.
 //	UPDATE t; DELETE FROM t         — pre: skips. new: FIRES (per-table mixing).
 //	Statements > MaxSheetCheckSize — pre: skips. new: FIRES (size cap).
+//	Missing bbdataarchive db       — pre: fires w/ code.BuiltinPriorBackupCheck.
+//	                                 new: fires w/ code.DatabaseNotExists
+//	                                 (public-API delta, mysql-aligned).
 //
 // Audit axes applied:
 //   - #7 (preserve pre-omni): NOT applied here — see reshape rationale.
