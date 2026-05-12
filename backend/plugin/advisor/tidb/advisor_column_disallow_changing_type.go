@@ -278,6 +278,25 @@ func normalizeColumnType(tp string) string {
 		// when Length=0 because there's no length to render;
 		// catch the canonicalization here.
 		return "decimal(10,0)"
+	case "bit":
+		// Pre-merge round-7 risk check surfaced this: MySQL's
+		// default BIT precision is 1, pingcap renders `BIT` as
+		// `bit(1)`, INFORMATION_SCHEMA stores `bit(1)`.
+		return "bit(1)"
+	case "binary":
+		// Pre-merge round-7 risk check surfaced this: MySQL's
+		// default BINARY length is 1, pingcap renders bare BINARY
+		// as `binary(1)`, INFORMATION_SCHEMA stores `binary(1)`.
+		return "binary(1)"
+	case "year":
+		// Pre-merge round-7 risk check surfaced this: MySQL's
+		// default YEAR display width is 4 (legacy; YEAR(2) was
+		// deprecated then removed). Pingcap renders bare YEAR as
+		// `year(-1)` (an internal sentinel for "no width specified"
+		// — a pingcap-side artifact); INFORMATION_SCHEMA stores
+		// `year(4)`. Canonicalize bare year to year(4) to match the
+		// catalog form.
+		return "year(4)"
 	case "tinyint":
 		return "tinyint(4)"
 	case "tinyint unsigned":
