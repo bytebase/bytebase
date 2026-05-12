@@ -269,6 +269,15 @@ func normalizeColumnType(tp string) string {
 		// MySQL canonicalizes BOOL/BOOLEAN to tinyint(1). Both
 		// pingcap rendering and INFORMATION_SCHEMA agree.
 		return "tinyint(1)"
+	case "decimal", "numeric", "fixed":
+		// MySQL applies default precision (10) and scale (0) when
+		// user writes bare DECIMAL (or its NUMERIC / FIXED aliases).
+		// Pingcap's Tp.String() and INFORMATION_SCHEMA both
+		// canonicalize the bare form to decimal(10,0). The
+		// omniBuildColumnTypeString builder renders the bare form
+		// when Length=0 because there's no length to render;
+		// catch the canonicalization here.
+		return "decimal(10,0)"
 	case "tinyint":
 		return "tinyint(4)"
 	case "tinyint unsigned":
