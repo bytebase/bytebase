@@ -2708,12 +2708,10 @@
         "description": "Ước tính theo thông tin thống kê.",
         "self": "Số dòng bị ảnh hưởng"
       },
-      "ghost-sync": "Đồng bộ gh-ost",
       "sql-review": {
         "description": "Phân tích câu lệnh SQL để tìm ra các vấn đề tiềm ẩn và đưa ra khuyến nghị. Bao gồm các quy tắc tích hợp sẵn và quy tắc tùy chỉnh của bạn.",
         "self": "Đánh giá SQL"
-      },
-      "summary-report": "Báo cáo tổng hợp"
+      }
     },
     "checking": "Đang kiểm tra...",
     "created": "Đã tạo",
