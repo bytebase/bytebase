@@ -348,6 +348,110 @@ func firstAlterCommandMatching(n *omniast.AlterTableStmt, matcher func(*omniast.
 	return -1
 }
 
+// omniIsTimeType reports whether the column type is DATETIME or
+// TIMESTAMP. Pingcap dispatched on `mysql.TypeDatetime` /
+// `mysql.TypeTimestamp` — distinct type bytes, no unification.
+// omni surfaces both as their own DataType.Name with no aliasing.
+func omniIsTimeType(dt *omniast.DataType) bool {
+	if dt == nil {
+		return false
+	}
+	switch strings.ToUpper(dt.Name) {
+	case "DATETIME", "TIMESTAMP":
+		return true
+	default:
+		return false
+	}
+}
+
+// omniIsDefaultCurrentTime reports whether a column has
+// `DEFAULT CURRENT_TIMESTAMP` (or one of its synonyms: NOW(),
+// LOCALTIME, LOCALTIMESTAMP). The omni AST puts the default
+// expression on `col.DefaultValue` (as an ExprNode); a function-call
+// default surfaces as `*omniast.FuncCallExpr` with `Name` carrying
+// the function token.
+func omniIsDefaultCurrentTime(col *omniast.ColumnDef) bool {
+	if col == nil {
+		return false
+	}
+	return omniIsCurrentTimeFuncCall(col.DefaultValue)
+}
+
+// omniIsOnUpdateCurrentTime reports whether a column has
+// `ON UPDATE CURRENT_TIMESTAMP` (or its synonyms). Omni surfaces
+// the on-update expression on `col.OnUpdate` — a separate top-level
+// field on ColumnDef (NOT inside Constraints[]).
+func omniIsOnUpdateCurrentTime(col *omniast.ColumnDef) bool {
+	if col == nil {
+		return false
+	}
+	return omniIsCurrentTimeFuncCall(col.OnUpdate)
+}
+
+// omniIsCurrentTimeFuncCall checks whether the given expression is a
+// function call to one of the CURRENT_TIMESTAMP synonyms:
+// CURRENT_TIMESTAMP, NOW, LOCALTIME, LOCALTIMESTAMP. Pingcap
+// canonicalized these to lowercase via `FnName.L`; omni keeps the
+// user's original case in `FuncCallExpr.Name`, so we compare
+// case-insensitively.
+func omniIsCurrentTimeFuncCall(expr omniast.ExprNode) bool {
+	if expr == nil {
+		return false
+	}
+	fc, ok := expr.(*omniast.FuncCallExpr)
+	if !ok {
+		return false
+	}
+	switch strings.ToUpper(fc.Name) {
+	case "NOW", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP":
+		return true
+	default:
+		return false
+	}
+}
+
+// omniIsCharOrBinaryType reports whether the column type is a
+// fixed-length character/binary type (CHAR or BINARY). Pingcap-tidb
+// dispatched on `mysql.TypeString` which covered BOTH `CHAR` and
+// `BINARY` via charset distinction (charset-pair unification, same
+// shape as cumulative #18 BLOB/TEXT and #20 TINYINT/BOOLEAN). Omni
+// splits to distinct `DataType.Name = "CHAR"` and `"BINARY"`.
+// Cumulative #22 — both must be matched to preserve pingcap behavior.
+// Mysql analog only matches CHAR (long-standing mysql gap; pre-omni
+// mysql used ANTLR token symbols and never matched BINARY either —
+// NOT a regression).
+func omniIsCharOrBinaryType(dt *omniast.DataType) bool {
+	if dt == nil {
+		return false
+	}
+	switch strings.ToUpper(dt.Name) {
+	case "CHAR", "BINARY":
+		return true
+	default:
+		return false
+	}
+}
+
+// omniCharLength returns the declared length of a CHAR/BINARY column,
+// applying the MySQL default of 1 when no explicit length is given.
+// Pingcap's `column.Tp.GetFlen()` returned the canonical default
+// width for bare CHAR / BARE BINARY; omni keeps Length=0 in that
+// case. Matches both omni-builder behavior and INFORMATION_SCHEMA
+// rendering.
+//
+// Returns 0 for non-CHAR/BINARY types — callers gate on
+// omniIsCharOrBinaryType first.
+func omniCharLength(dt *omniast.DataType) int {
+	if dt == nil || !omniIsCharOrBinaryType(dt) {
+		return 0
+	}
+	if dt.Length == 0 {
+		// MySQL default: bare CHAR → CHAR(1); bare BINARY → BINARY(1).
+		return 1
+	}
+	return dt.Length
+}
+
 // omniIsIntegerType reports whether the column type is an integer type
 // from the perspective of pingcap-tidb's `isInteger` helper. Pingcap
 // dispatched on `mysql.TypeTiny`/`TypeShort`/`TypeInt24`/`TypeLong`/`TypeLonglong`

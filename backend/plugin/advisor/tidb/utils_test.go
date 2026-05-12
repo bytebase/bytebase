@@ -291,3 +291,114 @@ func TestOmniColumnHasComment_PresentAbsentDistinction(t *testing.T) {
 	require.True(t, omniColumnHasComment(regularCommentCol),
 		"explicit COMMENT with value: omniColumnHasComment must return true")
 }
+
+// TestOmniIsTimeType pins the DATETIME/TIMESTAMP detection for
+// column_current_time_count_limit (batch 13). Pingcap dispatched
+// on mysql.TypeDatetime/TypeTimestamp — distinct type bytes,
+// no unification concern.
+func TestOmniIsTimeType(t *testing.T) {
+	cases := []struct {
+		name string
+		dt   *omniast.DataType
+		want bool
+	}{
+		{"DATETIME", &omniast.DataType{Name: "DATETIME"}, true},
+		{"TIMESTAMP", &omniast.DataType{Name: "TIMESTAMP"}, true},
+		{"lowercase datetime", &omniast.DataType{Name: "datetime"}, true},
+		{"DATE", &omniast.DataType{Name: "DATE"}, false},
+		{"TIME", &omniast.DataType{Name: "TIME"}, false},
+		{"YEAR", &omniast.DataType{Name: "YEAR"}, false},
+		{"VARCHAR", &omniast.DataType{Name: "VARCHAR"}, false},
+		{"nil", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsTimeType(tc.dt))
+		})
+	}
+}
+
+// TestOmniIsCurrentTimeFuncCall covers the CURRENT_TIMESTAMP synonym
+// detection used by column_current_time_count_limit. Pingcap used
+// FnName.L (lowercased); omni keeps user case in FuncCallExpr.Name,
+// so we compare case-insensitively.
+func TestOmniIsCurrentTimeFuncCall(t *testing.T) {
+	cases := []struct {
+		name string
+		expr omniast.ExprNode
+		want bool
+	}{
+		{"CURRENT_TIMESTAMP uppercase", &omniast.FuncCallExpr{Name: "CURRENT_TIMESTAMP"}, true},
+		{"current_timestamp lowercase", &omniast.FuncCallExpr{Name: "current_timestamp"}, true},
+		{"NOW", &omniast.FuncCallExpr{Name: "NOW"}, true},
+		{"LOCALTIME", &omniast.FuncCallExpr{Name: "LOCALTIME"}, true},
+		{"LOCALTIMESTAMP", &omniast.FuncCallExpr{Name: "LOCALTIMESTAMP"}, true},
+		{"UTC_TIMESTAMP (not synonym)", &omniast.FuncCallExpr{Name: "UTC_TIMESTAMP"}, false},
+		{"unknown function", &omniast.FuncCallExpr{Name: "FOO"}, false},
+		{"nil expr", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsCurrentTimeFuncCall(tc.expr))
+		})
+	}
+}
+
+// TestOmniIsCharOrBinaryType pins cumulative #22 — pingcap's
+// `mysql.TypeString` covered BOTH CHAR and BINARY via charset
+// distinction. The omni port must match both names; a mechanical
+// port matching only "CHAR" (like the mysql analog does) silently
+// drops BINARY coverage. Same shape as cumulative #18 (BLOB/TEXT
+// under TypeBlob) and #20 (TINYINT/BOOLEAN under TypeTiny).
+//
+// VARCHAR/VARBINARY are TypeVarString in pingcap, NOT TypeString —
+// pingcap rule did NOT fire on those. Pin the negative case too.
+func TestOmniIsCharOrBinaryType(t *testing.T) {
+	cases := []struct {
+		name string
+		dt   *omniast.DataType
+		want bool
+	}{
+		{"CHAR", &omniast.DataType{Name: "CHAR"}, true},
+		{"BINARY", &omniast.DataType{Name: "BINARY"}, true},
+		{"lowercase char", &omniast.DataType{Name: "char"}, true},
+		{"lowercase binary", &omniast.DataType{Name: "binary"}, true},
+		{"VARCHAR (negative)", &omniast.DataType{Name: "VARCHAR"}, false},
+		{"VARBINARY (negative)", &omniast.DataType{Name: "VARBINARY"}, false},
+		{"TEXT", &omniast.DataType{Name: "TEXT"}, false},
+		{"BLOB", &omniast.DataType{Name: "BLOB"}, false},
+		{"nil", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsCharOrBinaryType(tc.dt))
+		})
+	}
+}
+
+// TestOmniCharLength pins the MySQL default-1 application for bare
+// CHAR / BINARY columns. Pingcap's column.Tp.GetFlen() returned the
+// canonical default (1) for bare CHAR; omni leaves Length=0, so the
+// helper must apply the default explicitly to preserve pingcap
+// behavior on column_maximum_character_length.
+func TestOmniCharLength(t *testing.T) {
+	cases := []struct {
+		name string
+		dt   *omniast.DataType
+		want int
+	}{
+		{"bare CHAR → 1", &omniast.DataType{Name: "CHAR"}, 1},
+		{"bare BINARY → 1", &omniast.DataType{Name: "BINARY"}, 1},
+		{"CHAR(10)", &omniast.DataType{Name: "CHAR", Length: 10}, 10},
+		{"BINARY(16)", &omniast.DataType{Name: "BINARY", Length: 16}, 16},
+		{"CHAR(255)", &omniast.DataType{Name: "CHAR", Length: 255}, 255},
+		{"VARCHAR(255) → 0", &omniast.DataType{Name: "VARCHAR", Length: 255}, 0},
+		{"INT → 0", &omniast.DataType{Name: "INT"}, 0},
+		{"nil → 0", nil, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniCharLength(tc.dt))
+		})
+	}
+}

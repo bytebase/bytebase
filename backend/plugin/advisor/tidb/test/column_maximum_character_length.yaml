@@ -46,3 +46,38 @@
         line: 1
         column: 0
       endposition: null
+# Cumulative #22 pin (batch 13): pingcap's mysql.TypeString covered
+# BOTH CHAR and BINARY (charset-pair unification, same shape as #18
+# BLOB/TEXT). The pingcap-tidb rule fired on BINARY(N>maximum) too;
+# a mechanical port matching only "CHAR" would drop BINARY coverage
+# (mysql analog had this latent gap — pre-omni mysql also missed it
+# via ANTLR token symbols; long-standing mysql gap, not regression
+# per invariant #10). This fixture locks the BINARY-coverage contract
+# on tidb.
+- statement: CREATE TABLE t(blob_col binary(225))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `blob_col` is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Single-advice-per-statement cardinality pin (batch 13): pingcap-tidb's
+# Visitor broke after the first CHAR/BINARY column exceeding the limit
+# — ONE advice per top-level statement. Mysql analog emits per-column.
+# Tidb preserves pingcap behavior. Multi-column fixture verifies exactly
+# 1 advice for a statement with TWO violating columns.
+- statement: CREATE TABLE t(a char(225), b binary(225))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `a` is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
