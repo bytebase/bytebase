@@ -103,7 +103,7 @@ function WorkspaceSegment() {
         {label && (
           <Badge
             variant={planVariant(currentPlan)}
-            className="text-[10px] px-1.5 py-0"
+            className="text-[10px] px-1.5 py-0 hidden lg:block"
           >
             {label}
           </Badge>
@@ -154,7 +154,7 @@ function WorkspaceSegment() {
 // ---------------------------------------------------------------------------
 // ProjectSegment — shows project name + dropdown, only when inside a project
 // ---------------------------------------------------------------------------
-function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
+function ProjectSegment() {
   const { t } = useTranslation();
   const route = useCurrentRoute();
   const [open, setOpen] = useState(false);
@@ -172,9 +172,6 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
 
   return (
     <>
-      {showSeparator && (
-        <span className="text-control-placeholder select-none">/</span>
-      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
@@ -223,8 +220,11 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
 export function HeaderBreadcrumb() {
   return (
     <div className="flex items-center gap-x-1">
-      <WorkspaceSegment />
-      <ProjectSegment showSeparator />
+      <div className="hidden md:flex items-center gap-x-1">
+        <WorkspaceSegment />
+        <span className="text-control-placeholder select-none">/</span>
+      </div>
+      <ProjectSegment />
     </div>
   );
 }

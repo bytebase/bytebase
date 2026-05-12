@@ -137,13 +137,13 @@ export const VirtualDataBlock = forwardRef<
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <p className="font-bold text-control-light overflow-hidden whitespace-nowrap mb-1">
+              <p className="font-bold text-control-light dark:text-gray-300 overflow-hidden whitespace-nowrap mb-1">
                 ******************************** {rowIndex + 1}. row
                 ********************************
               </p>
               <div
                 className={cn(
-                  "py-2 px-3 bg-control-bg rounded relative",
+                  "py-2 px-3 bg-control-bg dark:bg-gray-700 rounded relative",
                   isActive && "border-2 border-accent/20 bg-accent/10!"
                 )}
               >
@@ -156,7 +156,7 @@ export const VirtualDataBlock = forwardRef<
                   return (
                     <div
                       key={column.id}
-                      className="flex items-start text-control-light text-sm"
+                      className="flex items-start text-control-light dark:text-gray-300 text-sm"
                     >
                       <div className="min-w-28 text-left flex items-center font-medium pt-1">
                         <div className="flex items-center gap-x-1">

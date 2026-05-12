@@ -534,10 +534,14 @@ function SingleResultViewInner({
                 </span>
               </div>
               {!disallowCopyingData && rows.length > 0 && (
+                // `variant="outline"` is `bg-transparent + text-control`, which
+                // disappears inside the admin-mode dark backdrop. Force an
+                // opaque light-on-dark surface in `.dark` to match the Vue
+                // toolbar's contrast (light gray bg + dark text).
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 px-2"
+                  className="h-7 px-2 dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:hover:bg-gray-600"
                   onClick={copyAll}
                 >
                   <CopyIcon className="size-4" />
