@@ -1,12 +1,24 @@
 package taskrun
 
 import (
+	"context"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+func TestWrappedContextCanceledMatchesErrorsIs(t *testing.T) {
+	driverCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := errors.Wrap(driverCtx.Err(), "task canceled")
+	require.Error(t, err)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Contains(t, err.Error(), "task canceled")
+}
 
 func TestGetPrependStatements(t *testing.T) {
 	tests := []struct {

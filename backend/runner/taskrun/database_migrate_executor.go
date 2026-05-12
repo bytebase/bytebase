@@ -374,7 +374,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 		opts.LogGhostMigrationEnd("")
 		return nil
 	case <-driverCtx.Done():
-		err := errors.New("task canceled")
+		err := errors.Wrap(driverCtx.Err(), "task canceled")
 		opts.LogGhostMigrationEnd(err.Error())
 		abortCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
