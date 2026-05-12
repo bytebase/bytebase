@@ -21,7 +21,14 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-var getSSHClient = util.GetSSHClient
+type sshDialer interface {
+	DialContext(context.Context, string, string) (net.Conn, error)
+	Close() error
+}
+
+var getSSHDialer = func(dataSource *storepb.DataSource) (sshDialer, error) {
+	return util.GetSSHClient(dataSource)
+}
 
 var defaultConfig = struct {
 	attemptInstantDDL                   bool
@@ -209,7 +216,7 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, func(), error) {
+func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, func(), error) { // NOSONAR(go:S107) This existing internal API wires gh-ost configuration fields explicitly.
 	resolvedDataSource, err := util.ResolveTLSMaterial(dataSource)
 	if err != nil {
 		return nil, nil, err
@@ -401,27 +408,27 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 
 func setupSSHNetwork(dataSource *storepb.DataSource, migrationContext *ghostbase.MigrationContext) (func(), error) {
 	if dataSource.GetSshHost() == "" {
-		return func() {}, nil
+		return noopCleanup, nil
 	}
 
-	sshClient, err := getSSHClient(dataSource)
+	sshClient, err := getSSHDialer(dataSource)
 	if err != nil {
 		return nil, err
 	}
 
 	network := "mysql-tcp-" + uuid.NewString()[:8]
-	gomysql.RegisterDialContext(network, func(_ context.Context, addr string) (net.Conn, error) {
+	gomysql.RegisterDialContext(network, func(ctx context.Context, addr string) (net.Conn, error) {
 		if sshClient == nil {
 			return nil, errors.New("ssh client is not initialized")
 		}
-		return sshClient.Dial("tcp", addr)
+		return sshClient.DialContext(ctx, "tcp", addr)
 	})
 	migrationContext.InspectorConnectionConfig.Network = network
-	migrationContext.InspectorConnectionConfig.Dialer = func(_ context.Context, network, address string) (net.Conn, error) {
+	migrationContext.InspectorConnectionConfig.Dialer = func(ctx context.Context, network, address string) (net.Conn, error) {
 		if sshClient == nil {
 			return nil, errors.New("ssh client is not initialized")
 		}
-		return sshClient.Dial(network, address)
+		return sshClient.DialContext(ctx, network, address)
 	}
 
 	return func() {
@@ -430,6 +437,10 @@ func setupSSHNetwork(dataSource *storepb.DataSource, migrationContext *ghostbase
 			_ = sshClient.Close()
 		}
 	}, nil
+}
+
+func noopCleanup() {
+	// No resource is allocated when SSH tunneling is disabled.
 }
 
 func writeTLSMaterialTempFiles(dataSource *storepb.DataSource, migrationContext *ghostbase.MigrationContext) (func(), error) {
