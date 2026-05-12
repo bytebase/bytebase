@@ -100,7 +100,17 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 			}
 			stmtLine := ostmt.FirstTokenLine()
 			for _, cmd := range n.Commands {
-				if cmd == nil || cmd.Type != ast.ATAddConstraint || cmd.Constraint == nil {
+				if cmd == nil || cmd.Constraint == nil {
+					continue
+				}
+				// Cumulative #17 sibling-parity convention: tidb omni
+				// emits only ATAddConstraint for all `ALTER TABLE ADD
+				// ...` forms today, but the dual arm is the recommended
+				// convention (batch 4 naming-trio + batch 8 index spine
+				// + utils.go collectIndexFamilyAlterTable) for forward-
+				// compat against grammar evolution that may start
+				// emitting ATAddIndex.
+				if cmd.Type != ast.ATAddConstraint && cmd.Type != ast.ATAddIndex {
 					continue
 				}
 				if omniIndexKeyCount(cmd.Constraint) > maximum {

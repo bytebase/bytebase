@@ -97,7 +97,10 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 					if slices.ContainsFunc(addColumnTargets(cmd), omniColumnCreatesIndex) {
 						lineForTable[tableName] = stmtLine
 					}
-				case ast.ATAddConstraint:
+				case ast.ATAddConstraint, ast.ATAddIndex:
+					// Cumulative #17 sibling-parity convention: dual
+					// arm preserved for forward-compat per established
+					// pattern in utils.go collectIndexFamilyAlterTable.
 					if omniConstraintCreatesIndex(cmd.Constraint) {
 						lineForTable[tableName] = stmtLine
 					}
