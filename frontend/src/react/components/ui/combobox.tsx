@@ -65,6 +65,8 @@ type ComboboxBaseProps = {
   className?: string;
   disabled?: boolean;
   clearable?: boolean;
+  /** Trigger size — matches the Input component's tier names. Defaults to `md`. */
+  size?: "sm" | "md";
   /** Render dropdown via portal (use when inside overflow:hidden containers like modals) */
   portal?: boolean;
 };
@@ -98,6 +100,7 @@ export function Combobox(props: ComboboxProps) {
     className,
     disabled,
     clearable = true,
+    size = "md",
     portal,
   } = props;
   const multiple = props.multiple === true;
@@ -424,7 +427,10 @@ export function Combobox(props: ComboboxProps) {
           // wrap below a too-narrow label on a narrow container, which
           // looks broken. Keep the trigger on a single line in that case
           // and let the label truncate inside `renderTrigger`.
-          "flex items-center gap-1 min-h-9 w-full rounded-xs border border-control-border bg-background px-3 py-1 text-sm leading-5 cursor-pointer",
+          "flex items-center gap-1 w-full rounded-xs border border-control-border bg-background py-1 cursor-pointer",
+          size === "sm"
+            ? "min-h-7 px-2 text-xs leading-4"
+            : "min-h-9 px-3 text-sm leading-5",
           multiple && "flex-wrap",
           disabled && "opacity-50 cursor-not-allowed",
           open && "border-accent"
