@@ -96,13 +96,28 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 			}
 			switch cmd.Type {
 			case ast.ATAddColumn:
+				// Cumulative #23: pingcap-tidb's pre-omni
+				// AlterTableAddColumns inner column loop had no break;
+				// LAST violating column in the grouped form overwrites
+				// and is reported (asymmetric vs CreateTableStmt which
+				// DOES break — first-wins). Track lastViolation across
+				// the inner loop, emit once after — mirrors cumulative
+				// #15's "preserve pingcap single-advice-per-stmt
+				// cardinality with last-wins semantics" prescription
+				// on the AlterTable ADD COLUMN call-site.
+				var lastCol *ast.ColumnDef
+				var lastLen int
 				for _, column := range addColumnTargets(cmd) {
 					if column == nil {
 						continue
 					}
 					if charLength := omniCharLength(column.TypeName); charLength > maximum {
-						return buildCharLengthAdvice(level, title, tableName, column.Name, charLength, maximum, stmtLine)
+						lastCol = column
+						lastLen = charLength
 					}
+				}
+				if lastCol != nil {
+					return buildCharLengthAdvice(level, title, tableName, lastCol.Name, lastLen, maximum, stmtLine)
 				}
 			case ast.ATChangeColumn, ast.ATModifyColumn:
 				if cmd.Column == nil {

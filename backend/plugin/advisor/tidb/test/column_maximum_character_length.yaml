@@ -81,3 +81,22 @@
         line: 1
         column: 0
       endposition: null
+# Cumulative #23 pin (batch 14, batch-13 follow-up): pingcap-tidb's
+# pre-omni AlterTableAddColumns inner column loop had NO break — the
+# LAST violating column in the grouped ADD COLUMN form overwrites and
+# is reported. Asymmetric vs CreateTableStmt which DID break (first-
+# wins). Initial batch-13 migration regressed to first-wins via early
+# return; restored via lastViolation tracker. Same shape as cumulative
+# #15 (charset_allowlist set-then-append cardinality) applied to a
+# different call-site within the same advisor file.
+- statement: ALTER TABLE tech_book ADD COLUMN (a char(225), b char(226))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `b` is 226, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
