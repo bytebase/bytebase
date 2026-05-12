@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import type { Language, SQLDialect } from "@/types";
 import { UNKNOWN_ID } from "@/types";
@@ -18,6 +19,7 @@ import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
+  formatAbsoluteDateTime,
 } from "@/utils";
 import { batchConvertPositionToMonacoPosition } from "@/utils/v1/position";
 import {
@@ -556,6 +558,40 @@ export function MonacoEditor({
   }, [autoCompleteContext, readOnly, ready]);
 
   const height = clampMeasuredHeight(contentHeight);
+  let connectionStateText = t(
+    "sql-editor.web-socket.connection-status.disconnected"
+  );
+  if (connection.state === "ready") {
+    connectionStateText = t(
+      "sql-editor.web-socket.connection-status.connected"
+    );
+  } else if (
+    connection.state === "initial" ||
+    connection.state === "reconnecting"
+  ) {
+    connectionStateText = t(
+      "sql-editor.web-socket.connection-status.connecting"
+    );
+  }
+  const connectionHeartbeatText =
+    connection.state === "ready" && connection.heartbeat.timestamp
+      ? t("sql-editor.web-socket.connection-status.last-heartbeat", {
+          time: formatAbsoluteDateTime(connection.heartbeat.timestamp),
+        })
+      : "";
+  const connectionStatusTooltip = (
+    <div className="flex flex-col gap-1">
+      <div className="inline-flex gap-1">
+        <span>{t("sql-editor.web-socket.connection-status.title")}</span>
+        <span>{connectionStateText}</span>
+      </div>
+      {connectionHeartbeatText && (
+        <div className="text-xs text-control-placeholder">
+          {connectionHeartbeatText}
+        </div>
+      )}
+    </div>
+  );
 
   if (initFailed) {
     return (
@@ -602,20 +638,22 @@ export function MonacoEditor({
       )}
       <div className="absolute right-[18px] top-[3px] z-30 flex items-center justify-end gap-1">
         {cornerPrefix}
-        {ready && !readOnly && (
-          <div className="flex h-4 w-4 cursor-default items-center justify-center opacity-60">
-            <div
-              className={cn(
-                "h-3 w-3 rounded-full",
-                connection.state === "ready"
-                  ? "bg-success"
-                  : connection.state === "initial" ||
-                      connection.state === "reconnecting"
-                    ? "bg-warning"
-                    : "bg-control-placeholder"
-              )}
-            />
-          </div>
+        {ready && !readOnly && shouldEnableLSP && (
+          <Tooltip content={connectionStatusTooltip} side="bottom">
+            <div className="flex h-4 w-4 cursor-pointer items-center justify-center opacity-60 transition-all hover:opacity-100">
+              <div
+                className={cn(
+                  "h-3 w-3 rounded-full",
+                  connection.state === "ready"
+                    ? "bg-success"
+                    : connection.state === "initial" ||
+                        connection.state === "reconnecting"
+                      ? "bg-warning"
+                      : "bg-control-placeholder"
+                )}
+              />
+            </div>
+          </Tooltip>
         )}
         {cornerSuffix}
       </div>

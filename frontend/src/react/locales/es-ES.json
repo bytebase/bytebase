@@ -2822,6 +2822,13 @@
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
     "web-socket": {
+      "connection-status": {
+        "connected": "conectado",
+        "connecting": "conectando",
+        "disconnected": "desconectado",
+        "last-heartbeat": "Último heartbeat a las {{time}}",
+        "title": "Servidor de lenguaje"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",

@@ -2822,6 +2822,13 @@
     "view-schema-text": "テキストの表示 スキーマ",
     "visualize-explain": "視覚化の説明",
     "web-socket": {
+      "connection-status": {
+        "connected": "接続済み",
+        "connecting": "接続中",
+        "disconnected": "切断済み",
+        "last-heartbeat": "最終ハートビート {{time}}",
+        "title": "言語サーバー"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",

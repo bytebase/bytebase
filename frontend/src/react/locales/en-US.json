@@ -2834,6 +2834,13 @@
     "view-schema-text": "View schema text",
     "visualize-explain": "Visualize Explain",
     "web-socket": {
+      "connection-status": {
+        "connected": "connected",
+        "connecting": "connecting",
+        "disconnected": "disconnected",
+        "last-heartbeat": "Last heartbeat at {{time}}",
+        "title": "Language server"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",

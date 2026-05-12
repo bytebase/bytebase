@@ -2822,6 +2822,13 @@
     "view-schema-text": "查看文本 Schema",
     "visualize-explain": "可视化 Explain",
     "web-socket": {
+      "connection-status": {
+        "connected": "已连接",
+        "connecting": "连接中",
+        "disconnected": "已断开",
+        "last-heartbeat": "上次心跳时间 {{time}}",
+        "title": "语言服务器"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
