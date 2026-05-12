@@ -151,7 +151,7 @@ export function PreviewPane({ db, database, schema, table }: Props) {
       </button>
       {expanded && (
         <div
-          className="relative overflow-hidden"
+          className="relative overflow-y-auto"
           style={{ height: `${height}px` }}
         >
           {pending && (
