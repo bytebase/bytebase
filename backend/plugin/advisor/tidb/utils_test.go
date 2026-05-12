@@ -430,87 +430,12 @@ func TestOmniCharLength(t *testing.T) {
 	}
 }
 
-// TestOmniIsDDLStmt pins the DDL-type enumeration used by
-// builtin_prior_backup_check's mixed-DDL-and-DML detection.
-// Pingcap-tidb has an `ast.DDLNode` marker interface; omni has no
-// such interface, so we enumerate concrete DDL types. The enumeration
-// mirrors pingcap's DDLNode set (22 types per ast/ddl.go's
-// `_ DDLNode = &XxxStmt{}` declarations as of tidb v8.5.5), restricted
-// to types omni's grammar accepts today (drops 4 Tier-4-deferred:
-// Sequence trio + FlashBackDatabase).
-//
-// Both positive and negative pins are load-bearing — without the
-// negative cases, a future refactor could re-add over-inclusions
-// (e.g., CreateUserStmt) and tests would still pass. Initial batch
-// 19 had this exact mistake (over-enumerated User/Role/Function/
-// Tablespace as DDL when pingcap doesn't); pre-merge peer review
-// caught it, and the negative cases below pin the corrected contract.
-func TestOmniIsDDLStmt(t *testing.T) {
-	cases := []struct {
-		name string
-		node omniast.Node
-		want bool
-	}{
-		// Positive: pingcap DDLNode set (excluding Tier-4-deferred).
-		{"CreateTableStmt", &omniast.CreateTableStmt{}, true},
-		{"AlterTableStmt", &omniast.AlterTableStmt{}, true},
-		{"DropTableStmt", &omniast.DropTableStmt{}, true},
-		{"CreateIndexStmt", &omniast.CreateIndexStmt{}, true},
-		{"DropIndexStmt", &omniast.DropIndexStmt{}, true},
-		{"CreateViewStmt", &omniast.CreateViewStmt{}, true},
-		// Cumulative #30 Codex-fix-1c: DropViewStmt IS DDL (pingcap
-		// parses DROP VIEW under DropTableStmt which is DDL; omni
-		// splits to DropViewStmt — must classify as DDL for parity).
-		{"DropViewStmt (#30 Codex-fix-1c)", &omniast.DropViewStmt{}, true},
-		{"CreateDatabaseStmt", &omniast.CreateDatabaseStmt{}, true},
-		// Cumulative #30 Codex-fix-1c: AlterDatabaseStmt IS DDL via
-		// pingcap's ddlNode struct embedding (peer's compile-time
-		// `_ DDLNode = ...` grep missed embedding-based implementers).
-		{"AlterDatabaseStmt (#30 Codex-fix-1c)", &omniast.AlterDatabaseStmt{}, true},
-		{"DropDatabaseStmt", &omniast.DropDatabaseStmt{}, true},
-		{"TruncateStmt", &omniast.TruncateStmt{}, true},
-		{"RenameTableStmt", &omniast.RenameTableStmt{}, true},
-		{"CreatePlacementPolicyStmt", &omniast.CreatePlacementPolicyStmt{}, true},
-		{"AlterPlacementPolicyStmt", &omniast.AlterPlacementPolicyStmt{}, true},
-		{"DropPlacementPolicyStmt", &omniast.DropPlacementPolicyStmt{}, true},
-		{"CreateResourceGroupStmt", &omniast.CreateResourceGroupStmt{}, true},
-		{"AlterResourceGroupStmt", &omniast.AlterResourceGroupStmt{}, true},
-		{"DropResourceGroupStmt", &omniast.DropResourceGroupStmt{}, true},
-		{"OptimizeTableStmt", &omniast.OptimizeTableStmt{}, true},
-		{"RepairTableStmt", &omniast.RepairTableStmt{}, true},
-
-		// Negative — pingcap-tidb does NOT classify these as DDL.
-		// (Initial batch 19 over-enumerated these as true; pre-merge
-		// peer review caught; pins are load-bearing for that lesson.
-		// DropViewStmt and AlterDatabaseStmt were originally in this
-		// negative list per peer's compile-time grep, but Codex-fix-1c
-		// established they ARE DDL via runtime ddlNode-embedding
-		// verification — moved to positive list above.)
-		{"CreateUserStmt (privilege mgmt, not DDL)", &omniast.CreateUserStmt{}, false},
-		{"DropUserStmt", &omniast.DropUserStmt{}, false},
-		{"AlterUserStmt", &omniast.AlterUserStmt{}, false},
-		{"CreateRoleStmt", &omniast.CreateRoleStmt{}, false},
-		{"DropRoleStmt", &omniast.DropRoleStmt{}, false},
-		{"CreateFunctionStmt (procedural, not DDL)", &omniast.CreateFunctionStmt{}, false},
-		{"CreateTriggerStmt", &omniast.CreateTriggerStmt{}, false},
-		{"CreateEventStmt", &omniast.CreateEventStmt{}, false},
-		{"CreateTablespaceStmt", &omniast.CreateTablespaceStmt{}, false},
-		{"AlterTablespaceStmt", &omniast.AlterTablespaceStmt{}, false},
-		{"DropTablespaceStmt", &omniast.DropTablespaceStmt{}, false},
-		{"CreateServerStmt", &omniast.CreateServerStmt{}, false},
-
-		// Negative: DML and query.
-		{"UpdateStmt (DML)", &omniast.UpdateStmt{}, false},
-		{"DeleteStmt (DML)", &omniast.DeleteStmt{}, false},
-		{"InsertStmt (DML)", &omniast.InsertStmt{}, false},
-		{"SelectStmt (query)", &omniast.SelectStmt{}, false},
-
-		// Negative: nil.
-		{"nil", nil, false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniIsDDLStmt(tc.node))
-		})
-	}
-}
+// TestOmniIsDDLStmt was REMOVED in cumulative #30 Codex-fix-1f:
+// the omniIsDDLStmt helper itself was removed when DDL detection
+// switched to pingcap's authoritative DDLNode interface via the
+// `getTiDBNodes` path. The omni-only enumeration was brittle (4
+// rounds of corrections across Codex-fix-1c/1d/1e) and fundamentally
+// gap-prone for Tier-4-deferred grammar (Sequence, FlashBackDatabase)
+// that omni's parser rejects but pingcap classifies as DDL. The
+// switch eliminates the enumeration. End-to-end coverage of the
+// DDL-detection path is now in TestTiDBPriorBackupCheckAdvisor.

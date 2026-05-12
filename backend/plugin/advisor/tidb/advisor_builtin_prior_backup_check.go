@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
+	pingcapast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -85,12 +86,46 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
+	// Cumulative #30 Codex-fix-1f: DDL detection MUST go through
+	// pingcap (`getTiDBNodes`), not omni (`getTiDBOmniNodes`).
+	// Reason: invariant #2 soft-fail at the omni wrapper silently
+	// drops Tier-4-deferred grammar (Sequence trio, FlashBackDatabase,
+	// FlashBackTable). For a safety gate, that's a real regression —
+	// pingcap's full DDLNode interface catches all 22 implementers
+	// via `ddlNode` struct embedding. The omni path is still used
+	// below for per-table DML-mixing detection (where omni AST shape
+	// is required); DDL detection sidesteps omni's grammar gaps via
+	// the pingcap-bridge path.
+	//
+	// Architectural note: this dual-path approach mirrors mysql's
+	// analog (mysqlparser.ExtractTables + isOmniDDL). Eight rounds
+	// of Codex catches on omni-only DDL enumeration (cumulative #30
+	// Codex-fix-1c through 1e) demonstrated the brittle-enumeration
+	// pattern; switching DDL detection to pingcap's authoritative
+	// DDLNode interface eliminates the enumeration entirely.
+	pingcapStmts, err := getTiDBNodes(checkCtx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range pingcapStmts {
+		if _, isDDL := p.(pingcapast.DDLNode); isDDL {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: common.ConvertANTLRLineToPosition(p.OriginTextPosition()),
+			})
+		}
+	}
+
 	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Mixed DDL + DML detection. Collect DML-by-table along the way.
+	// 2. Per-table DML mixing detection (omni path — needs full
+	// AST-shape access for SET-clause analysis).
 	// Cumulative #30 Codex-fix-2 (revised): resolve unqualified table
 	// references to a default database at EXTRACTION time, so the
 	// priorBackupTable.database field is always populated. This makes
@@ -115,15 +150,6 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	for _, ostmt := range stmts {
 		node := ostmt.Node
-		if omniIsDDLStmt(node) {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Title:         title,
-				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:          code.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
-			})
-		}
 		switch n := node.(type) {
 		case *ast.UpdateStmt:
 			// Cumulative #30 Codex-fix-1: derive UPDATE mutation
@@ -503,27 +529,11 @@ func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackup
 // the verified correct list. Unit tests in utils_test.go pin both
 // positive (DDL types that MUST return true) and negative (DML +
 // non-DDL utility types that must NOT) cases.
-// Cumulative #30 Codex-fix-1c: DropViewStmt + AlterDatabaseStmt are
-// DDL in pingcap. Initial port excluded both per peer's compile-time
-// `_ DDLNode = ...` grep, which missed the `ddlNode` struct embedding
-// at ast/base.go:81-88. Empirical: parsing `DROP VIEW v` yields
-// *ast.DropTableStmt in pingcap (already in our list) but
-// *ast.DropViewStmt in omni — excluding the latter was the real
-// regression. AlterDatabaseStmt empirically isDDLNode=true via the
-// embedding. Both added.
-func omniIsDDLStmt(node ast.Node) bool {
-	switch node.(type) {
-	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropTableStmt,
-		*ast.CreateIndexStmt, *ast.DropIndexStmt,
-		*ast.CreateViewStmt, *ast.DropViewStmt,
-		*ast.CreateDatabaseStmt, *ast.AlterDatabaseStmt, *ast.DropDatabaseStmt,
-		*ast.TruncateStmt, // pingcap calls it TruncateTableStmt
-		*ast.RenameTableStmt,
-		*ast.CreatePlacementPolicyStmt, *ast.AlterPlacementPolicyStmt, *ast.DropPlacementPolicyStmt,
-		*ast.CreateResourceGroupStmt, *ast.AlterResourceGroupStmt, *ast.DropResourceGroupStmt,
-		*ast.OptimizeTableStmt, *ast.RepairTableStmt:
-		return true
-	default:
-		return false
-	}
-}
+// Note: omniIsDDLStmt previously enumerated omni's DDL types for
+// the advisor's DDL detection step. Removed in Codex-fix-1f after
+// eight rounds of enumeration corrections (cumulative #30 Codex-
+// fix-1c/1d/1e) revealed the omni-only path's fundamental gap with
+// pingcap's broader DDLNode interface (Tier-4-deferred grammar like
+// Sequence/FlashBack). DDL detection now uses pingcap's DDLNode
+// directly via the `getTiDBNodes` path; no per-type omni enumeration
+// to maintain. Lesson preserved in plan-doc cumulative #30.

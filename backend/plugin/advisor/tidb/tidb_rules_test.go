@@ -269,6 +269,40 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			},
 		},
 		{
+			// Cumulative #30 Codex-fix-1f: Tier-4-deferred DDL
+			// (CREATE/ALTER/DROP SEQUENCE) is omni-rejected at
+			// parse time. Pre-fix-1f used omniIsDDLStmt on
+			// omni-parsed stmts → soft-fail skipped the SEQUENCE
+			// stmt → DDL detection missed → no mixed-DDL advice
+			// despite the DML+DDL mixing. Post-fix-1f: DDL
+			// detection uses pingcap's DDLNode interface via
+			// `getTiDBNodes` → pingcap parses CreateSequenceStmt
+			// successfully → DDL detected → advice fires.
+			name:            "CREATE SEQUENCE + UPDATE fires mixed DDL+DML via pingcap path (Codex-fix-1f)",
+			statement:       "CREATE SEQUENCE seq1 START 1 INCREMENT BY 1;\nUPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DDL and DML",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-1f: FLASHBACK family is
+			// Tier-4-deferred grammar in omni. Pingcap handles
+			// FLASHBACK TABLE / FLASHBACK DATABASE as DDL via
+			// the DDLNode interface. Post-fix-1f: pingcap path
+			// catches it; pre-fix-1f silently skipped.
+			//
+			// Note: pingcap classifies FLASHBACK TABLE / DATABASE
+			// as DDL via ddlNode struct embedding. Verified by
+			// parse-test in batch 19 reshape investigation.
+			name:            "FLASHBACK TABLE + DELETE fires mixed DDL+DML via pingcap path (Codex-fix-1f)",
+			statement:       "FLASHBACK TABLE tech_book TO tech_book_old;\nDELETE FROM orders WHERE order_id = 5;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DDL and DML",
+			},
+		},
+		{
 			// Cumulative #30 Codex-fix-1e: schema-aware column
 			// resolution for unqualified SET in multi-table UPDATE.
 			// `UPDATE tech_book JOIN orders SET customer_name = 'x'`
