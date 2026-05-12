@@ -28,6 +28,27 @@ export interface ResultGroup {
   results: PlanCheckRun_Result[];
 }
 
+export const getPlanCheckSummaryWithFallback = (
+  planCheckRuns: PlanCheckRun[],
+  statusCount: Record<string, number> | undefined
+): PlanCheckSummary => {
+  if (planCheckRuns.length > 0) return getPlanCheckSummary(planCheckRuns);
+  const counts = statusCount ?? {};
+  const running = counts[PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]] || 0;
+  const success = counts[Advice_Level[Advice_Level.SUCCESS]] || 0;
+  const warning = counts[Advice_Level[Advice_Level.WARNING]] || 0;
+  const error =
+    (counts[Advice_Level[Advice_Level.ERROR]] || 0) +
+    (counts[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0);
+  return {
+    error,
+    running,
+    success,
+    total: running + success + warning + error,
+    warning,
+  };
+};
+
 export const getPlanCheckSummary = (
   planCheckRuns: PlanCheckRun[]
 ): PlanCheckSummary => {
