@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
 
@@ -109,10 +110,19 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		}
 		switch n := node.(type) {
 		case *ast.UpdateStmt:
-			for _, t := range omniExtractDMLTables(n.Tables) {
+			// Cumulative #30 Codex-fix-1: derive UPDATE mutation
+			// targets from SET-clause LHS qualifiers, NOT from the
+			// full Tables list (which includes JOIN-only read-only
+			// tables). For `UPDATE t1 JOIN t2 ON ... SET t1.col = ...`
+			// the mutation target is t1; t2 must NOT be tagged.
+			aliasMap := omniBuildTableAliasMap(n.Tables)
+			for _, t := range omniExtractUpdateTargets(n.SetList, aliasMap) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "UPDATE"})
 			}
 		case *ast.DeleteStmt:
+			// DELETE's Tables field IS the mutation target set (per
+			// omni parsenodes.go:123); Using[] is the filter-only
+			// joins. Use Tables directly.
 			for _, t := range omniExtractDMLTables(n.Tables) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "DELETE"})
 			}
@@ -141,7 +151,19 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 	groups := make(map[string]*tableTypes)
 	for _, ref := range dmlRefs {
-		key := fmt.Sprintf("%s.%s", ref.table.database, ref.table.table)
+		// Cumulative #30 Codex-fix-2: canonicalize key so equivalent
+		// references (qualified vs unqualified; mixed casing) group
+		// into the same bucket. Empty database → CurrentDatabase
+		// fallback; both segments lowercased for case-insensitivity.
+		// Without this, `UPDATE tech_book ...; DELETE FROM
+		// db.tech_book ...` splits into `.tech_book` vs
+		// `db.tech_book` buckets and misses the mixing — false-
+		// negative on a safety gate.
+		db := ref.table.database
+		if db == "" {
+			db = checkCtx.CurrentDatabase
+		}
+		key := fmt.Sprintf("%s.%s", strings.ToLower(db), strings.ToLower(ref.table.table))
 		g := groups[key]
 		if g == nil {
 			g = &tableTypes{seen: make(map[string]bool)}
@@ -220,6 +242,95 @@ func omniExtractTableExprRefs(t ast.TableExpr) []priorBackupTable {
 	default:
 		return nil
 	}
+}
+
+// omniBuildTableAliasMap walks an UpdateStmt's Tables slice and
+// builds an alias→base-table lookup map. Each TableRef contributes
+// two entries: one keyed by its alias (if present) and one keyed by
+// its bare name (so unaliased references also resolve). JoinClause
+// recurses into Left+Right. SubqueryExpr contributes nothing —
+// derived tables aren't base-table candidates (cumulative #26).
+//
+// Used by omniExtractUpdateTargets to resolve SET-clause column
+// qualifiers back to base tables — the cumulative #30 Codex-fix-1
+// SET-clause-target-extraction discipline. Pre-fix, `n.Tables` was
+// used directly, false-positiving on JOIN-only read-only tables in
+// statements like `UPDATE t1 JOIN t2 SET t1.col = ...`.
+func omniBuildTableAliasMap(tables []ast.TableExpr) map[string]priorBackupTable {
+	m := make(map[string]priorBackupTable)
+	for _, t := range tables {
+		omniCollectTableAliases(t, m)
+	}
+	return m
+}
+
+func omniCollectTableAliases(t ast.TableExpr, m map[string]priorBackupTable) {
+	if t == nil {
+		return
+	}
+	switch n := t.(type) {
+	case *ast.TableRef:
+		base := priorBackupTable{database: n.Schema, table: n.Name}
+		// Alias takes precedence in lookup; also register the bare
+		// name for unqualified references in single-table updates.
+		if n.Alias != "" {
+			m[strings.ToLower(n.Alias)] = base
+		}
+		m[strings.ToLower(n.Name)] = base
+	case *ast.JoinClause:
+		omniCollectTableAliases(n.Left, m)
+		omniCollectTableAliases(n.Right, m)
+	case *ast.SubqueryExpr:
+		// Derived table — not a base-table candidate for backup
+		// type-mixing detection.
+	default:
+	}
+}
+
+// omniExtractUpdateTargets walks an UpdateStmt's SetList and returns
+// the distinct base-table references that are actual mutation
+// targets. Resolves column qualifiers against the alias map:
+//   - Qualified `t.col = ...` or `alias.col = ...`: look up the
+//     qualifier in aliasMap → base table.
+//   - Unqualified `col = ...`: if aliasMap has exactly one entry
+//     (single-target UPDATE), use it. Otherwise the assignment is
+//     ambiguous without schema info — skip (per cumulative #30
+//     fix-1 rationale: false-negative is preferable to false-
+//     positive at this boundary; multi-target UPDATE with unqualified
+//     SET is rare in practice and would be ambiguous-by-design).
+//
+// Returns deduplicated targets in input order; duplicates from
+// multiple assignments on the same table are collapsed.
+func omniExtractUpdateTargets(setList []*ast.Assignment, aliasMap map[string]priorBackupTable) []priorBackupTable {
+	var result []priorBackupTable
+	seen := make(map[string]bool)
+	add := func(t priorBackupTable) {
+		key := strings.ToLower(t.database) + "." + strings.ToLower(t.table)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		result = append(result, t)
+	}
+	for _, a := range setList {
+		if a == nil || a.Column == nil {
+			continue
+		}
+		qualifier := a.Column.Table
+		if qualifier == "" {
+			// Unqualified: only safe to attribute when single-target.
+			if len(aliasMap) == 1 {
+				for _, t := range aliasMap {
+					add(t)
+				}
+			}
+			continue
+		}
+		if base, ok := aliasMap[strings.ToLower(qualifier)]; ok {
+			add(base)
+		}
+	}
+	return result
 }
 
 // omniIsDDLStmt reports whether the given statement node is a DDL

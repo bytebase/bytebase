@@ -152,6 +152,36 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"for backup",
 			},
 		},
+		{
+			// Cumulative #30 Codex-fix-1: UPDATE JOIN should NOT
+			// false-positive on the joined-only read table.
+			// `UPDATE t1 JOIN t2 ON ... SET t1.col=...` mutates t1
+			// only; t2 is read-only. Following DELETE FROM t2 is
+			// pure DELETE — no mixing on either table. Pre-fix code
+			// tagged BOTH t1 and t2 as UPDATE targets, then matched
+			// t2's UPDATE+DELETE → false-positive. Post-fix:
+			// SET-clause-based target extraction → only t1 tagged
+			// for UPDATE → no mixing.
+			name:            "UPDATE-JOIN + DELETE-on-joined-table — no false-positive (Codex-fix-1)",
+			statement:       "UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET tech_book.name = 'x';\nDELETE FROM orders WHERE order_id = 5;",
+			backupDBPresent: true,
+			wantNoneSubstr: []string{
+				"mixed DML statements",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-2: case-insensitive grouping.
+			// `UPDATE tech_book ...; DELETE FROM Tech_Book ...`
+			// references the same logical table with different
+			// casing; pre-fix code split into two buckets and missed
+			// the mixing. Post-fix: lowercased grouping key.
+			name:            "case-insensitive grouping — Tech_Book ≡ tech_book (Codex-fix-2)",
+			statement:       "UPDATE tech_book SET id = 1 WHERE id = 2;\nDELETE FROM Tech_Book WHERE id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+			},
+		},
 	}
 
 	for _, tc := range cases {
