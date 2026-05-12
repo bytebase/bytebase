@@ -26,9 +26,9 @@ import { pushNotification } from "@/store";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { isApprovalCompleted } from "../../issue-detail/utils/approval";
 import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { getPlanCheckSummary } from "../utils/phaseSummary";
 
 export function PlanDetailDeployFuture() {
   const { t } = useTranslation();
@@ -37,17 +37,13 @@ export function PlanDetailDeployFuture() {
   const [rolloutConfirmOpen, setRolloutConfirmOpen] = useState(false);
   const [bypassWarnings, setBypassWarnings] = useState(false);
 
-  const planChecksFailed = useMemo(() => {
-    const counts = page.plan.planCheckRunStatusCount ?? {};
-    return (
-      (counts[Advice_Level[Advice_Level.ERROR]] ?? 0) > 0 ||
-      (counts.FAILED ?? 0) > 0
-    );
-  }, [page.plan.planCheckRunStatusCount]);
-  const planChecksRunning = useMemo(() => {
-    const counts = page.plan.planCheckRunStatusCount ?? {};
-    return (counts.RUNNING ?? 0) > 0;
-  }, [page.plan.planCheckRunStatusCount]);
+  const planCheckSummary = useMemo(
+    () => getPlanCheckSummary(page.plan),
+    [page.plan]
+  );
+  const planChecksFailed = planCheckSummary.error > 0;
+  const planChecksRunning = planCheckSummary.running > 0;
+  const hasAnyPlanCheckRun = planCheckSummary.total > 0;
   const issueApproved = isApprovalCompleted(page.issue);
   const canCreateRollout = Boolean(
     page.issue &&
@@ -164,120 +160,135 @@ export function PlanDetailDeployFuture() {
     }
   };
 
-  const requirementItems = [
-    page.projectRequirePlanCheckNoError
-      ? planChecksRunning
-        ? {
-            key: "checks",
-            label: t("plan.phase.deploy-checks-must-pass"),
-            description: t("plan.phase.deploy-checks-running"),
-            tagLabel: t("common.in-progress"),
-            statusClass: "text-warning",
-            icon: Clock3,
-            iconClass: "text-warning/80",
-            required: true,
-          }
-        : planChecksFailed
-          ? {
-              key: "checks",
-              label: t("plan.phase.deploy-checks-must-pass"),
-              description: t("plan.phase.deploy-checks-blocked"),
-              tagLabel: t("common.failed"),
-              statusClass: "text-error",
-              icon: CircleAlert,
-              iconClass: "text-error/80",
-              required: true,
-            }
-          : {
-              key: "checks",
-              label: t("plan.phase.deploy-checks-must-pass"),
-              description: t("plan.phase.deploy-checks-ready"),
-              tagLabel: t("common.done"),
-              statusClass: "text-success",
-              icon: CheckCircle2,
-              iconClass: "text-success/80",
-              required: true,
-            }
-      : {
-          key: "checks",
-          label: t("plan.phase.deploy-checks-must-pass"),
-          description: t("plan.phase.deploy-checks-optional"),
-          tagLabel: t("common.optional"),
-          statusClass: "text-control-placeholder",
-          icon: MinusCircle,
-          iconClass: "text-control-placeholder",
-          required: false,
-        },
-    page.projectRequireIssueApproval
-      ? issueApproved
-        ? {
-            key: "approval",
-            label: t("plan.phase.deploy-approval-must-complete"),
-            description: t("plan.phase.deploy-approval-ready"),
-            tagLabel: t("common.done"),
-            statusClass: "text-success",
-            icon: CheckCircle2,
-            iconClass: "text-success/80",
-            required: true,
-          }
-        : {
-            key: "approval",
-            label: t("plan.phase.deploy-approval-must-complete"),
-            description: t("plan.phase.deploy-approval-pending"),
-            tagLabel: t("common.pending"),
-            statusClass: "text-warning",
-            icon: Clock3,
-            iconClass: "text-warning/80",
-            required: true,
-          }
-      : {
-          key: "approval",
-          label: t("plan.phase.deploy-approval-must-complete"),
-          description: t("plan.phase.deploy-approval-optional"),
-          tagLabel: t("common.optional"),
-          statusClass: "text-control-placeholder",
-          icon: MinusCircle,
-          iconClass: "text-control-placeholder",
-          required: false,
-        },
-  ];
+  const statePresets = useMemo(
+    () => ({
+      done: {
+        icon: CheckCircle2,
+        iconClass: "text-success/80",
+        statusClass: "text-success",
+        tagLabel: t("common.done"),
+      },
+      failed: {
+        icon: CircleAlert,
+        iconClass: "text-error/80",
+        statusClass: "text-error",
+        tagLabel: t("common.failed"),
+      },
+      running: {
+        icon: Clock3,
+        iconClass: "text-warning/80",
+        statusClass: "text-warning",
+        tagLabel: t("common.in-progress"),
+      },
+      pending: {
+        icon: Clock3,
+        iconClass: "text-warning/80",
+        statusClass: "text-warning",
+        tagLabel: t("common.pending"),
+      },
+      optional: {
+        icon: MinusCircle,
+        iconClass: "text-control-placeholder",
+        statusClass: "text-control-placeholder",
+        tagLabel: t("common.optional"),
+      },
+    }),
+    [t]
+  );
+  const checksItem = useMemo(() => {
+    const base = {
+      key: "checks",
+      label: t("plan.phase.deploy-checks-must-pass"),
+    };
+    if (planChecksRunning) {
+      return {
+        ...base,
+        ...statePresets.running,
+        description: t("plan.phase.deploy-checks-running"),
+      };
+    }
+    if (planChecksFailed) {
+      return {
+        ...base,
+        ...statePresets.failed,
+        description: t("plan.phase.deploy-checks-blocked"),
+      };
+    }
+    if (hasAnyPlanCheckRun || page.projectRequirePlanCheckNoError) {
+      return {
+        ...base,
+        ...statePresets.done,
+        description: t("plan.phase.deploy-checks-ready"),
+      };
+    }
+    return {
+      ...base,
+      ...statePresets.optional,
+      description: t("plan.phase.deploy-checks-optional"),
+    };
+  }, [
+    t,
+    statePresets,
+    planChecksRunning,
+    planChecksFailed,
+    hasAnyPlanCheckRun,
+    page.projectRequirePlanCheckNoError,
+  ]);
+  const approvalItem = useMemo(() => {
+    const base = {
+      key: "approval",
+      label: t("plan.phase.deploy-approval-must-complete"),
+    };
+    if (issueApproved) {
+      return {
+        ...base,
+        ...statePresets.done,
+        description: t("plan.phase.deploy-approval-ready"),
+      };
+    }
+    if (page.projectRequireIssueApproval) {
+      return {
+        ...base,
+        ...statePresets.pending,
+        description: t("plan.phase.deploy-approval-pending"),
+      };
+    }
+    return {
+      ...base,
+      ...statePresets.optional,
+      description: t("plan.phase.deploy-approval-optional"),
+    };
+  }, [t, statePresets, issueApproved, page.projectRequireIssueApproval]);
+  const requirementItems = [checksItem, approvalItem];
 
   return (
-    <div className="mt-1.5">
+    <div className="mt-1.5 flex flex-col gap-y-3">
       <p className="text-sm text-control-placeholder">
         {t("plan.phase.deploy-description")}
       </p>
 
       {page.issue && (
-        <ul className="mt-2.5 max-w-[28rem] space-y-1">
+        <ul className="flex max-w-[28rem] flex-col gap-y-1">
           {requirementItems.map((item) => {
             const Icon = item.icon;
             return (
-              <li key={item.key} className="flex items-start gap-2 py-1">
-                <div className="flex min-w-0 items-start gap-2">
-                  <Icon
-                    className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${item.iconClass}`}
-                  />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-xs font-medium text-control">
-                        {item.label}
-                      </span>
-                      {item.required && (
-                        <span className="text-[10px] font-medium text-error/80">
-                          *
-                        </span>
-                      )}
-                      <span
-                        className={`text-[11px] font-medium ${item.statusClass}`}
-                      >
-                        {item.tagLabel}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-control-placeholder">
-                      {item.description}
-                    </p>
+              <li
+                key={item.key}
+                className="flex min-w-0 items-start gap-x-2 py-1"
+              >
+                <Icon className={`mt-0.5 size-4 shrink-0 ${item.iconClass}`} />
+                <div className="flex min-w-0 flex-col gap-y-0.5">
+                  <div className="flex flex-wrap items-center gap-x-2">
+                    <span className="text-sm font-medium text-control">
+                      {item.label}
+                    </span>
+                    <span className={`text-sm ${item.statusClass}`}>
+                      {item.tagLabel}
+                    </span>
                   </div>
+                  <p className="text-xs text-control-placeholder">
+                    {item.description}
+                  </p>
                 </div>
               </li>
             );
@@ -286,16 +297,14 @@ export function PlanDetailDeployFuture() {
       )}
 
       {showManualCreateRolloutHint && (
-        <div className="mt-3 flex max-w-[28rem] flex-col items-start gap-y-2">
-          <p className="text-xs text-control-placeholder">
+        <div className="flex flex-col items-start gap-y-2 border-t border-control-border pt-3">
+          <p className="text-sm text-control-light">
             {manualCreateRolloutDescription}
           </p>
           {canCreateRollout && (
             <Button
               disabled={creatingRollout}
               onClick={() => setRolloutConfirmOpen(true)}
-              size="sm"
-              variant="outline"
             >
               {t("plan.phase.create-rollout-action")}
             </Button>
