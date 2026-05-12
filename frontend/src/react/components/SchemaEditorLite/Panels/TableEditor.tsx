@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { SegmentedControl } from "@/react/components/ui/segmented-control";
 import type {
   Database,
   DatabaseMetadata,
@@ -93,39 +94,39 @@ export function TableEditor({
     [tableStatus, editStatus, db, schema, table]
   );
 
+  const modeOptions = useMemo(() => {
+    const items: { value: EditorMode; label: string }[] = [
+      { value: "COLUMNS", label: t("schema-editor.columns") },
+    ];
+    if (showIndexes) {
+      items.push({ value: "INDEXES", label: t("schema-editor.indexes") });
+    }
+    if (showPartitions) {
+      items.push({
+        value: "PARTITIONS",
+        label: t("schema-editor.partitions"),
+      });
+    }
+    return items;
+  }, [showIndexes, showPartitions, t]);
+
   return (
     <div className="flex size-full flex-col gap-y-2 overflow-y-hidden pt-2">
       {/* Toolbar */}
       <div className="flex items-center gap-x-2 px-4">
-        <div className="flex items-center gap-x-1">
-          <Button
-            variant={mode === "COLUMNS" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMode("COLUMNS")}
-          >
-            {t("schema-editor.columns")}
-          </Button>
-          {showIndexes && (
-            <Button
-              variant={mode === "INDEXES" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setMode("INDEXES")}
-            >
-              {t("schema-editor.indexes")}
-            </Button>
-          )}
-          {showPartitions && (
-            <Button
-              variant={mode === "PARTITIONS" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setMode("PARTITIONS")}
-            >
-              {t("schema-editor.partitions")}
-            </Button>
-          )}
-        </div>
+        <SegmentedControl
+          value={mode}
+          options={modeOptions}
+          onValueChange={setMode}
+          ariaLabel={t("schema-editor.self")}
+        />
         {!readonly && !disableChangeTable && mode === "COLUMNS" && (
-          <Button variant="outline" size="sm" onClick={handleAddColumn}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={handleAddColumn}
+          >
             <Plus className="mr-1 size-4" />
             {t("schema-editor.actions.add-column")}
           </Button>
