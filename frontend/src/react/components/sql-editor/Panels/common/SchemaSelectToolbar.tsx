@@ -49,7 +49,9 @@ export function SchemaSelectToolbar() {
         if (typeof value === "string") setSchema(value);
       }}
     >
-      <SelectTrigger size="sm" className="min-w-32">
+      {/* Use `h-8` to align with the sibling `DatabaseChooser` (also h-8);
+          the default `size="sm"` trigger is `h-7` and looked shorter. */}
+      <SelectTrigger size="sm" className="min-w-32 h-8 shrink-0">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

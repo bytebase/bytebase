@@ -187,18 +187,18 @@ function SchemaPaneInner() {
     return () => cancelAnimationFrame(raf);
   }, [isFetching, metadata, totalTableCount, database, tabStore]);
 
-  // Reactive proxy for `tab.treeState.keys`. Reads via useVueState +
-  // deep watch (Pinia mutates in place); writes go through a thin
-  // setter so the store mutation triggers the watch.
-  const expandedKeys = useVueState<string[]>(
-    () => {
-      const tab = tabStore.currentTab;
-      if (!tab) return [];
-      if (tab.treeState.database !== database.name) return [];
-      return tab.treeState.keys ?? [];
-    },
-    { deep: true }
-  );
+  // Reactive proxy for `tab.treeState.keys`. Writes via `setExpandedKeys`
+  // always REPLACE the whole array (`tab.treeState.keys = keys`), so a
+  // shallow watch on the getter is enough — the getter's read of
+  // `tab.treeState.keys` registers as a dep, and array replacement
+  // triggers the watch. Deep traversal over an array of plain strings
+  // would just add per-element overhead with no extra reactivity.
+  const expandedKeys = useVueState<string[]>(() => {
+    const tab = tabStore.currentTab;
+    if (!tab) return [];
+    if (tab.treeState.database !== database.name) return [];
+    return tab.treeState.keys ?? [];
+  });
 
   const setExpandedKeys = useCallback(
     (keys: string[]) => {
@@ -279,7 +279,6 @@ function SchemaPaneInner() {
   }, [tree, expandedKeySet, searchKeyword]);
 
   // ---- Click discriminator (single vs double) -----------------------------
-  const { events: clickEvents, handleClick } = useClickEvents();
   const { selectAllFromTableOrView } = useSchemaActionsForClick();
 
   const toggleNode = useCallback(
@@ -293,10 +292,8 @@ function SchemaPaneInner() {
     [expandedKeys, removeExpandedKeys, upsertExpandedKeys]
   );
 
-  useEffect(() => {
-    const offSingle = clickEvents.on("single-click", ({ node }) => {
-      // Toggle expand for non-leaf rows. For schema, also push the
-      // selected schema into the tab's connection.
+  const { handleClick } = useClickEvents({
+    onSingleClick: (node) => {
       if (node.meta.type === "schema") {
         const tab = tabStore.currentTab;
         if (tab) {
@@ -306,24 +303,19 @@ function SchemaPaneInner() {
         }
       }
       toggleNode(node);
-    });
-    const offDouble = clickEvents.on("double-click", ({ node }) => {
+    },
+    onDoubleClick: (node) => {
       const type = node.meta.type;
       if (type === "table" || type === "view") {
         void selectAllFromTableOrView(node);
-      } else if (type === "schema" || type === "expandable-text") {
-        toggleNode(node);
       } else {
-        // Leaf nodes: mirror single-click toggle behavior so the tree
-        // state matches what the user expects after a fast double-tap.
+        // schema / expandable-text / leaf nodes: mirror single-click
+        // toggle behavior so the tree state matches what the user
+        // expects after a fast double-tap.
         toggleNode(node);
       }
-    });
-    return () => {
-      offSingle();
-      offDouble();
-    };
-  }, [clickEvents, selectAllFromTableOrView, tabStore, toggleNode]);
+    },
+  });
 
   // ---- Context menu (right-click) -----------------------------------------
   const contextMenuRef = useRef<SchemaContextMenuHandle>(null);
@@ -403,7 +395,16 @@ function SchemaPaneInner() {
   );
 
   return (
-    <div className="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden">
+    <div
+      className="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden"
+      // Fail-safe: hide the hover panel when the cursor leaves the
+      // SchemaPane container entirely (e.g. moves into the main editor
+      // area). Per-row `onMouseLeave` already schedules a hide, but if
+      // the cursor exits through whitespace where no row handler fires
+      // — or crosses through the floating panel itself which keeps
+      // itself alive on hover — the panel can otherwise linger.
+      onMouseLeave={() => hoverState.update(undefined, "after")}
+    >
       <div className="px-1 flex flex-row gap-1">
         <div className="flex-1 overflow-hidden">
           <Input

@@ -8,11 +8,30 @@ import { SelectionActionBar } from "./SelectionActionBar";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}));
+
+function mockMatchMedia(matches: (query: string) => boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: matches(query),
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => true,
+  })) as unknown as typeof window.matchMedia;
+}
+
 describe("SelectionActionBar", () => {
   let container: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
+    // Default to the widest tier so existing tests see all actions inline.
+    mockMatchMedia(() => true);
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -170,24 +189,135 @@ describe("SelectionActionBar", () => {
     expect(btn.className).toContain("text-error");
   });
 
-  test("children render after declarative actions", async () => {
+  test("at lg breakpoint, shows first 5 actions inline and rest in More menu", async () => {
+    mockMatchMedia(() => true);
     await act(async () => {
       root.render(
         <SelectionActionBar
           count={1}
           label="1 selected"
-          allSelected={true}
+          allSelected={false}
           onToggleSelectAll={() => {}}
-          actions={[{ key: "a", label: "InlineAction", onClick: () => {} }]}
-        >
-          <span data-testid="custom-slot">CustomSlot</span>
-        </SelectionActionBar>
+          actions={[
+            { key: "a1", label: "Action1", icon: Archive, onClick: () => {} },
+            { key: "a2", label: "Action2", icon: Archive, onClick: () => {} },
+            { key: "a3", label: "Action3", icon: Archive, onClick: () => {} },
+            { key: "a4", label: "Action4", icon: Archive, onClick: () => {} },
+            { key: "a5", label: "Action5", icon: Archive, onClick: () => {} },
+            { key: "a6", label: "Action6", icon: Archive, onClick: () => {} },
+            { key: "a7", label: "Action7", icon: Archive, onClick: () => {} },
+          ]}
+        />
       );
     });
-    expect(
-      container.querySelector('[data-testid="custom-slot"]')
-    ).not.toBeNull();
-    expect(container.textContent).toContain("CustomSlot");
+    for (const label of [
+      "Action1",
+      "Action2",
+      "Action3",
+      "Action4",
+      "Action5",
+    ]) {
+      expect(container.textContent ?? "").toContain(label);
+    }
+    expect(container.textContent ?? "").not.toContain("Action6");
+    expect(container.textContent ?? "").not.toContain("Action7");
+    const moreButton = container.querySelector("button[aria-label]");
+    expect(moreButton).not.toBeNull();
+  });
+
+  test("at < sm breakpoint, shows only 1 action inline and rest in More menu", async () => {
+    mockMatchMedia(() => false);
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={2}
+          label="2 selected"
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          actions={[
+            {
+              key: "a1",
+              label: "InlineOnly",
+              icon: Archive,
+              onClick: () => {},
+            },
+            { key: "a2", label: "Overflow1", icon: Archive, onClick: () => {} },
+            { key: "a3", label: "Overflow2", icon: Archive, onClick: () => {} },
+          ]}
+        />
+      );
+    });
+    expect(container.textContent ?? "").toContain("InlineOnly");
+    expect(container.textContent ?? "").not.toContain("Overflow1");
+    expect(container.textContent ?? "").not.toContain("Overflow2");
+  });
+
+  test("hidden actions don't count toward maxVisible", async () => {
+    mockMatchMedia(() => false); // < sm → maxVisible = 1
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={1}
+          label="1 selected"
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          actions={[
+            {
+              key: "h",
+              label: "HiddenA",
+              icon: Archive,
+              onClick: () => {},
+              hidden: true,
+            },
+            { key: "v", label: "VisibleA", icon: Archive, onClick: () => {} },
+          ]}
+        />
+      );
+    });
+    expect(container.textContent ?? "").toContain("VisibleA");
+    expect(container.textContent ?? "").not.toContain("HiddenA");
+    const moreButton = container.querySelector("button[aria-label]");
+    expect(moreButton).toBeNull();
+  });
+
+  test("maxVisibleActions override skips the More menu entirely", async () => {
+    mockMatchMedia(() => false);
+    await act(async () => {
+      root.render(
+        <SelectionActionBar
+          count={1}
+          label="1 selected"
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          maxVisibleActions={99}
+          actions={[
+            {
+              key: "a1",
+              label: "ActionAlpha",
+              icon: Archive,
+              onClick: () => {},
+            },
+            {
+              key: "a2",
+              label: "ActionBeta",
+              icon: Archive,
+              onClick: () => {},
+            },
+            {
+              key: "a3",
+              label: "ActionGamma",
+              icon: Archive,
+              onClick: () => {},
+            },
+          ]}
+        />
+      );
+    });
+    expect(container.textContent ?? "").toContain("ActionAlpha");
+    expect(container.textContent ?? "").toContain("ActionBeta");
+    expect(container.textContent ?? "").toContain("ActionGamma");
+    const moreButton = container.querySelector("button[aria-label]");
+    expect(moreButton).toBeNull();
   });
 
   test("disabled action with disabledReason is wrapped in a tooltip-capable element", async () => {

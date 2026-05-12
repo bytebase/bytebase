@@ -22,6 +22,7 @@ import authRoutes, {
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
+  AUTH_PROFILE_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
   OAUTH2_CONSENT_MODULE,
 } from "./auth";
@@ -122,7 +123,8 @@ router.beforeEach((to, from, next) => {
   if (
     authStore.isLoggedIn &&
     (to.name === AUTH_2FA_SETUP_MODULE ||
-      to.name === AUTH_PASSWORD_RESET_MODULE)
+      to.name === AUTH_PASSWORD_RESET_MODULE ||
+      to.name === AUTH_PROFILE_SETUP_MODULE)
   ) {
     next();
     return;

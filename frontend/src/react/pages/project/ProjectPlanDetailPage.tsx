@@ -18,10 +18,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { DeployBranch } from "./plan-detail/components/deploy/DeployBranch";
 import { DeployTaskDetailPanel } from "./plan-detail/components/deploy/DeployTaskDetailPanel";
@@ -169,21 +167,21 @@ export function ProjectPlanDetailPage({
       if (review === "future") return undefined;
       if (
         review === "completed" &&
-        page.issue.approvalStatus === Issue_ApprovalStatus.PENDING
+        page.issue.approvalStatus === ApprovalStatus.PENDING
       ) {
         return { label: t("common.bypassed"), variant: "default" as const };
       }
       switch (page.issue.approvalStatus) {
-        case Issue_ApprovalStatus.APPROVED:
+        case ApprovalStatus.APPROVED:
           return {
             label: t("issue.table.approved"),
             variant: "success" as const,
           };
-        case Issue_ApprovalStatus.SKIPPED:
+        case ApprovalStatus.SKIPPED:
           return { label: t("common.skipped"), variant: "default" as const };
-        case Issue_ApprovalStatus.REJECTED:
+        case ApprovalStatus.REJECTED:
           return { label: t("common.rejected"), variant: "warning" as const };
-        case Issue_ApprovalStatus.PENDING:
+        case ApprovalStatus.PENDING:
           return {
             label: t("common.under-review"),
             variant: "secondary" as const,

@@ -27,7 +27,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/component/telemetry"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -187,11 +186,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if logSetup.EnableDebug {
 		log.LogLevel.Set(slog.LevelDebug)
 	}
-	telemetry.InitGlobalReporter(
-		profile.Version,
-		profile.GitCommit,
-		logSetup.GetEnableMetricCollection(),
-	)
 
 	s.bus, err = bus.New()
 	if err != nil {

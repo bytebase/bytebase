@@ -14,11 +14,9 @@ import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { refreshIssueList, useCurrentUserV1, useIssueV1Store } from "@/store";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
@@ -40,7 +38,7 @@ export function MyIssuesPage() {
         { id: "status", value: IssueStatus[IssueStatus.OPEN] },
         {
           id: "approval",
-          value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+          value: ApprovalStatus[ApprovalStatus.PENDING],
         },
         { id: "current-approver", value: myEmail },
       ],

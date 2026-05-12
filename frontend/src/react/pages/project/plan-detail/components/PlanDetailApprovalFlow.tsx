@@ -32,10 +32,13 @@ import {
   IssueCommentType,
   useIssueCommentStore,
 } from "@/store/modules/v1/issueComment";
-import { RiskLevel, State } from "@/types/proto-es/v1/common_pb";
+import {
+  ApprovalStatus,
+  RiskLevel,
+  State,
+} from "@/types/proto-es/v1/common_pb";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  Issue_ApprovalStatus,
   Issue_Approver_Status,
   ListIssueCommentsRequestSchema,
   RequestIssueRequestSchema,
@@ -122,7 +125,7 @@ function PlanDetailApprovalFlowContent({
     return list.length > 0 ? list : EMPTY_COMMENTS;
   });
   const lastRejection = useMemo(() => {
-    if (!issue || issue.approvalStatus !== Issue_ApprovalStatus.REJECTED) {
+    if (!issue || issue.approvalStatus !== ApprovalStatus.REJECTED) {
       return undefined;
     }
     for (let i = comments.length - 1; i >= 0; i--) {
@@ -159,7 +162,7 @@ function PlanDetailApprovalFlowContent({
     .filter(Boolean)
     .join(" · ");
 
-  if (issue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
+  if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     if (mode === "review") {
       return (
         <div className="flex flex-col">
@@ -193,7 +196,7 @@ function PlanDetailApprovalFlowContent({
   }
 
   if (
-    issue.approvalStatus === Issue_ApprovalStatus.SKIPPED ||
+    issue.approvalStatus === ApprovalStatus.SKIPPED ||
     approvalSteps.length === 0
   ) {
     if (mode === "review") {
@@ -266,18 +269,17 @@ function PlanDetailApprovalFlowContent({
 
   return (
     <div className="flex flex-col">
-      {issue.approvalStatus === Issue_ApprovalStatus.REJECTED &&
-        lastRejection && (
-          <div className="mx-4 mt-3 rounded-sm border border-warning bg-warning/10 px-3 py-2 text-sm text-warning">
-            <div className="font-medium">
-              {t("custom-approval.issue-review.rejected-by")}{" "}
-              {lastRejection.creator}
-            </div>
-            {lastRejection.comment && (
-              <div className="mt-1">{lastRejection.comment}</div>
-            )}
+      {issue.approvalStatus === ApprovalStatus.REJECTED && lastRejection && (
+        <div className="mx-4 mt-3 rounded-sm border border-warning bg-warning/10 px-3 py-2 text-sm text-warning">
+          <div className="font-medium">
+            {t("custom-approval.issue-review.rejected-by")}{" "}
+            {lastRejection.creator}
           </div>
-        )}
+          {lastRejection.comment && (
+            <div className="mt-1">{lastRejection.comment}</div>
+          )}
+        </div>
+      )}
 
       <div className="px-4 py-3">
         <div className="flex w-full flex-row flex-wrap items-center gap-2">
@@ -635,19 +637,19 @@ function getStatusTag(
   if (approvalStepCount === 0) {
     return undefined;
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.APPROVED) {
+  if (issue.approvalStatus === ApprovalStatus.APPROVED) {
     return {
       className: "bg-success/10 text-success",
       label: t("issue.table.approved"),
     };
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.REJECTED) {
+  if (issue.approvalStatus === ApprovalStatus.REJECTED) {
     return {
       className: "bg-warning/10 text-warning",
       label: t("common.rejected"),
     };
   }
-  if (issue.approvalStatus === Issue_ApprovalStatus.PENDING) {
+  if (issue.approvalStatus === ApprovalStatus.PENDING) {
     return {
       className: "bg-accent/10 text-accent",
       label: t("common.under-review"),

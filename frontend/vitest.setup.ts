@@ -1,6 +1,16 @@
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
+// jsdom does not implement ResizeObserver. Components that subscribe to size
+// changes (e.g. EllipsisText) blow up on mount without this shim.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
 // Vitest 4.1's `populateGlobal` does not copy jsdom's `localStorage` /
 // `sessionStorage` onto the test global because Node 22+ already defines
 // them as experimental globals (which resolve to `undefined` unless

@@ -155,22 +155,22 @@
     - [Issue.Status](#bytebase-store-Issue-Status)
     - [Issue.Type](#bytebase-store-Issue-Type)
   
-- [store/issue_comment.proto](#store_issue_comment-proto)
-    - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
-    - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
-    - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
-    - [IssueCommentPayload.PlanSpecUpdate](#bytebase-store-IssueCommentPayload-PlanSpecUpdate)
-  
-- [store/oauth2.proto](#store_oauth2-proto)
-    - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
-    - [OAuth2ClientConfig](#bytebase-store-OAuth2ClientConfig)
-  
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
+  
+- [store/issue_comment.proto](#store_issue_comment-proto)
+    - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
+    - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
+    - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
+    - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
+  
+- [store/oauth2.proto](#store_oauth2-proto)
+    - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
+    - [OAuth2ClientConfig](#bytebase-store-OAuth2ClientConfig)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
@@ -2797,145 +2797,6 @@ Type represents the category of issue.
 
 
 
-<a name="store_issue_comment-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/issue_comment.proto
-
-
-
-<a name="bytebase-store-IssueCommentPayload"></a>
-
-### IssueCommentPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| comment | [string](#string) |  |  |
-| approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
-| issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
-| plan_spec_update | [IssueCommentPayload.PlanSpecUpdate](#bytebase-store-IssueCommentPayload-PlanSpecUpdate) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-Approval"></a>
-
-### IssueCommentPayload.Approval
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-IssueUpdate"></a>
-
-### IssueCommentPayload.IssueUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| from_title | [string](#string) | optional |  |
-| to_title | [string](#string) | optional |  |
-| from_description | [string](#string) | optional |  |
-| to_description | [string](#string) | optional |  |
-| from_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
-| to_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
-| from_labels | [string](#string) | repeated |  |
-| to_labels | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-PlanSpecUpdate"></a>
-
-### IssueCommentPayload.PlanSpecUpdate
-Plan spec update event (tracks sheet changes to plan specs)
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| spec | [string](#string) |  | The spec that was updated Format: projects/{project}/plans/{plan}/specs/{spec} |
-| from_sheet_sha256 | [string](#string) | optional | The SHA256 hash of the previous sheet content (hex-encoded). |
-| to_sheet_sha256 | [string](#string) | optional | The SHA256 hash of the new sheet content (hex-encoded). |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_oauth2-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/oauth2.proto
-
-
-
-<a name="bytebase-store-OAuth2AuthorizationCodeConfig"></a>
-
-### OAuth2AuthorizationCodeConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| redirect_uri | [string](#string) |  |  |
-| code_challenge | [string](#string) |  |  |
-| code_challenge_method | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-OAuth2ClientConfig"></a>
-
-### OAuth2ClientConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| client_name | [string](#string) |  |  |
-| redirect_uris | [string](#string) | repeated |  |
-| grant_types | [string](#string) | repeated |  |
-| token_endpoint_auth_method | [string](#string) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_plan-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3029,6 +2890,147 @@ Plan spec update event (tracks sheet changes to plan specs)
 | create_database_config | [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig) |  |  |
 | change_database_config | [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig) |  |  |
 | export_data_config | [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_issue_comment-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/issue_comment.proto
+
+
+
+<a name="bytebase-store-IssueCommentPayload"></a>
+
+### IssueCommentPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| comment | [string](#string) |  |  |
+| approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
+| issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
+| plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-Approval"></a>
+
+### IssueCommentPayload.Approval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-IssueUpdate"></a>
+
+### IssueCommentPayload.IssueUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from_title | [string](#string) | optional |  |
+| to_title | [string](#string) | optional |  |
+| from_description | [string](#string) | optional |  |
+| to_description | [string](#string) | optional |  |
+| from_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
+| to_status | [Issue.Status](#bytebase-store-Issue-Status) | optional |  |
+| from_labels | [string](#string) | repeated |  |
+| to_labels | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-PlanUpdate"></a>
+
+### IssueCommentPayload.PlanUpdate
+PlanUpdate carries before/after snapshots of plan.config.specs,
+emitted once per PlanService.UpdatePlan call whose specs branch
+produces a non-cosmetic diff. The renderer computes per-spec
+add/remove/update from the snapshot pair.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| from_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+| to_specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_oauth2-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/oauth2.proto
+
+
+
+<a name="bytebase-store-OAuth2AuthorizationCodeConfig"></a>
+
+### OAuth2AuthorizationCodeConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| redirect_uri | [string](#string) |  |  |
+| code_challenge | [string](#string) |  |  |
+| code_challenge_method | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-OAuth2ClientConfig"></a>
+
+### OAuth2ClientConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| client_name | [string](#string) |  |  |
+| redirect_uris | [string](#string) | repeated |  |
+| grant_types | [string](#string) | repeated |  |
+| token_endpoint_auth_method | [string](#string) |  |  |
 
 
 

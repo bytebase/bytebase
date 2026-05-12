@@ -1,10 +1,15 @@
 {
+  "activity.sentence.added-spec": "添加了",
   "activity.sentence.canceled-issue": "closed the issue",
   "activity.sentence.changed-description": "changed description",
   "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
   "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.changed-targets-of": "修改了 targets：",
   "activity.sentence.created-issue": "created issue",
-  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.disabled-prior-backup-on": "禁用了 prior backup",
+  "activity.sentence.enabled-prior-backup-on": "启用了 prior backup",
+  "activity.sentence.modified-sql-of": "修改了 SQL",
+  "activity.sentence.removed-spec": "移除了",
   "activity.sentence.reopened-issue": "reopened issue",
   "activity.sentence.resolved-issue": "将工单标记为已完成",
   "activity.sentence.review-done-rollout-created": "审批完成，已创建发布",
@@ -313,6 +318,7 @@
     "logout": "登出",
     "manage": "管理",
     "manually-select": "Manually select",
+    "maximize": "最大化",
     "members_one": "成员",
     "members_other": "成员",
     "minutes": "分钟",
@@ -321,6 +327,7 @@
     "more": "更多",
     "n-items-selected": "已选 {{n}} 项",
     "n-more": "+{{n}} 更多",
+    "n-selected": "已选择 {{n}} 项",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",
@@ -788,7 +795,6 @@
       "unspecified": "未指定"
     },
     "select": "选择数据库",
-    "selected-n-databases": "已选择 {{n}} 个数据库",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-complete-for-instance": "实例 '{{0}}' 同步完成",
     "sync-database": "同步数据库",
@@ -1686,9 +1692,7 @@
         "title_one": "删除 {{count}} 个项目？",
         "title_other": "删除 {{count}} 个项目？",
         "warning": "此操作无法撤消。包括工单、配置和历史记录在内的所有项目数据将被永久删除。"
-      },
-      "selected_one": "已选择 {{count}} 个项目",
-      "selected_other": "已选择 {{count}} 个项目"
+      }
     },
     "create-modal": {
       "project-name": "项目名称",
@@ -1994,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外键",
       "name": "Name",
+      "name-placeholder": "列名",
       "not-null": "Not Null",
       "on-update": "更新时",
       "operations": "Operations",
@@ -2041,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "选择 schema"
     },
+    "select-object-hint": "从左侧树中选择一个数据库对象进行编辑",
     "self": "Schema 编辑器",
     "table": {
       "duplicate-name": "Table name already exists",
@@ -2142,6 +2148,22 @@
         "branding": "品牌",
         "config-partly-updated": "配置部分更新。",
         "config-updated": "配置已更新。",
+        "danger-zone": {
+          "confirm-description": "此操作将永久删除工作空间「{{workspace}}」及其所有数据，且无法撤销。请输入工作空间名称以确认。",
+          "confirm-title": "删除工作空间？",
+          "delete-failed": "删除工作空间失败。",
+          "delete-workspace": "删除工作空间",
+          "deleted": "工作空间已删除。",
+          "deleting": "删除中...",
+          "description": "删除工作空间后，其中的所有项目、数据库、工单和设置将被永久移除，且无法恢复。",
+          "exit-confirm-description": "您将失去对工作空间「{{workspace}}」的访问权限。需要重新被邀请才能重新加入。",
+          "exit-confirm-title": "退出工作空间？",
+          "exit-description": "离开此工作空间并移除您的访问权限。需要重新被邀请才能重新加入。",
+          "exit-failed": "退出工作空间失败。",
+          "exit-workspace": "退出工作空间",
+          "exited": "您已退出工作空间。",
+          "exiting": "退出中..."
+        },
         "data-copy": "启用复制数据",
         "data-export": "启用数据导出",
         "default-landing-page": {
@@ -2376,6 +2398,8 @@
       "workload-identity-tag-hint": "留空则允许所有标签"
     },
     "profile": {
+      "display-name": "您的姓名",
+      "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
       "password": "密码",
       "password-confirm": "确认密码",
@@ -2385,7 +2409,13 @@
       "phone": "手机号",
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
       "role": "角色",
-      "subscription": "（升级到付费方案来解锁角色管理）"
+      "setup-failed": "更新个人资料失败。",
+      "setup-skip": "稍后再说",
+      "setup-success": "个人资料已更新。",
+      "setup-title": "欢迎！设置您的个人资料",
+      "subscription": "（升级到付费方案来解锁角色管理）",
+      "workspace-name": "工作空间名称",
+      "workspace-name-placeholder": "输入工作空间名称"
     },
     "sensitive-data": {
       "algorithms": {
@@ -2677,6 +2707,7 @@
     "download-as-file": "下载为 {{file}} 格式",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
+    "duration-hour": "{{hours}} 小时",
     "duration-hours": "{{hours}} 小时",
     "execute-query": "执行查询",
     "executing-query": "执行查询",
@@ -3740,10 +3771,8 @@
   "task.affected-rows": "影响行数",
   "task.check-type.affected-rows.description": "根据统计信息估算。",
   "task.check-type.affected-rows.self": "影响行数",
-  "task.check-type.ghost-sync": "gh-ost 同步",
   "task.check-type.sql-review.description": "分析 SQL 语句中的潜在问题并提供建议，包括内置规则和自定义规则。",
   "task.check-type.sql-review.self": "SQL 审核",
-  "task.check-type.summary-report": "摘要报告",
   "task.executed-by": "执行人",
   "task.no-cancelable-tasks": "没有可取消的任务",
   "task.no-runnable-tasks": "没有可运行的任务",

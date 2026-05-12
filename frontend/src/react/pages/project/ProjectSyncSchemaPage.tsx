@@ -2178,7 +2178,7 @@ function TargetDatabasesSelectPanel({
         {/* Footer */}
         <SheetFooter className="justify-between">
           <div className="textinfolabel">
-            {t("database.selected-n-databases", { n: selected.size })}
+            {t("common.n-selected", { n: selected.size })}
           </div>
           <div className="flex items-center justify-end gap-x-2">
             <Button variant="outline" onClick={onClose}>

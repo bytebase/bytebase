@@ -28,7 +28,7 @@ type IssueCommentPayload struct {
 	//
 	//	*IssueCommentPayload_Approval_
 	//	*IssueCommentPayload_IssueUpdate_
-	//	*IssueCommentPayload_PlanSpecUpdate_
+	//	*IssueCommentPayload_PlanUpdate_
 	Event         isIssueCommentPayload_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -96,10 +96,10 @@ func (x *IssueCommentPayload) GetIssueUpdate() *IssueCommentPayload_IssueUpdate 
 	return nil
 }
 
-func (x *IssueCommentPayload) GetPlanSpecUpdate() *IssueCommentPayload_PlanSpecUpdate {
+func (x *IssueCommentPayload) GetPlanUpdate() *IssueCommentPayload_PlanUpdate {
 	if x != nil {
-		if x, ok := x.Event.(*IssueCommentPayload_PlanSpecUpdate_); ok {
-			return x.PlanSpecUpdate
+		if x, ok := x.Event.(*IssueCommentPayload_PlanUpdate_); ok {
+			return x.PlanUpdate
 		}
 	}
 	return nil
@@ -117,15 +117,15 @@ type IssueCommentPayload_IssueUpdate_ struct {
 	IssueUpdate *IssueCommentPayload_IssueUpdate `protobuf:"bytes,3,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
 }
 
-type IssueCommentPayload_PlanSpecUpdate_ struct {
-	PlanSpecUpdate *IssueCommentPayload_PlanSpecUpdate `protobuf:"bytes,7,opt,name=plan_spec_update,json=planSpecUpdate,proto3,oneof"`
+type IssueCommentPayload_PlanUpdate_ struct {
+	PlanUpdate *IssueCommentPayload_PlanUpdate `protobuf:"bytes,7,opt,name=plan_update,json=planUpdate,proto3,oneof"`
 }
 
 func (*IssueCommentPayload_Approval_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_IssueUpdate_) isIssueCommentPayload_Event() {}
 
-func (*IssueCommentPayload_PlanSpecUpdate_) isIssueCommentPayload_Event() {}
+func (*IssueCommentPayload_PlanUpdate_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
@@ -271,34 +271,32 @@ func (x *IssueCommentPayload_IssueUpdate) GetToLabels() []string {
 	return nil
 }
 
-// Plan spec update event (tracks sheet changes to plan specs)
-type IssueCommentPayload_PlanSpecUpdate struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The spec that was updated
-	// Format: projects/{project}/plans/{plan}/specs/{spec}
-	Spec string `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
-	// The SHA256 hash of the previous sheet content (hex-encoded).
-	FromSheetSha256 *string `protobuf:"bytes,2,opt,name=from_sheet_sha256,json=fromSheetSha256,proto3,oneof" json:"from_sheet_sha256,omitempty"`
-	// The SHA256 hash of the new sheet content (hex-encoded).
-	ToSheetSha256 *string `protobuf:"bytes,3,opt,name=to_sheet_sha256,json=toSheetSha256,proto3,oneof" json:"to_sheet_sha256,omitempty"`
+// PlanUpdate carries before/after snapshots of plan.config.specs,
+// emitted once per PlanService.UpdatePlan call whose specs branch
+// produces a non-cosmetic diff. The renderer computes per-spec
+// add/remove/update from the snapshot pair.
+type IssueCommentPayload_PlanUpdate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromSpecs     []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=from_specs,json=fromSpecs,proto3" json:"from_specs,omitempty"`
+	ToSpecs       []*PlanConfig_Spec     `protobuf:"bytes,2,rep,name=to_specs,json=toSpecs,proto3" json:"to_specs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *IssueCommentPayload_PlanSpecUpdate) Reset() {
-	*x = IssueCommentPayload_PlanSpecUpdate{}
+func (x *IssueCommentPayload_PlanUpdate) Reset() {
+	*x = IssueCommentPayload_PlanUpdate{}
 	mi := &file_store_issue_comment_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *IssueCommentPayload_PlanSpecUpdate) String() string {
+func (x *IssueCommentPayload_PlanUpdate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IssueCommentPayload_PlanSpecUpdate) ProtoMessage() {}
+func (*IssueCommentPayload_PlanUpdate) ProtoMessage() {}
 
-func (x *IssueCommentPayload_PlanSpecUpdate) ProtoReflect() protoreflect.Message {
+func (x *IssueCommentPayload_PlanUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_store_issue_comment_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -310,42 +308,36 @@ func (x *IssueCommentPayload_PlanSpecUpdate) ProtoReflect() protoreflect.Message
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IssueCommentPayload_PlanSpecUpdate.ProtoReflect.Descriptor instead.
-func (*IssueCommentPayload_PlanSpecUpdate) Descriptor() ([]byte, []int) {
+// Deprecated: Use IssueCommentPayload_PlanUpdate.ProtoReflect.Descriptor instead.
+func (*IssueCommentPayload_PlanUpdate) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 2}
 }
 
-func (x *IssueCommentPayload_PlanSpecUpdate) GetSpec() string {
+func (x *IssueCommentPayload_PlanUpdate) GetFromSpecs() []*PlanConfig_Spec {
 	if x != nil {
-		return x.Spec
+		return x.FromSpecs
 	}
-	return ""
+	return nil
 }
 
-func (x *IssueCommentPayload_PlanSpecUpdate) GetFromSheetSha256() string {
-	if x != nil && x.FromSheetSha256 != nil {
-		return *x.FromSheetSha256
+func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
+	if x != nil {
+		return x.ToSpecs
 	}
-	return ""
-}
-
-func (x *IssueCommentPayload_PlanSpecUpdate) GetToSheetSha256() string {
-	if x != nil && x.ToSheetSha256 != nil {
-		return *x.ToSheetSha256
-	}
-	return ""
+	return nil
 }
 
 var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\"\x97\b\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xe6\a\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
-	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12^\n" +
-	"\x10plan_spec_update\x18\a \x01(\v22.bytebase.store.IssueCommentPayload.PlanSpecUpdateH\x00R\x0eplanSpecUpdate\x1aX\n" +
+	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12Q\n" +
+	"\vplan_update\x18\a \x01(\v2..bytebase.store.IssueCommentPayload.PlanUpdateH\x00R\n" +
+	"planUpdate\x1aX\n" +
 	"\bApproval\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x1a\xd1\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
@@ -366,13 +358,12 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x0f_to_descriptionB\x0e\n" +
 	"\f_from_statusB\f\n" +
 	"\n" +
-	"_to_status\x1a\xac\x01\n" +
-	"\x0ePlanSpecUpdate\x12\x12\n" +
-	"\x04spec\x18\x01 \x01(\tR\x04spec\x12/\n" +
-	"\x11from_sheet_sha256\x18\x02 \x01(\tH\x00R\x0ffromSheetSha256\x88\x01\x01\x12+\n" +
-	"\x0fto_sheet_sha256\x18\x03 \x01(\tH\x01R\rtoSheetSha256\x88\x01\x01B\x14\n" +
-	"\x12_from_sheet_sha256B\x12\n" +
-	"\x10_to_sheet_sha256B\a\n" +
+	"_to_status\x1a\x88\x01\n" +
+	"\n" +
+	"PlanUpdate\x12>\n" +
+	"\n" +
+	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecsB\a\n" +
 	"\x05eventB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11IssueCommentProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
@@ -390,25 +381,28 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 
 var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_issue_comment_proto_goTypes = []any{
-	(*IssueCommentPayload)(nil),                // 0: bytebase.store.IssueCommentPayload
-	(*IssueCommentPayload_Approval)(nil),       // 1: bytebase.store.IssueCommentPayload.Approval
-	(*IssueCommentPayload_IssueUpdate)(nil),    // 2: bytebase.store.IssueCommentPayload.IssueUpdate
-	(*IssueCommentPayload_PlanSpecUpdate)(nil), // 3: bytebase.store.IssueCommentPayload.PlanSpecUpdate
-	(IssuePayloadApproval_Approver_Status)(0),  // 4: bytebase.store.IssuePayloadApproval.Approver.Status
-	(Issue_Status)(0),                          // 5: bytebase.store.Issue.Status
+	(*IssueCommentPayload)(nil),               // 0: bytebase.store.IssueCommentPayload
+	(*IssueCommentPayload_Approval)(nil),      // 1: bytebase.store.IssueCommentPayload.Approval
+	(*IssueCommentPayload_IssueUpdate)(nil),   // 2: bytebase.store.IssueCommentPayload.IssueUpdate
+	(*IssueCommentPayload_PlanUpdate)(nil),    // 3: bytebase.store.IssueCommentPayload.PlanUpdate
+	(IssuePayloadApproval_Approver_Status)(0), // 4: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                         // 5: bytebase.store.Issue.Status
+	(*PlanConfig_Spec)(nil),                   // 6: bytebase.store.PlanConfig.Spec
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
 	1, // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
 	2, // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	3, // 2: bytebase.store.IssueCommentPayload.plan_spec_update:type_name -> bytebase.store.IssueCommentPayload.PlanSpecUpdate
+	3, // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
 	4, // 3: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
 	5, // 4: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
 	5, // 5: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	6, // 6: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
+	6, // 7: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }
@@ -418,13 +412,13 @@ func file_store_issue_comment_proto_init() {
 	}
 	file_store_approval_proto_init()
 	file_store_issue_proto_init()
+	file_store_plan_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),
-		(*IssueCommentPayload_PlanSpecUpdate_)(nil),
+		(*IssueCommentPayload_PlanUpdate_)(nil),
 	}
 	file_store_issue_comment_proto_msgTypes[2].OneofWrappers = []any{}
-	file_store_issue_comment_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

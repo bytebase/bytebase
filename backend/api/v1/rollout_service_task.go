@@ -418,9 +418,9 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 		// This is a fake CREATE DATABASE and USE statement since a single SQLite file represents a database. Engine driver will recognize it and establish a connection to create the sqlite file representing the database.
 		return fmt.Sprintf("CREATE DATABASE '%s';", databaseName), nil
 	case storepb.Engine_MONGODB:
-		// We just run createCollection in mongosh instead of execute `use <database>` first, because we execute the
-		// mongodb statement in mongosh with --file flag, and it doesn't support `use <database>` statement in the file.
-		// And we pass the database name to Bytebase engine driver, which will be used to build the connection string.
+		// MongoDB has no top-level CREATE DATABASE — a database is implicitly created
+		// when its first collection is. We pass the database name to the engine driver
+		// (which uses it to build the connection URI) and emit createCollection.
 		return fmt.Sprintf(`db.createCollection("%s");`, c.Table), nil
 	case storepb.Engine_SPANNER:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil

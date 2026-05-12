@@ -50,3 +50,41 @@
         line: 2
         column: 0
       endposition: null
+# BOOL/BOOLEAN preservation pin (batch 10 / cumulative #20): pingcap's
+# `mysql.TypeTiny` enum was shared between TINYINT + BOOL + BOOLEAN (BOOL
+# and BOOLEAN are TINYINT aliases in MySQL). Omni splits the alias: BOOL
+# and BOOLEAN both pre-normalize to DataType.Name = "BOOLEAN" (NOT
+# "TINYINT"). A mechanical port that matches only INT-family names would
+# regress on `CREATE TABLE t(b BOOL AUTO_INCREMENT, KEY(b))` — pingcap-tidb
+# treated this as integer (rule did NOT fire). Fixture locks the BOOLEAN
+# inclusion in omniIsIntegerType.
+- statement: CREATE TABLE t(a BOOL AUTO_INCREMENT, KEY(a))
+  changeType: 1
+- statement: CREATE TABLE t(a BOOLEAN AUTO_INCREMENT, KEY(a))
+  changeType: 1
+- statement: CREATE TABLE t(a TINYINT AUTO_INCREMENT, KEY(a))
+  changeType: 1
+# Multi-line CREATE TABLE line-position pin (batch 10, Codex round-2):
+# pingcap-tidb captured column.OriginTextPosition() into columnData.line
+# but then emitted checker.line (statement line) in the advice — column
+# line was dead code. The omni port actually uses column line via
+# ostmt.AbsoluteLine(column.Loc.Start), so multi-line CREATE TABLE advice
+# now points at the OFFENDING COLUMN's line rather than the CREATE TABLE
+# keyword's line. UX improvement; same shape as batch 9
+# column_require_default's column-line behavior. Pin locks the new
+# contract — future refactor that reverts to statement-line will fail
+# this fixture.
+- statement: |-
+    CREATE TABLE t(
+      a varchar(255) AUTO_INCREMENT
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`a` requires integer type
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

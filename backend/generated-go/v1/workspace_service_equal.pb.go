@@ -68,6 +68,19 @@ func (x *Workspace) Equal(y *Workspace) bool {
 	return true
 }
 
+func (x *DeleteWorkspaceRequest) Equal(y *DeleteWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *UpdateWorkspaceRequest) Equal(y *UpdateWorkspaceRequest) bool {
 	if x == y {
 		return true
@@ -83,6 +96,19 @@ func (x *UpdateWorkspaceRequest) Equal(y *UpdateWorkspaceRequest) bool {
 	}); !ok || !equal.Equal(y.UpdateMask) {
 		return false
 	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
+		return false
+	}
+	return true
+}
+
+func (x *LeaveWorkspaceRequest) Equal(y *LeaveWorkspaceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
 		return false
 	}
 	return true

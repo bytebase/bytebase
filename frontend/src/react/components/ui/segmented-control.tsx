@@ -18,6 +18,8 @@ interface SegmentedControlProps<T extends string> {
   ariaLabel: string;
   disabled?: boolean;
   className?: string;
+  /** Segment size — matches the Input/Combobox size tier names. Defaults to `md`. */
+  size?: "sm" | "md";
 }
 
 export function SegmentedControl<T extends string>({
@@ -27,7 +29,10 @@ export function SegmentedControl<T extends string>({
   ariaLabel,
   disabled = false,
   className,
+  size = "md",
 }: SegmentedControlProps<T>) {
+  const segmentSizeClasses =
+    size === "sm" ? "min-h-7 px-2 text-xs" : "min-h-8 px-3 text-sm";
   return (
     <BaseRadioGroup
       value={value}
@@ -50,7 +55,8 @@ export function SegmentedControl<T extends string>({
           <label
             key={option.value}
             className={cn(
-              "relative inline-flex min-h-8 items-center justify-center px-3 text-sm transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
+              "relative inline-flex items-center justify-center transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
+              segmentSizeClasses,
               index > 0 &&
                 !previousSelected &&
                 "border-l border-control-border",

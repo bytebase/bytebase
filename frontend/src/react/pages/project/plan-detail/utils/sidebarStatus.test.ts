@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { getPlanDetailSidebarStatusInfo } from "./sidebarStatus";
@@ -27,7 +24,7 @@ const status = ({
   rollout,
 }: {
   issue?: {
-    approvalStatus: Issue_ApprovalStatus;
+    approvalStatus: ApprovalStatus;
     status: IssueStatus;
   };
   rollout?: Rollout;
@@ -55,7 +52,7 @@ describe("plan detail sidebar status", () => {
     expect(
       status({
         issue: {
-          approvalStatus: Issue_ApprovalStatus.REJECTED,
+          approvalStatus: ApprovalStatus.REJECTED,
           status: IssueStatus.OPEN,
         },
       })
@@ -63,7 +60,7 @@ describe("plan detail sidebar status", () => {
     expect(
       status({
         issue: {
-          approvalStatus: Issue_ApprovalStatus.SKIPPED,
+          approvalStatus: ApprovalStatus.SKIPPED,
           status: IssueStatus.OPEN,
         },
       })

@@ -582,7 +582,14 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsPanel value="DATABASE">
+        {/*
+          `keepMounted` keeps the inactive Tabs.Panel attached to the DOM
+          instead of unmounting it. Without this, switching to the
+          "Database Group" tab unmounts `EnvironmentTreeSection`s and
+          tabbing back remounts them — which re-runs their mount-effect
+          and fires fresh `listDatabases` RPCs every time.
+        */}
+        <TabsPanel value="DATABASE" keepMounted>
           <div className="flex flex-col gap-y-1">
             <AdvancedSearch
               params={searchParams}
@@ -628,18 +635,29 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           </div>
         </TabsPanel>
 
-        <TabsPanel value="DATABASE-GROUP">
-          <DatabaseGroupTable
-            projectName={projectName}
-            view={DatabaseGroupView.FULL}
-            leadingLabel={t("database-group.select")}
-            showSelection
-            showExternalLink
-            selectedDatabaseGroupNames={selectedDatabaseGroupNames}
-            onSelectedDatabaseGroupNamesChange={handleSelectedGroupsChange}
-            onRowClick={(_, group) => handleSelectDatabaseGroup(group.name)}
-          />
-        </TabsPanel>
+        {/*
+          Only mount the DATABASE-GROUP panel when the user's plan
+          actually allows the tab. The trigger above is `disabled` for
+          plans missing either feature flag, but `keepMounted` on the
+          panel would otherwise still mount `DatabaseGroupTable`, whose
+          mount effect fires `fetchDBGroupListByProjectName` — wasted
+          API traffic on every ConnectionPane open and a chance to
+          surface 403s for an inaccessible UI path.
+        */}
+        {hasBatchQueryFeature && hasDatabaseGroupFeature && (
+          <TabsPanel value="DATABASE-GROUP" keepMounted>
+            <DatabaseGroupTable
+              projectName={projectName}
+              view={DatabaseGroupView.FULL}
+              leadingLabel={t("database-group.select")}
+              showSelection
+              showExternalLink
+              selectedDatabaseGroupNames={selectedDatabaseGroupNames}
+              onSelectedDatabaseGroupNamesChange={handleSelectedGroupsChange}
+              onRowClick={(_, group) => handleSelectDatabaseGroup(group.name)}
+            />
+          </TabsPanel>
+        )}
       </Tabs>
 
       <ConnectionContextMenu ref={contextMenuRef} />
@@ -951,9 +969,14 @@ function EnvironmentTreeSection(props: {
             isDatabase && groupCoveredDatabaseTitles.has(databaseName)
               ? groupCoveredDatabaseTitles.get(databaseName)
               : undefined;
-          const checked =
-            isDatabase &&
-            (selectedSet.has(databaseName) || matchedGroupTitle !== undefined);
+          // Distinguish "user explicitly selected this row" from
+          // "implicitly included because the row belongs to a selected
+          // group". Only the explicit case should tint the row blue —
+          // group-implied entries are locked-on and need to read as
+          // disabled, not as an active user choice.
+          const userSelected = isDatabase && selectedSet.has(databaseName);
+          const groupImplied = matchedGroupTitle !== undefined;
+          const checkDisabled = switchingConnection || groupImplied;
           return (
             <TreeRow
               style={style}
@@ -962,10 +985,9 @@ function EnvironmentTreeSection(props: {
               isOpen={!!node.isOpen}
               hasChildren={!!data.children && data.children.length > 0}
               query={query}
-              selected={checked}
-              checkDisabled={
-                switchingConnection || matchedGroupTitle !== undefined
-              }
+              rowTinted={userSelected}
+              checkboxChecked={userSelected || groupImplied}
+              checkDisabled={checkDisabled}
               checkTooltip={
                 matchedGroupTitle !== undefined ? matchedGroupTitle : undefined
               }
@@ -978,6 +1000,10 @@ function EnvironmentTreeSection(props: {
                 }
               }}
               onToggleChecked={(next) => {
+                // Belt-and-suspenders: even if BaseUI Checkbox somehow
+                // fires `onCheckedChange` while disabled, drop the
+                // toggle so a group-implied row can't be unchecked.
+                if (checkDisabled) return;
                 if (isDatabase) {
                   onToggleDatabase(databaseName, next);
                 }
@@ -1009,7 +1035,8 @@ function TreeRow({
   isOpen,
   hasChildren,
   query,
-  selected,
+  rowTinted,
+  checkboxChecked,
   checkDisabled,
   checkTooltip,
   onClick,
@@ -1024,9 +1051,13 @@ function TreeRow({
   hasChildren: boolean;
   depth: number;
   query: string;
-  /** Whether the row is "checked" (batch-query selection or implicit
-   *  via group). Doubles as the row tint condition. */
-  selected: boolean;
+  /** Whether the row should render the active-selection tint. Only set
+   *  when the user explicitly selected the row — NOT for group-implied
+   *  membership, which should read as locked-on (gray) not active. */
+  rowTinted: boolean;
+  /** Whether the inline batch-mode checkbox renders as checked. True for
+   *  user-explicit selection AND for group-implied membership. */
+  checkboxChecked: boolean;
   /** True when the checkbox should be locked, e.g. mid-connection-switch
    *  or when membership is forced by a selected group. */
   checkDisabled: boolean;
@@ -1072,7 +1103,7 @@ function TreeRow({
       className={cn(
         "bb-conn-pane-row flex items-center gap-x-1 w-full pr-2 cursor-pointer rounded-sm",
         "hover:bg-control-bg/70",
-        selected && "bg-accent/10"
+        rowTinted && "bg-accent/10"
       )}
       data-node-key={node.key}
       onMouseDown={(e) => {
@@ -1128,7 +1159,7 @@ function TreeRow({
       <Label
         node={node}
         keyword={query}
-        checked={selected}
+        checked={checkboxChecked}
         checkDisabled={checkDisabled}
         checkTooltip={checkTooltip}
         onCheckedChange={onToggleChecked}

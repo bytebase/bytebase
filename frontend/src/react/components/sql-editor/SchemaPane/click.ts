@@ -1,35 +1,50 @@
-import Emittery from "emittery";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { TreeNode } from "./schemaTree";
 
-const DELAY = 250;
-
-type ClickEvents = Emittery<{
-  "single-click": { node: TreeNode };
-  "double-click": { node: TreeNode };
-}>;
+const DOUBLE_CLICK_WINDOW_MS = 250;
 
 type PendingState = {
   timeout: ReturnType<typeof setTimeout>;
   node: TreeNode;
 };
 
+export type ClickHandlers = {
+  readonly onSingleClick: (node: TreeNode) => void;
+  readonly onDoubleClick: (node: TreeNode) => void;
+};
+
 export type UseClickEventsResult = {
-  events: ClickEvents;
   handleClick: (node: TreeNode) => void;
 };
 
 /**
- * React port of `src/views/sql-editor/AsidePanel/SchemaPane/click.ts`.
+ * Single/double-click discriminator for the schema tree.
  *
- * 250ms single/double-click discriminator. Same Emittery API surface,
- * but the timing state lives in a closure (returned via `useMemo`) so
- * it persists across renders without resubscribing.
+ * Previously this routed clicks through an `Emittery` instance and the
+ * consumer subscribed via `useEffect`. Emittery's `emit` is async — its
+ * implementation `await resolvedPromise` before invoking listeners, so the
+ * actual `toggleNode` work was deferred to a microtask after every click.
+ * Combined with the downstream Vue-watch / React-render / react-arborist
+ * recompute, that microtask hop pushed the paint out far enough that
+ * users saw "no response until I move the mouse" (the next input event
+ * was what gave the browser a chance to flush). Plain callbacks invoked
+ * synchronously from `handleClick` keep all the work in the same tick.
+ *
+ * For most node types both single- and double-click do the same thing
+ * (`toggleNode`), so we skip the discriminator and fire the single-click
+ * handler immediately. Only `table` and `view` rows have a distinct
+ * double-click action (`selectAllFromTableOrView`) — those keep the
+ * 250ms timer.
  */
-export function useClickEvents(): UseClickEventsResult {
+export function useClickEvents(handlers: ClickHandlers): UseClickEventsResult {
+  // Refresh-on-render ref so the discriminator always invokes the latest
+  // handlers (which capture the latest `expandedKeys`, etc.) without
+  // having to re-create the discriminator state on every parent render.
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
   return useMemo(() => {
     let pending: PendingState | undefined;
-    const events: ClickEvents = new Emittery();
 
     const clear = () => {
       if (!pending) return;
@@ -37,26 +52,35 @@ export function useClickEvents(): UseClickEventsResult {
       pending = undefined;
     };
 
-    const queue = (node: TreeNode) => {
+    const queueSingle = (node: TreeNode) => {
       pending = {
         timeout: setTimeout(() => {
-          events.emit("single-click", { node });
-          clear();
-        }, DELAY),
+          pending = undefined;
+          handlersRef.current.onSingleClick(node);
+        }, DOUBLE_CLICK_WINDOW_MS),
         node,
       };
     };
 
     const handleClick = (node: TreeNode) => {
-      if (pending && pending.node.key === node.key) {
-        events.emit("double-click", { node });
+      const type = node.meta.type;
+      const hasDistinctDoubleClick = type === "table" || type === "view";
+
+      if (!hasDistinctDoubleClick) {
         clear();
+        handlersRef.current.onSingleClick(node);
+        return;
+      }
+
+      if (pending && pending.node.key === node.key) {
+        clear();
+        handlersRef.current.onDoubleClick(node);
         return;
       }
       clear();
-      queue(node);
+      queueSingle(node);
     };
 
-    return { events, handleClick };
+    return { handleClick };
   }, []);
 }

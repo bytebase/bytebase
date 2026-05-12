@@ -133,7 +133,7 @@ export function TableCell({
       onClick={handleClick}
       onDoubleClick={showDetail}
       className={cn(
-        "px-2 py-1 flex items-center",
+        "w-full h-full px-2 py-1 flex items-center",
         allowSelect ? "cursor-pointer hover:bg-accent/10" : "select-none",
         selected && "bg-accent/20!"
       )}

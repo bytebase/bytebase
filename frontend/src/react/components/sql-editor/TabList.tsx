@@ -260,7 +260,7 @@ export function TabList() {
         ref={scrollRef}
         onScroll={recalculateScrollState}
         className={cn(
-          "flex-1 overflow-x-auto scrollbar-thin",
+          "flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin",
           scrollState.moreLeft && "more-left",
           scrollState.moreRight && "more-right"
         )}
@@ -274,7 +274,7 @@ export function TabList() {
             items={tabs.map((tab) => tab.id)}
             strategy={horizontalListSortingStrategy}
           >
-            <div className="relative flex flex-nowrap overflow-hidden h-9 pt-0.5">
+            <div className="relative flex flex-nowrap h-9 pt-0.5">
               {tabs.map((tab, index) => (
                 <TabItem
                   key={tab.id}

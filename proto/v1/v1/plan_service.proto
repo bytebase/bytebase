@@ -11,7 +11,6 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/issue_service.proto";
 import "v1/rollout_service.proto";
 import "v1/sql_service.proto";
 
@@ -245,7 +244,7 @@ message Plan {
 
   // The approval status of the linked issue.
   // Unspecified when no linked issue exists.
-  Issue.ApprovalStatus approval_status = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ApprovalStatus approval_status = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Per-stage rollout status summary.
   // Ordered by environment deployment order. Empty when no rollout exists.

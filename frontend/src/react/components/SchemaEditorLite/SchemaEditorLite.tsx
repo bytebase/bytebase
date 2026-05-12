@@ -175,7 +175,7 @@ export const SchemaEditorLite = forwardRef<
     <SchemaEditorProvider value={contextValue}>
       <div className="bb-schema-editor relative flex size-full flex-col overflow-hidden rounded-sm border">
         {combinedLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
             <Loader2 className="size-8 animate-spin text-accent" />
           </div>
         )}

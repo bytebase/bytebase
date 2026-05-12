@@ -50,7 +50,17 @@ function Checkbox({
         "data-[checked]:bg-accent data-[checked]:border-accent",
         "data-[indeterminate]:bg-accent data-[indeterminate]:border-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-control-border",
+        "data-disabled:cursor-not-allowed data-disabled:hover:border-control-border",
+        // Disabled + checked: render in a muted gray instead of the
+        // accent so it reads as "locked-on". Base UI sets the
+        // `data-disabled` attribute when `disabled` is true — using
+        // `data-disabled:` instead of `disabled:` matches the
+        // convention used elsewhere in this directory and is
+        // independent of whether the rendered element supports the
+        // `:disabled` pseudo-class.
+        "data-disabled:data-[checked]:bg-control-light data-disabled:data-[checked]:border-control-light",
+        "data-disabled:data-[indeterminate]:bg-control-light data-disabled:data-[indeterminate]:border-control-light",
+        "data-disabled:not-data-[checked]:not-data-[indeterminate]:opacity-50",
         !onClick && className
       )}
     >

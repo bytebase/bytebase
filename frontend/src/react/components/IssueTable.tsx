@@ -15,6 +15,7 @@ import { SelectionActionBar } from "@/react/components/SelectionActionBar";
 import { TimeRangePicker } from "@/react/components/TimeRangePicker";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Sheet,
@@ -43,11 +44,10 @@ import {
   isValidProjectName,
   unknownUser,
 } from "@/types";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
-  Issue_ApprovalStatus,
   Issue_Type,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -223,7 +223,7 @@ export function PresetButtons({
       if (preset === "WAITING_APPROVAL") {
         return (
           getValueFromSearchParams(vp, "approval") ===
-          Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING]
+          ApprovalStatus[ApprovalStatus.PENDING]
         );
       }
       if (preset === "OPEN") {
@@ -264,7 +264,7 @@ export function PresetButtons({
             { id: "status", value: IssueStatus[IssueStatus.OPEN] },
             {
               id: "approval",
-              value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+              value: ApprovalStatus[ApprovalStatus.PENDING],
             },
             { id: "current-approver", value: myEmail },
           ],
@@ -399,7 +399,7 @@ export function useIssueSearchScopeOptions(
         description: t("issue.advanced-search.scope.approval.description"),
         options: [
           {
-            value: Issue_ApprovalStatus[Issue_ApprovalStatus.CHECKING],
+            value: ApprovalStatus[ApprovalStatus.CHECKING],
             keywords: ["checking"],
             render: () => (
               <span>
@@ -408,7 +408,7 @@ export function useIssueSearchScopeOptions(
             ),
           },
           {
-            value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+            value: ApprovalStatus[ApprovalStatus.PENDING],
             keywords: ["pending"],
             render: () => (
               <span>
@@ -417,7 +417,7 @@ export function useIssueSearchScopeOptions(
             ),
           },
           {
-            value: Issue_ApprovalStatus[Issue_ApprovalStatus.APPROVED],
+            value: ApprovalStatus[ApprovalStatus.APPROVED],
             keywords: ["approved", "done"],
             render: () => (
               <span>
@@ -426,7 +426,7 @@ export function useIssueSearchScopeOptions(
             ),
           },
           {
-            value: Issue_ApprovalStatus[Issue_ApprovalStatus.REJECTED],
+            value: ApprovalStatus[ApprovalStatus.REJECTED],
             keywords: ["rejected"],
             render: () => (
               <span>
@@ -435,7 +435,7 @@ export function useIssueSearchScopeOptions(
             ),
           },
           {
-            value: Issue_ApprovalStatus[Issue_ApprovalStatus.SKIPPED],
+            value: ApprovalStatus[ApprovalStatus.SKIPPED],
             keywords: ["skipped"],
             render: () => (
               <span>
@@ -630,12 +630,19 @@ export function IssueListItem({
       className="flex items-start gap-x-2 px-3 sm:px-4 py-3 cursor-pointer border-b border-control-bg hover:bg-control-bg"
       onClick={onRowClick}
     >
-      <Checkbox
-        className="shrink-0 mt-1"
-        checked={selected}
-        onCheckedChange={() => onToggleSelection()}
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div
+        className="shrink-0 self-stretch cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelection();
+        }}
+      >
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelection()}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
 
       <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-start sm:gap-x-2">
         <div className="flex-1 min-w-0">
@@ -646,13 +653,15 @@ export function IssueListItem({
             {issue.title ? (
               <a
                 href={issueUrl}
-                className="font-medium text-main text-base truncate hover:underline"
+                className="font-medium text-main text-base hover:underline min-w-0 block"
                 onClick={(e) => e.stopPropagation()}
               >
-                <HighlightLabelText
-                  text={issue.title}
-                  keyword={highlightWords}
-                />
+                <EllipsisText text={issue.title}>
+                  <HighlightLabelText
+                    text={issue.title}
+                    keyword={highlightWords}
+                  />
+                </EllipsisText>
               </a>
             ) : (
               <a
@@ -823,7 +832,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
 
-  if (issue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
+  if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     return (
       <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
@@ -838,7 +847,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (approvalSteps.length > 0) {
     const status = issue.approvalStatus;
-    if (status === Issue_ApprovalStatus.APPROVED) {
+    if (status === ApprovalStatus.APPROVED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-success/10 text-success px-2 py-0.5 text-xs">
@@ -850,7 +859,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
         </div>
       );
     }
-    if (status === Issue_ApprovalStatus.REJECTED) {
+    if (status === ApprovalStatus.REJECTED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs">
@@ -862,7 +871,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
         </div>
       );
     }
-    if (status === Issue_ApprovalStatus.PENDING) {
+    if (status === ApprovalStatus.PENDING) {
       const currentRoleIndex = issue.approvers.length;
       const role = approvalSteps[currentRoleIndex];
       const roleName = role ? displayRoleTitle(role) : "";
@@ -919,7 +928,7 @@ export function BatchActionBar({
   return (
     <SelectionActionBar
       count={issues.length}
-      label={`${issues.length} ${t("common.selected")}`}
+      label={t("common.n-selected", { n: issues.length })}
       allSelected={allSelected}
       onToggleSelectAll={onToggleSelectAll}
       actions={[

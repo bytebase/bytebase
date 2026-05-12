@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "added",
       "canceled-issue": "closed the issue",
       "changed-description": "changed description",
       "changed-from-to": "changed {name} from \"{oldValue}\" to \"{newValue}\"",
       "changed-labels": "changed labels",
+      "changed-targets-of": "changed targets of",
       "created-issue": "created issue",
+      "disabled-prior-backup-on": "disabled prior backup on",
+      "enabled-prior-backup-on": "enabled prior backup on",
+      "modified-sql-of": "modified SQL of",
+      "removed-spec": "removed",
       "reopened-issue": "reopened issue",
       "resolved-issue": "approved the issue"
     }
@@ -117,6 +123,7 @@
       "invalid-or-expired-code": "Invalid or expired code. Please request a new one.",
       "title": "Reset your password"
     },
+    "profile-setup": "Profile Setup",
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {email}.",
       "demo-account": "Demo Account",
@@ -323,8 +330,10 @@
     "minutes": "Minutes",
     "missing-required-permission": "Missing required permissions {permissions}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {resource}",
+    "more": "More",
     "n-items-selected": "{n} items selected",
     "n-more": "+{n} more",
+    "n-selected": "{n} selected",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
@@ -676,7 +685,6 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
-    "selected-n-databases": "{n} database selected | {n} databases selected",
     "successfully-exported-schema": "Successfully exported schema",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{0}'",
@@ -2700,12 +2708,10 @@
         "description": "Estimated by statistical information.",
         "self": "Affected rows"
       },
-      "ghost-sync": "gh-ost sync",
       "sql-review": {
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
         "self": "SQL review"
-      },
-      "summary-report": "Summary report"
+      }
     },
     "checking": "Checking...",
     "created": "Created",

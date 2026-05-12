@@ -110,6 +110,8 @@ interface InstanceColumn {
   sortKey?: string;
   cellClassName?: string;
   render: (instance: Instance) => React.ReactNode;
+  onCellClick?: (instance: Instance, e: React.MouseEvent) => void;
+  onHeaderClick?: (e: React.MouseEvent) => void;
 }
 
 // ============================================================
@@ -511,50 +513,6 @@ function EditEnvironmentSheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
-}
-
-// ============================================================
-// SyncDropdown
-// ============================================================
-
-function SyncDropdown({
-  disabled,
-  onSync,
-}: {
-  disabled: boolean;
-  onSync: (enableFullSync: boolean) => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-full"
-            disabled={disabled}
-          >
-            <RefreshCw className={cn("size-4", disabled && "animate-spin")} />
-            {disabled ? t("instance.syncing") : t("instance.sync.self")}
-            <ChevronDown className="size-3" />
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="start" className="min-w-[200px]">
-        <DropdownMenuItem
-          title={t("instance.sync.sync-all-tip")}
-          onClick={() => onSync(true)}
-        >
-          {t("instance.sync.sync-all")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSync(false)}>
-          {t("instance.sync.sync-new")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
 
@@ -1038,10 +996,19 @@ export function InstancesPage() {
         <Checkbox
           checked={someSelected ? "indeterminate" : allSelected}
           onCheckedChange={toggleSelectAll}
+          onClick={(e) => e.stopPropagation()}
         />
       ),
       defaultWidth: 48,
       cellClassName: "px-4 py-2",
+      onCellClick: (instance, e) => {
+        e.stopPropagation();
+        toggleSelection(instance.name);
+      },
+      onHeaderClick: (e) => {
+        e.stopPropagation();
+        toggleSelectAll();
+      },
       render: (instance) => (
         <Checkbox
           checked={selectedNames.has(instance.name)}
@@ -1199,6 +1166,8 @@ export function InstancesPage() {
                   onResizeStart={
                     col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
                   }
+                  className={cn(col.onHeaderClick && "cursor-pointer")}
+                  onClick={col.onHeaderClick}
                 >
                   {col.title}
                 </TableHead>
@@ -1237,7 +1206,16 @@ export function InstancesPage() {
                   {columns.map((col) => (
                     <TableCell
                       key={col.key}
-                      className={cn("overflow-hidden", col.cellClassName)}
+                      className={cn(
+                        "overflow-hidden",
+                        col.cellClassName,
+                        col.onCellClick && "cursor-pointer"
+                      )}
+                      onClick={
+                        col.onCellClick
+                          ? (e) => col.onCellClick!(instance, e)
+                          : undefined
+                      }
                     >
                       {col.render(instance)}
                     </TableCell>
@@ -1265,7 +1243,24 @@ export function InstancesPage() {
       {(() => {
         const canSync = hasWorkspacePermissionV2("bb.instances.sync");
         const canUpdate = hasWorkspacePermissionV2("bb.instances.update");
+        const syncDisabled = !canSync || syncing;
         const instanceActions: SelectionAction[] = [
+          {
+            key: "sync-new",
+            label: syncing
+              ? t("instance.syncing")
+              : t("instance.sync.sync-new"),
+            icon: RefreshCw,
+            onClick: () => handleSync(false),
+            disabled: syncDisabled,
+          },
+          {
+            key: "sync-all",
+            label: t("instance.sync.sync-all"),
+            icon: RefreshCw,
+            onClick: () => handleSync(true),
+            disabled: syncDisabled,
+          },
           {
             key: "edit-env",
             label: t("database.edit-environment"),
@@ -1291,18 +1286,14 @@ export function InstancesPage() {
         return (
           <SelectionActionBar
             count={selectedInstanceList.length}
-            label={t("instance.selected-n-instances", {
-              count: selectedInstanceList.length,
-            })}
+            label={t("common.n-selected", { n: selectedInstanceList.length })}
             allSelected={allSelected}
             onToggleSelectAll={() => {
               if (allSelected) setSelectedNames(new Set());
               else setSelectedNames(new Set(instances.map((i) => i.name)));
             }}
             actions={instanceActions}
-          >
-            <SyncDropdown disabled={!canSync || syncing} onSync={handleSync} />
-          </SelectionActionBar>
+          />
         );
       })()}
 

@@ -59,10 +59,17 @@ export function DatabaseRevisionTable({
     <Table>
       <TableHeader className="bg-control-bg">
         <TableRow>
-          <TableHead className="w-12">
+          <TableHead
+            className="w-12 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSelectAll();
+            }}
+          >
             <Checkbox
               checked={someSelected ? "indeterminate" : allSelected}
               onCheckedChange={toggleSelectAll}
+              onClick={(e) => e.stopPropagation()}
             />
           </TableHead>
           <TableHead>{t("common.version")}</TableHead>
@@ -80,7 +87,13 @@ export function DatabaseRevisionTable({
             }
             onClick={() => void router.push(revisionLink(revision))}
           >
-            <TableCell className="w-12">
+            <TableCell
+              className="w-12 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSelection(revision.name);
+              }}
+            >
               <Checkbox
                 checked={selectedNames.has(revision.name)}
                 onCheckedChange={() => toggleSelection(revision.name)}

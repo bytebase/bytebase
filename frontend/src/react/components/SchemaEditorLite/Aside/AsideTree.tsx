@@ -7,13 +7,24 @@ import {
   FileCode,
   FunctionSquare,
   Layers,
+  Plus,
   Table2,
   View,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { ColumnIcon } from "@/react/components/schema/icons";
+import { Badge } from "@/react/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
@@ -27,9 +38,16 @@ import {
   ProcedureMetadataSchema,
   ViewMetadataSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
+import {
+  engineSupportsEditFunctions,
+  engineSupportsEditProcedures,
+  engineSupportsEditViews,
+  engineSupportsMultiSchema,
+} from "../core/spec";
 import { SchemaNameDialog } from "../Modals/SchemaNameDialog";
-import { TableNameDialog } from "../Modals/TableNameDialog";
+import { TableNamePopover } from "../Modals/TableNamePopover";
 import type { EditStatus } from "../types";
 import { NodeCheckbox } from "./NodeCheckbox";
 import type { TreeNode, TreeNodeForTable } from "./tree-builder";
@@ -37,6 +55,7 @@ import { buildTree } from "./tree-builder";
 import { useContextMenu } from "./useContextMenu";
 
 export function AsideTree() {
+  const { t } = useTranslation();
   const context = useSchemaEditorContext();
   const {
     targets,
@@ -51,6 +70,10 @@ export function AsideTree() {
 
   const [searchPattern, setSearchPattern] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  // Anchor for the "+" dropdown — the same ref is used as the popover anchor
+  // when the user picks "New table" from the dropdown, so the popover always
+  // appears in the same spot regardless of how the user opened it.
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
 
   // Tree data — treeBuildVersion busts the cache after in-place metadata mutations
   const { tree, nodeMap } = useMemo(
@@ -79,6 +102,7 @@ export function AsideTree() {
       typeof useSchemaEditorContext
     >["targets"][0]["metadata"]["schemas"][0];
     table?: TreeNodeForTable["metadata"]["table"];
+    anchorPoint: { x: number; y: number };
   } | null>(null);
 
   const [schemaNameModalCtx, setSchemaNameModalCtx] = useState<{
@@ -109,6 +133,7 @@ export function AsideTree() {
           db: node.db,
           database: node.metadata.database,
           schema: node.metadata.schema,
+          anchorPoint: { x: menuState.x, y: menuState.y },
         });
       } else if (key === "rename-table" && node.type === "table") {
         setTableNameModalCtx({
@@ -116,6 +141,7 @@ export function AsideTree() {
           database: node.metadata.database,
           schema: node.metadata.schema,
           table: node.metadata.table,
+          anchorPoint: { x: menuState.x, y: menuState.y },
         });
       } else if (key === "drop-table" && node.type === "table") {
         const status = editStatus.getTableStatus(node.db, node.metadata);
@@ -257,7 +283,15 @@ export function AsideTree() {
         rebuildTree(false);
       }
     },
-    [menuState.node, hideMenu, editStatus, rebuildTree, tabs]
+    [
+      menuState.node,
+      menuState.x,
+      menuState.y,
+      hideMenu,
+      editStatus,
+      rebuildTree,
+      tabs,
+    ]
   );
 
   // Node click handler
@@ -338,14 +372,173 @@ export function AsideTree() {
     [editStatus]
   );
 
+  // Discoverable "+" dropdown next to the search input. Mirrors the
+  // right-click context menu but is always visible. Routes to the first
+  // target + first schema (the common single-DB single-schema case in
+  // plan-detail); power users with multi-schema setups can still
+  // right-click a specific schema.
+  const createActions = useMemo(() => {
+    if (readonly || targets.length === 0) return [];
+    const target = targets[0];
+    const engine = getDatabaseEngine(target.database);
+    const firstSchema = target.metadata.schemas[0];
+    if (!firstSchema) return [];
+
+    const actions: {
+      key: string;
+      label: string;
+      onSelect: () => void;
+      separatorBefore?: boolean;
+    }[] = [];
+
+    actions.push({
+      key: "create-table",
+      label: t("schema-editor.actions.create-table"),
+      onSelect: () => {
+        const rect = createTriggerRef.current?.getBoundingClientRect();
+        setTableNameModalCtx({
+          db: target.database,
+          database: target.metadata,
+          schema: firstSchema,
+          anchorPoint: rect ? { x: rect.left, y: rect.bottom } : { x: 0, y: 0 },
+        });
+      },
+    });
+
+    if (engineSupportsEditViews(engine)) {
+      actions.push({
+        key: "create-view",
+        label: t("schema-editor.actions.create-view"),
+        onSelect: () => {
+          const view = create(ViewMetadataSchema, {
+            name: "new_view",
+            definition: "",
+          }) as ViewMetadata;
+          firstSchema.views.push(view);
+          editStatus.markEditStatus(
+            target.database,
+            { schema: firstSchema, view },
+            "created"
+          );
+          tabs.addTab({
+            type: "view",
+            database: target.database,
+            metadata: {
+              database: target.metadata,
+              schema: firstSchema,
+              view,
+            },
+          });
+          rebuildTree(false);
+        },
+      });
+    }
+
+    if (engineSupportsEditProcedures(engine)) {
+      actions.push({
+        key: "create-procedure",
+        label: t("schema-editor.actions.create-procedure"),
+        onSelect: () => {
+          const procedure = create(ProcedureMetadataSchema, {
+            name: "new_procedure",
+            definition: "",
+          }) as ProcedureMetadata;
+          firstSchema.procedures.push(procedure);
+          editStatus.markEditStatus(
+            target.database,
+            { schema: firstSchema, procedure },
+            "created"
+          );
+          tabs.addTab({
+            type: "procedure",
+            database: target.database,
+            metadata: {
+              database: target.metadata,
+              schema: firstSchema,
+              procedure,
+            },
+          });
+          rebuildTree(false);
+        },
+      });
+    }
+
+    if (engineSupportsEditFunctions(engine)) {
+      actions.push({
+        key: "create-function",
+        label: t("schema-editor.actions.create-function"),
+        onSelect: () => {
+          const func = create(FunctionMetadataSchema, {
+            name: "new_function",
+            definition: "",
+          }) as FunctionMetadata;
+          firstSchema.functions.push(func);
+          editStatus.markEditStatus(
+            target.database,
+            { schema: firstSchema, function: func },
+            "created"
+          );
+          tabs.addTab({
+            type: "function",
+            database: target.database,
+            metadata: {
+              database: target.metadata,
+              schema: firstSchema,
+              function: func,
+            },
+          });
+          rebuildTree(false);
+        },
+      });
+    }
+
+    if (engineSupportsMultiSchema(engine)) {
+      actions.push({
+        key: "create-schema",
+        separatorBefore: true,
+        label: t("schema-editor.actions.create-schema"),
+        onSelect: () => {
+          setSchemaNameModalCtx({
+            db: target.database,
+            database: target.metadata,
+          });
+        },
+      });
+    }
+
+    return actions;
+  }, [readonly, targets, t, editStatus, tabs, rebuildTree]);
+
   return (
     <div className="flex size-full flex-col gap-y-2">
-      <div className="sticky top-0 px-1 pt-1">
+      <div className="sticky top-0 flex items-center gap-x-1 px-1 pt-1">
         <SearchInput
-          placeholder="Search..."
+          placeholder={t("common.search")}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="h-7"
+          className="h-7 flex-1"
         />
+        {createActions.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              ref={createTriggerRef}
+              aria-label={t("common.create")}
+              title={t("common.create")}
+              className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-xs text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Plus className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {createActions.map((action) => (
+                <Fragment key={action.key}>
+                  {action.separatorBefore && <DropdownMenuSeparator />}
+                  <DropdownMenuItem onClick={action.onSelect}>
+                    {action.label}
+                  </DropdownMenuItem>
+                </Fragment>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       <div ref={containerRef} className="flex-1 overflow-hidden">
         <Tree
@@ -387,7 +580,7 @@ export function AsideTree() {
             }}
           >
             <div
-              className={`absolute rounded-sm border border-control-border bg-white py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
+              className={`absolute rounded-sm border border-control-border bg-background py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
               style={{ left: menuState.x, top: menuState.y }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -408,9 +601,10 @@ export function AsideTree() {
 
       {/* Modals */}
       {tableNameModalCtx && (
-        <TableNameDialog
+        <TableNamePopover
           open
           onClose={() => setTableNameModalCtx(null)}
+          anchorPoint={tableNameModalCtx.anchorPoint}
           db={tableNameModalCtx.db}
           database={tableNameModalCtx.database}
           schema={tableNameModalCtx.schema}
@@ -470,11 +664,7 @@ function NodeIcon({ node }: { node: TreeNode }) {
     case "table":
       return <Table2 className={cls} />;
     case "column":
-      return (
-        <div className={cn(cls, "text-center text-xs font-bold leading-4")}>
-          C
-        </div>
-      );
+      return <ColumnIcon className={cls} />;
     case "view":
       return <View className={cls} />;
     case "procedure":
@@ -509,6 +699,25 @@ function statusClassName(status: EditStatus): string {
     default:
       return "";
   }
+}
+
+// Single-character badge next to created/updated/dropped tree entries.
+// Text-color alone was too quiet (BYT-9473); the badge is additive and
+// keeps the existing color/strike-through on the label.
+function StatusBadge({ status }: { status: EditStatus }) {
+  if (status === "normal") return null;
+  const variant =
+    status === "created"
+      ? "success"
+      : status === "updated"
+        ? "warning"
+        : "destructive";
+  const letter = status === "created" ? "+" : status === "updated" ? "~" : "−";
+  return (
+    <Badge variant={variant} className="ml-1 h-4 px-1 text-[10px] leading-none">
+      {letter}
+    </Badge>
+  );
 }
 
 // Custom node renderer
@@ -577,6 +786,7 @@ function NodeRenderer(
       <span className={cn("truncate", statusClassName(status))}>
         {treeNode.label || "(empty)"}
       </span>
+      <StatusBadge status={status} />
     </div>
   );
 }

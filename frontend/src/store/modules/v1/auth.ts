@@ -10,6 +10,7 @@ import { router } from "@/router";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
+  AUTH_PROFILE_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
 } from "@/router/auth";
 import { SETUP_MODULE } from "@/router/setup";
@@ -146,6 +147,14 @@ export const useAuthStore = defineStore("auth_v1", () => {
         },
       });
     }
+    if (actuatorStore.isSaaSMode && resp.user && needsProfileSetup(resp.user)) {
+      return router.push({
+        name: AUTH_PROFILE_SETUP_MODULE,
+        query: {
+          redirect: nextPage,
+        },
+      });
+    }
     if (redirect) {
       router.replace(nextPage);
     }
@@ -252,3 +261,20 @@ export const useCurrentUserV1 = () => {
       unknownUser()
   );
 };
+
+/**
+ * Returns true if the user should be prompted to set up their profile.
+ * First-time login with an auto-generated name (email local-part or full email).
+ */
+function needsProfileSetup(user: User): boolean {
+  // Only prompt on first login (lastLoginTime is not set yet).
+  if (user.profile?.lastLoginTime) return false;
+  const name = user.title;
+  const email = user.email;
+  if (!name || !email) return false;
+  // Name matches full email or email local-part → auto-generated.
+  if (name === email) return true;
+  const atIndex = email.indexOf("@");
+  if (atIndex > 0 && name === email.substring(0, atIndex)) return true;
+  return false;
+}

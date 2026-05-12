@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -105,12 +106,24 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		return nil, err
 	}
 
-	// 2. Resolve workspace early so all subsequent checks can use it.
+	// 2. Reject deactivated users before any workspace provisioning.
+	if loginUser.MemberDeleted {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user has been deactivated"))
+	}
+
+	// 3. Resolve workspace early so all subsequent checks can use it.
 	// Login is allow_without_credential, so workspace is NOT in the context from auth middleware.
 	preferredWS, _ := parseOptionalWorkspace(request.Workspace)
 	workspaceID, err := s.resolveWorkspaceForLogin(ctx, loginUser, preferredWS)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
+	}
+	// If the user has no workspace (e.g. left all workspaces), provision a new one.
+	if workspaceID == "" {
+		workspaceID, err = s.provisionWorkspaceForNewUser(ctx, loginUser.Email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
+		}
 	}
 	common.SetAuditWorkspaceID(ctx, workspaceID)
 
@@ -394,21 +407,21 @@ func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email st
 
 // Logout is the auth logout method.
 func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
-	// Delete refresh token from database if present
-	if refreshToken := auth.GetRefreshTokenFromCookie(req.Header()); refreshToken != "" {
+	resp := connect.NewResponse(&emptypb.Empty{})
+	s.clearSessionAndSetCookies(ctx, req.Header(), resp.Header(), common.GetWorkspaceIDFromContext(ctx))
+	return resp, nil
+}
+
+// clearSessionAndSetCookies deletes the refresh token and sets expired cookies on the response headers.
+func (s *AuthService) clearSessionAndSetCookies(ctx context.Context, reqHeaders http.Header, respHeaders http.Header, workspaceID string) {
+	if refreshToken := auth.GetRefreshTokenFromCookie(reqHeaders); refreshToken != "" {
 		if err := s.store.DeleteWebRefreshToken(ctx, auth.HashToken(refreshToken)); err != nil {
-			slog.Error("failed to delete refresh token on logout", log.BBError(err))
+			slog.Error("failed to delete refresh token", log.BBError(err))
 		}
 	}
-
-	resp := connect.NewResponse(&emptypb.Empty{})
-
-	origin := req.Header().Get("Origin")
-	// Clear access token cookie
-	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, common.GetWorkspaceIDFromContext(ctx), origin, "").String())
-	// Clear refresh token cookie
-	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
-	return resp, nil
+	origin := reqHeaders.Get("Origin")
+	respHeaders.Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, "").String())
+	respHeaders.Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
 }
 
 // Refresh exchanges a refresh token for new access and refresh tokens.
@@ -1122,7 +1135,7 @@ func (s *AuthService) resolveWorkspaceForLogin(ctx context.Context, user *store.
 			return "", errors.Wrap(err, "failed to find workspace")
 		}
 		if ws == nil {
-			return "", errors.Errorf("%q is not a member of any workspace", user.Email)
+			return "", nil
 		}
 		return ws.ResourceID, nil
 	default:
@@ -1216,7 +1229,13 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		}
 	}
 
-	// Generate new token with target workspace.
+	return s.switchWorkspaceInternal(ctx, user, workspaceID, request.Web, req.Header())
+}
+
+// switchWorkspaceInternal generates new tokens for the target workspace and
+// returns a LoginResponse with cookies set. Used by SwitchWorkspace,
+// LeaveWorkspace, and DeleteWorkspace.
+func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.UserMessage, workspaceID string, web bool, reqHeaders http.Header) (*connect.Response[v1pb.LoginResponse], error) {
 	token, err := s.generateLoginToken(ctx, user, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate token"))
@@ -1234,14 +1253,11 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		slog.Error("failed to update user profile", log.BBError(err))
 	}
 
-	// Build response.
 	response := &v1pb.LoginResponse{}
 	resp := connect.NewResponse(response)
 
-	if request.Web {
-		// Require a valid refresh token cookie — prevents non-web clients from
-		// upgrading a short-lived bearer token into a long-lived web session.
-		oldRefreshToken := auth.GetRefreshTokenFromCookie(req.Header())
+	if web {
+		oldRefreshToken := auth.GetRefreshTokenFromCookie(reqHeaders)
 		if oldRefreshToken == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("refresh token cookie required for web workspace switch"))
 		}
@@ -1260,7 +1276,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
 		}
 
-		origin := req.Header().Get("Origin")
+		origin := reqHeaders.Get("Origin")
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 

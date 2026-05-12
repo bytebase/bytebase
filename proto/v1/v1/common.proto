@@ -97,6 +97,24 @@ enum ExportFormat {
   XLSX = 4;
 }
 
+// Approval workflow status for an issue or a plan.
+// Lives at the top level so both plan_service.proto and issue_service.proto
+// can reference it without a circular import.
+enum ApprovalStatus {
+  // Unspecified approval status.
+  APPROVAL_STATUS_UNSPECIFIED = 0;
+  // Approval checks are being evaluated.
+  CHECKING = 1;
+  // Approval is pending.
+  PENDING = 2;
+  // Issue has been approved.
+  APPROVED = 3;
+  // Issue has been rejected.
+  REJECTED = 4;
+  // Approval was skipped.
+  SKIPPED = 5;
+}
+
 // Position in a text expressed as one-based line and one-based column.
 // We use 1-based numbering to match the majority of industry standards:
 // - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)

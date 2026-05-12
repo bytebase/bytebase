@@ -60,21 +60,28 @@ func (x *IssueCommentPayload_IssueUpdate) Equal(y *IssueCommentPayload_IssueUpda
 	return true
 }
 
-func (x *IssueCommentPayload_PlanSpecUpdate) Equal(y *IssueCommentPayload_PlanSpecUpdate) bool {
+func (x *IssueCommentPayload_PlanUpdate) Equal(y *IssueCommentPayload_PlanUpdate) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Spec != y.Spec {
+	if len(x.FromSpecs) != len(y.FromSpecs) {
 		return false
 	}
-	if p, q := x.FromSheetSha256, y.FromSheetSha256; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+	for i := 0; i < len(x.FromSpecs); i++ {
+		if !x.FromSpecs[i].Equal(y.FromSpecs[i]) {
+			return false
+		}
+	}
+	if len(x.ToSpecs) != len(y.ToSpecs) {
 		return false
 	}
-	if p, q := x.ToSheetSha256, y.ToSheetSha256; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
+	for i := 0; i < len(x.ToSpecs); i++ {
+		if !x.ToSpecs[i].Equal(y.ToSpecs[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -95,7 +102,7 @@ func (x *IssueCommentPayload) Equal(y *IssueCommentPayload) bool {
 	if !x.GetIssueUpdate().Equal(y.GetIssueUpdate()) {
 		return false
 	}
-	if !x.GetPlanSpecUpdate().Equal(y.GetPlanSpecUpdate()) {
+	if !x.GetPlanUpdate().Equal(y.GetPlanUpdate()) {
 		return false
 	}
 	return true

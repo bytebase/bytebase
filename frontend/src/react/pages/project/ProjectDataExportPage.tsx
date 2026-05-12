@@ -24,13 +24,9 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_ApprovalStatus,
-  Issue_Type,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   displayRoleTitle,
@@ -370,7 +366,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
 
-  if (issue.approvalStatus === Issue_ApprovalStatus.CHECKING) {
+  if (issue.approvalStatus === ApprovalStatus.CHECKING) {
     return (
       <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
         {t("custom-approval.issue-review.generating-approval-flow")}
@@ -385,7 +381,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
 
   if (approvalSteps.length > 0) {
     const status = issue.approvalStatus;
-    if (status === Issue_ApprovalStatus.APPROVED) {
+    if (status === ApprovalStatus.APPROVED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-success/10 text-success px-2 py-0.5 text-xs">
@@ -397,7 +393,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
         </div>
       );
     }
-    if (status === Issue_ApprovalStatus.REJECTED) {
+    if (status === ApprovalStatus.REJECTED) {
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs">
@@ -409,7 +405,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
         </div>
       );
     }
-    if (status === Issue_ApprovalStatus.PENDING) {
+    if (status === ApprovalStatus.PENDING) {
       const currentRoleIndex = issue.approvers.length;
       const role = approvalSteps[currentRoleIndex];
       const roleName = role ? displayRoleTitle(role) : "";

@@ -20,11 +20,9 @@ import {
   useUIStateStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_ApprovalStatus,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
   buildSearchParamsBySearchText,
@@ -73,7 +71,7 @@ export function ProjectIssueDashboardPage({
         { id: "status", value: IssueStatus[IssueStatus.OPEN] },
         {
           id: "approval",
-          value: Issue_ApprovalStatus[Issue_ApprovalStatus.PENDING],
+          value: ApprovalStatus[ApprovalStatus.PENDING],
         },
         { id: "current-approver", value: myEmail },
       ],

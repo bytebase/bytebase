@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -20,6 +21,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/plugin/mailer"
+	stripeplugin "github.com/bytebase/bytebase/backend/plugin/stripe"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -31,6 +33,7 @@ type WorkspaceService struct {
 	licenseService *enterprise.LicenseService
 	iamManager     *iam.Manager
 	profile        *config.Profile
+	authService    *AuthService
 }
 
 // NewWorkspaceService creates a new WorkspaceService.
@@ -39,12 +42,14 @@ func NewWorkspaceService(
 	iamManager *iam.Manager,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
+	authService *AuthService,
 ) *WorkspaceService {
 	return &WorkspaceService{
 		store:          store,
 		iamManager:     iamManager,
 		profile:        profile,
 		licenseService: licenseService,
+		authService:    authService,
 	}
 }
 
@@ -198,6 +203,169 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[
 	}
 
 	return connect.NewResponse(v1Policy), nil
+}
+
+// DeleteWorkspace soft-deletes a workspace. SaaS only.
+// Cancels any active Stripe subscription before deleting, then switches
+// to the next available workspace and returns new auth tokens.
+func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Request[v1pb.DeleteWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	if !s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace deletion is only supported in SaaS mode"))
+	}
+
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	workspaceID, err := common.GetWorkspaceID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if contextWorkspaceID := common.GetWorkspaceIDFromContext(ctx); workspaceID != contextWorkspaceID {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot delete workspace %q from workspace %q", workspaceID, contextWorkspaceID))
+	}
+
+	// Cancel active Stripe subscription if any.
+	sub, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check subscription"))
+	}
+	if sub != nil && sub.Payload != nil && sub.Payload.StripeSubscriptionId != "" {
+		if _, err := stripeplugin.CancelSubscription(sub.Payload.StripeSubscriptionId, workspaceID, true); err != nil {
+			slog.Warn("failed to cancel Stripe subscription during workspace deletion",
+				slog.String("workspace", workspaceID),
+				log.BBError(err),
+			)
+		}
+	}
+
+	if err := s.store.DeleteWorkspace(ctx, workspaceID); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to delete workspace"))
+	}
+
+	// Find the next workspace and switch to it.
+	nextWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		Email: user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find next workspace"))
+	}
+	if nextWS == nil {
+		// No remaining workspace — clear auth cookies and return empty response.
+		// Frontend redirects to login which will provision a new workspace.
+		resp := connect.NewResponse(&v1pb.LoginResponse{})
+		s.authService.clearSessionAndSetCookies(ctx, req.Header(), resp.Header(), workspaceID)
+		return resp, nil
+	}
+
+	isWeb := auth.GetRefreshTokenFromCookie(req.Header()) != ""
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
+}
+
+// LeaveWorkspace removes the calling user from a workspace's IAM bindings,
+// then switches to the next available workspace.
+func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Request[v1pb.LeaveWorkspaceRequest]) (*connect.Response[v1pb.LoginResponse], error) {
+	user, ok := GetUserFromContext(ctx)
+	if !ok || user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	workspaceID, err := common.GetWorkspaceID(req.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	// Verify the user is a member of the target workspace.
+	ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID: &workspaceID,
+		Email:       user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify workspace membership"))
+	}
+	if ws == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("not a member of workspace %q", workspaceID))
+	}
+
+	memberIdentifier := common.FormatUserEmail(user.Email)
+
+	// Simulate removing the user from all direct IAM bindings and check
+	// that at least one active admin would remain. We exclude the caller
+	// from the admin list to also account for admin-via-group bindings.
+	policyMessage, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get workspace IAM policy"))
+	}
+	simulatedPolicy := &storepb.IamPolicy{}
+	for _, binding := range policyMessage.Policy.Bindings {
+		var filtered []string
+		for _, m := range binding.Members {
+			if m != memberIdentifier {
+				filtered = append(filtered, m)
+			}
+		}
+		if len(filtered) > 0 {
+			simulatedPolicy.Bindings = append(simulatedPolicy.Bindings, &storepb.Binding{
+				Role:      binding.Role,
+				Members:   filtered,
+				Condition: binding.Condition,
+			})
+		}
+	}
+	admins := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, workspaceID, store.WorkspaceAdminRole, !s.profile.SaaS, simulatedPolicy)
+	// Filter out the caller — they may still appear as admin via group bindings
+	// that haven't been removed yet.
+	var otherAdmins []*store.UserMessage
+	for _, admin := range admins {
+		if admin.Email != user.Email {
+			otherAdmins = append(otherAdmins, admin)
+		}
+	}
+	if !containsActiveEndUser(otherAdmins) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot leave workspace: you are the last admin"))
+	}
+
+	// Remove the user from all groups in this workspace.
+	if err := s.store.RemoveMemberFromAllGroups(ctx, workspaceID, memberIdentifier); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to remove user from groups"))
+	}
+
+	// Remove the user from all direct IAM bindings.
+	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: workspaceID,
+		Member:    memberIdentifier,
+		Roles:     []string{},
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update IAM policy"))
+	}
+
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
+
+	// Only switch workspace if the user is leaving their current workspace.
+	currentWorkspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID != currentWorkspaceID {
+		// Leaving a different workspace — no token switch needed.
+		return connect.NewResponse(&v1pb.LoginResponse{}), nil
+	}
+
+	// Find the next workspace to switch to.
+	nextWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		Email: user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find next workspace"))
+	}
+	if nextWS == nil {
+		resp := connect.NewResponse(&v1pb.LoginResponse{})
+		s.authService.clearSessionAndSetCookies(ctx, req.Header(), resp.Header(), workspaceID)
+		return resp, nil
+	}
+
+	isWeb := auth.GetRefreshTokenFromCookie(req.Header()) != ""
+	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
 }
 
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {

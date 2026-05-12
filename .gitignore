@@ -42,3 +42,9 @@ scripts/azure-marketplace/*.backup
 
 # playwright-cli local session artifacts
 .playwright-cli/
+
+# playwright-mcp local session artifacts (chrome-devtools/playwright-mcp dumps)
+.playwright-mcp/
+
+# superpowers brainstorm sessions (visual companion mockups)
+.superpowers/

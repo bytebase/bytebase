@@ -1,10 +1,15 @@
 {
+  "activity.sentence.added-spec": "añadió",
   "activity.sentence.canceled-issue": "closed the issue",
   "activity.sentence.changed-description": "changed description",
   "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
   "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.changed-targets-of": "cambió los targets de",
   "activity.sentence.created-issue": "created issue",
-  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.disabled-prior-backup-on": "desactivó prior backup en",
+  "activity.sentence.enabled-prior-backup-on": "activó prior backup en",
+  "activity.sentence.modified-sql-of": "modificó el SQL de",
+  "activity.sentence.removed-spec": "eliminó",
   "activity.sentence.reopened-issue": "reopened issue",
   "activity.sentence.resolved-issue": "marcó la incidencia como completada",
   "activity.sentence.review-done-rollout-created": "Revisión completada, rollout creado",
@@ -313,6 +318,7 @@
     "logout": "Cerrar sesión",
     "manage": "Administrar",
     "manually-select": "Manually select",
+    "maximize": "Maximizar",
     "members_one": "Miembro",
     "members_other": "Miembros",
     "minutes": "Minutos",
@@ -321,6 +327,7 @@
     "more": "Más",
     "n-items-selected": "{{n}} elementos seleccionados",
     "n-more": "+{{n}} más",
+    "n-selected": "{{n}} seleccionados",
     "name": "Nombre",
     "next": "Siguiente",
     "no-data": "Sin datos",
@@ -788,7 +795,6 @@
       "unspecified": "No especificado"
     },
     "select": "Seleccionar base de datos",
-    "selected-n-databases": "{{n}} base(s) de datos seleccionada(s)",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{{0}}'",
     "sync-database": "Sincronizar base de datos",
@@ -1686,9 +1692,7 @@
         "title_one": "¿Eliminar {{count}} Proyecto?",
         "title_other": "¿Eliminar {{count}} Proyectos?",
         "warning": "Esta acción no se puede deshacer. Todos los datos del proyecto, incluidos problemas, configuraciones e historial, se eliminarán permanentemente."
-      },
-      "selected_one": "{{count}} proyecto seleccionado",
-      "selected_other": "{{count}} proyectos seleccionados"
+      }
     },
     "create-modal": {
       "project-name": "Proyecto Nombre",
@@ -1994,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "Clave foránea",
       "name": "Name",
+      "name-placeholder": "Nombre de la columna",
       "not-null": "Not Null",
       "on-update": "En actualización",
       "operations": "Operations",
@@ -2041,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "Seleccionar esquema"
     },
+    "select-object-hint": "Selecciona un objeto de base de datos del árbol para editarlo",
     "self": "Editor de esquema",
     "table": {
       "duplicate-name": "Table name already exists",
@@ -2142,6 +2148,22 @@
         "branding": "Marca",
         "config-partly-updated": "Configuración parcialmente actualizada.",
         "config-updated": "La configuración se ha actualizado.",
+        "danger-zone": {
+          "confirm-description": "Esto eliminará permanentemente el espacio de trabajo \"{{workspace}}\" y todos sus datos. Esta acción no se puede deshacer. Escriba el nombre del espacio de trabajo para confirmar.",
+          "confirm-title": "¿Eliminar espacio de trabajo?",
+          "delete-failed": "Error al eliminar el espacio de trabajo.",
+          "delete-workspace": "Eliminar espacio de trabajo",
+          "deleted": "Espacio de trabajo eliminado.",
+          "deleting": "Eliminando...",
+          "description": "Una vez que elimine un espacio de trabajo, todos los proyectos, bases de datos, incidencias y configuraciones dentro de él se eliminarán permanentemente. Esta acción no se puede deshacer.",
+          "exit-confirm-description": "Perderá el acceso al espacio de trabajo \"{{workspace}}\". Necesitará ser reinvitado para volver a unirse.",
+          "exit-confirm-title": "¿Salir del espacio de trabajo?",
+          "exit-description": "Abandonar este espacio de trabajo y eliminar su acceso. Necesitará ser reinvitado para volver a unirse.",
+          "exit-failed": "Error al salir del espacio de trabajo.",
+          "exit-workspace": "Salir del espacio de trabajo",
+          "exited": "Ha salido del espacio de trabajo.",
+          "exiting": "Saliendo..."
+        },
         "data-copy": "Habilitar la copia de datos",
         "data-export": "Habilitar la exportación de datos",
         "default-landing-page": {
@@ -2376,6 +2398,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "Su nombre",
+      "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
@@ -2385,7 +2409,13 @@
       "phone": "Número de móvil",
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "role": "Rol",
-      "subscription": "(Actualice para habilitar la gestión de roles)"
+      "setup-failed": "Error al actualizar el perfil.",
+      "setup-skip": "Lo haré después",
+      "setup-success": "Perfil actualizado.",
+      "setup-title": "¡Bienvenido! Configure su perfil",
+      "subscription": "(Actualice para habilitar la gestión de roles)",
+      "workspace-name": "Nombre del espacio de trabajo",
+      "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
     },
     "sensitive-data": {
       "algorithms": {
@@ -2677,7 +2707,8 @@
     "download-as-file": "Descargar como {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
-    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "duration-hour": "{{hours}} hora",
+    "duration-hours": "{{hours}} horas",
     "execute-query": "Ejecutar consulta",
     "executing-query": "Ejecutando consulta",
     "expire-at": "Expire at {{time}}",
@@ -3740,10 +3771,8 @@
   "task.affected-rows": "Filas afectadas",
   "task.check-type.affected-rows.description": "Estimado por información estadística.",
   "task.check-type.affected-rows.self": "Filas afectadas",
-  "task.check-type.ghost-sync": "gh-ost sync",
   "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
   "task.check-type.sql-review.self": "SQL review",
-  "task.check-type.summary-report": "Summary report",
   "task.executed-by": "Ejecutado por",
   "task.no-cancelable-tasks": "No hay tareas cancelables",
   "task.no-runnable-tasks": "No hay tareas ejecutables",

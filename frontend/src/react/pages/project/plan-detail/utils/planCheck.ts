@@ -28,6 +28,27 @@ export interface ResultGroup {
   results: PlanCheckRun_Result[];
 }
 
+export const getPlanCheckSummaryWithFallback = (
+  planCheckRuns: PlanCheckRun[],
+  statusCount: Record<string, number> | undefined
+): PlanCheckSummary => {
+  if (planCheckRuns.length > 0) return getPlanCheckSummary(planCheckRuns);
+  const counts = statusCount ?? {};
+  const running = counts[PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]] || 0;
+  const success = counts[Advice_Level[Advice_Level.SUCCESS]] || 0;
+  const warning = counts[Advice_Level[Advice_Level.WARNING]] || 0;
+  const error =
+    (counts[Advice_Level[Advice_Level.ERROR]] || 0) +
+    (counts[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0);
+  return {
+    error,
+    running,
+    success,
+    total: running + success + warning + error,
+    warning,
+  };
+};
+
 export const getPlanCheckSummary = (
   planCheckRuns: PlanCheckRun[]
 ): PlanCheckSummary => {
@@ -178,6 +199,22 @@ export const transformReleaseCheckResultsToPlanCheckRuns = (
   const allResults: PlanCheckRun_Result[] = [];
 
   for (const result of results) {
+    if (result.advices.length === 0) {
+      // checkRelease succeeded for this target with no advices. Emit a
+      // synthetic SUCCESS result so the summary shows a Success badge —
+      // otherwise a clean run looks identical to "checks never ran".
+      allResults.push(
+        create(PlanCheckRun_ResultSchema, {
+          code: 0,
+          content: "",
+          status: Advice_Level.SUCCESS,
+          target: result.target,
+          title: "OK",
+          type: PlanCheckRun_Result_Type.STATEMENT_ADVISE,
+        })
+      );
+      continue;
+    }
     for (const advice of result.advices) {
       allResults.push(
         create(PlanCheckRun_ResultSchema, {

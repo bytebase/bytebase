@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "añadió",
       "canceled-issue": "cerró la incidencia",
       "changed-description": "cambio de descripción",
       "changed-from-to": "cambio de {name} de \"{oldValue}\" a \"{newValue}\"",
       "changed-labels": "etiquetas cambiadas",
+      "changed-targets-of": "cambió los targets de",
       "created-issue": "incidencia creado",
+      "disabled-prior-backup-on": "desactivó prior backup en",
+      "enabled-prior-backup-on": "activó prior backup en",
+      "modified-sql-of": "modificó el SQL de",
+      "removed-spec": "eliminó",
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "aprobó la incidencia"
     }
@@ -117,6 +123,7 @@
       "invalid-or-expired-code": "Código inválido o caducado. Por favor solicita uno nuevo.",
       "title": "Restablecer su contraseña"
     },
+    "profile-setup": "Configurar perfil",
     "sign-in": {
       "code-sent-hint": "Se ha enviado un código de verificación a {email}.",
       "demo-account": "Demo Account",
@@ -323,8 +330,10 @@
     "minutes": "Minutos",
     "missing-required-permission": "Faltan permisos requeridos {permissions}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {resource}",
+    "more": "Más",
     "n-items-selected": "{n} elementos seleccionados",
     "n-more": "+{n} más",
+    "n-selected": "{n} seleccionados",
     "name": "Nombre",
     "next": "Siguiente",
     "no-data": "Sin datos",
@@ -676,7 +685,6 @@
       "unspecified": "No especificado"
     },
     "select": "Seleccionar base de datos",
-    "selected-n-databases": "{n} base de datos seleccionada | {n} bases de datos seleccionadas",
     "successfully-exported-schema": "Esquema exportado con éxito",
     "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "sync-complete-for-instance": "Sincronización completada para la instancia '{0}'",
@@ -2700,12 +2708,10 @@
         "description": "Estimado por información estadística.",
         "self": "Filas afectadas"
       },
-      "ghost-sync": "Sincronización gh-ost",
       "sql-review": {
         "description": "Analice la sentencia SQL para detectar posibles problemas y proporcione recomendaciones. Incluye reglas integradas y sus reglas personalizadas.",
         "self": "Revisión de SQL"
-      },
-      "summary-report": "Informe resumido"
+      }
     },
     "checking": "Comprobando...",
     "created": "Creado",

@@ -6,8 +6,10 @@ import {
   Play,
   Plus,
   ThumbsUp,
+  Trash2,
 } from "lucide-react";
 import {
+  Fragment,
   type ReactNode,
   useCallback,
   useEffect,
@@ -29,7 +31,6 @@ import {
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
-import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   extractUserEmail,
@@ -44,8 +45,8 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import {
-  Issue_ApprovalStatus,
   type IssueComment,
   IssueComment_Approval_Status,
   IssueSchema,
@@ -53,6 +54,7 @@ import {
   ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractPlanUID,
@@ -60,9 +62,19 @@ import {
   getSpecDisplayInfo,
 } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import {
+  enablePriorBackupOfSpec,
+  sheetNameOfSpec,
+  targetsOfSpec,
+} from "@/utils/v1/issue/plan";
 import { getSheetStatement } from "@/utils/v1/sheet";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { isDatabaseChangeDoneRolloutComment } from "../utils/activity";
+import {
+  diffEntryKey,
+  diffPlanSpecsForEvent,
+  type SpecDiffEntry,
+} from "../utils/diffPlanSpecs";
 
 function useIssueRefTransform(projectName: string | undefined) {
   const { t } = useTranslation();
@@ -668,7 +680,7 @@ function CommentActionSentence({
                 .href
             : "";
           const sentence =
-            page.issue?.approvalStatus === Issue_ApprovalStatus.APPROVED
+            page.issue?.approvalStatus === ApprovalStatus.APPROVED
               ? planUID
                 ? t("activity.sentence.review-done-rollout-created-for-plan")
                 : t("activity.sentence.review-done-rollout-created")
@@ -724,49 +736,203 @@ function CommentActionSentence({
   }
 
   if (
-    commentType === IssueCommentType.PLAN_SPEC_UPDATE &&
-    issueComment.event.case === "planSpecUpdate"
+    commentType === IssueCommentType.PLAN_UPDATE &&
+    issueComment.event.case === "planUpdate"
   ) {
-    const { spec, fromSheet, toSheet } = issueComment.event.value;
-    if (fromSheet && toSheet && page.plan) {
-      const specs = page.plan.specs ?? [];
-      const specInfo = getSpecDisplayInfo(specs, spec);
-      const planName = page.plan.name;
-      const href = router.resolve({
-        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-        params: {
-          planId: extractPlanUID(planName),
-          projectId: extractProjectResourceName(planName),
-          specId: specInfo?.specId ?? "",
-        },
-      }).href;
-
-      return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
-          {t("activity.sentence.modified-sql-of")}{" "}
-          {specInfo?.specId ? (
-            <a
-              className="inline-flex items-center gap-1 hover:underline"
-              href={href}
-            >
-              {t("plan.spec.change")}
-              <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
-                #{specInfo.displayIndex}
-              </span>
-            </a>
-          ) : (
-            t("plan.spec.change")
-          )}{" "}
-          <IssueDetailStatementUpdateButton
-            newSheet={toSheet}
-            oldSheet={fromSheet}
-          />
-        </span>
-      );
+    const entries = diffPlanSpecsForEvent(issueComment.event.value);
+    if (entries.length === 0) return null;
+    if (entries.length === 1) {
+      return <SpecDiffRow entry={entries[0]} />;
     }
+    return (
+      <div className="flex flex-col gap-1">
+        {entries.map((entry) => (
+          <SpecDiffRow key={diffEntryKey(entry)} entry={entry} />
+        ))}
+      </div>
+    );
   }
 
   return <span className="wrap-break-word min-w-0 text-gray-600" />;
+}
+
+function SpecDiffRow({ entry }: { entry: SpecDiffEntry }) {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  const planName = page.plan?.name ?? "";
+
+  if (entry.kind === "added") {
+    return (
+      <SpecChangeRow specRef={specResourceName(planName, entry.spec)}>
+        {t("activity.sentence.added-spec")}
+      </SpecChangeRow>
+    );
+  }
+
+  if (entry.kind === "removed") {
+    return (
+      <SpecChangeRow specRef={specResourceName(planName, entry.spec)}>
+        {t("activity.sentence.removed-spec")}
+      </SpecChangeRow>
+    );
+  }
+
+  // updated
+  const fragments: ReactNode[] = [];
+  let trailing: ReactNode = null;
+  if (entry.sheetChanged) {
+    const fromSheet = sheetNameOfSpec(entry.from);
+    const toSheet = sheetNameOfSpec(entry.to);
+    fragments.push(
+      <span key="sheet">{t("activity.sentence.modified-sql-of")}</span>
+    );
+    trailing = (
+      <IssueDetailStatementUpdateButton
+        newSheet={toSheet}
+        oldSheet={fromSheet}
+      />
+    );
+  }
+  if (entry.targetsChanged) {
+    const fromTargets = targetsOfSpec(entry.from);
+    const toTargets = targetsOfSpec(entry.to);
+    const fromSet = new Set(fromTargets);
+    const toSet = new Set(toTargets);
+    const added = toTargets.filter((x) => !fromSet.has(x));
+    const removed = fromTargets.filter((x) => !toSet.has(x));
+    const diffText = [
+      added.length > 0 ? `+${added.join(", ")}` : null,
+      removed.length > 0 ? `-${removed.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("  ");
+    fragments.push(
+      <span key="targets" className="inline-flex items-center gap-1">
+        {t("activity.sentence.changed-targets-of")}{" "}
+        <span className="text-xs">{diffText}</span>
+      </span>
+    );
+  }
+  if (entry.priorBackupChanged) {
+    const flipped = enablePriorBackupOfSpec(entry.to);
+    fragments.push(
+      <span key="backup">
+        {flipped
+          ? t("activity.sentence.enabled-prior-backup-on")
+          : t("activity.sentence.disabled-prior-backup-on")}
+      </span>
+    );
+  }
+  if (fragments.length === 0 && entry.otherChanged) {
+    // Unknown attribute change — generic fallback with a JSON-diff toggle.
+    return (
+      <SpecChangeRow specRef={specResourceName(planName, entry.to)}>
+        <span>{t("common.updated")}</span>
+        <details className="ml-2 text-xs">
+          <summary className="cursor-pointer text-control-light">
+            {t("common.detail")}
+          </summary>
+          <pre className="mt-1 max-h-48 overflow-auto rounded bg-control-bg p-2">
+            {JSON.stringify({ from: entry.from, to: entry.to }, null, 2)}
+          </pre>
+        </details>
+      </SpecChangeRow>
+    );
+  }
+
+  return (
+    <SpecChangeRow
+      specRef={specResourceName(planName, entry.to)}
+      trailing={trailing}
+    >
+      {joinFragments(fragments, t("common.and"))}
+    </SpecChangeRow>
+  );
+}
+
+function specResourceName(planName: string, spec: Plan_Spec): string {
+  return planName ? `${planName}/specs/${spec.id}` : `specs/${spec.id}`;
+}
+
+function SpecChangeRow({
+  specRef,
+  children,
+  trailing,
+}: {
+  specRef: string;
+  children: ReactNode;
+  trailing?: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const page = useIssueDetailContext();
+  const specs = page.plan?.specs ?? [];
+  const specInfo = getSpecDisplayInfo(specs, specRef);
+  const specIdFromRef = specRef.match(/\/specs\/([^/]+)$/)?.[1] ?? "";
+  const specId = specInfo?.specId ?? specIdFromRef;
+  const specIdShort = specId.slice(0, 8);
+  // Only link to specs that still exist in the live plan — otherwise the spec
+  // view would silently bounce back to specs[0].
+  const href = specInfo?.specId
+    ? router.resolve({
+        query: {
+          ...router.currentRoute.value.query,
+          spec: specInfo.specId,
+        },
+      }).href
+    : null;
+  const onClick = href
+    ? (e: React.MouseEvent) => {
+        // Allow modifier-clicks (open in new tab) to use the native href.
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        void router.push({
+          query: {
+            ...router.currentRoute.value.query,
+            spec: specInfo!.specId,
+          },
+        });
+      }
+    : undefined;
+
+  const chip = (
+    <span className="inline-flex items-center gap-1">
+      {t("plan.spec.change")}
+      {specIdShort !== "" ? (
+        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+          {specIdShort}
+        </span>
+      ) : null}
+    </span>
+  );
+
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-gray-600">
+      {children}{" "}
+      {href != null ? (
+        <a
+          className="inline-flex items-center gap-1 hover:underline"
+          href={href}
+          onClick={onClick}
+        >
+          {chip}
+        </a>
+      ) : (
+        chip
+      )}
+      {trailing != null ? <> {trailing}</> : null}
+    </span>
+  );
+}
+
+function joinFragments(fragments: ReactNode[], separator: string): ReactNode {
+  if (fragments.length === 0) return null;
+  if (fragments.length === 1) return fragments[0];
+  return fragments.map((f, i) => (
+    <Fragment key={i}>
+      {i > 0 ? <span> {separator} </span> : null}
+      {f}
+    </Fragment>
+  ));
 }
 
 function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
@@ -842,7 +1008,31 @@ function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
     }
   }
 
-  if (commentType === IssueCommentType.PLAN_SPEC_UPDATE) {
+  if (
+    commentType === IssueCommentType.PLAN_UPDATE &&
+    issueComment.event.case === "planUpdate"
+  ) {
+    const entries = diffPlanSpecsForEvent(issueComment.event.value);
+    const allAdded =
+      entries.length > 0 && entries.every((e) => e.kind === "added");
+    const allRemoved =
+      entries.length > 0 && entries.every((e) => e.kind === "removed");
+    if (allAdded) {
+      return (
+        <CommentIconBadge
+          className="bg-success text-white"
+          icon={<Plus className="h-4 w-4" />}
+        />
+      );
+    }
+    if (allRemoved) {
+      return (
+        <CommentIconBadge
+          className="bg-error text-white"
+          icon={<Trash2 className="h-4 w-4" />}
+        />
+      );
+    }
     return (
       <CommentIconBadge
         className="bg-control-bg text-control"
@@ -966,13 +1156,17 @@ function IssueDetailStatementUpdateButton({
     const load = async () => {
       setIsLoading(true);
       try {
+        // One side may be empty when the sheet was attached (no oldSheet)
+        // or cleared (no newSheet). Treat that side as empty content
+        // rather than fetching by an empty resource name.
+        const fetchStatement = async (sheetName: string) => {
+          if (!sheetName) return "";
+          const sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+          return sheet ? getSheetStatement(sheet) : "";
+        };
         const [oldValue, newValue] = await Promise.all([
-          sheetStore
-            .getOrFetchSheetByName(oldSheet)
-            .then((sheet) => (sheet ? getSheetStatement(sheet) : "")),
-          sheetStore
-            .getOrFetchSheetByName(newSheet)
-            .then((sheet) => (sheet ? getSheetStatement(sheet) : "")),
+          fetchStatement(oldSheet),
+          fetchStatement(newSheet),
         ]);
         if (!canceled) {
           setOldStatement(oldValue);
@@ -1005,19 +1199,35 @@ function IssueDetailStatementUpdateButton({
             <DialogTitle>{t("common.detail")}</DialogTitle>
           </div>
           <div className="px-6 pb-6 pt-2">
-            <div className="relative h-[calc(100vh-10rem)] w-full">
-              {isLoading ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-control-light" />
-                </div>
-              ) : (
+            {(() => {
+              // Fill the dialog instead of letting the editor shrink to
+              // content height — short SQL diffs were leaving most of the
+              // dialog blank. Cap at a sensible max so very tall viewports
+              // don't get an awkwardly-stretched editor.
+              const height = Math.min(
+                900,
+                Math.max(400, window.innerHeight - 240)
+              );
+              if (isLoading) {
+                return (
+                  <div
+                    className="flex w-full items-center justify-center rounded-md border"
+                    style={{ height }}
+                  >
+                    <Loader2 className="h-6 w-6 animate-spin text-control-light" />
+                  </div>
+                );
+              }
+              return (
                 <ReadonlyDiffMonaco
-                  className="h-full w-full overflow-clip rounded-md border"
+                  className="w-full"
+                  max={height}
+                  min={height}
                   modified={newStatement}
                   original={oldStatement}
                 />
-              )}
-            </div>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>

@@ -50,3 +50,39 @@
         line: 2
         column: 0
       endposition: null
+# ZEROFILL preservation pin (batch 10): pingcap's
+# `mysql.HasUnsignedFlag(column.Tp.GetFlag())` returned true when EITHER
+# the unsigned flag OR the zerofill flag was set (ZEROFILL implies
+# UNSIGNED in MySQL). Omni splits the bits — `col.TypeName.Unsigned` and
+# `col.TypeName.Zerofill` are separate booleans. A mechanical port
+# checking only Unsigned would regress on `CREATE TABLE t(a INT ZEROFILL
+# AUTO_INCREMENT)` (pingcap-tidb treated this as unsigned, rule did NOT
+# fire). Fixture locks the Unsigned||Zerofill check.
+- statement: CREATE TABLE t(a INT ZEROFILL AUTO_INCREMENT)
+  changeType: 1
+- statement: CREATE TABLE t(a INT UNSIGNED ZEROFILL AUTO_INCREMENT)
+  changeType: 1
+# Multi-line CREATE TABLE line-position pin (batch 10, Codex round-2):
+# pingcap-tidb captured column.OriginTextPosition() into columnData.line
+# but then emitted checker.line (statement line) in the advice — column
+# line was dead code. The omni port actually uses column line via
+# ostmt.AbsoluteLine(column.Loc.Start), so multi-line CREATE TABLE advice
+# now points at the OFFENDING COLUMN's line rather than the CREATE TABLE
+# keyword's line. UX improvement; same shape as batch 9
+# column_require_default's column-line behavior. Pin locks the new
+# contract — future refactor that reverts to statement-line will fail
+# this fixture.
+- statement: |-
+    CREATE TABLE t(
+      a INT AUTO_INCREMENT
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 417
+      title: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
+      content: Auto-increment column `t`.`a` is not UNSIGNED type
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

@@ -10,6 +10,7 @@ export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";
 export const AUTH_PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 export const AUTH_OAUTH_CALLBACK_MODULE = "auth.oauth.callback";
 export const AUTH_OIDC_CALLBACK_MODULE = "auth.oidc.callback";
+export const AUTH_PROFILE_SETUP_MODULE = "auth.profile.setup";
 export const AUTH_2FA_SETUP_MODULE = "auth.2fa.setup";
 export const OAUTH2_CONSENT_MODULE = "oauth2.consent";
 
@@ -79,6 +80,13 @@ const authRoutes: RouteRecordRaw[] = [
         meta: { title: () => t("multi-factor.self") },
         component: reactPage,
         props: { page: "MultiFactorPage" },
+      },
+      {
+        path: "profile-setup",
+        name: AUTH_PROFILE_SETUP_MODULE,
+        meta: { title: () => t("auth.profile-setup") },
+        component: reactPage,
+        props: { page: "ProfileSetupPage" },
       },
     ],
   },

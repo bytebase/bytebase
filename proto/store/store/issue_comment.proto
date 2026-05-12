@@ -4,6 +4,7 @@ package bytebase.store;
 
 import "store/approval.proto";
 import "store/issue.proto";
+import "store/plan.proto";
 
 option go_package = "generated-go/store";
 
@@ -13,7 +14,7 @@ message IssueCommentPayload {
   oneof event {
     Approval approval = 2;
     IssueUpdate issue_update = 3;
-    PlanSpecUpdate plan_spec_update = 7;
+    PlanUpdate plan_update = 7;
   }
 
   message Approval {
@@ -31,14 +32,12 @@ message IssueCommentPayload {
     repeated string to_labels = 8;
   }
 
-  // Plan spec update event (tracks sheet changes to plan specs)
-  message PlanSpecUpdate {
-    // The spec that was updated
-    // Format: projects/{project}/plans/{plan}/specs/{spec}
-    string spec = 1;
-    // The SHA256 hash of the previous sheet content (hex-encoded).
-    optional string from_sheet_sha256 = 2;
-    // The SHA256 hash of the new sheet content (hex-encoded).
-    optional string to_sheet_sha256 = 3;
+  // PlanUpdate carries before/after snapshots of plan.config.specs,
+  // emitted once per PlanService.UpdatePlan call whose specs branch
+  // produces a non-cosmetic diff. The renderer computes per-spec
+  // add/remove/update from the snapshot pair.
+  message PlanUpdate {
+    repeated PlanConfig.Spec from_specs = 1;
+    repeated PlanConfig.Spec to_specs = 2;
   }
 }

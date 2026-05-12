@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "追加しました",
       "canceled-issue": "イシューを閉じた",
       "changed-description": "説明の変更",
       "changed-from-to": "{name} を「{oldValue}」から「{newValue}」に変更します",
       "changed-labels": "ラベルを変更しました",
+      "changed-targets-of": "ターゲットを変更しました",
       "created-issue": "イシューを作成する",
+      "disabled-prior-backup-on": "事前バックアップを無効化しました",
+      "enabled-prior-backup-on": "事前バックアップを有効化しました",
+      "modified-sql-of": "SQL を変更しました",
+      "removed-spec": "削除しました",
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを承認した"
     }
@@ -117,6 +123,7 @@
       "invalid-or-expired-code": "コードが無効または期限切れです。新しいコードをリクエストしてください。",
       "title": "あなたのパスワードをリセット"
     },
+    "profile-setup": "プロフィール設定",
     "sign-in": {
       "code-sent-hint": "{email} に認証コードを送信しました。",
       "demo-account": "Demo Account",
@@ -323,8 +330,10 @@
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {permissions}",
     "missing-required-permission-for-resource": "リソース {resource} に必要な権限がありません",
+    "more": "その他",
     "n-items-selected": "{n} 件選択済み",
     "n-more": "+{n} もっと",
+    "n-selected": "{n} 件選択中",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",
@@ -676,7 +685,6 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
-    "selected-n-databases": "{n} 個のデータベースが選択されました",
     "successfully-exported-schema": "スキーマのエクスポートに成功しました",
     "successfully-transferred-databases": "データベースの移行が完了しました",
     "sync-complete-for-instance": "インスタンス '{0}' の同期が完了しました",
@@ -2700,12 +2708,10 @@
         "description": "統計情報から推定。",
         "self": "影響を受ける行"
       },
-      "ghost-sync": "gh-ost同期",
       "sql-review": {
         "description": "SQL文を分析し、潜在的な問題点を特定し、推奨事項を提示します。組み込みルールとカスタムルールが含まれます。",
         "self": "SQL レビュー"
-      },
-      "summary-report": "概略報告"
+      }
     },
     "checking": "検査中…",
     "created": "内蔵",

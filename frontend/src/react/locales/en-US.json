@@ -1,10 +1,15 @@
 {
+  "activity.sentence.added-spec": "added",
   "activity.sentence.canceled-issue": "closed the issue",
   "activity.sentence.changed-description": "changed description",
   "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
   "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.changed-targets-of": "changed targets of",
   "activity.sentence.created-issue": "created issue",
+  "activity.sentence.disabled-prior-backup-on": "disabled prior backup on",
+  "activity.sentence.enabled-prior-backup-on": "enabled prior backup on",
   "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.removed-spec": "removed",
   "activity.sentence.reopened-issue": "reopened issue",
   "activity.sentence.resolved-issue": "marked the issue as Done",
   "activity.sentence.review-done-rollout-created": "Review done, rollout created",
@@ -318,6 +323,7 @@
     "logout": "Logout",
     "manage": "Manage",
     "manually-select": "Manually select",
+    "maximize": "Maximize",
     "members_one": "Member",
     "members_other": "Members",
     "minutes": "Minutes",
@@ -326,6 +332,7 @@
     "more": "More",
     "n-items-selected": "{{n}} items selected",
     "n-more": "+{{n}} more",
+    "n-selected": "{{n}} selected",
     "name": "Name",
     "next": "Next",
     "no-data": "No data",
@@ -795,7 +802,6 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
-    "selected-n-databases": "{{n}} database(s) selected",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{{0}}'",
     "sync-database": "Sync Database",
@@ -1694,9 +1700,7 @@
         "title_one": "Delete {{count}} Project?",
         "title_other": "Delete {{count}} Projects?",
         "warning": "This action cannot be undone. All project data including issues, configurations, and history will be permanently removed."
-      },
-      "selected_one": "{{count}} project selected",
-      "selected_other": "{{count}} projects selected"
+      }
     },
     "create-modal": {
       "project-name": "Project Name",
@@ -2005,6 +2009,7 @@
       "default": "Default",
       "foreign-key": "Foreign Key",
       "name": "Name",
+      "name-placeholder": "Column name",
       "not-null": "Not Null",
       "on-update": "On Update",
       "operations": "Operations",
@@ -2052,6 +2057,7 @@
       "name-placeholder": "Schema name",
       "select": "Select schema"
     },
+    "select-object-hint": "Select a database object from the tree to edit",
     "self": "Schema editor",
     "table": {
       "duplicate-name": "Table name already exists",
@@ -2153,6 +2159,22 @@
         "branding": "Branding",
         "config-partly-updated": "Configuration partly updated.",
         "config-updated": "Configuration is updated.",
+        "danger-zone": {
+          "confirm-description": "This will permanently delete the workspace \"{{workspace}}\" and all its data. This action cannot be undone. Type the workspace name to confirm.",
+          "confirm-title": "Delete workspace?",
+          "delete-failed": "Failed to delete workspace.",
+          "delete-workspace": "Delete workspace",
+          "deleted": "Workspace deleted.",
+          "deleting": "Deleting...",
+          "description": "Once you delete a workspace, all projects, databases, issues, and settings within it will be permanently removed. This action cannot be undone.",
+          "exit-confirm-description": "You will lose access to workspace \"{{workspace}}\". You will need to be re-invited to rejoin.",
+          "exit-confirm-title": "Exit workspace?",
+          "exit-description": "Leave this workspace and remove your access. You will need to be re-invited to rejoin.",
+          "exit-failed": "Failed to exit workspace.",
+          "exit-workspace": "Exit workspace",
+          "exited": "You have exited the workspace.",
+          "exiting": "Exiting..."
+        },
         "data-copy": "Enable data copying",
         "data-export": "Enable data export",
         "default-landing-page": {
@@ -2388,6 +2410,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "Your name",
+      "display-name-placeholder": "Enter your name",
       "email": "Email",
       "password": "Password",
       "password-confirm": "Password Confirm",
@@ -2397,7 +2421,13 @@
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx",
       "role": "Role",
-      "subscription": "(Upgrade to enable role management)"
+      "setup-failed": "Failed to update profile.",
+      "setup-skip": "I'll do this later",
+      "setup-success": "Profile updated.",
+      "setup-title": "Welcome! Set up your profile",
+      "subscription": "(Upgrade to enable role management)",
+      "workspace-name": "Workspace name",
+      "workspace-name-placeholder": "Enter workspace name"
     },
     "sensitive-data": {
       "algorithms": {
@@ -2689,7 +2719,8 @@
     "download-as-file": "Download as {{file}}",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
-    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "duration-hour": "{{hours}} hour",
+    "duration-hours": "{{hours}} hours",
     "execute-query": "Execute query",
     "executing-query": "Executing query",
     "expire-at": "Expire at {{time}}",
@@ -3752,10 +3783,8 @@
   "task.affected-rows": "Affected rows",
   "task.check-type.affected-rows.description": "Estimated by statistical information.",
   "task.check-type.affected-rows.self": "Affected rows",
-  "task.check-type.ghost-sync": "gh-ost sync",
   "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
   "task.check-type.sql-review.self": "SQL review",
-  "task.check-type.summary-report": "Summary report",
   "task.executed-by": "Executed by",
   "task.no-cancelable-tasks": "No cancelable tasks",
   "task.no-runnable-tasks": "No runnable tasks",

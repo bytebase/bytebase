@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Badge } from "@/react/components/ui/badge";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
   TableBody,
@@ -142,11 +143,18 @@ export function ProjectTable({
       <TableHeader>
         <TableRow>
           {showSelection ? (
-            <TableHead className="w-12">
+            <TableHead
+              className="w-12 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSelectAll();
+              }}
+            >
               <Checkbox
                 checked={allSelected}
                 aria-label={t("common.select-all")}
                 onCheckedChange={handleSelectAll}
+                onClick={(e) => e.stopPropagation()}
               />
             </TableHead>
           ) : showLeadingCheck ? (
@@ -206,14 +214,19 @@ export function ProjectTable({
               >
                 {showSelection ? (
                   <TableCell
-                    className="w-12"
-                    onClick={(e) => e.stopPropagation()}
+                    className={cn("w-12", !isDefault && "cursor-pointer")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isDefault) return;
+                      handleToggleRow(project.name);
+                    }}
                   >
                     <Checkbox
                       checked={isSelected}
                       aria-label={t("common.select")}
                       disabled={isDefault}
                       onCheckedChange={() => handleToggleRow(project.name)}
+                      onClick={(e) => e.stopPropagation()}
                       className="disabled:opacity-50"
                     />
                   </TableCell>
@@ -225,16 +238,23 @@ export function ProjectTable({
                   </TableCell>
                 ) : null}
                 <TableCell>
-                  <HighlightLabelText text={resourceId} keyword={keyword} />
+                  <EllipsisText text={resourceId}>
+                    <HighlightLabelText text={resourceId} keyword={keyword} />
+                  </EllipsisText>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-x-2">
-                    <HighlightLabelText
+                  <div className="flex items-center gap-x-2 min-w-0">
+                    <EllipsisText
                       text={project.title || resourceId}
-                      keyword={keyword}
-                    />
+                      className="min-w-0"
+                    >
+                      <HighlightLabelText
+                        text={project.title || resourceId}
+                        keyword={keyword}
+                      />
+                    </EllipsisText>
                     {project.state === State.DELETED ? (
-                      <Badge variant="warning" className="text-xs">
+                      <Badge variant="warning" className="text-xs shrink-0">
                         {t("common.archived")}
                       </Badge>
                     ) : null}

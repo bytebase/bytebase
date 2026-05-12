@@ -266,11 +266,11 @@ export const VirtualDataTable = forwardRef<
   return (
     <div
       ref={containerRef}
-      className="relative w-full flex-1 min-h-0 overflow-auto rounded-sm border"
+      className="relative w-full flex-1 min-h-0 overflow-auto rounded-sm border dark:border-zinc-500"
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-1 bg-control-bg flex shadow-sm"
+        className="sticky top-0 z-1 bg-control-bg dark:bg-gray-700 flex shadow-sm"
         style={{ minWidth: minRowWidth }}
       >
         {/* Index header */}
@@ -306,10 +306,10 @@ export const VirtualDataTable = forwardRef<
               }
               onClick={(e) => handleSelectColumn(e, columnIndex)}
               className={cn(
-                "px-3 py-1.5 min-w-8 text-left text-xs font-medium text-control-light tracking-wider",
+                "px-3 py-1.5 min-w-8 text-left text-xs font-medium text-control-light dark:text-gray-300 tracking-wider",
                 !selectionDisabled &&
-                  "cursor-pointer hover:bg-control-bg-hover",
-                isSelected && "bg-accent/10!"
+                  "cursor-pointer hover:bg-control-bg-hover dark:hover:bg-gray-800",
+                isSelected && "bg-accent/10! dark:bg-accent/40!"
               )}
             >
               <div className="flex items-center min-w-0 gap-x-1">
@@ -392,9 +392,9 @@ export const VirtualDataTable = forwardRef<
               {/* Index cell */}
               <div
                 className={cn(
-                  "relative flex items-center shrink-0 text-sm leading-5 whitespace-nowrap break-all border-block-border border-r border-b group-even:bg-control-bg/40",
-                  isActive && "bg-accent/10!",
-                  rowSelected && "bg-accent/20!"
+                  "relative flex items-center shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-r border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
+                  isActive && "bg-accent/10! dark:bg-accent/40!",
+                  rowSelected && "bg-accent/20! dark:bg-accent/40!"
                 )}
                 data-col-index={0}
                 style={{
@@ -416,8 +416,8 @@ export const VirtualDataTable = forwardRef<
                     aria-label={`Select row ${rowIndex + 1}`}
                     onClick={(e) => handleSelectRow(e, rowIndex)}
                     className={cn(
-                      "absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10",
-                      rowSelected && "bg-accent/20!"
+                      "absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 hover:bg-accent/10 dark:bg-white/10 dark:hover:bg-accent/40",
+                      rowSelected && "bg-accent/20! dark:bg-accent/40!"
                     )}
                   />
                 )}
@@ -431,12 +431,12 @@ export const VirtualDataTable = forwardRef<
                   <div
                     key={`${rowIndex}-${columnIndex + 1}`}
                     className={cn(
-                      "relative shrink-0 text-sm leading-5 whitespace-nowrap break-all border-block-border border-b group-even:bg-control-bg/40",
+                      "relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 border-b group-even:bg-control-bg/40 dark:group-even:bg-gray-700/50",
                       !isLastCol && "border-r",
                       // Match the Vue version: an active (search-matched) row
                       // highlights every cell in that row, not just the index
                       // column.
-                      isActive && "bg-accent/10!"
+                      isActive && "bg-accent/10! dark:bg-accent/40!"
                     )}
                     data-col-index={columnIndex + 1}
                     style={{
@@ -490,7 +490,7 @@ function HeaderCell({
     <div
       onClick={onClick}
       className={cn(
-        "group relative shrink-0 border-block-border",
+        "group relative shrink-0 border-block-border dark:border-zinc-500",
         borderRight ? "border-x" : "border-l",
         className
       )}

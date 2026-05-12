@@ -5,6 +5,7 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
 import { Checkbox } from "@/react/components/ui/checkbox";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import {
   Table,
   TableBody,
@@ -58,6 +59,8 @@ interface DatabaseColumn {
   sortKey?: DatabaseTableSort["key"];
   cellClassName?: string;
   render: (database: Database) => React.ReactNode;
+  onCellClick?: (database: Database, e: React.MouseEvent) => void;
+  onHeaderClick?: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -136,9 +139,18 @@ export function DatabaseTableView({
           <Checkbox
             checked={someSelected ? "indeterminate" : allSelected}
             onCheckedChange={toggleSelectAll}
+            onClick={(e) => e.stopPropagation()}
           />
         ),
         defaultWidth: 48,
+        onCellClick: (db, e) => {
+          e.stopPropagation();
+          toggleSelection(db.name);
+        },
+        onHeaderClick: (e) => {
+          e.stopPropagation();
+          toggleSelectAll();
+        },
         render: (db) => (
           <Checkbox
             checked={selectedNames?.has(db.name) ?? false}
@@ -158,12 +170,11 @@ export function DatabaseTableView({
       sortKey: "name",
       render: (db) => {
         const instanceResource = getInstanceResource(db);
+        const databaseName = extractDatabaseResourceName(db.name).databaseName;
         return (
-          <div className="flex items-center gap-x-2">
+          <div className="flex items-center gap-x-2 min-w-0">
             <EngineIcon engine={instanceResource.engine} className="h-5 w-5" />
-            <span className="truncate">
-              {extractDatabaseResourceName(db.name).databaseName}
-            </span>
+            <EllipsisText text={databaseName} className="min-w-0 flex-1" />
           </div>
         );
       },
@@ -301,6 +312,8 @@ export function DatabaseTableView({
                   onResizeStart={
                     col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
                   }
+                  className={cn(col.onHeaderClick && "cursor-pointer")}
+                  onClick={col.onHeaderClick}
                 >
                   {col.title}
                 </TableHead>
@@ -340,7 +353,16 @@ export function DatabaseTableView({
                 {columns.map((col) => (
                   <TableCell
                     key={col.key}
-                    className={cn("overflow-hidden", col.cellClassName)}
+                    className={cn(
+                      "overflow-hidden",
+                      col.cellClassName,
+                      col.onCellClick && "cursor-pointer"
+                    )}
+                    onClick={
+                      col.onCellClick
+                        ? (e) => col.onCellClick!(db, e)
+                        : undefined
+                    }
                   >
                     {col.render(db)}
                   </TableCell>

@@ -134,14 +134,14 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 		a.NoError(err)
 		issue = issueGetResp.Msg
 
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 
 	// Verify approval finding completed successfully
 	a.NotNil(issue)
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus, "Approval finding should complete")
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, issue.ApprovalStatus, "Approval finding should complete")
 
 	// Verify that the approval template was correctly assigned
 	// Note: The status may be SKIPPED/APPROVED if the user is a workspace owner
@@ -282,14 +282,14 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 		a.NoError(err)
 		issue = issueGetResp.Msg
 
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 
 	// Verify approval finding completed
 	a.NotNil(issue)
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, issue.ApprovalStatus)
 
 	// Verify the first rule was applied (not the catch-all)
 	a.Equal("Prod Change Database - First Rule", issue.GetApprovalTemplate().GetTitle(), "First matching rule should be applied")
@@ -411,20 +411,20 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 		a.NoError(err)
 		issue = issueGetResp.Msg
 
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 
 	// Verify approval finding completed
 	a.NotNil(issue)
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, issue.ApprovalStatus)
 
 	// Since no rule matches test environment, no approval template should be assigned
 	// and the issue should be auto-approved (or skipped)
 	a.Nil(issue.ApprovalTemplate, "No approval template should be assigned when no rule matches")
 	// Status should be APPROVED or SKIPPED (auto-approved)
-	a.True(issue.ApprovalStatus == v1pb.Issue_APPROVED || issue.ApprovalStatus == v1pb.Issue_SKIPPED,
+	a.True(issue.ApprovalStatus == v1pb.ApprovalStatus_APPROVED || issue.ApprovalStatus == v1pb.ApprovalStatus_SKIPPED,
 		"Issue should be auto-approved when no rule matches, got status: %v", issue.ApprovalStatus)
 }
 
@@ -623,14 +623,14 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 		}))
 		a.NoError(err)
 		issue = issueGetResp.Msg
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 
 	// Verify fallback rule was applied
 	a.NotNil(issue)
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, issue.ApprovalStatus)
 	a.NotNil(issue.ApprovalTemplate, "Fallback approval template should be assigned")
 	a.Equal("Fallback Rule", issue.GetApprovalTemplate().GetTitle(), "Fallback rule should be applied")
 }
@@ -760,14 +760,14 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 		}))
 		a.NoError(err)
 		issue = issueGetResp.Msg
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 
 	// Verify source-specific rule was applied, NOT the fallback
 	a.NotNil(issue)
-	a.NotEqual(v1pb.Issue_CHECKING, issue.ApprovalStatus)
+	a.NotEqual(v1pb.ApprovalStatus_CHECKING, issue.ApprovalStatus)
 	a.NotNil(issue.ApprovalTemplate)
 	a.Equal("Source Specific Rule (should be used)", issue.GetApprovalTemplate().GetTitle(),
 		"Source-specific rule should take priority over fallback even when fallback is first in list")
@@ -908,12 +908,12 @@ func TestSelfApprovalBlocked(t *testing.T) {
 		}))
 		a.NoError(err)
 		issue = issueGetResp.Msg
-		if issue.ApprovalStatus != v1pb.Issue_CHECKING {
+		if issue.ApprovalStatus != v1pb.ApprovalStatus_CHECKING {
 			break
 		}
 	}
 	a.NotNil(issue)
-	a.Equal(v1pb.Issue_PENDING, issue.ApprovalStatus)
+	a.Equal(v1pb.ApprovalStatus_PENDING, issue.ApprovalStatus)
 
 	// Try to approve as creator (should fail due to self-approval restriction)
 	_, err = ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
@@ -980,5 +980,5 @@ func TestSelfApprovalBlocked(t *testing.T) {
 		Name: issue.Name,
 	}))
 	a.NoError(err)
-	a.Equal(v1pb.Issue_APPROVED, issueGetResp.Msg.ApprovalStatus)
+	a.Equal(v1pb.ApprovalStatus_APPROVED, issueGetResp.Msg.ApprovalStatus)
 }

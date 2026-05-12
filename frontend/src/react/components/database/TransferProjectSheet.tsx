@@ -51,7 +51,7 @@ export function TransferProjectSheet({
         </SheetHeader>
         <SheetBody className="gap-y-4 overflow-hidden">
           <p className="shrink-0 text-sm text-control-light">
-            {t("database.selected-n-databases", { n: databases.length })}
+            {t("common.n-selected", { n: databases.length })}
           </p>
 
           {/* Table is naturally sized — short lists stay short. When the

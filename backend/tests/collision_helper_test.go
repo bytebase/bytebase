@@ -535,6 +535,7 @@ type projectSnapshot struct {
 	Issues        []*v1pb.Issue
 	TaskRuns      []*v1pb.TaskRun
 	PlanCheckRuns []*v1pb.PlanCheckRun
+	IssueComments []*v1pb.IssueComment
 }
 
 // snapshotProject captures every plan/issue/task_run/plan_check_run row
@@ -608,11 +609,26 @@ func snapshotProject(
 		}
 	}
 
+	var issueComments []*v1pb.IssueComment
+	for _, i := range issues {
+		icResp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
+			Parent:   i.Name,
+			PageSize: 1000,
+		}))
+		a.NoError(err, "ListIssueComments for issue %s", i.Name)
+		for _, c := range icResp.Msg.IssueComments {
+			a.True(strings.HasPrefix(c.Name, project.Name+"/"),
+				"ListIssueComments for issue %s returned %q — read-path leak", i.Name, c.Name)
+		}
+		issueComments = append(issueComments, icResp.Msg.IssueComments...)
+	}
+
 	return &projectSnapshot{
 		Plans:         plans,
 		Issues:        issues,
 		TaskRuns:      taskRuns,
 		PlanCheckRuns: planCheckRuns,
+		IssueComments: issueComments,
 	}
 }
 
@@ -661,6 +677,16 @@ func assertProjectUnchanged(
 			a.Equal(b.Status, af.Status, "%s: plan_check_run %s status changed from %v to %v", label, b.Name, b.Status, af.Status)
 		},
 		label, "plan_check_run")
+
+	// issue_comment is keyed by composite (project, id); a cross-project
+	// emission would surface here as either a new row in `after` or a
+	// disappeared row.
+	assertNoChange(t, before.IssueComments, after.IssueComments,
+		func(c *v1pb.IssueComment) string { return c.Name },
+		func(b, af *v1pb.IssueComment) {
+			a.Equal(b.Comment, af.Comment, "%s: issue_comment %s comment changed", label, b.Name)
+		},
+		label, "issue_comment")
 }
 
 // assertNoChange compares two row slices keyed by name, fails if any

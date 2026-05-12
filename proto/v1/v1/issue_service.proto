@@ -13,6 +13,7 @@ import "google/protobuf/timestamp.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
+import "v1/plan_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -471,20 +472,6 @@ message Issue {
   repeated string labels = 17;
 
   // The overall approval status for the issue.
-  enum ApprovalStatus {
-    // Unspecified approval status.
-    APPROVAL_STATUS_UNSPECIFIED = 0;
-    // Approval checks are being evaluated.
-    CHECKING = 1;
-    // Approval is pending.
-    PENDING = 2;
-    // Issue has been approved.
-    APPROVED = 3;
-    // Issue has been rejected.
-    REJECTED = 4;
-    // Approval was skipped.
-    SKIPPED = 5;
-  }
   ApprovalStatus approval_status = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The access grant associated with this issue.
@@ -619,8 +606,8 @@ message IssueComment {
     Approval approval = 7;
     // Issue update event.
     IssueUpdate issue_update = 8;
-    // Plan spec update event.
-    PlanSpecUpdate plan_spec_update = 12;
+    // Plan update event.
+    PlanUpdate plan_update = 12;
   }
 
   // Approval event information.
@@ -654,16 +641,10 @@ message IssueComment {
     repeated string to_labels = 8;
   }
 
-  // Plan spec update event information (tracks sheet changes to plan specs).
-  message PlanSpecUpdate {
-    // The spec that was updated.
-    // Format: projects/{project}/plans/{plan}/specs/{spec}
-    string spec = 1;
-    // The previous sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    optional string from_sheet = 2;
-    // The new sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    optional string to_sheet = 3;
+  // Plan update event information (snapshot of plan.config.specs before
+  // and after a PlanService.UpdatePlan call that mutated specs).
+  message PlanUpdate {
+    repeated Plan.Spec from_specs = 1;
+    repeated Plan.Spec to_specs = 2;
   }
 }

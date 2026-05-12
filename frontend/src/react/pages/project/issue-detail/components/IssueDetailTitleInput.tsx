@@ -86,7 +86,7 @@ export function IssueDetailTitleInput() {
     <div className="relative min-w-0 flex-1">
       <input
         className={[
-          "h-10 w-full bg-transparent text-[18px] font-bold text-main transition-colors outline-hidden",
+          "h-10 w-full bg-transparent text-xl! font-bold text-main transition-colors outline-hidden",
           "placeholder:text-control-placeholder",
           "caret-main",
           isReadOnly ? "cursor-default" : "cursor-text",

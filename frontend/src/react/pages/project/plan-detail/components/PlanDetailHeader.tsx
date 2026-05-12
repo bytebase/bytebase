@@ -156,6 +156,17 @@ export function PlanDetailHeader() {
       return;
     }
 
+    // Skip the API round-trip when nothing changed so we don't pollute the
+    // issue timeline with "changed name from X to X".
+    const trimmed = title.trim();
+    const currentTitle = page.issue?.title ?? page.plan.title;
+    if (trimmed === currentTitle) {
+      setTitle(currentTitle);
+      setEditingTitle(false);
+      setEditing("title", false);
+      return;
+    }
+
     try {
       setUpdating(true);
       if (page.issue) {
@@ -429,7 +440,7 @@ export function PlanDetailHeader() {
         <div className="min-w-0 flex-1">
           <input
             className={cn(
-              "h-9 w-full bg-transparent text-[18px] font-bold text-main outline-hidden",
+              "h-9 w-full bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle
                 ? "border border-control-border px-3"
                 : "border border-transparent px-0",

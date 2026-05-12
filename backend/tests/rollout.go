@@ -100,11 +100,11 @@ waitApproval:
 				return err
 			}
 			issue := issueResp.Msg
-			if issue.ApprovalStatus == v1pb.Issue_APPROVED || issue.ApprovalStatus == v1pb.Issue_SKIPPED {
+			if issue.ApprovalStatus == v1pb.ApprovalStatus_APPROVED || issue.ApprovalStatus == v1pb.ApprovalStatus_SKIPPED {
 				break waitApproval
 			}
 			// If the issue is pending approval, approve it (test user should be project owner)
-			if issue.ApprovalStatus == v1pb.Issue_PENDING {
+			if issue.ApprovalStatus == v1pb.ApprovalStatus_PENDING {
 				_, err := ctl.issueServiceClient.ApproveIssue(ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{
 					Name: issueName,
 				}))

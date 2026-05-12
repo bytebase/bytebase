@@ -196,7 +196,20 @@ export function Panels() {
           <div className="h-full flex flex-col">
             <div className="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center">
               <div className="flex items-center justify-start gap-2">
-                <DatabaseChooser disabled />
+                {/*
+                  Wrap the chooser so it's the lone child of its own
+                  flex container. The chooser uses
+                  `[&:not(:last-child)]:border-r-0` /
+                  `first:rounded-l-xs last:rounded-r-xs` to share borders
+                  with adjacent buttons in a button-group context. Here
+                  the next sibling is a separate Select primitive (not
+                  part of the group), so without this wrapper the chooser
+                  loses its right border and only gets left-rounded
+                  corners.
+                */}
+                <div className="inline-flex">
+                  <DatabaseChooser disabled />
+                </div>
                 <SchemaSelectToolbar />
               </div>
             </div>

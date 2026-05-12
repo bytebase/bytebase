@@ -1,68 +1,63 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/react/lib/utils";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
 interface EllipsisTextProps {
   readonly text: string;
   readonly className?: string;
+  readonly children?: ReactNode;
 }
 
 /**
- * Renders text with CSS truncation. Shows a tooltip with the full text only
- * when the text is actually overflowing (i.e. truncated with ellipsis).
- * The tooltip is portaled to document.body to avoid clipping by overflow:hidden.
+ * Renders text (or `children`) with CSS truncation. Shows a tooltip with the
+ * full `text` only when the rendered content is actually overflowing.
+ *
+ * `text` is the source-of-truth string used as both the default rendered
+ * content and the tooltip body. Pass `children` to render a richer node
+ * (e.g. <HighlightLabelText>) while still tooltip-ing the plain text.
  */
-export function EllipsisText({ text, className }: EllipsisTextProps) {
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-
-  const handleMouseEnter = useCallback(() => {
-    const el = textRef.current;
-    if (el && el.scrollWidth > el.clientWidth) {
-      const rect = el.getBoundingClientRect();
-      setPos({
-        x: rect.left + rect.width / 2,
-        y: rect.top,
-      });
-      setShowTooltip(true);
-    }
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setShowTooltip(false);
-  }, []);
+export function EllipsisText({ text, className, children }: EllipsisTextProps) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!showTooltip) return;
-    const onScroll = () => setShowTooltip(false);
-    window.addEventListener("scroll", onScroll, true);
-    return () => window.removeEventListener("scroll", onScroll, true);
-  }, [showTooltip]);
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      setIsTruncated(el.scrollWidth > el.clientWidth);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text, children]);
 
   return (
-    <span
-      ref={textRef}
-      className={`block truncate ${className ?? ""}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {text}
-      {showTooltip &&
-        createPortal(
-          <span
-            role="tooltip"
-            style={{
-              position: "fixed",
-              left: pos.x,
-              top: pos.y,
-              transform: "translate(-50%, -100%) translateY(-6px)",
-            }}
-            className="z-50 rounded-sm bg-gray-900 px-2.5 py-1.5 text-xs font-normal text-white shadow-md max-w-80 whitespace-normal pointer-events-none"
+    <BaseTooltip.Provider delay={300}>
+      <BaseTooltip.Root open={isTruncated && open} onOpenChange={setOpen}>
+        <BaseTooltip.Trigger
+          render={
+            <span ref={ref} className={cn("block truncate", className)} />
+          }
+        >
+          {children ?? text}
+        </BaseTooltip.Trigger>
+        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+          <BaseTooltip.Positioner
+            side="top"
+            sideOffset={4}
+            className={LAYER_SURFACE_CLASS}
           >
-            {text}
-          </span>,
-          document.body
-        )}
-    </span>
+            <BaseTooltip.Popup className="rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md whitespace-nowrap">
+              {text}
+              <BaseTooltip.Arrow className="fill-main" />
+            </BaseTooltip.Popup>
+          </BaseTooltip.Positioner>
+        </BaseTooltip.Portal>
+      </BaseTooltip.Root>
+    </BaseTooltip.Provider>
   );
 }

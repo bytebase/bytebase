@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
+import "v1/auth_service.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -47,6 +48,28 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Deletes a workspace. SaaS only. Cancels any active subscription and
+  // soft-deletes the workspace so all associated data becomes inaccessible.
+  // Requires workspace admin permission.
+  rpc DeleteWorkspace(DeleteWorkspaceRequest) returns (LoginResponse) {
+    option (google.api.http) = {delete: "/v1/{name=workspaces/*}"};
+    option (bytebase.v1.permission) = "bb.workspaces.delete";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Removes the calling user from a workspace and switches to the next
+  // available workspace. Available to any workspace member. Fails if the
+  // caller is the last workspace admin.
+  rpc LeaveWorkspace(LeaveWorkspaceRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=workspaces/*}:leave"
+      body: "*"
+    };
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+  }
+
   // Sets IAM policy for the workspace.
   // Permissions required: bb.workspaces.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -82,8 +105,18 @@ message Workspace {
   string logo = 3;
 }
 
+message DeleteWorkspaceRequest {
+  // Format: workspaces/{workspace}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message UpdateWorkspaceRequest {
   Workspace workspace = 1 [(google.api.field_behavior) = REQUIRED];
 
   google.protobuf.FieldMask update_mask = 2;
+}
+
+message LeaveWorkspaceRequest {
+  // Format: workspaces/{workspace}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }

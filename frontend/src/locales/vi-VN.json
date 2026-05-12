@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "đã thêm",
       "canceled-issue": "đã đóng vấn đề",
       "changed-description": "đã thay đổi mô tả",
       "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
       "changed-labels": "đã thay đổi nhãn",
+      "changed-targets-of": "đã thay đổi targets của",
       "created-issue": "đã tạo vấn đề",
+      "disabled-prior-backup-on": "đã tắt prior backup trên",
+      "enabled-prior-backup-on": "đã bật prior backup trên",
+      "modified-sql-of": "đã sửa đổi SQL của",
+      "removed-spec": "đã xóa",
       "reopened-issue": "đã mở lại vấn đề",
       "resolved-issue": "đã phê duyệt vấn đề"
     }
@@ -117,6 +123,7 @@
       "invalid-or-expired-code": "Mã không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.",
       "title": "Đặt lại mật khẩu của bạn"
     },
+    "profile-setup": "Thiết lập hồ sơ",
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {email}.",
       "demo-account": "Demo Account",
@@ -323,8 +330,10 @@
     "minutes": "Phút",
     "missing-required-permission": "Thiếu quyền cần thiết {permissions}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {resource}",
+    "more": "Thêm",
     "n-items-selected": "Đã chọn {n} mục",
     "n-more": "+{n} nữa",
+    "n-selected": "Đã chọn {n}",
     "name": "Tên",
     "next": "Tiếp theo",
     "no-data": "Không có dữ liệu",
@@ -676,7 +685,6 @@
       "unspecified": "Không xác định"
     },
     "select": "Chọn cơ sở dữ liệu",
-    "selected-n-databases": "Đã chọn {n} cơ sở dữ liệu | Đã chọn {n} cơ sở dữ liệu",
     "successfully-exported-schema": "Đã xuất schema thành công",
     "successfully-transferred-databases": "Đã chuyển thành công cơ sở dữ liệu",
     "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{0}'",
@@ -2700,12 +2708,10 @@
         "description": "Ước tính theo thông tin thống kê.",
         "self": "Số dòng bị ảnh hưởng"
       },
-      "ghost-sync": "Đồng bộ gh-ost",
       "sql-review": {
         "description": "Phân tích câu lệnh SQL để tìm ra các vấn đề tiềm ẩn và đưa ra khuyến nghị. Bao gồm các quy tắc tích hợp sẵn và quy tắc tùy chỉnh của bạn.",
         "self": "Đánh giá SQL"
-      },
-      "summary-report": "Báo cáo tổng hợp"
+      }
     },
     "checking": "Đang kiểm tra...",
     "created": "Đã tạo",

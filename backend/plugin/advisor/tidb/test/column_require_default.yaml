@@ -53,3 +53,25 @@
         line: 3
         column: 0
       endposition: null
+# TEXT-family transitive coverage pin (batch 9 / cumulative #18): omniNeedDefault
+# treats TEXT and BLOB families identically as "default-exempt" (no meaningful
+# default for blob/text columns). Pingcap unified TEXT under TypeBlob; omni
+# splits TEXT into its own DataType.Name. omniNeedDefault was already correct
+# (lists all 8 names); this fixture locks that contract so a future refactor
+# can't drop TEXT names and silently start flagging text-without-default.
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a TEXT;
+    ALTER TABLE tech_book ADD COLUMN b TINYTEXT;
+    ALTER TABLE tech_book ADD COLUMN c MEDIUMTEXT;
+    ALTER TABLE tech_book ADD COLUMN d LONGTEXT;
+  changeType: 1
+# Case-insensitive PK match pin (batch 9 round-2, Codex P2): omni preserves
+# the user's literal case on BOTH column.Name and constraint.Columns — no
+# normalization. Pingcap's `.L` (lowercase) coalesced these for matching;
+# the omni port must lowercase both sides before lookup, otherwise
+# `CREATE TABLE t(A INT, PRIMARY KEY(a))` flags `A` as missing DEFAULT
+# because the case-sensitive lookup misses the PK exemption.
+- statement: CREATE TABLE t(A INT, PRIMARY KEY(a));
+  changeType: 1
+- statement: CREATE TABLE t(mycol INT, PRIMARY KEY(MyCol));
+  changeType: 1

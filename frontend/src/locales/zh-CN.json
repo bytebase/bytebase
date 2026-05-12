@@ -1,11 +1,17 @@
 {
   "activity": {
     "sentence": {
+      "added-spec": "添加了",
       "canceled-issue": "关闭工单",
       "changed-description": "修改描述",
       "changed-from-to": "将 {name} 从 \"{oldValue}\" 修改为 \"{newValue}\"",
       "changed-labels": "改变标签",
+      "changed-targets-of": "修改了 targets：",
       "created-issue": "创建工单",
+      "disabled-prior-backup-on": "禁用了 prior backup",
+      "enabled-prior-backup-on": "启用了 prior backup",
+      "modified-sql-of": "修改了 SQL",
+      "removed-spec": "移除了",
       "reopened-issue": "重开工单",
       "resolved-issue": "批准工单"
     }
@@ -117,6 +123,7 @@
       "invalid-or-expired-code": "验证码无效或已过期，请重新申请。",
       "title": "重置您的密码"
     },
+    "profile-setup": "设置个人资料",
     "sign-in": {
       "code-sent-hint": "验证码已发送至 {email}。",
       "demo-account": "Demo Account",
@@ -323,8 +330,10 @@
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {permissions}",
     "missing-required-permission-for-resource": "缺少资源 {resource} 的必需权限",
+    "more": "更多",
     "n-items-selected": "已选 {n} 项",
     "n-more": "+{n} 更多",
+    "n-selected": "已选择 {n} 项",
     "name": "名称",
     "next": "下一步",
     "no-data": "无数据",
@@ -676,7 +685,6 @@
       "unspecified": "未指定"
     },
     "select": "选择数据库",
-    "selected-n-databases": "已选择 {n} 个数据库",
     "successfully-exported-schema": "成功导出 Schema",
     "successfully-transferred-databases": "数据库转移完成",
     "sync-complete-for-instance": "实例 '{0}' 同步完成",
@@ -2700,12 +2708,10 @@
         "description": "根据统计信息估算。",
         "self": "影响行数"
       },
-      "ghost-sync": "gh-ost 同步",
       "sql-review": {
         "description": "分析 SQL 语句中的潜在问题并提供建议。包括内置规则以及您的自定义规则。",
         "self": "SQL 审核"
-      },
-      "summary-report": "概要报告"
+      }
     },
     "checking": "检查中…",
     "created": "创建于",

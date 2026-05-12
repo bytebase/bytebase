@@ -1,10 +1,15 @@
 {
+  "activity.sentence.added-spec": "追加しました",
   "activity.sentence.canceled-issue": "closed the issue",
   "activity.sentence.changed-description": "changed description",
   "activity.sentence.changed-from-to": "changed {{name}} from \"{{oldValue}}\" to \"{{newValue}}\"",
   "activity.sentence.changed-labels": "changed labels",
+  "activity.sentence.changed-targets-of": "ターゲットを変更しました",
   "activity.sentence.created-issue": "created issue",
-  "activity.sentence.modified-sql-of": "modified SQL of",
+  "activity.sentence.disabled-prior-backup-on": "事前バックアップを無効化しました",
+  "activity.sentence.enabled-prior-backup-on": "事前バックアップを有効化しました",
+  "activity.sentence.modified-sql-of": "SQL を変更しました",
+  "activity.sentence.removed-spec": "削除しました",
   "activity.sentence.reopened-issue": "reopened issue",
   "activity.sentence.resolved-issue": "イシューを完了としてマークしました",
   "activity.sentence.review-done-rollout-created": "レビューが完了し、ロールアウトが作成されました",
@@ -313,6 +318,7 @@
     "logout": "サインアウト",
     "manage": "管理",
     "manually-select": "Manually select",
+    "maximize": "最大化",
     "members_one": "メンバー",
     "members_other": "メンバー",
     "minutes": "分",
@@ -321,6 +327,7 @@
     "more": "その他",
     "n-items-selected": "{{n}} 件選択済み",
     "n-more": "+{{n}} もっと",
+    "n-selected": "{{n}} 件選択中",
     "name": "名前",
     "next": "次のステップ",
     "no-data": "データなし",
@@ -788,7 +795,6 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
-    "selected-n-databases": "{{n}} 個のデータベースが選択されました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
     "sync-database": "データベース同期",
@@ -1686,9 +1692,7 @@
         "title_one": "{{count}} 件のプロジェクトを削除しますか?",
         "title_other": "{{count}} 件のプロジェクトを削除しますか?",
         "warning": "この操作は元に戻せません。イシュー、設定、履歴を含むすべてのプロジェクトデータが完全に削除されます。"
-      },
-      "selected_one": "{{count}} 件のプロジェクトが選択されました",
-      "selected_other": "{{count}} 件のプロジェクトが選択されました"
+      }
     },
     "create-modal": {
       "project-name": "プロジェクト名前",
@@ -1994,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外部キー",
       "name": "Name",
+      "name-placeholder": "カラム名",
       "not-null": "Not Null",
       "on-update": "アップデート時",
       "operations": "Operations",
@@ -2041,6 +2046,7 @@
       "name-placeholder": "Schema name",
       "select": "スキーマの選択"
     },
+    "select-object-hint": "編集するデータベースオブジェクトをツリーから選択してください",
     "self": "スキーマエディタ",
     "table": {
       "duplicate-name": "Table name already exists",
@@ -2142,6 +2148,22 @@
         "branding": "ブランド",
         "config-partly-updated": "設定が部分的に更新されました。",
         "config-updated": "設定が更新されました。",
+        "danger-zone": {
+          "confirm-description": "ワークスペース「{{workspace}}」とそのすべてのデータが完全に削除されます。この操作は元に戻せません。確認のためワークスペース名を入力してください。",
+          "confirm-title": "ワークスペースを削除しますか？",
+          "delete-failed": "ワークスペースの削除に失敗しました。",
+          "delete-workspace": "ワークスペースを削除",
+          "deleted": "ワークスペースが削除されました。",
+          "deleting": "削除中...",
+          "description": "ワークスペースを削除すると、すべてのプロジェクト、データベース、課題、設定が完全に削除され、元に戻すことはできません。",
+          "exit-confirm-description": "ワークスペース「{{workspace}}」へのアクセスを失います。再参加するには再度招待を受ける必要があります。",
+          "exit-confirm-title": "ワークスペースを退出しますか？",
+          "exit-description": "このワークスペースを離れ、アクセス権を削除します。再参加するには再度招待を受ける必要があります。",
+          "exit-failed": "ワークスペースの退出に失敗しました。",
+          "exit-workspace": "ワークスペースを退出",
+          "exited": "ワークスペースを退出しました。",
+          "exiting": "退出中..."
+        },
         "data-copy": "データのコピーを有効にする",
         "data-export": "データのエクスポートを有効にする",
         "default-landing-page": {
@@ -2376,6 +2398,8 @@
       "workload-identity-tag-hint": "Leave empty to allow all tags"
     },
     "profile": {
+      "display-name": "あなたの名前",
+      "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
@@ -2385,7 +2409,13 @@
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "role": "ロール",
-      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
+      "setup-failed": "プロフィールの更新に失敗しました。",
+      "setup-skip": "後で設定する",
+      "setup-success": "プロフィールが更新されました。",
+      "setup-title": "ようこそ！プロフィールを設定してください",
+      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)",
+      "workspace-name": "ワークスペース名",
+      "workspace-name-placeholder": "ワークスペース名を入力"
     },
     "sensitive-data": {
       "algorithms": {
@@ -2677,7 +2707,8 @@
     "download-as-file": "{{file}} 形式でダウンロード",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
-    "duration-hours": "{{hours}} hour | {{hours}} hours",
+    "duration-hour": "{{hours}} 時間",
+    "duration-hours": "{{hours}} 時間",
     "execute-query": "クエリを実行する",
     "executing-query": "クエリの実行",
     "expire-at": "Expire at {{time}}",
@@ -3740,10 +3771,8 @@
   "task.affected-rows": "影響を受けた行数",
   "task.check-type.affected-rows.description": "統計情報に基づく推定です。",
   "task.check-type.affected-rows.self": "影響行数",
-  "task.check-type.ghost-sync": "gh-ost sync",
   "task.check-type.sql-review.description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules.",
   "task.check-type.sql-review.self": "SQL review",
-  "task.check-type.summary-report": "Summary report",
   "task.executed-by": "実行者",
   "task.no-cancelable-tasks": "キャンセル可能なタスクはありません",
   "task.no-runnable-tasks": "実行可能なタスクはありません",

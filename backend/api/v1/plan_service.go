@@ -301,6 +301,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
+	var issueCommentCreates []*store.IssueCommentMessage
 
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
@@ -315,8 +316,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		case "state":
 			planUpdate.Deleted = new(req.Plan.State == v1pb.State_DELETED)
 		case "specs":
-			// Block all spec changes if plan has a rollout (pipeline).
-			// Block all spec changes if plan has a rollout (pipeline).
 			if oldPlan.Config != nil && oldPlan.Config.GetHasRollout() {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update specs for plan that has a rollout"))
 			}
@@ -343,6 +342,20 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
 			if issue != nil {
+				if !planSpecsEqualSet(oldPlan.Config.GetSpecs(), allSpecs) {
+					issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
+						ProjectID: issue.ProjectID,
+						IssueUID:  issue.UID,
+						Payload: &storepb.IssueCommentPayload{
+							Event: &storepb.IssueCommentPayload_PlanUpdate_{
+								PlanUpdate: &storepb.IssueCommentPayload_PlanUpdate{
+									FromSpecs: oldPlan.Config.GetSpecs(),
+									ToSpecs:   allSpecs,
+								},
+							},
+						},
+					})
+				}
 				// Reset approval finding status
 				updatedIssue, err := s.store.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
 					PayloadUpsert: &storepb.Issue{
@@ -376,6 +389,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
+	}
+
+	if len(issueCommentCreates) > 0 {
+		if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
+			slog.Warn("failed to create plan spec audit issue comments", log.BBError(err))
+		}
 	}
 
 	if planCheckRunsTrigger {
@@ -1085,6 +1104,26 @@ func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanCon
 			Password: c.Password,
 		},
 	}
+}
+
+// planSpecsEqualSet reports whether two spec slices have the same set of
+// specs keyed by id, with each pair byte-equal under proto.Equal. Order
+// is ignored — reorder-only diffs are not audited.
+func planSpecsEqualSet(a, b []*storepb.PlanConfig_Spec) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	byID := make(map[string]*storepb.PlanConfig_Spec, len(a))
+	for _, s := range a {
+		byID[s.GetId()] = s
+	}
+	for _, s := range b {
+		other, ok := byID[s.GetId()]
+		if !ok || !proto.Equal(s, other) {
+			return false
+		}
+	}
+	return true
 }
 
 func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {

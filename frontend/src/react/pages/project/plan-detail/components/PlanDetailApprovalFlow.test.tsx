@@ -2,11 +2,9 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  Issue_ApprovalStatus,
-  Issue_Approver_Status,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanDetailProvider } from "../context/PlanDetailContext";
 import type { PlanDetailPageState } from "../hooks/usePlanDetailPage";
 import { PlanDetailReviewApprovalFlow } from "./PlanDetailApprovalFlow";
@@ -194,7 +192,7 @@ const makeIssue = ({
   roles = ["roles/PROJECT_OWNER"],
   creator = "users/me",
 }: {
-  approvalStatus: Issue_ApprovalStatus;
+  approvalStatus: ApprovalStatus;
   approvers?: Array<Record<string, unknown>>;
   roles?: string[];
   creator?: string;
@@ -233,7 +231,7 @@ beforeEach(() => {
 describe("PlanDetailApprovalFlow", () => {
   test("renders generating row for checking approval flow", () => {
     const issue = makeIssue({
-      approvalStatus: Issue_ApprovalStatus.CHECKING,
+      approvalStatus: ApprovalStatus.CHECKING,
     });
     const { container, render, unmount } = renderIntoContainer(
       <PlanDetailProvider value={makePageState({ issue })}>
@@ -254,7 +252,7 @@ describe("PlanDetailApprovalFlow", () => {
 
   test("renders skip placeholder when approval flow is skipped", () => {
     const issue = makeIssue({
-      approvalStatus: Issue_ApprovalStatus.SKIPPED,
+      approvalStatus: ApprovalStatus.SKIPPED,
       roles: [],
     });
     const { container, render, unmount } = renderIntoContainer(
@@ -275,7 +273,7 @@ describe("PlanDetailApprovalFlow", () => {
 
   test("renders timeline header and footer link for pending approval", () => {
     const issue = makeIssue({
-      approvalStatus: Issue_ApprovalStatus.PENDING,
+      approvalStatus: ApprovalStatus.PENDING,
       approvers: [
         {
           principal: "users/approver",
@@ -330,7 +328,7 @@ describe("PlanDetailApprovalFlow", () => {
       },
     ];
     const issue = makeIssue({
-      approvalStatus: Issue_ApprovalStatus.REJECTED,
+      approvalStatus: ApprovalStatus.REJECTED,
       approvers: [
         {
           principal: "users/approver",

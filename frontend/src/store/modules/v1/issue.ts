@@ -8,11 +8,10 @@ import { ref, watch } from "vue";
 import { issueServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import { type IssueFilter } from "@/types";
-import { RiskLevel } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetIssueRequestSchema,
-  Issue_ApprovalStatus,
   Issue_Type,
   IssueStatus,
   SearchIssuesRequestSchema,
@@ -41,9 +40,7 @@ export const buildIssueFilter = (find: IssueFilter): string => {
     filter.push(`current_approver == "${find.currentApprover}"`);
   }
   if (find.approvalStatus) {
-    filter.push(
-      `approval_status == "${Issue_ApprovalStatus[find.approvalStatus]}"`
-    );
+    filter.push(`approval_status == "${ApprovalStatus[find.approvalStatus]}"`);
   }
   if (find.statusList && find.statusList.length > 0) {
     filter.push(
