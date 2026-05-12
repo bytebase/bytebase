@@ -109,11 +109,18 @@ func columnTypeChanged(metadata *model.DatabaseMetadata, tableName, columnName s
 }
 
 // omniBuildColumnTypeString renders an omni DataType into the lowercase
-// "name[(length[,scale])] [unsigned] [zerofill]" form that the
-// normalizeColumnType helper + catalog comparison expects.
+// "name[(...)] [unsigned] [zerofill]" form that the normalizeColumnType
+// helper + catalog comparison expects.
 //
-// Length/scale rendering rules per type family (each verified empirically
-// against pingcap's Tp.String() during pre-batch protocol; cumulative #21):
+// Rendering rules per type family (each verified empirically against
+// pingcap's Tp.String() during pre-batch protocol; cumulative #21):
+//
+//   - **ENUM / SET:** render the literal value list as
+//     `enum('v1','v2',…)` / `set('v1','v2',…)`, single quotes inside
+//     values doubled per SQL convention. Pingcap preserved the literals
+//     in `Tp.String()`; catalog stores them via MySQL's COLUMN_TYPE.
+//     A naive builder that dropped EnumValues would false-positive on
+//     no-op `MODIFY status ENUM('a','b')` (Codex round-4 catch).
 //
 //   - **DECIMAL / NUMERIC / FIXED (exact-precision):** always (M,D)
 //     when Length > 0; Scale defaults to 0. Pingcap and MySQL
@@ -152,6 +159,9 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	}
 	tp := strings.ToLower(dt.Name)
 	switch {
+	case isEnumOrSetTypeName(tp):
+		// ENUM / SET render their value list, not length/scale.
+		tp = fmt.Sprintf("%s(%s)", tp, formatEnumValueList(dt.EnumValues))
 	case dt.Length > 0 && isExactDecimalTypeName(tp):
 		// DECIMAL / NUMERIC / FIXED: always (M,D), defaulting Scale=0.
 		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
@@ -167,7 +177,10 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 		// Either no length, or float-family without explicit scale.
 	}
 	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
-	// rendered both. Match that convention.
+	// rendered both. Match that convention. (ENUM/SET are string types
+	// and never carry these attributes in valid SQL, but the omni AST
+	// surfaces Unsigned/Zerofill as plain bools — defensively skip the
+	// suffix application when the type doesn't take them.)
 	if dt.Unsigned || dt.Zerofill {
 		tp += " unsigned"
 	}
@@ -203,6 +216,29 @@ func isApproximateFloatTypeName(lower string) bool {
 	default:
 		return false
 	}
+}
+
+// isEnumOrSetTypeName returns true for the ENUM and SET pseudo-types
+// whose canonical rendering carries a value list rather than a length
+// or scale.
+func isEnumOrSetTypeName(lower string) bool {
+	return lower == "enum" || lower == "set"
+}
+
+// formatEnumValueList renders an ENUM / SET value list in pingcap's
+// `'v1','v2',…` canonical form: each value SQL-escaped (single quotes
+// doubled) and wrapped in single quotes, comma-separated with no
+// spaces. Matches pingcap's `Tp.String()` output for ENUM/SET as well
+// as MySQL info_schema's COLUMN_TYPE rendering.
+func formatEnumValueList(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = "'" + strings.ReplaceAll(v, "'", "''") + "'"
+	}
+	return strings.Join(parts, ",")
 }
 
 // normalizeColumnType canonicalizes bare integer type names to their
