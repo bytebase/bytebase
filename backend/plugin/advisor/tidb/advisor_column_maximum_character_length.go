@@ -81,7 +81,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 				continue
 			}
 			if charLength := omniCharLength(column.TypeName); charLength > maximum {
-				return buildCharLengthAdvice(level, title, tableName, column.Name, maximum, ostmt.AbsoluteLine(column.Loc.Start))
+				return buildCharLengthAdvice(level, title, tableName, column.Name, charLength, maximum, ostmt.AbsoluteLine(column.Loc.Start))
 			}
 		}
 	case *ast.AlterTableStmt:
@@ -101,7 +101,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 						continue
 					}
 					if charLength := omniCharLength(column.TypeName); charLength > maximum {
-						return buildCharLengthAdvice(level, title, tableName, column.Name, maximum, stmtLine)
+						return buildCharLengthAdvice(level, title, tableName, column.Name, charLength, maximum, stmtLine)
 					}
 				}
 			case ast.ATChangeColumn, ast.ATModifyColumn:
@@ -109,7 +109,7 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 					continue
 				}
 				if charLength := omniCharLength(cmd.Column.TypeName); charLength > maximum {
-					return buildCharLengthAdvice(level, title, tableName, cmd.Column.Name, maximum, stmtLine)
+					return buildCharLengthAdvice(level, title, tableName, cmd.Column.Name, charLength, maximum, stmtLine)
 				}
 			default:
 			}
@@ -119,12 +119,12 @@ func checkStmtForCharLength(ostmt OmniStmt, maximum int, level storepb.Advice_St
 	return nil
 }
 
-func buildCharLengthAdvice(level storepb.Advice_Status, title, _, columnName string, maximum, line int) *storepb.Advice {
+func buildCharLengthAdvice(level storepb.Advice_Status, title, _, columnName string, charLength, maximum, line int) *storepb.Advice {
 	return &storepb.Advice{
 		Status:        level,
 		Code:          code.CharLengthExceedsLimit.Int32(),
 		Title:         title,
-		Content:       fmt.Sprintf("The length of the CHAR column `%s` is bigger than %d, please use VARCHAR instead", columnName, maximum),
+		Content:       fmt.Sprintf("The length of the CHAR column `%s` is %d, bigger than %d, please use VARCHAR instead", columnName, charLength, maximum),
 		StartPosition: common.ConvertANTLRLineToPosition(line),
 	}
 }

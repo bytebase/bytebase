@@ -8,7 +8,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -19,7 +19,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name_2` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -30,7 +30,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -41,7 +41,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -60,7 +60,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `blob_col` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `blob_col` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -76,7 +76,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `a` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `a` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
