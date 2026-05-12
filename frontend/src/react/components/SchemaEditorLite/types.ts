@@ -316,14 +316,22 @@ export type SelectionContext = {
 export type ScrollStatusContext = {
   pendingScrollToTable: RichMetadataWithDB<RichTableMetadata> | undefined;
   pendingScrollToColumn: RichMetadataWithDB<RichColumnMetadata> | undefined;
+  // Mirrors the scroll-to-column queue but signals "this column was just
+  // added — focus its Name input and flash the row." Consumed by
+  // TableColumnEditor when a row whose UUID matches mounts/renders.
+  pendingFocusColumn: RichMetadataWithDB<RichColumnMetadata> | undefined;
   queuePendingScrollToTable: (
     params: RichMetadataWithDB<RichTableMetadata>
   ) => void;
   queuePendingScrollToColumn: (
     params: RichMetadataWithDB<RichColumnMetadata>
   ) => void;
+  queuePendingFocusToColumn: (
+    params: RichMetadataWithDB<RichColumnMetadata>
+  ) => void;
   consumePendingScrollToTable: () => void;
   consumePendingScrollToColumn: () => void;
+  consumePendingFocusToColumn: () => void;
 };
 
 // Combined context value
