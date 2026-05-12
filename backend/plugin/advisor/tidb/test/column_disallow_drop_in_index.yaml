@@ -55,3 +55,35 @@
         line: 3
         column: 0
       endposition: null
+# Batch 16: catalog side-load pin — ALTER DROP COLUMN on a table NOT
+# created in the reviewed statements should consult OriginalMetadata
+# for index membership. tech_book is pre-populated in the mock catalog
+# with an index on (id, name) (utils_for_tests.go:80-82); dropping
+# either column should fire via the SIDE-LOAD CATALOG path. This pin
+# exercises the load-bearing path that existing CREATE-then-ALTER
+# fixtures didn't reach (those built index info via the CREATE arm).
+- statement: ALTER TABLE tech_book DROP COLUMN name
+  changeType: 1
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`tech_book`.`name` cannot drop index column'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 16: case-sensitivity pin (cumulative #19 territory) — pre-omni
+# pingcap-tidb used .O (original case) throughout, with no .L
+# lowercase normalization. CREATE TABLE t(A INT, INDEX(A)) stores
+# "A" in the index set; ALTER TABLE t DROP COLUMN a looks up "a"
+# which DOES NOT match. Rule does NOT fire — preserves pingcap-tidb
+# case-sensitive behavior. Omni's direct strings also preserve user
+# case, so the omni port matches mechanically. NOT a regression. Pin
+# documents that this advisor doesn't need the strings.ToLower
+# normalization that batch 9's column_require_default needed (which
+# used .L explicitly in pre-omni source).
+- statement: |-
+    CREATE TABLE t(A int, INDEX idx_A(A));
+    ALTER TABLE t DROP COLUMN a
+  changeType: 1
