@@ -4,7 +4,7 @@
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
   >
-    <Watermark />
+    <ReactPageMount page="Watermark" container-class="contents" />
 
     <NNotificationProvider
       :max="MAX_NOTIFICATION_DISPLAY_COUNT"
@@ -39,7 +39,7 @@ import {
   watchEffect,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import Watermark from "@/components/misc/Watermark.vue";
+import ReactPageMount from "@/react/ReactPageMount.vue";
 import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
 import AuthContext from "./AuthContext.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
