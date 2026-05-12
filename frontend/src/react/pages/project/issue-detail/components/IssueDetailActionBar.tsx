@@ -3,10 +3,13 @@ import dayjs from "dayjs";
 import { first, orderBy } from "lodash-es";
 import {
   CalendarX,
+  Check,
   ChevronDown,
   EllipsisVertical,
   ExternalLink,
   Loader2,
+  MessageCircle,
+  X,
 } from "lucide-react";
 import {
   type ReactNode,
@@ -856,6 +859,7 @@ function IssueDetailReviewPopover({
       <div className="flex flex-col gap-y-2.5">
         <IssueDetailReviewOption
           description={t("issue.review.comment-description")}
+          icon={<MessageCircle className="size-4 text-control" />}
           label={t("common.comment")}
           onSelect={() => setSelectedAction("COMMENT")}
           selected={selectedAction === "COMMENT"}
@@ -863,6 +867,7 @@ function IssueDetailReviewPopover({
         {context.permissions.isApprovalCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.approve-description")}
+            icon={<Check className="size-4 text-success" />}
             label={t("common.approve")}
             onSelect={() => setSelectedAction("APPROVE")}
             selected={selectedAction === "APPROVE"}
@@ -871,6 +876,7 @@ function IssueDetailReviewPopover({
         {context.permissions.isApprovalCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.reject-description")}
+            icon={<X className="size-4 text-error" />}
             label={t("common.reject")}
             onSelect={() => setSelectedAction("REJECT")}
             selected={selectedAction === "REJECT"}
@@ -927,11 +933,13 @@ function IssueDetailReviewPopover({
 
 function IssueDetailReviewOption({
   description,
+  icon,
   label,
   onSelect,
   selected,
 }: {
   description?: string;
+  icon?: ReactNode;
   label: string;
   onSelect: () => void;
   selected: boolean;
@@ -949,6 +957,7 @@ function IssueDetailReviewOption({
         onChange={onSelect}
         type="radio"
       />
+      {icon && <span className="mt-1 shrink-0">{icon}</span>}
       <span className="flex flex-col">
         <span className="text-sm font-medium leading-6">{label}</span>
         {description && (
