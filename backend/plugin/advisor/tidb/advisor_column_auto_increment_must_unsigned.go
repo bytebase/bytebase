@@ -54,59 +54,9 @@ type columnAutoIncrementMustUnsignedChecker struct {
 }
 
 func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt OmniStmt) {
-	var cols []columnData
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		for _, column := range n.Columns {
-			if column == nil {
-				continue
-			}
-			if !autoIncrementColumnIsUnsignedOmni(column) {
-				cols = append(cols, columnData{
-					table:  tableName,
-					column: column.Name,
-					line:   ostmt.AbsoluteLine(column.Loc.Start),
-				})
-			}
-		}
-	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATAddColumn:
-				for _, column := range addColumnTargets(cmd) {
-					if column == nil {
-						continue
-					}
-					if !autoIncrementColumnIsUnsignedOmni(column) {
-						cols = append(cols, columnData{table: tableName, column: column.Name, line: stmtLine})
-					}
-				}
-			case ast.ATChangeColumn, ast.ATModifyColumn:
-				if cmd.Column == nil {
-					continue
-				}
-				if !autoIncrementColumnIsUnsignedOmni(cmd.Column) {
-					cols = append(cols, columnData{table: tableName, column: cmd.Column.Name, line: stmtLine})
-				}
-			default:
-			}
-		}
-	default:
-		return
-	}
-
+	cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
+		return !autoIncrementColumnIsUnsignedOmni(col)
+	})
 	for _, col := range cols {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
 			Status:        c.level,

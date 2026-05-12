@@ -248,6 +248,83 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 	return false
 }
 
+// collectColumnViolations walks an OmniStmt's CREATE TABLE columns and
+// ALTER TABLE ADD/CHANGE/MODIFY COLUMN commands, returning a columnData
+// entry for every column where isViolation returns true. Line for
+// CREATE TABLE columns is the column's start; for ALTER TABLE commands,
+// the top-level statement's start (matching pingcap-typed visitors that
+// read `node.OriginTextPosition()` for ALTER TABLE specs).
+//
+// Used by column-attribute advisors that share the shape "walk columns,
+// apply a predicate, emit advice on violations" — currently
+// advisor_column_auto_increment_must_integer and
+// advisor_column_auto_increment_must_unsigned. Extensible to future
+// advisors with the same shape (column_maximum_character_length,
+// column_type_disallow_list, etc.). Per-advisor advice formatting and
+// the rule-specific predicate stay in the caller.
+//
+// Not appropriate for advisors with table-level filtering
+// (advisor_column_require_default's table-level PK exemption) or those
+// that read non-column structures (advisor_column_auto_increment_initial_value's
+// table options).
+func collectColumnViolations(ostmt OmniStmt, isViolation func(*omniast.ColumnDef) bool) []columnData {
+	if isViolation == nil {
+		return nil
+	}
+	var cols []columnData
+	switch n := ostmt.Node.(type) {
+	case *omniast.CreateTableStmt:
+		if n.Table == nil {
+			return nil
+		}
+		tableName := n.Table.Name
+		for _, column := range n.Columns {
+			if column == nil {
+				continue
+			}
+			if isViolation(column) {
+				cols = append(cols, columnData{
+					table:  tableName,
+					column: column.Name,
+					line:   ostmt.AbsoluteLine(column.Loc.Start),
+				})
+			}
+		}
+	case *omniast.AlterTableStmt:
+		if n.Table == nil {
+			return nil
+		}
+		tableName := n.Table.Name
+		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
+		for _, cmd := range n.Commands {
+			if cmd == nil {
+				continue
+			}
+			switch cmd.Type {
+			case omniast.ATAddColumn:
+				for _, column := range addColumnTargets(cmd) {
+					if column == nil {
+						continue
+					}
+					if isViolation(column) {
+						cols = append(cols, columnData{table: tableName, column: column.Name, line: stmtLine})
+					}
+				}
+			case omniast.ATChangeColumn, omniast.ATModifyColumn:
+				if cmd.Column == nil {
+					continue
+				}
+				if isViolation(cmd.Column) {
+					cols = append(cols, columnData{table: tableName, column: cmd.Column.Name, line: stmtLine})
+				}
+			default:
+			}
+		}
+	default:
+	}
+	return cols
+}
+
 // omniIsIntegerType reports whether the column type is an integer type
 // from the perspective of pingcap-tidb's `isInteger` helper. Pingcap
 // dispatched on `mysql.TypeTiny`/`TypeShort`/`TypeInt24`/`TypeLong`/`TypeLonglong`
