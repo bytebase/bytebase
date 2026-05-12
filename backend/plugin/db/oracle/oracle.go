@@ -128,9 +128,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
-		if err := validateOracleCommandsForExecution(singleSQLs); err != nil {
-			return 0, err
-		}
 		commands = singleSQLs
 	} else {
 		commands = []base.Statement{
@@ -151,15 +148,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts)
-}
-
-func validateOracleCommandsForExecution(commands []base.Statement) error {
-	for _, command := range commands {
-		if _, err := plsqlparser.ParsePLSQLOmni(command.Text); err != nil {
-			return errors.Wrapf(err, "failed to parse sql before execution")
-		}
-	}
-	return nil
 }
 
 // executeInTransactionMode executes statements within a single transaction
@@ -246,9 +234,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
-	}
-	if err := validateOracleCommandsForExecution(singleSQLs); err != nil {
-		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
