@@ -26,9 +26,12 @@ type IndexNoDuplicateColumnAdvisor struct{}
 
 // Check fires on PRIMARY KEY, UNIQUE (all 3 syntactic forms),
 // INDEX/KEY, FOREIGN KEY constraints with duplicate plain-column
-// entries. Expression-based key parts (e.g., functional indexes) are
-// skipped — matches pingcap-tidb's `if key.Expr == nil` filter.
-// Recipe A; no cross-stmt state.
+// entries. Real functional-index expressions (e.g., `((a + 1))`)
+// are skipped — pre-omni's `if key.Expr == nil` filter and the
+// omni port's `*ColumnRef`-only type-assert preserve the same
+// author-intent contract ("skip non-column expressions to avoid
+// name-based dedup on functional indexes"). Recipe A; no cross-
+// stmt state.
 //
 // Cumulative #2 coverage (verified empirically): pingcap-tidb's
 // parser produces `ConstraintUniq` (Tp=4) for ALL three UNIQUE
@@ -48,6 +51,25 @@ type IndexNoDuplicateColumnAdvisor struct{}
 // pk (cols)` syntax has empty Name in omni (parser drops it).
 // Advice content uses `omniConstraintAdviceName` (utils.go) which
 // falls back to "PRIMARY" canonical.
+//
+// Cumulative #29 (parser-quirk false-NEGATIVE silently fixed):
+// pingcap-tidb's parser treats single-paren-wrapped column refs
+// (e.g., `INDEX idx((a), (a))`) as expressions (`key.Expr != nil,
+// key.Column == nil`). The pre-omni `if key.Expr == nil` filter
+// (author intent: "skip non-column expressions") had a filter-
+// effect that ALSO skipped paren-wrapped column refs as a side-
+// effect — rule did NOT fire on `((a), (a))` despite the
+// duplicate semantic being unambiguous. Omni follows MySQL 8.0
+// spec: single-paren is grouping (flattened at parse time to
+// inner ColumnRef); double-paren `((expr))` is the functional-
+// index syntax. The `*ColumnRef`-only type-assert in
+// `omniIndexColumns` correctly skips real functional indexes
+// (`((a + 1))` → `*BinaryOperationExpr`, not ColumnRef) while
+// catching paren-wrapped column duplicates. NOT a regression;
+// inverse direction of cumulative #21 (#21 was a parser-quirk
+// false-POSITIVE silently fixed; #29 is a parser-quirk false-
+// NEGATIVE silently fixed). Both positive and negative scope-
+// bounding fixtures pinned.
 //
 // Cumulative #17 sibling-parity: ATAddConstraint + ATAddIndex
 // dual arm preserved per established convention.
