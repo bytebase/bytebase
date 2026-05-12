@@ -10,15 +10,20 @@ import {
   Pause,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { Button } from "@/react/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { Input } from "@/react/components/ui/input";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -433,13 +438,9 @@ function IssueDetailDatabaseExportTasks({
 function IssueDetailDatabaseExportTaskActions({ task }: { task: Task }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<
     "RUN" | "SKIP" | "CANCEL" | undefined
   >();
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   const stage = useMemo(() => {
     return page.rollout?.stages.find((candidate) =>
@@ -462,7 +463,7 @@ function IssueDetailDatabaseExportTaskActions({ task }: { task: Task }) {
 
   return (
     <>
-      <div className="relative flex items-center gap-x-2" ref={menuRef}>
+      <div className="flex items-center gap-x-2">
         {primaryAction && (
           <Button
             onClick={() => setPendingAction("RUN")}
@@ -473,44 +474,26 @@ function IssueDetailDatabaseExportTaskActions({ task }: { task: Task }) {
           </Button>
         )}
         {(canSkip || canCancel) && (
-          <>
-            <Button
+          <DropdownMenu>
+            <DropdownMenuTrigger
               aria-label={t("common.more")}
-              onClick={() => setMenuOpen((open) => !open)}
-              size="xs"
-              variant="ghost"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-control hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             >
               <EllipsisVertical className="h-3.5 w-3.5" />
-            </Button>
-            {menuOpen && (
-              <div className="absolute right-0 top-full z-20 mt-1 min-w-36 overflow-hidden rounded-sm border border-control-border bg-white py-1 shadow-lg">
-                {canSkip && (
-                  <button
-                    className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-control-bg"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setPendingAction("SKIP");
-                    }}
-                    type="button"
-                  >
-                    {t("common.skip")}
-                  </button>
-                )}
-                {canCancel && (
-                  <button
-                    className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-control-bg"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setPendingAction("CANCEL");
-                    }}
-                    type="button"
-                  >
-                    {t("common.cancel")}
-                  </button>
-                )}
-              </div>
-            )}
-          </>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="min-w-36">
+              {canSkip && (
+                <DropdownMenuItem onClick={() => setPendingAction("SKIP")}>
+                  {t("common.skip")}
+                </DropdownMenuItem>
+              )}
+              {canCancel && (
+                <DropdownMenuItem onClick={() => setPendingAction("CANCEL")}>
+                  {t("common.cancel")}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

@@ -1,7 +1,13 @@
 import { X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import {
+  getLayerRoot,
+  LAYER_BACKDROP_CLASS,
+  LAYER_SURFACE_CLASS,
+} from "@/react/components/ui/layer";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
@@ -99,45 +105,50 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
           </div>
         )}
 
-        {showMobileSidebar && (
-          <div
-            className={cn(
-              "absolute inset-0 z-30 transition-[visibility] duration-200",
-              page.mobileSidebarOpen
-                ? "visible"
-                : "invisible pointer-events-none"
-            )}
-          >
-            <button
-              className={cn(
-                "absolute inset-0 bg-black/40 transition-opacity duration-200",
-                page.mobileSidebarOpen ? "opacity-100" : "opacity-0"
-              )}
-              onClick={() => page.setMobileSidebarOpen(false)}
-              type="button"
-            />
+        {showMobileSidebar &&
+          createPortal(
             <div
               className={cn(
-                "absolute right-0 top-0 flex h-full w-[80vw] min-w-[240px] max-w-[320px] transform flex-col border-l bg-white p-2 shadow-lg transition-transform duration-200",
-                page.mobileSidebarOpen ? "translate-x-0" : "translate-x-full"
+                "fixed inset-0 transition-[visibility] duration-200",
+                LAYER_SURFACE_CLASS,
+                page.mobileSidebarOpen
+                  ? "visible"
+                  : "invisible pointer-events-none"
               )}
             >
-              <div className="mb-2 flex justify-end">
-                <Button
-                  aria-label={t("common.close")}
-                  onClick={() => page.setMobileSidebarOpen(false)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <button
+                className={cn(
+                  "absolute inset-0 bg-black/40 transition-opacity duration-200",
+                  LAYER_BACKDROP_CLASS,
+                  page.mobileSidebarOpen ? "opacity-100" : "opacity-0"
+                )}
+                onClick={() => page.setMobileSidebarOpen(false)}
+                type="button"
+              />
+              <div
+                className={cn(
+                  "absolute right-0 top-0 flex h-full w-[80vw] min-w-[240px] max-w-[320px] transform flex-col border-l bg-white p-2 shadow-lg transition-transform duration-200",
+                  LAYER_SURFACE_CLASS,
+                  page.mobileSidebarOpen ? "translate-x-0" : "translate-x-full"
+                )}
+              >
+                <div className="mb-2 flex justify-end">
+                  <Button
+                    aria-label={t("common.close")}
+                    onClick={() => page.setMobileSidebarOpen(false)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <IssueDetailSidebar />
+                </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <IssueDetailSidebar />
-              </div>
-            </div>
-          </div>
-        )}
+            </div>,
+            getLayerRoot("overlay")
+          )}
       </div>
     </IssueDetailProvider>
   );

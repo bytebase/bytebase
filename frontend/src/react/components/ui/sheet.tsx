@@ -53,7 +53,7 @@ function SheetOverlay({
 // legitimate size is needed so all consumers stay aligned.
 const sheetContentVariants = cva(
   cn(
-    "fixed inset-y-0 right-0 z-50 flex h-full flex-col bg-background shadow-lg",
+    "fixed inset-y-0 right-0 flex h-full flex-col bg-background shadow-lg",
     "max-w-[100vw] outline-hidden",
     "data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full",
     "transition-transform duration-200 ease-out"

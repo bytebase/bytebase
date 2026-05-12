@@ -19,6 +19,7 @@ export interface DatabaseSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  portal?: boolean;
   projectName?: string;
   environmentName?: string;
   allowedEngineTypeList?: Engine[];
@@ -30,6 +31,7 @@ export function DatabaseSelect({
   placeholder,
   disabled,
   className,
+  portal,
   projectName,
   environmentName,
   allowedEngineTypeList,
@@ -94,6 +96,7 @@ export function DatabaseSelect({
       onSearch={fetchDatabases}
       disabled={disabled}
       className={className}
+      portal={portal}
       renderValue={(opt) => {
         const db = databases.find((d) => d.name === opt.value);
         if (!db) return opt.label;
