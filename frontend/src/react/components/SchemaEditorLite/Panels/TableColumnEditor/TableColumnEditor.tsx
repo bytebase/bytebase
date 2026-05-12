@@ -264,6 +264,7 @@ export function TableColumnEditor({
                     // the initial mount of a row, so clearing the name on
                     // an existing column won't re-steal focus.
                     autoFocus={status === "created" && column.name === ""}
+                    placeholder={t("schema-editor.column.name-placeholder")}
                     value={column.name}
                     disabled={disabled}
                     size="xs"

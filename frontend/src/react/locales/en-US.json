@@ -2009,6 +2009,7 @@
       "default": "Default",
       "foreign-key": "Foreign Key",
       "name": "Name",
+      "name-placeholder": "Column name",
       "not-null": "Not Null",
       "on-update": "On Update",
       "operations": "Operations",

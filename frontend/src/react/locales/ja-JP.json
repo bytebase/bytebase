@@ -1998,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外部キー",
       "name": "Name",
+      "name-placeholder": "カラム名",
       "not-null": "Not Null",
       "on-update": "アップデート時",
       "operations": "Operations",

@@ -1998,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "Khóa ngoại",
       "name": "Name",
+      "name-placeholder": "Tên cột",
       "not-null": "Not Null",
       "on-update": "Khi cập nhật",
       "operations": "Operations",

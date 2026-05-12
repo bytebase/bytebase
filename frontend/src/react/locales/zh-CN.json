@@ -1998,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "外键",
       "name": "Name",
+      "name-placeholder": "列名",
       "not-null": "Not Null",
       "on-update": "更新时",
       "operations": "Operations",

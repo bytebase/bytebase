@@ -1998,6 +1998,7 @@
       "default": "Default",
       "foreign-key": "Clave foránea",
       "name": "Name",
+      "name-placeholder": "Nombre de la columna",
       "not-null": "Not Null",
       "on-update": "En actualización",
       "operations": "Operations",
