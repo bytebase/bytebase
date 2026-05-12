@@ -106,6 +106,8 @@ export interface PlanDetailPageSnapshot {
 export interface PlanDetailPageState extends PlanDetailPageSnapshot {
   isEditing: boolean;
   isRefreshing: boolean;
+  isRunningChecks: boolean;
+  setIsRunningChecks: (running: boolean) => void;
   lastRefreshTime: number;
   activePhases: Set<PlanDetailPhase>;
   routeName?: string;
@@ -318,6 +320,7 @@ export const usePlanDetailPage = ({
   );
   const [editingScopes, setEditingScopes] = useState<Record<string, true>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const [pendingLeaveConfirm, setPendingLeaveConfirm] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
@@ -691,6 +694,8 @@ export const usePlanDetailPage = ({
       ...snapshot,
       isEditing,
       isRefreshing,
+      isRunningChecks,
+      setIsRunningChecks,
       lastRefreshTime,
       activePhases,
       routeName,
@@ -715,6 +720,7 @@ export const usePlanDetailPage = ({
       closeTaskPanel,
       isEditing,
       isRefreshing,
+      isRunningChecks,
       lastRefreshTime,
       patchState,
       pendingLeaveConfirm,

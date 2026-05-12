@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -21,15 +21,17 @@ import { usePlanDetailContext } from "../context/PlanDetailContext";
 
 // Wraps the run / refresh logic shared between PlanDetailChecks (per-spec
 // section in the body) and the plan-level summary in PlanDetailMetadataSidebar.
+// The running flag lives on the page context so both surfaces disable their
+// Run buttons together — otherwise the user could trigger two concurrent
+// runPlanChecks calls from the same page.
 export function usePlanCheckActions() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const { patchState } = page;
+  const { patchState, isRunningChecks, setIsRunningChecks } = page;
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1().value;
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const [isRunningChecks, setIsRunningChecks] = useState(false);
 
   const allowRunChecks = useMemo(() => {
     if (page.plan.hasRollout) return false;

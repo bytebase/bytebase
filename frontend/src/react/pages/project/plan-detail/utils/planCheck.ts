@@ -199,6 +199,22 @@ export const transformReleaseCheckResultsToPlanCheckRuns = (
   const allResults: PlanCheckRun_Result[] = [];
 
   for (const result of results) {
+    if (result.advices.length === 0) {
+      // checkRelease succeeded for this target with no advices. Emit a
+      // synthetic SUCCESS result so the summary shows a Success badge —
+      // otherwise a clean run looks identical to "checks never ran".
+      allResults.push(
+        create(PlanCheckRun_ResultSchema, {
+          code: 0,
+          content: "",
+          status: Advice_Level.SUCCESS,
+          target: result.target,
+          title: "OK",
+          type: PlanCheckRun_Result_Type.STATEMENT_ADVISE,
+        })
+      );
+      continue;
+    }
     for (const advice of result.advices) {
       allResults.push(
         create(PlanCheckRun_ResultSchema, {
