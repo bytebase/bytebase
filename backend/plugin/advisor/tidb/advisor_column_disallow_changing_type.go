@@ -241,13 +241,34 @@ func formatEnumValueList(values []string) string {
 	return strings.Join(parts, ",")
 }
 
-// normalizeColumnType canonicalizes bare integer type names to their
-// default-length forms so that pingcap's `int(11)`-style rendering
-// matches the catalog's `int` (or vice-versa, depending on which side
-// elides the default length). Kept structurally identical to the
-// pingcap-typed predecessor + the mysql analog for fixture parity.
+// normalizeColumnType canonicalizes type-name forms so that
+// equivalent renderings on either side of the comparison
+// (omni-built new type vs catalog-stored existing type) match.
+// Two classes of normalization:
+//
+//   - **Integer default-length**: bare `int` ↔ `int(11)`, `tinyint`
+//     ↔ `tinyint(4)`, etc. Pingcap's `Tp.String()` always rendered
+//     the default display width; catalog stores it too. The omni
+//     port may emit either form depending on whether the user
+//     specified a length.
+//
+//   - **Alias normalization**: `boolean` ↔ `tinyint(1)`. Omni
+//     preserves `DataType.Name = "BOOLEAN"` from the user's
+//     literal source; pingcap and MySQL info_schema both
+//     canonicalize boolean columns to `tinyint(1)` (verified via
+//     `backend/plugin/schema/{tidb,mysql}/get_database_metadata.go`
+//     and pingcap's Tp.String() for BOOLEAN columns). Without
+//     this entry, no-op `MODIFY x BOOLEAN` on a tinyint(1)
+//     column would false-positive (Codex round-5 catch).
+//
+// Kept structurally aligned with the mysql analog + pingcap-typed
+// predecessor for fixture parity.
 func normalizeColumnType(tp string) string {
 	switch strings.ToLower(tp) {
+	case "boolean", "bool":
+		// MySQL canonicalizes BOOL/BOOLEAN to tinyint(1). Both
+		// pingcap rendering and INFORMATION_SCHEMA agree.
+		return "tinyint(1)"
 	case "tinyint":
 		return "tinyint(4)"
 	case "tinyint unsigned":
