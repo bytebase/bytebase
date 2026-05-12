@@ -155,24 +155,3 @@ func omniIndexKeyCount(c *ast.Constraint) int {
 		return 0
 	}
 }
-
-// omniConstraintAdviceName returns the constraint name suitable for
-// embedding in advice content. Falls back to "PRIMARY" for unnamed
-// PRIMARY KEY constraints (cumulative #28: pingcap-tidb accepted the
-// non-standard `PRIMARY KEY index_name (cols)` extension and captured
-// the index_name; omni follows standard MySQL grammar where PRIMARY
-// KEY doesn't accept an index_name and silently drops it. "PRIMARY"
-// is MySQL's canonical internal name for the primary key — better UX
-// than the empty backticks the raw `c.Name` would produce).
-func omniConstraintAdviceName(c *ast.Constraint) string {
-	if c == nil {
-		return ""
-	}
-	if c.Name != "" {
-		return c.Name
-	}
-	if c.Type == ast.ConstrPrimaryKey {
-		return "PRIMARY"
-	}
-	return ""
-}

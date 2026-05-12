@@ -498,6 +498,31 @@ func omniIsIntegerType(dt *omniast.DataType) bool {
 	}
 }
 
+// omniConstraintAdviceName returns the constraint name suitable for
+// embedding in advice content. Falls back to "PRIMARY" for unnamed
+// PRIMARY KEY constraints (cumulative #28: pingcap-tidb accepted the
+// non-standard `PRIMARY KEY index_name (cols)` extension and captured
+// the index_name; omni follows standard MySQL grammar where PRIMARY
+// KEY doesn't accept an index_name and silently drops it. "PRIMARY"
+// is MySQL's canonical internal name for the primary key — better UX
+// than the empty backticks the raw `c.Name` would produce).
+//
+// Promoted to utils.go in batch 18 (originally file-local in batch
+// 17's advisor_index_key_number_limit.go) when a second consumer
+// (advisor_index_no_duplicate_column) needed the same fallback.
+func omniConstraintAdviceName(c *omniast.Constraint) string {
+	if c == nil {
+		return ""
+	}
+	if c.Name != "" {
+		return c.Name
+	}
+	if c.Type == omniast.ConstrPrimaryKey {
+		return "PRIMARY"
+	}
+	return ""
+}
+
 // omniDataTypeNameCompact returns a compact, lowercase type-name string
 // for use in advice content + allowlist comparisons. Mirrors the mysql
 // helper of the same name (mysql/utils_omni.go). Length/scale info is
