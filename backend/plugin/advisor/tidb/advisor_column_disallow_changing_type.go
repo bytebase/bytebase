@@ -159,17 +159,16 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	}
 	lower := strings.ToLower(dt.Name)
 
-	// Build the base form (without UNSIGNED/ZEROFILL modifiers).
-	// Modifier handling is centralized below so canonical-bare-form
-	// types (DECIMAL → decimal(10,0), INT → int(11), etc.) compose
-	// correctly with UNSIGNED/ZEROFILL — this avoids the
-	// bare-form × modifier Cartesian product false-positive class
-	// (Codex round-8 catch on PR #20302; otherwise
-	// `MODIFY x DECIMAL UNSIGNED` against `decimal(10,0) unsigned`
-	// catalog would false-positive because my builder previously
-	// emitted "decimal unsigned" and normalizeColumnType had no
-	// "decimal unsigned" entry).
-	base := buildBaseTypeForm(dt, lower)
+	// Build the compact (no-modifier) form first; this is the
+	// CompactStr-equivalent that maps directly to pingcap's
+	// `column.Tp.CompactStr()` and to MySQL info_schema's
+	// non-attribute column-type rendering. Modifier handling is
+	// centralized below so canonical-bare-form types (DECIMAL →
+	// decimal(10,0), INT → int(11), etc.) compose correctly with
+	// UNSIGNED/ZEROFILL — this avoids the bare-form × modifier
+	// Cartesian product false-positive class (Codex round-8 catch
+	// on PR #20302).
+	base := omniBuildCompactTypeString(dt, lower)
 
 	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
 	// rendered both. Match that convention.
@@ -182,10 +181,40 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	return base
 }
 
-// buildBaseTypeForm renders the type body (without UNSIGNED/ZEROFILL
-// suffixes), applying MySQL canonical default precisions where the
-// type family carries them. ENUM/SET use their value list as the body.
-func buildBaseTypeForm(dt *ast.DataType, lower string) string {
+// omniBuildCompactTypeString renders the type body in the
+// CompactStr-equivalent form: type name + canonicalized length/scale
+// (ENUM/SET value list) without UNSIGNED/ZEROFILL/charset suffixes.
+// Matches pingcap's `column.Tp.CompactStr()` output and MySQL
+// info_schema's non-attribute column-type rendering.
+//
+// Use this when comparing against:
+//   - User-provided blocklist/allowlist entries (column_type_disallow_list)
+//   - Pingcap CompactStr-equivalent fixture content
+//
+// For catalog comparison that needs UNSIGNED/ZEROFILL preservation,
+// wrap with omniBuildColumnTypeString which appends the modifiers.
+//
+// The `lower` argument should be `strings.ToLower(dt.Name)` — callers
+// often have it available already; passing in avoids re-computing.
+//
+// Length/scale rendering rules per type family (each verified
+// empirically against pingcap's Tp.String()/CompactStr() during
+// batch 11 + 12 pre-batch protocol):
+//
+//   - **ENUM / SET:** value list as body.
+//   - **DECIMAL / NUMERIC / FIXED (exact-precision):** always (M,D),
+//     defaulting Scale=0; canonicalize the name to `decimal`.
+//   - **FLOAT / DOUBLE / REAL (approximate):** (M,D) only when Scale > 0;
+//     otherwise bare name (matches pingcap's precision-hint drop).
+//   - **Bare-form types with MySQL canonical defaults**: apply via
+//     `canonicalBareTypeForm` (INT → int(11), TINYINT → tinyint(4),
+//     BIT → bit(1), BINARY → binary(1), YEAR → year(4), BOOLEAN →
+//     tinyint(1), DECIMAL → decimal(10,0), …).
+//   - **All other types**: (Length) when Length > 0; bare name otherwise.
+func omniBuildCompactTypeString(dt *ast.DataType, lower string) string {
+	if dt == nil {
+		return ""
+	}
 	switch {
 	case isEnumOrSetTypeName(lower):
 		return fmt.Sprintf("%s(%s)", lower, formatEnumValueList(dt.EnumValues))

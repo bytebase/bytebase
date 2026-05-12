@@ -11,10 +11,84 @@ package tidb
 // directly. No shared-mock-catalog cross-engine impact concern.
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/bytebase/omni/tidb/ast"
 )
+
+// TestOmniBuildCompactTypeString locks the CompactStr-equivalent
+// rendering used by column_type_disallow_list. Codex round-1 catch on
+// PR #20308 (Codex P1) flagged that the earlier omniDataTypeNameCompact
+// rendering dropped length/literal/canonicalization information that
+// pingcap's `column.Tp.CompactStr()` preserved — breaking user
+// blocklist entries like "VARCHAR(255)" / "TINYINT(1)" / "ENUM('X','Y')".
+// These tests pin the CompactStr-equivalent contract.
+func TestOmniBuildCompactTypeString(t *testing.T) {
+	cases := []struct {
+		name string
+		dt   *ast.DataType
+		want string
+	}{
+		// Bare-name types: pingcap CompactStr also renders bare.
+		{"JSON", &ast.DataType{Name: "JSON"}, "json"},
+		{"BLOB", &ast.DataType{Name: "BLOB"}, "blob"},
+		{"DATE", &ast.DataType{Name: "DATE"}, "date"},
+		// Length-bearing types: preserve length in CompactStr form.
+		{"VARCHAR(255)", &ast.DataType{Name: "VARCHAR", Length: 255}, "varchar(255)"},
+		{"CHAR(10)", &ast.DataType{Name: "CHAR", Length: 10}, "char(10)"},
+		{"BINARY(16)", &ast.DataType{Name: "BINARY", Length: 16}, "binary(16)"},
+		// Bare-form integer: canonical default width applied.
+		{"INT bare → int(11)", &ast.DataType{Name: "INT"}, "int(11)"},
+		{"TINYINT bare → tinyint(4)", &ast.DataType{Name: "TINYINT"}, "tinyint(4)"},
+		{"SMALLINT bare → smallint(6)", &ast.DataType{Name: "SMALLINT"}, "smallint(6)"},
+		{"MEDIUMINT bare → mediumint(9)", &ast.DataType{Name: "MEDIUMINT"}, "mediumint(9)"},
+		{"BIGINT bare → bigint(20)", &ast.DataType{Name: "BIGINT"}, "bigint(20)"},
+		{"BIT bare → bit(1)", &ast.DataType{Name: "BIT"}, "bit(1)"},
+		{"BINARY bare → binary(1)", &ast.DataType{Name: "BINARY"}, "binary(1)"},
+		{"YEAR bare → year(4)", &ast.DataType{Name: "YEAR"}, "year(4)"},
+		// Specified integer length: preserved.
+		{"TINYINT(1)", &ast.DataType{Name: "TINYINT", Length: 1}, "tinyint(1)"},
+		{"INT(11)", &ast.DataType{Name: "INT", Length: 11}, "int(11)"},
+		// Exact-decimal: canonicalize to decimal(M,D).
+		{"DECIMAL bare → decimal(10,0)", &ast.DataType{Name: "DECIMAL"}, "decimal(10,0)"},
+		{"DECIMAL(10)", &ast.DataType{Name: "DECIMAL", Length: 10}, "decimal(10,0)"},
+		{"DECIMAL(10,2)", &ast.DataType{Name: "DECIMAL", Length: 10, Scale: 2}, "decimal(10,2)"},
+		{"NUMERIC(10,2) → decimal", &ast.DataType{Name: "NUMERIC", Length: 10, Scale: 2}, "decimal(10,2)"},
+		// Approximate float: drop precision hint when Scale=0.
+		{"FLOAT bare", &ast.DataType{Name: "FLOAT"}, "float"},
+		{"FLOAT(10) → float", &ast.DataType{Name: "FLOAT", Length: 10}, "float"},
+		{"FLOAT(10,2)", &ast.DataType{Name: "FLOAT", Length: 10, Scale: 2}, "float(10,2)"},
+		// ENUM/SET: value list as body.
+		{"ENUM('x','y')", &ast.DataType{Name: "ENUM", EnumValues: []string{"x", "y"}}, "enum('x','y')"},
+		{"SET('a','b')", &ast.DataType{Name: "SET", EnumValues: []string{"a", "b"}}, "set('a','b')"},
+		// BOOLEAN canonicalizes to tinyint(1).
+		{"BOOLEAN → tinyint(1)", &ast.DataType{Name: "BOOLEAN"}, "tinyint(1)"},
+		// Crucially: CompactStr does NOT include UNSIGNED/ZEROFILL
+		// modifiers, even when set on the DataType. The wrapper
+		// omniBuildColumnTypeString appends those; the compact form
+		// stays modifier-free (matches pingcap's CompactStr behavior:
+		// `BIGINT UNSIGNED` → CompactStr "bigint(20)" — no UNSIGNED).
+		{"BIGINT UNSIGNED → compact has no UNSIGNED", &ast.DataType{Name: "BIGINT", Unsigned: true}, "bigint(20)"},
+		{"INT(11) UNSIGNED → compact has no UNSIGNED", &ast.DataType{Name: "INT", Length: 11, Unsigned: true}, "int(11)"},
+		{"INT ZEROFILL → compact has no ZEROFILL", &ast.DataType{Name: "INT", Zerofill: true}, "int(11)"},
+		// nil safety.
+		{"nil", nil, ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			lower := ""
+			if tc.dt != nil {
+				lower = strings.ToLower(tc.dt.Name)
+			}
+			got := omniBuildCompactTypeString(tc.dt, lower)
+			if got != tc.want {
+				t.Errorf("omniBuildCompactTypeString = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestOmniBuildColumnTypeString(t *testing.T) {
 	cases := []struct {

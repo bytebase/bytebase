@@ -97,22 +97,24 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 }
 
 // checkColumnTypeDisallow returns an advice if the column's rendered
-// type is in the user-supplied blocklist, or nil if not. The rendering
-// uses omniDataTypeNameCompact (bare lowercase Name, no length/scale/
-// modifiers) — matches the bare-name convention the existing fixtures
-// + test config use. The mysql analog does the same.
+// type is in the user-supplied blocklist, or nil if not.
 //
-// Note: this is intentionally NOT the rich rendering used by
-// advisor_column_disallow_changing_type (which compares against
-// catalog and needs the full canonical form). Here the comparison is
-// against a user-provided blocklist that conventionally lists bare
-// type names like "JSON", "BLOB", "BINARY_FLOAT" — so the compact
-// rendering is appropriate.
+// Uses omniBuildCompactTypeString — the CompactStr-equivalent — to
+// match the pre-migration pingcap behavior. Pingcap's
+// `column.Tp.CompactStr()` rendered length, scale, and ENUM/SET
+// literals (e.g. "varchar(255)", "enum('x','y')", "tinyint(1)"),
+// applied canonical defaults to bare integer forms ("int" →
+// "int(11)"), and canonicalized aliases ("BOOLEAN" → "tinyint(1)").
+// A user blocklist of ["VARCHAR(255)"] matched VARCHAR(255) columns
+// exactly; a blocklist of ["JSON"] matched JSON columns. The earlier
+// commit on this PR used omniDataTypeNameCompact (bare lowercase
+// Name only), which silently broke length/literal blocklist entries
+// — Codex P1 catch.
 func checkColumnTypeDisallow(typeRestriction map[string]bool, level storepb.Advice_Status, title, tableName string, col *ast.ColumnDef, line int) *storepb.Advice {
 	if col.TypeName == nil {
 		return nil
 	}
-	columnType := strings.ToUpper(omniDataTypeNameCompact(col.TypeName))
+	columnType := strings.ToUpper(omniBuildCompactTypeString(col.TypeName, strings.ToLower(col.TypeName.Name)))
 	if !typeRestriction[columnType] {
 		return nil
 	}
