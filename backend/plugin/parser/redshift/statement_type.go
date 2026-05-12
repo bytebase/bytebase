@@ -268,6 +268,13 @@ func (c *statementTypeCollectorWithPosition) EnterDropdbstmt(ctx *parser.Dropdbs
 	c.addStatement(storepb.StatementType_DROP_DATABASE, ctx)
 }
 
+func (c *statementTypeCollectorWithPosition) EnterTruncatestmt(ctx *parser.TruncatestmtContext) {
+	if !isTopLevel(ctx.GetParent()) {
+		return
+	}
+	c.addStatement(storepb.StatementType_TRUNCATE, ctx)
+}
+
 // DROP SCHEMA statements
 func (c *statementTypeCollectorWithPosition) EnterDropschemastmt(ctx *parser.DropschemastmtContext) {
 	if !isTopLevel(ctx.GetParent()) {

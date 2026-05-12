@@ -41,6 +41,8 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return getDropStatementTypeFromOmni(n)
 	case *ast.DropdbStmt:
 		return storepb.StatementType_DROP_DATABASE
+	case *ast.TruncateStmt:
+		return storepb.StatementType_TRUNCATE
 
 	// DDL - ALTER
 	case *ast.AlterTableStmt:
