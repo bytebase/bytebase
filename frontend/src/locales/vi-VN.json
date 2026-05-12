@@ -1128,9 +1128,7 @@
           "description": "Nhập giá trị sau đó nhấn Enter",
           "title": "Bảng"
         }
-      },
-      "search": "Nhập tiêu đề hoặc id để tìm kiếm",
-      "self": "Tìm kiếm nâng cao"
+      }
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt"

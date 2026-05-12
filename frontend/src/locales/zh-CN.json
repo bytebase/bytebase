@@ -1128,9 +1128,7 @@
           "description": "输入值然后按 Enter",
           "title": "表"
         }
-      },
-      "search": "输入名称或 ID 来搜索",
-      "self": "高级搜索"
+      }
     },
     "approval-flow": {
       "self": "审批流"

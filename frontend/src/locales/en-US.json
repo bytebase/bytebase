@@ -1128,9 +1128,7 @@
           "description": "Input the value then press Enter",
           "title": "Table"
         }
-      },
-      "search": "Input title or id to search",
-      "self": "Advanced search"
+      }
     },
     "approval-flow": {
       "self": "Approval flow"

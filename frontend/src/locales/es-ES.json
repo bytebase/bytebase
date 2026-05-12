@@ -1128,9 +1128,7 @@
           "description": "Ingrese el valor y luego presione Enter",
           "title": "Tabla"
         }
-      },
-      "search": "Ingrese título o id para buscar",
-      "self": "Búsqueda Avanzada"
+      }
     },
     "approval-flow": {
       "self": "Flujo de aprobación"

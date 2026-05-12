@@ -1128,9 +1128,7 @@
           "description": "値を入力してEnterを押します",
           "title": "テーブル"
         }
-      },
-      "search": "検索するにはタイトルまたはIDを入力してください",
-      "self": "高度な検索"
+      }
     },
     "approval-flow": {
       "self": "承認の流れ"
