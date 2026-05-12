@@ -20,10 +20,7 @@ type Props = {
 //      because the metadata is a Pinia/Vue reactive proxy.
 //   2. WeakMap keys (the parent metadata reference) drop their cache entry
 //      automatically when the metadata refreshes — no manual invalidation.
-const tableColumnIndex = new WeakMap<
-  object,
-  Map<string, ColumnMetadata>
->();
+const tableColumnIndex = new WeakMap<object, Map<string, ColumnMetadata>>();
 function findColumn(parent: { columns: ColumnMetadata[] }, name: string) {
   let map = tableColumnIndex.get(parent);
   if (!map) {

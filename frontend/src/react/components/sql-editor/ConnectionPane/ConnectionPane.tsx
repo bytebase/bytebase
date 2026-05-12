@@ -635,18 +635,29 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           </div>
         </TabsPanel>
 
-        <TabsPanel value="DATABASE-GROUP" keepMounted>
-          <DatabaseGroupTable
-            projectName={projectName}
-            view={DatabaseGroupView.FULL}
-            leadingLabel={t("database-group.select")}
-            showSelection
-            showExternalLink
-            selectedDatabaseGroupNames={selectedDatabaseGroupNames}
-            onSelectedDatabaseGroupNamesChange={handleSelectedGroupsChange}
-            onRowClick={(_, group) => handleSelectDatabaseGroup(group.name)}
-          />
-        </TabsPanel>
+        {/*
+          Only mount the DATABASE-GROUP panel when the user's plan
+          actually allows the tab. The trigger above is `disabled` for
+          plans missing either feature flag, but `keepMounted` on the
+          panel would otherwise still mount `DatabaseGroupTable`, whose
+          mount effect fires `fetchDBGroupListByProjectName` — wasted
+          API traffic on every ConnectionPane open and a chance to
+          surface 403s for an inaccessible UI path.
+        */}
+        {hasBatchQueryFeature && hasDatabaseGroupFeature && (
+          <TabsPanel value="DATABASE-GROUP" keepMounted>
+            <DatabaseGroupTable
+              projectName={projectName}
+              view={DatabaseGroupView.FULL}
+              leadingLabel={t("database-group.select")}
+              showSelection
+              showExternalLink
+              selectedDatabaseGroupNames={selectedDatabaseGroupNames}
+              onSelectedDatabaseGroupNamesChange={handleSelectedGroupsChange}
+              onRowClick={(_, group) => handleSelectDatabaseGroup(group.name)}
+            />
+          </TabsPanel>
+        )}
       </Tabs>
 
       <ConnectionContextMenu ref={contextMenuRef} />
