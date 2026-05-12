@@ -50,23 +50,26 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 
 // checkStmtForOrderByRand returns at most ONE advice per top-level
 // statement, mirroring pingcap-typed predecessor's break-after-first-
-// RAND-match cardinality. Mysql analog emits per-item (no break) AND
-// recurses into UNION set-op arms; tidb preserves the narrower
-// pingcap-tidb scope (no SetOp recursion, single advice per stmt).
+// RAND-match cardinality. Mysql analog emits per-item (no break);
+// tidb preserves pingcap-tidb's single-advice-per-stmt contract.
 //
 // Cumulative #1 framing: INSERT-VALUES / INSERT-SET / INSERT-TABLE
 // forms have `ins.Select == nil` and skip. Only INSERT ... SELECT can
 // have an ORDER BY; only that path is checked.
 //
-// Long-standing pre-omni tidb gap (preserved per invariant #10): the
-// pingcap Enter type-asserted `insert.Select.(*ast.SelectStmt)`, so
-// for `INSERT INTO t SELECT ... UNION SELECT ... ORDER BY RAND()` the
-// outer pingcap shape is a SetOprStmt and the cast fails — rule did
-// not fire. Omni's `InsertStmt.Select` is `*SelectStmt` with
-// `SetOp != SetOpNone` carrying the union; we only check the top-
-// level OrderBy, leaving UNION-arm OrderBy paths uncovered to match
-// pingcap-tidb behavior. (Mysql omni recurses; that's an enhancement
-// available if the tidb gap surfaces as customer signal.)
+// Cumulative #24 — silent UX improvement at the UNION boundary:
+// pingcap's `InsertStmt.Select` is a `ResultSetNode` interface;
+// UNION'd inserts produce `*ast.SetOprStmt`. The pre-omni rule
+// type-asserted `insert.Select.(*ast.SelectStmt)` — the cast failed
+// for UNION'd inputs and silently skipped the whole check. Omni's
+// `InsertStmt.Select` is `*SelectStmt` (concrete) regardless of
+// SetOp, so `ins.Select.OrderBy` here IS the outer-UNION ORDER BY
+// list. The rule now fires on `INSERT ... SELECT ... UNION ...
+// ORDER BY RAND()` (outer-UNION position) — matches the rule's
+// stated intent. NOT a regression. Inner per-arm OrderBy (in
+// parenthesized UNION arms, if/when omni grammar accepts that
+// syntax in INSERT position — currently rejected) remains
+// uncovered, matching pingcap-tidb's per-arm behavior.
 func checkStmtForOrderByRand(ostmt OmniStmt, level storepb.Advice_Status, title string) *storepb.Advice {
 	ins, ok := ostmt.Node.(*ast.InsertStmt)
 	if !ok {
