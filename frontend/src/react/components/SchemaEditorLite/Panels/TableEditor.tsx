@@ -10,7 +10,12 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { ColumnMetadataSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  ColumnMetadataSchema,
+  IndexMetadataSchema,
+  TablePartitionMetadata_Type,
+  TablePartitionMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { getDatabaseEngine } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import {
@@ -86,6 +91,63 @@ export function TableEditor({
     });
   }, [db, database, schema, table, editStatus, rebuildTree, scrollStatus]);
 
+  // Add-index / add-partition handlers live at the TableEditor level so the
+  // three "Add …" actions can share a single right-aligned slot in the
+  // toolbar instead of jumping into the body panel when the user switches
+  // tabs. The child editors no longer render their own add buttons.
+  const handleAddIndex = useCallback(() => {
+    const index = create(IndexMetadataSchema, {
+      name: `idx_${table.name}_${Date.now()}`,
+      expressions: [],
+      primary: false,
+      unique: false,
+      comment: "",
+    });
+    table.indexes.push(index);
+    editStatus.markEditStatus(db, { schema, table }, "updated");
+  }, [table, editStatus, db, schema]);
+
+  const handleAddPartition = useCallback(() => {
+    const firstPartition = table.partitions[0];
+    const partition = create(TablePartitionMetadataSchema, {
+      name: `p${table.partitions.length}`,
+      type: firstPartition?.type ?? TablePartitionMetadata_Type.RANGE,
+      expression: firstPartition?.expression ?? "",
+      value: "",
+      subpartitions: [],
+    });
+    table.partitions.push(partition);
+    editStatus.markEditStatus(db, { schema, table }, "updated");
+  }, [table, editStatus, db, schema]);
+
+  const addAction = useMemo(() => {
+    if (readonly || disableChangeTable) return null;
+    if (mode === "COLUMNS") {
+      return {
+        label: t("schema-editor.actions.add-column"),
+        onClick: handleAddColumn,
+      };
+    }
+    if (mode === "INDEXES") {
+      return {
+        label: t("schema-editor.actions.add-index"),
+        onClick: handleAddIndex,
+      };
+    }
+    return {
+      label: t("schema-editor.actions.add-partition"),
+      onClick: handleAddPartition,
+    };
+  }, [
+    readonly,
+    disableChangeTable,
+    mode,
+    t,
+    handleAddColumn,
+    handleAddIndex,
+    handleAddPartition,
+  ]);
+
   const markTableStatus = useCallback(
     (status: "updated") => {
       if (tableStatus === "created" || tableStatus === "dropped") return;
@@ -119,16 +181,17 @@ export function TableEditor({
           options={modeOptions}
           onValueChange={setMode}
           ariaLabel={t("schema-editor.self")}
+          size="sm"
         />
-        {!readonly && !disableChangeTable && mode === "COLUMNS" && (
+        {addAction && (
           <Button
             variant="outline"
             size="sm"
             className="ml-auto"
-            onClick={handleAddColumn}
+            onClick={addAction.onClick}
           >
             <Plus className="mr-1 size-4" />
-            {t("schema-editor.actions.add-column")}
+            {addAction.label}
           </Button>
         )}
       </div>
