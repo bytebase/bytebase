@@ -14,6 +14,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { ColumnIcon } from "@/react/components/schema/icons";
 import { Badge } from "@/react/components/ui/badge";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
@@ -39,6 +40,7 @@ import { buildTree } from "./tree-builder";
 import { useContextMenu } from "./useContextMenu";
 
 export function AsideTree() {
+  const { t } = useTranslation();
   const context = useSchemaEditorContext();
   const {
     targets,
