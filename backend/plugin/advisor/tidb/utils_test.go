@@ -344,6 +344,33 @@ func TestOmniIsCurrentTimeFuncCall(t *testing.T) {
 	}
 }
 
+// TestOmniIsRandFuncCall pins the case-insensitive RAND function
+// detection contract used by insert_disallow_order_by_rand. Pingcap-tidb
+// matched via lowercase-canonical `FnName.L == ast.Rand`; omni preserves
+// the user's case in `FuncCallExpr.Name`, so we compare via EqualFold.
+// RAND accepts an optional seed arg — we match regardless of arity.
+func TestOmniIsRandFuncCall(t *testing.T) {
+	cases := []struct {
+		name string
+		expr omniast.ExprNode
+		want bool
+	}{
+		{"RAND uppercase", &omniast.FuncCallExpr{Name: "RAND"}, true},
+		{"rand lowercase", &omniast.FuncCallExpr{Name: "rand"}, true},
+		{"Rand titlecase", &omniast.FuncCallExpr{Name: "Rand"}, true},
+		{"RAND with seed arg", &omniast.FuncCallExpr{Name: "RAND", Args: []omniast.ExprNode{nil}}, true},
+		{"RANDOM (not synonym)", &omniast.FuncCallExpr{Name: "RANDOM"}, false},
+		{"NOT_RAND prefix-like", &omniast.FuncCallExpr{Name: "NOT_RAND"}, false},
+		{"unknown function", &omniast.FuncCallExpr{Name: "FOO"}, false},
+		{"nil expr", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsRandFuncCall(tc.expr))
+		})
+	}
+}
+
 // TestOmniIsCharOrBinaryType pins cumulative #22 — pingcap's
 // `mysql.TypeString` covered BOTH CHAR and BINARY via charset
 // distinction. The omni port must match both names; a mechanical

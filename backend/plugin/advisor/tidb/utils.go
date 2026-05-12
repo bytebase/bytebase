@@ -410,6 +410,25 @@ func omniIsCurrentTimeFuncCall(expr omniast.ExprNode) bool {
 	}
 }
 
+// omniIsRandFuncCall checks whether the given expression is a
+// function call to RAND(). Used by insert_disallow_order_by_rand.
+// Pingcap-tidb compared via `FnName.L == ast.Rand` (lowercase
+// canonicalization); omni keeps the user's original case in
+// `FuncCallExpr.Name`, so we compare case-insensitively. RAND
+// accepts an optional integer seed argument; we match regardless
+// of arity (matching pingcap's predecessor — which type-asserted
+// the function call but didn't inspect Args).
+func omniIsRandFuncCall(expr omniast.ExprNode) bool {
+	if expr == nil {
+		return false
+	}
+	fc, ok := expr.(*omniast.FuncCallExpr)
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(fc.Name, "RAND")
+}
+
 // omniIsCharOrBinaryType reports whether the column type is a
 // fixed-length character/binary type (CHAR or BINARY). Pingcap-tidb
 // dispatched on `mysql.TypeString` which covered BOTH `CHAR` and
