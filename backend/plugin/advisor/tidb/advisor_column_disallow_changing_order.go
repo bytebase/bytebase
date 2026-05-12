@@ -44,21 +44,17 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 		}
 		// Single-advice-per-statement contract (mirrors pingcap-tidb).
 		// Mysql analog emits per-cmd; preserve pingcap behavior.
-		for _, cmd := range alter.Commands {
-			if cmd == nil {
-				continue
-			}
-			if (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn) &&
-				(cmd.First || cmd.After != "") {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.ChangeColumnOrder.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("\"%s\" changes column order", ostmt.TrimmedText()),
-					StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
-				})
-				break
-			}
+		if firstAlterCommandMatching(alter, func(cmd *ast.AlterTableCmd) bool {
+			return (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn) &&
+				(cmd.First || cmd.After != "")
+		}) >= 0 {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.ChangeColumnOrder.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" changes column order", ostmt.TrimmedText()),
+				StartPosition: common.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
+			})
 		}
 	}
 

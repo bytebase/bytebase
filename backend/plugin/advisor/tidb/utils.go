@@ -325,6 +325,29 @@ func collectColumnViolations(ostmt OmniStmt, isViolation func(*omniast.ColumnDef
 	return cols
 }
 
+// firstAlterCommandMatching returns the index of the first AlterTableCmd
+// in n.Commands satisfying matcher, or -1 if none match. Used by ALTER-
+// TABLE-only advisors that emit a single advice per statement
+// (cardinality-1) on the first triggering command — `disallow_changing`
+// and `disallow_changing_order` share this exact shape.
+//
+// Returns -1 when n is nil, n.Commands is empty, or matcher returns
+// false for every non-nil command.
+func firstAlterCommandMatching(n *omniast.AlterTableStmt, matcher func(*omniast.AlterTableCmd) bool) int {
+	if n == nil || matcher == nil {
+		return -1
+	}
+	for i, cmd := range n.Commands {
+		if cmd == nil {
+			continue
+		}
+		if matcher(cmd) {
+			return i
+		}
+	}
+	return -1
+}
+
 // omniIsIntegerType reports whether the column type is an integer type
 // from the perspective of pingcap-tidb's `isInteger` helper. Pingcap
 // dispatched on `mysql.TypeTiny`/`TypeShort`/`TypeInt24`/`TypeLong`/`TypeLonglong`

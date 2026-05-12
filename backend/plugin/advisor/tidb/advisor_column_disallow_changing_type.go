@@ -109,27 +109,71 @@ func columnTypeChanged(metadata *model.DatabaseMetadata, tableName, columnName s
 }
 
 // omniBuildColumnTypeString renders an omni DataType into the lowercase
-// "name[(length[,scale])] [unsigned]" form that normalizeColumnType
-// expects. Zerofill / charset / collation are intentionally NOT
-// rendered — neither the catalog nor the rule's normalize map covers
-// them.
+// "name[(length[,scale])] [unsigned] [zerofill]" form that the
+// normalizeColumnType helper + catalog comparison expects.
+//
+// Three subtleties (caught by Codex round-2 on PR #20302; cumulative #21
+// + #21a):
+//
+//  1. **Zero-scale on decimal-family types.** Pingcap's `Tp.String()`
+//     canonicalized `DECIMAL(10)` and `DECIMAL(10,0)` both to
+//     `"decimal(10,0)"` (explicit scale, even when zero). Catalog stores
+//     the same form. A naive "skip scale when 0" builder renders
+//     `"decimal(10)"` and false-positives on `MODIFY x DECIMAL(10)` on a
+//     `decimal(10,0)` column. Decimal-family types always render with
+//     explicit scale when Length > 0.
+//
+//  2. **ZEROFILL attribute.** Pingcap appended `" ZEROFILL"` (and
+//     implied UNSIGNED) for zerofill columns. Omni surfaces Zerofill
+//     as a separate bool. Render `" zerofill"` when set; treat
+//     Zerofill-without-Unsigned as also unsigned in the output
+//     (matches pingcap rendering convention; ZEROFILL implies UNSIGNED
+//     in MySQL storage). Note: MySQL canonicalizes ZEROFILL display
+//     widths to maximums (e.g. `int(11)` → `int(10)`); the
+//     normalizeColumnType map doesn't cover the zerofill cases, so
+//     ZEROFILL-vs-no-ZEROFILL or display-width-canonicalization
+//     differences may still surface as false-positives on rare
+//     ZEROFILL no-op modifies. Out of scope to fix here.
+//
+//  3. **Charset / collation suffix.** Pingcap appended a `" BINARY"`
+//     charset annotation on BLOB/TINYBLOB/VARBINARY; omni's DataType
+//     has no charset suffix. Cumulative #21 — preserved (omni's
+//     no-suffix rendering matches catalog).
 func omniBuildColumnTypeString(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
 	tp := strings.ToLower(dt.Name)
 	switch {
-	case dt.Length > 0 && dt.Scale > 0:
+	case dt.Length > 0 && (dt.Scale > 0 || isDecimalFamilyTypeName(tp)):
 		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
 	case dt.Length > 0:
 		tp = fmt.Sprintf("%s(%d)", tp, dt.Length)
 	default:
 		// No length specified — keep tp as the bare type name.
 	}
-	if dt.Unsigned {
+	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
+	// rendered both. Match that convention.
+	if dt.Unsigned || dt.Zerofill {
 		tp += " unsigned"
 	}
+	if dt.Zerofill {
+		tp += " zerofill"
+	}
 	return tp
+}
+
+// isDecimalFamilyTypeName returns true for column types that always
+// carry an explicit scale in their canonical rendering, even when the
+// scale is zero. MySQL info_schema and pingcap's Tp.String() both
+// canonicalize `DECIMAL(M)` to `decimal(M,0)`.
+func isDecimalFamilyTypeName(lower string) bool {
+	switch lower {
+	case "decimal", "numeric", "fixed", "float", "double", "real":
+		return true
+	default:
+		return false
+	}
 }
 
 // normalizeColumnType canonicalizes bare integer type names to their
