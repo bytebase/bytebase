@@ -174,12 +174,12 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 }
 
 // omniConstraintIsIndexFamily reports whether the constraint type
-// participates in the duplicate-column check: PRIMARY KEY, UNIQUE
-// (all 3 pingcap variants unified under ConstrUnique), INDEX/KEY
-// (unified under ConstrIndex), or FOREIGN KEY. Cumulative #2 + #29:
-// the pre-omni list explicitly OMITTED ConstraintUniqKey (long-
-// standing pre-omni miss); omni's single-arm ConstrUnique restores
-// that coverage automatically.
+// participates in the duplicate-column check: PRIMARY KEY, UNIQUE,
+// INDEX/KEY, or FOREIGN KEY. Omni's `ConstrUnique` unifies the 3
+// pingcap UNIQUE syntactic forms (parser produces ConstraintUniq=4
+// for bare UNIQUE / UNIQUE KEY / UNIQUE INDEX; UniqKey=5 / UniqIndex=6
+// are defined enum values but parser-unreachable — see top-level
+// docstring's cumulative #2 note). Mechanical port.
 func omniConstraintIsIndexFamily(t ast.ConstraintType) bool {
 	switch t {
 	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrForeignKey:
