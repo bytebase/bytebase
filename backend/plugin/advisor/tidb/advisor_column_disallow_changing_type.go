@@ -157,37 +157,97 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
-	tp := strings.ToLower(dt.Name)
-	switch {
-	case isEnumOrSetTypeName(tp):
-		// ENUM / SET render their value list, not length/scale.
-		tp = fmt.Sprintf("%s(%s)", tp, formatEnumValueList(dt.EnumValues))
-	case dt.Length > 0 && isExactDecimalTypeName(tp):
-		// DECIMAL / NUMERIC / FIXED: always (M,D), defaulting Scale=0.
-		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
-	case dt.Length > 0 && dt.Scale > 0:
-		// Any other type with explicit (M,D) — render both.
-		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
-	case dt.Length > 0 && !isApproximateFloatTypeName(tp):
-		// VARCHAR / CHAR / integer-with-display-width / etc.: (Length).
-		// FLOAT(N) / DOUBLE(N) / REAL(N) fall through to default →
-		// bare name, matching pingcap's precision-hint drop.
-		tp = fmt.Sprintf("%s(%d)", tp, dt.Length)
-	default:
-		// Either no length, or float-family without explicit scale.
-	}
+	lower := strings.ToLower(dt.Name)
+
+	// Build the base form (without UNSIGNED/ZEROFILL modifiers).
+	// Modifier handling is centralized below so canonical-bare-form
+	// types (DECIMAL → decimal(10,0), INT → int(11), etc.) compose
+	// correctly with UNSIGNED/ZEROFILL — this avoids the
+	// bare-form × modifier Cartesian product false-positive class
+	// (Codex round-8 catch on PR #20302; otherwise
+	// `MODIFY x DECIMAL UNSIGNED` against `decimal(10,0) unsigned`
+	// catalog would false-positive because my builder previously
+	// emitted "decimal unsigned" and normalizeColumnType had no
+	// "decimal unsigned" entry).
+	base := buildBaseTypeForm(dt, lower)
+
 	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
-	// rendered both. Match that convention. (ENUM/SET are string types
-	// and never carry these attributes in valid SQL, but the omni AST
-	// surfaces Unsigned/Zerofill as plain bools — defensively skip the
-	// suffix application when the type doesn't take them.)
+	// rendered both. Match that convention.
 	if dt.Unsigned || dt.Zerofill {
-		tp += " unsigned"
+		base += " unsigned"
 	}
 	if dt.Zerofill {
-		tp += " zerofill"
+		base += " zerofill"
 	}
-	return tp
+	return base
+}
+
+// buildBaseTypeForm renders the type body (without UNSIGNED/ZEROFILL
+// suffixes), applying MySQL canonical default precisions where the
+// type family carries them. ENUM/SET use their value list as the body.
+func buildBaseTypeForm(dt *ast.DataType, lower string) string {
+	switch {
+	case isEnumOrSetTypeName(lower):
+		return fmt.Sprintf("%s(%s)", lower, formatEnumValueList(dt.EnumValues))
+	case dt.Length > 0 && isExactDecimalTypeName(lower):
+		// DECIMAL / NUMERIC / FIXED with explicit length: always (M,D),
+		// defaulting Scale=0.
+		return fmt.Sprintf("%s(%d,%d)", lower, dt.Length, dt.Scale)
+	case dt.Length > 0 && dt.Scale > 0:
+		// Any other type with explicit (M,D) — render both.
+		return fmt.Sprintf("%s(%d,%d)", lower, dt.Length, dt.Scale)
+	case dt.Length > 0 && !isApproximateFloatTypeName(lower):
+		// VARCHAR / CHAR / integer-with-display-width / etc.: (Length).
+		// FLOAT(N) / DOUBLE(N) / REAL(N) fall through to default below →
+		// bare name, matching pingcap's precision-hint drop.
+		return fmt.Sprintf("%s(%d)", lower, dt.Length)
+	}
+	// No length, OR float-family without explicit scale.
+	// Apply MySQL canonical default precision for type families whose
+	// catalog/info_schema rendering carries the default.
+	if canonical, ok := canonicalBareTypeForm(lower); ok {
+		return canonical
+	}
+	return lower
+}
+
+// canonicalBareTypeForm returns the MySQL canonical default rendering
+// for type families whose info_schema / pingcap Tp.String() always
+// includes an explicit length/precision even when the user wrote the
+// bare form. Returns "", false for type families that store/render
+// bare (FLOAT, DOUBLE, JSON, DATE, …).
+//
+// This centralizes the "what does MySQL canonicalize?" knowledge in
+// one place. Adding a new family is a single switch entry rather
+// than: one normalize entry per type-modifier combination.
+func canonicalBareTypeForm(lower string) (string, bool) {
+	switch lower {
+	case "decimal", "numeric", "fixed":
+		return "decimal(10,0)", true
+	case "tinyint":
+		return "tinyint(4)", true
+	case "smallint":
+		return "smallint(6)", true
+	case "mediumint":
+		return "mediumint(9)", true
+	case "int", "integer":
+		return "int(11)", true
+	case "bigint":
+		return "bigint(20)", true
+	case "bit":
+		return "bit(1)", true
+	case "binary":
+		return "binary(1)", true
+	case "year":
+		return "year(4)", true
+	case "boolean", "bool":
+		// BOOLEAN is a TINYINT(1) alias; UNSIGNED/ZEROFILL append
+		// to "tinyint(1)" if syntactically present (e.g. malformed
+		// SQL like `BOOLEAN UNSIGNED`) — matches pingcap rendering.
+		return "tinyint(1)", true
+	default:
+		return "", false
+	}
 }
 
 // isExactDecimalTypeName returns true for column types whose canonical

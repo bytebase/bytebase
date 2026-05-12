@@ -36,8 +36,9 @@ func TestOmniBuildColumnTypeString(t *testing.T) {
 		{"DECIMAL(10,2)", &ast.DataType{Name: "DECIMAL", Length: 10, Scale: 2}, "decimal(10,2)"},
 		{"NUMERIC(8)", &ast.DataType{Name: "NUMERIC", Length: 8}, "numeric(8,0)"},
 		// Round 2: ZEROFILL implies UNSIGNED + appends zerofill.
-		{"INT-ZEROFILL", &ast.DataType{Name: "INT", Zerofill: true}, "int unsigned zerofill"},
-		{"INT-UNSIGNED-ZEROFILL", &ast.DataType{Name: "INT", Unsigned: true, Zerofill: true}, "int unsigned zerofill"},
+		// Note: round-8 fix updated bare INT ZEROFILL from "int unsigned zerofill"
+		// (the original round-2 output, which mismatched catalog) to the
+		// canonical "int(11) unsigned zerofill" form that catalog stores.
 		{"INT(11)-ZEROFILL", &ast.DataType{Name: "INT", Length: 11, Zerofill: true}, "int(11) unsigned zerofill"},
 		// Round 3: FLOAT/DOUBLE/REAL drop precision hint when no
 		// explicit scale; render (M,D) only when Scale > 0.
@@ -54,17 +55,45 @@ func TestOmniBuildColumnTypeString(t *testing.T) {
 		{"ENUM-3", &ast.DataType{Name: "ENUM", EnumValues: []string{"x", "y", "z"}}, "enum('x','y','z')"},
 		{"SET-3", &ast.DataType{Name: "SET", EnumValues: []string{"a", "b", "c"}}, "set('a','b','c')"},
 		{"ENUM-escape", &ast.DataType{Name: "ENUM", EnumValues: []string{"with'quote"}}, "enum('with''quote')"},
-		// Round 5 / 6 are normalizeColumnType concerns — tested in
-		// TestNormalizeColumnType below. The builder for BOOLEAN
-		// and bare DECIMAL emits the user-typed form; normalize
-		// canonicalizes.
-		{"BOOLEAN-builder", &ast.DataType{Name: "BOOLEAN"}, "boolean"},
-		{"DECIMAL-bare-builder", &ast.DataType{Name: "DECIMAL"}, "decimal"},
-		// Round-7 risk check (BIT / BINARY / YEAR bare-form
-		// defaults). Builder emits bare; normalize canonicalizes.
-		{"BIT-bare-builder", &ast.DataType{Name: "BIT"}, "bit"},
-		{"BINARY-bare-builder", &ast.DataType{Name: "BINARY"}, "binary"},
-		{"YEAR-bare-builder", &ast.DataType{Name: "YEAR"}, "year"},
+		// Rounds 5, 6, 7, 8 — the builder now applies MySQL canonical
+		// default forms for type families whose info_schema rendering
+		// carries explicit length/precision. Previously these were
+		// emitted bare and relied on normalizeColumnType; now the
+		// builder produces the canonical form directly so that the
+		// bare-form × modifier (UNSIGNED/ZEROFILL) Cartesian product
+		// composes without combinatorial normalize-map entries.
+		{"BOOLEAN", &ast.DataType{Name: "BOOLEAN"}, "tinyint(1)"},
+		{"DECIMAL-bare", &ast.DataType{Name: "DECIMAL"}, "decimal(10,0)"},
+		{"NUMERIC-bare", &ast.DataType{Name: "NUMERIC"}, "decimal(10,0)"},
+		{"BIT-bare", &ast.DataType{Name: "BIT"}, "bit(1)"},
+		{"BINARY-bare", &ast.DataType{Name: "BINARY"}, "binary(1)"},
+		{"YEAR-bare", &ast.DataType{Name: "YEAR"}, "year(4)"},
+		{"INT-bare", &ast.DataType{Name: "INT"}, "int(11)"},
+		{"TINYINT-bare", &ast.DataType{Name: "TINYINT"}, "tinyint(4)"},
+		{"BIGINT-bare", &ast.DataType{Name: "BIGINT"}, "bigint(20)"},
+		// Round 8 / peer-review-prompted: bare-form × modifier
+		// combinations. Pre-fix these emitted "decimal unsigned" /
+		// "int unsigned zerofill" (bare base + suffix); now emit
+		// the canonical-base + suffix forms that match what pingcap
+		// Tp.String() and info_schema render.
+		{"DECIMAL-bare-UNSIGNED", &ast.DataType{Name: "DECIMAL", Unsigned: true}, "decimal(10,0) unsigned"},
+		{"DECIMAL-bare-ZEROFILL", &ast.DataType{Name: "DECIMAL", Zerofill: true}, "decimal(10,0) unsigned zerofill"},
+		{"DECIMAL-bare-UNSIGNED-ZEROFILL", &ast.DataType{Name: "DECIMAL", Unsigned: true, Zerofill: true}, "decimal(10,0) unsigned zerofill"},
+		{"NUMERIC-bare-UNSIGNED", &ast.DataType{Name: "NUMERIC", Unsigned: true}, "decimal(10,0) unsigned"},
+		{"INT-bare-ZEROFILL", &ast.DataType{Name: "INT", Zerofill: true}, "int(11) unsigned zerofill"},
+		{"INT-bare-UNSIGNED-ZEROFILL", &ast.DataType{Name: "INT", Unsigned: true, Zerofill: true}, "int(11) unsigned zerofill"},
+		{"TINYINT-bare-ZEROFILL", &ast.DataType{Name: "TINYINT", Zerofill: true}, "tinyint(4) unsigned zerofill"},
+		{"SMALLINT-bare-ZEROFILL", &ast.DataType{Name: "SMALLINT", Zerofill: true}, "smallint(6) unsigned zerofill"},
+		{"MEDIUMINT-bare-ZEROFILL", &ast.DataType{Name: "MEDIUMINT", Zerofill: true}, "mediumint(9) unsigned zerofill"},
+		{"BIGINT-bare-ZEROFILL", &ast.DataType{Name: "BIGINT", Zerofill: true}, "bigint(20) unsigned zerofill"},
+		{"INT-bare-UNSIGNED", &ast.DataType{Name: "INT", Unsigned: true}, "int(11) unsigned"},
+		{"BIGINT-bare-UNSIGNED", &ast.DataType{Name: "BIGINT", Unsigned: true}, "bigint(20) unsigned"},
+		// FLOAT/DOUBLE/REAL with bare-form + modifier: float-family
+		// does NOT apply default precision, so bare → "float unsigned"
+		// (matches pingcap's precision-hint-drop behavior even with
+		// modifiers).
+		{"FLOAT-bare-UNSIGNED", &ast.DataType{Name: "FLOAT", Unsigned: true}, "float unsigned"},
+		{"DOUBLE-bare-UNSIGNED", &ast.DataType{Name: "DOUBLE", Unsigned: true}, "double unsigned"},
 		// Regular cases that should "just work".
 		{"VARCHAR(255)", &ast.DataType{Name: "VARCHAR", Length: 255}, "varchar(255)"},
 		{"CHAR(10)", &ast.DataType{Name: "CHAR", Length: 10}, "char(10)"},
@@ -171,6 +200,15 @@ func TestTypeStringRoundTripAgainstNormalize(t *testing.T) {
 		{"INT(11)", &ast.DataType{Name: "INT", Length: 11}, "int(11)", true},
 		{"bare TINYINT", &ast.DataType{Name: "TINYINT"}, "tinyint(4)", true},
 		{"VARCHAR(255)", &ast.DataType{Name: "VARCHAR", Length: 255}, "varchar(255)", true},
+		// Round 8: bare-form × modifier no-op-modify scenarios.
+		// Catalog stores the canonical form (default precision +
+		// UNSIGNED [+ ZEROFILL]); builder now produces matching form.
+		{"DECIMAL UNSIGNED no-op", &ast.DataType{Name: "DECIMAL", Unsigned: true}, "decimal(10,0) unsigned", true},
+		{"DECIMAL ZEROFILL no-op", &ast.DataType{Name: "DECIMAL", Zerofill: true}, "decimal(10,0) unsigned zerofill", true},
+		{"INT ZEROFILL no-op", &ast.DataType{Name: "INT", Zerofill: true}, "int(11) unsigned zerofill", true},
+		{"TINYINT ZEROFILL no-op", &ast.DataType{Name: "TINYINT", Zerofill: true}, "tinyint(4) unsigned zerofill", true},
+		{"INT UNSIGNED no-op", &ast.DataType{Name: "INT", Unsigned: true}, "int(11) unsigned", true},
+		{"BIGINT UNSIGNED no-op", &ast.DataType{Name: "BIGINT", Unsigned: true}, "bigint(20) unsigned", true},
 		// Negative case: actual type change. Normalize should NOT
 		// produce matching strings.
 		{"INT → BIGINT", &ast.DataType{Name: "BIGINT"}, "int(11)", false},
