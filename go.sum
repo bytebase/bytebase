@@ -242,8 +242,8 @@ github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920 h1:IfmPt5o5R70NK
 github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920/go.mod h1:ykhjIPiv0IWpu3OGXCHdz2eUSe8UNGGD6baqjs8jSuU=
 github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca h1:bDgHzFb+pn23vrCdQ8+VYTu8dHKwV9KWgcAUvL6CT+s=
 github.com/bytebase/azure-sdk-for-go/sdk/data/azcosmos v0.0.0-20260424030223-eac0db373bca/go.mod h1:OwIkGuhFwOV7zicy7lmJl3MRqhkf2OmCSX8NMFEPm4A=
-github.com/bytebase/gh-ost2 v1.1.7-0.20260509080506-4ca6df829327 h1:zfT0iH+eaP1kyYV3TSaTi/5YOUVY/kE1yZurtPdd/WE=
-github.com/bytebase/gh-ost2 v1.1.7-0.20260509080506-4ca6df829327/go.mod h1:XVUEFLOcM31VxA/pvm1YMolnDWlzVyvsqZy9OZKVJ8k=
+github.com/bytebase/gh-ost2 v1.1.7-0.20260512035759-ca2794d6ebea h1:jj2X8RJaIEjFG4OUZONdKaPRyXY1k5uXepEj6Y8FDgk=
+github.com/bytebase/gh-ost2 v1.1.7-0.20260512035759-ca2794d6ebea/go.mod h1:XVUEFLOcM31VxA/pvm1YMolnDWlzVyvsqZy9OZKVJ8k=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
 github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
 github.com/bytebase/gomongo v0.0.0-20260403033636-f6c50d4ab888 h1:E8tz8maxpih/vtCnyrqtIOQlFbO00gT+Ahk6+W6kyQs=

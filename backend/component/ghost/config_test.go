@@ -9,10 +9,12 @@ import (
 	"encoding/pem"
 	"math/big"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -35,8 +37,9 @@ func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 		AuthenticationType:   storepb.DataSource_PASSWORD,
 	}
 
-	migrationContext, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
+	t.Cleanup(cleanup)
 	require.True(t, migrationContext.UseTLS)
 	require.True(t, migrationContext.TLSAllowInsecure)
 	require.True(t, filepath.IsAbs(migrationContext.TLSCACertificate))
@@ -66,9 +69,39 @@ func TestNewMigrationContextRespectsVerifyTlsCertificate(t *testing.T) {
 		SslKey:               keyPEM,
 	}
 
-	migrationContext, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
+	t.Cleanup(cleanup)
 	require.False(t, migrationContext.TLSAllowInsecure)
+}
+
+func TestNewMigrationContextUsesSSHNetwork(t *testing.T) {
+	originalGetSSHClient := getSSHClient
+	getSSHClient = func(_ *storepb.DataSource) (*ssh.Client, error) {
+		return nil, nil
+	}
+	t.Cleanup(func() {
+		getSSHClient = originalGetSSHClient
+	})
+
+	ctx := context.Background()
+	database := &store.DatabaseMessage{DatabaseName: "ghostdb"}
+	dataSource := &storepb.DataSource{
+		Host:               "172.29.0.10",
+		Port:               "3306",
+		Username:           "root",
+		Password:           "root",
+		SshHost:            "127.0.0.1",
+		SshPort:            "2222",
+		SshUser:            "bb",
+		AuthenticationType: storepb.DataSource_PASSWORD,
+	}
+
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	require.NoError(t, err)
+	t.Cleanup(cleanup)
+	require.True(t, strings.HasPrefix(migrationContext.InspectorConnectionConfig.Network, "mysql-tcp-"))
+	require.NotNil(t, migrationContext.InspectorConnectionConfig.Dialer)
 }
 
 func generateSelfSignedPEM(t *testing.T) (string, string) {

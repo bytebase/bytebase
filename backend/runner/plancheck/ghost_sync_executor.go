@@ -142,10 +142,11 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to generate secure random number")
 	}
-	migrationContext, err := ghost.NewMigrationContext(ctx, randomInt.Int64(), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, target.GhostFlags, 20000000)
+	migrationContext, cleanup, err := ghost.NewMigrationContext(ctx, randomInt.Int64(), database, adminDataSource, tableName, fmt.Sprintf("_dryrun_%d", time.Now().Unix()), statement, true, target.GhostFlags, 20000000)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}
+	defer cleanup()
 	defer func() {
 		// Use migrationContext.Uuid as the tls_config_key by convention.
 		// We need to deregister it when gh-ost exits.
