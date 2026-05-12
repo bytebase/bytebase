@@ -112,45 +112,59 @@ func columnTypeChanged(metadata *model.DatabaseMetadata, tableName, columnName s
 // "name[(length[,scale])] [unsigned] [zerofill]" form that the
 // normalizeColumnType helper + catalog comparison expects.
 //
-// Three subtleties (caught by Codex round-2 on PR #20302; cumulative #21
-// + #21a):
+// Length/scale rendering rules per type family (each verified empirically
+// against pingcap's Tp.String() during pre-batch protocol; cumulative #21):
 //
-//  1. **Zero-scale on decimal-family types.** Pingcap's `Tp.String()`
-//     canonicalized `DECIMAL(10)` and `DECIMAL(10,0)` both to
-//     `"decimal(10,0)"` (explicit scale, even when zero). Catalog stores
-//     the same form. A naive "skip scale when 0" builder renders
-//     `"decimal(10)"` and false-positives on `MODIFY x DECIMAL(10)` on a
-//     `decimal(10,0)` column. Decimal-family types always render with
-//     explicit scale when Length > 0.
+//   - **DECIMAL / NUMERIC / FIXED (exact-precision):** always (M,D)
+//     when Length > 0; Scale defaults to 0. Pingcap and MySQL
+//     info_schema both canonicalize `DECIMAL(10)` → `decimal(10,0)`.
 //
-//  2. **ZEROFILL attribute.** Pingcap appended `" ZEROFILL"` (and
-//     implied UNSIGNED) for zerofill columns. Omni surfaces Zerofill
-//     as a separate bool. Render `" zerofill"` when set; treat
-//     Zerofill-without-Unsigned as also unsigned in the output
-//     (matches pingcap rendering convention; ZEROFILL implies UNSIGNED
-//     in MySQL storage). Note: MySQL canonicalizes ZEROFILL display
-//     widths to maximums (e.g. `int(11)` → `int(10)`); the
-//     normalizeColumnType map doesn't cover the zerofill cases, so
-//     ZEROFILL-vs-no-ZEROFILL or display-width-canonicalization
-//     differences may still surface as false-positives on rare
-//     ZEROFILL no-op modifies. Out of scope to fix here.
+//   - **FLOAT / DOUBLE / REAL (approximate):** (M,D) ONLY when Scale
+//     was explicitly given (Scale > 0); otherwise render bare type
+//     name. MySQL drops the precision hint for `FLOAT(10)` —
+//     pingcap's `Tp.String()` returns `"float"` for `FLOAT(10)` and
+//     `"float"` for `FLOAT(10,0)`. Treating these like DECIMAL caused
+//     false-positives on no-op `MODIFY x FLOAT(10)` (Codex round-3
+//     catch).
 //
-//  3. **Charset / collation suffix.** Pingcap appended a `" BINARY"`
-//     charset annotation on BLOB/TINYBLOB/VARBINARY; omni's DataType
-//     has no charset suffix. Cumulative #21 — preserved (omni's
-//     no-suffix rendering matches catalog).
+//   - **All other types** (VARCHAR / CHAR / BINARY / VARBINARY /
+//     integer family / etc.): (Length) when Length > 0; no scale.
+//
+// Additional attributes:
+//
+//   - **ZEROFILL**: pingcap appended `" ZEROFILL"` (and implied
+//     UNSIGNED) for zerofill columns. Render `" zerofill"` when
+//     `Zerofill` is set; treat Zerofill as implying Unsigned in the
+//     output. Caveat: MySQL canonicalizes ZEROFILL display widths to
+//     maximums (e.g. `int(11)` → `int(10)`); the normalizeColumnType
+//     map doesn't cover zerofill cases, so display-width-
+//     canonicalization differences may still surface as false-
+//     positives on rare ZEROFILL no-op modifies. Out of scope
+//     (ZEROFILL is deprecated in MySQL 8.0.17+).
+//
+//   - **Charset / collation:** pingcap appended a `" BINARY"` charset
+//     annotation on BLOB/TINYBLOB/VARBINARY; omni's DataType has no
+//     charset suffix. Latent pingcap false-positive — silently fixed
+//     by the migration (cumulative #21).
 func omniBuildColumnTypeString(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
 	tp := strings.ToLower(dt.Name)
 	switch {
-	case dt.Length > 0 && (dt.Scale > 0 || isDecimalFamilyTypeName(tp)):
+	case dt.Length > 0 && isExactDecimalTypeName(tp):
+		// DECIMAL / NUMERIC / FIXED: always (M,D), defaulting Scale=0.
 		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
-	case dt.Length > 0:
+	case dt.Length > 0 && dt.Scale > 0:
+		// Any other type with explicit (M,D) — render both.
+		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
+	case dt.Length > 0 && !isApproximateFloatTypeName(tp):
+		// VARCHAR / CHAR / integer-with-display-width / etc.: (Length).
+		// FLOAT(N) / DOUBLE(N) / REAL(N) fall through to default →
+		// bare name, matching pingcap's precision-hint drop.
 		tp = fmt.Sprintf("%s(%d)", tp, dt.Length)
 	default:
-		// No length specified — keep tp as the bare type name.
+		// Either no length, or float-family without explicit scale.
 	}
 	// ZEROFILL implies UNSIGNED in MySQL storage; pingcap's Tp.String()
 	// rendered both. Match that convention.
@@ -163,13 +177,28 @@ func omniBuildColumnTypeString(dt *ast.DataType) string {
 	return tp
 }
 
-// isDecimalFamilyTypeName returns true for column types that always
-// carry an explicit scale in their canonical rendering, even when the
-// scale is zero. MySQL info_schema and pingcap's Tp.String() both
-// canonicalize `DECIMAL(M)` to `decimal(M,0)`.
-func isDecimalFamilyTypeName(lower string) bool {
+// isExactDecimalTypeName returns true for column types whose canonical
+// MySQL rendering always carries an explicit scale, even when zero.
+// Pingcap's `Tp.String()` canonicalizes `DECIMAL(M)` → `decimal(M,0)`;
+// MySQL info_schema does the same.
+func isExactDecimalTypeName(lower string) bool {
 	switch lower {
-	case "decimal", "numeric", "fixed", "float", "double", "real":
+	case "decimal", "numeric", "fixed":
+		return true
+	default:
+		return false
+	}
+}
+
+// isApproximateFloatTypeName returns true for column types whose
+// canonical MySQL rendering drops the precision hint when scale is
+// not explicitly given. Pingcap's `Tp.String()` returns `"float"` for
+// `FLOAT(10)` and `"float"` for `FLOAT(10,0)` — only `FLOAT(M,D)`
+// with D > 0 renders as `float(M,D)`. Same applies to DOUBLE and
+// REAL (REAL is an alias for DOUBLE in pingcap + MySQL).
+func isApproximateFloatTypeName(lower string) bool {
+	switch lower {
+	case "float", "double", "real":
 		return true
 	default:
 		return false
