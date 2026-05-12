@@ -216,6 +216,58 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"mixed DML statements on the same table",
 			},
 		},
+		{
+			// Cumulative #30 Codex-fix-1c: DROP VIEW must be classified
+			// as DDL. Pingcap parses `DROP VIEW v` as *ast.DropTableStmt
+			// (already in DDL list); omni splits to *ast.DropViewStmt
+			// which initial port excluded → regression. Post-fix:
+			// DropViewStmt added to DDL set.
+			name:            "DROP VIEW + UPDATE fires mixed DDL+DML (Codex-fix-1c)",
+			statement:       "DROP VIEW v;\nUPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DDL and DML",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-1c: ALTER DATABASE must be
+			// classified as DDL. Pingcap implements DDLNode via
+			// ddlNode struct embedding (ast/base.go:81); peer's
+			// compile-time `_ DDLNode = ...` grep missed this →
+			// initial port excluded AlterDatabaseStmt → regression.
+			// Empirical verification: parse + .(ast.DDLNode) returns
+			// true for AlterDatabaseStmt.
+			name:            "ALTER DATABASE + UPDATE fires mixed DDL+DML (Codex-fix-1c)",
+			statement:       "ALTER DATABASE test COLLATE = utf8mb4_bin;\nUPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DDL and DML",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-1d: schema-qualified UPDATE
+			// target disambiguation. Joined same-bare-name tables
+			// across schemas (`db1.tech_book JOIN db2.tech_book`):
+			// pre-fix lookup-by-bare-name overwrote the first entry
+			// with the second, so `SET db1.tech_book.id = 1` resolved
+			// to db2.tech_book (wrong). Following `DELETE FROM
+			// db1.tech_book` → DELETE on db1; UPDATE went to db2 →
+			// no mixing detected → false-negative. Post-fix: separate
+			// bySchemaName lookup keyed by "schema.name" disambiguates.
+			//
+			// Note: this fixture uses two parsed-but-non-existent
+			// databases (db1, db2) — the advisor's grouping logic
+			// runs purely on AST-level table identifiers, not on
+			// catalog schema existence. The mixed-DML detection
+			// fires regardless of whether the named databases exist.
+			name:            "schema-qualified UPDATE target disambiguation (Codex-fix-1d)",
+			statement:       "UPDATE db1.tech_book JOIN db2.tech_book ON db1.tech_book.id = db2.tech_book.id SET db1.tech_book.id = 1;\nDELETE FROM db1.tech_book WHERE id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+				"db1.tech_book",
+			},
+		},
 	}
 
 	for _, tc := range cases {

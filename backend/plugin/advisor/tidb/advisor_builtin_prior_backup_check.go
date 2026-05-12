@@ -261,38 +261,48 @@ func omniExtractTableExprRefs(t ast.TableExpr, defaultDB string) []priorBackupTa
 	}
 }
 
-// updateTableAliasMap holds two pieces of resolution state for an
-// UpdateStmt:
-//   - lookup: alias-or-name → base table (used for qualified SET
-//     column resolution)
-//   - distinctBases: deduplicated base tables in the FROM clause
-//     (used to detect single-target UPDATE for unqualified SET
-//     attribution — pre-Codex-fix-1b counted aliasMap entries
-//     directly, which double-counted aliased single-table UPDATEs
-//     since each TableRef contributes 2 lookup keys)
+// updateTableAliasMap holds resolution state for an UpdateStmt's
+// SET-clause target extraction. Three lookup paths plus a single-
+// target-detection list:
+//
+//   - bySchemaName: canonical "schema.name" key → base. Used for
+//     fully-qualified SET LHS (`SET db1.t.col = ...`). Cumulative
+//     #30 Codex-fix-1d: required because joined tables with the
+//     same bare name in different schemas (e.g.
+//     `UPDATE db1.tech_book JOIN db2.tech_book ...`) collide in a
+//     bare-name-only lookup. Schema-qualified lookup disambiguates.
+//
+//   - byAlias: canonical alias key → base. Only registered for
+//     aliased TableRefs. Aliases are unique within a query (parser-
+//     enforced) so no ambiguity.
+//
+//   - byBareName: canonical bare-name key → list of bases. Multiple
+//     bases under the same bare name means the bare-name reference
+//     is ambiguous (resolution skips to avoid misattribution).
+//
+//   - distinctBases: deduplicated base tables in the FROM clause.
+//     Used to detect single-target UPDATE for unqualified-column
+//     SET attribution. Pre-Codex-fix-1b counted lookup-map entries
+//     directly, which double-counted aliased TableRefs.
 type updateTableAliasMap struct {
-	lookup        map[string]priorBackupTable
+	bySchemaName  map[string]priorBackupTable
+	byAlias       map[string]priorBackupTable
+	byBareName    map[string][]priorBackupTable
 	distinctBases []priorBackupTable
 }
 
 // omniBuildTableAliasMap walks an UpdateStmt's Tables slice and
-// builds resolution state for SET-clause target extraction. For each
-// TableRef, registers BOTH the alias (if any) AND the bare name in
-// the lookup map (so qualified references like `alias.col` or
-// `tablename.col` resolve identically) and records the base table
-// once in distinctBases. JoinClause recurses into Left+Right.
-// SubqueryExpr contributes nothing — derived tables aren't base-
-// table candidates (cumulative #26).
-//
-// Unqualified Schema is resolved to defaultDB (cumulative #30
-// Codex-fix-2 revised).
-//
-// Pre-Codex-fix-1b regression: counted lookup-map entries (2 per
-// aliased TableRef) when deciding "is this single-target?",
-// dropping unqualified SET attribution for `UPDATE tech_book AS t
-// SET id = 1`. Post-fix: count distinctBases instead.
+// builds resolution state for SET-clause target extraction.
+// Unqualified TableRef Schema is resolved to defaultDB.
+// JoinClause recurses into Left+Right. SubqueryExpr contributes
+// nothing — derived tables aren't base-table candidates (cumulative
+// #26).
 func omniBuildTableAliasMap(tables []ast.TableExpr, defaultDB string) *updateTableAliasMap {
-	m := &updateTableAliasMap{lookup: make(map[string]priorBackupTable)}
+	m := &updateTableAliasMap{
+		bySchemaName: make(map[string]priorBackupTable),
+		byAlias:      make(map[string]priorBackupTable),
+		byBareName:   make(map[string][]priorBackupTable),
+	}
 	for _, t := range tables {
 		omniCollectTableAliases(t, defaultDB, m)
 	}
@@ -310,12 +320,15 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 			db = defaultDB
 		}
 		base := priorBackupTable{database: db, table: n.Name}
+		nameLower := strings.ToLower(n.Name)
+		dbLower := strings.ToLower(db)
+		m.bySchemaName[dbLower+"."+nameLower] = base
 		if n.Alias != "" {
-			m.lookup[strings.ToLower(n.Alias)] = base
+			m.byAlias[strings.ToLower(n.Alias)] = base
 		}
-		m.lookup[strings.ToLower(n.Name)] = base
+		m.byBareName[nameLower] = append(m.byBareName[nameLower], base)
 		// distinctBases dedup by canonicalized (db, table).
-		distinctKey := strings.ToLower(base.database) + "." + strings.ToLower(base.table)
+		distinctKey := dbLower + "." + nameLower
 		alreadyTracked := false
 		for _, b := range m.distinctBases {
 			if strings.ToLower(b.database)+"."+strings.ToLower(b.table) == distinctKey {
@@ -330,26 +343,25 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 		omniCollectTableAliases(n.Left, defaultDB, m)
 		omniCollectTableAliases(n.Right, defaultDB, m)
 	case *ast.SubqueryExpr:
-		// Derived table — not a base-table candidate for backup
-		// type-mixing detection.
+		// Derived table — not a base-table candidate.
 	default:
 	}
 }
 
 // omniExtractUpdateTargets walks an UpdateStmt's SetList and returns
 // the distinct base-table references that are actual mutation
-// targets. Resolves column qualifiers against the alias map:
-//   - Qualified `t.col = ...` or `alias.col = ...`: look up the
-//     qualifier in lookup → base table.
-//   - Unqualified `col = ...`: if there is exactly ONE distinct
-//     base table in the FROM clause (single-target UPDATE,
-//     regardless of alias multiplicity), use it. Otherwise the
-//     assignment is ambiguous without schema info — skip (multi-
-//     target UPDATE with unqualified SET is rare in practice and
-//     would be ambiguous-by-design).
+// targets. Resolution by qualifier type:
 //
-// Returns deduplicated targets; duplicates from multiple assignments
-// on the same table are collapsed.
+//  1. Column.Schema != "" AND Column.Table != "" → fully-qualified
+//     lookup via bySchemaName. Cumulative #30 Codex-fix-1d.
+//  2. Column.Schema == "" AND Column.Table != "" → byAlias first
+//     (aliases unambiguous); on miss, byBareName. If byBareName
+//     has multiple candidates (joined same-named tables across
+//     schemas), the reference is ambiguous → skip.
+//  3. Both empty → single-target fallback via distinctBases. Skip
+//     when multi-target (ambiguous without schema info).
+//
+// Returns deduplicated targets.
 func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap) []priorBackupTable {
 	var result []priorBackupTable
 	seen := make(map[string]bool)
@@ -365,19 +377,35 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap)
 		if a == nil || a.Column == nil {
 			continue
 		}
-		qualifier := a.Column.Table
-		if qualifier == "" {
-			// Unqualified: safe to attribute only when single-target.
+		col := a.Column
+		switch {
+		case col.Schema != "" && col.Table != "":
+			// Cumulative #30 Codex-fix-1d: schema-qualified lookup
+			// disambiguates same-bare-name joined tables across schemas.
+			key := strings.ToLower(col.Schema) + "." + strings.ToLower(col.Table)
+			if base, ok := m.bySchemaName[key]; ok {
+				add(base)
+			}
+		case col.Table != "":
+			// Try alias first (always unambiguous).
+			if base, ok := m.byAlias[strings.ToLower(col.Table)]; ok {
+				add(base)
+				continue
+			}
+			// Bare-name lookup. Single match → use; multiple → skip
+			// (ambiguous user reference under joined same-named
+			// tables; without schema info we can't disambiguate).
+			bases := m.byBareName[strings.ToLower(col.Table)]
+			if len(bases) == 1 {
+				add(bases[0])
+			}
+		default:
+			// Unqualified — only safe when single-target.
 			// Codex-fix-1b: count DISTINCT base tables, not lookup-
-			// map entries — aliased TableRef contributes 2 lookup
-			// keys but 1 distinct base.
+			// map entries.
 			if len(m.distinctBases) == 1 {
 				add(m.distinctBases[0])
 			}
-			continue
-		}
-		if base, ok := m.lookup[strings.ToLower(qualifier)]; ok {
-			add(base)
 		}
 	}
 	return result
@@ -410,12 +438,20 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap)
 // the verified correct list. Unit tests in utils_test.go pin both
 // positive (DDL types that MUST return true) and negative (DML +
 // non-DDL utility types that must NOT) cases.
+// Cumulative #30 Codex-fix-1c: DropViewStmt + AlterDatabaseStmt are
+// DDL in pingcap. Initial port excluded both per peer's compile-time
+// `_ DDLNode = ...` grep, which missed the `ddlNode` struct embedding
+// at ast/base.go:81-88. Empirical: parsing `DROP VIEW v` yields
+// *ast.DropTableStmt in pingcap (already in our list) but
+// *ast.DropViewStmt in omni — excluding the latter was the real
+// regression. AlterDatabaseStmt empirically isDDLNode=true via the
+// embedding. Both added.
 func omniIsDDLStmt(node ast.Node) bool {
 	switch node.(type) {
 	case *ast.CreateTableStmt, *ast.AlterTableStmt, *ast.DropTableStmt,
 		*ast.CreateIndexStmt, *ast.DropIndexStmt,
-		*ast.CreateViewStmt,                            // NOT DropViewStmt (asymmetric in pingcap)
-		*ast.CreateDatabaseStmt, *ast.DropDatabaseStmt, // NOT AlterDatabaseStmt
+		*ast.CreateViewStmt, *ast.DropViewStmt,
+		*ast.CreateDatabaseStmt, *ast.AlterDatabaseStmt, *ast.DropDatabaseStmt,
 		*ast.TruncateStmt, // pingcap calls it TruncateTableStmt
 		*ast.RenameTableStmt,
 		*ast.CreatePlacementPolicyStmt, *ast.AlterPlacementPolicyStmt, *ast.DropPlacementPolicyStmt,

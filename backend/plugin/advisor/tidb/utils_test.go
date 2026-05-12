@@ -458,7 +458,15 @@ func TestOmniIsDDLStmt(t *testing.T) {
 		{"CreateIndexStmt", &omniast.CreateIndexStmt{}, true},
 		{"DropIndexStmt", &omniast.DropIndexStmt{}, true},
 		{"CreateViewStmt", &omniast.CreateViewStmt{}, true},
+		// Cumulative #30 Codex-fix-1c: DropViewStmt IS DDL (pingcap
+		// parses DROP VIEW under DropTableStmt which is DDL; omni
+		// splits to DropViewStmt — must classify as DDL for parity).
+		{"DropViewStmt (#30 Codex-fix-1c)", &omniast.DropViewStmt{}, true},
 		{"CreateDatabaseStmt", &omniast.CreateDatabaseStmt{}, true},
+		// Cumulative #30 Codex-fix-1c: AlterDatabaseStmt IS DDL via
+		// pingcap's ddlNode struct embedding (peer's compile-time
+		// `_ DDLNode = ...` grep missed embedding-based implementers).
+		{"AlterDatabaseStmt (#30 Codex-fix-1c)", &omniast.AlterDatabaseStmt{}, true},
 		{"DropDatabaseStmt", &omniast.DropDatabaseStmt{}, true},
 		{"TruncateStmt", &omniast.TruncateStmt{}, true},
 		{"RenameTableStmt", &omniast.RenameTableStmt{}, true},
@@ -471,11 +479,13 @@ func TestOmniIsDDLStmt(t *testing.T) {
 		{"OptimizeTableStmt", &omniast.OptimizeTableStmt{}, true},
 		{"RepairTableStmt", &omniast.RepairTableStmt{}, true},
 
-		// Negative — pingcap-tidb does NOT classify these as DDL:
-		// (initial batch 19 over-enumerated these as true; pre-merge
-		// peer review caught; pins are load-bearing for that lesson.)
-		{"DropViewStmt (asymmetric in pingcap — CreateView is, DropView isn't)", &omniast.DropViewStmt{}, false},
-		{"AlterDatabaseStmt (not in pingcap DDLNode)", &omniast.AlterDatabaseStmt{}, false},
+		// Negative — pingcap-tidb does NOT classify these as DDL.
+		// (Initial batch 19 over-enumerated these as true; pre-merge
+		// peer review caught; pins are load-bearing for that lesson.
+		// DropViewStmt and AlterDatabaseStmt were originally in this
+		// negative list per peer's compile-time grep, but Codex-fix-1c
+		// established they ARE DDL via runtime ddlNode-embedding
+		// verification — moved to positive list above.)
 		{"CreateUserStmt (privilege mgmt, not DDL)", &omniast.CreateUserStmt{}, false},
 		{"DropUserStmt", &omniast.DropUserStmt{}, false},
 		{"AlterUserStmt", &omniast.AlterUserStmt{}, false},
