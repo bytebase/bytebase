@@ -248,6 +248,33 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 	return false
 }
 
+// omniIsIntegerType reports whether the column type is an integer type
+// from the perspective of pingcap-tidb's `isInteger` helper. Pingcap
+// dispatched on `mysql.TypeTiny`/`TypeShort`/`TypeInt24`/`TypeLong`/`TypeLonglong`
+// (5 type bytes), and crucially `mysql.TypeTiny` was shared by TINYINT,
+// BOOL, and BOOLEAN (BOOL/BOOLEAN are TINYINT aliases). Omni splits
+// the alias group: BOOL/BOOLEAN both normalize to `DataType.Name = "BOOLEAN"`
+// (verified empirically), while TINYINT stays as "TINYINT". Match all 7
+// omni names (6 covering pingcap's 5 type bytes + "INTEGER" as a
+// defensive alias even though omni pre-normalizes INTEGER → INT per
+// cumulative #7). Cumulative #20 documents the TINYINT/BOOLEAN split.
+//
+// NOTE: this diverges from `mysql/utils_omni.go`'s `omniIsIntegerType`,
+// which currently omits "BOOLEAN". Pre-omni mysql ANTLR did not treat
+// BOOL as TINYINT — that's a long-standing mysql behavior gap, NOT a
+// regression introduced by mysql's omni migration. Out of scope here.
+func omniIsIntegerType(dt *omniast.DataType) bool {
+	if dt == nil {
+		return false
+	}
+	switch strings.ToUpper(dt.Name) {
+	case "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT", "BOOLEAN":
+		return true
+	default:
+		return false
+	}
+}
+
 // omniDataTypeNameCompact returns a compact, lowercase type-name string
 // for use in advice content + allowlist comparisons. Mirrors the mysql
 // helper of the same name (mysql/utils_omni.go). Length/scale info is
