@@ -117,7 +117,10 @@ export function Navigator({ treeHeight }: NavigatorProps) {
         )}
       >
         <ChevronLeft
-          className={cn("size-4 transition-transform", !expanded && "-scale-100")}
+          className={cn(
+            "size-4 transition-transform",
+            !expanded && "-scale-100"
+          )}
         />
       </button>
     </div>

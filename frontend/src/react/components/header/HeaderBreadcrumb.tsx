@@ -24,7 +24,6 @@ import {
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/react/router";
-import { useAppStore } from "@/react/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { ProjectCreateDialog } from "./ProjectCreateDialog";
 import { ProjectSwitchPanel } from "./ProjectSwitchPanel";
@@ -63,7 +62,6 @@ function planVariant(
 // ---------------------------------------------------------------------------
 function WorkspaceSegment() {
   const { t } = useTranslation();
-  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const workspace = useWorkspace();
   const workspaceList = useWorkspaceList();
   const currentWorkspaceName = workspace?.name ?? "";
@@ -73,12 +71,6 @@ function WorkspaceSegment() {
   const hasMultiple = workspaceList.length > 1;
   const switchWorkspace = useSwitchWorkspace();
   const navigate = useNavigate();
-
-  // Self-host has a single workspace — no need to show the workspace segment.
-  if (!isSaaSMode) {
-    return null;
-  }
-
   const [open, setOpen] = useState(false);
 
   const onSwitch = useCallback(
@@ -229,11 +221,10 @@ function ProjectSegment({ showSeparator }: { showSeparator: boolean }) {
 // HeaderBreadcrumb — the assembled breadcrumb bar
 // ---------------------------------------------------------------------------
 export function HeaderBreadcrumb() {
-  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   return (
     <div className="flex items-center gap-x-1">
       <WorkspaceSegment />
-      <ProjectSegment showSeparator={isSaaSMode} />
+      <ProjectSegment showSeparator />
     </div>
   );
 }
