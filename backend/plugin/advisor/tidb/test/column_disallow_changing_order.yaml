@@ -54,3 +54,20 @@
         line: 2
         column: 0
       endposition: null
+# Single-advice-per-statement cardinality pin (batch 11): multiple
+# position-changing specs in one ALTER TABLE produce ONE advice
+# (pingcap-tidb broke after first match). Mysql analog emits per-cmd —
+# cardinality divergence preserved on the tidb side per invariant #7.
+- statement: |-
+    CREATE TABLE t(a int, b int, c int);
+    ALTER TABLE t MODIFY COLUMN a int FIRST, MODIFY COLUMN b int AFTER c;
+  changeType: 1
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t MODIFY COLUMN a int FIRST, MODIFY COLUMN b int AFTER c;" changes column order'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
