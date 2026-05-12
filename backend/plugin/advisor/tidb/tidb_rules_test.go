@@ -1,8 +1,13 @@
 package tidb
 
 import (
+	"context"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
@@ -62,5 +67,125 @@ func TestTiDBRules(t *testing.T) {
 
 	for _, rule := range rules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
+	}
+}
+
+// TestTiDBPriorBackupCheckAdvisor exercises the BUILTIN_PRIOR_BACKUP_CHECK
+// advisor's full check pipeline. Modeled on the mysql analog's
+// TestMariaDBPriorBackupCheckAdvisor — the standard fixture driver
+// doesn't set ListDatabaseNamesFunc, so backup-database-existence and
+// per-table DML-mixing checks need dedicated context construction.
+//
+// Coverage:
+//   - Mixed DDL + DML: triggers "mixed DDL and DML" advice
+//   - Backup db missing: triggers "Need database ... does not exist"
+//   - Backup db present + plain UPDATE: no DML-mixing advice
+//   - Per-table DML-type mixing (UPDATE + DELETE on same table):
+//     triggers "mixed DML statements on the same table" advice
+//   - Size cap exceeded: triggers size-limit advice
+func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
+	sm := sheet.NewManager()
+	// Large statement for size-cap testing: must exceed
+	// common.MaxSheetCheckSize (2 * 1024 * 1024 bytes). Padded
+	// with a SQL comment so the statement parses cleanly.
+	largeStatement := "UPDATE tech_book SET id = 1 WHERE id = 2; -- " + strings.Repeat("x", 2*1024*1024+100)
+	cases := []struct {
+		name              string
+		statement         string
+		backupDBPresent   bool
+		wantContentSubstr []string
+		wantNoneSubstr    []string
+	}{
+		{
+			name:            "mixed DDL and DML fires",
+			statement:       "CREATE TABLE t(id INT);\nUPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DDL and DML",
+			},
+			wantNoneSubstr: []string{
+				"does not exist",
+			},
+		},
+		{
+			name:            "backup db missing fires",
+			statement:       "UPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: false,
+			wantContentSubstr: []string{
+				"does not exist",
+			},
+		},
+		{
+			name:            "single UPDATE on table — clean",
+			statement:       "UPDATE tech_book SET id = 1 WHERE id = 2;",
+			backupDBPresent: true,
+			wantNoneSubstr: []string{
+				"mixed DDL and DML",
+				"mixed DML statements",
+				"does not exist",
+				"exceeds the maximum limit",
+			},
+		},
+		{
+			name:            "per-table DML mixing (UPDATE + DELETE on same table) fires",
+			statement:       "UPDATE tech_book SET id = 1 WHERE id = 2;\nDELETE FROM tech_book WHERE id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+				"tech_book",
+			},
+		},
+		{
+			name:            "UPDATE + DELETE on DIFFERENT tables — clean",
+			statement:       "UPDATE tech_book SET id = 1 WHERE id = 2;\nDELETE FROM orders WHERE order_id = 3;",
+			backupDBPresent: true,
+			wantNoneSubstr: []string{
+				"mixed DML statements",
+			},
+		},
+		{
+			name:            "size cap exceeded fires",
+			statement:       largeStatement,
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"exceeds the maximum limit",
+				"for backup",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := advisor.Context{
+				DBType:            storepb.Engine_TIDB,
+				DBSchema:          advisor.MockMySQLDatabase, // tidb tests reuse mysql mock catalog
+				EnablePriorBackup: true,
+				InstanceID:        "instance",
+				ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+					if tc.backupDBPresent {
+						return []string{"bbdataarchive"}, nil
+					}
+					return nil, nil
+				},
+			}
+			rule := &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+				Level: storepb.SQLReviewRule_WARNING,
+			}
+			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{rule}, ctx)
+			require.NoError(t, err)
+			joined := ""
+			for _, a := range adviceList {
+				joined += a.Content + "\n"
+			}
+			for _, want := range tc.wantContentSubstr {
+				require.True(t, strings.Contains(joined, want),
+					"expected advice content containing %q, got: %s", want, joined)
+			}
+			for _, unwanted := range tc.wantNoneSubstr {
+				require.False(t, strings.Contains(joined, unwanted),
+					"expected NO advice content containing %q, got: %s", unwanted, joined)
+			}
+		})
 	}
 }
