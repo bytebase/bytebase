@@ -429,3 +429,73 @@ func TestOmniCharLength(t *testing.T) {
 		})
 	}
 }
+
+// TestOmniIsConstantLit pins the literal-type enumeration for
+// builtin_prior_backup_check's isConstant predicate. Pre-omni used
+// the `ast.ValueExpr` interface check; omni has 8 concrete literal
+// types — enumerated by omniIsConstantLit. This test locks the
+// contract so a future omni literal type (if added) gets surfaced
+// as a test failure rather than a silent miss.
+func TestOmniIsConstantLit(t *testing.T) {
+	cases := []struct {
+		name string
+		expr omniast.ExprNode
+		want bool
+	}{
+		{"IntLit", &omniast.IntLit{Value: 5}, true},
+		{"StringLit", &omniast.StringLit{Value: "abc"}, true},
+		{"FloatLit", &omniast.FloatLit{Value: "1.5"}, true},
+		{"BoolLit", &omniast.BoolLit{Value: true}, true},
+		{"NullLit", &omniast.NullLit{}, true},
+		{"HexLit", &omniast.HexLit{}, true},
+		{"BitLit", &omniast.BitLit{}, true},
+		{"TemporalLit", &omniast.TemporalLit{}, true},
+		{"ColumnRef (not literal)", &omniast.ColumnRef{Column: "a"}, false},
+		{"BinaryExpr (not literal)", &omniast.BinaryExpr{Op: omniast.BinOpAdd}, false},
+		{"nil", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsConstantLit(tc.expr))
+		})
+	}
+}
+
+// TestOmniIsDDLStmt pins the DDL-type enumeration used by
+// builtin_prior_backup_check's mixed-DDL-and-DML detection. Pre-omni
+// used the `ast.DDLNode` marker interface; omni has no such
+// interface, so we enumerate concrete DDL types. This test covers
+// the principal DDL types (CREATE/ALTER/DROP × TABLE/INDEX/VIEW/
+// DATABASE) + negative DML cases. A future omni DDL type would
+// silently slip past omniIsDDLStmt; the test offers a known-good
+// reference for batch-author audits.
+func TestOmniIsDDLStmt(t *testing.T) {
+	cases := []struct {
+		name string
+		node omniast.Node
+		want bool
+	}{
+		{"CreateTableStmt", &omniast.CreateTableStmt{}, true},
+		{"AlterTableStmt", &omniast.AlterTableStmt{}, true},
+		{"DropTableStmt", &omniast.DropTableStmt{}, true},
+		{"CreateIndexStmt", &omniast.CreateIndexStmt{}, true},
+		{"DropIndexStmt", &omniast.DropIndexStmt{}, true},
+		{"CreateViewStmt", &omniast.CreateViewStmt{}, true},
+		{"DropViewStmt", &omniast.DropViewStmt{}, true},
+		{"CreateDatabaseStmt", &omniast.CreateDatabaseStmt{}, true},
+		{"AlterDatabaseStmt", &omniast.AlterDatabaseStmt{}, true},
+		{"DropDatabaseStmt", &omniast.DropDatabaseStmt{}, true},
+		{"TruncateStmt", &omniast.TruncateStmt{}, true},
+		{"RenameTableStmt", &omniast.RenameTableStmt{}, true},
+		{"UpdateStmt (DML, not DDL)", &omniast.UpdateStmt{}, false},
+		{"DeleteStmt (DML, not DDL)", &omniast.DeleteStmt{}, false},
+		{"InsertStmt (DML, not DDL)", &omniast.InsertStmt{}, false},
+		{"SelectStmt (query, not DDL)", &omniast.SelectStmt{}, false},
+		{"nil", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, omniIsDDLStmt(tc.node))
+		})
+	}
+}
