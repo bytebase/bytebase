@@ -268,6 +268,27 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"db1.tech_book",
 			},
 		},
+		{
+			// Cumulative #30 Codex-fix-1e: schema-aware column
+			// resolution for unqualified SET in multi-table UPDATE.
+			// `UPDATE tech_book JOIN orders SET customer_name = 'x'`
+			// has unqualified `customer_name` — which exists on
+			// `orders` only (per MockMySQLDatabase). Pre-fix-1e:
+			// multi-target UPDATE with unqualified SET → skip → no
+			// UPDATE target recorded → following DELETE on orders
+			// would not fire as mixed-DML (false-negative).
+			// Post-fix-1e: omniResolveUnqualifiedSETColumn walks
+			// dbMetadata, finds customer_name on orders → UPDATE
+			// attributed to orders → DELETE on orders → mixed-DML
+			// fires.
+			name:            "unqualified SET in multi-table UPDATE resolves via catalog (Codex-fix-1e)",
+			statement:       "UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET customer_name = 'x';\nDELETE FROM orders WHERE order_id = 5;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+				"orders",
+			},
+		},
 	}
 
 	for _, tc := range cases {

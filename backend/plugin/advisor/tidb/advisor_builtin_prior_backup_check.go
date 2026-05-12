@@ -132,7 +132,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			// tables). For `UPDATE t1 JOIN t2 ON ... SET t1.col = ...`
 			// the mutation target is t1; t2 must NOT be tagged.
 			aliasMap := omniBuildTableAliasMap(n.Tables, defaultDB)
-			for _, t := range omniExtractUpdateTargets(n.SetList, aliasMap) {
+			for _, t := range omniExtractUpdateTargets(n.SetList, aliasMap, checkCtx.DBSchema) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "UPDATE"})
 			}
 		case *ast.DeleteStmt:
@@ -358,11 +358,15 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 //     (aliases unambiguous); on miss, byBareName. If byBareName
 //     has multiple candidates (joined same-named tables across
 //     schemas), the reference is ambiguous → skip.
-//  3. Both empty → single-target fallback via distinctBases. Skip
-//     when multi-target (ambiguous without schema info).
+//  3. Both empty → single-target shortcut via distinctBases.
+//     Multi-target falls through to schema-aware column resolution
+//     (Codex-fix-1e): walk dbMetadata for each candidate base to
+//     find which one owns the column; single match → use; multiple
+//     or zero → skip (MySQL itself errors on ambiguous unqualified
+//     refs at execution time).
 //
 // Returns deduplicated targets.
-func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap) []priorBackupTable {
+func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap, dbMetadata *storepb.DatabaseSchemaMetadata) []priorBackupTable {
 	var result []priorBackupTable
 	seen := make(map[string]bool)
 	add := func(t priorBackupTable) {
@@ -400,15 +404,76 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap)
 				add(bases[0])
 			}
 		default:
-			// Unqualified — only safe when single-target.
-			// Codex-fix-1b: count DISTINCT base tables, not lookup-
-			// map entries.
+			// Unqualified SET column.
+			// Single-target shortcut (Codex-fix-1b: count DISTINCT
+			// base tables, not lookup-map entries).
 			if len(m.distinctBases) == 1 {
 				add(m.distinctBases[0])
+				continue
 			}
+			// Multi-target: schema-aware column resolution
+			// (Codex-fix-1e). Walk dbMetadata for each candidate
+			// base; the base owning the column is the target.
+			if matches := omniResolveUnqualifiedSETColumn(col.Column, m.distinctBases, dbMetadata); len(matches) == 1 {
+				add(matches[0])
+			}
+			// Otherwise (no match, or ambiguous multi-match): skip.
+			// MySQL itself errors on ambiguous unqualified refs at
+			// execution time; backup-safety gate stays silent rather
+			// than guessing.
 		}
 	}
 	return result
+}
+
+// omniResolveUnqualifiedSETColumn (cumulative #30 Codex-fix-1e):
+// walks dbMetadata to find which of distinctBases owns the named
+// column. Used to disambiguate `UPDATE t1 JOIN t2 ... SET col = ...`
+// when `col` exists on only one of the joined tables (the common
+// case — joins-for-filtering pattern). Returns the resolved base
+// (single-element slice) when exactly one base has the column;
+// returns empty otherwise (ambiguous or unresolvable).
+//
+// Schema-match policy: a base whose database doesn't match
+// dbMetadata.Name is excluded — we have no catalog info for it
+// and can't resolve. The common case (single-database multi-table
+// UPDATE) has all bases pointing at dbMetadata.Name, so resolution
+// works. Cross-database UPDATEs with unqualified SET fall through
+// to "ambiguous, skip" — same as MySQL's runtime behavior on such
+// statements.
+//
+// Case-insensitive matching on both table and column names per
+// MySQL convention.
+func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *storepb.DatabaseSchemaMetadata) []priorBackupTable {
+	if dbMetadata == nil || colName == "" {
+		return nil
+	}
+	dbName := dbMetadata.GetName()
+	var matches []priorBackupTable
+	for _, base := range distinctBases {
+		// Skip bases pointing at other databases — we have no
+		// catalog info for them.
+		if base.database != "" && dbName != "" && !strings.EqualFold(base.database, dbName) {
+			continue
+		}
+		for _, schema := range dbMetadata.Schemas {
+			for _, table := range schema.Tables {
+				if !strings.EqualFold(table.Name, base.table) {
+					continue
+				}
+				for _, c := range table.Columns {
+					if strings.EqualFold(c.Name, colName) {
+						matches = append(matches, base)
+						break
+					}
+				}
+			}
+		}
+	}
+	if len(matches) == 1 {
+		return matches
+	}
+	return nil
 }
 
 // omniIsDDLStmt reports whether the given statement node is a DDL
