@@ -962,7 +962,6 @@
     "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "port": "ポート",
     "project-id": "プロジェクトID",
-    "restore": "復元する",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{0}' を通常の状態に復元しますか?",
     "role-arn": "ロール ARN",
     "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",
@@ -978,7 +977,6 @@
       "connection": "接続"
     },
     "select-database-user": "データベースユーザーの選択",
-    "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "sentence": {
       "aws-rds": {
         "mysql": {

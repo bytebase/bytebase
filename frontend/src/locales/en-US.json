@@ -962,7 +962,6 @@
     "password-write-only": "YOUR_DB_PWD - write only",
     "port": "Port",
     "project-id": "Project ID",
-    "restore": "Restore",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{0}' to normal state?",
     "role-arn": "Role ARN",
     "role-arn-description": "IAM role to assume for cross-account access. Leave empty for same-account access.",
@@ -978,7 +977,6 @@
       "connection": "Connection"
     },
     "select-database-user": "Select database user",
-    "selected-n-instances": "{n} instance selected | {n} instances selected",
     "sentence": {
       "aws-rds": {
         "mysql": {
