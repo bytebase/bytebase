@@ -1115,8 +1115,7 @@
           "description": "Input the \"key:value\" pair then press Enter"
         },
         "project": {
-          "description": "Filter by project",
-          "title": "Project"
+          "description": "Filter by project"
         },
         "state": {
           "description": "Filter by state"

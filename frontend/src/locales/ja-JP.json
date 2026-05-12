@@ -1115,8 +1115,7 @@
           "description": "「キー:値」のペアを入力し、Enterを押します"
         },
         "project": {
-          "description": "プロジェクトでフィルターする",
-          "title": "プロジェクト"
+          "description": "プロジェクトでフィルターする"
         },
         "state": {
           "description": "状態でフィルタ"

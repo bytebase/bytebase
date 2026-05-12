@@ -1115,8 +1115,7 @@
           "description": "输入 \"key:value\" 后按下回车"
         },
         "project": {
-          "description": "根据项目过滤",
-          "title": "项目"
+          "description": "根据项目过滤"
         },
         "state": {
           "description": "按状态过滤"

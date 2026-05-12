@@ -1115,8 +1115,7 @@
           "description": "Nhập cặp \"key:value\" rồi nhấn Enter"
         },
         "project": {
-          "description": "Lọc theo dự án",
-          "title": "Dự án"
+          "description": "Lọc theo dự án"
         },
         "state": {
           "description": "Lọc theo trạng thái"

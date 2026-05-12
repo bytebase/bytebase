@@ -1115,8 +1115,7 @@
           "description": "Ingrese el par \"clave:valor\" y luego presione Enter"
         },
         "project": {
-          "description": "Filtrar por proyecto",
-          "title": "Proyecto"
+          "description": "Filtrar por proyecto"
         },
         "state": {
           "description": "Filtrar por estado"
