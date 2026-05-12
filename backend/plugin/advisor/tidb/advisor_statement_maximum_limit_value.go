@@ -27,13 +27,29 @@ func init() {
 type StatementMaximumLimitValueAdvisor struct{}
 
 // Check fires on every SelectStmt (top-level and nested) with
-// Limit.Count > maximum. Recipe B (ast.Walk) preserves pingcap-tidb's
-// Accept-based recursion semantics: pre-omni Enter ran via
-// `stmt.Accept(checker)` which fires on every nested SelectStmt
-// (subqueries in FROM, WHERE IN, UNION arms, CTEs). Omni's `ast.Walk`
-// recurses into SelectStmt.{CTEs, TargetList, From, Where, GroupBy,
-// Having, OrderBy, Limit, Left, Right} per walk_generated.go:720 —
-// equivalent traversal coverage.
+// Limit.Count > maximum. Recipe B (ast.Walk) recursion covers:
+// subqueries in FROM, WHERE IN clauses, UNION arms, CTEs — matching
+// pingcap-tidb's Accept-based traversal at the inner-SelectStmt
+// boundaries. Omni's `ast.Walk` recurses into
+// SelectStmt.{CTEs, TargetList, From, Where, GroupBy, Having,
+// OrderBy, Limit, Left, Right} per walk_generated.go:720.
+//
+// Cumulative #26 — silent UX improvement at the UNION-root boundary:
+// pingcap represents `SELECT ... UNION SELECT ... LIMIT n` (LIMIT
+// without parens — attaches to the OUTER UNION result) as
+// `*ast.SetOprStmt{Limit: ...}` with the UNION arms as inner
+// `*ast.SelectStmt`s with nil Limits. The pre-omni rule's Enter
+// matched only `*ast.SelectStmt` so the outer LIMIT lived on a
+// concrete type the rule never inspected — silently skipped.
+// Omni unifies UNION-root under `*ast.SelectStmt{SetOp: !=None,
+// Limit: ...}` (same struct, set-op metadata), so the Walk visits
+// the outer SelectStmt and reads the outer-UNION Limit directly.
+// Rule now fires on the outer-UNION LIMIT case. Same structural
+// shape as cumulative #24 (UNION outer-ORDER-BY on
+// insert_disallow_order_by_rand). NOT a regression — pre-omni miss
+// was an accidental artifact of pingcap's distinct SetOprStmt type
+// being filtered out by the rule's narrow type-assert, not the
+// rule's intent.
 //
 // Scope preservation per invariant #7:
 //   - Only `Limit.Count` is checked. `Limit.Offset` is NOT (mysql
@@ -45,10 +61,11 @@ type StatementMaximumLimitValueAdvisor struct{}
 //     which would also have failed for non-literal counts.
 //   - Strict-greater (`>`, not `>=`) — preserved.
 //   - Every advice (including those fired on nested SelectStmts in
-//     subqueries) uses the TOP-LEVEL statement's first-token line.
-//     Pre-omni rule wrote `checker.line = stmt.OriginTextPosition()`
-//     once per top-level and reused it for every advice it emitted
-//     during that statement's walk.
+//     subqueries OR on UNION-root outer Limits) uses the TOP-LEVEL
+//     statement's first-token line. Pre-omni rule wrote
+//     `checker.line = stmt.OriginTextPosition()` once per top-level
+//     and reused it for every advice it emitted during that
+//     statement's walk.
 func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBOmniNodes(checkCtx)
 	if err != nil {

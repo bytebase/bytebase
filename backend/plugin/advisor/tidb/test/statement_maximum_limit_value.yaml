@@ -81,3 +81,28 @@
         line: 1
         column: 0
       endposition: null
+# Cumulative #26 pin (batch 15, Codex P2 catch pre-merge): pre-omni
+# pingcap represented `SELECT ... UNION SELECT ... LIMIT N` as
+# `*ast.SetOprStmt{Limit: ...}` — distinct concrete type with the
+# outer LIMIT on the SetOprStmt itself; inner SelectStmt arms have
+# nil Limit. The pre-omni rule's Enter matched only `*ast.SelectStmt`
+# so this outer LIMIT was silently skipped — pre-omni did NOT fire
+# despite the rule's stated intent ("limit value exceeds maximum").
+# Omni unifies UNION-root under `*ast.SelectStmt{SetOp:Union, Limit:
+# ...}` (same struct, set-op metadata); ast.Walk visits the outer
+# SelectStmt and reads the outer-UNION Limit. Rule now fires —
+# silent UX improvement matching rule intent. Same structural shape
+# as cumulative #24 (UNION outer-ORDER-BY on
+# insert_disallow_order_by_rand) — second occurrence of UNION-root
+# unification as a divergence axis across consecutive batches (14/15).
+- statement: SELECT * FROM employee UNION SELECT * FROM employee LIMIT 1001
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 1001 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
