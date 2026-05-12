@@ -326,7 +326,6 @@
     "loading": "Loading",
     "logout": "Logout",
     "manage": "Manage",
-    "maximize": "Maximize",
     "members": "Member | Members",
     "minutes": "Minutes",
     "missing-required-permission": "Missing required permissions {permissions}",

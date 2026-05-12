@@ -326,7 +326,6 @@
     "loading": "加载中",
     "logout": "登出",
     "manage": "管理",
-    "maximize": "最大化",
     "members": "成员 | 成员",
     "minutes": "分钟",
     "missing-required-permission": "缺少必需的权限 {permissions}",

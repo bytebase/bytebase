@@ -326,7 +326,6 @@
     "loading": "読み込み中",
     "logout": "サインアウト",
     "manage": "管理",
-    "maximize": "最大化",
     "members": "メンバー | メンバー",
     "minutes": "分",
     "missing-required-permission": "必要な権限がありません {permissions}",
