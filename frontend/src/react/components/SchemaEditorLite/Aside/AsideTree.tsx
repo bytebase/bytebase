@@ -14,6 +14,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
 import { createPortal } from "react-dom";
+import { ColumnIcon } from "@/react/components/schema/icons";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
@@ -470,11 +471,7 @@ function NodeIcon({ node }: { node: TreeNode }) {
     case "table":
       return <Table2 className={cls} />;
     case "column":
-      return (
-        <div className={cn(cls, "text-center text-xs font-bold leading-4")}>
-          C
-        </div>
-      );
+      return <ColumnIcon className={cls} />;
     case "view":
       return <View className={cls} />;
     case "procedure":

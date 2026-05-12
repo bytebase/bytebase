@@ -126,26 +126,6 @@ export function CheckConstraintIcon({ className }: IconProps) {
   return <Check className={cn("size-3.5 text-gray-500", className)} />;
 }
 
-/**
- * Vue's ColumnIcon is a hand-edited "lucide:columns-3" with the second
- * gap line removed (single column instead of two). Reproduce the SVG.
- */
-export function ColumnIcon({ className }: IconProps) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={cn(baseSize, "text-gray-500", className)}
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M9 3v18" />
-    </svg>
-  );
-}
+// ColumnIcon is shared with SchemaEditorLite; both surfaces must render
+// identical icons so users don't see drift across editors.
+export { ColumnIcon } from "@/react/components/schema/icons";
