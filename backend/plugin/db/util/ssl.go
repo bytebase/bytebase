@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
@@ -212,6 +213,7 @@ func configureClientCertificates(ds *storepb.DataSource, cfg *tls.Config) error 
 type SSLMode string
 
 const (
+	sslModeRequire    SSLMode = "require"
 	sslModeVerifyCA   SSLMode = "verify-ca"
 	sslModeVerifyFull SSLMode = "verify-full"
 )
@@ -219,6 +221,9 @@ const (
 // GetPGSSLMode is used only when SSL is enabled.
 // We should consider allowing user to override this default in the future even if SSL is enabled.
 func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
+	if !ds.GetVerifyTlsCertificate() {
+		return sslModeRequire
+	}
 	sslMode := sslModeVerifyFull
 	if ds.GetSslCa() != "" {
 		if ds.GetSshHost() != "" {
@@ -226,4 +231,28 @@ func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
 		}
 	}
 	return sslMode
+}
+
+// ApplyPGTLSConfig applies Bytebase TLS settings to pgx primary and fallback TLS configs.
+func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.FallbackConfig) {
+	if tlscfg == nil {
+		return
+	}
+	applyPGTLSConfigForHost(tlscfg, host, tlscfg)
+	for _, fallback := range fallbacks {
+		if fallback != nil && fallback.TLSConfig != nil {
+			applyPGTLSConfigForHost(fallback.TLSConfig, fallback.Host, tlscfg)
+		}
+	}
+}
+
+func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
+	if len(src.Certificates) > 0 {
+		dst.Certificates = append([]tls.Certificate(nil), src.Certificates...)
+	}
+	if src.VerifyPeerCertificate != nil {
+		dst.RootCAs = src.RootCAs
+		dst.InsecureSkipVerify = src.InsecureSkipVerify
+		dst.VerifyPeerCertificate = CreateCertificateVerifier(src.RootCAs, host)
+	}
 }
