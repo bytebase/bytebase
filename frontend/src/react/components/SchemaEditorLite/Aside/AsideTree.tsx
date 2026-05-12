@@ -15,6 +15,7 @@ import type { NodeRendererProps } from "react-arborist";
 import { Tree } from "react-arborist";
 import { createPortal } from "react-dom";
 import { ColumnIcon } from "@/react/components/schema/icons";
+import { Badge } from "@/react/components/ui/badge";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { cn } from "@/react/lib/utils";
@@ -508,6 +509,29 @@ function statusClassName(status: EditStatus): string {
   }
 }
 
+// Single-character badge next to created/updated/dropped tree entries.
+// Text-color alone was too quiet (BYT-9473); the badge is additive and
+// keeps the existing color/strike-through on the label.
+function StatusBadge({ status }: { status: EditStatus }) {
+  if (status === "normal") return null;
+  const variant =
+    status === "created"
+      ? "success"
+      : status === "updated"
+        ? "warning"
+        : "destructive";
+  const letter =
+    status === "created" ? "+" : status === "updated" ? "~" : "−";
+  return (
+    <Badge
+      variant={variant}
+      className="ml-1 h-4 px-1 text-[10px] leading-none"
+    >
+      {letter}
+    </Badge>
+  );
+}
+
 // Custom node renderer
 function NodeRenderer(
   props: NodeRendererProps<ArboristNode> & {
@@ -574,6 +598,7 @@ function NodeRenderer(
       <span className={cn("truncate", statusClassName(status))}>
         {treeNode.label || "(empty)"}
       </span>
+      <StatusBadge status={status} />
     </div>
   );
 }
