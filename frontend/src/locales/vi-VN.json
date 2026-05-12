@@ -962,7 +962,6 @@
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
     "project-id": "ID dự án",
-    "restore": "Khôi phục",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{0}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
@@ -978,7 +977,6 @@
       "connection": "Kết nối"
     },
     "select-database-user": "Chọn người dùng cơ sở dữ liệu",
-    "selected-n-instances": "{n} phiên bản đã chọn | {n} phiên bản đã chọn",
     "sentence": {
       "aws-rds": {
         "mysql": {
