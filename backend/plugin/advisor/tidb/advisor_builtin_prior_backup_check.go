@@ -539,38 +539,8 @@ func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackup
 	return nil
 }
 
-// omniIsDDLStmt reports whether the given statement node is a DDL
-// (schema-changing) statement, mirroring pingcap-tidb's `ast.DDLNode`
-// interface set. Pingcap-tidb's DDLNode has 22 implementers (verified
-// against pkg/parser/ast/ddl.go's `_ DDLNode = &XxxStmt{}` declarations
-// for tidb v8.5.5). The omni enumeration here covers 18 of those 22 —
-// the 4 absent ones are deferred Tier 4 grammar in omni today:
-//   - CreateSequenceStmt / AlterSequenceStmt / DropSequenceStmt
-//   - FlashBackDatabaseStmt
-//
-// When omni grammar lands those, this list needs updating.
-//
-// **Critically** also excludes types that look DDL-shaped but pingcap-
-// tidb does NOT classify as DDL:
-//   - DropViewStmt (CreateViewStmt IS DDL, but DropViewStmt isn't —
-//     asymmetric in pingcap)
-//   - AlterDatabaseStmt (CreateDatabaseStmt + DropDatabaseStmt are
-//     DDL but AlterDatabaseStmt isn't)
-//   - User/Role management (Create/Alter/DropUser, Create/DropRole)
-//   - Function/Trigger/Event procedural objects
-//   - Tablespace + Server management
-//
-// Initial batch 19 PR over-enumerated DDL (included User/Role/Function/
-// Tablespace/etc. as DDL — false-positives that pre-omni did NOT flag);
-// pre-merge peer review caught the bidirectional mismatch and provided
-// the verified correct list. Unit tests in utils_test.go pin both
-// positive (DDL types that MUST return true) and negative (DML +
-// non-DDL utility types that must NOT) cases.
-// Note: omniIsDDLStmt previously enumerated omni's DDL types for
-// the advisor's DDL detection step. Removed in Codex-fix-1f after
-// eight rounds of enumeration corrections (cumulative #30 Codex-
-// fix-1c/1d/1e) revealed the omni-only path's fundamental gap with
-// pingcap's broader DDLNode interface (Tier-4-deferred grammar like
-// Sequence/FlashBack). DDL detection now uses pingcap's DDLNode
-// directly via the `getTiDBNodes` path; no per-type omni enumeration
-// to maintain. Lesson preserved in plan-doc cumulative #30.
+// (omniIsDDLStmt removed in cumulative #30 Codex-fix-1f. DDL
+// detection uses pingcap's DDLNode interface directly via the
+// getTiDBNodes path — handles Tier-4-deferred grammar that omni
+// rejects at parse time. Full lesson + 9-sub-fix algorithm-
+// corrections lineage lives in plan-doc cumulative #30.)
