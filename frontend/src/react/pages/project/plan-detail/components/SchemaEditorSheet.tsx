@@ -237,9 +237,9 @@ function SchemaEditorSheetBody({
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-y-3 overflow-hidden px-4 pb-2">
+      <div className="flex flex-1 flex-col gap-y-2 overflow-hidden px-4 pb-2">
         {databaseNames.length > 1 && (
-          <div className="flex items-center gap-x-2">
+          <div className="flex h-9 items-center gap-x-2">
             <span className="text-sm text-control-light">
               {t("schema-editor.template-database")}:
             </span>
