@@ -269,6 +269,45 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			},
 		},
 		{
+			// Cumulative #30 Codex-fix-1g: count-cap with multi-table
+			// gate. The backup transformer at parser/tidb/backup.go:
+			// 96-110 routes >5 DML statements into single-table-only
+			// path which errors on multi-table inputs. The advisor
+			// must catch this pre-execution.
+			//
+			// 6 UPDATEs across two tables (tech_book × 3 + orders × 3)
+			// → must fire "more than 5 DML statements across different
+			// tables".
+			name: "6+ DML across multiple tables fires count-cap (Codex-fix-1g)",
+			statement: "UPDATE tech_book SET id = 1 WHERE id = 1;\n" +
+				"UPDATE tech_book SET id = 2 WHERE id = 2;\n" +
+				"UPDATE tech_book SET id = 3 WHERE id = 3;\n" +
+				"UPDATE orders SET order_id = 4 WHERE order_id = 4;\n" +
+				"UPDATE orders SET order_id = 5 WHERE order_id = 5;\n" +
+				"UPDATE orders SET order_id = 6 WHERE order_id = 6;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"more than 5 DML statements across different tables",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-1g: single-table batches >5
+			// are still OK — the transformer's
+			// generateSQLForSingleTable handles them successfully.
+			// 6 UPDATEs on tech_book only → no count-cap advice.
+			name: "6+ DML on single table — no count-cap advice (Codex-fix-1g)",
+			statement: "UPDATE tech_book SET id = 1 WHERE id = 1;\n" +
+				"UPDATE tech_book SET id = 2 WHERE id = 2;\n" +
+				"UPDATE tech_book SET id = 3 WHERE id = 3;\n" +
+				"UPDATE tech_book SET id = 4 WHERE id = 4;\n" +
+				"UPDATE tech_book SET id = 5 WHERE id = 5;\n" +
+				"UPDATE tech_book SET id = 6 WHERE id = 6;",
+			backupDBPresent: true,
+			wantNoneSubstr: []string{
+				"more than 5 DML statements",
+			},
+		},
+		{
 			// Cumulative #30 Codex-fix-1f: Tier-4-deferred DDL
 			// (CREATE/ALTER/DROP SEQUENCE) is omni-rejected at
 			// parse time. Pre-fix-1f used omniIsDDLStmt on

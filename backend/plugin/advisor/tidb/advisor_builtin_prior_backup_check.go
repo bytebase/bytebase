@@ -19,6 +19,12 @@ var (
 	_ advisor.Advisor = (*StatementPriorBackupCheckAdvisor)(nil)
 )
 
+// maxMixedDMLCount must stay in sync with the backup transformer's
+// constant at backend/plugin/parser/tidb/backup.go:23. The advisor's
+// count-cap gate (Codex-fix-1g) uses the same threshold to predict
+// transformer behavior at pre-execution time.
+const maxMixedDMLCount = 5
+
 func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, &StatementPriorBackupCheckAdvisor{})
 }
@@ -223,6 +229,37 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 				Status:        level,
 				Title:         title,
 				Content:       fmt.Sprintf("Prior backup cannot handle mixed DML statements on the same table %q", key),
+				Code:          code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: nil,
+			})
+		}
+	}
+
+	// Cumulative #30 Codex-fix-1g: count-cap with multi-table gate.
+	// The backup transformer at backend/plugin/parser/tidb/backup.go:
+	// 96-110 routes > maxMixedDMLCount DML statements into
+	// generateSQLForSingleTable which errors on multi-table inputs
+	// ("prior backup cannot handle statements on different tables
+	// more than 5"). My reshape (cumulative #30) dropped this gate
+	// under the "modernize-away-pre-omni-logic" framing — but the
+	// transformer constraint is current, not legacy. Reinstating
+	// the count gate prevents the advisor from approving inputs
+	// that the transformer rejects at runtime.
+	//
+	// Single-table batches above the threshold are intentionally
+	// allowed — the transformer's generateSQLForSingleTable
+	// successfully handles them.
+	if len(dmlRefs) > maxMixedDMLCount {
+		distinctDMLTables := make(map[string]struct{})
+		for _, ref := range dmlRefs {
+			distinctKey := strings.ToLower(ref.table.database) + "." + strings.ToLower(ref.table.table)
+			distinctDMLTables[distinctKey] = struct{}{}
+		}
+		if len(distinctDMLTables) > 1 {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				Content:       fmt.Sprintf("Prior backup cannot handle more than %d DML statements across different tables", maxMixedDMLCount),
 				Code:          code.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: nil,
 			})
