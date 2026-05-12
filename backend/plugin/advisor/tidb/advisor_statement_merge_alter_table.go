@@ -50,7 +50,9 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		lastLine int
 	}
 	tableMap := make(map[string]*tableState)
-	touch := func(name string, line int) {
+	// touchAlter INCREMENTS the per-table {count, lastLine}. Only ALTER
+	// uses this path — CREATE has reset semantics (see below).
+	touchAlter := func(name string, line int) {
 		entry := tableMap[name]
 		if entry == nil {
 			entry = &tableState{name: name}
@@ -63,12 +65,26 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 	for _, ostmt := range stmts {
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateTableStmt:
+			// Cumulative #25: CREATE TABLE RESETS the per-table state to
+			// {count: 1, lastLine}, mirroring pre-omni semantics. A second
+			// CREATE on the same name (e.g. after a DROP) starts a fresh
+			// window of modifications rather than carrying over the prior
+			// count — otherwise `CREATE t; ALTER t; CREATE t; ALTER t`
+			// would report "4 statements" instead of "2", merging
+			// modifications across table incarnations that cannot
+			// actually be merged. The pre-omni rule wrote the map entry
+			// unconditionally; mechanical port via a single touch()
+			// helper loses the reset semantic.
 			if n.Table != nil {
-				touch(n.Table.Name, ostmt.FirstTokenLine())
+				tableMap[n.Table.Name] = &tableState{
+					name:     n.Table.Name,
+					count:    1,
+					lastLine: ostmt.FirstTokenLine(),
+				}
 			}
 		case *ast.AlterTableStmt:
 			if n.Table != nil {
-				touch(n.Table.Name, ostmt.FirstTokenLine())
+				touchAlter(n.Table.Name, ostmt.FirstTokenLine())
 			}
 		default:
 		}

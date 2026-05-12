@@ -83,3 +83,25 @@
     ALTER TABLE a ADD COLUMN x int;
     ALTER TABLE b ADD COLUMN y int;
   changeType: 1
+# Cumulative #25 pin (batch 15, Codex P2 catch pre-merge): CREATE TABLE
+# RESETS the per-table state to {count: 1, lastLine}, mirroring pre-omni
+# semantics. A second CREATE on the same name starts a fresh window of
+# modifications rather than carrying over the prior count. Initial
+# batch 15 migration unified CREATE + ALTER behind a single touch()
+# helper that always incremented — would have reported "4 statements
+# to modify table `t`" for this input instead of "2".
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN a int;
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN c int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
