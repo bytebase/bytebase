@@ -31,7 +31,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { useSchemaEditorContext } from "../context";
 import { SchemaNameDialog } from "../Modals/SchemaNameDialog";
-import { TableNameDialog } from "../Modals/TableNameDialog";
+import { TableNamePopover } from "../Modals/TableNamePopover";
 import type { EditStatus } from "../types";
 import { NodeCheckbox } from "./NodeCheckbox";
 import type { TreeNode, TreeNodeForTable } from "./tree-builder";
@@ -81,6 +81,7 @@ export function AsideTree() {
       typeof useSchemaEditorContext
     >["targets"][0]["metadata"]["schemas"][0];
     table?: TreeNodeForTable["metadata"]["table"];
+    anchorPoint: { x: number; y: number };
   } | null>(null);
 
   const [schemaNameModalCtx, setSchemaNameModalCtx] = useState<{
@@ -111,6 +112,7 @@ export function AsideTree() {
           db: node.db,
           database: node.metadata.database,
           schema: node.metadata.schema,
+          anchorPoint: { x: menuState.x, y: menuState.y },
         });
       } else if (key === "rename-table" && node.type === "table") {
         setTableNameModalCtx({
@@ -118,6 +120,7 @@ export function AsideTree() {
           database: node.metadata.database,
           schema: node.metadata.schema,
           table: node.metadata.table,
+          anchorPoint: { x: menuState.x, y: menuState.y },
         });
       } else if (key === "drop-table" && node.type === "table") {
         const status = editStatus.getTableStatus(node.db, node.metadata);
@@ -410,9 +413,10 @@ export function AsideTree() {
 
       {/* Modals */}
       {tableNameModalCtx && (
-        <TableNameDialog
+        <TableNamePopover
           open
           onClose={() => setTableNameModalCtx(null)}
+          anchorPoint={tableNameModalCtx.anchorPoint}
           db={tableNameModalCtx.db}
           database={tableNameModalCtx.database}
           schema={tableNameModalCtx.schema}
