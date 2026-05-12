@@ -182,6 +182,40 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 				"mixed DML statements on the same table",
 			},
 		},
+		{
+			// Cumulative #30 Codex-fix-1b: aliased single-table
+			// UPDATE with unqualified SET. The lookup map contains
+			// 2 entries (alias + bare name) but only 1 distinct
+			// base table. Pre-fix-1b code gated on `len(lookup) == 1`
+			// → skipped attribution → following DELETE on same
+			// table wasn't flagged as mixed. Post-fix-1b: gate on
+			// `len(distinctBases) == 1` → attribution correctly
+			// records UPDATE on tech_book → DELETE → mixed-DML fires.
+			name:            "aliased single-table UPDATE with unqualified SET (Codex-fix-1b)",
+			statement:       "UPDATE tech_book AS t SET id = 1 WHERE id = 2;\nDELETE FROM tech_book WHERE id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-2 (revised): qualified vs
+			// unqualified split when CurrentDatabase is unset
+			// (plancheck path). Pre-fix used CurrentDatabase as the
+			// default fallback, which is empty in
+			// statement_advise_executor.go:168-180. Post-fix uses
+			// DBSchema.Name as the default (the schema being checked,
+			// reliably populated across review paths). Mock catalog's
+			// DBSchema.Name is "test", so unqualified `tech_book`
+			// resolves to `test.tech_book` and matches qualified
+			// `test.tech_book` (case-insensitive).
+			name:            "qualified vs unqualified same-table mixing (Codex-fix-2 revised)",
+			statement:       "UPDATE test.tech_book SET id = 1 WHERE id = 2;\nDELETE FROM tech_book WHERE id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+			},
+		},
 	}
 
 	for _, tc := range cases {

@@ -91,6 +91,22 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	// 2. Mixed DDL + DML detection. Collect DML-by-table along the way.
+	// Cumulative #30 Codex-fix-2 (revised): resolve unqualified table
+	// references to a default database at EXTRACTION time, so the
+	// priorBackupTable.database field is always populated. This makes
+	// the grouping key consistent across qualified vs unqualified
+	// references to the same table. Use DBSchema.Name as the default
+	// (the schema being checked; populated reliably across review
+	// paths including plancheck where CurrentDatabase is not set —
+	// per statement_advise_executor.go:168-180). Fall back to
+	// CurrentDatabase, then empty string, in that order.
+	defaultDB := ""
+	if checkCtx.DBSchema != nil {
+		defaultDB = checkCtx.DBSchema.GetName()
+	}
+	if defaultDB == "" {
+		defaultDB = checkCtx.CurrentDatabase
+	}
 	type dmlRef struct {
 		table    priorBackupTable
 		stmtType string // "UPDATE" or "DELETE"
@@ -115,7 +131,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			// full Tables list (which includes JOIN-only read-only
 			// tables). For `UPDATE t1 JOIN t2 ON ... SET t1.col = ...`
 			// the mutation target is t1; t2 must NOT be tagged.
-			aliasMap := omniBuildTableAliasMap(n.Tables)
+			aliasMap := omniBuildTableAliasMap(n.Tables, defaultDB)
 			for _, t := range omniExtractUpdateTargets(n.SetList, aliasMap) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "UPDATE"})
 			}
@@ -123,7 +139,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			// DELETE's Tables field IS the mutation target set (per
 			// omni parsenodes.go:123); Using[] is the filter-only
 			// joins. Use Tables directly.
-			for _, t := range omniExtractDMLTables(n.Tables) {
+			for _, t := range omniExtractDMLTables(n.Tables, defaultDB) {
 				dmlRefs = append(dmlRefs, dmlRef{table: t, stmtType: "DELETE"})
 			}
 		default:
@@ -151,19 +167,12 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 	groups := make(map[string]*tableTypes)
 	for _, ref := range dmlRefs {
-		// Cumulative #30 Codex-fix-2: canonicalize key so equivalent
-		// references (qualified vs unqualified; mixed casing) group
-		// into the same bucket. Empty database → CurrentDatabase
-		// fallback; both segments lowercased for case-insensitivity.
-		// Without this, `UPDATE tech_book ...; DELETE FROM
-		// db.tech_book ...` splits into `.tech_book` vs
-		// `db.tech_book` buckets and misses the mixing — false-
-		// negative on a safety gate.
-		db := ref.table.database
-		if db == "" {
-			db = checkCtx.CurrentDatabase
-		}
-		key := fmt.Sprintf("%s.%s", strings.ToLower(db), strings.ToLower(ref.table.table))
+		// Cumulative #30 Codex-fix-2 (revised): database is already
+		// resolved to defaultDB at extraction time (see omniExtractDMLTables
+		// + omniBuildTableAliasMap), so equivalent references (qualified
+		// vs unqualified) share the same database segment. Key is
+		// lowercased for case-insensitive grouping.
+		key := strings.ToLower(ref.table.database) + "." + strings.ToLower(ref.table.table)
 		g := groups[key]
 		if g == nil {
 			g = &tableTypes{seen: make(map[string]bool)}
@@ -207,32 +216,40 @@ type priorBackupTable struct {
 // omniExtractDMLTables walks an UpdateStmt.Tables or DeleteStmt.Tables
 // slice (each element is a TableExpr — *TableRef, *JoinClause, or
 // *SubqueryExpr) and returns the base-table references reached.
+// Unqualified references get defaultDB filled in (cumulative #30
+// Codex-fix-2 revised: resolve at extraction time so grouping keys
+// are consistent across qualified vs unqualified references).
 // Cumulative #26 — UNION-rooted derived tables (accessed via
 // SubqueryExpr at this layer) return nil. Derived tables aren't
 // base-table candidates for backup-type mixing.
-func omniExtractDMLTables(tables []ast.TableExpr) []priorBackupTable {
+func omniExtractDMLTables(tables []ast.TableExpr, defaultDB string) []priorBackupTable {
 	var result []priorBackupTable
 	for _, t := range tables {
-		result = append(result, omniExtractTableExprRefs(t)...)
+		result = append(result, omniExtractTableExprRefs(t, defaultDB)...)
 	}
 	return result
 }
 
 // omniExtractTableExprRefs walks a single omni TableExpr, returning
-// the base-table references reached.
-func omniExtractTableExprRefs(t ast.TableExpr) []priorBackupTable {
+// the base-table references reached. Empty Schema is resolved to
+// defaultDB (typically checkCtx.DBSchema.Name).
+func omniExtractTableExprRefs(t ast.TableExpr, defaultDB string) []priorBackupTable {
 	if t == nil {
 		return nil
 	}
 	switch n := t.(type) {
 	case *ast.TableRef:
+		db := n.Schema
+		if db == "" {
+			db = defaultDB
+		}
 		return []priorBackupTable{{
 			table:    n.Name,
-			database: n.Schema,
+			database: db,
 		}}
 	case *ast.JoinClause:
-		left := omniExtractTableExprRefs(n.Left)
-		right := omniExtractTableExprRefs(n.Right)
+		left := omniExtractTableExprRefs(n.Left, defaultDB)
+		right := omniExtractTableExprRefs(n.Right, defaultDB)
 		return append(left, right...)
 	case *ast.SubqueryExpr:
 		// Cumulative #26: derived tables aren't base-table candidates;
@@ -244,42 +261,74 @@ func omniExtractTableExprRefs(t ast.TableExpr) []priorBackupTable {
 	}
 }
 
+// updateTableAliasMap holds two pieces of resolution state for an
+// UpdateStmt:
+//   - lookup: alias-or-name → base table (used for qualified SET
+//     column resolution)
+//   - distinctBases: deduplicated base tables in the FROM clause
+//     (used to detect single-target UPDATE for unqualified SET
+//     attribution — pre-Codex-fix-1b counted aliasMap entries
+//     directly, which double-counted aliased single-table UPDATEs
+//     since each TableRef contributes 2 lookup keys)
+type updateTableAliasMap struct {
+	lookup        map[string]priorBackupTable
+	distinctBases []priorBackupTable
+}
+
 // omniBuildTableAliasMap walks an UpdateStmt's Tables slice and
-// builds an alias→base-table lookup map. Each TableRef contributes
-// two entries: one keyed by its alias (if present) and one keyed by
-// its bare name (so unaliased references also resolve). JoinClause
-// recurses into Left+Right. SubqueryExpr contributes nothing —
-// derived tables aren't base-table candidates (cumulative #26).
+// builds resolution state for SET-clause target extraction. For each
+// TableRef, registers BOTH the alias (if any) AND the bare name in
+// the lookup map (so qualified references like `alias.col` or
+// `tablename.col` resolve identically) and records the base table
+// once in distinctBases. JoinClause recurses into Left+Right.
+// SubqueryExpr contributes nothing — derived tables aren't base-
+// table candidates (cumulative #26).
 //
-// Used by omniExtractUpdateTargets to resolve SET-clause column
-// qualifiers back to base tables — the cumulative #30 Codex-fix-1
-// SET-clause-target-extraction discipline. Pre-fix, `n.Tables` was
-// used directly, false-positiving on JOIN-only read-only tables in
-// statements like `UPDATE t1 JOIN t2 SET t1.col = ...`.
-func omniBuildTableAliasMap(tables []ast.TableExpr) map[string]priorBackupTable {
-	m := make(map[string]priorBackupTable)
+// Unqualified Schema is resolved to defaultDB (cumulative #30
+// Codex-fix-2 revised).
+//
+// Pre-Codex-fix-1b regression: counted lookup-map entries (2 per
+// aliased TableRef) when deciding "is this single-target?",
+// dropping unqualified SET attribution for `UPDATE tech_book AS t
+// SET id = 1`. Post-fix: count distinctBases instead.
+func omniBuildTableAliasMap(tables []ast.TableExpr, defaultDB string) *updateTableAliasMap {
+	m := &updateTableAliasMap{lookup: make(map[string]priorBackupTable)}
 	for _, t := range tables {
-		omniCollectTableAliases(t, m)
+		omniCollectTableAliases(t, defaultDB, m)
 	}
 	return m
 }
 
-func omniCollectTableAliases(t ast.TableExpr, m map[string]priorBackupTable) {
+func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAliasMap) {
 	if t == nil {
 		return
 	}
 	switch n := t.(type) {
 	case *ast.TableRef:
-		base := priorBackupTable{database: n.Schema, table: n.Name}
-		// Alias takes precedence in lookup; also register the bare
-		// name for unqualified references in single-table updates.
-		if n.Alias != "" {
-			m[strings.ToLower(n.Alias)] = base
+		db := n.Schema
+		if db == "" {
+			db = defaultDB
 		}
-		m[strings.ToLower(n.Name)] = base
+		base := priorBackupTable{database: db, table: n.Name}
+		if n.Alias != "" {
+			m.lookup[strings.ToLower(n.Alias)] = base
+		}
+		m.lookup[strings.ToLower(n.Name)] = base
+		// distinctBases dedup by canonicalized (db, table).
+		distinctKey := strings.ToLower(base.database) + "." + strings.ToLower(base.table)
+		alreadyTracked := false
+		for _, b := range m.distinctBases {
+			if strings.ToLower(b.database)+"."+strings.ToLower(b.table) == distinctKey {
+				alreadyTracked = true
+				break
+			}
+		}
+		if !alreadyTracked {
+			m.distinctBases = append(m.distinctBases, base)
+		}
 	case *ast.JoinClause:
-		omniCollectTableAliases(n.Left, m)
-		omniCollectTableAliases(n.Right, m)
+		omniCollectTableAliases(n.Left, defaultDB, m)
+		omniCollectTableAliases(n.Right, defaultDB, m)
 	case *ast.SubqueryExpr:
 		// Derived table — not a base-table candidate for backup
 		// type-mixing detection.
@@ -291,17 +340,17 @@ func omniCollectTableAliases(t ast.TableExpr, m map[string]priorBackupTable) {
 // the distinct base-table references that are actual mutation
 // targets. Resolves column qualifiers against the alias map:
 //   - Qualified `t.col = ...` or `alias.col = ...`: look up the
-//     qualifier in aliasMap → base table.
-//   - Unqualified `col = ...`: if aliasMap has exactly one entry
-//     (single-target UPDATE), use it. Otherwise the assignment is
-//     ambiguous without schema info — skip (per cumulative #30
-//     fix-1 rationale: false-negative is preferable to false-
-//     positive at this boundary; multi-target UPDATE with unqualified
-//     SET is rare in practice and would be ambiguous-by-design).
+//     qualifier in lookup → base table.
+//   - Unqualified `col = ...`: if there is exactly ONE distinct
+//     base table in the FROM clause (single-target UPDATE,
+//     regardless of alias multiplicity), use it. Otherwise the
+//     assignment is ambiguous without schema info — skip (multi-
+//     target UPDATE with unqualified SET is rare in practice and
+//     would be ambiguous-by-design).
 //
-// Returns deduplicated targets in input order; duplicates from
-// multiple assignments on the same table are collapsed.
-func omniExtractUpdateTargets(setList []*ast.Assignment, aliasMap map[string]priorBackupTable) []priorBackupTable {
+// Returns deduplicated targets; duplicates from multiple assignments
+// on the same table are collapsed.
+func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap) []priorBackupTable {
 	var result []priorBackupTable
 	seen := make(map[string]bool)
 	add := func(t priorBackupTable) {
@@ -318,15 +367,16 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, aliasMap map[string]pri
 		}
 		qualifier := a.Column.Table
 		if qualifier == "" {
-			// Unqualified: only safe to attribute when single-target.
-			if len(aliasMap) == 1 {
-				for _, t := range aliasMap {
-					add(t)
-				}
+			// Unqualified: safe to attribute only when single-target.
+			// Codex-fix-1b: count DISTINCT base tables, not lookup-
+			// map entries — aliased TableRef contributes 2 lookup
+			// keys but 1 distinct base.
+			if len(m.distinctBases) == 1 {
+				add(m.distinctBases[0])
 			}
 			continue
 		}
-		if base, ok := aliasMap[strings.ToLower(qualifier)]; ok {
+		if base, ok := m.lookup[strings.ToLower(qualifier)]; ok {
 			add(base)
 		}
 	}
