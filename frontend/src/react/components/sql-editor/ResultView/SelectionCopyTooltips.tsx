@@ -40,13 +40,18 @@ export function SelectionCopyTooltips() {
 
   return (
     <div
-      className="w-full absolute h-full bg-background flex flex-row justify-start items-center text-control"
+      // `bg-background` is the light page bg and doesn't dark-switch
+      // automatically. The tip is `absolute h-full` over the result
+      // toolbar — without an opaque dark bg under it the white shows
+      // through admin mode's `bg-dark-bg`. Match the result-view chrome
+      // for both themes.
+      className="w-full absolute h-full bg-background dark:bg-dark-bg flex flex-row justify-start items-center text-control dark:text-gray-100"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
       }}
     >
-      <InfoIcon size={16} className="mr-2 text-control" />
+      <InfoIcon size={16} className="mr-2 text-control dark:text-gray-100" />
       <p className="text-sm flex flex-row justify-start items-center gap-1">
         {tokens.map((token, i) => {
           if (token === "action") {
@@ -55,7 +60,11 @@ export function SelectionCopyTooltips() {
                 key={i}
                 size="sm"
                 variant="outline"
-                className="h-6 px-2 gap-x-1"
+                // `outline` is `bg-transparent + text-control` and the
+                // tip sits over `bg-dark-bg` in admin mode → invisible.
+                // Force an opaque dark surface with a light shortcut
+                // label so the keyboard hint reads against the toolbar.
+                className="h-6 px-2 gap-x-1 dark:bg-gray-700 dark:text-gray-100 dark:border-zinc-600 dark:disabled:opacity-100"
                 disabled
               >
                 {isMac ? (
@@ -87,7 +96,18 @@ export function SelectionCopyTooltips() {
         })}
       </p>
       <div className="ml-1">
-        <Button size="sm" variant="ghost" onClick={deselect}>
+        {/*
+         * `ghost` is `text-control` with no background — invisible
+         * label against the admin-mode dark backdrop. Lift the label
+         * to a light gray and give it a hover surface so the cancel
+         * action is reachable.
+         */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="dark:text-gray-100 dark:hover:bg-gray-700"
+          onClick={deselect}
+        >
           {t("sql-editor.cancel-selection")}
         </Button>
       </div>

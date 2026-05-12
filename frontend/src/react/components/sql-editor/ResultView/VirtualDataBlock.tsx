@@ -72,6 +72,11 @@ export const VirtualDataBlock = forwardRef<
     estimateSize: estimateRowHeight,
     measureElement: (el) => el.getBoundingClientRect().height,
     overscan: 4,
+    // Each row is `position: absolute` (placed by `translateY(start)`),
+    // so a margin / padding-bottom on the row div has no effect on the
+    // gap to the next row. The virtualizer's `gap` option adds the
+    // requested pixels into each row's `start` so cards visibly breathe.
+    gap: 16,
   });
 
   useImperativeHandle(
@@ -131,7 +136,7 @@ export const VirtualDataBlock = forwardRef<
               key={virtualRow.key}
               ref={virtualizer.measureElement}
               data-index={rowIndex}
-              className="font-mono mb-2 mx-2 absolute inset-x-0"
+              className="font-mono mx-2 absolute inset-x-0"
               style={{
                 top: 0,
                 transform: `translateY(${virtualRow.start}px)`,
@@ -217,10 +222,16 @@ function CopyJSONButton({
   return (
     <div className="absolute right-2 top-2 z-10 opacity-70 hover:opacity-100">
       <Tooltip content={label}>
+        {/*
+         * In admin mode the row card is `dark:bg-gray-700`, and the
+         * `ghost` variant's `text-control` icon nearly disappears
+         * against it. Force a light icon + visible hover surface inside
+         * the `.dark` parent so the action is reachable.
+         */}
         <Button
           size="sm"
           variant="ghost"
-          className="size-7 p-0"
+          className="size-7 p-0 dark:text-gray-100 dark:hover:bg-gray-600"
           onClick={handleCopy}
         >
           {copied ? (
