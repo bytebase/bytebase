@@ -44,7 +44,6 @@ vi.mock("naive-ui", async () => {
     });
   return {
     NConfigProvider: passthrough("NConfigProvider"),
-    NDialogProvider: passthrough("NDialogProvider"),
     NNotificationProvider: passthrough("NNotificationProvider"),
     useNotification: () => ({
       create: mocks.notificationCreate,

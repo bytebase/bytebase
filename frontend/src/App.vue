@@ -10,15 +10,13 @@
       :max="MAX_NOTIFICATION_DISPLAY_COUNT"
       placement="bottom-right"
     >
-      <NDialogProvider>
-        <OverlayStackManager>
-          <NotificationContext>
-            <AuthContext>
-              <router-view />
-            </AuthContext>
-          </NotificationContext>
-        </OverlayStackManager>
-      </NDialogProvider>
+      <OverlayStackManager>
+        <NotificationContext>
+          <AuthContext>
+            <router-view />
+          </AuthContext>
+        </NotificationContext>
+      </OverlayStackManager>
     </NNotificationProvider>
   </NConfigProvider>
 </template>
@@ -26,11 +24,7 @@
 <script lang="ts" setup>
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
-import {
-  NConfigProvider,
-  NDialogProvider,
-  NNotificationProvider,
-} from "naive-ui";
+import { NConfigProvider, NNotificationProvider } from "naive-ui";
 import {
   onErrorCaptured,
   onMounted,
