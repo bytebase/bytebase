@@ -283,7 +283,15 @@ export function AsideTree() {
         rebuildTree(false);
       }
     },
-    [menuState.node, hideMenu, editStatus, rebuildTree, tabs]
+    [
+      menuState.node,
+      menuState.x,
+      menuState.y,
+      hideMenu,
+      editStatus,
+      rebuildTree,
+      tabs,
+    ]
   );
 
   // Node click handler

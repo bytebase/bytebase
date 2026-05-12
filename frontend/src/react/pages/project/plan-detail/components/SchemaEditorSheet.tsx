@@ -41,18 +41,18 @@ export function SchemaEditorSheet({
   project,
   onInsert,
 }: Props) {
-  // Resets on each open: the body below is gated on {open && ...} and the
-  // close path below clears the flag too, so reopening always starts
-  // un-maximized.
+  // Resets on each open: every close path routes through handleOpenChange,
+  // which clears the flag, so reopening always starts un-maximized.
   const [maximized, setMaximized] = useState(false);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (!next) setMaximized(false);
+      onOpenChange(next);
+    },
+    [onOpenChange]
+  );
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) setMaximized(false);
-        onOpenChange(next);
-      }}
-    >
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         width={maximized ? "huge" : "xlarge"}
         className="flex flex-col"
@@ -62,7 +62,7 @@ export function SchemaEditorSheet({
             databaseNames={databaseNames}
             project={project}
             onInsert={onInsert}
-            onCancel={() => onOpenChange(false)}
+            onCancel={() => handleOpenChange(false)}
             maximized={maximized}
             onMaximizedChange={setMaximized}
           />
