@@ -34,7 +34,13 @@ func TestOmniBuildColumnTypeString(t *testing.T) {
 		{"DECIMAL(10)", &ast.DataType{Name: "DECIMAL", Length: 10}, "decimal(10,0)"},
 		{"DECIMAL(10,0)", &ast.DataType{Name: "DECIMAL", Length: 10, Scale: 0}, "decimal(10,0)"},
 		{"DECIMAL(10,2)", &ast.DataType{Name: "DECIMAL", Length: 10, Scale: 2}, "decimal(10,2)"},
-		{"NUMERIC(8)", &ast.DataType{Name: "NUMERIC", Length: 8}, "numeric(8,0)"},
+		// Round 9: NUMERIC/FIXED aliases canonicalize to "decimal" in
+		// the rendered form. Omni pre-normalizes FIXED→DECIMAL but NOT
+		// NUMERIC→DECIMAL, so the builder canonicalizes for both.
+		{"NUMERIC(8)", &ast.DataType{Name: "NUMERIC", Length: 8}, "decimal(8,0)"},
+		{"NUMERIC(8,2)", &ast.DataType{Name: "NUMERIC", Length: 8, Scale: 2}, "decimal(8,2)"},
+		{"FIXED(8,2)-defensive", &ast.DataType{Name: "FIXED", Length: 8, Scale: 2}, "decimal(8,2)"},
+		{"NUMERIC(10,2)-UNSIGNED", &ast.DataType{Name: "NUMERIC", Length: 10, Scale: 2, Unsigned: true}, "decimal(10,2) unsigned"},
 		// Round 2: ZEROFILL implies UNSIGNED + appends zerofill.
 		// Note: round-8 fix updated bare INT ZEROFILL from "int unsigned zerofill"
 		// (the original round-2 output, which mismatched catalog) to the
@@ -204,6 +210,9 @@ func TestTypeStringRoundTripAgainstNormalize(t *testing.T) {
 		// Catalog stores the canonical form (default precision +
 		// UNSIGNED [+ ZEROFILL]); builder now produces matching form.
 		{"DECIMAL UNSIGNED no-op", &ast.DataType{Name: "DECIMAL", Unsigned: true}, "decimal(10,0) unsigned", true},
+		// Round 9: NUMERIC alias no-op against catalog stored as decimal.
+		{"NUMERIC(8,2) no-op (catalog decimal)", &ast.DataType{Name: "NUMERIC", Length: 8, Scale: 2}, "decimal(8,2)", true},
+		{"NUMERIC bare no-op (catalog decimal)", &ast.DataType{Name: "NUMERIC"}, "decimal(10,0)", true},
 		{"DECIMAL ZEROFILL no-op", &ast.DataType{Name: "DECIMAL", Zerofill: true}, "decimal(10,0) unsigned zerofill", true},
 		{"INT ZEROFILL no-op", &ast.DataType{Name: "INT", Zerofill: true}, "int(11) unsigned zerofill", true},
 		{"TINYINT ZEROFILL no-op", &ast.DataType{Name: "TINYINT", Zerofill: true}, "tinyint(4) unsigned zerofill", true},

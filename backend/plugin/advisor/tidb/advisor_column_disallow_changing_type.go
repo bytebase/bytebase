@@ -191,8 +191,13 @@ func buildBaseTypeForm(dt *ast.DataType, lower string) string {
 		return fmt.Sprintf("%s(%s)", lower, formatEnumValueList(dt.EnumValues))
 	case dt.Length > 0 && isExactDecimalTypeName(lower):
 		// DECIMAL / NUMERIC / FIXED with explicit length: always (M,D),
-		// defaulting Scale=0.
-		return fmt.Sprintf("%s(%d,%d)", lower, dt.Length, dt.Scale)
+		// defaulting Scale=0. Canonicalize the type name to "decimal"
+		// — pingcap's Tp.String() and MySQL info_schema both render
+		// `NUMERIC(8,2)` and `FIXED(8,2)` as `decimal(8,2)`. Empirical:
+		// omni pre-normalizes FIXED/DEC/INTEGER but does NOT
+		// pre-normalize NUMERIC (Name stays "NUMERIC"); render
+		// "decimal(...)" regardless to match catalog (Codex round-9).
+		return fmt.Sprintf("decimal(%d,%d)", dt.Length, dt.Scale)
 	case dt.Length > 0 && dt.Scale > 0:
 		// Any other type with explicit (M,D) — render both.
 		return fmt.Sprintf("%s(%d,%d)", lower, dt.Length, dt.Scale)
