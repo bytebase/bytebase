@@ -2045,6 +2045,7 @@
       "name-placeholder": "Schema name",
       "select": "スキーマの選択"
     },
+    "select-object-hint": "編集するデータベースオブジェクトをツリーから選択してください",
     "self": "スキーマエディタ",
     "table": {
       "duplicate-name": "Table name already exists",

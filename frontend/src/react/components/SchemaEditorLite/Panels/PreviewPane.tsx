@@ -155,12 +155,14 @@ export function PreviewPane({ db, database, schema, table }: Props) {
           style={{ height: `${height}px` }}
         >
           {pending && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60">
               <Loader2 className="size-5 animate-spin text-accent" />
             </div>
           )}
           {error ? (
-            <pre className="p-2 text-xs text-error">{error}</pre>
+            <pre className="m-2 overflow-auto rounded-xs bg-error/5 p-3 text-xs whitespace-pre-wrap text-error">
+              {error}
+            </pre>
           ) : (
             <ReadonlyMonaco
               content={ddl}

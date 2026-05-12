@@ -2045,6 +2045,7 @@
       "name-placeholder": "Schema name",
       "select": "选择 schema"
     },
+    "select-object-hint": "从左侧树中选择一个数据库对象进行编辑",
     "self": "Schema 编辑器",
     "table": {
       "duplicate-name": "Table name already exists",

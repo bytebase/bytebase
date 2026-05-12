@@ -2045,6 +2045,7 @@
       "name-placeholder": "Schema name",
       "select": "Seleccionar esquema"
     },
+    "select-object-hint": "Selecciona un objeto de base de datos del árbol para editarlo",
     "self": "Editor de esquema",
     "table": {
       "duplicate-name": "Table name already exists",

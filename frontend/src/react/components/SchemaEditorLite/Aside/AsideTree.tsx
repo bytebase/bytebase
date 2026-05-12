@@ -347,7 +347,7 @@ export function AsideTree() {
     <div className="flex size-full flex-col gap-y-2">
       <div className="sticky top-0 px-1 pt-1">
         <SearchInput
-          placeholder="Search..."
+          placeholder={t("common.search")}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="h-7"
         />
@@ -392,7 +392,7 @@ export function AsideTree() {
             }}
           >
             <div
-              className={`absolute rounded-sm border border-control-border bg-white py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
+              className={`absolute rounded-sm border border-control-border bg-background py-1 shadow-md ${LAYER_SURFACE_CLASS}`}
               style={{ left: menuState.x, top: menuState.y }}
               onClick={(e) => e.stopPropagation()}
             >

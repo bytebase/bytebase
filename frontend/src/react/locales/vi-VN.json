@@ -2045,6 +2045,7 @@
       "name-placeholder": "Schema name",
       "select": "Chọn lược đồ"
     },
+    "select-object-hint": "Chọn một đối tượng cơ sở dữ liệu từ cây để chỉnh sửa",
     "self": "Trình chỉnh sửa lược đồ",
     "table": {
       "duplicate-name": "Table name already exists",
