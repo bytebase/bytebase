@@ -1,5 +1,11 @@
 - statement: CREATE TABLE t(a int, b int, primary key (a, b))
   changeType: 1
+# Cumulative #28: pingcap-tidb accepted `PRIMARY KEY pk (cols)` (non-
+# standard extension) and captured "pk" as the constraint name. Omni
+# follows standard MySQL grammar and silently drops the index_name on
+# PRIMARY KEY (it's not in the standard syntax). The advisor falls
+# back to "PRIMARY" (MySQL canonical name) when c.Name is empty for
+# ConstrPrimaryKey — better UX than empty backticks.
 - statement: |-
     CREATE TABLE t(
             a int,
@@ -10,7 +16,7 @@
     - status: 2
       code: 802
       title: INDEX_KEY_NUMBER_LIMIT
-      content: The number of index `pk` in table `t` should be not greater than 5
+      content: The number of index `PRIMARY` in table `t` should be not greater than 5
       startposition:
         line: 4
         column: 0
@@ -50,6 +56,26 @@
       code: 802
       title: INDEX_KEY_NUMBER_LIMIT
       content: The number of index `uk` in table `t` should be not greater than 5
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# Cumulative #2 unique-trio coverage pin: pingcap had ConstraintUniq /
+# ConstraintUniqKey / ConstraintUniqIndex as 3 distinct enums; omni
+# unifies all 3 under ConstrUnique (verified empirically: parsing
+# UNIQUE(...) / UNIQUE KEY n(...) / UNIQUE INDEX n(...) all yields
+# Type=ConstrUnique). The single-arm omni port covers all 3 forms
+# mechanically. UNIQUE INDEX form here exercises the third variant
+# that earlier fixtures didn't directly pin.
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int,
+                   UNIQUE INDEX ui_all (a, b, c, d, e, f, g))
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `ui_all` in table `t` should be not greater than 5
       startposition:
         line: 2
         column: 0
