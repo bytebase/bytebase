@@ -40,6 +40,11 @@
         line: 2
         column: 0
       endposition: null
+# Cumulative #28: omni follows standard MySQL grammar and drops the
+# non-standard `PRIMARY KEY pk_a (cols)` index name. Advisor falls
+# back to "PRIMARY" canonical (matching what MySQL's information_
+# schema would surface for the primary key index regardless of any
+# user-supplied non-standard name).
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)
@@ -48,7 +53,7 @@
     - status: 2
       code: 812
       title: INDEX_NO_DUPLICATE_COLUMN
-      content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
+      content: PRIMARY KEY `PRIMARY` has duplicate column `t`.`a`
       startposition:
         line: 2
         column: 0
@@ -75,6 +80,45 @@
       code: 812
       title: INDEX_NO_DUPLICATE_COLUMN
       content: FOREIGN KEY `fk_a` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# Cumulative #2 parity pin: verify all three UNIQUE syntactic forms
+# fire identically. Pingcap empirically maps `UNIQUE`, `UNIQUE KEY`,
+# `UNIQUE INDEX` all to `ConstraintUniq` (Tp=4); `ConstraintUniqKey`
+# (Tp=5) and `ConstraintUniqIndex` (Tp=6) are defined in the enum
+# but never produced for these inputs. Omni unifies under
+# `ConstrUnique`. Both engines emit "UNIQUE KEY" in advice content
+# (per indexTypeString mapping in pre-omni / omniIndexTypeString in
+# the port). UNIQUE INDEX form pinned (the existing fixture already
+# covered UNIQUE KEY; bare UNIQUE not yet pinned).
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD UNIQUE INDEX ui_a (a, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `ui_a` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# Bare UNIQUE (no name) — exercises the empty-name path on
+# ConstrUnique. Advisor passes empty constraint name through
+# omniConstraintAdviceName, which returns "" for non-PK constraints
+# (the "PRIMARY" fallback only fires on PRIMARY KEY).
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD UNIQUE (a, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `` has duplicate column `t`.`a`
       startposition:
         line: 2
         column: 0
