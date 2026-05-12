@@ -1,5 +1,5 @@
 import { cloneDeep } from "lodash-es";
-import { Loader2 } from "lucide-react";
+import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SchemaEditorLite } from "@/react/components/SchemaEditorLite";
@@ -42,10 +42,38 @@ export function SchemaEditorSheet({
   onInsert,
 }: Props) {
   const { t } = useTranslation();
+  // Resets on each open: the body below is gated on {open && ...} and the
+  // close path below clears the flag too, so reopening always starts
+  // un-maximized.
+  const [maximized, setMaximized] = useState(false);
+  const MaximizeIcon = maximized ? Minimize2 : Maximize2;
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent width="xlarge" className="flex flex-col">
-        <SheetHeader>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setMaximized(false);
+        onOpenChange(next);
+      }}
+    >
+      <SheetContent
+        width={maximized ? "huge" : "xlarge"}
+        className="flex flex-col"
+      >
+        <SheetHeader
+          actions={
+            <button
+              type="button"
+              aria-label={
+                maximized ? t("common.restore") : t("common.maximize")
+              }
+              title={maximized ? t("common.restore") : t("common.maximize")}
+              onClick={() => setMaximized((v) => !v)}
+              className="shrink-0 rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
+            >
+              <MaximizeIcon className="size-4" />
+            </button>
+          }
+        >
           <SheetTitle>{t("schema-editor.self")}</SheetTitle>
         </SheetHeader>
         {open && (
