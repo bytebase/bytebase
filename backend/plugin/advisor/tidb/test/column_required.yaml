@@ -212,3 +212,30 @@
         line: 1
         column: 0
       endposition: null
+# Cumulative #27 pin (batch 16, Codex P2 catch pre-merge): pre-omni
+# ATRenameColumn arm UNCONDITIONALLY updated line[table] — even when
+# the rename touched no required column. CHANGE COLUMN is conditional
+# (only on advice-relevant rename). Initial batch 16 migration unified
+# both arms behind the conditional pattern, regressing RENAME's
+# unconditional line update. Externally observable: for `CREATE TABLE
+# book(id); ALTER TABLE book RENAME COLUMN x TO y;` the advice
+# StartPosition was line 1 (CREATE) on the regressed branch instead
+# of line 2 (RENAME) on pre-omni. Fix: split the line-update from the
+# renameColumn() return-value check on ATRenameColumn only; CHANGE
+# COLUMN remains conditional. Cumulative #27 documents the auxiliary-
+# state-map audit refinement of #25: each state map (primary `tables`
+# AND auxiliary `line`) has its own per-arm conditionality contract;
+# the audit must enumerate cross-arm × cross-map (Cartesian).
+- statement: |-
+    CREATE TABLE book(id int);
+    ALTER TABLE book RENAME COLUMN x TO y;
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

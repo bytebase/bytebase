@@ -53,10 +53,21 @@ type ColumnRequirementAdvisor struct{}
 //     is old, `cmd.Column.Name` is new (verified in
 //     advisor_column_disallow_changing_type.go pattern).
 //
-// Line tracking: pre-omni only updates `line[table]` on advice-
-// triggering changes (DROP COLUMN of required col; RENAME away from
-// required col; CHANGE COLUMN away from required col). ADD COLUMN
-// does NOT update line. CreateTable seeds line. Preserved.
+// Line tracking has per-arm semantics distinct from primary state
+// (cumulative #27 — auxiliary state maps have their own conditionality
+// contracts; mechanical port must audit each state map independently):
+//   - CreateTable: seeds line[table] unconditionally.
+//   - DropTable: does NOT delete from line (orphaned entries harmless;
+//     generateAdviceList iterates tables, not line).
+//   - ATRenameColumn: updates line UNCONDITIONALLY (RENAME is a more
+//     explicit "user modified this table at this line" signal).
+//   - ATAddColumn: does NOT update line (ADD can only make missing
+//     required columns present; never triggers new advice).
+//   - ATDropColumn: updates line ONLY when the dropped column was
+//     required (return value of dropColumn).
+//   - ATChangeColumn: updates line ONLY when the old name was required
+//     (return value of renameColumn). Asymmetric vs ATRenameColumn —
+//     pre-omni intentional asymmetry preserved.
 //
 // Identifier case-sensitivity (cumulative #19): pre-omni used `.O`
 // throughout (no `.L` lowercase); omni's direct strings preserve user
@@ -118,9 +129,16 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 				}
 				switch cmd.Type {
 				case ast.ATRenameColumn:
-					if v.renameColumn(table, cmd.Name, cmd.NewName) {
-						v.line[table] = stmtLine
-					}
+					// Cumulative #27: pre-omni updated line[table]
+					// UNCONDITIONALLY for RENAME COLUMN, even when
+					// neither old nor new is in the required set.
+					// CHANGE COLUMN (below) is conditional on return
+					// value — asymmetric pre-omni behavior preserved.
+					// RENAME is a more explicit "user modified this
+					// table at this line" signal that should mark the
+					// position regardless of required-column impact.
+					v.renameColumn(table, cmd.Name, cmd.NewName)
+					v.line[table] = stmtLine
 				case ast.ATAddColumn:
 					for _, column := range addColumnTargets(cmd) {
 						if column == nil {
