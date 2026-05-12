@@ -3700,6 +3700,7 @@
   "subscription.usage.instance-count.title": "实例数量限制",
   "task": {
     "cancel-task": "取消任务",
+    "cancel-task-description": "待运行和就绪的任务运行会立即取消。运行中的任务运行会收到尽力而为的取消请求，可能会继续运行；如有需要请重试。",
     "checking": "检查中…",
     "created": "创建时间",
     "data-export-creator-only": "只有工单创建者可以执行数据导出任务",

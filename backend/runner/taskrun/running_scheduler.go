@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -87,11 +88,17 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 			ProjectID: task.ProjectID,
 			Updater:   "",
 			Status:    storepb.TaskRun_FAILED,
+			AllowedStatuses: []storepb.TaskRun_Status{
+				storepb.TaskRun_RUNNING,
+			},
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
 		}
 		if _, patchErr := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); patchErr != nil {
+			if common.ErrorCode(patchErr) == common.Conflict {
+				return nil
+			}
 			return errors.Wrapf(patchErr, "failed to mark task run as failed after drift detection")
 		}
 		return nil
@@ -139,13 +146,19 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			log.BBError(err),
 		)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:          taskRunUID,
-			ProjectID:   task.ProjectID,
-			Updater:     "",
-			Status:      storepb.TaskRun_CANCELED,
+			ID:        taskRunUID,
+			ProjectID: task.ProjectID,
+			Updater:   "",
+			Status:    storepb.TaskRun_CANCELED,
+			AllowedStatuses: []storepb.TaskRun_Status{
+				storepb.TaskRun_RUNNING,
+			},
 			ResultProto: &storepb.TaskRunResult{},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return
+			}
 			slog.Error("Failed to mark task as CANCELED",
 				slog.Int64("id", task.ID),
 				log.BBError(err),
@@ -166,11 +179,17 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			ProjectID: task.ProjectID,
 			Updater:   "",
 			Status:    storepb.TaskRun_FAILED,
+			AllowedStatuses: []storepb.TaskRun_Status{
+				storepb.TaskRun_RUNNING,
+			},
 			ResultProto: &storepb.TaskRunResult{
 				Detail: err.Error(),
 			},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				return
+			}
 			slog.Error("Failed to mark task as FAILED",
 				slog.Int64("id", task.ID),
 				log.BBError(err),
@@ -208,13 +227,19 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 
 	// Success case
 	taskRunStatusPatch := &store.TaskRunStatusPatch{
-		ID:          taskRunUID,
-		ProjectID:   task.ProjectID,
-		Updater:     "",
-		Status:      storepb.TaskRun_DONE,
+		ID:        taskRunUID,
+		ProjectID: task.ProjectID,
+		Updater:   "",
+		Status:    storepb.TaskRun_DONE,
+		AllowedStatuses: []storepb.TaskRun_Status{
+			storepb.TaskRun_RUNNING,
+		},
 		ResultProto: result,
 	}
 	if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return
+		}
 		slog.Error("Failed to mark task as DONE",
 			slog.Int64("id", task.ID),
 			log.BBError(err),

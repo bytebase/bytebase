@@ -97,7 +97,10 @@ type RolloutServiceClient interface {
 	// Skips multiple tasks in a rollout stage.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
-	// Cancels multiple running task executions.
+	// Cancels multiple task runs.
+	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
+	// a best-effort cancellation request and may continue running if the request is missed or the
+	// executor does not stop. The response does not report which task runs were actually canceled.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
 	// Generates rollback SQL for a completed task run.
@@ -284,7 +287,10 @@ type RolloutServiceHandler interface {
 	// Skips multiple tasks in a rollout stage.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *connect.Request[v1.BatchSkipTasksRequest]) (*connect.Response[v1.BatchSkipTasksResponse], error)
-	// Cancels multiple running task executions.
+	// Cancels multiple task runs.
+	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
+	// a best-effort cancellation request and may continue running if the request is missed or the
+	// executor does not stop. The response does not report which task runs were actually canceled.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *connect.Request[v1.BatchCancelTaskRunsRequest]) (*connect.Response[v1.BatchCancelTaskRunsResponse], error)
 	// Generates rollback SQL for a completed task run.

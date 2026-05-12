@@ -3700,6 +3700,7 @@
   "subscription.usage.instance-count.title": "Límite de cantidad de instancias",
   "task": {
     "cancel-task": "Cancelar tarea | Cancelar tareas",
+    "cancel-task-description": "Las ejecuciones de tareas pendientes y disponibles se cancelan inmediatamente. Las ejecuciones en curso reciben una solicitud de cancelación de mejor esfuerzo y pueden seguir ejecutándose; vuelva a intentarlo si es necesario.",
     "checking": "Comprobando...",
     "created": "Creado",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",

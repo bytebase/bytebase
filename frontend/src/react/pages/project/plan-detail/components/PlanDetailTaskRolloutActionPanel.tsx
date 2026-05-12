@@ -362,6 +362,12 @@ export function PlanDetailTaskRolloutActionPanel({
               </div>
             )}
 
+            {action === "CANCEL" && (
+              <p className="text-sm text-control-light">
+                {t("task.cancel-task-description")}
+              </p>
+            )}
+
             {action === "RUN" && (
               <div className="flex flex-col">
                 <h3 className="mb-1 font-medium text-control">
@@ -543,6 +549,7 @@ async function cancelTasks({
         return (
           taskNames.has(taskName) &&
           (run.status === TaskRun_Status.PENDING ||
+            run.status === TaskRun_Status.AVAILABLE ||
             run.status === TaskRun_Status.RUNNING)
         );
       })

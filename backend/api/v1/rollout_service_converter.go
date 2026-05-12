@@ -344,6 +344,8 @@ func convertToTaskStatus(latestTaskRunStatus storepb.TaskRun_Status, skipped boo
 		return v1pb.Task_NOT_STARTED
 	case storepb.TaskRun_PENDING:
 		return v1pb.Task_PENDING
+	case storepb.TaskRun_AVAILABLE:
+		return v1pb.Task_PENDING
 	case storepb.TaskRun_RUNNING:
 		return v1pb.Task_RUNNING
 	case storepb.TaskRun_DONE:

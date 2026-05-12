@@ -3700,6 +3700,7 @@
   "subscription.usage.instance-count.title": "インスタンスの制限",
   "task": {
     "cancel-task": "タスクをキャンセルする",
+    "cancel-task-description": "保留中および利用可能なタスク実行はすぐにキャンセルされます。実行中のタスク実行にはベストエフォートのキャンセル要求が送信されますが、実行が続く場合があります。必要に応じて再試行してください。",
     "checking": "検査中…",
     "created": "作成日時",
     "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",

@@ -9860,7 +9860,10 @@ paths:
         - RolloutService
       summary: BatchCancelTaskRuns
       description: |-
-        Cancels multiple running task executions.
+        Cancels multiple task runs.
+         PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
+         a best-effort cancellation request and may continue running if the request is missed or the
+         executor does not stop. The response does not report which task runs were actually canceled.
          Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
       operationId: RolloutService_BatchCancelTaskRuns
       parameters:

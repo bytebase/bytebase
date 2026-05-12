@@ -160,7 +160,8 @@ export function DeployStageContentSidebar({ stage }: { stage: Stage }) {
                               ? Task_Status.FAILED
                               : taskRun.status === TaskRun_Status.RUNNING
                                 ? Task_Status.RUNNING
-                                : taskRun.status === TaskRun_Status.PENDING
+                                : taskRun.status === TaskRun_Status.PENDING ||
+                                    taskRun.status === TaskRun_Status.AVAILABLE
                                   ? Task_Status.PENDING
                                   : Task_Status.CANCELED
                         }
