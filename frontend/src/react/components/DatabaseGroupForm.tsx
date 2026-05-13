@@ -208,9 +208,9 @@ export function DatabaseGroupForm({
           />
           <div className="mt-2">
             <ResourceIdField
+              suffix
               value={resourceId}
-              resourceType="database-group"
-              resourceName="database-group"
+              resourceName={t("common.database-group")}
               resourceTitle={title}
               readonly={!isCreating}
               validate={isCreating ? validateResourceId : undefined}

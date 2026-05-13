@@ -268,10 +268,10 @@ function SetupWizard() {
                     onChange={(e) => setProjectTitle(e.target.value)}
                   />
                   <ResourceIdField
+                    suffix
                     ref={resourceFieldRef}
                     value={resourceId}
-                    resourceType="project"
-                    resourceName={projectTitle}
+                    resourceName={t("common.project")}
                     resourceTitle={projectTitle}
                     validate={validateProjectResourceID}
                     onChange={setResourceId}

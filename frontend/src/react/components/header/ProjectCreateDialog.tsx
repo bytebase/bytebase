@@ -159,10 +159,10 @@ export function ProjectCreateDialog({
                 onChange={(e) => setTitle(e.target.value)}
               />
               <ResourceIdField
+                suffix
                 ref={resourceIdFieldRef}
                 value={resourceId}
-                resourceType="project"
-                resourceName={title}
+                resourceName={t("common.project")}
                 resourceTitle={title}
                 validate={validate}
                 onChange={setResourceId}

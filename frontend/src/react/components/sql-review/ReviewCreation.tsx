@@ -333,7 +333,6 @@ export function ReviewCreation({
             {/* Resource ID */}
             <ResourceIdField
               value={resourceId}
-              resourceType="review-config"
               resourceName={t("sql-review.review-policy")}
               resourceTitle={policyName}
               suffix

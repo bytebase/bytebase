@@ -552,7 +552,6 @@ function RoleSheet({
                 <ResourceIdField
                   ref={resourceIdFieldRef}
                   value={resourceId}
-                  resourceType="role"
                   resourceName={t("role.self")}
                   resourceTitle={editRole.title}
                   suffix
@@ -564,7 +563,6 @@ function RoleSheet({
               {mode === "EDIT" && !isBuiltin && (
                 <ResourceIdField
                   value={extractRoleResourceName(editRole.name)}
-                  resourceType="role"
                   resourceName={t("role.self")}
                   readonly
                 />

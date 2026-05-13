@@ -865,7 +865,6 @@ function EnvironmentDetail({
             />
             <ResourceIdField
               value={environment.id}
-              resourceType="environment"
               resourceName={t("common.environment")}
               readonly
             />
@@ -1168,7 +1167,6 @@ function CreateSheet({
               />
               <ResourceIdField
                 value={resourceId}
-                resourceType="environment"
                 resourceName={t("common.environment")}
                 resourceTitle={title}
                 validate={validateResourceId}

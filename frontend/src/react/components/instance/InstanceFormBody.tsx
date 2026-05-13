@@ -1396,6 +1396,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             {/* Resource ID */}
             <div className="sm:col-span-3 sm:col-start-1 -mt-4">
               <ResourceIdField
+                suffix
                 value={resourceId}
                 onChange={setResourceId}
                 onValidationChange={setResourceIdValidated}

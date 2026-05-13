@@ -14,15 +14,6 @@ import { randomString } from "@/utils";
 const VALID_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890-";
 const RESOURCE_ID_PATTERN = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
-type ResourceType =
-  | "environment"
-  | "instance"
-  | "project"
-  | "idp"
-  | "role"
-  | "database-group"
-  | "review-config";
-
 export interface ResourceIdFieldRef {
   resourceId: string;
   isValidated: boolean;
@@ -31,7 +22,9 @@ export interface ResourceIdFieldRef {
 
 interface ResourceIdFieldProps {
   value: string;
-  resourceType: ResourceType;
+  // Localized resource-type label (e.g. "Project", "Environment").
+  // Used in the field label, description, placeholder, and validation
+  // messages — NOT the user-entered title/name of the resource.
   resourceName: string;
   resourceTitle?: string;
   suffix?: boolean;
@@ -68,7 +61,6 @@ export const ResourceIdField = forwardRef<
 >(function ResourceIdField(
   {
     value,
-    resourceType: _resourceType, // reserved for future per-type behavior
     resourceName,
     resourceTitle,
     suffix = false,
@@ -222,7 +214,7 @@ export const ResourceIdField = forwardRef<
           )}
         </div>
       ) : (
-        <div className="mt-1">
+        <div className="mt-3">
           <label className="textlabel flex items-center">
             {t("resource-id.self", { resource: resourceName })}
             <span className="ml-0.5 text-error">*</span>
