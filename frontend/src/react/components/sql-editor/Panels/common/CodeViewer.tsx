@@ -8,12 +8,12 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import type { MonacoModule } from "@/components/MonacoEditor";
-import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ChatAction } from "@/plugins/ai/types";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
+import { formatSQL } from "@/react/components/monaco/sqlFormatter";
+import type { MonacoModule } from "@/react/components/monaco/types";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";

@@ -1,5 +1,5 @@
 import { shallowRef } from "vue";
-import { type IStandaloneCodeEditor } from "@/components/MonacoEditor";
+import { type IStandaloneCodeEditor } from "@/react/components/monaco/types";
 
 export const activeSQLEditorRef = shallowRef<IStandaloneCodeEditor>();
 

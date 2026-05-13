@@ -1,7 +1,7 @@
 import { type IRange, Selection } from "monaco-editor";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { positionWithOffset } from "@/components/MonacoEditor/utils";
+import { positionWithOffset } from "@/react/components/monaco/utils";
 import { activeSQLEditorRef } from "@/react/components/sql-editor/StandardPanel/state";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";

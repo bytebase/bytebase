@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { watch } from "vue";
-import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
+import type { IStandaloneCodeEditor } from "@/react/components/monaco/types";
 import { ConnectionHolder } from "@/react/components/sql-editor/ConnectionHolder";
 import { EditorAction } from "@/react/components/sql-editor/EditorAction";
 import { ResultView } from "@/react/components/sql-editor/ResultView";

@@ -1,11 +1,11 @@
 import type * as monaco from "monaco-editor";
-import type { MonacoModule } from "@/components/MonacoEditor";
 import type { Language } from "@/types";
 import { MonacoEditor } from "./MonacoEditor";
 import type {
   AdviceOption,
   IStandaloneEditorConstructionOptions,
   LineHighlightOption,
+  MonacoModule,
 } from "./types";
 
 export interface ReadonlyMonacoProps {

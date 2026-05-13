@@ -18,6 +18,13 @@ const allowedVueImports = new Set([
 
 const vueImportPattern = /from\s+["']([^"']+\.vue)["']/g;
 
+// Vue-side helper modules that have React equivalents in
+// frontend/src/react/components/monaco/. React code must import from the
+// React copy, not from the Vue dir. The Vue dir stays alive because the
+// AI plugin (frontend/src/plugins/ai/) still uses the Vue Monaco
+// components — but React must not reach across.
+const bannedReactToVueModulePrefixes = ["@/components/MonacoEditor"];
+
 describe("React layer must not import .vue files", () => {
   test("no .tsx or .ts file under frontend/src/react/ imports a .vue file", () => {
     const violations: string[] = [];
@@ -35,6 +42,30 @@ describe("React layer must not import .vue files", () => {
         const importPath = match[1];
         if (!allowedVueImports.has(importPath)) {
           violations.push(`${file}: ${importPath}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("no .tsx or .ts file under frontend/src/react/ imports Vue-side helper modules with React equivalents", () => {
+    const importPattern = /from\s+["']([^"']+)["']/g;
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(sources)) {
+      if (file.endsWith("/no-react-to-vue-imports.test.ts")) continue;
+      if (file.endsWith("/no-legacy-vue-deps.test.ts")) continue;
+
+      let match: RegExpExecArray | null;
+      importPattern.lastIndex = 0;
+      while ((match = importPattern.exec(source)) !== null) {
+        const importPath = match[1];
+        for (const prefix of bannedReactToVueModulePrefixes) {
+          if (
+            importPath === prefix ||
+            importPath.startsWith(`${prefix}/`)
+          ) {
+            violations.push(`${file}: ${importPath}`);
+          }
         }
       }
     }
