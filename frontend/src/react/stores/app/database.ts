@@ -4,6 +4,7 @@ import {
   BatchGetDatabasesRequestSchema,
   type Database,
   GetDatabaseRequestSchema,
+  ListDatabasesRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
@@ -82,5 +83,28 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
       return { databasesByName: next };
     });
     return response.databases;
+  },
+
+  fetchDatabases: async ({ parent, pageSize, pageToken, filter, orderBy }) => {
+    const response = await databaseServiceClientConnect.listDatabases(
+      createProto(ListDatabasesRequestSchema, {
+        parent,
+        pageSize,
+        pageToken: pageToken ?? "",
+        filter: filter ?? "",
+        orderBy: orderBy ?? "",
+      })
+    );
+    set((state) => {
+      const next = { ...state.databasesByName };
+      for (const db of response.databases) {
+        next[db.name] = db;
+      }
+      return { databasesByName: next };
+    });
+    return {
+      databases: response.databases,
+      nextPageToken: response.nextPageToken,
+    };
   },
 });

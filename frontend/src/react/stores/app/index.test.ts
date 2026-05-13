@@ -64,6 +64,7 @@ const mocks = vi.hoisted(() => ({
   getInstance: vi.fn(),
   getDatabase: vi.fn(),
   batchGetDatabases: vi.fn(),
+  listDatabases: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -86,6 +87,7 @@ vi.mock("@/connect", () => ({
   databaseServiceClientConnect: {
     getDatabase: mocks.getDatabase,
     batchGetDatabases: mocks.batchGetDatabases,
+    listDatabases: mocks.listDatabases,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -590,6 +592,32 @@ describe("useAppStore", () => {
     expect(third).toEqual(database);
     expect(mocks.getDatabase).toHaveBeenCalledTimes(1);
     expect(store.getState().databasesByName[dbName]).toEqual(database);
+  });
+
+  test("fetchDatabases populates databasesByName from the list response", async () => {
+    const dbA = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db1",
+    });
+    const dbB = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db2",
+    });
+    mocks.listDatabases.mockResolvedValue({
+      databases: [dbA, dbB],
+      nextPageToken: "next",
+    });
+    const store = createAppStore();
+
+    const result = await store.getState().fetchDatabases({
+      parent: "projects/a",
+      pageSize: 50,
+      filter: 'project == "projects/a"',
+    });
+
+    expect(result.databases).toEqual([dbA, dbB]);
+    expect(result.nextPageToken).toBe("next");
+    expect(store.getState().databasesByName[dbA.name]).toEqual(dbA);
+    expect(store.getState().databasesByName[dbB.name]).toEqual(dbB);
+    expect(mocks.listDatabases).toHaveBeenCalledTimes(1);
   });
 
   test("notify() routes to the React toast manager", async () => {

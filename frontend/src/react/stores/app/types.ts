@@ -125,12 +125,24 @@ export type InstanceSlice = {
   fetchInstance: (name: string) => Promise<Instance | undefined>;
 };
 
+export type DatabaseListParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  filter?: string;
+  orderBy?: string;
+};
+
 export type DatabaseSlice = {
   databasesByName: Record<string, Database>;
   databaseRequests: Record<string, Promise<Database | undefined>>;
   databaseErrorsByName: Record<string, Error | undefined>;
   fetchDatabase: (name: string) => Promise<Database | undefined>;
   batchFetchDatabases: (names: string[]) => Promise<Database[]>;
+  fetchDatabases: (params: DatabaseListParams) => Promise<{
+    databases: Database[];
+    nextPageToken: string;
+  }>;
 };
 
 export type NotificationSlice = {
