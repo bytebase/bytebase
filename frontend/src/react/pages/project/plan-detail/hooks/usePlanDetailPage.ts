@@ -1,43 +1,16 @@
-import { create } from "@bufbuild/protobuf";
-import { Code, ConnectError } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  issueServiceClientConnect,
-  planServiceClientConnect,
-  projectServiceClientConnect,
-  rolloutServiceClientConnect,
-  userServiceClientConnect,
-} from "@/connect";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
 import { PLAN_DETAIL_PHASE_DEPLOY } from "@/router/dashboard/projectV1RouteHelpers";
-import {
-  WORKSPACE_ROUTE_403,
-  WORKSPACE_ROUTE_404,
-} from "@/router/dashboard/workspaceRoutes";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
-  GetIssueRequestSchema,
-  type Issue,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
-import {
-  GetPlanCheckRunRequestSchema,
-  GetPlanRequestSchema,
-  type Plan,
-  type PlanCheckRun,
-} from "@/types/proto-es/v1/plan_service_pb";
-import {
-  GetProjectRequestSchema,
-  type Project,
-} from "@/types/proto-es/v1/project_service_pb";
-import {
-  GetRolloutRequestSchema,
-  ListTaskRunsRequestSchema,
   type Rollout,
   Task_Status,
   type TaskRun,
@@ -46,20 +19,15 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
-import {
-  getIssueRoute,
-  getRolloutFromPlan,
-  hasProjectPermissionV2,
-  minmax,
-  setDocumentTitle,
-} from "@/utils";
+import { getIssueRoute, setDocumentTitle } from "@/utils";
 import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
-import { POLLER_INTERVAL, PROJECT_NAME_PREFIX } from "../shell/constants";
+import { fetchPlanSnapshot } from "../shell/hooks/fetchPlanSnapshot";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
+import { useInitialFetch } from "../shell/hooks/useInitialFetch";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
+import { usePolling } from "../shell/hooks/usePolling";
 import { useRouteSelection } from "../shell/hooks/useRouteSelection";
 import { useSidebarMode } from "../shell/hooks/useSidebarMode";
-import { createPlanSkeleton } from "../utils/createPlan";
 
 export {
   MOBILE_BREAKPOINT_PX,
@@ -179,114 +147,6 @@ const shouldRedirectToIssueDetail = (plan: Plan, issue?: Issue) => {
   });
 };
 
-const fetchPlanDetailSnapshot = async (
-  projectId: string,
-  planId: string,
-  routeQuery: Record<string, unknown> = {}
-): Promise<Partial<PlanDetailPageSnapshot>> => {
-  const [project, currentUser] = await Promise.all([
-    projectServiceClientConnect.getProject(
-      create(GetProjectRequestSchema, {
-        name: `${PROJECT_NAME_PREFIX}${projectId}`,
-      })
-    ),
-    userServiceClientConnect.getCurrentUser({}),
-  ]);
-
-  if (planId.toLowerCase() === "create") {
-    const plan = await createPlanSkeleton(
-      project,
-      convertRouteQuery(routeQuery)
-    );
-    return {
-      currentUser,
-      plan,
-      project,
-      projectTitle: project.title,
-      projectCanCreateRollout: hasProjectPermissionV2(
-        project,
-        "bb.rollouts.create"
-      ),
-      projectRequireIssueApproval: project.requireIssueApproval,
-      projectRequirePlanCheckNoError: project.requirePlanCheckNoError,
-      issue: undefined,
-      rollout: undefined,
-      planCheckRuns: [],
-      taskRuns: [],
-    };
-  }
-
-  const plan = await planServiceClientConnect.getPlan(
-    create(GetPlanRequestSchema, {
-      name: `${PROJECT_NAME_PREFIX}${projectId}/plans/${planId}`,
-    })
-  );
-
-  const [issue, planCheckRuns, rollout] = await Promise.all([
-    plan.issue
-      ? issueServiceClientConnect
-          .getIssue(create(GetIssueRequestSchema, { name: plan.issue }))
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
-    planServiceClientConnect
-      .getPlanCheckRun(
-        create(GetPlanCheckRunRequestSchema, {
-          name: `${plan.name}/planCheckRun`,
-        })
-      )
-      .then((run) => [run] as PlanCheckRun[])
-      .catch(() => []),
-    plan.hasRollout
-      ? rolloutServiceClientConnect
-          .getRollout(
-            create(GetRolloutRequestSchema, {
-              name: getRolloutFromPlan(plan.name),
-            })
-          )
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
-  ]);
-
-  const taskRuns =
-    rollout !== undefined
-      ? await rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rollout.name}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
-      : [];
-
-  return {
-    currentUser,
-    plan,
-    project,
-    projectTitle: project.title,
-    projectCanCreateRollout: hasProjectPermissionV2(
-      project,
-      "bb.rollouts.create"
-    ),
-    projectRequireIssueApproval: project.requireIssueApproval,
-    projectRequirePlanCheckNoError: project.requirePlanCheckNoError,
-    issue,
-    rollout,
-    planCheckRuns,
-    taskRuns,
-  };
-};
-
-const convertRouteQuery = (query: Record<string, unknown>) => {
-  const kv: Record<string, string> = {};
-  for (const [key, value] of Object.entries(query)) {
-    if (typeof value === "string") {
-      kv[key] = value;
-    }
-  }
-  return kv;
-};
-
 export const usePlanDetailPage = ({
   projectId,
   planId,
@@ -314,7 +174,6 @@ export const usePlanDetailPage = ({
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const latestSnapshotRef = useRef(snapshot);
-  const pollTimerRef = useRef<number | undefined>(undefined);
   // Target route captured when the guard intercepts a navigation. We cancel
   // that navigation synchronously and re-issue it after the user confirms.
   const pendingLeaveTargetRef = useRef<string | null>(null);
@@ -335,14 +194,6 @@ export const usePlanDetailPage = ({
     latestSnapshotRef.current = snapshot;
   }, [snapshot]);
 
-  const stopPolling = useCallback(() => {
-    if (!pollTimerRef.current) {
-      return;
-    }
-    window.clearTimeout(pollTimerRef.current);
-    pollTimerRef.current = undefined;
-  }, []);
-
   const patchState = useCallback((patch: Partial<PlanDetailPageSnapshot>) => {
     setSnapshot((prev) => applyDerivedState({ ...prev, ...patch }));
   }, []);
@@ -351,7 +202,7 @@ export const usePlanDetailPage = ({
     try {
       setIsRefreshing(true);
       const current = latestSnapshotRef.current;
-      const patch = await fetchPlanDetailSnapshot(
+      const patch = await fetchPlanSnapshot(
         current.projectId,
         current.planId,
         routeQueryRef.current
@@ -372,65 +223,14 @@ export const usePlanDetailPage = ({
     });
   }, [routePhase, routeStageId]);
 
-  useEffect(() => {
-    storeApi.setState({ editingScopes: {} });
-    patchState({
-      projectId,
-      planId,
-      specId,
-      pageKey: `${projectId}/${planId}/${specId ?? ""}`,
-      projectTitle: "",
-      isCreating: planId.toLowerCase() === "create",
-      isInitializing: true,
-      plan: unknownPlan(),
-      issue: undefined,
-      rollout: undefined,
-      planCheckRuns: [],
-      taskRuns: [],
-    });
-
-    let canceled = false;
-
-    const load = async () => {
-      try {
-        const patch = await fetchPlanDetailSnapshot(
-          projectId,
-          planId,
-          routeQueryRef.current
-        );
-        if (canceled) {
-          return;
-        }
-        patchState({
-          ...patch,
-          isInitializing: false,
-          specId,
-        });
-      } catch (error) {
-        if (canceled) {
-          return;
-        }
-        if (error instanceof ConnectError) {
-          if (error.code === Code.NotFound) {
-            void router.push({ name: WORKSPACE_ROUTE_404 });
-          } else if (error.code === Code.PermissionDenied) {
-            void router.push({ name: WORKSPACE_ROUTE_403 });
-          }
-          patchState({ isInitializing: false });
-          return;
-        }
-
-        patchState({ isInitializing: false });
-        throw error;
-      }
-    };
-
-    void load();
-
-    return () => {
-      canceled = true;
-    };
-  }, [patchState, planId, projectId, specId, storeApi]);
+  useInitialFetch({
+    projectId,
+    planId,
+    specId,
+    routeQueryRef,
+    storeApi,
+    patchState,
+  });
 
   const resolveLeaveConfirm = useCallback(
     (confirmed: boolean) => {
@@ -540,51 +340,10 @@ export const usePlanDetailPage = ({
     );
   }, [snapshot.rollout]);
 
-  useEffect(() => {
-    if (!snapshot.ready || snapshot.isCreating || isPlanDone) {
-      stopPolling();
-      return;
-    }
-
-    let canceled = false;
-
-    const poll = (interval: number) => {
-      stopPolling();
-      const nextInterval = minmax(
-        interval +
-          Math.floor(Math.random() * (POLLER_INTERVAL.jitter * 2 + 1)) -
-          POLLER_INTERVAL.jitter,
-        POLLER_INTERVAL.min,
-        POLLER_INTERVAL.max
-      );
-
-      pollTimerRef.current = window.setTimeout(async () => {
-        if (canceled) {
-          return;
-        }
-        await refreshState().catch(() => undefined);
-        if (canceled) {
-          return;
-        }
-        poll(
-          Math.min(nextInterval * POLLER_INTERVAL.growth, POLLER_INTERVAL.max)
-        );
-      }, nextInterval);
-    };
-
-    poll(POLLER_INTERVAL.min);
-
-    return () => {
-      canceled = true;
-      stopPolling();
-    };
-  }, [
-    isPlanDone,
+  usePolling({
+    enabled: snapshot.ready && !snapshot.isCreating && !isPlanDone,
     refreshState,
-    snapshot.isCreating,
-    snapshot.ready,
-    stopPolling,
-  ]);
+  });
 
   const selectedTaskName = useMemo(() => {
     if (!routeTaskId || !snapshot.rollout) {
