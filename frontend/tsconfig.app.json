@@ -31,7 +31,8 @@
     "src/react/components/SchemaEditorLite/Panels/IndexesEditor/index.ts",
     "src/react/components/SchemaEditorLite/Panels/PartitionsEditor/index.ts",
     "src/react/components/SchemaEditorLite/Panels/TableList/index.ts",
-    "src/react/components/sql-editor/ResultView/index.ts"
+    "src/react/components/sql-editor/ResultView/index.ts",
+    "src/react/pages/project/plan-detail/index.ts"
   ],
   "compilerOptions": {
     "composite": true,

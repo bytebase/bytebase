@@ -1,7 +1,10 @@
 // Use import.meta.glob so vue-tsc does not follow the import into React .tsx files.
 // Vite resolves the glob at build time and creates a lazy chunk for the matched module.
 const settingsPageLoaders = import.meta.glob("./pages/settings/*.tsx");
-const projectPageLoaders = import.meta.glob("./pages/project/*.tsx");
+const projectPageLoaders = import.meta.glob([
+  "./pages/project/*.tsx",
+  "./pages/project/plan-detail/ProjectPlanDetailPage.tsx",
+]);
 const pluginComponentLoaders = import.meta.glob(
   "./plugins/agent/components/AgentWindow.tsx"
 );
@@ -64,6 +67,7 @@ async function loadCoreDeps() {
 const pageDirs = [
   "./pages/settings",
   "./pages/project",
+  "./pages/project/plan-detail",
   "./plugins/agent/components",
   "./pages/workspace",
   "./pages/auth",
