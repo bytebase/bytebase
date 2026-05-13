@@ -57,27 +57,24 @@ import {
   setDocumentTitle,
 } from "@/utils";
 import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
+import { POLLER_INTERVAL, PROJECT_NAME_PREFIX } from "../shell/constants";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
+import { useSidebarMode } from "../shell/hooks/useSidebarMode";
 import { createPlanSkeleton } from "../utils/createPlan";
 
-const POLLER_INTERVAL = {
-  min: 1000,
-  max: 30000,
-  growth: 2,
-  jitter: 250,
-} as const;
+export {
+  MOBILE_BREAKPOINT_PX,
+  POLLER_INTERVAL,
+  PROJECT_NAME_PREFIX,
+  SIDEBAR_WIDTH_NARROW_PX,
+  SIDEBAR_WIDTH_WIDE_PX,
+  WIDE_SIDEBAR_BREAKPOINT_PX,
+} from "../shell/constants";
+export type { PlanDetailSidebarMode } from "../shell/hooks/useSidebarMode";
 
-const PROJECT_NAME_PREFIX = "projects/";
+import type { PlanDetailSidebarMode } from "../shell/hooks/useSidebarMode";
 
-// Width below which the sidebar collapses into a mobile drawer.
-export const MOBILE_BREAKPOINT_PX = 780;
-// Width at or above which the sidebar widens.
-export const WIDE_SIDEBAR_BREAKPOINT_PX = 1280;
-export const SIDEBAR_WIDTH_NARROW_PX = 240;
-export const SIDEBAR_WIDTH_WIDE_PX = 336;
-
-export type PlanDetailSidebarMode = "NONE" | "DESKTOP" | "MOBILE";
 export type PlanDetailPhase = "changes" | "review" | "deploy";
 
 export interface PlanDetailPageSnapshot {
@@ -100,10 +97,6 @@ export interface PlanDetailPageSnapshot {
   rollout?: Rollout;
   planCheckRuns: PlanCheckRun[];
   taskRuns: TaskRun[];
-  sidebarMode: PlanDetailSidebarMode;
-  containerWidth: number;
-  desktopSidebarWidth: number;
-  mobileSidebarOpen: boolean;
 }
 
 export interface PlanDetailPageState extends PlanDetailPageSnapshot {
@@ -119,6 +112,10 @@ export interface PlanDetailPageState extends PlanDetailPageSnapshot {
   routeTaskId?: string;
   selectedTaskName?: string;
   pendingLeaveConfirm: boolean;
+  sidebarMode: PlanDetailSidebarMode;
+  containerWidth: number;
+  desktopSidebarWidth: number;
+  mobileSidebarOpen: boolean;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
   refreshState: () => Promise<void>;
   bypassLeaveGuardOnce: () => void;
@@ -154,10 +151,6 @@ const buildDefaultSnapshot = (
   rollout: undefined,
   planCheckRuns: [],
   taskRuns: [],
-  sidebarMode: "NONE",
-  containerWidth: 0,
-  desktopSidebarWidth: 0,
-  mobileSidebarOpen: false,
 });
 
 const applyDerivedState = (
@@ -318,6 +311,7 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
+  const sidebar = useSidebarMode(pageHost);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
@@ -369,13 +363,6 @@ export const usePlanDetailPage = ({
       setIsRefreshing(false);
     }
   }, [patchState]);
-
-  const setMobileSidebarOpen = useCallback(
-    (open: boolean) => {
-      patchState({ mobileSidebarOpen: open });
-    },
-    [patchState]
-  );
 
   const closeTaskPanel = useCallback(() => {
     void router.replace({
@@ -539,46 +526,6 @@ export const usePlanDetailPage = ({
     }
   }, [phase, routeName, routePhase, routeStageId, routeTaskId]);
 
-  useEffect(() => {
-    if (!pageHost) {
-      patchState({
-        containerWidth: 0,
-        desktopSidebarWidth: 0,
-        mobileSidebarOpen: false,
-        sidebarMode: "NONE",
-      });
-      return;
-    }
-
-    const updateSidebar = () => {
-      const containerWidth = pageHost.getBoundingClientRect().width;
-      const sidebarMode: PlanDetailSidebarMode =
-        containerWidth === 0
-          ? "NONE"
-          : containerWidth < MOBILE_BREAKPOINT_PX
-            ? "MOBILE"
-            : "DESKTOP";
-      patchState({
-        containerWidth,
-        desktopSidebarWidth:
-          containerWidth < WIDE_SIDEBAR_BREAKPOINT_PX
-            ? SIDEBAR_WIDTH_NARROW_PX
-            : SIDEBAR_WIDTH_WIDE_PX,
-        mobileSidebarOpen:
-          sidebarMode === "MOBILE"
-            ? latestSnapshotRef.current.mobileSidebarOpen
-            : false,
-        sidebarMode,
-      });
-    };
-
-    updateSidebar();
-    const observer = new ResizeObserver(() => updateSidebar());
-    observer.observe(pageHost);
-
-    return () => observer.disconnect();
-  }, [pageHost, patchState]);
-
   const isPlanDone = useMemo(() => {
     if (!snapshot.rollout) {
       return false;
@@ -670,11 +617,15 @@ export const usePlanDetailPage = ({
       routeTaskId,
       selectedTaskName,
       pendingLeaveConfirm: editing.pendingLeaveConfirm,
+      sidebarMode: sidebar.sidebarMode,
+      containerWidth: sidebar.containerWidth,
+      desktopSidebarWidth: sidebar.sidebarWidth,
+      mobileSidebarOpen: sidebar.isMobileSidebarOpen,
       bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
       patchState,
       refreshState,
       setEditing: editing.setEditing,
-      setMobileSidebarOpen,
+      setMobileSidebarOpen: sidebar.setMobileSidebarOpen,
       togglePhase: phase.togglePhase,
       expandPhase: phase.expandPhase,
       closeTaskPanel,
@@ -696,7 +647,7 @@ export const usePlanDetailPage = ({
       routeStageId,
       routeTaskId,
       selectedTaskName,
-      setMobileSidebarOpen,
+      sidebar,
       snapshot,
     ]
   );
