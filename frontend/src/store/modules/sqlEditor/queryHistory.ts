@@ -85,10 +85,41 @@ export const useSQLEditorQueryHistoryStore = defineStore(
       queryHistoryMap.set(key, { queryHistories: [] });
     };
 
+    /**
+     * Post-execute refresh that preserves pagination state. Fetches
+     * page 1 (no cursor) and prepends entries whose `name` isn't
+     * already cached. Keeps the existing `nextPageToken`, so a user
+     * who has loaded pages 1–3 stays at pages 1–3 after running a new
+     * query — the just-executed statement appears at the top without
+     * resetting the list.
+     */
+    const mergeLatest = async (filter: QueryHistoryFilter) => {
+      const key = getCacheKey(filter);
+      const resp = await sqlServiceClientConnect.searchQueryHistories(
+        create(SearchQueryHistoriesRequestSchema, {
+          pageSize: 5,
+          filter: getListQueryHistoryFilter(filter),
+        })
+      );
+      const existing = queryHistoryMap.get(key);
+      const existingNames = new Set(
+        (existing?.queryHistories ?? []).map((h) => h.name)
+      );
+      const fresh = resp.queryHistories.filter(
+        (h) => !existingNames.has(h.name)
+      );
+      queryHistoryMap.set(key, {
+        nextPageToken: existing?.nextPageToken,
+        queryHistories: [...fresh, ...(existing?.queryHistories ?? [])],
+      });
+      return resp;
+    };
+
     return {
       resetPageToken,
       fetchQueryHistoryList,
       getQueryHistoryList,
+      mergeLatest,
     };
   }
 );

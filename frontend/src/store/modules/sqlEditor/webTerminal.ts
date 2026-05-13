@@ -8,7 +8,12 @@ import { fromEventPattern, Observable } from "rxjs";
 import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useSQLEditorQueryHistoryStore,
+  useSQLEditorStore,
+} from "@/store";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import type {
   SQLEditorQueryParams,
@@ -266,10 +271,25 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
         });
       }
     }
-    // Admin-mode queries don't go through `useExecuteSQL` (it bails on
-    // `mode === "ADMIN"`), so emit the post-exec event from here too.
-    // `HistoryPane` listens and refetches.
-    void sqlEditorEvents.emit("query-executed");
+    // Admin-mode queries don't go through `useExecuteSQL`, so mirror
+    // its post-exec history refresh here. `mergeLatest` prepends the
+    // just-run statement without resetting the user's pagination.
+    const database = activeQuery().params?.connection.database;
+    if (database) {
+      useSQLEditorQueryHistoryStore()
+        .mergeLatest({
+          project: useSQLEditorStore().project,
+          database,
+        })
+        .catch(() => {
+          /* nothing */
+        })
+        .finally(() => {
+          void sqlEditorEvents.emit("query-executed");
+        });
+    } else {
+      void sqlEditorEvents.emit("query-executed");
+    }
     cleanup();
   });
 };

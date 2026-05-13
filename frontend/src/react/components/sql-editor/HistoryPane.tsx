@@ -1,6 +1,13 @@
 import dayjs from "dayjs";
 import { Copy, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -30,6 +37,10 @@ export function HistoryPane() {
 
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
+  // Bumped when `query-executed` fires; forces React to re-read the
+  // store cache (which `useExecuteSQL` / `webTerminal` have already
+  // refreshed via `mergeLatest` by the time we get the event).
+  const [, bumpRefresh] = useReducer((c: number) => c + 1, 0);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const currentTabDatabase = useVueState(
@@ -70,22 +81,18 @@ export function HistoryPane() {
     };
   }, [historyQuery]);
 
-  // Refetch on every post-execute event. Both `useExecuteSQL` and
-  // `webTerminal` emit `query-executed` once a statement completes.
-  // We can't reliably depend on the store's reactive cache: the React
-  // `useVueState` watch tracks `map.get(key)` only, and the cache's
-  // in-place field writes after the fetch don't fire that watcher. An
-  // explicit event + refetch sidesteps all of that.
+  // Force a re-render on every post-execute event. The store cache is
+  // already up-to-date by the time the event fires (`useExecuteSQL` /
+  // `webTerminal` chain the emit in `.finally` after `mergeLatest`
+  // resolves). The bumped reducer state triggers a render, which
+  // re-runs the `useVueState` getter and reads the merged list —
+  // preserving any pages the user had already loaded.
   useEffect(() => {
-    const refetch = async () => {
-      queryHistoryStore.resetPageToken(historyQuery);
-      await fetchHistory();
-    };
-    sqlEditorEvents.on("query-executed", refetch);
+    sqlEditorEvents.on("query-executed", bumpRefresh);
     return () => {
-      sqlEditorEvents.off("query-executed", refetch);
+      sqlEditorEvents.off("query-executed", bumpRefresh);
     };
-  }, [queryHistoryStore, historyQuery, fetchHistory]);
+  }, []);
 
   const onSearchUpdate = useCallback(
     (next: string) => {
