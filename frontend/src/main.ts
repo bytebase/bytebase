@@ -60,4 +60,14 @@ migrateStorageKeys();
   app.use(router).use(highlight).use(i18n).use(NaiveUI);
 
   app.mount("#app");
+
+  // Boot the React toaster after Vue is mounted. Importing mountToaster
+  // pulls in @/react/lib/toast as a side effect, which registers the
+  // bb.vue-notification window listener at module-eval time. Any
+  // subsequent pushNotification reaches the React renderer.
+  const toasterRoot = document.getElementById("bb-toaster-root");
+  if (toasterRoot) {
+    const { mountToaster } = await import("./react/mountToaster");
+    void mountToaster(toasterRoot);
+  }
 })();
