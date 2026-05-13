@@ -10,6 +10,7 @@ import {
   BindingSchema,
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
+import { InstanceRoleSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
@@ -71,6 +72,7 @@ const mocks = vi.hoisted(() => ({
   listDatabaseGroups: vi.fn(),
   getSheet: vi.fn(),
   createSheet: vi.fn(),
+  listInstanceRoles: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -102,6 +104,9 @@ vi.mock("@/connect", () => ({
   sheetServiceClientConnect: {
     getSheet: mocks.getSheet,
     createSheet: mocks.createSheet,
+  },
+  instanceRoleServiceClientConnect: {
+    listInstanceRoles: mocks.listInstanceRoles,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -667,6 +672,24 @@ describe("useAppStore", () => {
     expect(first).toEqual(sheet);
     expect(second).toEqual(sheet);
     expect(mocks.getSheet).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates instance role fetches per instance", async () => {
+    const instance = "instances/i1";
+    const roles = [
+      createProto(InstanceRoleSchema, { name: `${instance}/roles/admin` }),
+    ];
+    mocks.listInstanceRoles.mockResolvedValueOnce({ roles });
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchInstanceRoles(instance),
+      store.getState().fetchInstanceRoles(instance),
+    ]);
+
+    expect(first).toEqual(roles);
+    expect(second).toEqual(roles);
+    expect(mocks.listInstanceRoles).toHaveBeenCalledTimes(1);
   });
 
   test("notify() routes to the React toast manager", async () => {

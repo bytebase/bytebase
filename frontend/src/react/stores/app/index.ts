@@ -4,6 +4,7 @@ import { createDatabaseSlice } from "./database";
 import { createDBGroupSlice } from "./dbGroup";
 import { createIamSlice } from "./iam";
 import { createInstanceSlice } from "./instance";
+import { createInstanceRoleSlice } from "./instanceRole";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
@@ -29,6 +30,7 @@ export const createAppStore = () =>
     ...createDatabaseSlice(...args),
     ...createDBGroupSlice(...args),
     ...createSheetSlice(...args),
+    ...createInstanceRoleSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));
