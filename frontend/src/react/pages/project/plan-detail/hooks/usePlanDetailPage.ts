@@ -24,6 +24,7 @@ import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "../shell/hooks/fetchPlanSnapshot";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { useInitialFetch } from "../shell/hooks/useInitialFetch";
+import { useLeaveGuard } from "../shell/hooks/useLeaveGuard";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
 import { usePolling } from "../shell/hooks/usePolling";
 import { useRedirects } from "../shell/hooks/useRedirects";
@@ -160,9 +161,7 @@ export const usePlanDetailPage = ({
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const latestSnapshotRef = useRef(snapshot);
-  // Target route captured when the guard intercepts a navigation. We cancel
-  // that navigation synchronously and re-issue it after the user confirms.
-  const pendingLeaveTargetRef = useRef<string | null>(null);
+  const { resolveLeaveConfirm } = useLeaveGuard();
   const isEditing = editing.isEditing;
 
   // routeQuery is a fresh object on every router navigation. Stash the latest
@@ -217,58 +216,6 @@ export const usePlanDetailPage = ({
     storeApi,
     patchState,
   });
-
-  const resolveLeaveConfirm = useCallback(
-    (confirmed: boolean) => {
-      const target = confirmed ? pendingLeaveTargetRef.current : null;
-      pendingLeaveTargetRef.current = null;
-      editing.setPendingLeaveConfirm(false);
-      if (target) {
-        editing.bypassLeaveGuardOnce();
-        // Replace (not push) so a confirmed-discard navigation doesn't leave
-        // an extra entry that lets Back return to the discarded plan. Works
-        // correctly whether the original navigation was push, replace, or
-        // browser back/forward.
-        void router.replace(target);
-      }
-    },
-    [editing]
-  );
-
-  useEffect(() => {
-    if (!isEditing) {
-      // Editing scope ended (e.g. async save completed) while a leave
-      // prompt is open — there's nothing unsaved anymore, so navigate to
-      // the captured target without further confirmation.
-      if (pendingLeaveTargetRef.current) {
-        resolveLeaveConfirm(true);
-      }
-      return;
-    }
-
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.returnValue = t("common.leave-without-saving");
-      event.preventDefault();
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    const removeGuard = router.beforeEach((to, _from, next) => {
-      if (storeApi.getState().isLeaveGuardBypassed()) {
-        next();
-        return;
-      }
-      // Cancel the navigation synchronously and remember the target so we
-      // can re-issue it from resolveLeaveConfirm after the user confirms.
-      // Always overwrite the pending target — the latest navigation wins.
-      pendingLeaveTargetRef.current = to.fullPath;
-      editing.setPendingLeaveConfirm(true);
-      next(false);
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      removeGuard();
-    };
-  }, [editing, isEditing, resolveLeaveConfirm, storeApi, t]);
 
   useEffect(() => {
     if (snapshot.isCreating) {
