@@ -4,6 +4,7 @@ import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import {
   BindingSchema,
   IamPolicySchema,
@@ -61,6 +62,8 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   createProject: vi.fn(),
   getInstance: vi.fn(),
+  getDatabase: vi.fn(),
+  batchGetDatabases: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -79,6 +82,10 @@ vi.mock("@/connect", () => ({
   },
   instanceServiceClientConnect: {
     getInstance: mocks.getInstance,
+  },
+  databaseServiceClientConnect: {
+    getDatabase: mocks.getDatabase,
+    batchGetDatabases: mocks.batchGetDatabases,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -564,6 +571,25 @@ describe("useAppStore", () => {
     expect(second).toBe(instance);
     expect(mocks.getInstance).toHaveBeenCalledTimes(1);
     expect(store.getState().instancesByName[instance.name]).toBe(instance);
+  });
+
+  test("deduplicates database fetches and caches the result", async () => {
+    const dbName = "instances/i1/databases/db1";
+    const database = createProto(DatabaseSchema$, { name: dbName });
+    mocks.getDatabase.mockResolvedValueOnce(database);
+    const store = createAppStore();
+
+    const [first, second, third] = await Promise.all([
+      store.getState().fetchDatabase(dbName),
+      store.getState().fetchDatabase(dbName),
+      store.getState().fetchDatabase(dbName),
+    ]);
+
+    expect(first).toEqual(database);
+    expect(second).toEqual(database);
+    expect(third).toEqual(database);
+    expect(mocks.getDatabase).toHaveBeenCalledTimes(1);
+    expect(store.getState().databasesByName[dbName]).toEqual(database);
   });
 
   test("notify() routes to the React toast manager", async () => {

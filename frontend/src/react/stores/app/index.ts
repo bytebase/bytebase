@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createAuthSlice } from "./auth";
+import { createDatabaseSlice } from "./database";
 import { createIamSlice } from "./iam";
 import { createInstanceSlice } from "./instance";
 import { createNotificationSlice } from "./notification";
@@ -23,6 +24,7 @@ export const createAppStore = () =>
     ...createIamSlice(...args),
     ...createProjectSlice(...args),
     ...createInstanceSlice(...args),
+    ...createDatabaseSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));

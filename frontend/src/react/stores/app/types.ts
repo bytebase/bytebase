@@ -3,6 +3,7 @@ import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import type {
   Instance,
@@ -124,6 +125,14 @@ export type InstanceSlice = {
   fetchInstance: (name: string) => Promise<Instance | undefined>;
 };
 
+export type DatabaseSlice = {
+  databasesByName: Record<string, Database>;
+  databaseRequests: Record<string, Promise<Database | undefined>>;
+  databaseErrorsByName: Record<string, Error | undefined>;
+  fetchDatabase: (name: string) => Promise<Database | undefined>;
+  batchFetchDatabases: (names: string[]) => Promise<Database[]>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -140,6 +149,7 @@ export type AppStoreState = AuthSlice &
   IamSlice &
   ProjectSlice &
   InstanceSlice &
+  DatabaseSlice &
   NotificationSlice &
   PreferencesSlice;
 
