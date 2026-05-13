@@ -141,7 +141,7 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
 
-vi.mock("@/components/ColumnDataTable/utils", () => ({
+vi.mock("@/react/lib/column-data-table/utils", () => ({
   updateColumnCatalog: mocks.updateColumnCatalog,
   updateTableCatalog: mocks.updateTableCatalog,
 }));

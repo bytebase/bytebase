@@ -1,5 +1,5 @@
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import type { PayloadValueType } from "./types";
+import type { PayloadValueType } from "./rule-config-types";
 
 export const getRulePayload = (rule: RuleTemplateV2): PayloadValueType[] => {
   const { componentList } = rule;

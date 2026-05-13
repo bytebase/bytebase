@@ -25,8 +25,13 @@ const vueImportPattern = /from\s+["']([^"']+\.vue)["']/g;
 // components — but React must not reach across.
 const bannedReactToVueModulePrefixes = [
   "@/components/MonacoEditor",
-  // Plan logic moved to @/react/lib/plan/ — Vue dir no longer exists.
+  // Framework-neutral helpers that were moved out of components/ into the
+  // React layer. The Vue counterpart directories no longer exist; this
+  // entry locks the path back from being recreated.
   "@/components/Plan",
+  "@/components/SQLReview",
+  "@/components/ProjectMember",
+  "@/components/ColumnDataTable",
 ];
 
 describe("React layer must not import .vue files", () => {

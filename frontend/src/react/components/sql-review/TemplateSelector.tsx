@@ -1,11 +1,11 @@
 import { CheckCircle } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { rulesToTemplate } from "@/components/SQLReview/components/utils";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Badge } from "@/react/components/ui/badge";
 import { Separator } from "@/react/components/ui/separator";
 import { useVueState } from "@/react/hooks/useVueState";
+import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { cn } from "@/react/lib/utils";
 import { useProjectV1Store, useSQLReviewStore } from "@/store";
 import {

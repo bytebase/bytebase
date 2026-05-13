@@ -24,7 +24,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/components/ProjectMember/utils", () => ({
+vi.mock("@/react/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: (role: string) =>
     role === "roles/sqlEditorUser" ? "DDL/DML" : undefined,
 }));

@@ -3,10 +3,6 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  getRoleEnvironmentLimitationKind,
-  roleHasDatabaseLimitation,
-} from "@/components/ProjectMember/utils";
 import { issueServiceClientConnect } from "@/connect";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
@@ -35,6 +31,10 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  getRoleEnvironmentLimitationKind,
+  roleHasDatabaseLimitation,
+} from "@/react/lib/project-member/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {

@@ -1,9 +1,6 @@
 import { CircleHelpIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents/types";
-import { getRulePayload } from "@/components/SQLReview/components/RuleConfigComponents/utils";
-import { payloadValueListToComponentList } from "@/components/SQLReview/components/utils";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -15,6 +12,9 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import i18n from "@/react/i18n";
+import type { PayloadValueType } from "@/react/lib/sql-review/rule-config-types";
+import { getRulePayload } from "@/react/lib/sql-review/rule-config-utils";
+import { payloadValueListToComponentList } from "@/react/lib/sql-review/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type {

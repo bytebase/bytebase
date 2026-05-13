@@ -5,7 +5,7 @@ import type {
 } from "@/types";
 import { convertPolicyRuleToRuleTemplate, ruleTemplateMapV2 } from "@/types";
 import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
-import type { PayloadValueType } from "./RuleConfigComponents";
+import type { PayloadValueType } from "./rule-config-types";
 
 export const getRuleKey = (rule: RuleTemplateV2) =>
   `${rule.engine}:${rule.type}`;

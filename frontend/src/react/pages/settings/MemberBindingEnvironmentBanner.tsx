@@ -1,6 +1,6 @@
-import type { EnvLimitationKind } from "@/components/ProjectMember/utils";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
+import type { EnvLimitationKind } from "@/react/lib/project-member/utils";
 import type { ProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 
 export function MemberBindingEnvironmentBanner({

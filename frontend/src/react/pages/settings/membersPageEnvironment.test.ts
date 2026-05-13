@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 
-vi.mock("@/components/ProjectMember/utils", () => ({
+vi.mock("@/react/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: (role: string) =>
     role === "roles/sqlEditorUser" ? "DDL/DML" : undefined,
 }));

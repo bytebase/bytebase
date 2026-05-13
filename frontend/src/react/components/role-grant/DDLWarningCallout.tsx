@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import type { EnvLimitationKind } from "@/components/ProjectMember/utils";
 import { Alert } from "@/react/components/ui/alert";
+import type { EnvLimitationKind } from "@/react/lib/project-member/utils";
 
 type DDLWarningProps =
   | { type: "drawer"; kind: EnvLimitationKind }

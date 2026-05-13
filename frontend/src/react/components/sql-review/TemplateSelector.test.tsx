@@ -39,7 +39,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
-vi.mock("@/components/SQLReview/components/utils", () => ({
+vi.mock("@/react/lib/sql-review/utils", () => ({
   rulesToTemplate: mocks.rulesToTemplate,
 }));
 

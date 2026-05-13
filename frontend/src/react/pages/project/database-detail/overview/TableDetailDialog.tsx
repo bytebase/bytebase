@@ -4,10 +4,6 @@ import { Pencil, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  updateColumnCatalog,
-  updateTableCatalog,
-} from "@/components/ColumnDataTable/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -28,6 +24,10 @@ import {
 } from "@/react/components/ui/table";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  updateColumnCatalog,
+  updateTableCatalog,
+} from "@/react/lib/column-data-table/utils";
 import {
   getTableCatalog,
   pushNotification,
