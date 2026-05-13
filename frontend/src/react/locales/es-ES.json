@@ -909,7 +909,6 @@
   "db.start-to-sync-schema": "Comenzar a sincronizar el esquema",
   "db.successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado exitosamente para la base de datos '{{0}}'.",
   "db.syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
-  "dynamic.resource.instance": "ID de instancia",
   "environment": {
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
     "reorder": "Reordenar entornos",

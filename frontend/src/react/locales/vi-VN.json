@@ -909,7 +909,6 @@
   "db.start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
   "db.successfully-synced-schema-for-database-database-value-name": "Đồng bộ hóa lược đồ thành công cho cơ sở dữ liệu '{{0}}'.",
   "db.syncing-databases-for-instance": "Đang đồng bộ hóa cơ sở dữ liệu cho {{0}}...",
-  "dynamic.resource.instance": "ID phiên bản",
   "environment": {
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
     "reorder": "Sắp xếp lại môi trường",

@@ -909,7 +909,6 @@
   "db.start-to-sync-schema": "スキーマの同期を開始します",
   "db.successfully-synced-schema-for-database-database-value-name": "データベース '{{0}}' のスキーマが正常に同期されました。",
   "db.syncing-databases-for-instance": "{{0}} のデータベースを同期中...",
-  "dynamic.resource.instance": "インスタンス ID",
   "environment": {
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
     "reorder": "環境の並べ替え",

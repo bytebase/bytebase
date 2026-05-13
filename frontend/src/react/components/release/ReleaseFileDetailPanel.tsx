@@ -127,7 +127,8 @@ export function ReleaseFileDetailPanel({
         ) : (
           <ReadonlyMonaco
             content={statement}
-            className="h-auto max-h-[480px] min-h-[120px] border border-control-border rounded-xs text-sm overflow-clip relative"
+            max={480}
+            className="border border-control-border rounded-xs text-sm overflow-clip relative"
           />
         )}
       </div>

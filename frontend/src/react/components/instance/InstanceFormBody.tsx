@@ -15,6 +15,7 @@ import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LabelListEditor } from "@/react/components/LabelListEditor";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
+import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -32,7 +33,11 @@ import {
   environmentNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { isValidEnvironmentName, UNKNOWN_ID } from "@/types";
+import {
+  isValidEnvironmentName,
+  UNKNOWN_ID,
+  type ValidatedMessage,
+} from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AddressSchema,
@@ -258,248 +263,6 @@ function InstanceEngineRadioGrid({
           )}
         </button>
       ))}
-    </div>
-  );
-}
-
-// Matches Vue ResourceIdField component behavior exactly:
-// - Auto-generates resource ID from title with escape + optional random suffix on duplicate
-// - Shows inline "Instance ID: xxx  It cannot be changed later. Edit" by default
-// - Only shows input field when "Edit" is clicked (manualEdit mode)
-// - Validates: empty, min/max length, pattern, duplicate via fetchResource
-
-const RESOURCE_ID_CHARS = "abcdefghijklmnopqrstuvwxyz1234567890-";
-const RESOURCE_ID_PATTERN = /^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$/;
-
-function randomString(len: number): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < len; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-function escapeResourceTitle(str: string): string {
-  return str
-    .toLowerCase()
-    .split("")
-    .map((char) => {
-      if (char === " ") return "-";
-      if (char.match(/\s/)) return "";
-      if (RESOURCE_ID_CHARS.includes(char)) return char;
-      // Map non-ASCII to a deterministic letter
-      const alpha = "abcdefghijklmnopqrstuvwxyz";
-      return alpha.charAt(char.charCodeAt(0) % alpha.length);
-    })
-    .join("")
-    .toLowerCase();
-}
-
-interface ValidatedMessage {
-  type: "error" | "warning";
-  message: string;
-}
-
-function ResourceIdField({
-  value,
-  onChange,
-  onValidationChange,
-  resourceTitle,
-  readonly,
-  fetchResource,
-}: {
-  value: string;
-  onChange: (id: string) => void;
-  onValidationChange?: (valid: boolean) => void;
-  resourceTitle: string;
-  readonly: boolean;
-  fetchResource?: (id: string) => Promise<unknown>;
-}) {
-  const { t } = useTranslation();
-  const [resourceId, setResourceId] = useState(value);
-  const [manualEdit, setManualEdit] = useState(false);
-  const [validatedMessages, setValidatedMessages] = useState<
-    ValidatedMessage[]
-  >([]);
-  const initializedRef = useRef(false);
-
-  const resourceName = t("dynamic.resource.instance");
-
-  const validate = useCallback(
-    async (id: string): Promise<ValidatedMessage[]> => {
-      const msgs: ValidatedMessage[] = [];
-      if (id === "") {
-        msgs.push({
-          type: "error",
-          message: t("resource-id.validation.empty", {
-            resource: resourceName,
-          }),
-        });
-      } else if (id.length > 64) {
-        msgs.push({
-          type: "error",
-          message: t("resource-id.validation.overflow", {
-            resource: resourceName,
-          }),
-        });
-      } else if (!RESOURCE_ID_PATTERN.test(id)) {
-        msgs.push({
-          type: "error",
-          message: t("resource-id.validation.pattern", {
-            resource: resourceName,
-          }),
-        });
-      }
-
-      if (msgs.length === 0 && fetchResource && id && !readonly) {
-        try {
-          const resource = await fetchResource(id);
-          if (resource) {
-            msgs.push({
-              type: "error",
-              message: t("resource-id.validation.duplicated", {
-                resource: resourceName,
-              }),
-            });
-          }
-        } catch {
-          // NotFound = available, which is good
-        }
-      }
-      return msgs;
-    },
-    [fetchResource, readonly, resourceName, t]
-  );
-
-  const handleResourceIdChange = useCallback(
-    async (newValue: string) => {
-      setResourceId(newValue);
-      onChange(newValue);
-      const msgs = await validate(newValue);
-      setValidatedMessages(msgs);
-      onValidationChange?.(msgs.length === 0 && newValue !== "");
-      return msgs;
-    },
-    [onChange, validate, onValidationChange]
-  );
-
-  // Auto-generate from title (mirrors Vue watcher on resourceTitle)
-  useEffect(() => {
-    if (readonly || manualEdit) return;
-
-    const escapedTitle = escapeResourceTitle(resourceTitle);
-    const name = escapedTitle || "";
-    if (!name) return;
-
-    (async () => {
-      const msgs = await handleResourceIdChange(name);
-
-      // On first init, if duplicate, append random suffix
-      if (!initializedRef.current) {
-        if (msgs.length > 0) {
-          await handleResourceIdChange(
-            name + "-" + randomString(4).toLowerCase()
-          );
-        }
-      }
-      initializedRef.current = true;
-    })();
-  }, [resourceTitle]);
-
-  if (readonly) {
-    if (!resourceId) return null;
-    return (
-      <div className="sm:col-span-3 sm:col-start-1 -mt-4">
-        <div className="mt-4 textinfolabel text-sm flex items-center gap-x-1">
-          {t("resource-id.self", { resource: resourceName })}:{" "}
-          <span className="text-control-light font-medium">{resourceId}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!manualEdit) {
-    return (
-      <div className="sm:col-span-3 sm:col-start-1 -mt-4">
-        <div className="mt-4 textinfolabel text-sm flex items-start flex-wrap gap-x-1">
-          <div className="flex items-center gap-x-1">
-            {t("resource-id.self", { resource: resourceName })}:
-            {resourceId ? (
-              <span className="text-control-light font-medium mr-1">
-                {resourceId}
-              </span>
-            ) : (
-              <span className="text-control-placeholder italic">
-                &lt;EMPTY&gt;
-              </span>
-            )}
-          </div>
-          <div>
-            <span>{t("resource-id.cannot-be-changed-later")}</span>
-            <span
-              className="text-accent font-medium cursor-pointer hover:opacity-80 ml-1"
-              onClick={() => setManualEdit(true)}
-            >
-              {t("common.edit")}
-            </span>
-          </div>
-        </div>
-        {validatedMessages.length > 0 && (
-          <ul className="w-full my-2 flex flex-col gap-y-2 list-disc list-outside pl-4">
-            {validatedMessages.map((msg) => (
-              <li
-                key={msg.message}
-                className={`text-xs break-words ${
-                  msg.type === "warning" ? "text-warning" : "text-error"
-                }`}
-              >
-                {msg.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="sm:col-span-3 sm:col-start-1 -mt-4">
-      <div className="mt-4">
-        <label className="textlabel flex items-center">
-          {t("resource-id.self", { resource: resourceName })}
-          <span className="ml-0.5 text-error">*</span>
-        </label>
-        <div className="textinfolabel mb-2 mt-1">
-          {t("resource-id.description", { resource: resourceName })}
-        </div>
-        <Input
-          value={resourceId}
-          className={`w-full max-w-[40rem] ${
-            validatedMessages.some((m) => m.type === "error")
-              ? "border-error"
-              : ""
-          }`}
-          placeholder={t("resource-id.self", { resource: resourceName })}
-          onChange={(e) => {
-            handleResourceIdChange(e.target.value);
-          }}
-        />
-      </div>
-      {validatedMessages.length > 0 && (
-        <ul className="w-full my-2 flex flex-col gap-y-2 list-disc list-outside pl-4">
-          {validatedMessages.map((msg) => (
-            <li
-              key={msg.message}
-              className={`text-xs break-words ${
-                msg.type === "warning" ? "text-warning" : "text-error"
-              }`}
-            >
-              {msg.message}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
@@ -938,6 +701,35 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       setBasicInfo((prev) => ({ ...prev, name: `instances/${id}` }));
     },
     [setBasicInfo]
+  );
+
+  // Duplicate-instance check used by the shared ResourceIdField's `validate`
+  // callback. Tries to fetch the instance by ID; a successful fetch means the
+  // ID is taken. A NotFound (or any error) means the ID is available.
+  const validateInstanceId = useCallback(
+    async (id: string): Promise<ValidatedMessage[]> => {
+      if (!isCreating || !id) return [];
+      try {
+        const existing = await instanceV1Store.getOrFetchInstanceByName(
+          `${instanceNamePrefix}${id}`,
+          true /* silent */
+        );
+        if (existing) {
+          return [
+            {
+              type: "error",
+              message: t("resource-id.validation.duplicated", {
+                resource: t("common.instance"),
+              }),
+            },
+          ];
+        }
+      } catch {
+        // NotFound = available.
+      }
+      return [];
+    },
+    [instanceV1Store, isCreating, t]
   );
 
   const currentMongoDBConnectionSchema = useMemo(() => {
@@ -1398,16 +1190,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               <ResourceIdField
                 suffix
                 value={resourceId}
-                onChange={setResourceId}
-                onValidationChange={setResourceIdValidated}
+                resourceName={t("common.instance")}
                 resourceTitle={basicInfo.title}
                 readonly={!isCreating}
-                fetchResource={(id) =>
-                  instanceV1Store.getOrFetchInstanceByName(
-                    `${instanceNamePrefix}${id}`,
-                    true /* silent */
-                  )
-                }
+                validate={validateInstanceId}
+                onChange={setResourceId}
+                onValidationChange={setResourceIdValidated}
               />
             </div>
 

@@ -909,7 +909,6 @@
   "db.start-to-sync-schema": "开始同步 schema",
   "db.successfully-synced-schema-for-database-database-value-name": "成功为数据库 '{{0}}' 同步 schema。",
   "db.syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
-  "dynamic.resource.instance": "实例 ID",
   "environment": {
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
     "reorder": "重新排序环境",

@@ -1834,7 +1834,7 @@ function CreateWizardDrawer({
                       <ResourceIdField
                         ref={resourceIdFieldRef}
                         value={resourceId}
-                        resourceName={t("settings.menu.sso")}
+                        resourceName="SSO"
                         resourceTitle={title}
                         suffix
                         validate={validateResourceId}

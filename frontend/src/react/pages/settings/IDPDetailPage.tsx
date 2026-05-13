@@ -1503,7 +1503,7 @@ export function IDPDetailPage() {
               <div className="mt-1">
                 <ResourceIdField
                   suffix
-                  resourceName={t("settings.menu.sso")}
+                  resourceName="SSO"
                   readonly={true}
                   value={resourceId}
                 />
