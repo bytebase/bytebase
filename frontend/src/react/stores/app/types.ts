@@ -13,6 +13,7 @@ import type {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
   PlanFeature,
   PlanType,
@@ -154,6 +155,14 @@ export type DBGroupSlice = {
   listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
 };
 
+export type SheetSlice = {
+  sheetsByName: Record<string, Sheet>;
+  sheetRequests: Record<string, Promise<Sheet | undefined>>;
+  sheetErrorsByName: Record<string, Error | undefined>;
+  fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
+  createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -172,6 +181,7 @@ export type AppStoreState = AuthSlice &
   InstanceSlice &
   DatabaseSlice &
   DBGroupSlice &
+  SheetSlice &
   NotificationSlice &
   PreferencesSlice;
 

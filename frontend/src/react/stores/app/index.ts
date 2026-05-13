@@ -7,6 +7,7 @@ import { createInstanceSlice } from "./instance";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
+import { createSheetSlice } from "./sheet";
 import { createWorkspaceSlice } from "./workspace";
 
 export type { AppStoreState } from "./types";
@@ -27,6 +28,7 @@ export const createAppStore = () =>
     ...createInstanceSlice(...args),
     ...createDatabaseSlice(...args),
     ...createDBGroupSlice(...args),
+    ...createSheetSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));

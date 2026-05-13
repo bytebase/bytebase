@@ -21,6 +21,7 @@ import {
   SettingValueSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   PlanFeature,
   PlanType,
@@ -68,6 +69,8 @@ const mocks = vi.hoisted(() => ({
   listDatabases: vi.fn(),
   getDatabaseGroup: vi.fn(),
   listDatabaseGroups: vi.fn(),
+  getSheet: vi.fn(),
+  createSheet: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -95,6 +98,10 @@ vi.mock("@/connect", () => ({
   databaseGroupServiceClientConnect: {
     getDatabaseGroup: mocks.getDatabaseGroup,
     listDatabaseGroups: mocks.listDatabaseGroups,
+  },
+  sheetServiceClientConnect: {
+    getSheet: mocks.getSheet,
+    createSheet: mocks.createSheet,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -641,6 +648,25 @@ describe("useAppStore", () => {
     expect(first).toEqual(group);
     expect(second).toEqual(group);
     expect(mocks.getDatabaseGroup).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates sheet fetches and caches the result", async () => {
+    const name = "projects/p1/sheets/s1";
+    const sheet = createProto(SheetSchema, {
+      name,
+      content: new Uint8Array(),
+    });
+    mocks.getSheet.mockResolvedValueOnce(sheet);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchSheet(name),
+      store.getState().fetchSheet(name),
+    ]);
+
+    expect(first).toEqual(sheet);
+    expect(second).toEqual(sheet);
+    expect(mocks.getSheet).toHaveBeenCalledTimes(1);
   });
 
   test("notify() routes to the React toast manager", async () => {
