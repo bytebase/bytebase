@@ -16,11 +16,13 @@ export function ColumnResizeHandle({
   return (
     <div
       className={cn(
-        "absolute right-0 top-1/4 h-1/2 w-[3px] cursor-col-resize rounded-full bg-control-bg-hover hover:bg-accent/60 active:bg-accent transition-colors",
+        "group absolute right-[-6px] top-0 z-10 h-full w-3 cursor-col-resize",
         className
       )}
       onMouseDown={onMouseDown}
       onClick={(e) => e.stopPropagation()}
-    />
+    >
+      <span className="pointer-events-none absolute left-1/2 top-1/4 h-1/2 w-[3px] -translate-x-1/2 rounded-full bg-control-bg-hover transition-colors group-hover:bg-accent/60 group-active:bg-accent" />
+    </div>
   );
 }
