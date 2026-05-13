@@ -558,6 +558,35 @@ func TestOmniQuerySpan_InListAccessTables(t *testing.T) {
 	}, sortedSources(span.SourceColumns))
 }
 
+func TestOmniQuerySpan_CorrelatedExistsWithDateaddDatepart(t *testing.T) {
+	q := newOmniTestExtractor(t, "db")
+	sql := `
+SELECT outer_t.a
+FROM t AS outer_t
+WHERE outer_t.c > DATEADD(HOUR, 2, GETUTCDATE())
+  AND NOT EXISTS (
+    SELECT 1
+    FROM t1 AS inner_t
+    WHERE inner_t.a = outer_t.a
+      AND inner_t.b > outer_t.b
+  )
+ORDER BY outer_t.a
+`
+	span, err := q.getOmniQuerySpan(context.Background(), sql)
+	require.NoError(t, err)
+	require.Len(t, span.Results, 1)
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t", Column: "a"},
+	}, sortedSources(span.Results[0].SourceColumns))
+	require.ElementsMatch(t, []base.ColumnResource{
+		{Database: "db", Schema: "dbo", Table: "t", Column: "a"},
+		{Database: "db", Schema: "dbo", Table: "t", Column: "b"},
+		{Database: "db", Schema: "dbo", Table: "t", Column: "c"},
+		{Database: "db", Schema: "dbo", Table: "t1", Column: "a"},
+		{Database: "db", Schema: "dbo", Table: "t1", Column: "b"},
+	}, sortedSources(span.PredicateColumns))
+}
+
 // TestOmniQuerySpan_UnresolvedColumnErrors verifies that an unresolvable
 // column reference is surfaced as an error (both from SELECT list and from
 // WHERE predicates) rather than producing a silently-partial span. Matches
