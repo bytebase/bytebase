@@ -31,8 +31,8 @@ import {
   hasProjectPermissionV2,
   humanizeTs,
 } from "@/utils";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
 import { usePlanCheckActions } from "../hooks/usePlanCheckActions";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { getPlanCheckSummaryWithFallback } from "../utils/planCheck";
 import { getPlanDetailSidebarStatusInfo } from "../utils/sidebarStatus";
 import { PlanDetailSidebarApprovalFlow } from "./PlanDetailApprovalFlow";

@@ -18,7 +18,7 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractDatabaseResourceName, humanizeDate } from "@/utils";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import { PlanDetailTaskRunTable } from "../PlanDetailTaskRunTable";
 import { DeployTaskStatus } from "./DeployTaskStatus";

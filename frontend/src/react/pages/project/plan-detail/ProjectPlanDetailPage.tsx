@@ -28,16 +28,16 @@ import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailMetadataSidebar } from "./components/PlanDetailMetadataSidebar";
-import {
-  PlanDetailProvider,
-  usePlanDetailContext,
-} from "./context/PlanDetailContext";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import {
   SIDEBAR_WIDTH_NARROW_PX,
   WIDE_SIDEBAR_BREAKPOINT_PX,
 } from "./shell/constants";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
+import {
+  PlanDetailProvider,
+  usePlanDetailContext,
+} from "./shell/PlanDetailContext";
 import {
   buildChangesSummary,
   buildDeploySummary,

@@ -26,7 +26,7 @@ import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { DatabaseTarget } from "../PlanDetailChangesBranch";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {

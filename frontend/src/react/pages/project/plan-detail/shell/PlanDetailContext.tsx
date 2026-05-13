@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext } from "react";
-import type { PlanDetailPageState } from "../shell/hooks/types";
+import type { PlanDetailPageState } from "./hooks/types";
 
 const PlanDetailContext = createContext<PlanDetailPageState | null>(null);
 

@@ -42,8 +42,8 @@ import {
   extractSheetUID,
   hasProjectPermissionV2,
 } from "@/utils";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
 import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidation";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getCreateIssueBlockingErrors,
   getCreateIssueConfirmErrors,

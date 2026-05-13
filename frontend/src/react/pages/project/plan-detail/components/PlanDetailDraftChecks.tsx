@@ -14,7 +14,7 @@ import {
 } from "@/types/proto-es/v1/release_service_pb";
 import { extractProjectResourceName } from "@/utils";
 import { getSheetStatement } from "@/utils/v1/sheet";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { getLocalSheetByName } from "../utils/localSheet";
 import { transformReleaseCheckResultsToPlanCheckRuns } from "../utils/planCheck";
 

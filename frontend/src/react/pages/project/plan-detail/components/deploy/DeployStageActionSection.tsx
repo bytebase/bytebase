@@ -6,7 +6,7 @@ import {
   Task_Status,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {
   type PlanDetailTaskRolloutAction,

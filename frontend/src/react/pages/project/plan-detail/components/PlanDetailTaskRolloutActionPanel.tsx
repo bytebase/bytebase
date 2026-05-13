@@ -50,7 +50,7 @@ import {
   preloadRolloutPermissionContext,
   RUNNABLE_TASK_STATUSES,
 } from "../../issue-detail/utils/rollout";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
 

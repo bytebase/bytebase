@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { DeployTaskItem } from "./DeployTaskItem";
 import { DeployTaskToolbar } from "./DeployTaskToolbar";
 import { isDeployTaskSelectable } from "./taskActionState";

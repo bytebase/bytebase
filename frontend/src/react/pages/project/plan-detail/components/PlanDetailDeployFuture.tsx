@@ -28,7 +28,7 @@ import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { isApprovalCompleted } from "../../issue-detail/utils/approval";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 export function PlanDetailDeployFuture() {
   const { t } = useTranslation();

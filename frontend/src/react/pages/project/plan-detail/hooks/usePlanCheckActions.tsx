@@ -17,7 +17,7 @@ import {
   RunPlanChecksRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 // Wraps the run / refresh logic shared between PlanDetailChecks (per-spec
 // section in the body) and the plan-level summary in PlanDetailMetadataSidebar.

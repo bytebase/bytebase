@@ -57,7 +57,7 @@ import {
   memberMapToRolesInProjectIAM,
 } from "@/utils";
 import { extractIssueUID } from "@/utils/v1/issue/issue";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
 

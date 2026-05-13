@@ -106,8 +106,8 @@ import {
   getSheetStatement,
   setSheetStatement as setLocalSheetStatement,
 } from "@/utils/v1/sheet";
-import { usePlanDetailContext } from "../context/PlanDetailContext";
 import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidation";
+import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getDefaultGhostConfig,
   getGhostConfig as getGhostConfigFromStatement,
