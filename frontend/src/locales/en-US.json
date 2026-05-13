@@ -296,7 +296,6 @@
       "type-limit": "Only support {extension} file"
     },
     "filter-by-name": "Filter by name",
-    "finish": "Finish",
     "fork": "Fork",
     "from": "From",
     "general": "General",
@@ -339,9 +338,7 @@
     "no-data": "No data",
     "no-license": "No license",
     "not-started": "Not Started",
-    "off": "Off",
     "ok": "OK",
-    "on": "On",
     "only-creator-allowed-export": "Only the creator is allowed to export",
     "operation": "Operation",
     "operations": "Operations",
@@ -787,7 +784,6 @@
   },
   "environment": {
     "delete-description": "Delete environment will also remove it from related instances and databases. You cannot undo this action",
-    "production-environment": "Production environment",
     "reorder": "Reorder Environments",
     "select": "Select environment",
     "successfully-updated-environment": "Successfully updated environment '{name}'."
@@ -873,7 +869,6 @@
         }
       }
     },
-    "all": "All instances",
     "archive-instance-instance-name": "Archive instance '{0}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
     "authentication-database": "Authentication Database",
@@ -1428,7 +1423,6 @@
     }
   },
   "project": {
-    "all": "All projects",
     "batch": {
       "archive": {
         "description": "This will archive the selected projects. You can restore them later if needed.",
@@ -1464,8 +1458,7 @@
     },
     "members": {
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
-      "never-expires": "Never",
-      "workspace-level-roles": "Workspace level roles"
+      "never-expires": "Never"
     },
     "overview": {
       "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
@@ -1671,7 +1664,6 @@
     "validation": {
       "duplicated": "The {resource} ID already exists. Please choose another one.",
       "empty": "The {resource} ID cannot be empty",
-      "minlength": "The {resource} ID is too short. It should have at least 1 character.",
       "overflow": "The {resource} ID is too long. It should have less than 64 characters.",
       "pattern": "The {resource} ID can have lowercase letters, digits, or hyphens. It must start with a lowercase letter and end with a letter or number."
     }
@@ -1698,7 +1690,6 @@
       "self": "Project Releaser"
     },
     "project-roles": {
-      "apply-to-all-projects": "Apply to all projects",
       "self": "Project roles"
     },
     "project-viewer": {
@@ -2087,7 +2078,6 @@
       "inactive-service-accounts": "Inactive service accounts",
       "inactive-users": "Inactive users",
       "inactive-workload-identities": "Inactive workload identities",
-      "not-a-member": "Not a member yet",
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
       "revoke-access": "Revoke Access",

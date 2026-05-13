@@ -917,14 +917,6 @@ function EnvironmentTreeSection(props: {
     [selectedDatabaseNames]
   );
 
-  // Hide the env section entirely when it's the "unknown" bucket with no
-  // children (matches Vue's `v-if="env !== UNKNOWN || !treeIsEmpty"` guard).
-  if (isUnknownEnvironment && treeIsEmpty(treeByEnv.tree)) {
-    return null;
-  }
-
-  const data = treeByEnv.tree.map(toTreeDataNode);
-
   const expandedKeySet = useMemo(
     () => new Set(treeByEnv.expandedState.expandedKeys),
     [treeByEnv.expandedState.expandedKeys]
@@ -944,6 +936,17 @@ function EnvironmentTreeSection(props: {
       ),
     [treeByEnv.tree, expandedKeySet]
   );
+
+  // Hide the env section entirely when it's the "unknown" bucket with no
+  // children (matches Vue's `v-if="env !== UNKNOWN || !treeIsEmpty"` guard).
+  // Keep this guard AFTER all hook calls — early-returning before useMemo
+  // calls would change the hook order across renders and trigger the
+  // "Rendered more hooks than during the previous render" runtime error.
+  if (isUnknownEnvironment && treeIsEmpty(treeByEnv.tree)) {
+    return null;
+  }
+
+  const data = treeByEnv.tree.map(toTreeDataNode);
 
   return (
     <div className="flex flex-col gap-y-1 pt-2 pb-2">

@@ -1,6 +1,5 @@
-import { type OptionConfig } from "@/components/ExprEditor/context";
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { Factor } from "@/plugins/cel";
+import type { ResourceSelectOption } from "@/types/v2-shared";
 import {
   getDatabaseIdOptionConfig,
   getEnvironmentIdOptions,
@@ -11,6 +10,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
 } from "@/utils/cel-attributes";
+import { type OptionConfig } from "@/utils/expr";
 
 export const FactorList: Factor[] = [
   CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,

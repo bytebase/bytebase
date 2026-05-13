@@ -296,7 +296,6 @@
       "type-limit": "タイプ {extension} のファイルのみがサポートされます"
     },
     "filter-by-name": "名前でフィルタリングする",
-    "finish": "仕上げる",
     "fork": "フォーク",
     "from": "開始",
     "general": "全般",
@@ -339,9 +338,7 @@
     "no-data": "データなし",
     "no-license": "ライセンスがありません",
     "not-started": "未開始",
-    "off": "オフ",
     "ok": "わかりました",
-    "on": "オン",
     "only-creator-allowed-export": "エクスポートは作成者のみが実行できます",
     "operation": "操作",
     "operations": "操作",
@@ -787,7 +784,6 @@
   },
   "environment": {
     "delete-description": "環境を削除すると、関連するインスタンスとデータベースからも削除されます。この操作は元に戻せません",
-    "production-environment": "本番環境",
     "reorder": "環境の並べ替え",
     "select": "環境を選ぶ",
     "successfully-updated-environment": "環境「{name}」は正常に更新されました"
@@ -873,7 +869,6 @@
         }
       }
     },
-    "all": "すべてのインスタンス",
     "archive-instance-instance-name": "インスタンス '{0}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
     "authentication-database": "認証データベース",
@@ -1428,7 +1423,6 @@
     }
   },
   "project": {
-    "all": "全てのアイテム",
     "batch": {
       "archive": {
         "description": "選択したプロジェクトがアーカイブされます。必要に応じて後で復元できます。",
@@ -1464,8 +1458,7 @@
     },
     "members": {
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
-      "never-expires": "有効期限が切れることはありません",
-      "workspace-level-roles": "ワークスペースレベルのロール"
+      "never-expires": "有効期限が切れることはありません"
     },
     "overview": {
       "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"
@@ -1671,7 +1664,6 @@
     "validation": {
       "duplicated": "{resource} ID はすでに存在します。別のIDを使用してください。",
       "empty": "{resource} ID は空にできません",
-      "minlength": "{resource} ID には少なくとも 1 文字が含まれている必要があります。",
       "overflow": "{resource} ID は 64 文字未満である必要があります。",
       "pattern": "{resource} ID には、小文字、数字、またはハイフンを持つことができます。\n小文字から始めて、文字または番号で終わる必要があります。"
     }
@@ -1698,7 +1690,6 @@
       "self": "プロジェクト発行者"
     },
     "project-roles": {
-      "apply-to-all-projects": "すべてのプロジェクトに適用する",
       "self": "プロジェクトのロール"
     },
     "project-viewer": {
@@ -2087,7 +2078,6 @@
       "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-users": "非アクティブユーザー",
       "inactive-workload-identities": "非アクティブワークロードID",
-      "not-a-member": "未参加",
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
       "revoke-access": "アクセスを取り消す",

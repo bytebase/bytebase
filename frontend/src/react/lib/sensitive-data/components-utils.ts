@@ -1,14 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
-// ResourceSelectOption sits in a v2/Select Vue dir but is a framework-neutral
-// type alias over naive-ui's SelectOption. It can't move until ExprEditor/
-// context's OptionConfig (which also references it) migrates to React.
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { Factor, Operator } from "@/plugins/cel";
 import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import { AlgorithmSchema } from "@/types/proto-es/v1/setting_service_pb";
+import type { ResourceSelectOption } from "@/types/v2-shared";
 import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {

@@ -3,7 +3,6 @@ import dayjs from "dayjs";
 import { CircleHelp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -55,6 +54,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
+import { type OptionConfig } from "@/utils/expr";
 
 type RadioValue = "ALL" | "EXPRESSION" | "SELECT";
 

@@ -36,7 +36,6 @@ const planLabel: Record<number, string> = {
 };
 
 /**
- * Replaces frontend/src/components/FeatureGuard/FeatureModal.vue.
  * Subscription paywall dialog shown when the current plan doesn't include
  * a requested feature. Three copy variants:
  *  - Instance missing license → lock icon, "assign license" CTA.

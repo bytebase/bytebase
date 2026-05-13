@@ -1,13 +1,3 @@
-import { CheckIcon } from "lucide-vue-next";
-import type { VNode } from "vue";
-import { h } from "vue";
-import { type OptionConfig } from "@/components/ExprEditor/context";
-import {
-  EnvironmentV1Name,
-  InstanceV1Name,
-  RichDatabaseName,
-} from "@/components/v2";
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -26,111 +16,57 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 
-const getRenderOptionFunc = (resource: {
-  title: string | (() => VNode);
-  name: string;
-}): ((info: { node: VNode; selected: boolean }) => VNode) => {
-  return (info: { node: VNode; selected: boolean }) => {
-    return h(
-      info.node,
-      { class: "flex items-center justify-between gap-x-4" },
-      [
-        h("div", { class: "flex flex-col px-1 py-1 z-10" }, [
-          typeof resource.title === "string"
-            ? h(
-                "div",
-                { class: `textlabel ${info.selected ? "text-accent!" : ""}` },
-                resource.title
-              )
-            : resource.title(),
-          h("div", { class: "opacity-60 textinfolabel" }, resource.name),
-        ]),
-        info.selected ? h(CheckIcon, { class: "w-4 z-10" }) : undefined,
-      ]
-    );
-  };
+type LabeledOption = { value: string; label: string };
+
+export type OptionConfig = {
+  search?: (params: {
+    search: string;
+    pageToken: string;
+    pageSize: number;
+  }) => Promise<{
+    nextPageToken: string;
+    options: LabeledOption[];
+  }>;
+  fetch?: (names: string[]) => Promise<LabeledOption[]>;
+  fallback?: (value: string) => LabeledOption;
+  options: LabeledOption[];
 };
 
-export const getEnvironmentIdOptions = () => {
+export const getEnvironmentIdOptions = (): LabeledOption[] => {
   const environmentList = useEnvironmentV1Store().environmentList;
-  return environmentList.map<ResourceSelectOption<unknown>>((env) => {
-    const environmentId = env.id;
-    return {
-      label: `${env.title} (${environmentId})`,
-      value: environmentId,
-      render: getRenderOptionFunc({
-        name: env.name,
-        title: () =>
-          h(EnvironmentV1Name, {
-            environment: env,
-            link: false,
-            showColor: true,
-          }),
-      }),
-    };
-  });
+  return environmentList.map((env) => ({
+    label: `${env.title} (${env.id})`,
+    value: env.id,
+  }));
 };
 
-const getProjectIdOption = (proj: Project) => {
+const getProjectIdOption = (proj: Project): LabeledOption => {
   const projectId = extractProjectResourceName(proj.name);
   return {
     label: `${proj.title} (${projectId})`,
     value: projectId,
-    render: getRenderOptionFunc(proj),
   };
 };
 
-const getDatabasFullNameOption = (database: Database) => {
-  return {
-    label: database.name,
-    value: database.name,
-    render: getRenderOptionFunc({
-      name: database.name,
-      title: () =>
-        h(RichDatabaseName, {
-          database,
-          showEngineIcon: true,
-          showInstance: true,
-          showProject: false,
-          showArrow: true,
-        }),
-    }),
-  };
-};
+const getDatabaseFullNameOption = (database: Database): LabeledOption => ({
+  label: database.name,
+  value: database.name,
+});
 
-const getInstanceIdOption = (ins: Instance) => {
+const getInstanceIdOption = (ins: Instance): LabeledOption => {
   const instanceId = extractInstanceResourceName(ins.name);
   return {
     label: `${ins.title} (${instanceId})`,
     value: instanceId,
-    render: getRenderOptionFunc({
-      name: ins.name,
-      title: () =>
-        h(InstanceV1Name, {
-          instance: ins,
-          link: false,
-        }),
-    }),
   };
 };
 
-const getDatabaseIdOptions = (databases: Database[]) => {
-  return databases.map<ResourceSelectOption<unknown>>((database) => {
+const getDatabaseIdOptions = (databases: Database[]): LabeledOption[] => {
+  return databases.map((database) => {
     const { databaseName } = extractDatabaseResourceName(database.name);
     return {
       label: databaseName,
       value: databaseName,
-      render: getRenderOptionFunc({
-        name: database.name,
-        title: () =>
-          h(RichDatabaseName, {
-            database,
-            showEngineIcon: true,
-            showInstance: false,
-            showProject: false,
-            showArrow: false,
-          }),
-      }),
     };
   });
 };
@@ -145,11 +81,7 @@ export const getProjectIdOptionConfig = (): OptionConfig => {
       );
       return projects.map(getProjectIdOption);
     },
-    search: async (params: {
-      search: string;
-      pageToken: string;
-      pageSize: number;
-    }) => {
+    search: async (params) => {
       return projectStore
         .fetchProjectList({
           pageSize: params.pageSize,
@@ -178,7 +110,7 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
           store.getOrFetchInstanceByName(`${instanceNamePrefix}${instanceId}`)
         )
       );
-      const options: ResourceSelectOption<unknown>[] = [];
+      const options: LabeledOption[] = [];
       for (const instance of instances) {
         if (!isValidInstanceName(instance.name)) {
           continue;
@@ -187,11 +119,7 @@ export const getInstanceIdOptionConfig = (): OptionConfig => {
       }
       return options;
     },
-    search: async (params: {
-      search: string;
-      pageToken: string;
-      pageSize: number;
-    }) => {
+    search: async (params) => {
       return store
         .fetchInstanceList({
           pageSize: params.pageSize,
@@ -213,20 +141,13 @@ export const getDatabaseIdOptionConfig = (parent: string): OptionConfig => {
   const dbStore = useDatabaseV1Store();
   return {
     options: [],
-    // Since we use the database name (not the fullname) as the value, we cannot fetch the resource because we don't know the instance id.
-    // While searching via query is possible, but the performance cost could be significant if there're multiple values.
-    // So provide the fallback to show the selected database name instead of the entire database entity.
-    fallback: (value: string) => {
-      return {
-        label: value,
-        value: value,
-      };
-    },
-    search: async (params: {
-      search: string;
-      pageToken: string;
-      pageSize: number;
-    }) => {
+    // Since we use the database name (not the fullname) as the value, we cannot
+    // fetch the resource because we don't know the instance id. While searching
+    // via query is possible, the performance cost could be significant if there
+    // are multiple values. So provide the fallback to show the selected
+    // database name instead of the entire database entity.
+    fallback: (value: string) => ({ label: value, value }),
+    search: async (params) => {
       return dbStore
         .fetchDatabases({
           pageSize: params.pageSize,
@@ -251,13 +172,9 @@ export const getDatabaseNameOptionConfig = (parent: string): OptionConfig => {
     options: [],
     fetch: async (names: string[]) => {
       const databases = await dbStore.batchGetOrFetchDatabases(names);
-      return databases.map(getDatabasFullNameOption);
+      return databases.map(getDatabaseFullNameOption);
     },
-    search: async (params: {
-      search: string;
-      pageToken: string;
-      pageSize: number;
-    }) => {
+    search: async (params) => {
       return dbStore
         .fetchDatabases({
           pageSize: params.pageSize,
@@ -270,7 +187,7 @@ export const getDatabaseNameOptionConfig = (parent: string): OptionConfig => {
         })
         .then((resp) => ({
           nextPageToken: resp.nextPageToken,
-          options: resp.databases.map(getDatabasFullNameOption),
+          options: resp.databases.map(getDatabaseFullNameOption),
         }));
     },
   };

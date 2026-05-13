@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { ColumnResizeHandle } from "./column-resize-handle";
 import { TableBody, TableRow } from "./table";
 
 describe("table primitives", () => {
@@ -23,5 +24,14 @@ describe("table primitives", () => {
 
     expect(element.props["data-striped"]).toBe("false");
     expect(element.props.className).toContain("!bg-transparent");
+  });
+
+  test("ColumnResizeHandle uses a raised 12px hitbox around a 3px visual bar", () => {
+    const element = ColumnResizeHandle({ onMouseDown: () => {} });
+
+    expect(element.props.className).toContain("right-[-6px]");
+    expect(element.props.className).toContain("w-3");
+    expect(element.props.className).toContain("z-10");
+    expect(element.props.children.props.className).toContain("w-[3px]");
   });
 });

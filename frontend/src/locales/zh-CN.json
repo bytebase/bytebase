@@ -296,7 +296,6 @@
       "type-limit": "仅支持 {extension} 类型的文件"
     },
     "filter-by-name": "按名称过滤",
-    "finish": "完成",
     "fork": "复刻",
     "from": "从",
     "general": "通用",
@@ -339,9 +338,7 @@
     "no-data": "无数据",
     "no-license": "无证书",
     "not-started": "未开始",
-    "off": "关",
     "ok": "OK",
-    "on": "开",
     "only-creator-allowed-export": "只有创建者才能执行导出",
     "operation": "操作",
     "operations": "操作",
@@ -787,7 +784,6 @@
   },
   "environment": {
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",
-    "production-environment": "生产环境",
     "reorder": "重新排序环境",
     "select": "选择环境",
     "successfully-updated-environment": "环境'{name}'更新成功"
@@ -873,7 +869,6 @@
         }
       }
     },
-    "all": "所有实例",
     "archive-instance-instance-name": "归档实例'{0}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
     "authentication-database": "认证数据库",
@@ -1428,7 +1423,6 @@
     }
   },
   "project": {
-    "all": "所有项目",
     "batch": {
       "archive": {
         "description": "这将归档所选项目。如有需要，您可以稍后恢复它们。",
@@ -1464,8 +1458,7 @@
     },
     "members": {
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
-      "never-expires": "永不过期",
-      "workspace-level-roles": "工作空间级别角色"
+      "never-expires": "永不过期"
     },
     "overview": {
       "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
@@ -1671,7 +1664,6 @@
     "validation": {
       "duplicated": "{resource} ID 已存在。请使用其他 ID。",
       "empty": "{resource} ID 不能为空",
-      "minlength": "{resource} ID 至少包含 1 个字符。",
       "overflow": "{resource} ID 应该少于 64 个字符。",
       "pattern": "{resource} ID 可以具有小写字母，数字或连字符。\n它必须从小写字母开始，并以字母或数字结尾。"
     }
@@ -1698,7 +1690,6 @@
       "self": "项目发布者"
     },
     "project-roles": {
-      "apply-to-all-projects": "应用到所有项目",
       "self": "项目角色"
     },
     "project-viewer": {
@@ -2087,7 +2078,6 @@
       "inactive-service-accounts": "未激活服务账号",
       "inactive-users": "未激活用户",
       "inactive-workload-identities": "未激活工作负载身份",
-      "not-a-member": "尚未加入",
       "reset-service-key": "重置 Service Key",
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
       "revoke-access": "撤销访问权限",

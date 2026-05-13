@@ -54,24 +54,9 @@ import { cn } from "@/react/lib/utils";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { getDefaultPagination } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID } from "@/utils/cel-attributes";
+import type { OptionConfig } from "@/utils/expr";
 
-// ============================================================
-// OptionConfig type
-// ============================================================
-
-export type OptionConfig = {
-  search?: (params: {
-    search: string;
-    pageToken: string;
-    pageSize: number;
-  }) => Promise<{
-    nextPageToken: string;
-    options: { value: string; label: string }[];
-  }>;
-  fetch?: (names: string[]) => Promise<{ value: string; label: string }[]>;
-  fallback?: (value: string) => { value: string; label: string };
-  options: { value: string; label: string }[];
-};
+export type { OptionConfig } from "@/utils/expr";
 
 // ============================================================
 // Helpers
