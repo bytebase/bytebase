@@ -14,7 +14,6 @@ import {
   useSQLEditorQueryHistoryStore,
   useSQLEditorStore,
 } from "@/store";
-import { sqlEditorEvents } from "@/views/sql-editor/events";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,
@@ -38,6 +37,7 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/connect";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Code.Aborted;

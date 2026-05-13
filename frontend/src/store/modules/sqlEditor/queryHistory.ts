@@ -68,7 +68,19 @@ export const useSQLEditorQueryHistoryStore = defineStore(
 
       queryHistoryMap.get(key)!.nextPageToken = resp.nextPageToken;
       if (pageToken) {
-        queryHistoryMap.get(key)!.queryHistories.push(...resp.queryHistories);
+        // Dedupe by `name` on the append path. The backend uses
+        // offset-based page tokens, so when `mergeLatest` prepends a
+        // freshly-executed query the cached cursor is now off by one
+        // (the new entry shifted every server position). The next
+        // "Load more" call may return rows that already live in the
+        // cache; filtering by `name` prevents visible duplicates.
+        const cachedNames = new Set(
+          queryHistoryMap.get(key)!.queryHistories.map((h) => h.name)
+        );
+        const fresh = resp.queryHistories.filter(
+          (h) => !cachedNames.has(h.name)
+        );
+        queryHistoryMap.get(key)!.queryHistories.push(...fresh);
       } else {
         queryHistoryMap.get(key)!.queryHistories = resp.queryHistories;
       }
@@ -108,8 +120,14 @@ export const useSQLEditorQueryHistoryStore = defineStore(
       const fresh = resp.queryHistories.filter(
         (h) => !existingNames.has(h.name)
       );
+      // When there's no existing cache, take the cursor straight from
+      // the response — otherwise we'd drop `resp.nextPageToken` and
+      // leave the user with a non-empty list and no way to "Load
+      // more". When there IS an existing cache, keep its cursor: the
+      // user was paginating through older items and we don't want to
+      // rewind their position to page 1.
       queryHistoryMap.set(key, {
-        nextPageToken: existing?.nextPageToken,
+        nextPageToken: existing ? existing.nextPageToken : resp.nextPageToken,
         queryHistories: [...fresh, ...(existing?.queryHistories ?? [])],
       });
       return resp;
