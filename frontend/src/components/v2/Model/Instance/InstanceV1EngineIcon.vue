@@ -2,7 +2,7 @@
   <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
       <div :class="sizeClass" class="relative shrink-0" v-bind="$attrs">
-        <EngineIcon custom-class="w-full h-full" :engine="instance.engine" />
+        <img class="w-full h-full object-contain" :src="iconSrc" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
@@ -18,7 +18,7 @@
 import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
-import { EngineIcon } from "@/components/Icon";
+import { EngineIconPath } from "@/components/InstanceForm/constants";
 import type {
   Instance,
   InstanceResource,
@@ -54,4 +54,6 @@ const sizeClass = computed(() => {
     return "w-4 h-4";
   }
 });
+
+const iconSrc = computed(() => EngineIconPath[props.instance.engine]);
 </script>
