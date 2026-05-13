@@ -14,7 +14,7 @@ export type ToastVariant = "success" | "info" | "warning" | "error";
 const toastRoot = [
   "absolute right-0 bottom-0",
   "w-(--toast-width) max-w-[calc(100vw-2rem)]",
-  "rounded-md border bg-popover text-popover-foreground shadow-md",
+  "rounded-md border bg-background text-main shadow-md",
   "px-4 py-3 pr-10",
   // Base UI emits these CSS vars; we use them for the stack/expand transforms.
   "transform [transition:transform_250ms,opacity_250ms]",
@@ -91,7 +91,7 @@ function ToastDescription({
     <BaseToast.Description
       {...props}
       className={cn(
-        "text-sm leading-5 text-muted-foreground whitespace-pre-wrap",
+        "text-sm leading-5 text-control-light whitespace-pre-wrap",
         className
       )}
     />
@@ -106,7 +106,7 @@ function ToastAction({
     <BaseToast.Action
       {...props}
       className={cn(
-        "mt-1 inline-flex w-fit text-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "mt-1 inline-flex w-fit text-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         className
       )}
     />
@@ -123,7 +123,7 @@ function ToastClose({
       {...props}
       aria-label={ariaLabel ?? "Close"}
       className={cn(
-        "absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-sm text-control-light opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         className
       )}
     >
