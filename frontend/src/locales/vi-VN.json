@@ -296,7 +296,6 @@
       "type-limit": "Chỉ hỗ trợ tệp {extension}"
     },
     "filter-by-name": "Lọc theo tên",
-    "finish": "Hoàn tất",
     "fork": "Bản sao",
     "from": "Từ",
     "general": "Chung",
@@ -339,9 +338,7 @@
     "no-data": "Không có dữ liệu",
     "no-license": "Không có giấy phép",
     "not-started": "Chưa bắt đầu",
-    "off": "Tắt",
     "ok": "OK",
-    "on": "Bật",
     "only-creator-allowed-export": "Chỉ người tạo mới được phép xuất",
     "operation": "Thao tác",
     "operations": "Các thao tác",
@@ -787,7 +784,6 @@
   },
   "environment": {
     "delete-description": "Xóa môi trường cũng sẽ xóa nó khỏi các phiên bản và cơ sở dữ liệu liên quan. Bạn không thể hoàn tác hành động này.",
-    "production-environment": "Môi trường sản xuất",
     "reorder": "Sắp xếp lại môi trường",
     "select": "Chọn môi trường",
     "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'."
@@ -873,7 +869,6 @@
         }
       }
     },
-    "all": "Tất cả phiên bản",
     "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
     "authentication-database": "Cơ sở dữ liệu xác thực",
@@ -1428,7 +1423,6 @@
     }
   },
   "project": {
-    "all": "Tất cả dự án",
     "batch": {
       "archive": {
         "description": "Thao tác này sẽ lưu trữ các dự án đã chọn. Bạn có thể khôi phục chúng sau nếu cần.",
@@ -1464,8 +1458,7 @@
     },
     "members": {
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
-      "never-expires": "Không bao giờ",
-      "workspace-level-roles": "Vai trò cấp độ không gian làm việc"
+      "never-expires": "Không bao giờ"
     },
     "overview": {
       "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
@@ -1671,7 +1664,6 @@
     "validation": {
       "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn một ID khác.",
       "empty": "ID {resource} không được để trống",
-      "minlength": "ID {resource} quá ngắn. Nó phải có ít nhất 1 ký tự.",
       "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự.",
       "pattern": "ID {resource} có thể có chữ thường, chữ số hoặc dấu gạch nối. \nNó phải bắt đầu với một chữ cái viết thường và kết thúc bằng một chữ cái hoặc số."
     }
@@ -1698,7 +1690,6 @@
       "self": "Người phát hành dự án"
     },
     "project-roles": {
-      "apply-to-all-projects": "Áp dụng cho tất cả các dự án",
       "self": "Vai trò dự án"
     },
     "project-viewer": {
@@ -2087,7 +2078,6 @@
       "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
       "inactive-workload-identities": "Danh tính Workload không hoạt động",
-      "not-a-member": "Chưa là thành viên",
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
       "revoke-access": "Thu hồi Quyền truy cập",

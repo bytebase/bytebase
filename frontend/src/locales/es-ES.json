@@ -296,7 +296,6 @@
       "type-limit": "Solo se admiten archivos {extension}"
     },
     "filter-by-name": "Filtrar por nombre",
-    "finish": "Finalizar",
     "fork": "Bifurcación",
     "from": "Desde",
     "general": "General",
@@ -339,9 +338,7 @@
     "no-data": "Sin datos",
     "no-license": "Sin licencia",
     "not-started": "No iniciado",
-    "off": "Apagado",
     "ok": "OK",
-    "on": "Encendido",
     "only-creator-allowed-export": "Solo el creador puede exportar",
     "operation": "Operación",
     "operations": "Operaciones",
@@ -787,7 +784,6 @@
   },
   "environment": {
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",
-    "production-environment": "Entorno de producción",
     "reorder": "Reordenar entornos",
     "select": "Seleccionar entorno",
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente."
@@ -873,7 +869,6 @@
         }
       }
     },
-    "all": "Todas las instancias",
     "archive-instance-instance-name": "¿Archivar la instancia '{0}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
     "authentication-database": "Base de datos de autenticación",
@@ -1428,7 +1423,6 @@
     }
   },
   "project": {
-    "all": "Todos los proyectos",
     "batch": {
       "archive": {
         "description": "Esto archivará los proyectos seleccionados. Podrás restaurarlos más tarde si lo necesitas.",
@@ -1464,8 +1458,7 @@
     },
     "members": {
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
-      "never-expires": "Nunca caduca",
-      "workspace-level-roles": "Roles a nivel de espacio de trabajo"
+      "never-expires": "Nunca caduca"
     },
     "overview": {
       "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
@@ -1671,7 +1664,6 @@
     "validation": {
       "duplicated": "El ID de {resource} ya existe. Por favor, elige otro.",
       "empty": "El ID {resource} no puede estar vacío",
-      "minlength": "El ID de {resource} es demasiado corto. Debe tener al menos 1 carácter.",
       "overflow": "El ID de {resource} es demasiado largo. Debe tener menos de 64 caracteres.",
       "pattern": "La identificación {recurso} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número."
     }
@@ -1698,7 +1690,6 @@
       "self": "Liberador del proyecto"
     },
     "project-roles": {
-      "apply-to-all-projects": "Aplicar a todos los proyectos",
       "self": "Roles de proyecto"
     },
     "project-viewer": {
@@ -2087,7 +2078,6 @@
       "inactive-service-accounts": "Cuentas de servicio inactivas",
       "inactive-users": "Usuarios inactivos",
       "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
-      "not-a-member": "Aún no es miembro",
       "reset-service-key": "Restablecer Clave de Servicio",
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
       "revoke-access": "Revocar acceso",
