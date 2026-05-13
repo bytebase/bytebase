@@ -19,13 +19,14 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
-import { getIssueRoute, setDocumentTitle } from "@/utils";
+import { setDocumentTitle } from "@/utils";
 import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "../shell/hooks/fetchPlanSnapshot";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { useInitialFetch } from "../shell/hooks/useInitialFetch";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
 import { usePolling } from "../shell/hooks/usePolling";
+import { useRedirects } from "../shell/hooks/useRedirects";
 import { useRouteSelection } from "../shell/hooks/useRouteSelection";
 import { useSidebarMode } from "../shell/hooks/useSidebarMode";
 
@@ -130,21 +131,6 @@ const applyDerivedState = (
     readonly,
     ready: !snapshot.isInitializing && !!snapshot.plan.name,
   };
-};
-
-const shouldRedirectToIssueDetail = (plan: Plan, issue?: Issue) => {
-  if (!issue?.name) {
-    return false;
-  }
-  if (plan.specs.length === 0) {
-    return false;
-  }
-  return plan.specs.every((spec) => {
-    return (
-      spec.config?.case === "createDatabaseConfig" ||
-      spec.config?.case === "exportDataConfig"
-    );
-  });
 };
 
 export const usePlanDetailPage = ({
@@ -300,14 +286,11 @@ export const usePlanDetailPage = ({
     t,
   ]);
 
-  useEffect(() => {
-    if (
-      snapshot.ready &&
-      shouldRedirectToIssueDetail(snapshot.plan, snapshot.issue)
-    ) {
-      void router.replace(getIssueRoute({ name: snapshot.issue?.name ?? "" }));
-    }
-  }, [snapshot.issue, snapshot.plan, snapshot.ready]);
+  useRedirects({
+    ready: snapshot.ready,
+    plan: snapshot.plan,
+    issue: snapshot.issue,
+  });
 
   useEffect(() => {
     if (
