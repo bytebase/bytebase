@@ -13,22 +13,49 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+type funcBodyAnalysis struct {
+	sourceColumns    []base.SourceColumnSet
+	predicateColumns base.SourceColumnSet
+}
+
 // analyzeFunctionBody analyzes a user-defined function body and returns per-column
 // source column sets. Results are cached by function OID on the extractor.
 // A nil value in the cache means analysis is in progress (recursion sentinel).
 // On parse errors, it degrades gracefully by returning empty sets.
 func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
+	analysis := e.analyzeFunctionBodyForProc(proc)
+	e.mergeFunctionSourceTables(analysis.sourceColumns)
+	mergeSourceColumnSetInto(e.funcPredicateColumns, analysis.predicateColumns)
+	return analysis.sourceColumns
+}
+
+func (e *omniQuerySpanExtractor) analyzeTableFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
+	analysis := e.analyzeFunctionBodyForProc(proc)
+	e.mergeFunctionSourceTables(analysis.sourceColumns)
+	return analysis.sourceColumns
+}
+
+func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserProc) *funcBodyAnalysis {
 	// Check cache.
 	if cached, ok := e.funcBodyCache[proc.OID]; ok {
 		if cached == nil {
 			// In-progress sentinel — recursive call. Return empty sets.
-			return makeEmptySets(proc)
+			return &funcBodyAnalysis{
+				sourceColumns:    makeEmptySets(proc),
+				predicateColumns: make(base.SourceColumnSet),
+			}
 		}
 		return cached
 	}
 
 	// Store nil sentinel to detect recursion.
 	e.funcBodyCache[proc.OID] = nil
+	outerPredicateColumns := e.funcPredicateColumns
+	bodyPredicateColumns := make(base.SourceColumnSet)
+	e.funcPredicateColumns = bodyPredicateColumns
+	defer func() {
+		e.funcPredicateColumns = outerPredicateColumns
+	}()
 
 	// If the function body was stubbed during catalog loading (to avoid type
 	// validation errors), use the original body from metadata instead.
@@ -52,12 +79,45 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []b
 
 	if err != nil {
 		// On error, cache empty sets so we don't retry.
-		e.funcBodyCache[proc.OID] = makeEmptySets(proc)
+		e.funcBodyCache[proc.OID] = &funcBodyAnalysis{
+			sourceColumns:    makeEmptySets(proc),
+			predicateColumns: make(base.SourceColumnSet),
+		}
 		return e.funcBodyCache[proc.OID]
 	}
 
-	e.funcBodyCache[proc.OID] = result
-	return result
+	e.funcBodyCache[proc.OID] = &funcBodyAnalysis{
+		sourceColumns:    result,
+		predicateColumns: cloneSourceColumnSet(bodyPredicateColumns),
+	}
+	return e.funcBodyCache[proc.OID]
+}
+
+func cloneSourceColumnSet(src base.SourceColumnSet) base.SourceColumnSet {
+	dst := make(base.SourceColumnSet)
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}
+
+func mergeSourceColumnSetInto(dst, src base.SourceColumnSet) {
+	for k, v := range src {
+		dst[k] = v
+	}
+}
+
+func (e *omniQuerySpanExtractor) mergeFunctionSourceTables(bodySets []base.SourceColumnSet) {
+	for _, colSet := range bodySets {
+		for k := range colSet {
+			e.funcSourceColumns[base.ColumnResource{
+				Server:   k.Server,
+				Database: k.Database,
+				Schema:   k.Schema,
+				Table:    k.Table,
+			}] = true
+		}
+	}
 }
 
 func makeEmptySets(proc *catalog.UserProc) []base.SourceColumnSet {

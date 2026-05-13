@@ -27,7 +27,7 @@ type omniQuerySpanExtractor struct {
 	// Use getDatabaseMetadata() instead of accessing directly.
 	metaCache     map[string]*model.DatabaseMetadata
 	cat           *catalog.Catalog
-	funcBodyCache map[uint32][]base.SourceColumnSet
+	funcBodyCache map[uint32]*funcBodyAnalysis
 	// funcOrigDefs stores the original (non-stubbed) function definitions keyed
 	// by lowercase function name. Used by analyzeFunctionBody to get the real
 	// body when it was stubbed during catalog loading.
@@ -35,8 +35,9 @@ type omniQuerySpanExtractor struct {
 	// funcSourceColumns accumulates table-level access (column="") discovered inside
 	// function bodies. Merged into the top-level QuerySpan.SourceColumns.
 	funcSourceColumns base.SourceColumnSet
-	// funcPredicateColumns accumulates columns used in WHERE/JOIN conditions
-	// inside function bodies. Merged into the top-level QuerySpan.PredicateColumns.
+	// funcPredicateColumns accumulates columns used in fallback WHERE/JOIN
+	// conditions. Function body analysis records predicates separately so callers
+	// can decide whether they enter the top-level QuerySpan.PredicateColumns.
 	funcPredicateColumns base.SourceColumnSet
 	// fallbackCTEMap holds CTE definitions during fallback column extraction.
 	// Set by extractFallbackColumns and used by extractColumnsFromRangeVar
@@ -71,7 +72,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 		searchPath:           searchPath,
 		gCtx:                 gCtx,
 		metaCache:            make(map[string]*model.DatabaseMetadata),
-		funcBodyCache:        make(map[uint32][]base.SourceColumnSet),
+		funcBodyCache:        make(map[uint32]*funcBodyAnalysis),
 		funcOrigDefs:         make(map[string]string),
 		funcSourceColumns:    make(base.SourceColumnSet),
 		funcPredicateColumns: make(base.SourceColumnSet),
@@ -814,7 +815,7 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		if len(rte.FuncExprs) > 0 {
 			if fc, ok := rte.FuncExprs[0].(*catalog.FuncCallExpr); ok {
 				if proc := e.cat.GetUserProcByOID(fc.FuncOID); proc != nil {
-					bodySets := e.analyzeFunctionBody(proc)
+					bodySets := e.analyzeTableFunctionBody(proc)
 					if colIdx >= 0 && colIdx < len(bodySets) {
 						for k, val := range bodySets[colIdx] {
 							result[k] = val
@@ -1286,7 +1287,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFu
 		if proc := e.lookupUserProcByName(funcName); proc != nil {
 			outNames := getOutputParamNames(proc)
 			if len(outNames) > 0 {
-				bodySets := e.analyzeFunctionBody(proc)
+				bodySets := e.analyzeTableFunctionBody(proc)
 				var results []base.QuerySpanResult
 				for i, name := range outNames {
 					colSet := make(base.SourceColumnSet)
@@ -1448,7 +1449,7 @@ func (e *omniQuerySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt,
 			if len(outNames) == 0 {
 				continue
 			}
-			bodySets := e.analyzeFunctionBody(proc)
+			bodySets := e.analyzeTableFunctionBody(proc)
 			return e.buildFuncResults(outNames, bodySets, accessesMap)
 		}
 
@@ -1595,7 +1596,7 @@ func (e *omniQuerySpanExtractor) tryMetadataFuncLookup(funcName string, accesses
 	// Use a temporary OID for caching.
 	syntheticProc.OID = uint32(0xFFFF0000 + len(e.funcBodyCache))
 
-	bodySets := e.analyzeFunctionBody(syntheticProc)
+	bodySets := e.analyzeTableFunctionBody(syntheticProc)
 	return e.buildFuncResults(outNames, bodySets, accessesMap)
 }
 
