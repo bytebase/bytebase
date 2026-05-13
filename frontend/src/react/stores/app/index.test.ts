@@ -4,6 +4,7 @@ import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import {
   BindingSchema,
@@ -65,6 +66,8 @@ const mocks = vi.hoisted(() => ({
   getDatabase: vi.fn(),
   batchGetDatabases: vi.fn(),
   listDatabases: vi.fn(),
+  getDatabaseGroup: vi.fn(),
+  listDatabaseGroups: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -88,6 +91,10 @@ vi.mock("@/connect", () => ({
     getDatabase: mocks.getDatabase,
     batchGetDatabases: mocks.batchGetDatabases,
     listDatabases: mocks.listDatabases,
+  },
+  databaseGroupServiceClientConnect: {
+    getDatabaseGroup: mocks.getDatabaseGroup,
+    listDatabaseGroups: mocks.listDatabaseGroups,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -618,6 +625,22 @@ describe("useAppStore", () => {
     expect(store.getState().databasesByName[dbA.name]).toEqual(dbA);
     expect(store.getState().databasesByName[dbB.name]).toEqual(dbB);
     expect(mocks.listDatabases).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates db group fetches and caches the result", async () => {
+    const name = "projects/p1/databaseGroups/g1";
+    const group = createProto(DatabaseGroupSchema, { name });
+    mocks.getDatabaseGroup.mockResolvedValueOnce(group);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchDBGroup(name),
+      store.getState().fetchDBGroup(name),
+    ]);
+
+    expect(first).toEqual(group);
+    expect(second).toEqual(group);
+    expect(mocks.getDatabaseGroup).toHaveBeenCalledTimes(1);
   });
 
   test("notify() routes to the React toast manager", async () => {
