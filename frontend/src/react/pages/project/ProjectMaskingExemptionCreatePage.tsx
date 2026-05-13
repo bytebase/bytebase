@@ -4,9 +4,6 @@ import { CircleHelp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import { getClassificationLevelOptions } from "@/components/SensitiveData/components/utils";
-import { rewriteResourceDatabase } from "@/components/SensitiveData/exemptionDataUtils";
-import { getExpressionsForDatabaseResource } from "@/components/SensitiveData/utils";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -25,6 +22,9 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
+import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
+import { getExpressionsForDatabaseResource } from "@/react/lib/sensitive-data/utils";
 import { router } from "@/router";
 import {
   hasFeature,

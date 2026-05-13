@@ -1712,6 +1712,7 @@
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",
       "expires-today": "Hết hạn hôm nay",
       "grant-exemption": "Cấp Miễn trừ",
+      "level": "cấp",
       "n-exemptions_one": "{{n}} miễn trừ",
       "n-exemptions_other": "{{n}} miễn trừ",
       "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",

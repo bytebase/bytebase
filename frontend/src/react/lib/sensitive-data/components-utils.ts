@@ -1,5 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
+// ResourceSelectOption sits in a v2/Select Vue dir but is a framework-neutral
+// type alias over naive-ui's SelectOption. It can't move until ExprEditor/
+// context's OptionConfig (which also references it) migrates to React.
 import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { Factor, Operator } from "@/plugins/cel";
 import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";

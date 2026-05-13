@@ -2,14 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type {
-  MaskData,
-  MaskDataTarget,
-} from "@/components/SensitiveData/types";
-import {
-  getMaskDataIdentifier,
-  isCurrentColumnException,
-} from "@/components/SensitiveData/utils";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -28,6 +20,14 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import type {
+  MaskData,
+  MaskDataTarget,
+} from "@/react/lib/sensitive-data/types";
+import {
+  getMaskDataIdentifier,
+  isCurrentColumnException,
+} from "@/react/lib/sensitive-data/utils";
 import {
   featureToRef,
   pushNotification,

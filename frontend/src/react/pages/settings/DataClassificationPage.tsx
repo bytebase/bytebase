@@ -4,12 +4,12 @@ import { Pencil, Trash2, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import classificationExample from "@/components/SensitiveData/classification-example.json";
 import { ClassificationTree } from "@/react/components/ClassificationTree";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import classificationExample from "@/react/lib/sensitive-data/classification-example.json";
 import {
   pushNotification,
   useSettingV1Store,

@@ -32,6 +32,7 @@ const bannedReactToVueModulePrefixes = [
   "@/components/SQLReview",
   "@/components/ProjectMember",
   "@/components/ColumnDataTable",
+  "@/components/SensitiveData",
 ];
 
 describe("React layer must not import .vue files", () => {

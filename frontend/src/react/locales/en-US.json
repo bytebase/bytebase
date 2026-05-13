@@ -1720,6 +1720,7 @@
       "expires-in-days_other": "Expires in {{days}} days",
       "expires-today": "Expires today",
       "grant-exemption": "Grant Exemption",
+      "level": "level",
       "n-exemptions_one": "{{n}} exemption",
       "n-exemptions_other": "{{n}} exemptions",
       "no-exemptions": "No masking exemptions granted yet",

@@ -3,19 +3,6 @@ import dayjs from "dayjs";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  buildMemberSummary,
-  generateGrantTitle,
-  getConditionExpression,
-  groupByMember,
-  parseExpirationTimestamp,
-} from "@/components/SensitiveData/exemptionDataUtils";
-import type {
-  AccessUser,
-  ClassificationLevel,
-  ExemptionGrant,
-  ExemptionMember,
-} from "@/components/SensitiveData/types";
 import { operatorDisplayLabel } from "@/plugins/cel/types/operator";
 import {
   AdvancedSearch,
@@ -43,6 +30,19 @@ import {
 } from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  buildMemberSummary,
+  generateGrantTitle,
+  getConditionExpression,
+  groupByMember,
+  parseExpirationTimestamp,
+} from "@/react/lib/sensitive-data/exemptionDataUtils";
+import type {
+  AccessUser,
+  ClassificationLevel,
+  ExemptionGrant,
+  ExemptionMember,
+} from "@/react/lib/sensitive-data/types";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";

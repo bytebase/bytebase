@@ -1712,6 +1712,7 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",
       "grant-exemption": "免除を付与",
+      "level": "レベル",
       "n-exemptions_one": "{{n}} 件の免除",
       "n-exemptions_other": "{{n}} 件の免除",
       "no-exemptions": "マスキング免除はまだ付与されていません",
