@@ -214,8 +214,16 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
 	}
 
-	connConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
-	connConfig.StatementCacheCapacity = 0
+	// Apply pgbouncer-safe defaults unless the user has explicitly configured
+	// them via ExtraConnectionParameters (preserves escape hatches such as
+	// default_query_exec_mode=simple_protocol for non-PostgreSQL-compatible proxies).
+	extraParams := config.DataSource.GetExtraConnectionParameters()
+	if _, ok := extraParams["default_query_exec_mode"]; !ok {
+		connConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
+	}
+	if _, ok := extraParams["statement_cache_capacity"]; !ok {
+		connConfig.StatementCacheCapacity = 0
+	}
 	return connConfig, nil
 }
 

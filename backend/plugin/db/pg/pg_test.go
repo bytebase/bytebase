@@ -77,6 +77,26 @@ func TestGetPGConnectionConfigUsesPgBouncerCompatibleQueryMode(t *testing.T) {
 	require.Zero(t, connConfig.StatementCacheCapacity)
 }
 
+func TestGetPGConnectionConfigPreservesExplicitQueryExecMode(t *testing.T) {
+	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Username: "dba",
+			Host:     "proxy.example.com",
+			Port:     "6432",
+			ExtraConnectionParameters: map[string]string{
+				"default_query_exec_mode":  "simple_protocol",
+				"statement_cache_capacity": "128",
+			},
+		},
+		ConnectionContext: db.ConnectionContext{
+			DatabaseName: "postgres",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, pgx.QueryExecModeSimpleProtocol, connConfig.DefaultQueryExecMode)
+	require.Equal(t, 128, connConfig.StatementCacheCapacity)
+}
+
 func TestGetPGConnectionConfigDisablesTLSVerificationForAllHosts(t *testing.T) {
 	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
