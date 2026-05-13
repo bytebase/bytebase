@@ -60,10 +60,7 @@ describe("React layer must not import .vue files", () => {
       while ((match = importPattern.exec(source)) !== null) {
         const importPath = match[1];
         for (const prefix of bannedReactToVueModulePrefixes) {
-          if (
-            importPath === prefix ||
-            importPath.startsWith(`${prefix}/`)
-          ) {
+          if (importPath === prefix || importPath.startsWith(`${prefix}/`)) {
             violations.push(`${file}: ${importPath}`);
           }
         }

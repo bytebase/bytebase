@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
+import { NTag } from "naive-ui";
 import { h } from "vue";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import type {
   ScopeOption,
   ValueOption,
 } from "@/components/AdvancedSearch/types";
-import YouTag from "@/components/misc/YouTag.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1, useDatabaseV1Store, useUserStore } from "@/store";
@@ -235,7 +235,13 @@ export const getAccessSearchOptions = ({
                   h("span", user.title),
                 ];
                 if (user.name === me.value.name) {
-                  children.push(h(YouTag));
+                  children.push(
+                    h(
+                      NTag,
+                      { size: "small", round: true, type: "success" },
+                      { default: () => t("common.you") }
+                    )
+                  );
                 }
                 return h(
                   "div",
