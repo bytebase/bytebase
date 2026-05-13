@@ -12,6 +12,15 @@ type Props = {
   readonly onEnter: (query: string) => void;
 };
 
+function loadShowSuggestion(key: string): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? true : (JSON.parse(raw) as boolean);
+  } catch {
+    return true;
+  }
+}
+
 /**
  * React port of `plugins/ai/components/DynamicSuggestions.vue`.
  *
@@ -50,13 +59,20 @@ export function DynamicSuggestions({ onEnter }: Props) {
   const current = useVueState(() => suggestionsRef.value?.current());
 
   // Kick off the initial fetch when the component mounts and the cache
-  // is empty — matches the Vue `onMounted` block.
+  // is empty — matches the Vue `onMounted` block. `useDynamicSuggestions`
+  // returns a fresh `computed(...)` each render, so this effect re-runs on
+  // every render — gate by `state` so we don't pile concurrent `fetch()`s
+  // on top of an in-flight one (each fetch is a paid AI completion).
   useEffect(() => {
     const suggestion = suggestionsRef.value;
-    if (suggestion && suggestion.suggestions.length === 0) {
+    if (
+      suggestion &&
+      suggestion.suggestions.length === 0 &&
+      suggestion.state === "IDLE"
+    ) {
       void suggestion.fetch();
     }
-  }, [suggestionsRef]);
+  }, [suggestionsRef, state]);
 
   // Per-user dismissable flag persisted to localStorage. Defaults to
   // visible. Same storage key the Vue version used (`useDynamicLocalStorage`
@@ -66,22 +82,29 @@ export function DynamicSuggestions({ onEnter }: Props) {
     () => storageKeySqlEditorAiSuggestion(currentUserEmail),
     [currentUserEmail]
   );
-  const [showSuggestion, setShowSuggestion] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw === null) return true;
-      return JSON.parse(raw) as boolean;
-    } catch {
-      return true;
-    }
-  });
+  // Keep the in-memory flag bound to a specific storage key so a key
+  // change (user resolves / signs in as someone else) re-reads from the
+  // new key *before* any persistence runs — otherwise the write effect
+  // would clobber the new user's saved preference with the old user's
+  // in-memory value.
+  const [persisted, setPersisted] = useState<{ key: string; value: boolean }>(
+    () => ({ key: storageKey, value: loadShowSuggestion(storageKey) })
+  );
   useEffect(() => {
+    if (persisted.key === storageKey) return;
+    setPersisted({ key: storageKey, value: loadShowSuggestion(storageKey) });
+  }, [storageKey, persisted.key]);
+  useEffect(() => {
+    if (persisted.key !== storageKey) return;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(showSuggestion));
+      localStorage.setItem(storageKey, JSON.stringify(persisted.value));
     } catch {
       // ignore
     }
-  }, [storageKey, showSuggestion]);
+  }, [storageKey, persisted.key, persisted.value]);
+  const showSuggestion = persisted.value;
+  const setShowSuggestion = (next: boolean) =>
+    setPersisted({ key: storageKey, value: next });
 
   const show = !ready || suggestionsCount > 0 || state === "LOADING";
   if (!show) return null;
