@@ -1,10 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, test } from "vitest";
-import {
-  PlanDetailStoreProvider,
-  usePlanDetailStore,
-} from "../usePlanDetailStore";
+import { PlanDetailStoreProvider } from "../PlanDetailStoreProvider";
+import { usePlanDetailStore } from "../usePlanDetailStore";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <PlanDetailStoreProvider>{children}</PlanDetailStoreProvider>

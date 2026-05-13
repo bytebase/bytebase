@@ -56,6 +56,7 @@ import {
   minmax,
   setDocumentTitle,
 } from "@/utils";
+import { usePhaseState } from "../shell/hooks/usePhaseState";
 import { createPlanSkeleton } from "../utils/createPlan";
 
 const POLLER_INTERVAL = {
@@ -283,9 +284,6 @@ const fetchPlanDetailSnapshot = async (
   };
 };
 
-const defaultActivePhases = (): Set<PlanDetailPhase> =>
-  new Set<PlanDetailPhase>(["changes", "review", "deploy"]);
-
 const convertRouteQuery = (query: Record<string, unknown>) => {
   const kv: Record<string, string> = {};
   for (const [key, value] of Object.entries(query)) {
@@ -315,9 +313,7 @@ export const usePlanDetailPage = ({
   const [snapshot, setSnapshot] = useState<PlanDetailPageSnapshot>(() =>
     buildDefaultSnapshot(projectId, planId, specId)
   );
-  const [activePhases, setActivePhases] = useState<Set<PlanDetailPhase>>(() =>
-    defaultActivePhases()
-  );
+  const phase = usePhaseState();
   const [editingScopes, setEditingScopes] = useState<Record<string, true>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
@@ -395,22 +391,6 @@ export const usePlanDetailPage = ({
 
   const bypassLeaveGuardOnce = useCallback(() => {
     bypassLeaveGuardOnceRef.current = true;
-  }, []);
-
-  const togglePhase = useCallback((phase: PlanDetailPhase) => {
-    setActivePhases((prev) => {
-      const next = new Set(prev);
-      if (next.has(phase)) {
-        next.delete(phase);
-      } else {
-        next.add(phase);
-      }
-      return next;
-    });
-  }, []);
-
-  const expandPhase = useCallback((phase: PlanDetailPhase) => {
-    setActivePhases((prev) => new Set([...prev, phase]));
   }, []);
 
   const closeTaskPanel = useCallback(() => {
@@ -562,16 +542,16 @@ export const usePlanDetailPage = ({
       routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
       routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
     ) {
-      expandPhase("changes");
+      phase.expandPhase("changes");
     }
     if (
       routePhase === PLAN_DETAIL_PHASE_DEPLOY ||
       routeStageId ||
       routeTaskId
     ) {
-      expandPhase("deploy");
+      phase.expandPhase("deploy");
     }
-  }, [expandPhase, routeName, routePhase, routeStageId, routeTaskId]);
+  }, [phase, routeName, routePhase, routeStageId, routeTaskId]);
 
   useEffect(() => {
     if (!pageHost) {
@@ -697,7 +677,7 @@ export const usePlanDetailPage = ({
       isRunningChecks,
       setIsRunningChecks,
       lastRefreshTime,
-      activePhases,
+      activePhases: phase.activePhases,
       routeName,
       routePhase,
       routeStageId,
@@ -709,13 +689,12 @@ export const usePlanDetailPage = ({
       refreshState,
       setEditing,
       setMobileSidebarOpen,
-      togglePhase,
-      expandPhase,
+      togglePhase: phase.togglePhase,
+      expandPhase: phase.expandPhase,
       closeTaskPanel,
       resolveLeaveConfirm,
     }),
     [
-      activePhases,
       bypassLeaveGuardOnce,
       closeTaskPanel,
       isEditing,
@@ -724,6 +703,7 @@ export const usePlanDetailPage = ({
       lastRefreshTime,
       patchState,
       pendingLeaveConfirm,
+      phase,
       refreshState,
       resolveLeaveConfirm,
       routeName,
@@ -734,8 +714,6 @@ export const usePlanDetailPage = ({
       setEditing,
       setMobileSidebarOpen,
       snapshot,
-      togglePhase,
-      expandPhase,
     ]
   );
 };

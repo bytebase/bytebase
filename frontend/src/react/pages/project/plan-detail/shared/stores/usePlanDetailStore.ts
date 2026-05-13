@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import { create, useStore } from "zustand";
 import { createEditingSlice } from "./editingSlice";
 import { createPhaseSlice } from "./phaseSlice";
@@ -7,7 +7,7 @@ import { createSelectionSlice } from "./selectionSlice";
 import { createSnapshotSlice } from "./snapshotSlice";
 import type { PlanDetailStore } from "./types";
 
-const createPlanDetailStore = () =>
+export const createPlanDetailStore = () =>
   create<PlanDetailStore>()((...args) => ({
     ...createSnapshotSlice(...args),
     ...createPhaseSlice(...args),
@@ -16,22 +16,11 @@ const createPlanDetailStore = () =>
     ...createPollingSlice(...args),
   }));
 
-type PlanDetailStoreApi = ReturnType<typeof createPlanDetailStore>;
+export type PlanDetailStoreApi = ReturnType<typeof createPlanDetailStore>;
 
-const PlanDetailStoreContext = createContext<PlanDetailStoreApi | null>(null);
-
-export const PlanDetailStoreProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
-  const [store] = useState(createPlanDetailStore);
-  return (
-    <PlanDetailStoreContext.Provider value={store}>
-      {children}
-    </PlanDetailStoreContext.Provider>
-  );
-};
+export const PlanDetailStoreContext = createContext<PlanDetailStoreApi | null>(
+  null
+);
 
 export function usePlanDetailStore<T>(selector: (s: PlanDetailStore) => T): T {
   const store = useContext(PlanDetailStoreContext);
