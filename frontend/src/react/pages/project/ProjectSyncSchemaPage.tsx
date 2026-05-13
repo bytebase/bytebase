@@ -13,7 +13,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { DatabaseSelect } from "@/react/components/DatabaseSelect";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
@@ -46,6 +45,7 @@ import {
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
+import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";

@@ -3,7 +3,6 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { preCreateIssue } from "@/components/Plan/logic/issue";
 import {
   AdvancedSearch,
   getValueFromScopes,
@@ -27,6 +26,7 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { preCreateIssue } from "@/react/lib/plan/issue";
 import {
   pushNotification,
   useActuatorV1Store,

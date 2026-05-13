@@ -23,7 +23,11 @@ const vueImportPattern = /from\s+["']([^"']+\.vue)["']/g;
 // React copy, not from the Vue dir. The Vue dir stays alive because the
 // AI plugin (frontend/src/plugins/ai/) still uses the Vue Monaco
 // components — but React must not reach across.
-const bannedReactToVueModulePrefixes = ["@/components/MonacoEditor"];
+const bannedReactToVueModulePrefixes = [
+  "@/components/MonacoEditor",
+  // Plan logic moved to @/react/lib/plan/ — Vue dir no longer exists.
+  "@/components/Plan",
+];
 
 describe("React layer must not import .vue files", () => {
   test("no .tsx or .ts file under frontend/src/react/ imports a .vue file", () => {

@@ -12,7 +12,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -41,6 +40,7 @@ import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
+import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {

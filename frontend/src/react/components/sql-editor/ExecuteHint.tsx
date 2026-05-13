@@ -1,9 +1,9 @@
 import { Trans, useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
