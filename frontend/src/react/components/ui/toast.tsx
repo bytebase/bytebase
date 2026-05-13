@@ -1,5 +1,5 @@
 import { Toast as BaseToast } from "@base-ui/react/toast";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
@@ -8,34 +8,21 @@ import { cn } from "@/react/lib/utils";
 // the visual variant of the toast container.
 export type ToastVariant = "success" | "info" | "warning" | "error";
 
-const toastRootVariants = cva(
-  // Base: absolutely-positioned card. Base UI Toast.Root supplies its own
-  // transform-based animation slot via CSS variables; we layer surface
-  // styling on top.
-  [
-    "absolute right-0 bottom-0",
-    "w-(--toast-width) max-w-[calc(100vw-2rem)]",
-    "rounded-md border bg-popover text-popover-foreground shadow-md",
-    "px-4 py-3 pr-10",
-    // Base UI emits these CSS vars; we use them for the stack/expand transforms.
-    "transform [transition:transform_250ms,opacity_250ms]",
-    "[transform:translateY(calc(var(--toast-swipe-movement-y,0px)+var(--toast-index)*-12px))_scale(calc(1-var(--toast-index)*0.05))]",
-    "[&[data-expanded]]:[transform:translateY(calc(var(--toast-offset-y,0px)*-1-var(--toast-index)*16px))]",
-    "[&[data-starting-style]]:opacity-0",
-    "[&[data-ending-style]]:opacity-0",
-  ].join(" "),
-  {
-    variants: {
-      variant: {
-        success: "border-success/40",
-        info: "border-info/40",
-        warning: "border-warning/40",
-        error: "border-error/40",
-      },
-    },
-    defaultVariants: { variant: "info" },
-  }
-);
+// Toast card: neutral border (variant is signalled by the icon color, matching
+// sonner / react-hot-toast / shadcn-default — a full colored border is visual
+// noise when the icon already carries the type signal).
+const toastRoot = [
+  "absolute right-0 bottom-0",
+  "w-(--toast-width) max-w-[calc(100vw-2rem)]",
+  "rounded-md border bg-popover text-popover-foreground shadow-md",
+  "px-4 py-3 pr-10",
+  // Base UI emits these CSS vars; we use them for the stack/expand transforms.
+  "transform [transition:transform_250ms,opacity_250ms]",
+  "[transform:translateY(calc(var(--toast-swipe-movement-y,0px)+var(--toast-index)*-12px))_scale(calc(1-var(--toast-index)*0.05))]",
+  "[&[data-expanded]]:[transform:translateY(calc(var(--toast-offset-y,0px)*-1-var(--toast-index)*16px))]",
+  "[&[data-starting-style]]:opacity-0",
+  "[&[data-ending-style]]:opacity-0",
+].join(" ");
 
 const iconVariants = cva("size-5 shrink-0 mt-0.5", {
   variants: {
@@ -56,12 +43,15 @@ const iconMap: Record<ToastVariant, typeof CheckCircle2> = {
   error: XCircle,
 };
 
-type ToastRootProps = Omit<ComponentProps<typeof BaseToast.Root>, "className"> &
-  VariantProps<typeof toastRootVariants> & {
-    className?: string;
-    showIcon?: boolean;
-    children?: ReactNode;
-  };
+type ToastRootProps = Omit<
+  ComponentProps<typeof BaseToast.Root>,
+  "className"
+> & {
+  variant?: ToastVariant;
+  className?: string;
+  showIcon?: boolean;
+  children?: ReactNode;
+};
 
 function ToastRoot({
   variant = "info",
@@ -70,12 +60,9 @@ function ToastRoot({
   children,
   ...props
 }: ToastRootProps) {
-  const Icon = iconMap[variant ?? "info"];
+  const Icon = iconMap[variant];
   return (
-    <BaseToast.Root
-      {...props}
-      className={cn(toastRootVariants({ variant }), className)}
-    >
+    <BaseToast.Root {...props} className={cn(toastRoot, className)}>
       <div className="flex items-start gap-x-3">
         {showIcon ? <Icon className={iconVariants({ variant })} /> : null}
         <div className="flex min-w-0 flex-1 flex-col gap-y-1">{children}</div>
