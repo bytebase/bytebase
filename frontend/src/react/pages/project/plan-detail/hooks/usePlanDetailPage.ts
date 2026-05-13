@@ -14,10 +14,7 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
-import {
-  getRouteQueryString,
-  PLAN_DETAIL_PHASE_DEPLOY,
-} from "@/router/dashboard/projectV1RouteHelpers";
+import { PLAN_DETAIL_PHASE_DEPLOY } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   WORKSPACE_ROUTE_403,
   WORKSPACE_ROUTE_404,
@@ -60,6 +57,7 @@ import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
 import { POLLER_INTERVAL, PROJECT_NAME_PREFIX } from "../shell/constants";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
+import { useRouteSelection } from "../shell/hooks/useRouteSelection";
 import { useSidebarMode } from "../shell/hooks/useSidebarMode";
 import { createPlanSkeleton } from "../utils/createPlan";
 
@@ -328,9 +326,10 @@ export const usePlanDetailPage = ({
   // every time an unrelated query param like ?taskId changes.
   const routeQueryRef = useRef(routeQuery);
   routeQueryRef.current = routeQuery;
-  const routePhase = getRouteQueryString(routeQuery.phase as never);
-  const routeStageId = getRouteQueryString(routeQuery.stageId as never);
-  const routeTaskId = getRouteQueryString(routeQuery.taskId as never);
+  const route = useRouteSelection({ routeQuery, specId });
+  const routePhase = route.phase;
+  const routeStageId = route.stageId;
+  const routeTaskId = route.taskId;
 
   useEffect(() => {
     latestSnapshotRef.current = snapshot;
