@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { v4 as uuidv4 } from "uuid";
-import { type OptionConfig } from "@/components/ExprEditor/context";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { ExprType, type Factor, SQLTypeList, wrapAsGroup } from "@/plugins/cel";
 import i18n from "@/react/i18n";
@@ -36,6 +35,7 @@ import {
   CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
   CEL_ATTRIBUTE_STATEMENT_TEXT,
 } from "@/utils/cel-attributes";
+import { type OptionConfig } from "@/utils/expr";
 
 export { formatApprovalFlow } from "@/utils/workspaceApprovalSetting";
 

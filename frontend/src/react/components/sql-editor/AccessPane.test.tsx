@@ -45,7 +45,6 @@ vi.mock("@/store/modules/accessGrant", () => ({}));
 
 vi.mock("@/utils", () => ({
   getDefaultPagination: mocks.getDefaultPagination,
-  getAccessSearchOptions: vi.fn(() => []),
 }));
 
 vi.mock("@/views/sql-editor/events", () => ({
