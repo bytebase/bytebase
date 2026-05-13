@@ -7,7 +7,6 @@ import {
   InstanceV1Name,
   RichDatabaseName,
 } from "@/components/v2";
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import {
   instanceNamePrefix,
   projectNamePrefix,
@@ -20,6 +19,7 @@ import { isValidInstanceName } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { ResourceSelectOption } from "@/types/v2-shared";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,

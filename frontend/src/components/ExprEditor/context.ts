@@ -1,6 +1,6 @@
 import { type InjectionKey, inject, provide, type Ref } from "vue";
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { Factor, Operator } from "@/plugins/cel";
+import type { ResourceSelectOption } from "@/types/v2-shared";
 
 export type OptionConfig = {
   search?: (params: {

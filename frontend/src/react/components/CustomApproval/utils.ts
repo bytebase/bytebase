@@ -1,7 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { v4 as uuidv4 } from "uuid";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { ExprType, type Factor, SQLTypeList, wrapAsGroup } from "@/plugins/cel";
 import i18n from "@/react/i18n";
@@ -11,6 +10,7 @@ import { PRESET_WORKSPACE_ROLES, PresetRoleType } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
 import { ApprovalFlowSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
+import type { ResourceSelectOption } from "@/types/v2-shared";
 import {
   displayRoleTitle,
   engineNameV1,
