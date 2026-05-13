@@ -56,6 +56,8 @@ import {
   minmax,
   setDocumentTitle,
 } from "@/utils";
+import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
+import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { usePhaseState } from "../shell/hooks/usePhaseState";
 import { createPlanSkeleton } from "../utils/createPlan";
 
@@ -314,18 +316,17 @@ export const usePlanDetailPage = ({
     buildDefaultSnapshot(projectId, planId, specId)
   );
   const phase = usePhaseState();
-  const [editingScopes, setEditingScopes] = useState<Record<string, true>>({});
+  const editing = useEditingScopes();
+  const storeApi = usePlanDetailStoreApi();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
-  const [pendingLeaveConfirm, setPendingLeaveConfirm] = useState(false);
   const latestSnapshotRef = useRef(snapshot);
-  const bypassLeaveGuardOnceRef = useRef(false);
   const pollTimerRef = useRef<number | undefined>(undefined);
   // Target route captured when the guard intercepts a navigation. We cancel
   // that navigation synchronously and re-issue it after the user confirms.
   const pendingLeaveTargetRef = useRef<string | null>(null);
-  const isEditing = Object.keys(editingScopes).length > 0;
+  const isEditing = editing.isEditing;
 
   // routeQuery is a fresh object on every router navigation. Stash the latest
   // value in a ref and depend only on the individual keys we actually consume,
@@ -376,23 +377,6 @@ export const usePlanDetailPage = ({
     [patchState]
   );
 
-  const setEditing = useCallback((scope: string, editing: boolean) => {
-    setEditingScopes((prev) => {
-      if (editing) {
-        if (prev[scope]) return prev;
-        return { ...prev, [scope]: true };
-      }
-      if (!prev[scope]) return prev;
-      const next = { ...prev };
-      delete next[scope];
-      return next;
-    });
-  }, []);
-
-  const bypassLeaveGuardOnce = useCallback(() => {
-    bypassLeaveGuardOnceRef.current = true;
-  }, []);
-
   const closeTaskPanel = useCallback(() => {
     void router.replace({
       query: {
@@ -403,7 +387,7 @@ export const usePlanDetailPage = ({
   }, [routePhase, routeStageId]);
 
   useEffect(() => {
-    setEditingScopes({});
+    storeApi.setState({ editingScopes: {} });
     patchState({
       projectId,
       planId,
@@ -460,21 +444,24 @@ export const usePlanDetailPage = ({
     return () => {
       canceled = true;
     };
-  }, [patchState, planId, projectId, specId]);
+  }, [patchState, planId, projectId, specId, storeApi]);
 
-  const resolveLeaveConfirm = useCallback((confirmed: boolean) => {
-    const target = confirmed ? pendingLeaveTargetRef.current : null;
-    pendingLeaveTargetRef.current = null;
-    setPendingLeaveConfirm(false);
-    if (target) {
-      bypassLeaveGuardOnceRef.current = true;
-      // Replace (not push) so a confirmed-discard navigation doesn't leave
-      // an extra entry that lets Back return to the discarded plan. Works
-      // correctly whether the original navigation was push, replace, or
-      // browser back/forward.
-      void router.replace(target);
-    }
-  }, []);
+  const resolveLeaveConfirm = useCallback(
+    (confirmed: boolean) => {
+      const target = confirmed ? pendingLeaveTargetRef.current : null;
+      pendingLeaveTargetRef.current = null;
+      editing.setPendingLeaveConfirm(false);
+      if (target) {
+        editing.bypassLeaveGuardOnce();
+        // Replace (not push) so a confirmed-discard navigation doesn't leave
+        // an extra entry that lets Back return to the discarded plan. Works
+        // correctly whether the original navigation was push, replace, or
+        // browser back/forward.
+        void router.replace(target);
+      }
+    },
+    [editing]
+  );
 
   useEffect(() => {
     if (!isEditing) {
@@ -493,8 +480,7 @@ export const usePlanDetailPage = ({
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     const removeGuard = router.beforeEach((to, _from, next) => {
-      if (bypassLeaveGuardOnceRef.current) {
-        bypassLeaveGuardOnceRef.current = false;
+      if (storeApi.getState().isLeaveGuardBypassed()) {
         next();
         return;
       }
@@ -502,7 +488,7 @@ export const usePlanDetailPage = ({
       // can re-issue it from resolveLeaveConfirm after the user confirms.
       // Always overwrite the pending target — the latest navigation wins.
       pendingLeaveTargetRef.current = to.fullPath;
-      setPendingLeaveConfirm(true);
+      editing.setPendingLeaveConfirm(true);
       next(false);
     });
 
@@ -510,7 +496,7 @@ export const usePlanDetailPage = ({
       window.removeEventListener("beforeunload", onBeforeUnload);
       removeGuard();
     };
-  }, [isEditing, resolveLeaveConfirm, t]);
+  }, [editing, isEditing, resolveLeaveConfirm, storeApi, t]);
 
   useEffect(() => {
     if (snapshot.isCreating) {
@@ -683,11 +669,11 @@ export const usePlanDetailPage = ({
       routeStageId,
       routeTaskId,
       selectedTaskName,
-      pendingLeaveConfirm,
-      bypassLeaveGuardOnce,
+      pendingLeaveConfirm: editing.pendingLeaveConfirm,
+      bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
       patchState,
       refreshState,
-      setEditing,
+      setEditing: editing.setEditing,
       setMobileSidebarOpen,
       togglePhase: phase.togglePhase,
       expandPhase: phase.expandPhase,
@@ -695,14 +681,13 @@ export const usePlanDetailPage = ({
       resolveLeaveConfirm,
     }),
     [
-      bypassLeaveGuardOnce,
       closeTaskPanel,
+      editing,
       isEditing,
       isRefreshing,
       isRunningChecks,
       lastRefreshTime,
       patchState,
-      pendingLeaveConfirm,
       phase,
       refreshState,
       resolveLeaveConfirm,
@@ -711,7 +696,6 @@ export const usePlanDetailPage = ({
       routeStageId,
       routeTaskId,
       selectedTaskName,
-      setEditing,
       setMobileSidebarOpen,
       snapshot,
     ]
