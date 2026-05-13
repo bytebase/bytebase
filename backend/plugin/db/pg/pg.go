@@ -214,6 +214,8 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
 	}
 
+	connConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
+	connConfig.StatementCacheCapacity = 0
 	return connConfig, nil
 }
 
@@ -250,7 +252,13 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
 		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
 	)
-	return pgx.ParseConfig(dsn)
+	config, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	config.DefaultQueryExecMode = pgx.QueryExecModeExec
+	config.StatementCacheCapacity = 0
+	return config, nil
 }
 
 // getCloudSQLConnectionConfig returns config for Cloud SQL connector.
@@ -272,6 +280,8 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 		return d.Dial(ctx, conf.DataSource.Host)
 	}
 
+	config.DefaultQueryExecMode = pgx.QueryExecModeExec
+	config.StatementCacheCapacity = 0
 	return config, nil
 }
 
