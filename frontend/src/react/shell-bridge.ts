@@ -3,6 +3,10 @@ export const ReactShellBridgeEvent = {
   quickstartReset: "bb.react-quickstart-reset",
 } as const;
 
+export const VueShellBridgeEvent = {
+  notification: "bb.vue-notification",
+} as const;
+
 export type ReactShellBridgeEventName =
   (typeof ReactShellBridgeEvent)[keyof typeof ReactShellBridgeEvent];
 

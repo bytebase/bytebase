@@ -40,15 +40,12 @@ async function loadToaster() {
 
 /**
  * Mount the persistent <Toaster /> into the given container. Called once
- * at app bootstrap; the root lives until page unload.
- *
- * Importing this file also pulls in @/react/lib/toast, which registers the
- * `bb.vue-notification` window listener at module-eval time. Call this
- * function before any Vue code calls pushNotification.
+ * at app bootstrap; the root lives until page unload. The bb.vue-notification
+ * listener is already registered (main.ts side-effect-imports
+ * @/react/lib/toast); this function only attaches the Provider so queued
+ * toasts can render.
  */
 export async function mountToaster(container: HTMLElement) {
-  // Side-effect import: registers the bb.vue-notification window listener.
-  await import("@/react/lib/toast");
   const [deps, Toaster] = await Promise.all([loadCoreDeps(), loadToaster()]);
   const tree = deps.createElement(
     deps.StrictMode,

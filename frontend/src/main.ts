@@ -10,6 +10,10 @@ import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import "./polyfill";
+// Side-effect: registers the bb.vue-notification window listener and
+// constructs the toastManager singleton. Must load before any auth/error
+// interceptor can fire pushNotification during bootstrap RPCs.
+import "./react/lib/toast";
 import { router } from "./router";
 import {
   pinia,

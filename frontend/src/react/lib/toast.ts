@@ -2,38 +2,28 @@ import {
   Toast as BaseToast,
   type ToastManagerAddOptions,
 } from "@base-ui/react/toast";
-import type { NotificationCreate } from "@/types/notification";
+import { VueShellBridgeEvent } from "@/react/shell-bridge";
+import type { BBNotificationStyle, NotificationCreate } from "@/types";
 
 const NOTIFICATION_DURATION_MS = 6000;
 const CRITICAL_NOTIFICATION_DURATION_MS = 10000;
 
-const VUE_NOTIFICATION_EVENT = "bb.vue-notification";
+const STYLE_TO_TYPE: Record<
+  BBNotificationStyle,
+  "success" | "info" | "warning" | "error"
+> = {
+  SUCCESS: "success",
+  INFO: "info",
+  WARN: "warning",
+  CRITICAL: "error",
+};
 
-/**
- * Module-level toast manager — created once, lives outside any React tree.
- * Callers anywhere (React components, Zustand slices, plain TS modules,
- * the Vue side via the window-event bridge below) can call .add() / .close().
- *
- * The <Toaster /> component subscribes via Base UI's useToastManager() hook
- * and renders each toast.
- */
 export const toastManager = BaseToast.createToastManager();
 
 type ToastOptions = ToastManagerAddOptions<Record<string, unknown>>;
 
-/**
- * Convert the project's NotificationCreate shape into Base UI Toast options.
- * Pure function — exported for testing.
- */
 export function mapNotificationToToast(item: NotificationCreate): ToastOptions {
-  const type =
-    item.style === "SUCCESS"
-      ? "success"
-      : item.style === "WARN"
-        ? "warning"
-        : item.style === "CRITICAL"
-          ? "error"
-          : "info";
+  const type = STYLE_TO_TYPE[item.style];
   const priority: "low" | "high" = item.style === "CRITICAL" ? "high" : "low";
   const timeout = item.manualHide
     ? 0
@@ -63,23 +53,27 @@ export function mapNotificationToToast(item: NotificationCreate): ToastOptions {
   };
 }
 
-/**
- * Push a notification through the React toast renderer. Safe to call from
- * any context (component, store, plain TS module). Filters by
- * module === "bytebase" to match the previous Vue NotificationContext.
- */
+// Filter mirrors the previous Vue NotificationContext: only the "bytebase"
+// module renders; other modules (e.g. agent) own their own UI surface.
 export function pushReactNotification(item: NotificationCreate): void {
   if (item.module !== "bytebase") return;
   toastManager.add(mapNotificationToToast(item));
 }
 
-// Module-eval-time listener: catch notifications originating on the Vue side
-// (Pinia notificationStore.pushNotification) and forward them to the toast
-// manager. Registered exactly once per module load; main.ts imports this
-// module during app bootstrap, before any pushNotification fires.
+// Bridge from the Vue side: pushNotification() in the Pinia store dispatches
+// a window CustomEvent. Register at module-eval so events fired during app
+// bootstrap (e.g. auth/error interceptors before <Toaster /> mounts) are
+// caught and queued in toastManager; the Provider drains the queue on mount.
+// main.ts imports this module synchronously to make that ordering reliable.
 if (typeof window !== "undefined") {
-  window.addEventListener(VUE_NOTIFICATION_EVENT, (event: Event) => {
+  const handler = (event: Event) => {
     const detail = (event as CustomEvent<NotificationCreate>).detail;
     if (detail) pushReactNotification(detail);
-  });
+  };
+  window.addEventListener(VueShellBridgeEvent.notification, handler);
+  if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+      window.removeEventListener(VueShellBridgeEvent.notification, handler);
+    });
+  }
 }
