@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick } from "vue";
 import {
   emitReactLocaleChange,
-  emitReactNotification,
   emitReactQuickstartReset,
 } from "@/react/shell-bridge";
 
@@ -22,8 +21,6 @@ const mocks = vi.hoisted(() => ({
   setDocumentTitle: vi.fn(),
   overrideAppProfile: vi.fn(),
   pushNotification: vi.fn(),
-  tryPopNotification: vi.fn(),
-  notificationCreate: vi.fn(),
   introState: {} as Record<string, boolean>,
   saveIntroStateByKey: vi.fn(
     async ({ key, newState }: { key: string; newState: boolean }) => {
@@ -44,10 +41,6 @@ vi.mock("naive-ui", async () => {
     });
   return {
     NConfigProvider: passthrough("NConfigProvider"),
-    NNotificationProvider: passthrough("NNotificationProvider"),
-    useNotification: () => ({
-      create: mocks.notificationCreate,
-    }),
   };
 });
 
@@ -106,7 +99,6 @@ vi.mock("./plugins/i18n", () => ({
 vi.mock("./store", () => ({
   useNotificationStore: () => ({
     pushNotification: mocks.pushNotification,
-    tryPopNotification: mocks.tryPopNotification,
   }),
   useUIStateStore: () => ({
     introState: mocks.introState,
@@ -134,7 +126,6 @@ vi.mock("vue-router", async () => {
 });
 
 import App from "./App.vue";
-import NotificationContext from "./NotificationContext.vue";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -188,39 +179,6 @@ describe("React shell bridge", () => {
       "data.query": false,
     });
     expect(mocks.saveIntroStateByKey).toHaveBeenCalledTimes(2);
-
-    wrapper.unmount();
-  });
-
-  test("shows bytebase notifications and ignores other modules", async () => {
-    const wrapper = mount(NotificationContext, {
-      attachTo: document.body,
-      slots: {
-        default: "<div />",
-      },
-    });
-    await nextTick();
-
-    emitReactNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: "Saved",
-    });
-
-    expect(mocks.notificationCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "success",
-      })
-    );
-
-    mocks.notificationCreate.mockClear();
-    emitReactNotification({
-      module: "other",
-      style: "SUCCESS",
-      title: "Ignored",
-    });
-
-    expect(mocks.notificationCreate).not.toHaveBeenCalled();
 
     wrapper.unmount();
   });

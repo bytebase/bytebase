@@ -6,25 +6,18 @@
   >
     <ReactPageMount page="Watermark" container-class="contents" />
 
-    <NNotificationProvider
-      :max="MAX_NOTIFICATION_DISPLAY_COUNT"
-      placement="bottom-right"
-    >
-      <OverlayStackManager>
-        <NotificationContext>
-          <AuthContext>
-            <router-view />
-          </AuthContext>
-        </NotificationContext>
-      </OverlayStackManager>
-    </NNotificationProvider>
+    <OverlayStackManager>
+      <AuthContext>
+        <router-view />
+      </AuthContext>
+    </OverlayStackManager>
   </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
-import { NConfigProvider, NNotificationProvider } from "naive-ui";
+import { NConfigProvider } from "naive-ui";
 import {
   onErrorCaptured,
   onMounted,
@@ -38,7 +31,6 @@ import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
 import AuthContext from "./AuthContext.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
-import NotificationContext from "./NotificationContext.vue";
 import { locale, t } from "./plugins/i18n";
 import {
   type ReactQuickstartResetDetail,
@@ -46,9 +38,6 @@ import {
 } from "./react/shell-bridge";
 import { useNotificationStore, useUIStateStore } from "./store";
 import { isDev, setDocumentTitle } from "./utils";
-
-// Show at most 3 notifications to prevent excessive notification when shit hits the fan.
-const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
 const route = useRoute();
 const router = useRouter();

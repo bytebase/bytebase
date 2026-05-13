@@ -125,7 +125,6 @@ export type InstanceSlice = {
 };
 
 export type NotificationSlice = {
-  notifications: NotificationCreate[];
   notify: (notification: NotificationCreate) => void;
 };
 

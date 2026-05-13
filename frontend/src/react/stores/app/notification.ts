@@ -1,15 +1,10 @@
-import { emitReactNotification } from "@/react/shell-bridge";
+import { pushReactNotification } from "@/react/lib/toast";
 import type { AppSliceCreator, NotificationSlice } from "./types";
 
-export const createNotificationSlice: AppSliceCreator<NotificationSlice> = (
-  set
-) => ({
-  notifications: [],
-
+export const createNotificationSlice: AppSliceCreator<
+  NotificationSlice
+> = () => ({
   notify: (notification) => {
-    set((state) => ({
-      notifications: [...state.notifications, notification],
-    }));
-    emitReactNotification(notification);
+    pushReactNotification(notification);
   },
 });

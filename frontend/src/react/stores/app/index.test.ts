@@ -566,10 +566,10 @@ describe("useAppStore", () => {
     expect(store.getState().instancesByName[instance.name]).toBe(instance);
   });
 
-  test("dispatches notification events for the Vue shell bridge", () => {
+  test("notify() routes to the React toast manager", async () => {
+    const { toastManager } = await import("@/react/lib/toast");
+    const addSpy = vi.spyOn(toastManager, "add");
     const store = createAppStore();
-    const listener = vi.fn();
-    window.addEventListener(ReactShellBridgeEvent.notification, listener);
 
     store.getState().notify({
       module: "bytebase",
@@ -577,9 +577,12 @@ describe("useAppStore", () => {
       title: "Saved",
     });
 
-    expect(store.getState().notifications).toHaveLength(1);
-    expect(listener).toHaveBeenCalledTimes(1);
-    window.removeEventListener(ReactShellBridgeEvent.notification, listener);
+    expect(addSpy).toHaveBeenCalledTimes(1);
+    expect(addSpy.mock.calls[0][0]).toMatchObject({
+      title: "Saved",
+      type: "success",
+    });
+    addSpy.mockRestore();
   });
 
   test("keeps user-scoped preferences in localStorage", () => {
