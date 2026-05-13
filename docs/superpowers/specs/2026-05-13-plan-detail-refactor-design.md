@@ -4,6 +4,18 @@ Date: 2026-05-13
 Status: design (pre-implementation)
 Companion: [docs/plans/2026-05-13-plan-detail-current-state.md](../../plans/2026-05-13-plan-detail-current-state.md) — behavioral contract this refactor preserves
 
+## Update — 2026-05-13 (post-design)
+
+**Single-PR delivery chosen.** Despite the "Implementation sequencing" section below recommending six independently revertable PRs, the user chose to land the entire refactor in **one PR** at plan-writing time. The phased structure (PR 1 Foundation → PR 6 Header/Sidebar/cleanup) survives as internal commit groupings on a single branch, but there is no inter-PR merge gate.
+
+Consequences:
+- Intermediate compatibility shims are dropped — every consumer is updated in the same diff, so re-exports at old paths are not needed at any step.
+- The CI guard for Pinia reads inside `plan-detail/` is strict from the first commit (no warning-mode flag).
+- "Manual gates" become commit-time checks; no merge-to-main pauses.
+- Rollback is all-or-nothing — there is no PR-N revert option.
+
+The "Implementation sequencing" section below remains as a record of the original recommendation. The implementation plan at [docs/superpowers/plans/2026-05-13-plan-detail-refactor.md](../plans/2026-05-13-plan-detail-refactor.md) reflects the one-PR decision.
+
 ## Context
 
 The Plan Detail page (`/projects/:projectId/plans/:planId` and child routes) is a standalone React workflow page. Its current React tree under `frontend/src/react/pages/project/plan-detail/` is 63 files / ~14,300 lines. Six files exceed 700 lines; the largest is `PlanDetailChangesBranch.tsx` at 1,969 lines and packs seven components plus a SQL parser.
