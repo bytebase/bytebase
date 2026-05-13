@@ -1,7 +1,4 @@
 {
-  "resource": {
-    "instance": "Phiên bản"
-  },
   "settings": {
     "sensitive-data": {
       "semantic-types": {

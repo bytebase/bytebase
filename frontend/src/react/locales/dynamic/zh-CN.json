@@ -1,7 +1,4 @@
 {
-  "resource": {
-    "instance": "实例"
-  },
   "settings": {
     "sensitive-data": {
       "semantic-types": {

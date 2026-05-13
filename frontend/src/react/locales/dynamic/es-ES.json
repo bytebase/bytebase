@@ -1,7 +1,4 @@
 {
-  "resource": {
-    "instance": "Instancia"
-  },
   "settings": {
     "sensitive-data": {
       "semantic-types": {
