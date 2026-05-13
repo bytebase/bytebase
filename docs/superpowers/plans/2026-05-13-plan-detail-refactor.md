@@ -41,6 +41,8 @@
 
 The slice mirrors the existing `InstanceSlice` pattern (per-name entity cache + request-promise dedup + error map). Only port methods plan-detail actually calls.
 
+**Important proto naming gotcha (verified 2026-05-13):** the resource-`Database` schema generator is exported as `DatabaseSchema$` in `frontend/src/types/proto-es/v1/database_service_pb.d.ts`; `DatabaseSchema` is a different message (DDL metadata). Use `DatabaseSchema$` with `create(...)` in this slice's tests. Also: the proto only defines `getDatabase`, `listDatabases`, `batchGetDatabases` — there is no `searchDatabases` RPC. The slice should expose `fetchDatabase`, `batchFetchDatabases`, and `fetchDatabases` (wrapping `listDatabases`) with shape `{ parent, pageSize, pageToken?, filter?: string, orderBy? }` — the `filter` is the proto's raw CEL string (Pinia's `DatabaseFilter` is a Vue-layer wrapper that compiles to that string via `getListDatabaseFilter`).
+
 - [ ] **Step 1: Write the failing test**
 
 Add to `frontend/src/react/stores/app/index.test.ts` near the existing instance test:
@@ -48,7 +50,7 @@ Add to `frontend/src/react/stores/app/index.test.ts` near the existing instance 
 ```ts
 test("deduplicates database fetches and caches the result", async () => {
   const dbName = "instances/i1/databases/db1";
-  const database = createProto(DatabaseSchema, { name: dbName });
+  const database = createProto(DatabaseSchema$, { name: dbName });
   mocks.getDatabase.mockResolvedValueOnce(database);
   const store = createAppStore();
 
@@ -1777,16 +1779,25 @@ git commit -m "refactor(plan-detail): extract DatabaseGroupSelector + slice migr
 
 - [ ] **Step 2: Replace `useDatabaseV1Store` with `useAppStore`.**
 
+**Plan correction (2026-05-13):** the proto has `listDatabases` (not `searchDatabases`). Task 1.1 added `fetchDatabases` to the slice with shape `{ parent, pageSize, pageToken?, filter?: string, orderBy? }`. The Pinia store's `fetchDatabases` accepts a structured `DatabaseFilter` and compiles it down to the proto's CEL string `filter`; the React slice takes the CEL string directly. If `DatabaseSelector` currently builds a `DatabaseFilter` and passes it to the Pinia store, compile it to a string via the existing `getListDatabaseFilter` helper before calling the slice.
+
 Before:
 ```ts
 const dbStore = useVueState(() => useDatabaseV1Store());
-const result = await dbStore.searchDatabases({ parent, filter, pageSize, pageToken });
+const result = await dbStore.fetchDatabases({ parent, filter, pageSize, pageToken });
 ```
 
 After:
 ```ts
-const searchDatabases = useAppStore((s) => s.searchDatabases);
-const result = await searchDatabases({ parent, filter, pageSize, pageToken });
+import { getListDatabaseFilter } from "@/store/modules/v1/database"; // or a React-local copy
+// ...
+const fetchDatabases = useAppStore((s) => s.fetchDatabases);
+const result = await fetchDatabases({
+  parent,
+  filter: getListDatabaseFilter(filter ?? {}),
+  pageSize,
+  pageToken,
+});
 ```
 
 - [ ] **Step 3: `/simplify` checklist.**
