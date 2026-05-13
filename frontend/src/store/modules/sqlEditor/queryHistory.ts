@@ -120,14 +120,8 @@ export const useSQLEditorQueryHistoryStore = defineStore(
       const fresh = resp.queryHistories.filter(
         (h) => !existingNames.has(h.name)
       );
-      // When there's no existing cache, take the cursor straight from
-      // the response — otherwise we'd drop `resp.nextPageToken` and
-      // leave the user with a non-empty list and no way to "Load
-      // more". When there IS an existing cache, keep its cursor: the
-      // user was paginating through older items and we don't want to
-      // rewind their position to page 1.
       queryHistoryMap.set(key, {
-        nextPageToken: existing ? existing.nextPageToken : resp.nextPageToken,
+        nextPageToken: existing?.nextPageToken ?? resp.nextPageToken,
         queryHistories: [...fresh, ...(existing?.queryHistories ?? [])],
       });
       return resp;
