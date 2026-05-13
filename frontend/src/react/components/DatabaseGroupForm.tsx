@@ -2,10 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  FactorList,
-  getDatabaseGroupOptionConfigMap,
-} from "@/components/DatabaseGroup/utils";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -19,6 +15,10 @@ import { MatchedDatabaseView } from "@/react/components/MatchedDatabaseView";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import {
+  FactorList,
+  getDatabaseGroupOptionConfigMap,
+} from "@/react/lib/database-group/utils";
 import { pushNotification, useDBGroupStore } from "@/store";
 import {
   databaseGroupNamePrefix,
