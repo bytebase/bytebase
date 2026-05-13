@@ -50,3 +50,19 @@ END update_salary;`, statements[1].Text)
 	require.Equal(t, `
 CREATE TABLE t(id NUMBER)`, statements[2].Text)
 }
+
+func TestPLSQLSplitSQLPreservesSQLSetStatements(t *testing.T) {
+	statement := `SET DEFINE OFF
+SET TRANSACTION READ ONLY;
+SET ROLE app_role;
+SELECT 1 FROM dual;`
+
+	statements, err := SplitSQL(statement)
+	require.NoError(t, err)
+	statements = base.FilterEmptyStatements(statements)
+
+	require.Len(t, statements, 3)
+	require.Equal(t, "SET TRANSACTION READ ONLY", statements[0].Text)
+	require.Equal(t, "\nSET ROLE app_role", statements[1].Text)
+	require.Equal(t, "\nSELECT 1 FROM dual", statements[2].Text)
+}
