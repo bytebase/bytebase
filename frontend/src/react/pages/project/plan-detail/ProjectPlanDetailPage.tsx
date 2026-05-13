@@ -37,6 +37,7 @@ import {
   usePlanDetailPage,
   WIDE_SIDEBAR_BREAKPOINT_PX,
 } from "./hooks/usePlanDetailPage";
+import { PlanDetailStoreProvider } from "./shared/stores/usePlanDetailStore";
 import {
   buildChangesSummary,
   buildDeploySummary,
@@ -267,192 +268,196 @@ export function ProjectPlanDetailPage({
   }, [page.plan.specs, selectedSpecId]);
 
   return (
-    <PlanDetailProvider value={page}>
-      <div
-        ref={setPageHost}
-        className="relative h-full overflow-x-hidden bg-gray-50"
-      >
+    <PlanDetailStoreProvider>
+      <PlanDetailProvider value={page}>
         <div
-          className={cn(
-            "flex min-h-full flex-col",
-            page.ready ? "" : "invisible pointer-events-none"
-          )}
+          ref={setPageHost}
+          className="relative h-full overflow-x-hidden bg-gray-50"
         >
-          <header className="shrink-0 border-b bg-white">
-            <PlanDetailHeader />
-          </header>
-
           <div
-            className="min-h-0 flex flex-1 flex-col lg:grid"
-            style={desktopLayoutStyle}
+            className={cn(
+              "flex min-h-full flex-col",
+              page.ready ? "" : "invisible pointer-events-none"
+            )}
           >
-            <main className="min-w-0 flex-1">
-              <div className="flex min-w-0 flex-col gap-y-3 pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
-                <PhaseSection
-                  badge={phaseConfigs.changes.badge}
-                  expanded={page.activePhases.has("changes")}
-                  icon={<Code2 className="h-4 w-4 text-white" />}
-                  lineClass={phaseConfigs.changes.lineClass}
-                  label={t("plan.navigator.changes")}
-                  onSelect={() => page.expandPhase("changes")}
-                  status={phaseConfigs.changes.status}
-                  onToggle={() => page.togglePhase("changes")}
-                  summary={buildChangesSummary(page.plan, t)}
-                >
-                  <PlanDetailChangesBranch
-                    onSelectedSpecIdChange={setSelectedSpecId}
-                    selectedSpecId={selectedSpecId}
-                  />
-                </PhaseSection>
+            <header className="shrink-0 border-b bg-white">
+              <PlanDetailHeader />
+            </header>
 
-                <PhaseSection
-                  badge={phaseConfigs.review.badge}
-                  expanded={page.activePhases.has("review")}
-                  icon={<MessageSquareMore className="h-4 w-4 text-white" />}
-                  lineClass={phaseConfigs.review.lineClass}
-                  label={t("plan.navigator.review")}
-                  onSelect={() => page.expandPhase("review")}
-                  status={phaseConfigs.review.status}
-                  onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t)}
-                  future={
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.review-description")}
-                    </p>
+            <div
+              className="min-h-0 flex flex-1 flex-col lg:grid"
+              style={desktopLayoutStyle}
+            >
+              <main className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-col gap-y-3 pb-6 pl-2 pr-4 pt-4 xl:pr-8 2xl:pr-12">
+                  <PhaseSection
+                    badge={phaseConfigs.changes.badge}
+                    expanded={page.activePhases.has("changes")}
+                    icon={<Code2 className="h-4 w-4 text-white" />}
+                    lineClass={phaseConfigs.changes.lineClass}
+                    label={t("plan.navigator.changes")}
+                    onSelect={() => page.expandPhase("changes")}
+                    status={phaseConfigs.changes.status}
+                    onToggle={() => page.togglePhase("changes")}
+                    summary={buildChangesSummary(page.plan, t)}
+                  >
+                    <PlanDetailChangesBranch
+                      onSelectedSpecIdChange={setSelectedSpecId}
+                      selectedSpecId={selectedSpecId}
+                    />
+                  </PhaseSection>
+
+                  <PhaseSection
+                    badge={phaseConfigs.review.badge}
+                    expanded={page.activePhases.has("review")}
+                    icon={<MessageSquareMore className="h-4 w-4 text-white" />}
+                    lineClass={phaseConfigs.review.lineClass}
+                    label={t("plan.navigator.review")}
+                    onSelect={() => page.expandPhase("review")}
+                    status={phaseConfigs.review.status}
+                    onToggle={() => page.togglePhase("review")}
+                    summary={buildReviewSummary(page.issue, t)}
+                    future={
+                      <p className="mt-0.5 text-sm text-control-placeholder">
+                        {t("plan.phase.review-description")}
+                      </p>
+                    }
+                  >
+                    <ReviewBranch />
+                  </PhaseSection>
+
+                  <PhaseSection
+                    badge={phaseConfigs.deploy.badge}
+                    expanded={page.activePhases.has("deploy")}
+                    icon={<Rocket className="h-4 w-4 text-white" />}
+                    isLast
+                    label={t("plan.navigator.deploy")}
+                    status={phaseConfigs.deploy.status}
+                    onSelect={() => page.expandPhase("deploy")}
+                    onToggle={() => page.togglePhase("deploy")}
+                    summary={buildDeploySummary(page.rollout, t)}
+                    future={<PlanDetailDeployFuture />}
+                  >
+                    <DeployBranch
+                      selectedTask={selectedTask}
+                      onCloseTaskPanel={page.closeTaskPanel}
+                    />
+                  </PhaseSection>
+                </div>
+              </main>
+
+              {showDesktopSidebar && (
+                <DesktopColumn tag="aside" style={desktopSidebarStyle}>
+                  <div className="p-4">
+                    <PlanDetailMetadataSidebar />
+                  </div>
+                </DesktopColumn>
+              )}
+
+              {showDesktopDetail && selectedTask && (
+                <DesktopColumn
+                  header={
+                    <div className="flex items-center justify-between border-b bg-white px-4 py-2">
+                      <span className="textinfolabel">
+                        {t("common.detail")}
+                      </span>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={page.closeTaskPanel}
+                      >
+                        <X className="h-4 w-4" />
+                        {t("common.close")}
+                      </Button>
+                    </div>
                   }
                 >
-                  <ReviewBranch />
-                </PhaseSection>
-
-                <PhaseSection
-                  badge={phaseConfigs.deploy.badge}
-                  expanded={page.activePhases.has("deploy")}
-                  icon={<Rocket className="h-4 w-4 text-white" />}
-                  isLast
-                  label={t("plan.navigator.deploy")}
-                  status={phaseConfigs.deploy.status}
-                  onSelect={() => page.expandPhase("deploy")}
-                  onToggle={() => page.togglePhase("deploy")}
-                  summary={buildDeploySummary(page.rollout, t)}
-                  future={<PlanDetailDeployFuture />}
-                >
-                  <DeployBranch
-                    selectedTask={selectedTask}
-                    onCloseTaskPanel={page.closeTaskPanel}
-                  />
-                </PhaseSection>
-              </div>
-            </main>
-
-            {showDesktopSidebar && (
-              <DesktopColumn tag="aside" style={desktopSidebarStyle}>
-                <div className="p-4">
-                  <PlanDetailMetadataSidebar />
-                </div>
-              </DesktopColumn>
-            )}
-
-            {showDesktopDetail && selectedTask && (
-              <DesktopColumn
-                header={
-                  <div className="flex items-center justify-between border-b bg-white px-4 py-2">
-                    <span className="textinfolabel">{t("common.detail")}</span>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={page.closeTaskPanel}
-                    >
-                      <X className="h-4 w-4" />
-                      {t("common.close")}
-                    </Button>
-                  </div>
-                }
-              >
-                <DeployTaskDetailPanel task={selectedTask} />
-              </DesktopColumn>
-            )}
-          </div>
-        </div>
-
-        {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
-            <div className="text-sm text-control-light">
-              {t("common.loading")}
+                  <DeployTaskDetailPanel task={selectedTask} />
+                </DesktopColumn>
+              )}
             </div>
           </div>
-        )}
 
-        <Sheet
-          onOpenChange={page.setMobileSidebarOpen}
-          open={showMobileSidebar && page.mobileSidebarOpen}
-        >
-          <SheetContent
-            className="w-[20rem] max-w-[calc(100vw-2rem)]"
-            width="standard"
+          {!page.ready && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <div className="text-sm text-control-light">
+                {t("common.loading")}
+              </div>
+            </div>
+          )}
+
+          <Sheet
+            onOpenChange={page.setMobileSidebarOpen}
+            open={showMobileSidebar && page.mobileSidebarOpen}
           >
-            <SheetHeader>
-              <SheetTitle>{t("common.detail")}</SheetTitle>
-            </SheetHeader>
-            <SheetBody className="p-4">
-              <PlanDetailMetadataSidebar />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
+            <SheetContent
+              className="w-[20rem] max-w-[calc(100vw-2rem)]"
+              width="standard"
+            >
+              <SheetHeader>
+                <SheetTitle>{t("common.detail")}</SheetTitle>
+              </SheetHeader>
+              <SheetBody className="p-4">
+                <PlanDetailMetadataSidebar />
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
 
-        <Sheet
-          onOpenChange={(open) => {
-            if (!open) {
-              page.closeTaskPanel();
-            }
-          }}
-          open={showTaskDrawer}
-        >
-          <SheetContent
-            className="w-[40rem] max-w-[calc(100vw-2rem)]"
-            width="wide"
+          <Sheet
+            onOpenChange={(open) => {
+              if (!open) {
+                page.closeTaskPanel();
+              }
+            }}
+            open={showTaskDrawer}
           >
-            <SheetHeader>
-              <SheetTitle>{t("common.detail")}</SheetTitle>
-            </SheetHeader>
-            <SheetBody className="px-0 py-0">
-              {selectedTask ? (
-                <DeployTaskDetailPanel task={selectedTask} />
-              ) : null}
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
+            <SheetContent
+              className="w-[40rem] max-w-[calc(100vw-2rem)]"
+              width="wide"
+            >
+              <SheetHeader>
+                <SheetTitle>{t("common.detail")}</SheetTitle>
+              </SheetHeader>
+              <SheetBody className="px-0 py-0">
+                {selectedTask ? (
+                  <DeployTaskDetailPanel task={selectedTask} />
+                ) : null}
+              </SheetBody>
+            </SheetContent>
+          </Sheet>
 
-        <AlertDialog
-          open={page.pendingLeaveConfirm}
-          onOpenChange={(open) => {
-            if (!open) {
-              page.resolveLeaveConfirm(false);
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogTitle>
-              {t("common.leave-without-saving")}
-            </AlertDialogTitle>
-            <AlertDialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => page.resolveLeaveConfirm(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => page.resolveLeaveConfirm(true)}
-              >
-                {t("common.discard-changes")}
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </PlanDetailProvider>
+          <AlertDialog
+            open={page.pendingLeaveConfirm}
+            onOpenChange={(open) => {
+              if (!open) {
+                page.resolveLeaveConfirm(false);
+              }
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogTitle>
+                {t("common.leave-without-saving")}
+              </AlertDialogTitle>
+              <AlertDialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => page.resolveLeaveConfirm(false)}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => page.resolveLeaveConfirm(true)}
+                >
+                  {t("common.discard-changes")}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </PlanDetailProvider>
+    </PlanDetailStoreProvider>
   );
 }
 
