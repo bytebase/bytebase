@@ -18,16 +18,11 @@ const allowedVueImports = new Set([
 
 const vueImportPattern = /from\s+["']([^"']+\.vue)["']/g;
 
-// Vue-side helper modules that have React equivalents in
-// frontend/src/react/components/monaco/. React code must import from the
-// React copy, not from the Vue dir. The Vue dir stays alive because the
-// AI plugin (frontend/src/plugins/ai/) still uses the Vue Monaco
-// components — but React must not reach across.
+// Framework-neutral helpers that were moved out of components/ into the
+// React layer. The Vue counterpart directories no longer exist; these
+// entries lock the paths back from being recreated.
 const bannedReactToVueModulePrefixes = [
   "@/components/MonacoEditor",
-  // Framework-neutral helpers that were moved out of components/ into the
-  // React layer. The Vue counterpart directories no longer exist; this
-  // entry locks the path back from being recreated.
   "@/components/Plan",
   "@/components/SQLReview",
   "@/components/ProjectMember",

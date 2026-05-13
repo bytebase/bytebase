@@ -133,8 +133,8 @@ vi.mock("@/composables/useExecuteSQL", () => ({
   useExecuteSQL: () => ({ execute: vi.fn() }),
 }));
 
-vi.mock("@/components/MonacoEditor/sqlFormatter", () => ({
-  default: async (sql: string) => ({ data: sql, error: null }),
+vi.mock("@/react/components/monaco/sqlFormatter", () => ({
+  formatSQL: async (sql: string) => ({ data: sql, error: null }),
 }));
 
 vi.mock("@/types/sqlEditor/tabViewState", () => ({
