@@ -43,6 +43,8 @@ React UI components live in `src/react/components/ui/` and follow shadcn-style p
   - Children inherit the owning family. If a parent mounts into `agent` or `critical`, its descendants must not remount into a lower family.
   - Raw global `z-index` values are forbidden in React feature code for cross-surface stacking. Local component-internal `z-index` remains allowed when it only affects internal composition.
   - Consumers of overlay primitives must not set their own global `z-index`.
+  - Dropdown-bearing controls inside `Sheet`, `Dialog`, or any clipped/stacked container must render their popup through the shared layer. For shared controls that expose a `portal` prop, such as `Combobox` and select wrappers built on it, pass `portal` instead of raising a local dropdown with raw `z-index`.
+  - Menus, popovers, dropdowns, and custom floating panels should use shared `DropdownMenu`, `Popover`, `Combobox`, `Select`, `Dialog`, or `Sheet` primitives rather than ad hoc `absolute top-full z-*` markup.
   - Do not portal feature UI directly to `document.body` or a `document.body` alias. Use the shared overlay primitives, or explicitly mount into the correct semantic root with `getLayerRoot(<family>)`.
   - Do not hide raw global overlay classes in constants, imported helpers, `cn()` inputs, or interpolated template literals. A value like `fixed inset-0 z-50` is still forbidden even when it is not written directly in `className`.
   - When adding or changing React overlays, run `pnpm --dir frontend check` or `node frontend/scripts/check-react-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
