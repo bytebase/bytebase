@@ -12,6 +12,8 @@
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/react/**/*.tsx",
+    "src/plugins/ai/react/**/*.ts",
+    "src/plugins/ai/react/**/*.tsx",
     "src/react/components/MarkdownEditor/index.ts",
     "src/react/components/task-run-log/index.ts",
     "src/react/components/monaco/index.ts",

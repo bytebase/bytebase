@@ -31,6 +31,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const REACT_DIR = resolve(ROOT, "src/react");
 const LOCALES_DIR = resolve(REACT_DIR, "locales");
+// Additional React-side source roots outside `src/react/`. The AI plugin
+// keeps its React tree co-located with its framework-agnostic logic at
+// `src/plugins/ai/react/`; include those files when scanning for `t(...)`
+// usage so its i18n keys don't read as "unused".
+const EXTRA_REACT_DIRS = [resolve(ROOT, "src/plugins/ai/react")];
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
 let errors = 0;
@@ -85,6 +90,10 @@ function collectSourceKeys() {
   const files = [
     ...findFiles(REACT_DIR, ".tsx"),
     ...findFiles(REACT_DIR, ".ts"),
+    ...EXTRA_REACT_DIRS.flatMap((dir) => [
+      ...findFiles(dir, ".tsx"),
+      ...findFiles(dir, ".ts"),
+    ]),
   ];
   const keys = new Set();
   // Only match single/double quoted strings — template literals with ${} are dynamic keys

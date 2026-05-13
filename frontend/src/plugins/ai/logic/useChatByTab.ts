@@ -4,7 +4,6 @@ import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { useConversationStore } from "../store";
 import type { AIChatInfo, Conversation } from "../types";
-import { useAIContext } from "./context";
 
 const chatsByTab = new Map<string, AIChatInfo>();
 
@@ -60,19 +59,4 @@ export const useChatByTab = () => {
     if (!tab) return emptyChat;
     return getChatByTab(tab);
   });
-};
-
-export const useCurrentChat = (context = useAIContext()) => {
-  const { chat } = context;
-  const list = computed(() => chat.value.list.value);
-  const ready = computed(() => chat.value.ready.value);
-  const selected = computed({
-    get() {
-      return chat.value.selected.value;
-    },
-    set(val) {
-      chat.value.selected.value = val;
-    },
-  });
-  return { list, ready, selected };
 };

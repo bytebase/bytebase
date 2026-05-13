@@ -7,8 +7,8 @@ import {
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { AIChatToSQLBridgeHost } from "@/plugins/ai";
 import { aiContextEvents } from "@/plugins/ai/logic";
+import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
 import { DatabaseChooser } from "@/react/components/sql-editor/DatabaseChooser";
 import { DiagramPanel } from "@/react/components/sql-editor/DiagramPanel";
@@ -25,7 +25,6 @@ import { TerminalPanel } from "@/react/components/sql-editor/TerminalPanel/Termi
 import { TriggersPanel } from "@/react/components/sql-editor/TriggersPanel";
 import { ViewsPanel } from "@/react/components/sql-editor/ViewsPanel";
 import { Alert } from "@/react/components/ui/alert";
-import { VueMount } from "@/react/components/VueMount";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -230,10 +229,9 @@ export function Panels() {
                 >
                   <div className="h-full overflow-hidden flex flex-col">
                     <Suspense fallback={<AIPaneFallback />}>
-                      <VueMount
-                        component={AIChatToSQLBridgeHost}
-                        className="h-full"
-                      />
+                      <AIContextProvider>
+                        <AIChatToSQL />
+                      </AIContextProvider>
                     </Suspense>
                   </div>
                 </Panel>

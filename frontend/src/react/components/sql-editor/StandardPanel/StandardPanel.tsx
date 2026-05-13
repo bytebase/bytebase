@@ -5,10 +5,9 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
-import { AIChatToSQLBridgeHost } from "@/plugins/ai";
+import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
 import { ResultPanel } from "@/react/components/sql-editor/ResultPanel/ResultPanel";
-import { VueMount } from "@/react/components/VueMount";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -37,8 +36,10 @@ const AIPaneFallback = () => (
  *      the editor from being squeezed into an arbitrary top pane when
  *      the result pane wouldn't render anyway).
  *   2. Inner horizontal split — `<EditorMain>` / `<AIChatToSQL>`.
- *      The AI side pane mounts via `<VueMount>` so the Stage 22
- *      AI-plugin port can stay deferred without blocking this stage.
+ *      The AI side pane is now a React tree (Stage 22 port). `<AIContextProvider>`
+ *      wraps the React `<AIChatToSQL>` to re-establish the per-tab AI
+ *      state — the Vue `<VueMount component={AIChatToSQLBridgeHost}>`
+ *      bridge is gone.
  *
  * State source: `useSQLEditorTabStore` for tab + disconnect state,
  * `useConnectionOfCurrentSQLEditorTab` for the current instance,
@@ -103,10 +104,9 @@ export function StandardPanel() {
           >
             <div className="h-full overflow-hidden flex flex-col">
               <Suspense fallback={<AIPaneFallback />}>
-                <VueMount
-                  component={AIChatToSQLBridgeHost}
-                  className="h-full"
-                />
+                <AIContextProvider>
+                  <AIChatToSQL />
+                </AIContextProvider>
               </Suspense>
             </div>
           </Panel>

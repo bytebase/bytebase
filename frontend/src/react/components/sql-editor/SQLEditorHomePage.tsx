@@ -54,12 +54,10 @@ import { sqlEditorEvents } from "@/views/sql-editor/events";
  *    content into `pendingInsertAtCaret`; the React `<SQLEditor>` reads
  *    that ref and inserts at the cursor.
  *
- * Vue stragglers (`Quickstart`, `IAMRemindModal`) mount via
- * `<VueMount>` so the Stage 22 ports can stay deferred without
- * blocking this stage. The Vue Router route entry lives in
- * `router/sqlEditor.ts` as a tiny inline `defineComponent` whose
- * sole job is to mount this React tree via `<ReactPageMount
- * page="SQLEditorHomePage">` — no per-route `.vue` file remains.
+ * The Vue Router route entry lives in `router/sqlEditor.ts` as a
+ * tiny inline `defineComponent` whose sole job is to mount this
+ * React tree via `<ReactPageMount page="SQLEditorHomePage">` — no
+ * per-route `.vue` file remains.
  */
 export function SQLEditorHomePage() {
   const { t } = useTranslation();

@@ -1650,14 +1650,32 @@
     "ai": {
       "actions": {
         "explain-code": "Explicar el código",
-        "find-problems": "encontrar problemas"
+        "find-problems": "encontrar problemas",
+        "insert-at-caret": "Insertar en el cursor"
       },
       "ai-assistant": "Asistente de IA",
+      "conversation": {
+        "delete": "Eliminar conversación",
+        "history-conversations": "Historial de conversaciones",
+        "new-conversation": "Comenzar nueva conversación",
+        "no-message": "No hay mensajes en esta conversación",
+        "rename": "Renombrar conversación",
+        "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
+        "tips": {
+          "no-more": "No más",
+          "suggest-prompt": "Sugiriendo promts..."
+        },
+        "untitled": "Conversación sin título",
+        "view-history-conversations": "Ver historial de conversaciones"
+      },
+      "new-line": "Nueva linea",
       "not-configured": {
         "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
         "go-to-configure": "Ir a configurar",
         "self": "El Asistente AI no está configurado."
-      }
+      },
+      "send": "Enviar",
+      "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL"
     }
   },
   "policy": {

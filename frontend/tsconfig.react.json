@@ -16,5 +16,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/react/**/*.ts", "src/react/**/*.tsx", "src/react/react-env.d.ts"]
+  "include": [
+    "src/react/**/*.ts",
+    "src/react/**/*.tsx",
+    "src/react/react-env.d.ts",
+    "src/plugins/ai/react/**/*.ts",
+    "src/plugins/ai/react/**/*.tsx"
+  ]
 }

@@ -1650,14 +1650,32 @@
     "ai": {
       "actions": {
         "explain-code": "コードの説明",
-        "find-problems": "問題を見つける"
+        "find-problems": "問題を見つける",
+        "insert-at-caret": "キャレットに挿入"
       },
       "ai-assistant": "AI アシスタント",
+      "conversation": {
+        "delete": "セッションの削除",
+        "history-conversations": "歴史対話",
+        "new-conversation": "新しい会話を開始する",
+        "no-message": "この会話にはメッセージはありません",
+        "rename": "セッション名の変更",
+        "select-or-create": "開始するセッションを選択または {create} します。",
+        "tips": {
+          "no-more": "何も残っていない",
+          "suggest-prompt": "プロンプト単語を生成..."
+        },
+        "untitled": "名前のないセッション",
+        "view-history-conversations": "過去の会話を表示する"
+      },
+      "new-line": "改行",
       "not-configured": {
         "contact-admin-to-configure": "組織の管理者に問い合わせてください。",
         "go-to-configure": "設定に移動",
         "self": "AI アシスタントが設定されていません。"
-      }
+      },
+      "send": "送信",
+      "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。"
     }
   },
   "policy": {

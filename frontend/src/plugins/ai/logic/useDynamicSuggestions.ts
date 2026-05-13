@@ -1,17 +1,18 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { head, uniq, values } from "lodash-es";
-import { computed, reactive, ref } from "vue";
+import { computed, type MaybeRefOrGetter, reactive, ref, toValue } from "vue";
 import { hashCode } from "@/bbkit/BBUtil";
 import { sqlServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
+import type { Engine } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,
   AICompletionRequestSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { storageKeyAiSuggestions } from "@/utils";
-import { useAIContext } from "./context";
 import * as promptUtils from "./prompt";
 
 export type SuggestionContext = {
@@ -49,13 +50,25 @@ const MAX_STORED_SUGGESTIONS = 10;
 
 const keyOf = (metadata: string) => String(hashCode(metadata));
 
-export const useDynamicSuggestions = () => {
-  const context = useAIContext();
+/**
+ * Per-(database, engine, schema) cache of LLM-suggested prompt chips.
+ *
+ * Originally took its inputs via Vue's `useAIContext()` provide/inject.
+ * After Stage 22 the AI plugin's components are React, and the React
+ * provider doesn't set up a Vue inject chain — so callers pass
+ * `databaseMetadata` / `engine` / `schema` directly (or via Vue refs /
+ * getters, which makes this helper still usable from Vue surfaces that
+ * outlive this migration).
+ */
+export const useDynamicSuggestions = (params: {
+  databaseMetadata: MaybeRefOrGetter<DatabaseMetadata | undefined>;
+  engine: MaybeRefOrGetter<Engine | undefined>;
+  schema: MaybeRefOrGetter<string | undefined>;
+}) => {
   const metadata = computed(() => {
-    const meta = context.databaseMetadata.value;
-    const engine = context.engine.value;
-    const schema = context.schema.value;
-
+    const meta = toValue(params.databaseMetadata);
+    const engine = toValue(params.engine);
+    const schema = toValue(params.schema);
     if (meta && engine) {
       return promptUtils.databaseMetadataToText(meta, engine, schema);
     }

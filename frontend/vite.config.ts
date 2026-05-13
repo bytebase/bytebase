@@ -30,7 +30,17 @@ export default defineConfig({
       name: "react-tsx-transform",
       enforce: "pre",
       async transform(code, id) {
-        if (!/\/src\/react\/.+\.tsx$/.test(id)) return undefined;
+        // Both the main React tree (`src/react/...`) and the AI plugin's
+        // co-located React subtree (`src/plugins/ai/react/...`) compile
+        // with React's automatic JSX runtime. The latter has to be
+        // listed explicitly — otherwise its `.tsx` files fall through
+        // to the `vueJsx()` plugin below and get compiled with Vue's
+        // JSX transform, which produces Vue VNodes and dies at runtime
+        // with "Cannot add property _ctx, object is not extensible"
+        // when Vue tries to attach `_ctx` to a frozen value.
+        if (!/\/(src\/react|src\/plugins\/ai\/react)\/.+\.tsx$/.test(id)) {
+          return undefined;
+        }
         const result = await esbuildTransform(code, {
           loader: "tsx",
           jsx: "automatic",
@@ -45,7 +55,7 @@ export default defineConfig({
     vue(),
     vueJsx({
       include: /\.tsx$/,
-      exclude: /src\/react\//,
+      exclude: /src\/(react|plugins\/ai\/react)\//,
     }),
     // https://github.com/intlify/vite-plugin-vue-i18n
     VueI18nPlugin({

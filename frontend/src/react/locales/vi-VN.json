@@ -1650,14 +1650,32 @@
     "ai": {
       "actions": {
         "explain-code": "Giải thích mã",
-        "find-problems": "Tìm vấn đề"
+        "find-problems": "Tìm vấn đề",
+        "insert-at-caret": "Chèn vào con trỏ"
       },
       "ai-assistant": "Trợ lý AI",
+      "conversation": {
+        "delete": "Xóa cuộc trò chuyện",
+        "history-conversations": "Cuộc trò chuyện lịch sử",
+        "new-conversation": "Bắt đầu cuộc trò chuyện mới",
+        "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
+        "rename": "Đổi tên cuộc trò chuyện",
+        "select-or-create": "Chọn hoặc {create} một cuộc trò chuyện để bắt đầu.",
+        "tips": {
+          "no-more": "không còn nữa",
+          "suggest-prompt": "Gợi ý nhắc nhở..."
+        },
+        "untitled": "Cuộc trò chuyện không có tiêu đề",
+        "view-history-conversations": "Xem cuộc trò chuyện lịch sử"
+      },
+      "new-line": "Dòng mới",
       "not-configured": {
         "contact-admin-to-configure": "Vui lòng liên hệ với quản trị viên tổ chức của bạn.",
         "go-to-configure": "Đi tới cấu hình",
         "self": "Trợ lý AI chưa được định cấu hình."
-      }
+      },
+      "send": "Gửi",
+      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL"
     }
   },
   "policy": {

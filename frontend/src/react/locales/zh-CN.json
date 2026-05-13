@@ -1650,14 +1650,32 @@
     "ai": {
       "actions": {
         "explain-code": "解释代码",
-        "find-problems": "找出问题"
+        "find-problems": "找出问题",
+        "insert-at-caret": "在光标处插入"
       },
       "ai-assistant": "AI 助手",
+      "conversation": {
+        "delete": "删除会话",
+        "history-conversations": "历史对话",
+        "new-conversation": "开启新对话",
+        "no-message": "无消息",
+        "rename": "修改会话名称",
+        "select-or-create": "选择或{create}一个会话以开始。",
+        "tips": {
+          "no-more": "没有了",
+          "suggest-prompt": "生成提示词..."
+        },
+        "untitled": "未命名会话",
+        "view-history-conversations": "查看历史对话"
+      },
+      "new-line": "换行",
       "not-configured": {
         "contact-admin-to-configure": "请联系您的组织管理员。",
         "go-to-configure": "前往配置",
         "self": "AI 助手尚未配置。"
-      }
+      },
+      "send": "发送",
+      "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会将其转换成 SQL 语句"
     }
   },
   "policy": {

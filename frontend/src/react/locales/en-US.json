@@ -1658,14 +1658,32 @@
     "ai": {
       "actions": {
         "explain-code": "Explain code",
-        "find-problems": "Find problems"
+        "find-problems": "Find problems",
+        "insert-at-caret": "Insert at caret"
       },
       "ai-assistant": "AI Assistant",
+      "conversation": {
+        "delete": "Delete conversation",
+        "history-conversations": "History conversations",
+        "new-conversation": "Start new conversation",
+        "no-message": "No message in this conversation",
+        "rename": "Rename conversation",
+        "select-or-create": "Select or {create} a conversation to start.",
+        "tips": {
+          "no-more": "no more",
+          "suggest-prompt": "Suggesting prompts..."
+        },
+        "untitled": "Untitled conversation",
+        "view-history-conversations": "View history conversations"
+      },
+      "new-line": "New line",
       "not-configured": {
         "contact-admin-to-configure": "Please contact your org administrator.",
         "go-to-configure": "Go to configure",
         "self": "AI Assistant is not configured."
-      }
+      },
+      "send": "Send",
+      "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL"
     }
   },
   "policy": {
