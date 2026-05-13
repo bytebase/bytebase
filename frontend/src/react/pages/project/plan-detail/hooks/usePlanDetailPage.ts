@@ -22,6 +22,7 @@ import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
 import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "../shell/hooks/fetchPlanSnapshot";
+import { useDerivedPlanState } from "../shell/hooks/useDerivedPlanState";
 import { useEditingScopes } from "../shell/hooks/useEditingScopes";
 import { useInitialFetch } from "../shell/hooks/useInitialFetch";
 import { useLeaveGuard } from "../shell/hooks/useLeaveGuard";
@@ -275,68 +276,23 @@ export const usePlanDetailPage = ({
     refreshState,
   });
 
-  const selectedTaskName = useMemo(() => {
-    if (!routeTaskId || !snapshot.rollout) {
-      return undefined;
-    }
-    for (const stage of snapshot.rollout.stages) {
-      const task = stage.tasks.find((item) =>
-        item.name.endsWith(`/${routeTaskId}`)
-      );
-      if (task) {
-        return task.name;
-      }
-    }
-    return undefined;
-  }, [routeTaskId, snapshot.rollout]);
-
-  return useMemo(
-    () => ({
-      ...snapshot,
-      isEditing,
-      isRefreshing,
-      isRunningChecks,
-      setIsRunningChecks,
-      lastRefreshTime,
-      activePhases: phase.activePhases,
-      routeName,
-      routePhase,
-      routeStageId,
-      routeTaskId,
-      selectedTaskName,
-      pendingLeaveConfirm: editing.pendingLeaveConfirm,
-      sidebarMode: sidebar.sidebarMode,
-      containerWidth: sidebar.containerWidth,
-      desktopSidebarWidth: sidebar.sidebarWidth,
-      mobileSidebarOpen: sidebar.isMobileSidebarOpen,
-      bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
-      patchState,
-      refreshState,
-      setEditing: editing.setEditing,
-      setMobileSidebarOpen: sidebar.setMobileSidebarOpen,
-      togglePhase: phase.togglePhase,
-      expandPhase: phase.expandPhase,
-      closeTaskPanel,
-      resolveLeaveConfirm,
-    }),
-    [
-      closeTaskPanel,
-      editing,
-      isEditing,
-      isRefreshing,
-      isRunningChecks,
-      lastRefreshTime,
-      patchState,
-      phase,
-      refreshState,
-      resolveLeaveConfirm,
-      routeName,
-      routePhase,
-      routeStageId,
-      routeTaskId,
-      selectedTaskName,
-      sidebar,
-      snapshot,
-    ]
-  );
+  return useDerivedPlanState({
+    snapshot,
+    isEditing,
+    isRefreshing,
+    isRunningChecks,
+    setIsRunningChecks,
+    lastRefreshTime,
+    phase,
+    editing,
+    sidebar,
+    routeName,
+    routePhase,
+    routeStageId,
+    routeTaskId,
+    patchState,
+    refreshState,
+    closeTaskPanel,
+    resolveLeaveConfirm,
+  });
 };
