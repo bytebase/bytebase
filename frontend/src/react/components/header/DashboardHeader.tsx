@@ -132,7 +132,7 @@ export function DashboardHeader({
           }}
         >
           <Bot className="h-4 w-4" />
-          {isDesktopLabelVisible ? <span>{t("agent.self")}</span> : null}
+          {isLargeLabelVisible ? <span>{t("agent.self")}</span> : null}
         </Button>
 
         {currentPlan === PlanType.FREE ? (
@@ -160,7 +160,7 @@ export function DashboardHeader({
           }}
         >
           <SquareTerminal className="h-4 w-4" />
-          {isDesktopLabelVisible ? (
+          {isLargeLabelVisible ? (
             <span className="whitespace-nowrap">{t("sql-editor.self")}</span>
           ) : null}
         </Button>

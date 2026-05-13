@@ -731,7 +731,7 @@ export function AuditLogTable({
                 ))}
               </colgroup>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-control-bg">
                   {columns.map((col, colIdx) => (
                     <TableHead
                       key={col.key}

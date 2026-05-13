@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Info,
   type LucideIcon,
+  X,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/react/lib/utils";
@@ -48,6 +49,7 @@ type AlertProps = Omit<ComponentProps<"div">, "title"> &
     title?: ReactNode;
     description?: ReactNode;
     showIcon?: boolean;
+    onDismiss?: () => void;
   };
 
 function Alert({
@@ -56,6 +58,7 @@ function Alert({
   showIcon = true,
   title,
   description,
+  onDismiss,
   children,
   ...props
 }: AlertProps) {
@@ -91,6 +94,16 @@ function Alert({
           children
         )}
       </div>
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="shrink-0 rounded-xs p-0.5 text-control-light hover:bg-black/5 hover:text-control"
+          onClick={onDismiss}
+        >
+          <X className="size-4" />
+        </button>
+      )}
     </div>
   );
 }

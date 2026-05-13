@@ -179,7 +179,9 @@ export function SigninPage(props: SigninPageProps) {
           <Alert
             variant="info"
             className="mb-4 mt-4"
-            title={t("auth.sign-in.invited-email", { email: invitedEmail })}
+            description={t("auth.sign-in.invited-email", {
+              email: invitedEmail,
+            })}
           />
         )}
 

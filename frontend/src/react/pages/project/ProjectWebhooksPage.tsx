@@ -171,76 +171,81 @@ function WebhookTable({
 
   return (
     <div className="px-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-60">{t("common.name")}</TableHead>
-            <TableHead>URL</TableHead>
-            <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
-            {allowEdit && <TableHead className="w-12" />}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {webhooks.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={allowEdit ? 4 : 3}
-                className="py-8 text-center text-control-light"
-              >
-                {t("common.no-data")}
-              </TableCell>
+      <div className="border rounded-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-control-bg">
+              <TableHead className="w-60">{t("common.name")}</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
+              {allowEdit && <TableHead className="w-12" />}
             </TableRow>
-          ) : (
-            webhooks.map((webhook) => {
-              const activityTitles = webhook.notificationTypes.map(
-                (activity) => {
-                  const item = activityItemList.find(
-                    (item) => item.activity === activity
-                  );
-                  return item
-                    ? item.title
-                    : Activity_Type[activity] || `ACTIVITY_${activity}`;
-                }
-              );
-
-              return (
-                <TableRow
-                  key={webhook.name}
-                  className="cursor-pointer"
-                  onClick={(e) => onRowClick(e, webhook)}
+          </TableHeader>
+          <TableBody>
+            {webhooks.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={allowEdit ? 4 : 3}
+                  className="py-8 text-center text-control-light"
                 >
-                  <TableCell>
-                    <div className="flex items-center gap-x-2">
-                      <WebhookTypeIcon type={webhook.type} className="size-5" />
-                      {webhook.title}
-                    </div>
-                  </TableCell>
-                  <TableCell className="truncate max-w-xs text-control-light">
-                    {webhook.url}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {activityTitles.map((title) => (
-                        <span
-                          key={title}
-                          className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
-                        >
-                          {title}
-                        </span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  {allowEdit && (
+                  {t("common.no-data")}
+                </TableCell>
+              </TableRow>
+            ) : (
+              webhooks.map((webhook) => {
+                const activityTitles = webhook.notificationTypes.map(
+                  (activity) => {
+                    const item = activityItemList.find(
+                      (item) => item.activity === activity
+                    );
+                    return item
+                      ? item.title
+                      : Activity_Type[activity] || `ACTIVITY_${activity}`;
+                  }
+                );
+
+                return (
+                  <TableRow
+                    key={webhook.name}
+                    className="cursor-pointer"
+                    onClick={(e) => onRowClick(e, webhook)}
+                  >
                     <TableCell>
-                      <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                      <div className="flex items-center gap-x-2">
+                        <WebhookTypeIcon
+                          type={webhook.type}
+                          className="size-5"
+                        />
+                        {webhook.title}
+                      </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                    <TableCell className="truncate max-w-xs text-control-light">
+                      {webhook.url}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        {activityTitles.map((title) => (
+                          <span
+                            key={title}
+                            className="inline-block px-2 py-0.5 text-xs rounded-xs bg-control-bg text-control"
+                          >
+                            {title}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    {allowEdit && (
+                      <TableCell>
+                        <ActionDropdown webhook={webhook} onDelete={onDelete} />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import {
   FolderTree,
   Loader2,
   Plus,
-  X,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +23,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
+import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -307,9 +307,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     <div className="py-4 w-full flex flex-col">
       <div className="px-4 flex flex-col gap-y-2 pb-2">
         {!hideHint && (
-          <DismissibleAlert onClose={dismissHint}>
-            {t("plan.subtitle")}
-          </DismissibleAlert>
+          <Alert description={t("plan.subtitle")} onDismiss={dismissHint} />
         )}
         <div className="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2">
           <div className="w-full flex flex-1 items-center justify-between gap-x-2">
@@ -370,50 +368,6 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         title={t("plan.new-plan")}
       />
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DismissibleAlert
-// ---------------------------------------------------------------------------
-
-function DismissibleAlert({
-  children,
-  onClose,
-}: {
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  return (
-    <div className="relative w-full rounded-xs border border-accent/30 bg-accent/5 text-accent px-4 py-3 text-sm flex gap-x-3 items-start">
-      <Info className="size-5 shrink-0 mt-0.5" />
-      <div className="flex-1">{children}</div>
-      <button
-        className="p-0.5 hover:bg-accent/10 rounded-xs shrink-0"
-        onClick={onClose}
-      >
-        <X className="size-4" />
-      </button>
-    </div>
-  );
-}
-
-function Info(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4" />
-      <path d="M12 8h.01" />
-    </svg>
   );
 }
 

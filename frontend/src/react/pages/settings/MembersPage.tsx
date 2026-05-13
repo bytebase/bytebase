@@ -344,7 +344,7 @@ function MemberTable({
     <div className="border rounded-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-control-bg">
             {allowEdit && (
               <TableHead className="w-10">
                 <Checkbox checked={allSelected} onCheckedChange={toggleAll} />

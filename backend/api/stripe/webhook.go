@@ -54,7 +54,14 @@ func (h *WebhookHandler) handleCallback(c *echo.Context) error {
 	}
 
 	sig := c.Request().Header.Get("Stripe-Signature")
-	event, err := webhook.ConstructEvent(body, sig, h.webhookSecret)
+	// Our Stripe account is pinned to the basil API version, but stripe-go v85
+	// targets dahlia. Existing webhook endpoints can't have their API version
+	// changed in the Stripe Dashboard, so we accept the version mismatch — every
+	// Subscription/Invoice field this handler reads is schema-identical between
+	// basil and dahlia.
+	event, err := webhook.ConstructEventWithOptions(body, sig, h.webhookSecret, webhook.ConstructEventOptions{
+		IgnoreAPIVersionMismatch: true,
+	})
 	if err != nil {
 		slog.Error("stripe webhook signature verification failed", log.BBError(err))
 		return c.String(http.StatusBadRequest, "invalid signature")

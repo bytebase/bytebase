@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -18,6 +19,8 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { EllipsisText } from "@/react/components/ui/ellipsis-text";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import {
   Table,
   TableBody,
@@ -412,10 +415,10 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
           ) : (
             <div className="px-4">
               <div className="border rounded-sm overflow-hidden">
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow className="bg-control-bg">
-                      <TableHead className="w-24">
+                      <TableHead className="w-28">
                         {t("common.status")}
                       </TableHead>
                       <TableHead
@@ -560,28 +563,24 @@ function AccessGrantRow({
           {getAccessGrantDisplayStatusText(grant)}
         </Badge>
       </TableCell>
-      <TableCell className="truncate max-w-44">
-        {extractUserEmail(grant.creator)}
-      </TableCell>
-      <TableCell className="hidden xl:table-cell">{createdAt}</TableCell>
-      <TableCell className="hidden xl:table-cell">{expiration}</TableCell>
       <TableCell>
-        <Tooltip
-          content={
-            <pre className="max-w-lg whitespace-pre-wrap">{grant.query}</pre>
-          }
-        >
-          <div className="flex items-center gap-x-1 overflow-hidden">
-            <span className="font-mono text-xs truncate shrink">
-              {grant.query}
-            </span>
-            {grant.unmask && (
-              <Badge variant="warning" className="shrink-0">
-                {t("sql-editor.grant-type-unmask")}
-              </Badge>
-            )}
-          </div>
-        </Tooltip>
+        <EllipsisText text={extractUserEmail(grant.creator)} />
+      </TableCell>
+      <TableCell className="hidden xl:table-cell">
+        <EllipsisText text={createdAt} />
+      </TableCell>
+      <TableCell className="hidden xl:table-cell">
+        <EllipsisText text={expiration} />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-x-1 overflow-hidden">
+          <TruncatedQuery query={grant.query} />
+          {grant.unmask && (
+            <Badge variant="warning" className="shrink-0">
+              {t("sql-editor.grant-type-unmask")}
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <DatabaseTargets targets={grant.targets} />
@@ -620,6 +619,59 @@ function AccessGrantRow({
         </div>
       </TableCell>
     </TableRow>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TruncatedQuery
+// ---------------------------------------------------------------------------
+
+function TruncatedQuery({ query }: { query: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      setIsTruncated(el.scrollWidth > el.clientWidth);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [query]);
+
+  return (
+    <BaseTooltip.Provider delay={300}>
+      <BaseTooltip.Root open={isTruncated && open} onOpenChange={setOpen}>
+        <BaseTooltip.Trigger
+          render={
+            <span
+              ref={ref}
+              className="block font-mono text-xs truncate min-w-0 flex-1"
+            />
+          }
+        >
+          {query}
+        </BaseTooltip.Trigger>
+        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+          <BaseTooltip.Positioner
+            side="top"
+            sideOffset={4}
+            className={LAYER_SURFACE_CLASS}
+          >
+            <BaseTooltip.Popup className="rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
+              <pre className="max-w-lg whitespace-pre-wrap font-mono">
+                {query}
+              </pre>
+              <BaseTooltip.Arrow className="fill-main" />
+            </BaseTooltip.Popup>
+          </BaseTooltip.Positioner>
+        </BaseTooltip.Portal>
+      </BaseTooltip.Root>
+    </BaseTooltip.Provider>
   );
 }
 

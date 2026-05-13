@@ -184,7 +184,7 @@ function ServiceAccountTable({
     <div className="border rounded-sm overflow-hidden">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-control-bg">
             <TableHead className="whitespace-nowrap">
               {t("settings.members.table.account")}
             </TableHead>

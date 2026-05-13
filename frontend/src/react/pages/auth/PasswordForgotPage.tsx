@@ -82,7 +82,7 @@ export function PasswordForgotPage() {
           {!passwordResetEnabled ? (
             <Alert
               variant="warning"
-              title={t("auth.password-forget.selfhost")}
+              description={t("auth.password-forget.selfhost")}
             />
           ) : (
             <>

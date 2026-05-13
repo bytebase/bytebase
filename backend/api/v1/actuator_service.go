@@ -139,6 +139,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
 		Restriction:         restriction,
+		ExternalUrl:         s.profile.ExternalURL,
 	}
 
 	if workspaceID != "" {

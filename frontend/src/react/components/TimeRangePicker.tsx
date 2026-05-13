@@ -119,7 +119,7 @@ export function TimeRangePicker({
             <Input
               type="datetime-local"
               step="1"
-              className="flex-1"
+              className="flex-1 accent-accent"
               value={draftFrom}
               onChange={(e) => setDraftFrom(e.target.value)}
             />
@@ -131,7 +131,7 @@ export function TimeRangePicker({
             <Input
               type="datetime-local"
               step="1"
-              className="flex-1"
+              className="flex-1 accent-accent"
               value={draftTo}
               onChange={(e) => setDraftTo(e.target.value)}
             />

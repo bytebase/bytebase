@@ -1,4 +1,4 @@
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SearchParams } from "@/react/components/AdvancedSearch";
@@ -10,6 +10,7 @@ import {
   PresetButtons,
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
+import { Alert } from "@/react/components/ui/alert";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
@@ -231,9 +232,7 @@ export function ProjectIssueDashboardPage({
     <div className="py-4 flex flex-col">
       <div className="px-4 flex flex-col gap-y-2">
         {!hideHint && (
-          <DismissibleAlert onClose={dismissHint}>
-            {t("issue.subtitle")}
-          </DismissibleAlert>
+          <Alert description={t("issue.subtitle")} onDismiss={dismissHint} />
         )}
         <IssueSearchBar
           params={searchParams}
@@ -298,44 +297,6 @@ export function ProjectIssueDashboardPage({
         onClose={() => setBatchAction(undefined)}
         onUpdated={handleBatchUpdated}
       />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// DismissibleAlert
-// ---------------------------------------------------------------------------
-
-function DismissibleAlert({
-  children,
-  onClose,
-}: {
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  return (
-    <div className="relative w-full rounded-xs border border-accent/30 bg-accent/5 text-accent px-4 py-3 text-sm flex gap-x-3 items-start">
-      <svg
-        className="h-5 w-5 shrink-0 mt-0.5"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 16v-4" />
-        <path d="M12 8h.01" />
-      </svg>
-      <div className="flex-1">{children}</div>
-      <button
-        className="p-0.5 hover:bg-accent/10 rounded-xs shrink-0"
-        onClick={onClose}
-      >
-        <X className="h-4 w-4" />
-      </button>
     </div>
   );
 }
