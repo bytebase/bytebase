@@ -3,7 +3,7 @@ import type {
   PlanDetailPageSnapshot,
   PlanDetailPageState,
   PlanDetailPhase,
-} from "../../hooks/usePlanDetailPage";
+} from "./types";
 import type { useEditingScopes } from "./useEditingScopes";
 import type { usePhaseState } from "./usePhaseState";
 import type { useSidebarMode } from "./useSidebarMode";

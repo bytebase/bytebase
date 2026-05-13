@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { PlanDetailPageState } from "./hooks/usePlanDetailPage";
+import type { PlanDetailPageState } from "./shell/hooks/types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -109,9 +109,12 @@ vi.mock("./components/PlanDetailMetadataSidebar", () => ({
   PlanDetailMetadataSidebar: () => null,
 }));
 
-vi.mock("./hooks/usePlanDetailPage", () => ({
+vi.mock("./shell/constants", () => ({
   SIDEBAR_WIDTH_NARROW_PX: 320,
   WIDE_SIDEBAR_BREAKPOINT_PX: 1024,
+}));
+
+vi.mock("./shell/hooks/usePlanDetailPage", () => ({
   usePlanDetailPage: mocks.usePlanDetailPage,
 }));
 

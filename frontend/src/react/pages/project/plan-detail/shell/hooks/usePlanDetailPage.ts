@@ -7,94 +7,24 @@ import {
 } from "@/router/dashboard/projectV1";
 import { PLAN_DETAIL_PHASE_DEPLOY } from "@/router/dashboard/projectV1RouteHelpers";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import {
-  type Rollout,
-  Task_Status,
-  type TaskRun,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
-import { usePlanDetailStoreApi } from "../shared/stores/usePlanDetailStore";
-import { fetchPlanSnapshot } from "../shell/hooks/fetchPlanSnapshot";
-import { useDerivedPlanState } from "../shell/hooks/useDerivedPlanState";
-import { useEditingScopes } from "../shell/hooks/useEditingScopes";
-import { useInitialFetch } from "../shell/hooks/useInitialFetch";
-import { useLeaveGuard } from "../shell/hooks/useLeaveGuard";
-import { usePhaseState } from "../shell/hooks/usePhaseState";
-import { usePolling } from "../shell/hooks/usePolling";
-import { useRedirects } from "../shell/hooks/useRedirects";
-import { useRouteSelection } from "../shell/hooks/useRouteSelection";
-import { useSidebarMode } from "../shell/hooks/useSidebarMode";
-
-export {
-  MOBILE_BREAKPOINT_PX,
-  POLLER_INTERVAL,
-  PROJECT_NAME_PREFIX,
-  SIDEBAR_WIDTH_NARROW_PX,
-  SIDEBAR_WIDTH_WIDE_PX,
-  WIDE_SIDEBAR_BREAKPOINT_PX,
-} from "../shell/constants";
-export type { PlanDetailSidebarMode } from "../shell/hooks/useSidebarMode";
-
-import type { PlanDetailSidebarMode } from "../shell/hooks/useSidebarMode";
-
-export type PlanDetailPhase = "changes" | "review" | "deploy";
-
-export interface PlanDetailPageSnapshot {
-  projectId: string;
-  planId: string;
-  specId?: string;
-  pageKey: string;
-  projectTitle: string;
-  projectRequireIssueApproval: boolean;
-  projectRequirePlanCheckNoError: boolean;
-  projectCanCreateRollout: boolean;
-  currentUser: User;
-  project: Project;
-  isCreating: boolean;
-  isInitializing: boolean;
-  ready: boolean;
-  readonly: boolean;
-  plan: Plan;
-  issue?: Issue;
-  rollout?: Rollout;
-  planCheckRuns: PlanCheckRun[];
-  taskRuns: TaskRun[];
-}
-
-export interface PlanDetailPageState extends PlanDetailPageSnapshot {
-  isEditing: boolean;
-  isRefreshing: boolean;
-  isRunningChecks: boolean;
-  setIsRunningChecks: (running: boolean) => void;
-  lastRefreshTime: number;
-  activePhases: Set<PlanDetailPhase>;
-  routeName?: string;
-  routePhase?: string;
-  routeStageId?: string;
-  routeTaskId?: string;
-  selectedTaskName?: string;
-  pendingLeaveConfirm: boolean;
-  sidebarMode: PlanDetailSidebarMode;
-  containerWidth: number;
-  desktopSidebarWidth: number;
-  mobileSidebarOpen: boolean;
-  patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
-  refreshState: () => Promise<void>;
-  bypassLeaveGuardOnce: () => void;
-  setEditing: (scope: string, editing: boolean) => void;
-  setMobileSidebarOpen: (open: boolean) => void;
-  togglePhase: (phase: PlanDetailPhase) => void;
-  expandPhase: (phase: PlanDetailPhase) => void;
-  closeTaskPanel: () => void;
-  resolveLeaveConfirm: (confirmed: boolean) => void;
-}
+import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
+import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
+import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
+import { useDerivedPlanState } from "./useDerivedPlanState";
+import { useEditingScopes } from "./useEditingScopes";
+import { useInitialFetch } from "./useInitialFetch";
+import { useLeaveGuard } from "./useLeaveGuard";
+import { usePhaseState } from "./usePhaseState";
+import { usePolling } from "./usePolling";
+import { useRedirects } from "./useRedirects";
+import { useRouteSelection } from "./useRouteSelection";
+import { useSidebarMode } from "./useSidebarMode";
 
 const buildDefaultSnapshot = (
   projectId: string,

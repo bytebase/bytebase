@@ -7,9 +7,9 @@ import {
   WORKSPACE_ROUTE_404,
 } from "@/router/dashboard/workspaceRoutes";
 import { unknownPlan } from "@/types/v1/issue/plan";
-import type { PlanDetailPageSnapshot } from "../../hooks/usePlanDetailPage";
 import type { PlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
+import type { PlanDetailPageSnapshot } from "./types";
 
 export interface UseInitialFetchParams {
   projectId: string;

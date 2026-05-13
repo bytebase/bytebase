@@ -32,12 +32,12 @@ import {
   PlanDetailProvider,
   usePlanDetailContext,
 } from "./context/PlanDetailContext";
+import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import {
   SIDEBAR_WIDTH_NARROW_PX,
-  usePlanDetailPage,
   WIDE_SIDEBAR_BREAKPOINT_PX,
-} from "./hooks/usePlanDetailPage";
-import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
+} from "./shell/constants";
+import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
 import {
   buildChangesSummary,
   buildDeploySummary,
