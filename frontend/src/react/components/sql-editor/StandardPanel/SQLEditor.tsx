@@ -2,19 +2,19 @@ import type { IDisposable, IRange } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v1 as uuidv1 } from "uuid";
-import type {
-  IStandaloneCodeEditor,
-  MonacoModule,
-  Selection as MonacoSelection,
-} from "@/components/MonacoEditor";
-import {
-  extensionNameOfLanguage,
-  formatEditorContent,
-} from "@/components/MonacoEditor/utils";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ChatAction } from "@/plugins/ai/types";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
+import type {
+  IStandaloneCodeEditor,
+  MonacoModule,
+  Selection as MonacoSelection,
+} from "@/react/components/monaco/types";
+import {
+  extensionNameOfLanguage,
+  formatEditorContent,
+} from "@/react/components/monaco/utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,

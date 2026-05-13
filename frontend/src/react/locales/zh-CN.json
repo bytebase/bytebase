@@ -1730,6 +1730,7 @@
       "expires-in-days_other": "{{days}} 天后到期",
       "expires-today": "今天到期",
       "grant-exemption": "授予豁免",
+      "level": "等级",
       "n-exemptions_one": "{{n}} 项豁免",
       "n-exemptions_other": "{{n}} 项豁免",
       "no-exemptions": "尚未授予脱敏豁免",
@@ -2840,6 +2841,13 @@
     "view-schema-text": "查看文本 Schema",
     "visualize-explain": "可视化 Explain",
     "web-socket": {
+      "connection-status": {
+        "connected": "已连接",
+        "connecting": "连接中",
+        "disconnected": "已断开",
+        "last-heartbeat": "上次心跳时间 {{time}}",
+        "title": "语言服务器"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
@@ -3719,6 +3727,7 @@
   "subscription.usage.instance-count.title": "实例数量限制",
   "task": {
     "cancel-task": "取消任务",
+    "cancel-task-description": "待运行和就绪的任务运行会立即取消。运行中的任务运行会收到尽力而为的取消请求，可能会继续运行；如有需要请重试。",
     "checking": "检查中…",
     "created": "创建时间",
     "data-export-creator-only": "只有工单创建者可以执行数据导出任务",

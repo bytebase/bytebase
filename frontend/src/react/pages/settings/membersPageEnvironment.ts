@@ -1,4 +1,4 @@
-import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
+import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertFromExpr } from "@/utils/issue/cel";
 

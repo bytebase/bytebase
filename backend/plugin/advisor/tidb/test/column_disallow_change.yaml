@@ -15,3 +15,21 @@
         line: 2
         column: 0
       endposition: null
+# Single-advice-per-statement cardinality pin (batch 11): pingcap-tidb's
+# Visitor broke after the first CHANGE COLUMN match. Multiple CHANGE
+# COLUMN specs in one ALTER TABLE produce ONE advice, not N. (Mysql
+# analog emits per-cmd — cardinality divergence preserved on the tidb
+# side per invariant #7's "preserve pingcap behavior" rule.)
+- statement: |-
+    CREATE TABLE t(a int, b int);
+    ALTER TABLE t CHANGE COLUMN a c int, CHANGE COLUMN b d int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 406
+      title: COLUMN_DISALLOW_CHANGE
+      content: '"ALTER TABLE t CHANGE COLUMN a c int, CHANGE COLUMN b d int;" contains CHANGE COLUMN statement'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

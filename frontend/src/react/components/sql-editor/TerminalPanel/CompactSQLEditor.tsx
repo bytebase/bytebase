@@ -2,12 +2,12 @@ import { debounce } from "lodash-es";
 import type { IDisposable } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import type {
   IStandaloneCodeEditor,
   MonacoModule,
-} from "@/components/MonacoEditor";
-import { formatEditorContent } from "@/components/MonacoEditor/utils";
-import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
+} from "@/react/components/monaco/types";
+import { formatEditorContent } from "@/react/components/monaco/utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,

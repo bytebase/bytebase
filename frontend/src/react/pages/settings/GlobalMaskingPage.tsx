@@ -10,10 +10,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import {
-  factorOperatorOverrideMap,
-  getClassificationLevelOptions,
-} from "@/components/SensitiveData/components/utils";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -35,6 +31,10 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  factorOperatorOverrideMap,
+  getClassificationLevelOptions,
+} from "@/react/lib/sensitive-data/components-utils";
 import {
   pushNotification,
   useActuatorV1Store,

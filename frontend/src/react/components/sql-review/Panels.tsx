@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
@@ -14,6 +13,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
+import { getRuleKey } from "@/react/lib/sql-review/utils";
 import {
   pushNotification,
   useEnvironmentV1Store,

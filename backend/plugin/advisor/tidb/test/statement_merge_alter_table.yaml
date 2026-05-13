@@ -59,3 +59,49 @@
         line: 4
         column: 0
       endposition: null
+# Batch 15: count=3 pin — verifies the count grows past 2. Three
+# touches on the same table emit "There are 3 statements" not just "2".
+# Lock the count-accuracy contract.
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+    ALTER TABLE tech_book ADD COLUMN c int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 3 statements to modify table `tech_book`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+# Batch 15: per-table isolation pin — two ALTERs on DIFFERENT tables
+# do NOT trigger. Each table's count is 1 individually, neither > 1.
+# Pins the per-table-keyed counting (vs accidental cross-table count).
+- statement: |-
+    ALTER TABLE a ADD COLUMN x int;
+    ALTER TABLE b ADD COLUMN y int;
+  changeType: 1
+# Cumulative #25 pin (batch 15, Codex P2 catch pre-merge): CREATE TABLE
+# RESETS the per-table state to {count: 1, lastLine}, mirroring pre-omni
+# semantics. A second CREATE on the same name starts a fresh window of
+# modifications rather than carrying over the prior count. Initial
+# batch 15 migration unified CREATE + ALTER behind a single touch()
+# helper that always incremented — would have reported "4 statements
+# to modify table `t`" for this input instead of "2".
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN a int;
+    CREATE TABLE t(b int);
+    ALTER TABLE t ADD COLUMN c int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

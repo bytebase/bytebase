@@ -1730,6 +1730,7 @@
       "expires-in-days_other": "{{days}} 日後に期限切れ",
       "expires-today": "本日期限切れ",
       "grant-exemption": "免除を付与",
+      "level": "レベル",
       "n-exemptions_one": "{{n}} 件の免除",
       "n-exemptions_other": "{{n}} 件の免除",
       "no-exemptions": "マスキング免除はまだ付与されていません",
@@ -2840,6 +2841,13 @@
     "view-schema-text": "テキストの表示 スキーマ",
     "visualize-explain": "視覚化の説明",
     "web-socket": {
+      "connection-status": {
+        "connected": "接続済み",
+        "connecting": "接続中",
+        "disconnected": "切断済み",
+        "last-heartbeat": "最終ハートビート {{time}}",
+        "title": "言語サーバー"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
@@ -3719,6 +3727,7 @@
   "subscription.usage.instance-count.title": "インスタンスの制限",
   "task": {
     "cancel-task": "タスクをキャンセルする",
+    "cancel-task-description": "保留中および利用可能なタスク実行はすぐにキャンセルされます。実行中のタスク実行にはベストエフォートのキャンセル要求が送信されますが、実行が続く場合があります。必要に応じて再試行してください。",
     "checking": "検査中…",
     "created": "作成日時",
     "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",

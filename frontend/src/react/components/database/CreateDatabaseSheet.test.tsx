@@ -15,10 +15,12 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 vi.mock("@/react/components/InstanceSelect", () => ({
   InstanceSelect: (props: {
     onChange: (name: string, instance: unknown) => void;
+    portal?: boolean;
     value: string;
   }) =>
     createElement("input", {
       "data-testid": "instance-select",
+      "data-portal": String(Boolean(props.portal)),
       value: props.value,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
         props.onChange(e.target.value, undefined),
@@ -64,6 +66,7 @@ vi.mock("@/react/components/ui/combobox", () => ({
     value,
     onChange,
     placeholder,
+    portal,
   }: {
     value: string;
     onChange: (v: string) => void;
@@ -71,10 +74,12 @@ vi.mock("@/react/components/ui/combobox", () => ({
     noResultsText?: string;
     options?: unknown[];
     onSearch?: (q: string) => void;
+    portal?: boolean;
     renderValue?: (opt: unknown) => ReactNode;
   }) =>
     createElement("input", {
       "data-testid": "combobox",
+      "data-portal": String(Boolean(portal)),
       value,
       placeholder,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -223,6 +228,19 @@ async function renderSheet(enforceIssueTitle: boolean): Promise<void> {
   });
 }
 
+async function renderSheetWithoutFixedProject(): Promise<void> {
+  await act(async () => {
+    root.render(
+      createElement(CreateDatabaseSheet, {
+        open: true,
+        onClose: () => {},
+      })
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 async function fillInstance(): Promise<void> {
   const input = container.querySelector(
     "[data-testid='instance-select']"
@@ -261,6 +279,20 @@ async function flush(): Promise<void> {
 }
 
 describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
+  it("portals project and instance dropdowns out of the scrollable sheet body", async () => {
+    await renderSheetWithoutFixedProject();
+
+    const projectSelect = container.querySelector(
+      "input[placeholder='common.project']"
+    ) as HTMLInputElement;
+    const instanceSelect = container.querySelector(
+      "[data-testid='instance-select']"
+    ) as HTMLInputElement;
+
+    expect(projectSelect.dataset.portal).toBe("true");
+    expect(instanceSelect.dataset.portal).toBe("true");
+  });
+
   it("auto-fills title from database name when enforceIssueTitle is false", async () => {
     await renderSheet(false);
     await fillInstance();

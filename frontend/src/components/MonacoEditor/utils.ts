@@ -1,10 +1,10 @@
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { Range } from "monaco-editor";
 import { h, isRef, unref, watch } from "vue";
 import { t } from "@/plugins/i18n";
 import { pushNotification } from "@/store";
 import type { Language, MaybeRef, SQLDialect } from "@/types";
 import { minmax } from "@/utils";
-import LearnMoreLink from "../LearnMoreLink.vue";
 import sqlFormatter from "./sqlFormatter";
 import type { IStandaloneCodeEditor, Selection } from "./types";
 
@@ -126,9 +126,18 @@ export const errorNotification = (err: unknown) => {
       return [
         h("p", {}, messages.description()),
         message ? h("p", {}, message) : null,
-        h(LearnMoreLink, {
-          url: "https://docs.bytebase.com/administration/production-setup/#enable-https-and-websocket",
-        }),
+        h(
+          "a",
+          {
+            href: "https://docs.bytebase.com/administration/production-setup/#enable-https-and-websocket",
+            target: "__BLANK",
+            class: "inline-flex items-center normal-link",
+          },
+          [
+            t("common.learn-more"),
+            h(ExternalLinkIcon, { class: "w-4 h-4 ml-1" }),
+          ]
+        ),
       ];
     },
   });

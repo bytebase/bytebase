@@ -15,9 +15,14 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
 import { router } from "@/router";
@@ -138,13 +143,8 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [showDisable2FAConfirm, setShowDisable2FAConfirm] = useState(false);
   const [showRegenerateView, setShowRegenerateView] = useState(false);
-  const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
 
   const editNameRef = useRef<HTMLInputElement>(null);
-  const ellipsisMenuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(ellipsisMenuRef, showEllipsisMenu, () =>
-    setShowEllipsisMenu(false)
-  );
 
   // --- Password validity ---
   const passwordErrors = useMemo(() => {
@@ -603,29 +603,22 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                     {t("two-factor.recovery-codes.self")}
                   </span>
                   {!showRegenerateView && (
-                    <div className="relative" ref={ellipsisMenuRef}>
-                      <button
-                        type="button"
-                        className="p-1 rounded-xs hover:bg-control-bg"
-                        onClick={() => setShowEllipsisMenu((v) => !v)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        aria-label={t("common.more")}
+                        className="p-1 rounded-xs hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <Ellipsis className="w-8" />
-                      </button>
-                      {showEllipsisMenu && (
-                        <div className="absolute right-0 mt-1 z-10 bg-white border border-control-border rounded-sm shadow-md py-1 min-w-36">
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-control-bg"
-                            onClick={() => {
-                              setShowRegenerateView(true);
-                              setShowEllipsisMenu(false);
-                            }}
-                          >
-                            {t("common.regenerate")}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="min-w-36">
+                        <DropdownMenuItem
+                          className="py-1.5"
+                          onClick={() => setShowRegenerateView(true)}
+                        >
+                          {t("common.regenerate")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
                 <p className="mt-4 text-sm text-gray-500">

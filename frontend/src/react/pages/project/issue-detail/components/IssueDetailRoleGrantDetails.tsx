@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getRoleEnvironmentLimitationKind } from "@/components/ProjectMember/utils";
 import { DDLWarningCallout } from "@/react/components/role-grant/DDLWarningCallout";
 import {
   Table,
@@ -13,6 +12,7 @@ import {
 } from "@/react/components/ui/table";
 import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,

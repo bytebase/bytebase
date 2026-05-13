@@ -3,12 +3,15 @@ package ghost
 import (
 	"context"
 	"log/slog"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 
 	ghostbase "github.com/github/gh-ost/go/base"
 	ghostsql "github.com/github/gh-ost/go/sql"
+	gomysql "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -17,6 +20,15 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+type sshDialer interface {
+	DialContext(context.Context, string, string) (net.Conn, error)
+	Close() error
+}
+
+var getSSHDialer = func(dataSource *storepb.DataSource) (sshDialer, error) {
+	return util.GetSSHClient(dataSource)
+}
 
 var defaultConfig = struct {
 	attemptInstantDDL                   bool
@@ -204,10 +216,10 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, error) {
+func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, func(), error) { // NOSONAR(go:S107) This existing internal API wires gh-ost configuration fields explicitly.
 	resolvedDataSource, err := util.ResolveTLSMaterial(dataSource)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resolvedDataSource != nil {
 		dataSource = resolvedDataSource
@@ -215,7 +227,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 
 	password, err := secretcomp.ReplaceExternalSecret(ctx, dataSource.GetPassword(), dataSource.GetExternalSecret())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	migrationContext := ghostbase.NewMigrationContext()
@@ -225,7 +237,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	if dataSource.GetPort() != "" {
 		dsPort, err := strconv.Atoi(dataSource.GetPort())
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert port from string to int")
+			return nil, nil, errors.Wrap(err, "failed to convert port from string to int")
 		}
 		port = dsPort
 	}
@@ -235,12 +247,12 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 
 		tlsCleanup, err := writeTLSMaterialTempFiles(dataSource, migrationContext)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		defer tlsCleanup()
 
 		if err := migrationContext.SetupTLS(); err != nil {
-			return nil, errors.Wrapf(err, "failed to set up tls")
+			return nil, nil, errors.Wrapf(err, "failed to set up tls")
 		}
 	}
 	migrationContext.InspectorConnectionConfig.Key.Port = port
@@ -259,7 +271,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.ReplicaServerId = serverIDOffset + uint(taskID)
 	// set defaults
 	if err := migrationContext.SetConnectionConfig(""); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	migrationContext.AttemptInstantDDL = defaultConfig.attemptInstantDDL
 	migrationContext.AllowedRunningOnMaster = defaultConfig.allowedRunningOnMaster
@@ -270,20 +282,20 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.ThrottleHTTPTimeoutMillis = defaultConfig.throttleHTTPTimeoutMillis
 
 	if migrationContext.AlterStatement == "" {
-		return nil, errors.Errorf("alterStatement must be provided and must not be empty")
+		return nil, nil, errors.Errorf("alterStatement must be provided and must not be empty")
 	}
 	parser := ghostsql.NewParserFromAlterStatement(migrationContext.AlterStatement)
 	migrationContext.AlterStatementOptions = parser.GetAlterStatementOptions()
 
 	if migrationContext.DatabaseName == "" {
 		if !parser.HasExplicitSchema() {
-			return nil, errors.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
+			return nil, nil, errors.Errorf("database must be provided and database name must not be empty, or alterStatement must specify database name")
 		}
 		migrationContext.DatabaseName = parser.GetExplicitSchema()
 	}
 	if migrationContext.OriginalTableName == "" {
 		if !parser.HasExplicitTable() {
-			return nil, errors.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
+			return nil, nil, errors.Errorf("table must be provided and table name must not be empty, or alterStatement must specify table name")
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
@@ -313,22 +325,22 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.SetDefaultNumRetries(defaultConfig.defaultNumRetries)
 	migrationContext.ApplyCredentials()
 	if err := migrationContext.SetCutOverLockTimeoutSeconds(defaultConfig.cutoverLockTimeoutSeconds); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := migrationContext.SetExponentialBackoffMaxInterval(defaultConfig.exponentialBackoffMaxInterval); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	userFlags, err := GetUserFlags(flags)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user flags")
+		return nil, nil, errors.Wrapf(err, "failed to get user flags")
 	}
 	if v := userFlags.attemptInstantDDL; v != nil {
 		migrationContext.AttemptInstantDDL = *v
 	}
 	if v := userFlags.maxLoad; v != nil {
 		if err := migrationContext.ReadMaxLoad(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse max load %q", *v)
+			return nil, nil, errors.Wrapf(err, "failed to parse max load %q", *v)
 		}
 	}
 	if v := userFlags.chunkSize; v != nil {
@@ -342,12 +354,12 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	}
 	if v := userFlags.cutoverLockTimeoutSeconds; v != nil {
 		if err := migrationContext.SetCutOverLockTimeoutSeconds(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to set cutover lock timeout %d", *v)
+			return nil, nil, errors.Wrapf(err, "failed to set cutover lock timeout %d", *v)
 		}
 	}
 	if v := userFlags.exponentialBackoffMaxInterval; v != nil {
 		if err := migrationContext.SetExponentialBackoffMaxInterval(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to set exponential backoff max interval %d", *v)
+			return nil, nil, errors.Wrapf(err, "failed to set exponential backoff max interval %d", *v)
 		}
 	}
 	if v := userFlags.maxLagMillis; v != nil {
@@ -370,7 +382,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	}
 	if v := userFlags.throttleControlReplicas; v != nil {
 		if err := migrationContext.ReadThrottleControlReplicaKeys(*v); err != nil {
-			return nil, errors.Wrapf(err, "failed to set throttleControlReplicas")
+			return nil, nil, errors.Wrapf(err, "failed to set throttleControlReplicas")
 		}
 	}
 	if v := userFlags.assumeMasterHost; v != nil && *v {
@@ -385,9 +397,50 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.ForceTmpTableName = tableName + tmpTableNameSuffix
 
 	if migrationContext.SwitchToRowBinlogFormat && migrationContext.AssumeRBR {
-		return nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")
+		return nil, nil, errors.Errorf("switchToRBR and assumeRBR are mutually exclusive")
 	}
-	return migrationContext, nil
+	cleanup, err := setupSSHNetwork(dataSource, migrationContext)
+	if err != nil {
+		return nil, nil, err
+	}
+	return migrationContext, cleanup, nil
+}
+
+func setupSSHNetwork(dataSource *storepb.DataSource, migrationContext *ghostbase.MigrationContext) (func(), error) {
+	if dataSource.GetSshHost() == "" {
+		return noopCleanup, nil
+	}
+
+	sshClient, err := getSSHDialer(dataSource)
+	if err != nil {
+		return nil, err
+	}
+
+	network := "mysql-tcp-" + uuid.NewString()[:8]
+	gomysql.RegisterDialContext(network, func(ctx context.Context, addr string) (net.Conn, error) {
+		if sshClient == nil {
+			return nil, errors.New("ssh client is not initialized")
+		}
+		return sshClient.DialContext(ctx, "tcp", addr)
+	})
+	migrationContext.InspectorConnectionConfig.Network = network
+	migrationContext.InspectorConnectionConfig.Dialer = func(ctx context.Context, network, address string) (net.Conn, error) {
+		if sshClient == nil {
+			return nil, errors.New("ssh client is not initialized")
+		}
+		return sshClient.DialContext(ctx, network, address)
+	}
+
+	return func() {
+		gomysql.DeregisterDialContext(network)
+		if sshClient != nil {
+			_ = sshClient.Close()
+		}
+	}, nil
+}
+
+func noopCleanup() {
+	// No resource is allocated when SSH tunneling is disabled.
 }
 
 func writeTLSMaterialTempFiles(dataSource *storepb.DataSource, migrationContext *ghostbase.MigrationContext) (func(), error) {

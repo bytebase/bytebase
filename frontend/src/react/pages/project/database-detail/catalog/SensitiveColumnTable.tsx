@@ -1,7 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import type { MaskData } from "@/components/SensitiveData/types";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
@@ -19,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import type { MaskData } from "@/react/lib/sensitive-data/types";
 import { router } from "@/router";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute } from "@/utils";

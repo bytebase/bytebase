@@ -8,7 +8,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -19,7 +19,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name_2` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name_2` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -30,7 +30,7 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0
@@ -41,7 +41,61 @@
     - status: 2
       code: 415
       title: COLUMN_MAXIMUM_CHARACTER_LENGTH
-      content: The length of the CHAR column `name` is bigger than 20, please use VARCHAR instead
+      content: The length of the CHAR column `name` is 225, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative #22 pin (batch 13): pingcap's mysql.TypeString covered
+# BOTH CHAR and BINARY (charset-pair unification, same shape as #18
+# BLOB/TEXT). The pingcap-tidb rule fired on BINARY(N>maximum) too;
+# a mechanical port matching only "CHAR" would drop BINARY coverage
+# (mysql analog had this latent gap — pre-omni mysql also missed it
+# via ANTLR token symbols; long-standing mysql gap, not regression
+# per invariant #10). This fixture locks the BINARY-coverage contract
+# on tidb.
+- statement: CREATE TABLE t(blob_col binary(225))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `blob_col` is 225, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Single-advice-per-statement cardinality pin (batch 13): pingcap-tidb's
+# Visitor broke after the first CHAR/BINARY column exceeding the limit
+# — ONE advice per top-level statement. Mysql analog emits per-column.
+# Tidb preserves pingcap behavior. Multi-column fixture verifies exactly
+# 1 advice for a statement with TWO violating columns.
+- statement: CREATE TABLE t(a char(225), b binary(225))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `a` is 225, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative #23 pin (batch 14, batch-13 follow-up): pingcap-tidb's
+# pre-omni AlterTableAddColumns inner column loop had NO break — the
+# LAST violating column in the grouped ADD COLUMN form overwrites and
+# is reported. Asymmetric vs CreateTableStmt which DID break (first-
+# wins). Initial batch-13 migration regressed to first-wins via early
+# return; restored via lastViolation tracker. Same shape as cumulative
+# #15 (charset_allowlist set-then-append cardinality) applied to a
+# different call-site within the same advisor file.
+- statement: ALTER TABLE tech_book ADD COLUMN (a char(225), b char(226))
+  changeType: 1
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `b` is 226, bigger than 20, please use VARCHAR instead
       startposition:
         line: 1
         column: 0

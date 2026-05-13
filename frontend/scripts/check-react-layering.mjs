@@ -28,6 +28,7 @@ const APPROVED_PREFIXES = [
 
 const APPROVED_FILES = new Set([
   "src/react/components/auth/SessionExpiredSurface.tsx",
+  "src/react/components/Watermark.tsx",
 ]);
 
 const CLASS_ATTR_PATTERN = /\bclass(Name)?\s*=\s*/g;

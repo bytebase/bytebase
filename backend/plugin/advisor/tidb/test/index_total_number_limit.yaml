@@ -55,3 +55,22 @@
         line: 1
         column: 0
       endposition: null
+# Batch 17: ALTER TABLE ADD UNIQUE KEY pin — exercises ATAddConstraint
+# arm with omni ConstrUnique (cumulative #2 unified). tech_book has 1
+# index in mock catalog; adding 1 unique key touches lineForTable[t];
+# FinalMetadata is consulted for total count. Whether this fires
+# depends on FinalMetadata's count (set by test scaffolding). This
+# pin documents the touch path even if the catalog count doesn't
+# exceed maximum in the default mock — purpose is to verify the
+# ATAddConstraint arm registers the table touch correctly without
+# panic / crash on omni's unified ConstrUnique enum.
+- statement: ALTER TABLE tech_book ADD UNIQUE KEY uk_id (id)
+  changeType: 1
+# Batch 17: ALTER TABLE ADD COLUMN with inline PRIMARY KEY pin —
+# exercises the ATAddColumn arm's omniColumnCreatesIndex check on
+# column.Constraints[*].Type==ColConstrPrimaryKey. Cumulative #2
+# vicinity: pre-omni used ColumnOptionPrimaryKey on the column's
+# Options list; omni represents this on column.Constraints (typed
+# list with ColConstrPrimaryKey).
+- statement: ALTER TABLE tech_book ADD COLUMN new_pk int PRIMARY KEY
+  changeType: 1

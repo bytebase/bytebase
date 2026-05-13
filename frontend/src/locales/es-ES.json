@@ -962,7 +962,6 @@
     "password-write-only": "SU_DB_PWD - solo escritura",
     "port": "Puerto",
     "project-id": "ID del proyecto",
-    "restore": "Restaurar",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{0}' al estado normal?",
     "role-arn": "ARN del rol",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
@@ -978,7 +977,6 @@
       "connection": "Conexión"
     },
     "select-database-user": "Seleccionar usuario de base de datos",
-    "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "sentence": {
       "aws-rds": {
         "mysql": {
@@ -1117,8 +1115,7 @@
           "description": "Ingrese el par \"clave:valor\" y luego presione Enter"
         },
         "project": {
-          "description": "Filtrar por proyecto",
-          "title": "Proyecto"
+          "description": "Filtrar por proyecto"
         },
         "state": {
           "description": "Filtrar por estado"
@@ -1130,9 +1127,7 @@
           "description": "Ingrese el valor y luego presione Enter",
           "title": "Tabla"
         }
-      },
-      "search": "Ingrese título o id para buscar",
-      "self": "Búsqueda Avanzada"
+      }
     },
     "approval-flow": {
       "self": "Flujo de aprobación"

@@ -1738,6 +1738,7 @@
       "expires-in-days_other": "Expires in {{days}} days",
       "expires-today": "Expires today",
       "grant-exemption": "Grant Exemption",
+      "level": "level",
       "n-exemptions_one": "{{n}} exemption",
       "n-exemptions_other": "{{n}} exemptions",
       "no-exemptions": "No masking exemptions granted yet",
@@ -2852,6 +2853,13 @@
     "view-schema-text": "View schema text",
     "visualize-explain": "Visualize Explain",
     "web-socket": {
+      "connection-status": {
+        "connected": "connected",
+        "connecting": "connecting",
+        "disconnected": "disconnected",
+        "last-heartbeat": "Last heartbeat at {{time}}",
+        "title": "Language server"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
@@ -3731,6 +3739,7 @@
   "subscription.usage.instance-count.title": "Instance count limit",
   "task": {
     "cancel-task": "Cancel task | Cancel tasks",
+    "cancel-task-description": "Pending and available task runs are canceled immediately. Running task runs receive a best-effort cancel request and may keep running; retry if needed.",
     "checking": "Checking...",
     "created": "Created",
     "data-export-creator-only": "Only the issue creator can execute data export tasks",

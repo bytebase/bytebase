@@ -4,13 +4,6 @@ import { CircleHelp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import { getClassificationLevelOptions } from "@/components/SensitiveData/components/utils";
-import { rewriteResourceDatabase } from "@/components/SensitiveData/exemptionDataUtils";
-import type { SensitiveColumn } from "@/components/SensitiveData/types";
-import {
-  convertSensitiveColumnToDatabaseResource,
-  getExpressionsForDatabaseResource as getResourceExpressions,
-} from "@/components/SensitiveData/utils";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -36,6 +29,13 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { getClassificationLevelOptions } from "@/react/lib/sensitive-data/components-utils";
+import { rewriteResourceDatabase } from "@/react/lib/sensitive-data/exemptionDataUtils";
+import type { SensitiveColumn } from "@/react/lib/sensitive-data/types";
+import {
+  convertSensitiveColumnToDatabaseResource,
+  getExpressionsForDatabaseResource as getResourceExpressions,
+} from "@/react/lib/sensitive-data/utils";
 import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";

@@ -322,10 +322,11 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 		return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	migrationContext, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
+	migrationContext, cleanup, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
 	if err != nil {
 		return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
+	defer cleanup()
 	defer func() {
 		// Use migrationContext.Uuid as the tls_config_key by convention.
 		// We need to deregister it when gh-ost exits.
@@ -373,7 +374,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 		opts.LogGhostMigrationEnd("")
 		return nil
 	case <-driverCtx.Done():
-		err := errors.New("task canceled")
+		err := errors.Wrap(driverCtx.Err(), "task canceled")
 		opts.LogGhostMigrationEnd(err.Error())
 		abortCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()

@@ -12,6 +12,7 @@ export interface EnvironmentSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  portal?: boolean;
   clearable?: boolean;
   renderSuffix?: (environment: Environment) => React.ReactNode;
 }
@@ -22,6 +23,7 @@ export function EnvironmentSelect({
   placeholder,
   disabled,
   className,
+  portal,
   clearable = true,
   renderSuffix,
 }: EnvironmentSelectProps) {
@@ -56,6 +58,7 @@ export function EnvironmentSelect({
       noResultsText={t("common.no-data")}
       disabled={disabled}
       className={className}
+      portal={portal}
       clearable={clearable}
       renderValue={(opt) => {
         const env = environments.find(

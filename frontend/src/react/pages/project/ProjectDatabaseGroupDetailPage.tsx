@@ -1,7 +1,6 @@
 import { Edit, EllipsisVertical } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { DatabaseGroupForm } from "@/react/components/DatabaseGroupForm";
 import { FeatureAttention } from "@/react/components/FeatureAttention";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -18,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { useVueState } from "@/react/hooks/useVueState";
+import { preCreateIssue } from "@/react/lib/plan/issue";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS } from "@/router/dashboard/projectV1";
 import { hasFeature, useDBGroupStore, useProjectV1Store } from "@/store";

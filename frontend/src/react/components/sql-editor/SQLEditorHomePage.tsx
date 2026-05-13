@@ -7,7 +7,6 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
-import { applyPlanTitleToQuery } from "@/components/Plan/logic/title";
 import { IAMRemindDialog } from "@/react/components/IAMRemindDialog";
 import { Quickstart } from "@/react/components/Quickstart";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
@@ -21,6 +20,7 @@ import {
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
 import { useVueState } from "@/react/hooks/useVueState";
+import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";

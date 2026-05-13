@@ -15,8 +15,8 @@ import {
 import type { ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -92,10 +93,17 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 			ID:        taskRun.ID,
 			ProjectID: taskRun.ProjectID,
 			Status:    storepb.TaskRun_FAILED,
+			AllowedStatuses: []storepb.TaskRun_Status{
+				storepb.TaskRun_PENDING,
+				storepb.TaskRun_AVAILABLE,
+			},
 			ResultProto: &storepb.TaskRunResult{
 				Detail: haErr.Error(),
 			},
 		}); err != nil {
+			if common.ErrorCode(err) == common.Conflict {
+				continue
+			}
 			slog.Error("failed to fail task run for HA limit",
 				slog.Int64("taskRunID", taskRun.ID),
 				log.BBError(err),

@@ -1,11 +1,11 @@
 import type * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MonacoModule } from "@/components/MonacoEditor";
-import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ChatAction } from "@/plugins/ai/types";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
+import { formatSQL } from "@/react/components/monaco/sqlFormatter";
+import type { MonacoModule } from "@/react/components/monaco/types";
 import { useSQLEditorUIStore } from "@/store";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

@@ -44,7 +44,6 @@ vi.mock("naive-ui", async () => {
     });
   return {
     NConfigProvider: passthrough("NConfigProvider"),
-    NDialogProvider: passthrough("NDialogProvider"),
     NNotificationProvider: passthrough("NNotificationProvider"),
     useNotification: () => ({
       create: mocks.notificationCreate,
@@ -58,11 +57,12 @@ vi.mock("../naive-ui.config", () => ({
   themeOverrides: {},
 }));
 
-vi.mock("@/components/misc/Watermark.vue", async () => {
+vi.mock("@/react/ReactPageMount.vue", async () => {
   const { defineComponent, h } = await import("vue");
   return {
     default: defineComponent({
-      name: "MockWatermark",
+      name: "MockReactPageMount",
+      props: ["page", "pageProps", "containerClass"],
       setup() {
         return () => h("div");
       },

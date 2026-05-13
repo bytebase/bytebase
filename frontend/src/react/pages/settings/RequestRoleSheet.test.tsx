@@ -157,7 +157,7 @@ vi.mock("@/router/dashboard/projectV1", () => ({
   PROJECT_V1_ROUTE_ISSUE_DETAIL: "issue-detail",
 }));
 
-vi.mock("@/components/ProjectMember/utils", () => ({
+vi.mock("@/react/lib/project-member/utils", () => ({
   // Wrap in vi.fn() so per-test overrides (vi.mocked(x).mockReturnValue(...))
   // work — plain arrow functions can't be re-mocked at runtime.
   // Default: PROJECT_OWNER is not a SQL-permission role — both return
@@ -329,7 +329,7 @@ async function typeReason(text: string): Promise<void> {
 beforeEach(async () => {
   vi.spyOn(window, "open").mockImplementation(() => null);
   // Reset env-kind mock between tests so per-test overrides don't leak.
-  const utilsMock = await import("@/components/ProjectMember/utils");
+  const utilsMock = await import("@/react/lib/project-member/utils");
   vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockReturnValue(
     undefined
   );
@@ -411,7 +411,7 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
 
   it("renders DDL/DML warning under env multiselect when role has env limitation", async () => {
     // Override default helper mock for this case so the env section appears.
-    const utilsMock = await import("@/components/ProjectMember/utils");
+    const utilsMock = await import("@/react/lib/project-member/utils");
     vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
       () => "DDL/DML"
     );

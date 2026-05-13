@@ -1,10 +1,10 @@
 import { ArrowRightLeft, Pencil } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { preCreateIssue } from "@/react/lib/plan/issue";
 import { usePermissionStore, useProjectV1Store } from "@/store";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

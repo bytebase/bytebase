@@ -8,6 +8,11 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/react/components/ui/popover";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -90,28 +95,6 @@ function useEscapeKey(onEscape: () => void) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onEscape]);
-}
-
-function useClickOutside(
-  ref: React.RefObject<HTMLElement | null>,
-  onClickOutside: () => void
-) {
-  useEffect(() => {
-    // Delay by one frame so the click that opened the popover doesn't
-    // immediately trigger the outside-click handler.
-    const id = requestAnimationFrame(() => {
-      document.addEventListener("mousedown", handler);
-    });
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClickOutside();
-      }
-    }
-    return () => {
-      cancelAnimationFrame(id);
-      document.removeEventListener("mousedown", handler);
-    };
-  }, [ref, onClickOutside]);
 }
 
 export function SemanticTypesPage() {
@@ -1290,14 +1273,13 @@ function IconPicker({ value, onChange }: IconPickerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [tempValue, setTempValue] = useState(value);
-  const popoverRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dismiss = useCallback(() => setOpen(false), []);
-  useClickOutside(popoverRef, dismiss);
 
-  const handleOpen = () => {
-    setTempValue(value);
-    setOpen(true);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setTempValue(value);
+    }
+    setOpen(nextOpen);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1312,73 +1294,67 @@ function IconPicker({ value, onChange }: IconPickerProps) {
   };
 
   return (
-    <div className="relative flex items-center justify-center" ref={popoverRef}>
-      {value ? (
-        <div className="flex items-center gap-1">
-          <img src={value} className="w-6 h-6 object-contain" alt="" />
-          <button
-            className="p-0.5 rounded-xs hover:bg-control-bg-hover text-control-light"
-            onClick={handleOpen}
-          >
-            <Pencil className="w-3 h-3" />
-          </button>
-        </div>
-      ) : (
-        <button
-          className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
-          onClick={handleOpen}
-        >
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        className={
+          value
+            ? "flex items-center gap-1 rounded-xs text-control-light outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+            : "p-1 rounded-xs hover:bg-control-bg-hover text-control-light outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        }
+      >
+        {value ? (
+          <>
+            <img src={value} className="w-6 h-6 object-contain" alt="" />
+            <span className="p-0.5 rounded-xs hover:bg-control-bg-hover">
+              <Pencil className="w-3 h-3" />
+            </span>
+          </>
+        ) : (
           <Pencil className="w-4 h-4" />
-        </button>
-      )}
-      {open && (
-        <div className="absolute left-0 top-full z-20 mt-1 bg-background border border-control-border rounded-sm shadow-lg p-3">
-          <div
-            className="w-48 h-48 flex justify-center items-center border border-dashed border-control-border rounded-sm relative cursor-pointer"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {tempValue ? (
-              <div
-                className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-sm"
-                style={{ backgroundImage: `url(${tempValue})` }}
-              />
-            ) : (
-              <span className="text-sm text-control-placeholder">
-                {t("common.upload")}
-              </span>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept={SUPPORTED_IMAGE_EXTENSIONS.join(",")}
-              onChange={handleFileSelect}
+        )}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-3">
+        <div
+          className="w-48 h-48 flex justify-center items-center border border-dashed border-control-border rounded-sm relative cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {tempValue ? (
+            <div
+              className="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-sm"
+              style={{ backgroundImage: `url(${tempValue})` }}
             />
-          </div>
-          <div className="flex justify-end gap-x-2 mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTempValue("")}
-            >
-              {t("common.clear")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                onChange(tempValue);
-                setOpen(false);
-              }}
-            >
-              {t("common.update")}
-            </Button>
-          </div>
+          ) : (
+            <span className="text-sm text-control-placeholder">
+              {t("common.upload")}
+            </span>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={SUPPORTED_IMAGE_EXTENSIONS.join(",")}
+            onChange={handleFileSelect}
+          />
         </div>
-      )}
-    </div>
+        <div className="flex justify-end gap-x-2 mt-2">
+          <Button variant="outline" size="sm" onClick={() => setTempValue("")}>
+            {t("common.clear")}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onChange(tempValue);
+              setOpen(false);
+            }}
+          >
+            {t("common.update")}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -1398,42 +1374,34 @@ function DeleteConfirmButton({
   onConfirm,
 }: DeleteConfirmButtonProps) {
   const { t } = useTranslation();
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const dismiss = useCallback(() => onShowChange(false), [onShowChange]);
-  useClickOutside(popoverRef, dismiss);
 
   return (
-    <div className="relative" ref={popoverRef}>
-      <button
-        className="p-1 rounded-xs hover:bg-error/10 text-error"
-        onClick={() => onShowChange(!show)}
-      >
+    <Popover open={show} onOpenChange={onShowChange}>
+      <PopoverTrigger className="p-1 rounded-xs hover:bg-error/10 text-error">
         <Trash2 className="w-4 h-4" />
-      </button>
-      {show && (
-        <div className="absolute right-0 top-full z-10 mt-1 bg-background border border-control-border rounded-sm shadow-lg p-3 whitespace-nowrap">
-          <p className="text-sm mb-2">{message}</p>
-          <div className="flex justify-end gap-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onShowChange(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                onConfirm();
-                onShowChange(false);
-              }}
-            >
-              {t("common.delete")}
-            </Button>
-          </div>
+      </PopoverTrigger>
+      <PopoverContent className="whitespace-nowrap">
+        <p className="text-sm mb-2">{message}</p>
+        <div className="flex justify-end gap-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onShowChange(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              onConfirm();
+              onShowChange(false);
+            }}
+          >
+            {t("common.delete")}
+          </Button>
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

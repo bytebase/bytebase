@@ -37,3 +37,13 @@
         line: 2
         column: 0
       endposition: null
+# Bare-name no-flag pin (batch 12 / Codex P1): user blocklist ["JSON",
+# "BINARY_FLOAT"] does NOT contain "BLOB", "VARCHAR", "VARCHAR(255)",
+# etc. CompactStr-equivalent rendering renders e.g. VARCHAR(255) as
+# "varchar(255)" — the blocklist would need exactly "VARCHAR(255)" to
+# match. The earlier batch-12 commit rendered bare "VARCHAR" which
+# would have caused the inverse drift (matching a "VARCHAR" entry
+# against a VARCHAR(255) column). Confirms no-flag for non-blocklist
+# types regardless of length-bearing form.
+- statement: CREATE TABLE t(a VARCHAR(255), b BLOB, c TINYINT(1))
+  changeType: 1

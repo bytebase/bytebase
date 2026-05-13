@@ -88,6 +88,9 @@
 - statement: DELETE FROM t1 WHERE id = 1;
   want:
     - DELETE
+- statement: TRUNCATE TABLE t1;
+  want:
+    - TRUNCATE
 - statement: COMMENT ON TABLE t1 IS 'test table';
   want:
     - COMMENT

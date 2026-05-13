@@ -1,12 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import { ConnectError } from "@connectrpc/connect";
 import { ChevronDown, Download } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { databaseServiceClientConnect } from "@/connect";
-import { Button } from "@/react/components/ui/button";
-import { useClickOutside } from "@/react/hooks/useClickOutside";
-import { cn } from "@/react/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/react/components/ui/dropdown-menu";
 import { pushNotification } from "@/store";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -31,9 +34,6 @@ export function DatabaseExportSchemaButton({
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(containerRef, open, () => setOpen(false));
 
   const options = useMemo(
     () => [
@@ -104,32 +104,25 @@ export function DatabaseExportSchemaButton({
   );
 
   return (
-    <div className="relative" ref={containerRef}>
-      <Button
-        variant="outline"
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        className="inline-flex h-8 items-center justify-center gap-x-2 whitespace-nowrap rounded-sm border border-control-border bg-background px-3 text-sm font-medium text-control shadow-xs hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
         disabled={disabled || exporting}
-        onClick={() => setOpen((value) => !value)}
       >
         <Download className="size-4" />
         {t("database.export-schema")}
         <ChevronDown className="size-4" />
-      </Button>
-      {open && !disabled && !exporting && (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-52 rounded-sm border border-control-border bg-background py-1 shadow-md">
-          {options.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className={cn(
-                "block w-full px-3 py-2 text-left text-sm hover:bg-control-bg"
-              )}
-              onClick={() => void handleExport(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-52">
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.key}
+            onClick={() => void handleExport(option.key)}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

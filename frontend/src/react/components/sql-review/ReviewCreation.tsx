@@ -3,10 +3,10 @@ import { isEqual } from "lodash-es";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getTemplateId } from "@/components/SQLReview/components/utils";
 import { ResourceIdField } from "@/react/components/ResourceIdField";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { getTemplateId } from "@/react/lib/sql-review/utils";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_SQL_REVIEW,

@@ -1730,6 +1730,7 @@
       "expires-in-days_other": "Hết hạn sau {{days}} ngày",
       "expires-today": "Hết hạn hôm nay",
       "grant-exemption": "Cấp Miễn trừ",
+      "level": "cấp",
       "n-exemptions_one": "{{n}} miễn trừ",
       "n-exemptions_other": "{{n}} miễn trừ",
       "no-exemptions": "Chưa có miễn trừ che giấu nào được cấp",
@@ -2840,6 +2841,13 @@
     "view-schema-text": "Xem văn bản lược đồ",
     "visualize-explain": "Trực quan hóa Giải thích",
     "web-socket": {
+      "connection-status": {
+        "connected": "đã kết nối",
+        "connecting": "đang kết nối",
+        "disconnected": "đã ngắt kết nối",
+        "last-heartbeat": "Heartbeat gần nhất lúc {{time}}",
+        "title": "Máy chủ ngôn ngữ"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
@@ -3719,6 +3727,7 @@
   "subscription.usage.instance-count.title": "Giới hạn số lượng phiên bản",
   "task": {
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
+    "cancel-task-description": "Các lần chạy tác vụ đang chờ và sẵn sàng sẽ được hủy ngay. Các lần chạy đang chạy sẽ nhận yêu cầu hủy theo cách cố gắng tối đa và có thể tiếp tục chạy; hãy thử lại nếu cần.",
     "checking": "Đang kiểm tra...",
     "created": "Đã tạo",
     "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",

@@ -310,7 +310,7 @@ vi.mock("@/store/modules/v1/actuator", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
 }));
 
-vi.mock("@/components/Plan/logic/issue", () => ({
+vi.mock("@/react/lib/plan/issue", () => ({
   preCreateIssue: mocks.preCreateIssue,
 }));
 

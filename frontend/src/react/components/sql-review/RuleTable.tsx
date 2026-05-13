@@ -1,7 +1,6 @@
 import { ChevronDown, ChevronRight, ExternalLink, Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getRuleKey } from "@/components/SQLReview/components/utils";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -14,6 +13,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
+import { getRuleKey } from "@/react/lib/sql-review/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";

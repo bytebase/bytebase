@@ -211,6 +211,7 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	}
 	if tlscfg != nil {
 		connConfig.TLSConfig = tlscfg
+		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
 	}
 
 	return connConfig, nil

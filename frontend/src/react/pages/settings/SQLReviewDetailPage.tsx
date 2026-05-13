@@ -1,7 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { rulesToTemplate } from "@/components/SQLReview/components/utils";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { AttachResourcesPanel } from "@/react/components/sql-review/Panels";
 import { ResourceLink } from "@/react/components/sql-review/ResourceLink";
@@ -19,6 +18,7 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { rulesToTemplate } from "@/react/lib/sql-review/utils";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useSQLReviewStore } from "@/store";

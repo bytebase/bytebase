@@ -21,10 +21,6 @@ import { useTranslation } from "react-i18next";
 import { groupProjectRoleBindings } from "@/components/Member/projectRoleBindings";
 import type { GroupBinding, MemberBinding } from "@/components/Member/types";
 import { getMemberBindings } from "@/components/Member/utils";
-import {
-  getRoleEnvironmentLimitationKind,
-  roleHasDatabaseLimitation,
-} from "@/components/ProjectMember/utils";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
@@ -65,6 +61,10 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  getRoleEnvironmentLimitationKind,
+  roleHasDatabaseLimitation,
+} from "@/react/lib/project-member/utils";
 import { cn } from "@/react/lib/utils";
 import {
   useNavigate,

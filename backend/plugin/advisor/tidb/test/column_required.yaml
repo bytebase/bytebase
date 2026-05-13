@@ -162,3 +162,80 @@
                   updated_ts timestamp);
                 DROP TABLE book;
   changeType: 1
+# Batch 16: DROP-then-reCREATE pin (cumulative #25 axis) — DROP TABLE
+# removes the table from state; the subsequent CREATE TABLE on the
+# same name REPLACES with a fresh empty state (initEmptyTable +
+# per-column addColumn). The re-CREATE is missing required columns,
+# so the rule fires on the SECOND incarnation. Distinct from
+# statement_merge_alter_table's CREATE-resets pattern but same audit
+# axis: per-arm state-mutation semantics (DELETE then REPLACE).
+- statement: |-
+    CREATE TABLE book(
+                  id int,
+                  creator_id int,
+                  created_ts timestamp,
+                  updater_id int,
+                  updated_ts timestamp);
+                DROP TABLE book;
+                CREATE TABLE book(id int);
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+# Batch 16: case-sensitivity pin (cumulative #19 territory) — pre-omni
+# pingcap used .O throughout (no .L). `requiredColumns` is keyed by
+# the rule's configured strings (e.g. "creator_id" exactly). A column
+# named "Creator_id" in the user's CREATE TABLE would NOT match
+# "creator_id" in the required set — rule fires (case-mismatch =
+# missing). Omni preserves user case in column.Name; matches
+# pingcap-tidb behavior. NOT a regression.
+- statement: |-
+    CREATE TABLE book(
+                  id int,
+                  Creator_id int,
+                  created_ts timestamp,
+                  updater_id int,
+                  updated_ts timestamp);
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative #27 pin (batch 16, Codex P2 catch pre-merge): pre-omni
+# ATRenameColumn arm UNCONDITIONALLY updated line[table] — even when
+# the rename touched no required column. CHANGE COLUMN is conditional
+# (only on advice-relevant rename). Initial batch 16 migration unified
+# both arms behind the conditional pattern, regressing RENAME's
+# unconditional line update. Externally observable: for `CREATE TABLE
+# book(id); ALTER TABLE book RENAME COLUMN x TO y;` the advice
+# StartPosition was line 1 (CREATE) on the regressed branch instead
+# of line 2 (RENAME) on pre-omni. Fix: split the line-update from the
+# renameColumn() return-value check on ATRenameColumn only; CHANGE
+# COLUMN remains conditional. Cumulative #27 documents the auxiliary-
+# state-map audit refinement of #25: each state map (primary `tables`
+# AND auxiliary `line`) has its own per-arm conditionality contract;
+# the audit must enumerate cross-arm × cross-map (Cartesian).
+- statement: |-
+    CREATE TABLE book(id int);
+    ALTER TABLE book RENAME COLUMN x TO y;
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

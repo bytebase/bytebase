@@ -10,3 +10,99 @@
         line: 1
         column: 0
       endposition: null
+# Batch 15: nested-subquery in FROM — exercises ast.Walk recursion into
+# SelectStmt.From. Pre-omni pingcap's Accept(checker) auto-recursed into
+# subqueries via the same path; omni's Walk recurses via walk_generated
+# (verified empirically). Both the outer SELECT and the inner subquery
+# get visited; the inner has LIMIT 10000 > max=1000 → fires.
+- statement: SELECT * FROM (SELECT * FROM employee LIMIT 10000) AS sub
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 10000 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 15: UNION-arm LIMIT — exercises ast.Walk recursion into
+# SelectStmt.Left / SelectStmt.Right (the UNION arms). Pingcap-tidb
+# Accept-traversal visited both arms; omni Walk does likewise. The left
+# arm has LIMIT 10000 → fires.
+- statement: SELECT a FROM employee LIMIT 10000 UNION SELECT b FROM employee
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 10000 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 15: WHERE-IN subquery — exercises Walk recursion into WHERE
+# expressions and their nested SelectStmts. Pingcap Accept covered this
+# via interface dispatch on Expr.Accept; omni Walk does via expression-
+# tree recursion.
+- statement: SELECT * FROM employee WHERE id IN (SELECT id FROM employee LIMIT 10000)
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 10000 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 15: strict-greater pin — LIMIT exactly at maximum (1000) does
+# NOT fire. Preserves pingcap-tidb's `limitVal > int64(...)` strict
+# inequality. Without this pin, a future refactor to `>=` would silently
+# break customer workflows that set the limit AT the threshold.
+- statement: SELECT * FROM employee LIMIT 1000
+  changeType: 1
+# Batch 15: no LIMIT — does NOT fire (baseline negative).
+- statement: SELECT * FROM employee
+  changeType: 1
+# Batch 15: LIMIT offset, count form — pingcap-tidb's pre-omni rule
+# accessed `node.Limit.Count` which for `LIMIT 50, 10000` is the COUNT
+# (10000), NOT the offset (50). Omni's `Limit.Count` field is also the
+# count (verified empirically: parse `LIMIT 50, 10000` → Count IntLit
+# Value=10000). Rule fires on count=10000 > 1000.
+- statement: SELECT * FROM employee LIMIT 50, 10000
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 10000 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative #26 pin (batch 15, Codex P2 catch pre-merge): pre-omni
+# pingcap represented `SELECT ... UNION SELECT ... LIMIT N` as
+# `*ast.SetOprStmt{Limit: ...}` — distinct concrete type with the
+# outer LIMIT on the SetOprStmt itself; inner SelectStmt arms have
+# nil Limit. The pre-omni rule's Enter matched only `*ast.SelectStmt`
+# so this outer LIMIT was silently skipped — pre-omni did NOT fire
+# despite the rule's stated intent ("limit value exceeds maximum").
+# Omni unifies UNION-root under `*ast.SelectStmt{SetOp:Union, Limit:
+# ...}` (same struct, set-op metadata); ast.Walk visits the outer
+# SelectStmt and reads the outer-UNION Limit. Rule now fires —
+# silent UX improvement matching rule intent. Same structural shape
+# as cumulative #24 (UNION outer-ORDER-BY on
+# insert_disallow_order_by_rand) — second occurrence of UNION-root
+# unification as a divergence axis across consecutive batches (14/15).
+- statement: SELECT * FROM employee UNION SELECT * FROM employee LIMIT 1001
+  changeType: 1
+  want:
+    - status: 2
+      code: 222
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
+      content: The limit value 1001 exceeds the maximum allowed value 1000
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

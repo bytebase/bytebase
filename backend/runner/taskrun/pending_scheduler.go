@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -187,7 +188,13 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 		ProjectID: taskRun.ProjectID,
 		Updater:   "",
 		Status:    storepb.TaskRun_AVAILABLE,
+		AllowedStatuses: []storepb.TaskRun_Status{
+			storepb.TaskRun_PENDING,
+		},
 	}); err != nil {
+		if common.ErrorCode(err) == common.Conflict {
+			return nil
+		}
 		return errors.Wrapf(err, "failed to update task run status to available")
 	}
 

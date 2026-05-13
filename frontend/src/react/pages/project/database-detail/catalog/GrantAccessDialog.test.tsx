@@ -6,7 +6,7 @@ import type {
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { SensitiveColumn } from "@/components/SensitiveData/types";
+import type { SensitiveColumn } from "@/react/lib/sensitive-data/types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -47,15 +47,15 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/components/ExprEditor/context", () => ({}));
 
-vi.mock("@/components/SensitiveData/components/utils", () => ({
+vi.mock("@/react/lib/sensitive-data/components-utils", () => ({
   getClassificationLevelOptions: () => [],
 }));
 
-vi.mock("@/components/SensitiveData/exemptionDataUtils", () => ({
+vi.mock("@/react/lib/sensitive-data/exemptionDataUtils", () => ({
   rewriteResourceDatabase: vi.fn((expression: string) => expression),
 }));
 
-vi.mock("@/components/SensitiveData/utils", () => ({
+vi.mock("@/react/lib/sensitive-data/utils", () => ({
   convertSensitiveColumnToDatabaseResource: vi.fn((column) => ({
     databaseFullName: column.database.name,
     schema: column.maskData.schema,

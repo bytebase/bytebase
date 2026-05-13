@@ -33,3 +33,28 @@
         line: 1
         column: 0
       endposition: null
+# Single-advice-per-statement cardinality pin (batch 11): multiple
+# type-changing specs in one ALTER TABLE produce ONE advice (pingcap-tidb
+# broke after first match). Mysql analog emits per-cmd — cardinality
+# divergence preserved on the tidb side per invariant #7.
+- statement: ALTER TABLE tech_book MODIFY id bigint, MODIFY name varchar(20)
+  changeType: 1
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book MODIFY id bigint, MODIFY name varchar(20)" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# No-op type-change baseline pin (batch 11 / cumulative #21 conceptual):
+# `MODIFY id int` on an `int` column is a no-op — no advice. Catalog
+# stores type as the bare canonical form ("int"); omni renders the new
+# type the same way; normalizeColumnType canonicalizes both to "int(11)";
+# strings match → no flag. This test was passing pre-migration too
+# (already in fixture above); included here adjacent to the cumulative
+# #21 comment for context. The BLOB/TINYBLOB/VARBINARY "BINARY"-suffix
+# false-positive fix is documented conceptually in plan-doc cumulative
+# #21 — not pinned via fixture because tech_book's mock catalog doesn't
+# carry BLOB columns and adding one would have cross-engine impact.

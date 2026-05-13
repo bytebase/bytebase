@@ -40,6 +40,11 @@
         line: 2
         column: 0
       endposition: null
+# Cumulative #28: omni follows standard MySQL grammar and drops the
+# non-standard `PRIMARY KEY pk_a (cols)` index name. Advisor falls
+# back to "PRIMARY" canonical (matching what MySQL's information_
+# schema would surface for the primary key index regardless of any
+# user-supplied non-standard name).
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD PRIMARY KEY pk_a (a, a)
@@ -48,7 +53,7 @@
     - status: 2
       code: 812
       title: INDEX_NO_DUPLICATE_COLUMN
-      content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
+      content: PRIMARY KEY `PRIMARY` has duplicate column `t`.`a`
       startposition:
         line: 2
         column: 0
@@ -79,3 +84,75 @@
         line: 2
         column: 0
       endposition: null
+# Cumulative #2 parity pin: verify all three UNIQUE syntactic forms
+# fire identically. Pingcap empirically maps `UNIQUE`, `UNIQUE KEY`,
+# `UNIQUE INDEX` all to `ConstraintUniq` (Tp=4); `ConstraintUniqKey`
+# (Tp=5) and `ConstraintUniqIndex` (Tp=6) are defined in the enum
+# but never produced for these inputs. Omni unifies under
+# `ConstrUnique`. Both engines emit "UNIQUE KEY" in advice content
+# (per indexTypeString mapping in pre-omni / omniIndexTypeString in
+# the port). UNIQUE INDEX form pinned (the existing fixture already
+# covered UNIQUE KEY; bare UNIQUE not yet pinned).
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD UNIQUE INDEX ui_a (a, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `ui_a` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# Bare UNIQUE (no name) — exercises the empty-name path on
+# ConstrUnique. Advisor passes empty constraint name through
+# omniConstraintAdviceName, which returns "" for non-PK constraints
+# (the "PRIMARY" fallback only fires on PRIMARY KEY).
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD UNIQUE (a, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+# Cumulative #29 positive pin (parser-quirk false-NEGATIVE silently
+# fixed): pingcap-tidb's parser treats single-paren-wrapped column
+# refs as expressions (key.Expr != nil), so its `if key.Expr == nil`
+# filter skipped them — pre-omni did NOT fire on `INDEX idx((a),
+# (a))` despite the duplicate semantic being unambiguous. Omni
+# follows MySQL 8.0 spec: single-paren is grouping, flattened at
+# parse time to ColumnRef. Rule now fires. Caught pre-merge by
+# Codex P1; same family as cumulative #21 (parser quirk cleaned up
+# by omni migration) but inverse direction (#21: false-positive
+# fixed; #29: false-negative fixed).
+- statement: CREATE TABLE t(a int, INDEX idx1 ((a), (a)))
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `idx1` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Cumulative #29 NEGATIVE scope-bounding pin: real functional-index
+# expressions (e.g. `((a + 1))`) produce non-ColumnRef Expr in omni
+# (`*BinaryOperationExpr`); `omniIndexColumns`'s `*ColumnRef`-only
+# type-assert correctly skips them. This pin locks the change scope
+# of cumulative #29 to single-paren-wrapped ColumnRef ONLY — a
+# future refactor of `omniIndexColumns` (e.g., "let's also extract
+# bare column names from expressions") could silently broaden
+# coverage into real functional indexes; this pin catches that
+# regression. The paired positive + negative fixtures define the
+# cumulative #29 contract precisely.
+- statement: CREATE TABLE t(a int, INDEX idx1 ((a + 1), (a + 1)))
+  changeType: 1

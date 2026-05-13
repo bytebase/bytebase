@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { updateTableCatalog } from "@/components/ColumnDataTable/utils";
 import {
   Table,
   TableBody,
@@ -10,6 +9,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { useVueState } from "@/react/hooks/useVueState";
+import { updateTableCatalog } from "@/react/lib/column-data-table/utils";
 import {
   featureToRef,
   getTableCatalog,

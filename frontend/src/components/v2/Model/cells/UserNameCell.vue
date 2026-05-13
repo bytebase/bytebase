@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center" :class="gapClass">
-    <UserAvatar :user="user" :size="avatarSize" />
+    <BBAvatar :username="avatarUsername" :email="avatarEmail" :size="avatarSize" />
 
     <div class="flex flex-row items-center min-w-0">
       <div class="flex flex-col min-w-0">
@@ -30,8 +30,21 @@
             <NTag v-if="user.profile?.source && showSource" :size="tagSize" round type="info">
               {{ user.profile.source }}
             </NTag>
-            <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
-            <AccountTag :user="user" :size="tagSize" />
+            <NTag v-if="currentUserV1.name === user.name" :size="tagSize" round type="success">
+              {{ $t("common.you") }}
+            </NTag>
+            <NTag
+              v-if="userAccountType === AccountType.SERVICE_ACCOUNT || userAccountType === AccountType.WORKLOAD_IDENTITY"
+              :size="tagSize"
+              round
+              type="info"
+            >
+              {{
+                userAccountType === AccountType.SERVICE_ACCOUNT
+                  ? $t("settings.members.service-account")
+                  : $t("settings.members.workload-identity")
+              }}
+            </NTag>
             <NTag v-if="user.mfaEnabled && showMfaEnabled" :size="tagSize" type="success" round>
               {{ $t("two-factor.enabled") }}
             </NTag>
@@ -86,12 +99,10 @@
 import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
-import AccountTag from "@/components/misc/AccountTag.vue";
-import YouTag from "@/components/misc/YouTag.vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
+import { BBAvatar } from "@/bbkit";
 import { CopyButton, HighlightLabelText } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
-import { AccountType, getAccountTypeByEmail } from "@/types";
+import { AccountType, getAccountTypeByEmail, UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -148,6 +159,16 @@ const avatarSize = computed(() => {
       return "NORMAL";
   }
 });
+
+const avatarUsername = computed(() =>
+  props.user.name === `users/${UNKNOWN_ID}` ? "?" : props.user.title
+);
+
+const avatarEmail = computed(() =>
+  props.user.name === `users/${UNKNOWN_ID}` ? undefined : props.user.email
+);
+
+const userAccountType = computed(() => getAccountTypeByEmail(props.user.email));
 
 const gapClass = computed(() => {
   if (props.size === "tiny") {

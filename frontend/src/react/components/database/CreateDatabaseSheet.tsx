@@ -329,6 +329,7 @@ export function CreateDatabaseSheet({
               <ProjectSelect
                 value={projectName}
                 onChange={(name) => setProjectName(name)}
+                portal
               />
             </div>
           )}
@@ -350,6 +351,7 @@ export function CreateDatabaseSheet({
               value={instanceName}
               onChange={handleInstanceChange}
               engines={enginesSupportCreateDatabase()}
+              portal
             />
           </div>
 

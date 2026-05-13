@@ -1,7 +1,7 @@
 import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
-import type { MonacoModule } from "@/components/MonacoEditor";
 import type { ChatAction } from "@/plugins/ai/types";
+import type { MonacoModule } from "@/react/components/monaco/types";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";

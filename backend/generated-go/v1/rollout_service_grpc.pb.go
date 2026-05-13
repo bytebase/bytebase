@@ -65,7 +65,10 @@ type RolloutServiceClient interface {
 	// Skips multiple tasks in a rollout stage.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
-	// Cancels multiple running task executions.
+	// Cancels multiple task runs.
+	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
+	// a best-effort cancellation request and may continue running if the request is missed or the
+	// executor does not stop. The response does not report which task runs were actually canceled.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
 	// Generates rollback SQL for a completed task run.
@@ -224,7 +227,10 @@ type RolloutServiceServer interface {
 	// Skips multiple tasks in a rollout stage.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
-	// Cancels multiple running task executions.
+	// Cancels multiple task runs.
+	// PENDING and AVAILABLE task runs are moved to CANCELED synchronously. RUNNING task runs receive
+	// a best-effort cancellation request and may continue running if the request is missed or the
+	// executor does not stop. The response does not report which task runs were actually canceled.
 	// Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
 	// Generates rollback SQL for a completed task run.

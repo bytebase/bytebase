@@ -11,3 +11,51 @@
         line: 1
         column: 0
       endposition: null
+# Batch 14: uppercase RAND positive — pingcap canonicalized to
+# lowercase via FnName.L; omni preserves user case in FuncCallExpr.Name.
+# omniIsRandFuncCall uses EqualFold to match both forms.
+- statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND()
+  changeType: 1
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY RAND()" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+# Batch 14 negative: INSERT ... SELECT with ORDER BY on a column
+# (not RAND) — the rule should NOT fire. Distinguishes "any ORDER BY"
+# (would be a different rule) from "ORDER BY RAND() specifically".
+- statement: INSERT INTO tech_book SELECT * FROM tech_book ORDER BY id
+  changeType: 1
+# Batch 14 negative: INSERT ... SET form (cumulative #1 territory) —
+# ins.Select is nil; rule short-circuits before checking OrderBy.
+# Pins the "SET-form has no SELECT to inspect" semantic.
+- statement: INSERT INTO tech_book SET id = 1, name = "a"
+  changeType: 1
+# Cumulative #24 pin (batch 14, peer-review-caught pre-merge): pre-omni
+# pingcap-tidb's InsertStmt.Select was a ResultSetNode interface; for
+# UNION'd inserts the concrete type was *ast.SetOprStmt, NOT
+# *ast.SelectStmt. The pingcap Enter's `insert.Select.(*ast.SelectStmt)`
+# cast filtered out SetOprStmt entirely — pre-omni rule did NOT fire on
+# `INSERT ... SELECT ... UNION SELECT ... ORDER BY RAND()` despite the
+# rule's stated intent. Omni's InsertStmt.Select is *SelectStmt
+# (concrete) regardless of SetOp; UNION'd inputs carry the outer ORDER
+# BY at ins.Select.OrderBy. Rule now fires — silent UX improvement
+# fixing a latent pingcap accidental skip. Same UX-improvement shape
+# as cumulative #18 / #21. Inner per-arm parenthesized OrderBy remains
+# uncovered (omni rejects parenthesized UNION arms in INSERT position
+# today — separate Phase 2 grammar gap).
+- statement: INSERT INTO tech_book SELECT id FROM tech_book UNION SELECT id FROM tech_book ORDER BY RAND()
+  changeType: 1
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book SELECT id FROM tech_book UNION SELECT id FROM tech_book ORDER BY RAND()" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -1,4 +1,3 @@
-import type { MaskData } from "@/components/SensitiveData/types";
 import type { DatabaseResource } from "@/types";
 import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
@@ -11,7 +10,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
-import type { SensitiveColumn } from "./types";
+import type { MaskData, SensitiveColumn } from "./types";
 
 export const getMaskDataIdentifier = (maskData: MaskData): string => {
   return `${maskData.schema}.${maskData.table}.${maskData.column}`;

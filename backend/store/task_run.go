@@ -55,8 +55,9 @@ type TaskRunStatusPatch struct {
 	Updater string
 
 	// Domain specific fields
-	Status      storepb.TaskRun_Status
-	ResultProto *storepb.TaskRunResult
+	Status          storepb.TaskRun_Status
+	AllowedStatuses []storepb.TaskRun_Status
+	ResultProto     *storepb.TaskRunResult
 }
 
 // ListTaskRuns lists task runs.
@@ -431,8 +432,17 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	}
 
 	q := qb.Q().Space("UPDATE task_run SET ?", set).
-		Space("WHERE id = ? AND project = ?", patch.ID, patch.ProjectID).
-		Space("RETURNING id, creator, created_at, updated_at, task_id, status, result")
+		Space("WHERE id = ? AND project = ?", patch.ID, patch.ProjectID)
+
+	if len(patch.AllowedStatuses) > 0 {
+		var statusStrings []string
+		for _, status := range patch.AllowedStatuses {
+			statusStrings = append(statusStrings, status.String())
+		}
+		q.Space("AND status = ANY(?)", statusStrings)
+	}
+
+	q.Space("RETURNING id, creator, created_at, updated_at, task_id, status, result")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -453,6 +463,9 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 		&resultJSON,
 	); err != nil {
 		if err == sql.ErrNoRows {
+			if len(patch.AllowedStatuses) > 0 {
+				return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("task run %d status changed", patch.ID)}
+			}
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project ID not found: %d", patch.ID)}
 		}
 		return nil, err
@@ -473,7 +486,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	return &taskRun, nil
 }
 
-// BatchCancelTaskRuns updates the status of taskRuns to CANCELED.
+// BatchCancelTaskRuns updates non-running task runs to CANCELED.
 func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskRunIDs []int64) error {
 	if len(taskRunIDs) == 0 {
 		return nil
@@ -482,7 +495,9 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskR
 		UPDATE task_run
 		SET status = ?, updated_at = now()
 		WHERE id = ANY(?) AND project = ?
-	`, storepb.TaskRun_CANCELED.String(), taskRunIDs, projectID)
+		AND status IN (?, ?)
+	`, storepb.TaskRun_CANCELED.String(), taskRunIDs, projectID,
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {

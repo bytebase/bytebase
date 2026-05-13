@@ -7,7 +7,15 @@
         <div v-if="description" class="text-sm">
           <p class="whitespace-pre-wrap">
             {{ $te(description) ? $t(description) : description }}
-            <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
+            <a
+              v-if="link"
+              :href="link"
+              target="__BLANK"
+              class="inline-flex items-center normal-link ml-1 text-sm"
+            >
+              {{ $t("common.learn-more") }}
+              <ExternalLinkIcon class="w-4 h-4 ml-1" />
+            </a>
           </p>
         </div>
       </slot>
@@ -31,10 +39,10 @@
 </template>
 
 <script lang="ts" setup>
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NAlert, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 
 const props = withDefaults(
   defineProps<{

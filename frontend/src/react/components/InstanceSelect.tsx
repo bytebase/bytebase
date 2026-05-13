@@ -14,6 +14,7 @@ export interface InstanceSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  portal?: boolean;
   /** Only show instances with these engines */
   engines?: Engine[];
 }
@@ -24,6 +25,7 @@ export function InstanceSelect({
   placeholder,
   disabled,
   className,
+  portal,
   engines,
 }: InstanceSelectProps) {
   const { t } = useTranslation();
@@ -79,6 +81,7 @@ export function InstanceSelect({
       onSearch={fetchInstances}
       disabled={disabled}
       className={className}
+      portal={portal}
       renderValue={(opt) => {
         const inst = instances.find((i) => i.name === opt.value);
         if (!inst) return opt.label;

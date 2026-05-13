@@ -1730,6 +1730,7 @@
       "expires-in-days_other": "Expira en {{days}} días",
       "expires-today": "Expira hoy",
       "grant-exemption": "Conceder Exención",
+      "level": "nivel",
       "n-exemptions_one": "{{n}} exención",
       "n-exemptions_other": "{{n}} exenciones",
       "no-exemptions": "Aún no se han concedido exenciones de enmascaramiento",
@@ -2840,6 +2841,13 @@
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
     "web-socket": {
+      "connection-status": {
+        "connected": "conectado",
+        "connecting": "conectando",
+        "disconnected": "desconectado",
+        "last-heartbeat": "Último heartbeat a las {{time}}",
+        "title": "Servidor de lenguaje"
+      },
       "errors": {
         "description": "Auto Completion might be limited or disabled.",
         "disconnected": "WebSocket disconnected",
@@ -3719,6 +3727,7 @@
   "subscription.usage.instance-count.title": "Límite de cantidad de instancias",
   "task": {
     "cancel-task": "Cancelar tarea | Cancelar tareas",
+    "cancel-task-description": "Las ejecuciones de tareas pendientes y disponibles se cancelan inmediatamente. Las ejecuciones en curso reciben una solicitud de cancelación de mejor esfuerzo y pueden seguir ejecutándose; vuelva a intentarlo si es necesario.",
     "checking": "Comprobando...",
     "created": "Creado",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
