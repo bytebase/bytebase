@@ -98,11 +98,10 @@ CREATE TABLE policy (
     -- TAG: TagPolicy
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (resource_type, resource, type)
+    PRIMARY KEY (workspace, resource_type, resource, type)
 );
 
 CREATE INDEX idx_policy_workspace ON policy(workspace);
-CREATE UNIQUE INDEX idx_policy_unique_workspace_resource ON policy(workspace, resource_type, resource, type);
 
 -- idp stores generic identity provider.
 CREATE TABLE idp (
