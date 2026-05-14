@@ -71,3 +71,15 @@
   ignore_case_sensitive: false
   want: ""
   advice: null
+- statement: CREATE TABLE t_default_identifier(a text DEFAULT "status");
+  ignore_case_sensitive: false
+  want: ""
+  advice:
+    code: 260
+    content: "ERROR: cannot use column reference in DEFAULT expression (SQLSTATE 0A000)"
+- statement: CREATE TABLE t_default_column(a int, b int DEFAULT a);
+  ignore_case_sensitive: false
+  want: ""
+  advice:
+    code: 260
+    content: "ERROR: cannot use column reference in DEFAULT expression (SQLSTATE 0A000)"
