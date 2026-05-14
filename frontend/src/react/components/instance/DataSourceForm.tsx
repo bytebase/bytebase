@@ -783,16 +783,15 @@ export function DataSourceForm({
                   <div className="sm:col-span-3 sm:col-start-1">
                     <label className="textlabel flex items-center gap-x-1">
                       {t("common.username")}
-                      {onOpenInfoPanel &&
-                        hasAuthenticationInfo && (
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-x-0.5 text-accent text-xs"
-                            onClick={() => onOpenInfoPanel("authentication")}
-                          >
-                            <Info className="size-3.5" />
-                          </button>
-                        )}
+                      {onOpenInfoPanel && hasAuthenticationInfo && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                          onClick={() => onOpenInfoPanel("authentication")}
+                        >
+                          <Info className="size-3.5" />
+                        </button>
+                      )}
                     </label>
                     <Input
                       value={dataSource.username}
