@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
 
@@ -28,24 +29,50 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Then parse to get ASTs (note: ParsePLSQL adds semicolon internally)
-	parseResults, err := ParsePLSQL(statement + ";")
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		if stmt.Empty {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
 		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
-			astIndex++
+
+		list, omniErr := ParsePLSQLOmni(stmt.Text)
+		if omniErr == nil {
+			if list == nil || len(list.Items) == 0 {
+				result = append(result, base.ParsedStatement{Statement: stmt})
+				continue
+			}
+			for _, node := range list.Items {
+				raw, ok := node.(*ast.RawStmt)
+				if !ok {
+					continue
+				}
+				result = append(result, base.ParsedStatement{
+					Statement: stmt,
+					AST: &OmniAST{
+						Node:          raw.Stmt,
+						Text:          stmt.Text,
+						StartPosition: stmt.Start,
+					},
+				})
+			}
+			continue
 		}
-		result = append(result, ps)
+
+		parseResults, err := ParsePLSQL(stmt.Text)
+		if err != nil {
+			return nil, err
+		}
+		if len(parseResults) == 0 {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
+		}
+		for _, parseResult := range parseResults {
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST:       parseResult,
+			})
+		}
 	}
 
 	return result, nil
