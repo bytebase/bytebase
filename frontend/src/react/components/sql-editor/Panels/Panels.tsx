@@ -6,6 +6,7 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
+import { useShallow } from "zustand/react/shallow";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
@@ -27,11 +28,14 @@ import { ViewsPanel } from "@/react/components/sql-editor/ViewsPanel";
 import { Alert } from "@/react/components/ui/alert";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
+  selectEditorPanelSize,
+  useSQLEditorStore,
+} from "@/react/stores/sqlEditor";
+import {
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import {
@@ -71,7 +75,9 @@ const AIPaneFallback = () => (
 export function Panels() {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const handleEditorPanelResize = useSQLEditorStore(
+    (s) => s.handleEditorPanelResize
+  );
   const dbSchemaStore = useDBSchemaV1Store();
   const { database: databaseRef } = useConnectionOfCurrentSQLEditorTab();
 
@@ -85,9 +91,9 @@ export function Panels() {
   const tabMode = useVueState(() => tabStore.currentTab?.mode);
   const databaseName = useVueState(() => databaseRef.value.name);
   const view = useVueState(() => tabStore.currentTab?.viewState?.view);
-  const showAIPanel = useVueState(() => uiStore.showAIPanel);
-  const isShowingCode = useVueState(() => uiStore.isShowingCode);
-  const editorPanelSize = useVueState(() => uiStore.editorPanelSize);
+  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
+  const isShowingCode = useSQLEditorStore((s) => s.isShowingCode);
+  const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
 
   const showAIPaneAlongsidePanel = showAIPanel && isShowingCode;
   const { setSchema, updateViewState } = useViewStateNav();
@@ -184,7 +190,7 @@ export function Panels() {
 
   const handleAiResize = (sizePct: number) => {
     if (!Number.isFinite(sizePct)) return;
-    uiStore.handleEditorPanelResize(sizePct / 100);
+    handleEditorPanelResize(sizePct / 100);
   };
 
   return (

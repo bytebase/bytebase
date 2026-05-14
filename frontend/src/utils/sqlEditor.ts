@@ -19,19 +19,16 @@ import {
   type InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { wrapRefAsPromise } from "@/utils";
-import { formatAbsoluteDateTime } from "./datetime";
-import {
-  extractDatabaseResourceName,
-  getInstanceResource,
-} from "./v1/database";
+import { getInstanceResource } from "./v1/database";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
-
-export const NEW_WORKSHEET_TITLE = "new worksheet";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
     id: uuidv1(),
-    title: defaultSQLEditorTabTitle(),
+    // Tabs are created untitled. The UI renders a localized "Untitled"
+    // placeholder when the title is empty; users name worksheets explicitly
+    // when (and if) they save.
+    title: "",
     connection: emptySQLEditorConnection(),
     statement: "",
     selectedStatement: "",
@@ -50,10 +47,6 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
       databases: [],
     },
   };
-};
-
-const defaultSQLEditorTabTitle = () => {
-  return formatAbsoluteDateTime(Date.now());
 };
 
 export const emptySQLEditorConnection = (): SQLEditorConnection => {
@@ -90,29 +83,6 @@ export const isSameSQLEditorConnection = (
   b: SQLEditorConnection
 ): boolean => {
   return a.instance === b.instance && a.database === b.database;
-};
-
-export const isSimilarDefaultSQLEditorTabTitle = (title: string) => {
-  if (!title || title === NEW_WORKSHEET_TITLE) {
-    return true;
-  }
-  const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
-  return regex.test(title);
-};
-
-export const suggestedTabTitleForSQLEditorConnection = (
-  conn: SQLEditorConnection
-) => {
-  const database = useDatabaseV1Store().getDatabaseByName(conn.database);
-  const parts: string[] = [];
-  const { databaseName, instance } = extractDatabaseResourceName(database.name);
-  if (isValidDatabaseName(database.name)) {
-    parts.push(databaseName);
-  } else if (isValidInstanceName(instance)) {
-    parts.push(getInstanceResource(database).title);
-  }
-  parts.push(defaultSQLEditorTabTitle());
-  return parts.join(" ");
 };
 
 export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {

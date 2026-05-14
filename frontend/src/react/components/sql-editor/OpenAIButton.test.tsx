@@ -12,7 +12,11 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorUIStore: vi.fn(),
+  // New zustand state mirror.
+  state: { showAIPanel: false },
+  setShowAIPanel: vi.fn((v: boolean) => {
+    mocks.state.showAIPanel = v;
+  }),
   useSettingV1Store: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
@@ -33,9 +37,21 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
   useSettingV1Store: mocks.useSettingV1Store,
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: {
+      showAIPanel: boolean;
+      setShowAIPanel: (v: boolean) => void;
+    }) => unknown
+  ) =>
+    selector({
+      showAIPanel: mocks.state.showAIPanel,
+      setShowAIPanel: mocks.setShowAIPanel,
+    }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -177,7 +193,7 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
     ...overrides,
   };
 
-  const uiStore = { showAIPanel: values.showAIPanel };
+  mocks.state.showAIPanel = values.showAIPanel;
   const tabStore = {
     isDisconnected: values.isDisconnected,
     currentTab: { mode: values.currentMode },
@@ -188,24 +204,23 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
   };
 
   mocks.useSQLEditorTabStore.mockReturnValue(tabStore);
-  mocks.useSQLEditorUIStore.mockReturnValue(uiStore);
   mocks.useSettingV1Store.mockReturnValue(settingStore);
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
     instance: { value: values.instance },
   });
 
-  // Order of useVueState calls: isDisconnected, currentMode, showAIPanel, instance, openAIEnabled
+  // useVueState order after migration: isDisconnected, currentMode,
+  // instance, openAIEnabled (showAIPanel now read via zustand selector).
   const ordered = [
     values.isDisconnected,
     values.currentMode,
-    values.showAIPanel,
     values.instance,
     values.openAIEnabled,
   ];
   let idx = 0;
   mocks.useVueState.mockImplementation(() => ordered[idx++]);
 
-  return { uiStore, tabStore, settingStore };
+  return { tabStore, settingStore };
 };
 
 beforeEach(async () => {
@@ -260,7 +275,7 @@ describe("OpenAIButton", () => {
   });
 
   test("click toggles showAIPanel when enabled", () => {
-    const { uiStore } = setupDefaultMocks();
+    setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
       <OpenAIButton />
     );
@@ -275,13 +290,13 @@ describe("OpenAIButton", () => {
       button?.click();
     });
 
-    expect(uiStore.showAIPanel).toBe(true);
+    expect(mocks.setShowAIPanel).toHaveBeenCalledWith(true);
 
     unmount();
   });
 
   test("selecting explain-code action emits send-chat with prompt", async () => {
-    const { uiStore } = setupDefaultMocks();
+    setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(
       <OpenAIButton statement="SELECT 1" />
     );
@@ -298,7 +313,7 @@ describe("OpenAIButton", () => {
       explainItem?.click();
     });
 
-    expect(uiStore.showAIPanel).toBe(true);
+    expect(mocks.setShowAIPanel).toHaveBeenCalledWith(true);
     expect(mocks.explainCode).toHaveBeenCalledWith("SELECT 1", Engine.POSTGRES);
     expect(mocks.emit).toHaveBeenCalledWith("send-chat", {
       content: "EXPLAIN:SELECT 1",

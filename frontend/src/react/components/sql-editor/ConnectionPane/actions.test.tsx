@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   allowAdmin: false,
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
+  setShowConnectionPanel: vi.fn(),
+  setAsidePanelTab: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -23,15 +25,27 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useSQLEditorStore: () => ({ allowAdmin: mocks.allowAdmin }),
-  useSQLEditorUIStore: () => ({
-    showConnectionPanel: true,
-    asidePanelTab: "SCHEMA",
-  }),
   useSQLEditorTabStore: () => ({ currentTab: null }),
   useSQLEditorWorksheetStore: () => ({
     createWorksheet: vi.fn().mockResolvedValue(undefined),
     maybeUpdateWorksheet: vi.fn().mockResolvedValue(undefined),
   }),
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: Object.assign(
+    (
+      selector: (s: { setShowConnectionPanel: (v: boolean) => void }) => unknown
+    ) =>
+      selector({
+        setShowConnectionPanel: mocks.setShowConnectionPanel,
+      }),
+    {
+      getState: () => ({
+        setAsidePanelTab: mocks.setAsidePanelTab,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/router", () => ({

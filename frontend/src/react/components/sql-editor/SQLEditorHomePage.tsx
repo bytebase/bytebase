@@ -23,13 +23,13 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
   useProjectV1Store,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { unknownProject } from "@/types";
 import {
@@ -63,10 +63,12 @@ export function SQLEditorHomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const setPendingInsertAtCaret = useSQLEditorStore(
+    (s) => s.setPendingInsertAtCaret
+  );
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
 
   const projectContextReady = useVueState(
     () => editorStore.projectContextReady
@@ -147,13 +149,13 @@ export function SQLEditorHomePage() {
         viewState: { ...(t.viewState ?? {}), view: "CODE" },
       });
       requestAnimationFrame(() => {
-        uiStore.pendingInsertAtCaret = content;
+        setPendingInsertAtCaret(content);
       });
     });
     return () => {
       off();
     };
-  }, [tabStore, uiStore]);
+  }, [tabStore, setPendingInsertAtCaret]);
 
   const mobileToggle = hideSidebar
     ? createPortal(

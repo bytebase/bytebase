@@ -2,13 +2,13 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useActuatorV1Store,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
   useSQLEditorWorksheetStore,
 } from "@/store";
 import { defaultProject, isValidProjectName } from "@/types";
@@ -36,13 +36,12 @@ import { WorksheetPane } from "./WorksheetPane";
  */
 export function AsidePanel() {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
   const actuatorStore = useActuatorV1Store();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
   const worksheetStore = useSQLEditorWorksheetStore();
 
-  const asidePanelTab = useVueState(() => uiStore.asidePanelTab);
+  const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
   const isDisconnected = useVueState(() => tabStore.isDisconnected);
   const project = useVueState(() => editorStore.project);
   const projectContextReady = useVueState(

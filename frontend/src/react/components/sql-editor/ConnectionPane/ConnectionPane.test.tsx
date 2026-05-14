@@ -121,7 +121,17 @@ vi.mock("@/store", () => ({
   useSQLEditorStore: () => mocks.editorStore,
   useSQLEditorTabStore: () => mocks.tabStore,
   useSQLEditorTreeStore: () => mocks.treeStore,
-  useSQLEditorUIStore: () => mocks.uiStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: { setShowConnectionPanel: (v: boolean) => void }) => unknown
+  ) =>
+    selector({
+      setShowConnectionPanel: (next: boolean) => {
+        mocks.uiStore.showConnectionPanel = next;
+      },
+    }),
 }));
 
 vi.mock("@/store/modules", () => ({

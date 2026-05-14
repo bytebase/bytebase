@@ -17,14 +17,14 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   hasFeature,
   useAccessGrantStore,
   useDatabaseV1Store,
   useIssueV1Store,
   useProjectV1Store,
-  useSQLEditorStore,
-  useSQLEditorUIStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
 } from "@/store";
 import type { AccessFilter } from "@/store/modules/accessGrant";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -48,11 +48,16 @@ export function AccessPane() {
   const { t } = useTranslation();
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
   const accessGrantStore = useAccessGrantStore();
   const issueStore = useIssueV1Store();
   const databaseStore = useDatabaseV1Store();
-  const uiStore = useSQLEditorUIStore();
+  const highlightAccessGrantName = useSQLEditorStore(
+    (s) => s.highlightAccessGrantName
+  );
+  const setHighlightAccessGrantName = useSQLEditorStore(
+    (s) => s.setHighlightAccessGrantName
+  );
 
   const [showDrawer, setShowDrawer] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -76,9 +81,6 @@ export function AccessPane() {
   });
 
   const projectName = useVueState(() => editorStore.project);
-  const highlightAccessGrantName = useVueState(
-    () => uiStore.highlightAccessGrantName
-  );
 
   const project = useMemo(() => {
     if (!projectName) return undefined;
@@ -228,8 +230,8 @@ export function AccessPane() {
     if (!name) return;
     void fetchAccessGrants(true);
     const timer = setTimeout(() => {
-      if (uiStore.highlightAccessGrantName === name) {
-        uiStore.highlightAccessGrantName = undefined;
+      if (useSQLEditorStore.getState().highlightAccessGrantName === name) {
+        setHighlightAccessGrantName(undefined);
       }
     }, 3000);
     return () => clearTimeout(timer);

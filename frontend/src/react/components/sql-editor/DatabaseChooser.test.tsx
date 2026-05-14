@@ -11,9 +11,11 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorStore: vi.fn(),
-  useSQLEditorUIStore: vi.fn(),
+  // Legacy Pinia useSQLEditorStore (editor.ts).
+  useSQLEditorPiniaStore: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
+  // New zustand store setter.
+  setShowConnectionPanel: vi.fn(),
   isValidInstanceName: vi.fn(),
   isValidDatabaseName: vi.fn(),
   extractDatabaseResourceName: vi.fn(),
@@ -32,9 +34,17 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorStore: mocks.useSQLEditorStore,
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
+  useSQLEditorStore: mocks.useSQLEditorPiniaStore,
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: { setShowConnectionPanel: (v: boolean) => void }) => unknown
+  ) =>
+    selector({
+      setShowConnectionPanel: mocks.setShowConnectionPanel,
+    }),
 }));
 
 vi.mock("@/types", () => ({
@@ -102,8 +112,7 @@ beforeEach(async () => {
     currentTab: { id: "tab1" },
     isInBatchMode: false,
   });
-  mocks.useSQLEditorStore.mockReturnValue({ projectContextReady: true });
-  mocks.useSQLEditorUIStore.mockReturnValue({ showConnectionPanel: false });
+  mocks.useSQLEditorPiniaStore.mockReturnValue({ projectContextReady: true });
   mocks.isValidInstanceName.mockReturnValue(true);
   mocks.isValidDatabaseName.mockReturnValue(true);
   mocks.getInstanceResource.mockReturnValue(mockInstance);
@@ -149,7 +158,9 @@ describe("DatabaseChooser", () => {
   });
 
   test("button is disabled when projectContextReady is false", () => {
-    mocks.useSQLEditorStore.mockReturnValue({ projectContextReady: false });
+    mocks.useSQLEditorPiniaStore.mockReturnValue({
+      projectContextReady: false,
+    });
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChooser />
     );
@@ -159,9 +170,7 @@ describe("DatabaseChooser", () => {
     unmount();
   });
 
-  test("click sets showConnectionPanel to true on UI store", () => {
-    const uiStore = { showConnectionPanel: false };
-    mocks.useSQLEditorUIStore.mockReturnValue(uiStore);
+  test("click invokes setShowConnectionPanel(true)", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChooser />
     );
@@ -169,7 +178,7 @@ describe("DatabaseChooser", () => {
     act(() => {
       container.querySelector("button")?.click();
     });
-    expect(uiStore.showConnectionPanel).toBe(true);
+    expect(mocks.setShowConnectionPanel).toHaveBeenCalledWith(true);
     unmount();
   });
 });

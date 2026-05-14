@@ -20,7 +20,6 @@ import {
   isConnectedSQLEditorTab,
   storageKeySqlEditorCurrentTab,
   storageKeySqlEditorTabs,
-  suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
 import {
@@ -212,9 +211,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       treeState: cloneDeep(targetTab?.treeState),
       editorState: cloneDeep(targetTab?.editorState),
       batchQueryContext: cloneDeep(targetTab?.batchQueryContext),
-      title: suggestedTabTitleForSQLEditorConnection(
-        targetTab?.connection ?? emptySQLEditorConnection()
-      ),
+      // Cloned tabs start untitled; the UI renders an "Untitled" placeholder.
+      title: "",
       ...payload,
     };
 

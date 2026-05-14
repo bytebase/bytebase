@@ -9,20 +9,16 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorUIStore: vi.fn(),
+  useSQLEditorStore: vi.fn(),
+  currentAsidePanelTab: "WORKSHEET" as string,
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/store", () => ({
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: mocks.useSQLEditorStore,
 }));
 
 vi.mock("@/react/components/ui/tooltip", () => ({
@@ -53,8 +49,11 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useVueState.mockReturnValue(false);
-  mocks.useSQLEditorUIStore.mockReturnValue({ asidePanelTab: "WORKSHEET" });
+  mocks.currentAsidePanelTab = "WORKSHEET";
+  mocks.useSQLEditorStore.mockImplementation(
+    (selector: (s: { asidePanelTab: string }) => unknown) =>
+      selector({ asidePanelTab: mocks.currentAsidePanelTab })
+  );
   ({ TabItem } = await import("./TabItem"));
 });
 
@@ -97,7 +96,7 @@ describe("TabItem", () => {
   });
 
   test("applies active class when asidePanelTab matches", () => {
-    mocks.useVueState.mockReturnValue(true);
+    mocks.currentAsidePanelTab = "SCHEMA";
     const { container, render, unmount } = renderIntoContainer(
       <TabItem tab="SCHEMA" onClick={() => {}} />
     );
@@ -109,7 +108,7 @@ describe("TabItem", () => {
   });
 
   test("does NOT apply active class when asidePanelTab differs", () => {
-    mocks.useVueState.mockReturnValue(false);
+    mocks.currentAsidePanelTab = "WORKSHEET";
     const { container, render, unmount } = renderIntoContainer(
       <TabItem tab="SCHEMA" onClick={() => {}} />
     );

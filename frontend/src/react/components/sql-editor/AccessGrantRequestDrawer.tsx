@@ -20,15 +20,15 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import {
   AccessGrant_Status,
@@ -111,9 +111,12 @@ function AccessGrantRequestDrawerInner({
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUserV1();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
+  const setHighlightAccessGrantName = useSQLEditorStore(
+    (s) => s.setHighlightAccessGrantName
+  );
 
   const currentUserEmail = useVueState(() => currentUser.value.email);
   const project = useVueState(() => editorStore.project);
@@ -220,8 +223,8 @@ function AccessGrantRequestDrawerInner({
         });
         window.open(route.fullPath, "_blank");
       } else {
-        uiStore.asidePanelTab = "ACCESS";
-        uiStore.highlightAccessGrantName = response.name;
+        setAsidePanelTab("ACCESS");
+        setHighlightAccessGrantName(response.name);
       }
       onClose();
     } finally {

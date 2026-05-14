@@ -5,11 +5,11 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import {
@@ -30,8 +30,10 @@ type DatabaseChooserProps = {
 export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
-  const uiStore = useSQLEditorUIStore();
+  const editorStore = useSQLEditorPiniaStore();
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
   const connection = useConnectionOfCurrentSQLEditorTab();
 
   const currentTab = useVueState(() => tabStore.currentTab);
@@ -51,7 +53,7 @@ export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
     isValidDatabaseName(database.name);
 
   const handleClick = () => {
-    uiStore.showConnectionPanel = true;
+    setShowConnectionPanel(true);
   };
 
   return (

@@ -11,9 +11,12 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useCurrentUserV1: vi.fn(),
-  useSQLEditorStore: vi.fn(),
+  // Legacy Pinia editor store.
+  useSQLEditorPiniaStore: vi.fn(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorUIStore: vi.fn(),
+  // New zustand setters.
+  setAsidePanelTab: vi.fn(),
+  setHighlightAccessGrantName: vi.fn(),
   pushNotification: vi.fn(),
   useDatabaseV1Store: vi.fn(),
   createAccessGrant: vi.fn(),
@@ -30,11 +33,23 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useCurrentUserV1: mocks.useCurrentUserV1,
-  useSQLEditorStore: mocks.useSQLEditorStore,
+  useSQLEditorStore: mocks.useSQLEditorPiniaStore,
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
   pushNotification: mocks.pushNotification,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: {
+      setAsidePanelTab: (tab: string) => void;
+      setHighlightAccessGrantName: (v: string | undefined) => void;
+    }) => unknown
+  ) =>
+    selector({
+      setAsidePanelTab: mocks.setAsidePanelTab,
+      setHighlightAccessGrantName: mocks.setHighlightAccessGrantName,
+    }),
 }));
 
 vi.mock("@/connect", () => ({
@@ -278,19 +293,13 @@ const setupMocks = () => {
     value: { email: "user@example.com" },
   });
 
-  mocks.useSQLEditorStore.mockReturnValue({ project: "projects/proj1" });
+  mocks.useSQLEditorPiniaStore.mockReturnValue({ project: "projects/proj1" });
 
   mocks.useSQLEditorTabStore.mockReturnValue({
     currentTab: {
       connection: { database: "instances/inst1/databases/db1" },
     },
   });
-
-  const uiStore = {
-    asidePanelTab: "WORKSHEET",
-    highlightAccessGrantName: undefined,
-  };
-  mocks.useSQLEditorUIStore.mockReturnValue(uiStore);
 
   mocks.useDatabaseV1Store.mockReturnValue({
     fetchDatabases: vi.fn().mockResolvedValue({ databases: [] }),
@@ -414,12 +423,6 @@ describe("AccessGrantRequestDrawer", () => {
   });
 
   test("On success ACTIVE without issue → sets asidePanelTab and highlightAccessGrantName", async () => {
-    const uiStore = {
-      asidePanelTab: "WORKSHEET",
-      highlightAccessGrantName: undefined as string | undefined,
-    };
-    mocks.useSQLEditorUIStore.mockReturnValue(uiStore);
-
     const mockResponse = {
       status: 2, // ACTIVE
       issue: "",
@@ -461,9 +464,13 @@ describe("AccessGrantRequestDrawer", () => {
       submitBtn.click();
     });
 
-    // After submit: check pushNotification was called
+    // After submit: check pushNotification was called and zustand setters were invoked
     expect(mocks.pushNotification).toHaveBeenCalledWith(
       expect.objectContaining({ style: "SUCCESS" })
+    );
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("ACCESS");
+    expect(mocks.setHighlightAccessGrantName).toHaveBeenCalledWith(
+      "projects/proj1/accessGrants/grant-xyz"
     );
     expect(onClose).toHaveBeenCalled();
     unmount();

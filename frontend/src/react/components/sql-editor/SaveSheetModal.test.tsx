@@ -272,25 +272,37 @@ describe("SaveSheetModal", () => {
     unmount();
   });
 
-  test("4. Save button is disabled when title is empty", () => {
+  test("4. Save button stays enabled with an empty title (worksheet becomes Untitled)", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <SaveSheetModal />
     );
     render();
 
-    // Open modal with a tab that has an empty title — Save must be disabled
+    // Open modal with a tab that has an empty title — Save is allowed; the
+    // worksheet is created with an empty title and the UI renders "Untitled"
+    // placeholders for it elsewhere.
     const tabWithEmptyTitle = {
       ...tabWithoutWorksheet,
       title: "",
     };
     emitSaveSheet({ tab: tabWithEmptyTitle });
 
-    const buttons = container.querySelectorAll("button");
-    const saveButton = Array.from(buttons).find(
+    const saveButton = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent === "common.save"
     ) as HTMLButtonElement;
     expect(saveButton).not.toBeNull();
-    expect(saveButton.disabled).toBe(true);
+    expect(saveButton.disabled).toBe(false);
+
+    await act(async () => {
+      saveButton.click();
+    });
+
+    expect(mocks.editorWorksheetStore.createWorksheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: tabWithEmptyTitle.id,
+        title: "",
+      })
+    );
 
     unmount();
   });

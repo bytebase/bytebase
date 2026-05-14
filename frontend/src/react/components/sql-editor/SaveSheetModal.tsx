@@ -40,10 +40,8 @@ export function SaveSheetModal() {
     }
     // Silent path passes title + folder explicitly because React state setters
     // are async — reading state here would observe the prior modal's values.
+    // Empty titles are allowed; surfaces render an "Untitled" placeholder.
     const effectiveTitle = tabTitle ?? title;
-    if (effectiveTitle === "") {
-      return;
-    }
     const effectiveFolder = tabFolder ?? folder;
 
     editorWorksheetStore.abortAutoSave();
@@ -106,14 +104,11 @@ export function SaveSheetModal() {
         <DialogTitle>{t("sql-editor.save-sheet")}</DialogTitle>
         <div className="flex flex-col gap-y-3">
           <div className="flex flex-col gap-y-1">
-            <p>
-              {t("common.title")}
-              <span className="text-error ml-0.5">*</span>
-            </p>
+            <p>{t("common.title")}</p>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("sql-editor.save-sheet-input-placeholder")}
+              placeholder={t("common.untitled")}
               maxLength={200}
             />
           </div>
@@ -122,7 +117,7 @@ export function SaveSheetModal() {
             <Button variant="outline" onClick={close}>
               {t("common.close")}
             </Button>
-            <Button disabled={!title} onClick={() => void doSaveSheet()}>
+            <Button onClick={() => void doSaveSheet()}>
               {t("common.save")}
             </Button>
           </div>

@@ -7,12 +7,15 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => {
-  const uiStore = { showConnectionPanel: false };
+  const state = { showConnectionPanel: false };
+  const setShowConnectionPanel = (next: boolean) => {
+    state.showConnectionPanel = next;
+  };
   return {
-    uiStore,
+    state,
+    setShowConnectionPanel,
     hasWorkspacePermissionV2: vi.fn(),
     routerPush: vi.fn(),
-    useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   };
 });
 
@@ -28,12 +31,17 @@ vi.mock("@/router/dashboard/workspaceRoutes", () => ({
   INSTANCE_ROUTE_DASHBOARD: "workspace.instance",
 }));
 
-vi.mock("@/store", () => ({
-  useSQLEditorUIStore: () => mocks.uiStore,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: {
+      showConnectionPanel: boolean;
+      setShowConnectionPanel: (v: boolean) => void;
+    }) => unknown
+  ) =>
+    selector({
+      showConnectionPanel: mocks.state.showConnectionPanel,
+      setShowConnectionPanel: mocks.setShowConnectionPanel,
+    }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -134,15 +142,14 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.uiStore.showConnectionPanel = false;
-  mocks.useVueState.mockImplementation((getter) => getter());
+  mocks.state.showConnectionPanel = false;
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   ({ ConnectionPanel } = await import("./ConnectionPanel"));
 });
 
 describe("ConnectionPanel", () => {
   test("renders nothing when uiStore.showConnectionPanel is false", () => {
-    mocks.uiStore.showConnectionPanel = false;
+    mocks.state.showConnectionPanel = false;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />
     );
@@ -152,7 +159,7 @@ describe("ConnectionPanel", () => {
   });
 
   test("renders header + ConnectionPane when uiStore.showConnectionPanel is true", () => {
-    mocks.uiStore.showConnectionPanel = true;
+    mocks.state.showConnectionPanel = true;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />
     );
@@ -169,7 +176,7 @@ describe("ConnectionPanel", () => {
   });
 
   test("settings button navigates without closing the drawer (matches Vue)", () => {
-    mocks.uiStore.showConnectionPanel = true;
+    mocks.state.showConnectionPanel = true;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />
     );
@@ -183,7 +190,7 @@ describe("ConnectionPanel", () => {
     });
     // Drawer state is left untouched — the route change unmounts the SQL
     // editor anyway, and pre-closing introduced an unnecessary transition.
-    expect(mocks.uiStore.showConnectionPanel).toBe(true);
+    expect(mocks.state.showConnectionPanel).toBe(true);
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.instance",
     });
@@ -191,7 +198,7 @@ describe("ConnectionPanel", () => {
   });
 
   test("hides settings button when user lacks bb.instances.list permission", () => {
-    mocks.uiStore.showConnectionPanel = true;
+    mocks.state.showConnectionPanel = true;
     mocks.hasWorkspacePermissionV2.mockReturnValue(false);
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />
@@ -204,7 +211,7 @@ describe("ConnectionPanel", () => {
   });
 
   test("sheet-close writes uiStore.showConnectionPanel = false", () => {
-    mocks.uiStore.showConnectionPanel = true;
+    mocks.state.showConnectionPanel = true;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPanel />
     );
@@ -215,7 +222,7 @@ describe("ConnectionPanel", () => {
     act(() => {
       closer.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(mocks.uiStore.showConnectionPanel).toBe(false);
+    expect(mocks.state.showConnectionPanel).toBe(false);
     unmount();
   });
 });

@@ -16,10 +16,10 @@ import {
   formatEditorContent,
 } from "@/react/components/monaco/utils";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
   useUIStateStore,
   useWorkSheetAndTabStore,
 } from "@/store";
@@ -68,7 +68,10 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   const tabStore = useSQLEditorTabStore();
   const sheetAndTabStore = useWorkSheetAndTabStore();
   const uiStateStore = useUIStateStore();
-  const sqlEditorUIStore = useSQLEditorUIStore();
+  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
+  const setPendingInsertAtCaret = useSQLEditorStore(
+    (s) => s.setPendingInsertAtCaret
+  );
   const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
   const tabId = useVueState(() => tabStore.currentTab?.id);
@@ -242,8 +245,8 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   // ----- AI Monaco actions (explain-code / find-problems / new-chat) -----
   const handleAIAction = useCallback(
     (action: ChatAction) => {
-      const newChat = !sqlEditorUIStore.showAIPanel;
-      sqlEditorUIStore.showAIPanel = true;
+      const newChat = !useSQLEditorStore.getState().showAIPanel;
+      setShowAIPanel(true);
       const statement = getActiveStatement();
       if (!statement) return;
       const tab = tabStore.currentTab;
@@ -268,7 +271,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         }
       });
     },
-    [sqlEditorUIStore, getActiveStatement, tabStore]
+    [setShowAIPanel, getActiveStatement, tabStore]
   );
 
   useAIActions({
@@ -302,15 +305,13 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   }, [engine, runQueryAction, editorState, monacoState]);
 
   // ----- pendingInsertAtCaret -----
-  const pendingInsertAtCaret = useVueState(
-    () => sqlEditorUIStore.pendingInsertAtCaret
-  );
+  const pendingInsertAtCaret = useSQLEditorStore((s) => s.pendingInsertAtCaret);
   useEffect(() => {
     const editor = activeSQLEditorRef.value;
     if (!editor) return;
     const text = pendingInsertAtCaret;
     if (!text) return;
-    sqlEditorUIStore.pendingInsertAtCaret = undefined;
+    setPendingInsertAtCaret(undefined);
 
     requestAnimationFrame(() => {
       const selection = editor.getSelection();
@@ -324,7 +325,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       editor.focus();
       editor.revealLine(range.startLineNumber);
     });
-  }, [pendingInsertAtCaret, sqlEditorUIStore]);
+  }, [pendingInsertAtCaret, setPendingInsertAtCaret]);
 
   // ----- file upload (triggered by UploadFileButton in cornerPrefix) -----
   const handleUploadFile = useCallback(

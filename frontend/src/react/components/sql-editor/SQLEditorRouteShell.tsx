@@ -8,6 +8,8 @@ import {
 } from "@/react/components/ComponentPermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useCurrentRoute, useNavigate } from "@/react/router";
+import type { AsidePanelTab } from "@/react/stores/sqlEditor";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
@@ -17,14 +19,12 @@ import {
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
 import {
-  type AsidePanelTab,
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
   useSQLEditorWorksheetStore,
   useWorkSheetStore,
 } from "@/store";
@@ -46,7 +46,6 @@ import {
   getSheetStatement,
   isWorksheetReadableV1,
   STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB,
-  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
@@ -104,9 +103,9 @@ export function SQLEditorRouteShell() {
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const worksheetStore = useWorkSheetStore();
   const sqlEditorWorksheetStore = useSQLEditorWorksheetStore();
 
@@ -239,7 +238,6 @@ export function SQLEditorRouteShell() {
     tabStore.addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-      title: suggestedTabTitleForSQLEditorConnection(connection),
     });
     return true;
   };
@@ -407,15 +405,15 @@ export function SQLEditorRouteShell() {
     const panelQuery = router.currentRoute.value.query.panel;
     if (typeof panelQuery === "string" && panelQuery) {
       const tab = panelQuery.toUpperCase() as AsidePanelTab;
-      uiStore.asidePanelTab = ASIDE_PANEL_TABS.includes(tab) ? tab : stored;
+      setAsidePanelTab(ASIDE_PANEL_TABS.includes(tab) ? tab : stored);
     } else {
-      uiStore.asidePanelTab = stored;
+      setAsidePanelTab(stored);
     }
     sidebarRestoredRef.current = true;
   };
 
   // Persist sidebar tab changes back to localStorage (debounced).
-  const asidePanelTab = useVueState(() => uiStore.asidePanelTab);
+  const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
   const persistSidebarRef = useRef(
     debounce((tab: AsidePanelTab) => {
       try {

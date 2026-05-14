@@ -17,7 +17,7 @@ import type { MonacoModule } from "@/react/components/monaco/types";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorUIStore } from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -62,7 +62,8 @@ export function CodeViewer({
   headerClassName,
 }: CodeViewerProps) {
   const { t } = useTranslation();
-  const uiStore = useSQLEditorUIStore();
+  const setIsShowingCode = useSQLEditorStore((s) => s.setIsShowingCode);
+  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
 
   const [format, setFormat] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -116,16 +117,16 @@ export function CodeViewer({
   // mounted. Cleared on unmount so navigating back to the list view drops
   // the pane (matches Vue CodeViewer's auto-unmount on detail-clear).
   useEffect(() => {
-    uiStore.isShowingCode = true;
+    setIsShowingCode(true);
     return () => {
-      uiStore.isShowingCode = false;
+      setIsShowingCode(false);
     };
-  }, [uiStore]);
+  }, [setIsShowingCode]);
 
   const handleAIAction = useCallback(
     (action: ChatAction) => {
-      const newChat = !uiStore.showAIPanel;
-      uiStore.showAIPanel = true;
+      const newChat = !useSQLEditorStore.getState().showAIPanel;
+      setShowAIPanel(true);
       if (action !== "explain-code") return;
       const statement = selectedStatement || content;
       void nextAnimationFrame().then(() => {
@@ -135,7 +136,7 @@ export function CodeViewer({
         });
       });
     },
-    [uiStore, selectedStatement, content, engine]
+    [setShowAIPanel, selectedStatement, content, engine]
   );
 
   useAIActions({

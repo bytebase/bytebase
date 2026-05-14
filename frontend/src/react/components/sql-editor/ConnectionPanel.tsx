@@ -11,11 +11,10 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { useSQLEditorUIStore } from "@/store";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { ConnectionPane } from "./ConnectionPane/ConnectionPane";
@@ -23,8 +22,8 @@ import { ConnectionPane } from "./ConnectionPane/ConnectionPane";
 /**
  * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPanel.vue.
  * Right-side Sheet hosting the `ConnectionPane`. The open/close state is
- * read directly from `useSQLEditorUIStore().showConnectionPanel` via
- * `useVueState` rather than passed through `<ReactPageMount>` props —
+ * read directly from `useSQLEditorStore(s => s.showConnectionPanel)`
+ * rather than passed through `<ReactPageMount>` props —
  * funneling boolean state through Vue→React attrs proved brittle (Vue's
  * template compiler doesn't auto-translate `(v) => (ref = v)` into
  * `.value = v` outside of `v-model`, and concurrent renders can leave the
@@ -37,8 +36,10 @@ import { ConnectionPane } from "./ConnectionPane/ConnectionPane";
  */
 export function ConnectionPanel() {
   const { t } = useTranslation();
-  const uiStore = useSQLEditorUIStore();
-  const open = useVueState(() => uiStore.showConnectionPanel);
+  const open = useSQLEditorStore((s) => s.showConnectionPanel);
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
   const allowManageInstance = hasWorkspacePermissionV2("bb.instances.list");
   // Hoisted from ConnectionPaneInner so the FeatureModal portal mounts as
   // a SIBLING of the drawer Sheet rather than a descendant. With both at
@@ -59,7 +60,7 @@ export function ConnectionPanel() {
       eventDetails.cancel?.();
       return;
     }
-    uiStore.showConnectionPanel = next;
+    setShowConnectionPanel(next);
   };
 
   return (

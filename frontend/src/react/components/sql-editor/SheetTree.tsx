@@ -482,7 +482,10 @@ export function SheetTree({
     };
 
     const newTitle = editing.node.label.trim();
-    if (!newTitle) {
+    // Folders can't be renamed to empty (the label IS the folder name and the
+    // key segment). Worksheets can — they fall back to the "Untitled"
+    // placeholder in the UI.
+    if (!newTitle && !editing.node.worksheet) {
       editing.node.label = editing.rawLabel;
       cleanup();
       return;
@@ -1032,6 +1035,13 @@ export function SheetTree({
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
+            ) : folderNode.worksheet && !folderNode.label ? (
+              // Untitled worksheet — render a placeholder. We don't pipe this
+              // through HighlightLabelText since there's nothing to highlight
+              // and the muted italic styling signals "empty title".
+              <span className="truncate block text-control-placeholder italic">
+                {t("common.untitled")}
+              </span>
             ) : (
               <HighlightLabelText
                 text={folderNode.label}

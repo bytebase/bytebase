@@ -5,14 +5,18 @@ import {
   Group as PanelGroup,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
+import { useShallow } from "zustand/react/shallow";
 import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
 import { ResultPanel } from "@/react/components/sql-editor/ResultPanel/ResultPanel";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
+  selectEditorPanelSize,
+  useSQLEditorStore,
+} from "@/react/stores/sqlEditor";
+import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { instanceV1HasReadonlyMode } from "@/utils";
 import { EditorMain } from "./EditorMain";
@@ -43,19 +47,23 @@ const AIPaneFallback = () => (
  *
  * State source: `useSQLEditorTabStore` for tab + disconnect state,
  * `useConnectionOfCurrentSQLEditorTab` for the current instance,
- * `useSQLEditorUIStore` for AI-panel visibility / sizing. The Vue
- * version reads the same Pinia stores via the `useSQLEditorContext`
- * adapter, but the underlying state lives here.
+ * `useSQLEditorStore` (zustand) for AI-panel visibility / sizing.
  */
 export function StandardPanel() {
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const handleEditorPanelResize = useSQLEditorStore(
+    (s) => s.handleEditorPanelResize
+  );
+  const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
   const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useVueState(() => tabStore.currentTab);
   const isDisconnected = useVueState(() => tabStore.isDisconnected);
-  const showAIPanel = useVueState(() => uiStore.showAIPanel);
-  const editorPanelSize = useVueState(() => uiStore.editorPanelSize);
+  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
+  const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
   const instanceHasReadonly = useVueState(() =>
     instanceV1HasReadonlyMode(instanceRef.value)
   );
@@ -72,12 +80,12 @@ export function StandardPanel() {
     // fraction (`{size: 0.7, ...}`); convert and forward — the store's
     // setter writes `1 - size` to localStorage.
     if (!Number.isFinite(sizePct)) return;
-    uiStore.handleEditorPanelResize(sizePct / 100);
+    handleEditorPanelResize(sizePct / 100);
   };
 
   const handleChangeConnection = () => {
-    uiStore.asidePanelTab = "SCHEMA";
-    uiStore.showConnectionPanel = true;
+    setAsidePanelTab("SCHEMA");
+    setShowConnectionPanel(true);
   };
 
   const editorWithAi = (

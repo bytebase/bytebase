@@ -9,15 +9,16 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useSQLEditorUIStore: vi.fn(),
+  setShowConnectionPanel: vi.fn(),
+  useSQLEditorStore: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/store", () => ({
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: mocks.useSQLEditorStore,
 }));
 
 let ConnectionHolder: typeof import("./ConnectionHolder").ConnectionHolder;
@@ -44,13 +45,19 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  // The component selects `s.setShowConnectionPanel` from the store; the
+  // mock invokes the supplied selector against a stub state.
+  mocks.useSQLEditorStore.mockImplementation(
+    (selector: (s: { setShowConnectionPanel: typeof vi.fn }) => unknown) =>
+      selector({
+        setShowConnectionPanel: mocks.setShowConnectionPanel,
+      })
+  );
   ({ ConnectionHolder } = await import("./ConnectionHolder"));
 });
 
 describe("ConnectionHolder", () => {
   test("renders the Connect-to-database label", () => {
-    const store = { showConnectionPanel: false };
-    mocks.useSQLEditorUIStore.mockReturnValue(store);
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionHolder />
     );
@@ -60,9 +67,7 @@ describe("ConnectionHolder", () => {
     unmount();
   });
 
-  test("click sets showConnectionPanel to true on the store", () => {
-    const store = { showConnectionPanel: false };
-    mocks.useSQLEditorUIStore.mockReturnValue(store);
+  test("click invokes setShowConnectionPanel(true)", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionHolder />
     );
@@ -71,7 +76,7 @@ describe("ConnectionHolder", () => {
     act(() => {
       button?.click();
     });
-    expect(store.showConnectionPanel).toBe(true);
+    expect(mocks.setShowConnectionPanel).toHaveBeenCalledWith(true);
     unmount();
   });
 });

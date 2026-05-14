@@ -17,13 +17,13 @@ import {
 } from "@/react/components/ui/popover";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSettingV1Store,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
@@ -50,7 +50,8 @@ type Props = {
 export function OpenAIButton({ actions, statement, size = "default" }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
+  const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
+  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const settingV1Store = useSettingV1Store();
   const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
 
@@ -64,7 +65,6 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
 
   const isDisconnected = useVueState(() => tabStore.isDisconnected);
   const currentMode = useVueState(() => tabStore.currentTab?.mode);
-  const showAIPanel = useVueState(() => uiStore.showAIPanel);
   const instance = useVueState(() => instanceRef.value);
   const openAIEnabled = useVueState(() => {
     const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
@@ -99,7 +99,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
   );
 
   const handleToggle = () => {
-    uiStore.showAIPanel = !uiStore.showAIPanel;
+    setShowAIPanel(!showAIPanel);
   };
 
   // ---- Disabled state: AI feature not configured ---------------------------
@@ -122,7 +122,7 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
   const handleSelect = async (action: ChatAction) => {
     setMenuOpen(false);
     const newChat = !showAIPanel;
-    uiStore.showAIPanel = true;
+    setShowAIPanel(true);
 
     if (!statement) return;
     await nextAnimationFrame();

@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
@@ -20,6 +21,7 @@ type Props = {
  *  - Ellipsis + native tooltip via EllipsisText.
  */
 export function Label({ tab }: Props) {
+  const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
   const worksheetStore = useWorkSheetStore();
 
@@ -28,6 +30,7 @@ export function Label({ tab }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const readonly = tab.viewState.view !== "CODE";
+  const displayTitle = tab.title || t("common.untitled");
 
   const beginEdit = () => {
     if (readonly) return;
@@ -42,10 +45,6 @@ export function Label({ tab }: Props) {
 
   const confirmEdit = () => {
     const title = draft.trim();
-    if (title === "") {
-      cancelEdit();
-      return;
-    }
     tabStore.updateTab(tab.id, { title });
     if (tab.worksheet) {
       void worksheetStore.patchWorksheet(
@@ -109,13 +108,24 @@ export function Label({ tab }: Props) {
           the relative container and the `absolute inset-0` input shrinks to
           zero height → the cursor is visible but the text field is not. */}
       <EllipsisText
-        text={tab.title}
-        className={cn("text-sm leading-5 block", editing && "invisible")}
+        text={displayTitle}
+        className={cn(
+          "text-sm leading-5 block",
+          !tab.title && "text-control-placeholder italic",
+          editing && "invisible"
+        )}
       />
-      {/* Invisible "expand" dbl-click layer — EllipsisText strips onDblClick */}
+      {/* Invisible click/dbl-click layer — EllipsisText strips its own
+          handlers. Single-click enters edit when the tab is untitled (so the
+          common "I just made a tab, let me name it" flow saves a step). Named
+          tabs still need a double-click so a casual click doesn't accidentally
+          rename. */}
       {!editing && !readonly && (
         <div
           className="absolute inset-0 cursor-text"
+          onClick={() => {
+            if (!tab.title) beginEdit();
+          }}
           onDoubleClick={beginEdit}
         />
       )}
@@ -125,6 +135,7 @@ export function Label({ tab }: Props) {
           type="text"
           className="absolute inset-0 border-0 border-b p-0 text-sm leading-5 bg-background"
           value={draft}
+          placeholder={t("common.untitled")}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={confirmEdit}
           onKeyDown={(e) => {

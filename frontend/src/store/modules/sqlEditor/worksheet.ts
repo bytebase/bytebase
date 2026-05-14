@@ -7,21 +7,17 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import type { Ref } from "vue";
 import { computed, nextTick, ref, watch } from "vue";
 import { t } from "@/plugins/i18n";
+import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import {
   useCurrentUserV1,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import {
-  DEBOUNCE_SEARCH_DELAY,
-  isValidDatabaseName,
-  isValidProjectName,
-} from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, isValidProjectName } from "@/types";
 import {
   type Worksheet,
   Worksheet_Visibility,
@@ -29,11 +25,8 @@ import {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   extractWorksheetConnection,
-  isSimilarDefaultSQLEditorTabTitle,
-  NEW_WORKSHEET_TITLE,
   storageKeySqlEditorWorksheetFilter,
   storageKeySqlEditorWorksheetTree,
-  suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
@@ -346,7 +339,6 @@ export const useSQLEditorWorksheetStore = defineStore(
     const projectStore = useProjectV1Store();
     const projectIamPolicyStore = useProjectIamPolicyStore();
     const worksheetStore = useWorkSheetStore();
-    const uiStore = useSQLEditorUIStore();
     const me = useCurrentUserV1();
     const worksheetV1Store = useWorkSheetStore();
     const { project } = storeToRefs(useSQLEditorStore());
@@ -403,18 +395,12 @@ export const useSQLEditorWorksheetStore = defineStore(
       signal?: AbortSignal;
     }): Promise<SQLEditorTab | undefined> => {
       const connection = await extractWorksheetConnection({ database });
-      let worksheetTitle = title ?? "";
-      if (isSimilarDefaultSQLEditorTabTitle(worksheetTitle)) {
-        worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
-      }
+      const worksheetTitle = title ?? "";
 
       if (worksheet) {
         const currentSheet = worksheetStore.getWorksheetByName(worksheet);
         if (!currentSheet) {
           return;
-        }
-        if (!isSimilarDefaultSQLEditorTabTitle(currentSheet.title)) {
-          worksheetTitle = currentSheet.title;
         }
 
         const updated = await worksheetStore.patchWorksheet(
@@ -462,11 +448,8 @@ export const useSQLEditorWorksheetStore = defineStore(
       folders?: string[];
       database?: string;
     }): Promise<SQLEditorTab | undefined> => {
-      let worksheetTitle = title || NEW_WORKSHEET_TITLE;
+      const worksheetTitle = title ?? "";
       const connection = await extractWorksheetConnection({ database });
-      if (!title && isValidDatabaseName(database)) {
-        worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
-      }
 
       const newWorksheet = await worksheetStore.createWorksheet(
         create(WorksheetSchema, {
@@ -503,7 +486,7 @@ export const useSQLEditorWorksheetStore = defineStore(
         });
         nextTick(() => {
           if (tab && !tab.connection?.database) {
-            uiStore.showConnectionPanel = true;
+            useSQLEditorReactStore.getState().setShowConnectionPanel(true);
           }
         });
         return tab;

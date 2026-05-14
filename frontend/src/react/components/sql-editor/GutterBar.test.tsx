@@ -10,9 +10,15 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorStore: vi.fn(),
+  // Pinia legacy useSQLEditorStore (editor.ts) — still imported by GutterBar
+  // until that store is migrated.
+  useSQLEditorPiniaStore: vi.fn(),
   useProjectV1Store: vi.fn(),
-  useSQLEditorUIStore: vi.fn(),
+  // New zustand store.
+  state: {
+    asidePanelTab: "WORKSHEET" as string,
+  },
+  setAsidePanelTab: vi.fn(),
   routerResolve: vi.fn(() => ({ href: "/project/test-project" })),
 }));
 
@@ -25,9 +31,21 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorStore: mocks.useSQLEditorStore,
+  useSQLEditorStore: mocks.useSQLEditorPiniaStore,
   useProjectV1Store: mocks.useProjectV1Store,
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: {
+      asidePanelTab: string;
+      setAsidePanelTab: (tab: string) => void;
+    }) => unknown
+  ) =>
+    selector({
+      asidePanelTab: mocks.state.asidePanelTab,
+      setAsidePanelTab: mocks.setAsidePanelTab,
+    }),
 }));
 
 vi.mock("@/router", () => ({
@@ -77,11 +95,11 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useSQLEditorStore.mockReturnValue({ project: "projects/test" });
+  mocks.useSQLEditorPiniaStore.mockReturnValue({ project: "projects/test" });
   mocks.useProjectV1Store.mockReturnValue({
     getProjectByName: () => ({ allowJustInTimeAccess: false }),
   });
-  mocks.useSQLEditorUIStore.mockReturnValue({ asidePanelTab: "WORKSHEET" });
+  mocks.state.asidePanelTab = "WORKSHEET";
   mocks.routerResolve.mockReturnValue({ href: "/workspace/home" });
   ({ GutterBar } = await import("./GutterBar"));
 });
@@ -111,20 +129,18 @@ describe("GutterBar", () => {
     unmount();
   });
 
-  test("click writes asidePanelTab on the store", () => {
+  test("click writes asidePanelTab via setAsidePanelTab", () => {
     mocks.useVueState.mockImplementation((getter) => getter());
     mocks.useProjectV1Store.mockReturnValue({
       getProjectByName: () => ({ allowJustInTimeAccess: false }),
     });
-    const store = { asidePanelTab: "WORKSHEET" as string };
-    mocks.useSQLEditorUIStore.mockReturnValue(store);
     const { container, render, unmount } = renderIntoContainer(<GutterBar />);
     render();
     const buttons = container.querySelectorAll("button");
     act(() => {
       (buttons[1] as HTMLButtonElement).click();
     });
-    expect(store.asidePanelTab).toBe("SCHEMA");
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SCHEMA");
     unmount();
   });
 

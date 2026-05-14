@@ -52,11 +52,7 @@ vi.mock("@/utils", async () => {
         instance: "",
       })
     ),
-    isSimilarDefaultSQLEditorTabTitle: vi.fn(() => false),
     isWorksheetWritableV1: vi.fn(() => true),
-    NEW_WORKSHEET_TITLE: "Untitled",
-    suggestedTabTitleForSQLEditorConnection: vi.fn(() => "Untitled"),
-    isValidDatabaseName: vi.fn(() => false),
     isValidProjectName: vi.fn((name: string) => name.startsWith("projects/")),
     storageKeySqlEditorWorksheetFilter: vi.fn(() => "filter-key"),
     storageKeySqlEditorWorksheetTree: vi.fn(() => "tree-key"),
@@ -69,7 +65,6 @@ vi.mock("@/utils", async () => {
 
 // Mock @/types to avoid importing native modules transitively
 vi.mock("@/types", () => ({
-  isValidDatabaseName: vi.fn(() => false),
   isValidProjectName: vi.fn((name: string) => name.startsWith("projects/")),
   DEBOUNCE_SEARCH_DELAY: 300,
 }));

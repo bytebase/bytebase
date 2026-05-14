@@ -11,9 +11,14 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useProjectV1Store: vi.fn(),
-  useSQLEditorStore: vi.fn(),
+  // Legacy Pinia editor store.
+  useSQLEditorPiniaStore: vi.fn(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorUIStore: vi.fn(),
+  // New zustand store state + setter.
+  state: {
+    highlightAccessGrantName: undefined as string | undefined,
+  },
+  setHighlightAccessGrantName: vi.fn(),
   useAccessGrantStore: vi.fn(),
   useIssueV1Store: vi.fn(),
   useDatabaseV1Store: vi.fn(),
@@ -32,13 +37,33 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
-  useSQLEditorStore: mocks.useSQLEditorStore,
+  useSQLEditorStore: mocks.useSQLEditorPiniaStore,
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorUIStore: mocks.useSQLEditorUIStore,
   useAccessGrantStore: mocks.useAccessGrantStore,
   useIssueV1Store: mocks.useIssueV1Store,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: Object.assign(
+    (
+      selector: (s: {
+        highlightAccessGrantName: string | undefined;
+        setHighlightAccessGrantName: (v: string | undefined) => void;
+      }) => unknown
+    ) =>
+      selector({
+        highlightAccessGrantName: mocks.state.highlightAccessGrantName,
+        setHighlightAccessGrantName: mocks.setHighlightAccessGrantName,
+      }),
+    {
+      getState: () => ({
+        highlightAccessGrantName: mocks.state.highlightAccessGrantName,
+        setHighlightAccessGrantName: mocks.setHighlightAccessGrantName,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/store/modules/accessGrant", () => ({}));
@@ -206,16 +231,12 @@ const setupDefaultMocks = () => {
     })),
   });
 
-  mocks.useSQLEditorStore.mockReturnValue({ project: "projects/proj1" });
+  mocks.useSQLEditorPiniaStore.mockReturnValue({ project: "projects/proj1" });
   mocks.useSQLEditorTabStore.mockReturnValue({
     currentTab: { connection: { database: "instances/inst1/databases/db1" } },
   });
 
-  const uiStore = {
-    asidePanelTab: "ACCESS",
-    highlightAccessGrantName: undefined as string | undefined,
-  };
-  mocks.useSQLEditorUIStore.mockReturnValue(uiStore);
+  mocks.state.highlightAccessGrantName = undefined;
 
   mocks.useAccessGrantStore.mockReturnValue({
     searchMyAccessGrants: vi.fn().mockResolvedValue({

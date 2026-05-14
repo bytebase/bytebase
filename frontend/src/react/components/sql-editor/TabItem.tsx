@@ -2,10 +2,9 @@ import { Database, FileCode, History, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import type { AsidePanelTab } from "@/store";
-import { useSQLEditorUIStore } from "@/store";
+import type { AsidePanelTab } from "@/react/stores/sqlEditor";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 
 type TabItemProps = {
   readonly tab: AsidePanelTab;
@@ -22,13 +21,12 @@ const iconByTab = {
 /**
  * Single tab button in the SQL Editor aside panel's left gutter.
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/TabItem.vue.
- * Active state reflects useSQLEditorUIStore().asidePanelTab; click handler
+ * Active state reflects `useSQLEditorStore().asidePanelTab`; click handler
  * is supplied by the GutterBar parent (which writes the store).
  */
 export function TabItem({ tab, onClick }: TabItemProps) {
   const { t } = useTranslation();
-  const uiStore = useSQLEditorUIStore();
-  const isActive = useVueState(() => uiStore.asidePanelTab === tab);
+  const isActive = useSQLEditorStore((s) => s.asidePanelTab === tab);
 
   const Icon = iconByTab[tab];
   const labelByTab = {

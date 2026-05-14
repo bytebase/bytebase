@@ -1,14 +1,14 @@
 import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
 import { useVueState } from "@/react/hooks/useVueState";
+import type { AsidePanelTab } from "@/react/stores/sqlEditor";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import {
-  type AsidePanelTab,
   useProjectV1Store,
-  useSQLEditorStore,
-  useSQLEditorUIStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
 } from "@/store";
 import { TabItem } from "./TabItem";
 
@@ -20,9 +20,9 @@ import { TabItem } from "./TabItem";
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
  */
 export function GutterBar() {
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorPiniaStore();
   const projectStore = useProjectV1Store();
-  const uiStore = useSQLEditorUIStore();
+  const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
 
   const project = useVueState(() => {
     const name = editorStore.project;
@@ -41,7 +41,7 @@ export function GutterBar() {
     : router.resolve({ name: WORKSPACE_ROUTE_LANDING }).href;
 
   const handleClickTab = (target: AsidePanelTab) => {
-    uiStore.asidePanelTab = target;
+    setAsidePanelTab(target);
   };
 
   return (

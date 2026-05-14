@@ -1,7 +1,7 @@
 import { LinkIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { useSQLEditorUIStore } from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/ConnectionHolder.vue.
@@ -11,10 +11,12 @@ import { useSQLEditorUIStore } from "@/store";
  */
 export function ConnectionHolder() {
   const { t } = useTranslation();
-  const uiStore = useSQLEditorUIStore();
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
 
   const handleClick = () => {
-    uiStore.showConnectionPanel = true;
+    setShowConnectionPanel(true);
   };
 
   return (

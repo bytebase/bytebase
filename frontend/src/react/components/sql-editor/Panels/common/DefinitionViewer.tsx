@@ -6,7 +6,7 @@ import type { ChatAction } from "@/plugins/ai/types";
 import { ReadonlyMonaco } from "@/react/components/monaco/ReadonlyMonaco";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import type { MonacoModule } from "@/react/components/monaco/types";
-import { useSQLEditorUIStore } from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { dialectOfEngineV1 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { getInstanceResource, nextAnimationFrame } from "@/utils";
@@ -33,7 +33,8 @@ export function DefinitionViewer({
   format,
   onSelectContent,
 }: DefinitionViewerProps) {
-  const uiStore = useSQLEditorUIStore();
+  const setIsShowingCode = useSQLEditorStore((s) => s.setIsShowingCode);
+  const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const engine = useMemo(() => getInstanceResource(db).engine, [db]);
 
   const [formatted, setFormatted] = useState<{
@@ -68,16 +69,16 @@ export function DefinitionViewer({
   );
 
   useEffect(() => {
-    uiStore.isShowingCode = true;
+    setIsShowingCode(true);
     return () => {
-      uiStore.isShowingCode = false;
+      setIsShowingCode(false);
     };
-  }, [uiStore]);
+  }, [setIsShowingCode]);
 
   const handleAIAction = useCallback(
     (action: ChatAction) => {
-      const newChat = !uiStore.showAIPanel;
-      uiStore.showAIPanel = true;
+      const newChat = !useSQLEditorStore.getState().showAIPanel;
+      setShowAIPanel(true);
       if (action !== "explain-code") return;
       const statement = selectedStatement || content;
       void nextAnimationFrame().then(() => {
@@ -87,7 +88,7 @@ export function DefinitionViewer({
         });
       });
     },
-    [uiStore, selectedStatement, content, engine]
+    [setShowAIPanel, selectedStatement, content, engine]
   );
 
   useAIActions({

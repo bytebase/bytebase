@@ -25,6 +25,7 @@ import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useCommonSearchScopeOptions } from "@/react/components/useCommonSearchScopeOptions";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   featureToRef,
   pushNotification,
@@ -34,10 +35,9 @@ import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
   useSQLEditorTreeStore,
-  useSQLEditorUIStore,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
@@ -140,8 +140,10 @@ function ConnectionPaneWithHoverState(props: Props) {
 function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
-  const uiStore = useSQLEditorUIStore();
+  const editorStore = useSQLEditorPiniaStore();
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
   const environmentStore = useEnvironmentV1Store();
@@ -410,9 +412,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       // connection AND closes the drawer. Without this the drawer stays
       // open and the user can't see the schema panel underneath, so
       // subsequent re-clicks look like nothing happened.
-      uiStore.showConnectionPanel = false;
+      setShowConnectionPanel(false);
     },
-    [selectedDatabaseGroupNames, currentTab?.mode, uiStore]
+    [selectedDatabaseGroupNames, currentTab?.mode, setShowConnectionPanel]
   );
 
   const onBatchQueryContextChange = useCallback(
@@ -482,7 +484,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       });
       const ok = await onBatchQueryContextChange(ctx);
       if (ok) {
-        uiStore.showConnectionPanel = false;
+        setShowConnectionPanel(false);
       } else {
         pushNotification({
           module: "bytebase",
@@ -491,7 +493,12 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
         });
       }
     },
-    [currentTab?.batchQueryContext, onBatchQueryContextChange, uiStore, t]
+    [
+      currentTab?.batchQueryContext,
+      onBatchQueryContextChange,
+      setShowConnectionPanel,
+      t,
+    ]
   );
 
   const handleSelectedGroupsChange = useCallback(

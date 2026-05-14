@@ -7,12 +7,12 @@ import {
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useSQLEditorStore,
+  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorUIStore,
   useSQLEditorWorksheetStore,
 } from "@/store";
 import type {
@@ -72,7 +72,6 @@ export function setConnection(options: {
   };
 
   const tabStore = useSQLEditorTabStore();
-  const uiStore = useSQLEditorUIStore();
   const worksheetStore = useSQLEditorWorksheetStore();
 
   const batchQueryContext: BatchQueryContext = Object.assign(
@@ -99,7 +98,7 @@ export function setConnection(options: {
   void createOrUpdate().then((tab) => {
     if (tab) {
       tabStore.updateTab(tab.id, { mode, batchQueryContext });
-      uiStore.asidePanelTab = "SCHEMA";
+      useSQLEditorStore.getState().setAsidePanelTab("SCHEMA");
     }
   });
 }
@@ -111,8 +110,10 @@ export function setConnection(options: {
  */
 export function useConnectionMenu(node: SQLEditorTreeNode | null) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorStore();
-  const uiStore = useSQLEditorUIStore();
+  const editorStore = useSQLEditorPiniaStore();
+  const setShowConnectionPanel = useSQLEditorStore(
+    (s) => s.setShowConnectionPanel
+  );
   const allowAdmin = useVueState(() => editorStore.allowAdmin);
 
   const items = useMemo<ConnectionMenuItem[]>(() => {
@@ -131,7 +132,7 @@ export function useConnectionMenu(node: SQLEditorTreeNode | null) {
           icon: <LinkIcon className="size-4" />,
           onSelect: () => {
             setConnection({ database, newTab: false });
-            uiStore.showConnectionPanel = false;
+            setShowConnectionPanel(false);
           },
         });
         out.push({
@@ -140,7 +141,7 @@ export function useConnectionMenu(node: SQLEditorTreeNode | null) {
           icon: <LinkIcon className="size-4" />,
           onSelect: () => {
             setConnection({ database, newTab: true });
-            uiStore.showConnectionPanel = false;
+            setShowConnectionPanel(false);
           },
         });
       }
@@ -151,7 +152,7 @@ export function useConnectionMenu(node: SQLEditorTreeNode | null) {
           icon: <Wrench className="size-4" />,
           onSelect: () => {
             setConnection({ database, mode: "ADMIN", newTab: false });
-            uiStore.showConnectionPanel = false;
+            setShowConnectionPanel(false);
           },
         });
       }
@@ -189,13 +190,13 @@ export function useConnectionMenu(node: SQLEditorTreeNode | null) {
               schema: "",
               table: "",
             });
-            uiStore.showConnectionPanel = false;
+            setShowConnectionPanel(false);
           },
         });
       }
     }
     return out;
-  }, [node, allowAdmin, t, uiStore]);
+  }, [node, allowAdmin, t, setShowConnectionPanel]);
 
   const handleSelect = useCallback(
     (key: ActionKey) => {

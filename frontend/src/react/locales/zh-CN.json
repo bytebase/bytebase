@@ -2796,7 +2796,6 @@
     "rows-affected": "行受影响",
     "rows-upper-limit": "到达查询结果条数上限",
     "save-sheet": "保存工作表",
-    "save-sheet-input-placeholder": "请输入工作表名称",
     "scroll-to-bottom": "滚动到底部",
     "scroll-to-top": "滚动到顶部",
     "search-history-by-statement": "搜索 SQL 语句",
