@@ -342,6 +342,50 @@ func TestTiDBPriorBackupCheckAdvisor(t *testing.T) {
 			},
 		},
 		{
+			// Cumulative #30 Codex-fix-1h: multi-match fallback to
+			// all matched tables (mirrors transformer's
+			// resolveUnqualifiedColumns at backup.go:539-576).
+			// `name` column exists on BOTH tech_book and orders in
+			// MockMySQLDatabase. `UPDATE tech_book JOIN orders SET
+			// name = 'x'` → resolver returns BOTH tables. Then
+			// `DELETE FROM tech_book` makes tech_book mixed
+			// (UPDATE+DELETE) → mixed-DML fires on tech_book.
+			// Pre-fix-1h: resolver returned nil for multi-match →
+			// no UPDATE targets → no mixing detected → false-negative.
+			name:            "multi-match unqualified SET attributes to all (Codex-fix-1h)",
+			statement:       "UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET name = 'x';\nDELETE FROM tech_book WHERE id = 5;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"mixed DML statements on the same table",
+				"tech_book",
+			},
+		},
+		{
+			// Cumulative #30 Codex-fix-1h: zero-match fallback to
+			// all distinctBases. `notarealcolumn` doesn't exist on
+			// any joined table; transformer falls back to all
+			// tables. Six unqualified-SET multi-table UPDATEs with
+			// no-catalog-match column → count-cap fires (each
+			// contributes 2 distinctBases entries; total > 5 with
+			// distinct tables > 1).
+			//
+			// Pre-fix-1h: resolver returned nil → 0 dmlRefs → no
+			// count-cap fires → advisor approves SQL that the
+			// transformer would reject at runtime.
+			//
+			// Note: omni's parser permits unknown column names in
+			// SET (lazy column validation); the catalog walk simply
+			// fails to find them and falls back.
+			name: "zero-match unqualified SET falls back to all (Codex-fix-1h count-cap path)",
+			statement: "UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET notarealcolumn = 1 WHERE tech_book.id = 1;\n" +
+				"UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET notarealcolumn = 2 WHERE tech_book.id = 2;\n" +
+				"UPDATE tech_book INNER JOIN orders ON tech_book.id = orders.order_id SET notarealcolumn = 3 WHERE tech_book.id = 3;",
+			backupDBPresent: true,
+			wantContentSubstr: []string{
+				"more than 5 DML statements across different tables",
+			},
+		},
+		{
 			// Cumulative #30 Codex-fix-1e: schema-aware column
 			// resolution for unqualified SET in multi-table UPDATE.
 			// `UPDATE tech_book JOIN orders SET customer_name = 'x'`

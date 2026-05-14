@@ -475,47 +475,59 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap,
 				continue
 			}
 			// Multi-target: schema-aware column resolution
-			// (Codex-fix-1e). Walk dbMetadata for each candidate
-			// base; the base owning the column is the target.
-			if matches := omniResolveUnqualifiedSETColumn(col.Column, m.distinctBases, dbMetadata); len(matches) == 1 {
-				add(matches[0])
+			// (Codex-fix-1e, refined by Codex-fix-1h to mirror
+			// transformer semantics — any-match attributes; zero-
+			// match or no-metadata falls back to all distinctBases).
+			for _, t := range omniResolveUnqualifiedSETColumn(col.Column, m.distinctBases, dbMetadata) {
+				add(t)
 			}
-			// Otherwise (no match, or ambiguous multi-match): skip.
-			// MySQL itself errors on ambiguous unqualified refs at
-			// execution time; backup-safety gate stays silent rather
-			// than guessing.
 		}
 	}
 	return result
 }
 
-// omniResolveUnqualifiedSETColumn (cumulative #30 Codex-fix-1e):
-// walks dbMetadata to find which of distinctBases owns the named
-// column. Used to disambiguate `UPDATE t1 JOIN t2 ... SET col = ...`
-// when `col` exists on only one of the joined tables (the common
-// case — joins-for-filtering pattern). Returns the resolved base
-// (single-element slice) when exactly one base has the column;
-// returns empty otherwise (ambiguous or unresolvable).
+// omniResolveUnqualifiedSETColumn resolves an unqualified SET column
+// name to its owning base table(s). Mirrors the transformer's
+// resolveUnqualifiedColumns semantics at
+// parser/tidb/backup.go:539-576 (cumulative #30 Codex-fix-1h):
+//
+//   - No metadata available → return ALL distinctBases (fallback).
+//   - Column found in N≥1 distinct bases → return THOSE N bases.
+//     Single-match is the common case (Codex-fix-1e — typical
+//     joins-for-filtering pattern); multi-match means the column
+//     is ambiguous (MySQL itself errors at execution time, but
+//     the advisor signals the broader risk surface).
+//   - Column not found in ANY base → return ALL distinctBases
+//     (fallback — column likely added by an earlier statement
+//     or schema lag; the transformer treats this conservatively
+//     and the advisor must too to avoid approving inputs the
+//     transformer rejects).
+//
+// Earlier Codex-fix-1e returned nil on ambiguous/zero matches —
+// that diverged from transformer behavior and let multi-table
+// count-cap violations slip through (Codex P1 #10). Refined here
+// to mirror the transformer; the advisor stays as the prediction
+// layer for the transformer's runtime constraint.
 //
 // Schema-match policy: a base whose database doesn't match
-// dbMetadata.Name is excluded — we have no catalog info for it
-// and can't resolve. The common case (single-database multi-table
-// UPDATE) has all bases pointing at dbMetadata.Name, so resolution
-// works. Cross-database UPDATEs with unqualified SET fall through
-// to "ambiguous, skip" — same as MySQL's runtime behavior on such
-// statements.
-//
-// Case-insensitive matching on both table and column names per
+// dbMetadata.Name is excluded from the catalog walk — we have
+// no catalog info for it. Cross-database UPDATEs with unqualified
+// SET fall through to the zero-match path → all distinctBases
+// fallback. Case-insensitive matching on table/column names per
 // MySQL convention.
 func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *storepb.DatabaseSchemaMetadata) []priorBackupTable {
-	if dbMetadata == nil || colName == "" {
-		return nil
+	if colName == "" {
+		return distinctBases
+	}
+	if dbMetadata == nil {
+		return distinctBases
 	}
 	dbName := dbMetadata.GetName()
 	var matches []priorBackupTable
 	for _, base := range distinctBases {
-		// Skip bases pointing at other databases — we have no
-		// catalog info for them.
+		// Cross-DB bases: no catalog info; skip the catalog walk
+		// for these. They still participate in the fallback path
+		// when overall match count is zero.
 		if base.database != "" && dbName != "" && !strings.EqualFold(base.database, dbName) {
 			continue
 		}
@@ -533,10 +545,10 @@ func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackup
 			}
 		}
 	}
-	if len(matches) == 1 {
+	if len(matches) > 0 {
 		return matches
 	}
-	return nil
+	return distinctBases
 }
 
 // (omniIsDDLStmt removed in cumulative #30 Codex-fix-1f. DDL
