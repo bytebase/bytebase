@@ -99,6 +99,23 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							},
 						},
 					},
+					Indexes: []*store.IndexMetadata{
+						{
+							Name:    "PRIMARY",
+							Primary: true,
+							Unique:  true,
+							Expressions: []string{
+								"b",
+							},
+						},
+						{
+							Name:   "uk_a",
+							Unique: true,
+							Expressions: []string{
+								"a",
+							},
+						},
+					},
 				},
 				{
 					Name: "t1",
@@ -139,6 +156,22 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 						},
 						{
 							Name: "c",
+						},
+					},
+					Indexes: []*store.IndexMetadata{
+						{
+							Name:    "PRIMARY",
+							Primary: true,
+							Expressions: []string{
+								"c",
+							},
+						},
+						{
+							Name:   "PRIMARY",
+							Unique: true,
+							Expressions: []string{
+								"a",
+							},
 						},
 					},
 				},

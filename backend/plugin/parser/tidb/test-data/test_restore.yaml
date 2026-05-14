@@ -1,0 +1,141 @@
+- input: |-
+    UPDATE t_generated1111 SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET b = 1 WHERE a = 1;
+    UPDATE t_generated SET b = 2 WHERE a = 2;
+    UPDATE t_generated SET b = 3 WHERE a = 3;
+    UPDATE t_generated1111 SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET b = 4 WHERE a = 4;
+    UPDATE t_generated SET b = 5 WHERE a = 5;
+    UPDATE t_generated1111 SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated111 SET a = 7 WHERE b = 7;
+    UPDATE t_generated SET b = 7 WHERE a = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+
+    UPDATE t_generated SET b = 1 WHERE a = 1;
+    UPDATE t_generated SET b = 2 WHERE a = 2;
+    UPDATE t_generated SET b = 3 WHERE a = 3;
+    UPDATE t_generated SET b = 4 WHERE a = 4;
+    UPDATE t_generated SET b = 5 WHERE a = 5;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated SET b = 6 WHERE a = 6;
+    UPDATE t_generated SET b = 7 WHERE a = 7;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `b` = VALUES(`b`);
+- input: |-
+    UPDATE t_generated1111 SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated1111 SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated1111 SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated111 SET a = 7 WHERE b = 7;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+- input: |-
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+- input: DELETE FROM t_generated where a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    DELETE FROM t_generated where a = 1;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_1_t_generated`;
+- input: UPDATE t_generated SET a = 1 WHERE a = 2;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_t_generated
+  originaldatabase: db
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated SET a = 1 WHERE a = 2;
+    */
+    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_1_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+- input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    DELETE test FROM test, test2 as t2 where test.id = t2.id;
+    */
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test`;
+- input: UPDATE test x SET x.c = 1 WHERE x.c = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test x SET x.c = 1 WHERE x.c = 1;
+    */
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c` = VALUES(`c`);
+- input: UPDATE test SET a = 1 WHERE c = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET a = 1 WHERE c = 1;
+    */
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);

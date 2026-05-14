@@ -1,0 +1,6 @@
+services:
+  tidb:
+    image: pingcap/tidb:v8.5.5
+    container_name: tidb-test
+    ports:
+      - "4000:4000"
