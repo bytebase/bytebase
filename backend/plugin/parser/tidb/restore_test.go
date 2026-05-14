@@ -385,6 +385,87 @@ func TestGenerateRestoreSQLDeleteUsingOnlyTable(t *testing.T) {
 		"expected no-DML error since test2 is only joined for filter, not deleted")
 }
 
+// TestGenerateRestoreSQLUnqualifiedSetNonTargetColumn pins that an
+// unqualified SET column that does NOT belong to the target table does
+// NOT trigger rollback for the target. Per Codex P1 catch on PR #20345
+// — follow-on to the Bug 6 fix.
+//
+// Pre-fix bug: updateMutatesTable's unqualified branch returned true
+// for any unqualified SET when the target was in scope, regardless of
+// whether the column actually existed on the target. For
+// `UPDATE test JOIN t1 ... SET name = 1` (where `name` exists on the
+// joined table but not on `test`), the over-classification made
+// containsTable return true; extractUpdateColumns correctly returned
+// no `test`-table columns; doGenerate emitted invalid
+// `... ON DUPLICATE KEY UPDATE ;` for `test`.
+//
+// Post-fix: updateMutatesTable resolves unqualified SET columns
+// against the target table's actual normal column set (fetched once
+// at the top of GenerateRestoreSQL via getNormalColumnsLower). Non-
+// target columns no longer trigger a match.
+func TestGenerateRestoreSQLUnqualifiedSetNonTargetColumn(t *testing.T) {
+	// `name` doesn't exist on `test` (mock has only a, b, c).
+	const input = "UPDATE test JOIN t1 ON test.c = t1.c SET name = 1 WHERE test.c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.Error(t, err,
+		"unqualified SET on non-target-table column must not generate (invalid) rollback SQL")
+	require.Contains(t, err.Error(), "no DML statement found",
+		"expected no-DML error since SET column doesn't exist on target")
+}
+
+// TestGenerateRestoreSQLUnqualifiedSetTargetColumn pins the positive-
+// path counterpart: when the unqualified SET column DOES exist on the
+// target table, rollback is correctly generated (column resolves
+// through targetCols and `extractUpdateColumns` finds it in
+// normalColumns).
+func TestGenerateRestoreSQLUnqualifiedSetTargetColumn(t *testing.T) {
+	// Single-table UPDATE with unqualified SET — the common case.
+	// `a` exists on `test` (mock has a, b, c). targetCols includes
+	// "a" → updateMutatesTable returns true; extractUpdateColumns
+	// returns ["a"]; ODKU UPDATE `a` = VALUES(`a`).
+	const input = "UPDATE test SET a = 1 WHERE c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.NoError(t, err)
+	require.Contains(t, result, "`a` = VALUES(`a`)",
+		"unqualified SET on target's column must produce ODKU clause for that column")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last

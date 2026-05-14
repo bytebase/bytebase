@@ -29,21 +29,32 @@ func init() {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	originalSQL, err := extractStatement(statement, backupItem)
-	if err != nil {
-		return "", errors.Errorf("failed to extract single SQL: %v", err)
-	}
-
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, errMsgFailedToGetSourceDB, backupItem.SourceTable.Database)
+	}
+
+	// Fetch the target table's regular column set once. Used by
+	// updateMutatesTable to resolve unqualified SET columns against the
+	// target's actual schema — without it, an unqualified SET on a
+	// non-target-table column would mis-classify the UPDATE as mutating
+	// the target and produce invalid `... ON DUPLICATE KEY UPDATE ;`
+	// downstream. Per Codex P1 catch on PR #20345.
+	targetCols, err := getNormalColumnsLower(ctx, rCtx, sourceDatabase, backupItem.SourceTable.Table)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get target table columns")
+	}
+
+	originalSQL, err := extractStatement(statement, backupItem, sourceDatabase, targetCols)
+	if err != nil {
+		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
 	// Find ALL DML nodes referencing the target table — backup.go's single-
 	// table path bundles >maxMixedDMLCount same-table DMLs into one backup
 	// item, and rollback must cover every column touched across the bundle
 	// (not just the first stmt's columns). Per Codex P1 catch on PR #20345.
-	matchingNodes, err := findMatchingDMLs(originalSQL, sourceDatabase, backupItem.SourceTable.Table)
+	matchingNodes, err := findMatchingDMLs(originalSQL, sourceDatabase, backupItem.SourceTable.Table, targetCols)
 	if err != nil {
 		return "", err
 	}
@@ -58,13 +69,48 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	return doGenerate(ctx, rCtx, sqlForComment, matchingNodes, backupItem)
 }
 
+// getNormalColumnsLower returns a lowercased set of regular (non-
+// generated) column names for the given table. Used by
+// updateMutatesTable to determine whether an unqualified SET column
+// belongs to the target table — without this, multi-table UPDATEs
+// where unqualified SETs reference columns of the joined-but-not-
+// target table would be mis-classified as mutating the target.
+func getNormalColumnsLower(ctx context.Context, rCtx base.RestoreContext, database, table string) (map[string]bool, error) {
+	if rCtx.GetDatabaseMetadataFunc == nil {
+		return nil, errors.Errorf("GetDatabaseMetadataFunc is nil")
+	}
+	_, metadata, err := rCtx.GetDatabaseMetadataFunc(ctx, rCtx.InstanceID, database)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database metadata for %s", database)
+	}
+	if metadata == nil {
+		return nil, errors.Errorf("database metadata is nil for %s", database)
+	}
+	schema := metadata.GetSchemaMetadata("")
+	if schema == nil {
+		return nil, errors.Errorf("schema is nil for %s", database)
+	}
+	tableMetadata := schema.GetTable(table)
+	if tableMetadata == nil {
+		return nil, errors.Errorf("table metadata is nil for %s.%s", database, table)
+	}
+	result := make(map[string]bool)
+	for _, col := range tableMetadata.GetProto().Columns {
+		if col == nil || col.Generation != nil {
+			continue
+		}
+		result[strings.ToLower(col.Name)] = true
+	}
+	return result, nil
+}
+
 // findMatchingDMLs returns ALL UPDATE/DELETE nodes in the parsed statement
 // list that reference the target table. The single-DML form (return-on-
 // first-match) is incorrect for backup.go's single-table-bundling path,
 // where one backup item spans multiple same-table DMLs touching different
 // columns; rolling back only the first stmt's columns leaves later
 // columns mutated. See Codex P1 catch on PR #20345.
-func findMatchingDMLs(statement, database, table string) ([]ast.Node, error) {
+func findMatchingDMLs(statement, database, table string, targetCols map[string]bool) ([]ast.Node, error) {
 	stmtList, err := ParseTiDBOmni(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
@@ -73,7 +119,7 @@ func findMatchingDMLs(statement, database, table string) ([]ast.Node, error) {
 	for _, item := range stmtList.Items {
 		switch item.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
-			if containsTable(item, database, table) {
+			if containsTable(item, database, table, targetCols) {
 				result = append(result, item)
 			}
 		default:
@@ -386,7 +432,7 @@ func disjoint(a []string, b map[string]bool) bool {
 	return true
 }
 
-func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item, sourceDatabase string, targetCols map[string]bool) (string, error) {
 	if backupItem == nil {
 		return "", errors.Errorf("backup item is nil")
 	}
@@ -419,11 +465,6 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 	}
 
-	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
-	if err != nil {
-		return "", errors.Wrapf(err, errMsgFailedToGetSourceDB, backupItem.SourceTable.Database)
-	}
-
 	var result []string
 	for i := start; i <= end; i++ {
 		stmtList, err := ParseTiDBOmni(list[i].Text)
@@ -432,7 +473,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		}
 		containsSourceTable := false
 		for _, node := range stmtList.Items {
-			if containsTable(node, sourceDatabase, backupItem.SourceTable.Table) {
+			if containsTable(node, sourceDatabase, backupItem.SourceTable.Table, targetCols) {
 				containsSourceTable = true
 				break
 			}
@@ -456,10 +497,10 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 // matching n.Using too caused a backup item targeting a USING-only
 // table to generate rollback SQL that re-inserted rows that were never
 // deleted (reintroducing stale data).
-func containsTable(node ast.Node, database, table string) bool {
+func containsTable(node ast.Node, database, table string, targetCols map[string]bool) bool {
 	switch n := node.(type) {
 	case *ast.UpdateStmt:
-		return updateMutatesTable(n, database, table)
+		return updateMutatesTable(n, database, table, targetCols)
 	case *ast.DeleteStmt:
 		for _, expr := range n.Tables {
 			if tableExprReferences(expr, database, table) {
@@ -482,7 +523,7 @@ func containsTable(node ast.Node, database, table string) bool {
 // counted as mutation if the target table is in scope (multi-table
 // UPDATE with unqualified col is ambiguous; safer to over-include than
 // miss).
-func updateMutatesTable(stmt *ast.UpdateStmt, database, table string) bool {
+func updateMutatesTable(stmt *ast.UpdateStmt, database, table string, targetCols map[string]bool) bool {
 	// Precondition: target must be in stmt.Tables at all (else there's
 	// nothing to discuss).
 	targetInScope := false
@@ -506,11 +547,17 @@ func updateMutatesTable(stmt *ast.UpdateStmt, database, table string) bool {
 			continue
 		}
 		if col.Table == "" {
-			// Unqualified column. In multi-table UPDATE this is ambiguous;
-			// MySQL/TiDB resolves at execution by picking whichever table
-			// has the column. Without column-level resolution here, treat
-			// the target as potentially mutated when it's in scope.
-			return true
+			// Unqualified column. Resolve against the target table's
+			// actual columns — only count as mutation if the column
+			// exists on the target. Pre-fix this branch returned true
+			// unconditionally (over-counted); for `UPDATE test JOIN t1
+			// ON ... SET name = 1` where `name` is on t1 but not test,
+			// the over-count produced empty `... ON DUPLICATE KEY
+			// UPDATE ;`. Per Codex P1 catch on PR #20345.
+			if targetCols[strings.ToLower(col.Column)] {
+				return true
+			}
+			continue
 		}
 		// Qualified — resolve qualifier through the alias map.
 		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Table, table) {
