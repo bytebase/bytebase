@@ -395,14 +395,20 @@ export const useSQLEditorWorksheetStore = defineStore(
       signal?: AbortSignal;
     }): Promise<SQLEditorTab | undefined> => {
       const connection = await extractWorksheetConnection({ database });
-      const worksheetTitle = title ?? "";
 
-      if (worksheet) {
-        const currentSheet = worksheetStore.getWorksheetByName(worksheet);
-        if (!currentSheet) {
-          return;
-        }
+      // `title === undefined` means "don't change the title" — preserves the
+      // current title on auto-save calls from useSQLEditorAutoSave which
+      // never pass one. `title === ""` is a real, explicit empty title that
+      // should be persisted (renders as the Untitled placeholder elsewhere).
+      const currentSheet = worksheet
+        ? worksheetStore.getWorksheetByName(worksheet)
+        : undefined;
+      if (worksheet && !currentSheet) {
+        return;
+      }
+      const worksheetTitle = title ?? currentSheet?.title ?? "";
 
+      if (worksheet && currentSheet) {
         const updated = await worksheetStore.patchWorksheet(
           {
             ...currentSheet,
