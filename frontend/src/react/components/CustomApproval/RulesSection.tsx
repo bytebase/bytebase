@@ -25,6 +25,7 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { ColumnResizeHandle } from "@/react/components/ui/column-resize-handle";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
 import type { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
@@ -217,8 +218,15 @@ export function RulesSection({
     LocalApprovalRule | undefined
   >();
 
-  const [titleWidth, setTitleWidth] = useState(200);
-  const [flowWidth, setFlowWidth] = useState(280);
+  // Only the title and flow columns are resizable; the other three are
+  // fixed (40px gripper, flexible content, 140px actions). The shared hook
+  // tracks an array of widths positional to its input, so we hand it just
+  // the two resizable columns and compose them into the grid template.
+  const { widths: resizableWidths, onResizeStart } = useColumnWidths([
+    { defaultWidth: 200, minWidth: 80 },
+    { defaultWidth: 280, minWidth: 80 },
+  ]);
+  const [titleWidth, flowWidth] = resizableWidths;
 
   const gridStyle = useMemo<React.CSSProperties>(
     () => ({
@@ -226,32 +234,6 @@ export function RulesSection({
     }),
     [titleWidth, flowWidth]
   );
-
-  const handleResizeStart =
-    (column: "title" | "flow") => (e: React.MouseEvent) => {
-      e.preventDefault();
-      const startX = e.clientX;
-      const startWidth = column === "title" ? titleWidth : flowWidth;
-      const setter = column === "title" ? setTitleWidth : setFlowWidth;
-
-      const prevCursor = document.body.style.cursor;
-      const prevUserSelect = document.body.style.userSelect;
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-
-      const onMouseMove = (mv: MouseEvent) => {
-        const delta = mv.clientX - startX;
-        setter(Math.max(80, startWidth + delta));
-      };
-      const onMouseUp = () => {
-        document.body.style.cursor = prevCursor;
-        document.body.style.userSelect = prevUserSelect;
-        window.removeEventListener("mousemove", onMouseMove);
-        window.removeEventListener("mouseup", onMouseUp);
-      };
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    };
 
   const isFallback = source === RuleSource.SOURCE_UNSPECIFIED;
 
@@ -372,12 +354,12 @@ export function RulesSection({
           <div className="px-2 py-2" />
           <div className="relative px-3 py-2">
             {t("common.title")}
-            <ColumnResizeHandle onMouseDown={handleResizeStart("title")} />
+            <ColumnResizeHandle onMouseDown={(e) => onResizeStart(0, e)} />
           </div>
           <div className="px-3 py-2">{t("cel.condition.self")}</div>
           <div className="relative px-3 py-2">
             {t("custom-approval.approval-flow.self")}
-            <ColumnResizeHandle onMouseDown={handleResizeStart("flow")} />
+            <ColumnResizeHandle onMouseDown={(e) => onResizeStart(1, e)} />
           </div>
           <div className="px-3 py-2">{t("common.operations")}</div>
         </div>

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface ColumnWithWidth {
   defaultWidth: number;
@@ -21,6 +21,10 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
     startX: number;
     startWidth: number;
   } | null>(null);
+  // Holds the teardown function for an active drag so an unmount-mid-drag
+  // (route change, modal close, etc.) tears down document-level listeners
+  // and resets the body cursor/userSelect overrides.
+  const dragCleanupRef = useRef<() => void>(() => {});
 
   const onResizeStart = useCallback(
     (colIndex: number, e: React.MouseEvent) => {
@@ -43,20 +47,31 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
           return next;
         });
       };
-      const onMouseUp = () => {
+      const teardown = () => {
         dragRef.current = null;
         document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("mouseup", teardown);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
+        // Reset so the unmount-cleanup is a no-op if the drag ended cleanly.
+        dragCleanupRef.current = () => {};
       };
       document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("mouseup", teardown);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
+      dragCleanupRef.current = teardown;
     },
     [widths, columns]
   );
+
+  useEffect(() => {
+    return () => {
+      // If unmount happens mid-drag, tear down before any stale listener
+      // can fire against the unmounted tree.
+      dragCleanupRef.current();
+    };
+  }, []);
 
   const totalWidth = widths.reduce((sum, w) => sum + w, 0);
 
