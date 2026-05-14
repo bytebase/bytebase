@@ -20,7 +20,11 @@ import (
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatements)
+	// Phase 1.5 §1.5.N+1 dispatcher flip: register the Option B
+	// omni-first/pingcap-fallback dispatcher (parseTiDBStatementsOmni in
+	// dispatcher.go). See plans/2026-04-23-omni-tidb-completion-plan.md
+	// §1.5.0 invariant #8 for the contract.
+	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatementsOmni)
 	base.RegisterGetStatementTypes(storepb.Engine_TIDB, GetStatementTypes)
 }
 
@@ -100,38 +104,6 @@ func applyTiDBLineTracking(node ast.StmtNode, baseLine int, originalText string)
 		}
 	}
 	return actualStartLine, nil
-}
-
-// parseTiDBStatements is the ParseStatementsFunc for TiDB.
-// Returns []ParsedStatement with both text and AST populated.
-func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
-	stmts, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Then parse to get ASTs
-	asts, err := ParseTiDBForSyntaxCheck(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, AST provides parsed tree
-	var result []base.ParsedStatement
-	astIndex := 0
-	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
-		}
-		if !stmt.Empty && astIndex < len(asts) {
-			ps.AST = asts[astIndex]
-			astIndex++
-		}
-		result = append(result, ps)
-	}
-
-	return result, nil
 }
 
 func newTiDBParser() *tidbparser.Parser {
