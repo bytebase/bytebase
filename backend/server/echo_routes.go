@@ -68,8 +68,15 @@ func configureEchoRouters(
 		Subsystem:  "api",
 		Registerer: registry,
 	}))
+	// Fold the local echo registry with the default registry at scrape
+	// time. The local registry isolates echo HTTP middleware metrics from
+	// duplicate-registration errors in tests; the default registry catches
+	// promauto-registered metrics from other packages (e.g. db_metrics,
+	// the tidb dispatcher fallback counter, and Go runtime metrics auto-
+	// registered by client_golang). Without this fold, those metrics are
+	// registered but never exposed at /metrics.
 	e.GET("/metrics", echoprometheus.NewHandlerWithConfig(echoprometheus.HandlerConfig{
-		Gatherer: registry,
+		Gatherer: prometheus.Gatherers{registry, prometheus.DefaultGatherer},
 	}))
 
 	e.GET("/healthz", func(c *echo.Context) error {
