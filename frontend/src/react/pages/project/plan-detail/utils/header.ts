@@ -65,27 +65,20 @@ export const getCreateIssueBlockingErrors = ({
 };
 
 export const getCreateIssueConfirmErrors = ({
-  checksWarningAcknowledged,
   blockingErrors,
   project,
   selectedLabelCount,
-  showChecksWarning,
   t,
 }: {
   blockingErrors: string[];
-  checksWarningAcknowledged: boolean;
   project: Pick<Project, "forceIssueLabels">;
   selectedLabelCount: number;
-  showChecksWarning: boolean;
   t: T;
 }): string[] => {
   const errors = [...blockingErrors];
 
   if (project.forceIssueLabels && selectedLabelCount === 0) {
     errors.push(t("plan.labels-required-for-review"));
-  }
-  if (showChecksWarning && !checksWarningAcknowledged) {
-    errors.push(t("issue.checks-warning-hint"));
   }
 
   return errors;

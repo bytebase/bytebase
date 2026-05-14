@@ -31,7 +31,7 @@ describe("plan detail header create issue helpers", () => {
     );
   });
 
-  test("requires acknowledgement for non-blocking check warnings", () => {
+  test("flags non-blocking check warnings without adding a confirm error", () => {
     const plan = makePlan(["changeDatabaseConfig"], { ERROR: 1 });
     const project = {
       enforceSqlReview: false,
@@ -49,20 +49,8 @@ describe("plan detail header create issue helpers", () => {
     expect(
       getCreateIssueConfirmErrors({
         blockingErrors,
-        checksWarningAcknowledged: false,
         project,
         selectedLabelCount: 0,
-        showChecksWarning: true,
-        t,
-      })
-    ).toContain("issue.checks-warning-hint");
-    expect(
-      getCreateIssueConfirmErrors({
-        blockingErrors,
-        checksWarningAcknowledged: true,
-        project,
-        selectedLabelCount: 0,
-        showChecksWarning: true,
         t,
       })
     ).toEqual([]);

@@ -1652,6 +1652,7 @@
   "plan.targets.non-env-warning.other": "{{count}} databases will be excluded from rollout because they have no effective environment:",
   "plan.targets.title": "Targets",
   "plan.targets.view-all": "View all ({{count}})",
+  "plan.title-required": "Title is required",
   "plan.view-discussion": "View discussion",
   "plugin": {
     "ai": {

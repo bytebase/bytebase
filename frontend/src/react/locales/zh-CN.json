@@ -1644,6 +1644,7 @@
   "plan.targets.non-env-warning.other": "{{count}} 个数据库因为没有生效环境，将不会进入发布:",
   "plan.targets.title": "目标",
   "plan.targets.view-all": "查看全部 ({{count}})",
+  "plan.title-required": "标题不能为空",
   "plan.view-discussion": "查看讨论",
   "plugin": {
     "ai": {
