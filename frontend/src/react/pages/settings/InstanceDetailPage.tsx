@@ -25,6 +25,7 @@ import {
   InstanceFormProvider,
   InstanceRoleTable,
   InstanceSyncButton,
+  useInstanceFormContext,
 } from "@/react/components/instance";
 import { Alert } from "@/react/components/ui/alert";
 import {
@@ -33,6 +34,7 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
@@ -415,6 +417,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
           <InstanceFormProvider instance={instance}>
             <InstanceFormBody />
             <InstanceFormButtons className="sticky bottom-0 z-10" />
+            <UnsavedChangesGuard />
           </InstanceFormProvider>
         </TabsPanel>
 
@@ -484,4 +487,10 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
       </Tabs>
     </div>
   );
+}
+
+function UnsavedChangesGuard() {
+  const { valueChanged } = useInstanceFormContext();
+  useUnsavedChangesGuard(valueChanged);
+  return null;
 }

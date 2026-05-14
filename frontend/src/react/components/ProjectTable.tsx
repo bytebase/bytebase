@@ -141,7 +141,7 @@ export function ProjectTable({
   return (
     <Table className={className}>
       <TableHeader>
-        <TableRow>
+        <TableRow className="bg-control-bg">
           {showSelection ? (
             <TableHead
               className="w-12 cursor-pointer"

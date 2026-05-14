@@ -23,6 +23,7 @@ import {
 } from "@/react/components/ui/dropdown-menu";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
 import { router } from "@/router";
@@ -192,32 +193,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const cancelEditRef = useRef<() => void>(() => {});
 
   // Route change guard
-  useEffect(() => {
-    const shouldGuard = editing && allowSaveEdit;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (shouldGuard) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    const removeGuard = router.beforeEach((_to, _from, next) => {
-      if (shouldGuard) {
-        if (!window.confirm(t("common.leave-without-saving"))) {
-          next(false);
-          return;
-        }
-      }
-      next();
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      removeGuard();
-    };
-  }, [editing, allowSaveEdit]);
+  useUnsavedChangesGuard(editing && allowSaveEdit);
 
   // Document title
   useEffect(() => {

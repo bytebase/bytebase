@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import {
   Table,
@@ -93,48 +94,68 @@ export function ReleaseFileTable({
   };
 
   const rowCursor = rowClickable || showSelection ? "cursor-pointer" : "";
+  // Show the "Detail" affordance only when the row itself opens a detail
+  // panel — in selection mode the row click toggles the checkbox instead.
+  const showDetailButton = !showSelection && rowClickable && !!onRowClick;
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {showSelection && <TableHead className="w-10" />}
-          <TableHead className="w-40">{t("common.version")}</TableHead>
-          <TableHead className="w-16">{t("common.type")}</TableHead>
-          <TableHead className="w-32">
-            {t("database.revision.filename")}
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {files.map((file) => {
-          const checked = selectedPaths.has(file.path);
-          return (
-            <TableRow
-              key={file.path}
-              className={cn(rowCursor)}
-              onClick={(e) => handleRowClick(file, e)}
-            >
-              {showSelection && (
-                <TableCell
-                  className="w-10"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(file, checked)
-                    }
-                  />
-                </TableCell>
-              )}
-              <TableCell className="truncate">{file.version}</TableCell>
-              <TableCell>{typeText}</TableCell>
-              <TableCell className="truncate">{file.path || "-"}</TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+    <div className="w-full border rounded-sm overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            {showSelection && <TableHead className="w-10" />}
+            <TableHead className="w-40">{t("common.version")}</TableHead>
+            <TableHead className="w-16">{t("common.type")}</TableHead>
+            <TableHead className="w-32">
+              {t("database.revision.filename")}
+            </TableHead>
+            {showDetailButton && <TableHead className="w-24" />}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {files.map((file) => {
+            const checked = selectedPaths.has(file.path);
+            return (
+              <TableRow
+                key={file.path}
+                className={cn(rowCursor)}
+                onClick={(e) => handleRowClick(file, e)}
+              >
+                {showSelection && (
+                  <TableCell
+                    className="w-10"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(file, checked)
+                      }
+                    />
+                  </TableCell>
+                )}
+                <TableCell className="truncate">{file.version}</TableCell>
+                <TableCell>{typeText}</TableCell>
+                <TableCell className="truncate">{file.path || "-"}</TableCell>
+                {showDetailButton && (
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRowClick?.(file, e);
+                      }}
+                    >
+                      {t("common.detail")}
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

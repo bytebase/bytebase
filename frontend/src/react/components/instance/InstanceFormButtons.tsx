@@ -509,7 +509,7 @@ export function InstanceFormButtons({
         {connectionFailureDialog}
         <div
           className={cn(
-            "w-full py-4 border-t border-block-border flex justify-between bg-background",
+            "w-full py-4 border-t border-block-border flex justify-end items-center gap-x-4 bg-background",
             className
           )}
         >
@@ -522,16 +522,14 @@ export function InstanceFormButtons({
               {t("common.cancel")}
             </Button>
           )}
-          <div className="flex items-center gap-x-2">
-            <Button
-              disabled={
-                !allowCreate || state.isRequesting || state.isTestingConnection
-              }
-              onClick={tryCreate}
-            >
-              {state.isRequesting ? t("common.creating") : t("common.create")}
-            </Button>
-          </div>
+          <Button
+            disabled={
+              !allowCreate || state.isRequesting || state.isTestingConnection
+            }
+            onClick={tryCreate}
+          >
+            {state.isRequesting ? t("common.creating") : t("common.create")}
+          </Button>
         </div>
       </>
     );
@@ -545,7 +543,7 @@ export function InstanceFormButtons({
       {connectionFailureDialog}
       <div
         className={cn(
-          "w-full mt-4 py-4 border-t border-block-border flex justify-between bg-background",
+          "w-full mt-4 py-4 border-t border-block-border flex justify-end items-center gap-x-4 bg-background",
           className
         )}
       >
@@ -556,25 +554,23 @@ export function InstanceFormButtons({
         >
           {t("common.cancel")}
         </Button>
-        <div className="flex items-center gap-x-2">
-          <Button
-            variant="ghost"
-            disabled={!allowUpdate || state.isRequesting || !allowEdit}
-            onClick={testConnectionForCurrentEditingDS}
-          >
-            {state.isTestingConnection
-              ? t("instance.testing-connection")
-              : t("instance.test-connection")}
-          </Button>
-          <Button
-            disabled={
-              !allowUpdate || state.isRequesting || state.isTestingConnection
-            }
-            onClick={doUpdate}
-          >
-            {state.isRequesting ? t("common.updating") : t("common.update")}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          disabled={!allowUpdate || state.isRequesting || !allowEdit}
+          onClick={testConnectionForCurrentEditingDS}
+        >
+          {state.isTestingConnection
+            ? t("instance.testing-connection")
+            : t("instance.test-connection")}
+        </Button>
+        <Button
+          disabled={
+            !allowUpdate || state.isRequesting || state.isTestingConnection
+          }
+          onClick={doUpdate}
+        >
+          {state.isRequesting ? t("common.updating") : t("common.update")}
+        </Button>
       </div>
     </>
   );

@@ -56,6 +56,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { useEnvironmentList } from "@/react/hooks/useAppState";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -964,7 +965,7 @@ function EnvironmentDetail({
 
       {/* Sticky bottom buttons */}
       {canEdit && hasChanges && (
-        <div className="sticky bottom-0 bg-white py-2 px-2 border-t border-block-border flex items-center justify-between gap-x-2">
+        <div className="sticky -bottom-2 bg-white py-4 px-4 border-t border-block-border flex items-center justify-end gap-x-4">
           <Button variant="outline" onClick={revert}>
             {t("common.cancel")}
           </Button>
@@ -1496,30 +1497,8 @@ export function EnvironmentsPage() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [environmentListKey, t]);
 
-  // Guard browser refresh/close
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (detailDirtyRef.current) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, []);
-
-  // Guard Vue router navigation (sidebar links, etc.)
-  useEffect(() => {
-    const removeGuard = router.beforeEach((_to, _from, next) => {
-      if (detailDirtyRef.current) {
-        if (!window.confirm(t("common.leave-without-saving"))) {
-          next(false);
-          return;
-        }
-      }
-      next();
-    });
-    return removeGuard;
-  }, [t]);
+  // Guard browser refresh/close + in-app router navigation
+  useUnsavedChangesGuard(detailDirty);
 
   const selectTab = (id: string) => {
     if (id === selectedId) return;
@@ -1595,7 +1574,7 @@ export function EnvironmentsPage() {
   };
 
   return (
-    <div className="py-4 w-full h-full flex flex-col gap-4">
+    <div className="pt-4 w-full h-full flex flex-col gap-4">
       <Tabs
         value={selectedId}
         onValueChange={(v) => selectTab(v as string)}

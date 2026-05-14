@@ -1150,7 +1150,7 @@ export function ProjectSettingsPage() {
         {/* ============================================================= */}
         {allowEdit && isDirty && (
           <div className="sticky bottom-0 z-10">
-            <div className="flex justify-between w-full py-4 border-t border-block-border bg-background">
+            <div className="flex justify-end gap-x-4 w-full py-4 border-t border-block-border bg-background">
               <Button variant="outline" onClick={revert}>
                 {t("common.cancel")}
               </Button>

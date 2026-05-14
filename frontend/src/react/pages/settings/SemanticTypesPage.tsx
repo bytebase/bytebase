@@ -364,10 +364,10 @@ export function SemanticTypesPage() {
         {t("settings.sensitive-data.semantic-types.label")}
       </p>
 
-      <div className="border border-control-border rounded-sm">
+      <div className="border rounded-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-control-bg">
               <TableHead className="w-20 text-center">
                 {t("settings.sensitive-data.semantic-types.table.icon")}
               </TableHead>
@@ -988,10 +988,10 @@ function SemanticTemplateDrawer({
           <p className="text-sm text-control-placeholder mb-4">
             {t("settings.sensitive-data.semantic-types.template.description")}
           </p>
-          <div className="border border-control-border rounded-sm overflow-hidden">
+          <div className="border rounded-sm overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-control-bg">
                   <TableHead>ID</TableHead>
                   <TableHead>
                     {t(

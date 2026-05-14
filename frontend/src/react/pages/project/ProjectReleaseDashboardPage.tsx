@@ -203,7 +203,7 @@ function ReleaseTable({ releases }: { releases: Release[] }) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-control-bg">
             <TableHead className="w-75">{t("common.name")}</TableHead>
             <TableHead>{t("release.files")}</TableHead>
             <TableHead className="w-32">{t("common.created-at")}</TableHead>

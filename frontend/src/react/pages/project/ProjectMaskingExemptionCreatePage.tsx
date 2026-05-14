@@ -424,15 +424,13 @@ export function ProjectMaskingExemptionCreatePage({
 
       {/* Footer */}
       <div className="sticky bottom-0 z-10 border-t bg-background">
-        <div className="flex justify-end items-center px-4 py-3">
-          <div className="flex items-center gap-x-2">
-            <Button variant="outline" onClick={onDismiss}>
-              {t("common.cancel")}
-            </Button>
-            <Button disabled={submitDisabled || processing} onClick={onSubmit}>
-              {t("common.confirm")}
-            </Button>
-          </div>
+        <div className="flex justify-end items-center gap-x-4 px-4 py-3">
+          <Button variant="outline" onClick={onDismiss}>
+            {t("common.cancel")}
+          </Button>
+          <Button disabled={submitDisabled || processing} onClick={onSubmit}>
+            {t("common.confirm")}
+          </Button>
         </div>
       </div>
 

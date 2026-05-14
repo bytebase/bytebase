@@ -35,6 +35,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -380,35 +388,25 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm min-w-[1000px]">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="py-2 px-4 font-medium min-w-80">
-              {t("issue.table.name")}
-            </th>
-            <th className="py-2 px-4 font-medium w-50">
-              {t("plan.checks.self")}
-            </th>
-            <th className="py-2 px-4 font-medium w-35">
-              {t("plan.navigator.review")}
-            </th>
-            <th className="py-2 px-4 font-medium w-65">
+      <Table className="min-w-[1000px]">
+        <TableHeader>
+          <TableRow className="bg-control-bg">
+            <TableHead className="min-w-80">{t("issue.table.name")}</TableHead>
+            <TableHead className="w-50">{t("plan.checks.self")}</TableHead>
+            <TableHead className="w-35">{t("plan.navigator.review")}</TableHead>
+            <TableHead className="w-65">
               {t("rollout.stage.self", { count: 2 })}
-            </th>
-            <th className="py-2 px-4 font-medium w-38">
-              {t("issue.table.updated")}
-            </th>
-            <th className="py-2 px-4 font-medium w-38">
-              {t("issue.table.creator")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+            <TableHead className="w-38">{t("issue.table.updated")}</TableHead>
+            <TableHead className="w-38">{t("issue.table.creator")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {plans.map((plan) => (
             <PlanRow key={plan.name} plan={plan} projectId={projectId} />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -505,15 +503,12 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   };
 
   return (
-    <tr
-      className={cn(
-        "border-b cursor-pointer hover:bg-control-bg",
-        isDeleted && "opacity-60"
-      )}
+    <TableRow
+      className={cn("cursor-pointer", isDeleted && "opacity-60")}
       onClick={onRowClick}
     >
       {/* Title */}
-      <td className="py-2 px-4">
+      <TableCell>
         <div className="flex items-center gap-x-2 overflow-hidden">
           <span className="whitespace-nowrap text-control opacity-60">
             {extractPlanUID(plan.name)}
@@ -534,10 +529,10 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             </span>
           )}
         </div>
-      </td>
+      </TableCell>
 
       {/* Checks */}
-      <td className="py-2 px-4">
+      <TableCell>
         {hasAnyCheck ? (
           <div className="flex items-center gap-3 flex-wrap">
             {checkSummary.running > 0 && (
@@ -568,19 +563,19 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Approval */}
-      <td className="py-2 px-4">
+      <TableCell>
         {approvalTag ? (
           <StatusTag label={approvalTag.label} variant={approvalTag.variant} />
         ) : (
           <span className="text-control-light">-</span>
         )}
-      </td>
+      </TableCell>
 
       {/* Stages */}
-      <td className="py-2 px-4">
+      <TableCell>
         {plan.rolloutStageSummaries.length === 0 ? (
           <span className="text-control-light">-</span>
         ) : (
@@ -608,24 +603,24 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
             })}
           </div>
         )}
-      </td>
+      </TableCell>
 
       {/* Updated */}
-      <td className="py-2 px-4">
+      <TableCell>
         <Tooltip content={formatAbsoluteDateTime(updateTimeTs * 1000)}>
           <span className="text-control-light whitespace-nowrap">
             {humanizeTs(updateTimeTs)}
           </span>
         </Tooltip>
-      </td>
+      </TableCell>
 
       {/* Creator */}
-      <td className="py-2 px-4">
+      <TableCell>
         <div className="flex items-center gap-x-1.5">
           <span className="text-sm truncate">{creator.title}</span>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 

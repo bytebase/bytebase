@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useServerState } from "@/react/hooks/useAppState";
-import { router } from "@/router";
+import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { AccountSection } from "./AccountSection";
@@ -133,29 +133,7 @@ export function GeneralPage() {
   }, [t]);
 
   // Route change guard — both browser close and in-app navigation
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (allRefs.some((ref) => ref.current?.isDirty())) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    const removeGuard = router.beforeEach((_to, _from, next) => {
-      if (allRefs.some((ref) => ref.current?.isDirty())) {
-        if (!window.confirm(t("common.leave-without-saving"))) {
-          next(false);
-          return;
-        }
-      }
-      next();
-    });
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      removeGuard();
-    };
-  }, []);
+  useUnsavedChangesGuard(isDirty);
 
   // Hash scroll on mount
   useEffect(() => {
@@ -230,7 +208,7 @@ export function GeneralPage() {
 
       {isDirty && (
         <div className="sticky bottom-0 z-10 -mb-4">
-          <div className="flex justify-between w-full py-4 border-t border-block-border bg-background">
+          <div className="flex justify-end gap-x-4 w-full py-4 border-t border-block-border bg-background">
             <Button variant="outline" onClick={handleRevert}>
               {t("common.cancel")}
             </Button>

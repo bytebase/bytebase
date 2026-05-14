@@ -283,7 +283,7 @@ export function DatabaseTableView({
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   return (
-    <div className="overflow-x-auto border-y border-block-border">
+    <div className="overflow-x-auto border rounded-sm">
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, i) => (
@@ -291,7 +291,7 @@ export function DatabaseTableView({
           ))}
         </colgroup>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-control-bg">
             {columns.map((col, colIdx) => {
               const colSortKey = col.sortKey;
               const sortActive = Boolean(

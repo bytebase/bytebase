@@ -232,7 +232,7 @@ function ReleaseBasicInfo({
     vcsType !== undefined && vcsType !== VCSType.VCS_TYPE_UNSPECIFIED && vcsUrl;
 
   return (
-    <div className="flex flex-row items-center pl-4 gap-4">
+    <div className="flex flex-row items-center pl-1 gap-4">
       <div className="flex items-center gap-1">
         <Clock4 className="size-4 text-control-light" />
         {createTime !== undefined && (

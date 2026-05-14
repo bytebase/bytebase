@@ -560,40 +560,38 @@ export function ProjectWebhookForm({
       {/* Footer */}
       <div className="w-full sticky bottom-0 z-10">
         <div className="w-full py-4 px-4 border-t border-block-border bg-background">
-          <div className="flex justify-end">
-            <div className="flex items-center gap-x-2">
-              {create ? (
-                <Button variant="outline" onClick={cancel}>
-                  {t("common.cancel")}
+          <div className="flex justify-end items-center gap-x-4">
+            {create ? (
+              <Button variant="outline" onClick={cancel}>
+                {t("common.cancel")}
+              </Button>
+            ) : (
+              valueChanged && (
+                <Button variant="outline" onClick={discardChanges}>
+                  {t("common.discard-changes")}
+                </Button>
+              )
+            )}
+            {allowEdit &&
+              (create ? (
+                <Button
+                  disabled={!allowCreate || loading}
+                  onClick={createWebhook}
+                >
+                  {t("common.create")}
                 </Button>
               ) : (
-                valueChanged && (
-                  <Button variant="outline" onClick={discardChanges}>
-                    {t("common.discard-changes")}
-                  </Button>
-                )
-              )}
-              {allowEdit &&
-                (create ? (
-                  <Button
-                    disabled={!allowCreate || loading}
-                    onClick={createWebhook}
-                  >
-                    {t("common.create")}
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={
-                      loading ||
-                      !valueChanged ||
-                      state.notificationTypes.length === 0
-                    }
-                    onClick={updateWebhook}
-                  >
-                    {t("common.update")}
-                  </Button>
-                ))}
-            </div>
+                <Button
+                  disabled={
+                    loading ||
+                    !valueChanged ||
+                    state.notificationTypes.length === 0
+                  }
+                  onClick={updateWebhook}
+                >
+                  {t("common.update")}
+                </Button>
+              ))}
           </div>
         </div>
       </div>

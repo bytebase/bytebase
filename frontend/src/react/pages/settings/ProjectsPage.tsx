@@ -635,7 +635,7 @@ export function ProjectsPage() {
         </PermissionGuard>
       </div>
 
-      <div className="overflow-x-auto border-y border-block-border">
+      <div className="overflow-x-auto border rounded-sm">
         <ProjectTable
           className="min-w-[700px]"
           projectList={projects}

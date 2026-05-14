@@ -1140,7 +1140,7 @@ export function InstancesPage() {
         </PermissionGuard>
       </div>
 
-      <div className="overflow-x-auto border-y border-block-border">
+      <div className="overflow-x-auto border rounded-sm">
         <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
           <colgroup>
             {widths.map((w, i) => (
@@ -1148,7 +1148,7 @@ export function InstancesPage() {
             ))}
           </colgroup>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-control-bg">
               {columns.map((col, colIdx) => (
                 <TableHead
                   key={col.key}

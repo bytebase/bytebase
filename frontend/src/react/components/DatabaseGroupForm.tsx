@@ -247,7 +247,7 @@ export function DatabaseGroupForm({
 
       {!readonly && (
         <div className="sticky bottom-0 z-10">
-          <div className="flex justify-end w-full pt-4 pb-2 px-4 border-t border-block-border bg-background gap-x-3">
+          <div className="flex justify-end w-full pt-4 pb-2 px-4 border-t border-block-border bg-background gap-x-4">
             <Button variant="outline" onClick={onDismiss}>
               {t("common.cancel")}
             </Button>
