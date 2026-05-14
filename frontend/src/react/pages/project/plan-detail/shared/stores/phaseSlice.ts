@@ -4,7 +4,8 @@ import type {
   PlanDetailSliceCreator,
 } from "./types";
 
-const defaultActivePhases = (): Set<PlanDetailPhase> => new Set(["changes"]);
+const defaultActivePhases = (): Set<PlanDetailPhase> =>
+  new Set(["changes", "review", "deploy"]);
 
 export const createPhaseSlice: PlanDetailSliceCreator<PhaseSlice> = (set) => ({
   activePhases: defaultActivePhases(),
