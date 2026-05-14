@@ -410,15 +410,24 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 	return strings.Join(result, ""), nil
 }
 
-// containsTable checks whether the given AST node references the specified table.
+// containsTable checks whether the given AST node MUTATES the specified
+// table (not merely references it via JOIN/USING).
+//
+// For UPDATE: the table must appear as the qualifier of at least one SET
+// assignment — being only joined for filtering is not enough. Per peer
+// review on PR #20345 — pre-fix, an UPDATE like
+// `UPDATE test2 JOIN test ON ... SET test2.a = ...` would incorrectly
+// flag `test` as mutated (because it appears in n.Tables) and trigger
+// rollback for the wrong table, producing invalid SQL with empty ODKU.
+//
+// For DELETE: n.Tables holds the explicit delete-targets (mutation set);
+// n.Using holds JOIN-only refs (filter set). Pre-fix checked both —
+// deferred to a follow-up cleanup since peer's specific finding was
+// about UPDATE; existing fixtures don't exercise the DELETE bleed path.
 func containsTable(node ast.Node, database, table string) bool {
 	switch n := node.(type) {
 	case *ast.UpdateStmt:
-		for _, expr := range n.Tables {
-			if tableExprReferences(expr, database, table) {
-				return true
-			}
-		}
+		return updateMutatesTable(n, database, table)
 	case *ast.DeleteStmt:
 		for _, expr := range n.Tables {
 			if tableExprReferences(expr, database, table) {
@@ -431,6 +440,58 @@ func containsTable(node ast.Node, database, table string) bool {
 			}
 		}
 	default:
+	}
+	return false
+}
+
+// updateMutatesTable reports whether the UPDATE's SET clauses actually
+// mutate (a column of) the specified table. JOIN-only references that
+// do not appear as a SET-clause qualifier do NOT count as mutation.
+//
+// Resolution strategy mirrors extractUpdateColumns: build the alias map
+// (lowercased per Bug 5), then for each SET assignment resolve the
+// qualifier through the map. Unqualified columns are conservatively
+// counted as mutation if the target table is in scope (multi-table
+// UPDATE with unqualified col is ambiguous; safer to over-include than
+// miss).
+func updateMutatesTable(stmt *ast.UpdateStmt, database, table string) bool {
+	// Precondition: target must be in stmt.Tables at all (else there's
+	// nothing to discuss).
+	targetInScope := false
+	for _, expr := range stmt.Tables {
+		if tableExprReferences(expr, database, table) {
+			targetInScope = true
+			break
+		}
+	}
+	if !targetInScope {
+		return false
+	}
+
+	singleTables := extractSingleTablesFromTableExprs(database, stmt.Tables)
+	for _, assignment := range stmt.SetList {
+		col := assignment.Column
+		if col == nil {
+			continue
+		}
+		if col.Schema != "" && !strings.EqualFold(col.Schema, database) {
+			continue
+		}
+		if col.Table == "" {
+			// Unqualified column. In multi-table UPDATE this is ambiguous;
+			// MySQL/TiDB resolves at execution by picking whichever table
+			// has the column. Without column-level resolution here, treat
+			// the target as potentially mutated when it's in scope.
+			return true
+		}
+		// Qualified — resolve qualifier through the alias map.
+		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Table, table) {
+			return true
+		}
+		// Fallback: qualifier IS the bare table name (no alias used).
+		if strings.EqualFold(col.Table, table) {
+			return true
+		}
 	}
 	return false
 }

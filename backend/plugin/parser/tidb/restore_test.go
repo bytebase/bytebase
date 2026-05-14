@@ -247,6 +247,52 @@ func TestGenerateRestoreSQLSelfJoinMixedCaseAlias(t *testing.T) {
 		"ODKU clause must not be empty (would be invalid TiDB SQL)")
 }
 
+// TestGenerateRestoreSQLJoinedNotMutated pins that an UPDATE which
+// references the target table only via JOIN (not as a SET-clause
+// qualifier) does NOT generate rollback SQL for that table. Per peer
+// review on PR #20345.
+//
+// Pre-fix bug: containsTable matched the target if it appeared in
+// n.Tables (which includes JOIN-only refs). For
+// `UPDATE test2 JOIN test ON ... SET test2.a = ...` with backupItem
+// targeting `test`, the match incorrectly fired; extractUpdateColumns
+// then correctly returned no `test`-table columns; doGenerate emitted
+// invalid `... ON DUPLICATE KEY UPDATE ;` for `test`.
+//
+// Post-fix: containsTable's UpdateStmt arm uses updateMutatesTable,
+// which checks SET-clause qualifiers (resolved through the alias map)
+// — JOIN-only refs no longer trigger rollback for the wrong table.
+func TestGenerateRestoreSQLJoinedNotMutated(t *testing.T) {
+	const input = "UPDATE test2 JOIN test ON test2.c = test.c SET test2.a = 1 WHERE test2.c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test", // backup targets test, but test is JOINED not UPDATED
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	// The UPDATE doesn't mutate `test` (only joins it), so no DML matches
+	// the backup_item's target. Pre-fix, this produced invalid SQL with
+	// empty ODKU; post-fix, the "no DML statement found" error is the
+	// correct outcome (there's genuinely no DML to roll back for `test`).
+	require.Error(t, err,
+		"backup item for joined-only-not-mutated table must not generate (invalid) rollback SQL")
+	require.Contains(t, err.Error(), "no DML statement found",
+		"expected no-DML error since test is only joined, not mutated")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last
