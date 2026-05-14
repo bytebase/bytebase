@@ -1915,9 +1915,6 @@
     "view-all-files": "查看全部文件"
   },
   "remind": {
-    "release": {
-      "new-version-available-with-tag": "新版本 {{tag}} 已推出"
-    },
     "role-expire": {
       "checkbox": "直到有更新再提醒",
       "content": "您的角色即将到期",

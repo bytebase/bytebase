@@ -1915,9 +1915,6 @@
     "view-all-files": "View all files"
   },
   "remind": {
-    "release": {
-      "new-version-available-with-tag": "新しいバージョン {{tag}} が利用可能です"
-    },
     "role-expire": {
       "checkbox": "更新があるまで通知しない",
       "content": "次のロールは期限切れになります",

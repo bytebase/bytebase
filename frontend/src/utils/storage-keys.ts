@@ -4,7 +4,6 @@
 // --- Global (no user scope) ---
 export const STORAGE_KEY_BACK_PATH = "bb.back-path";
 export const STORAGE_KEY_LANGUAGE = "bb.language";
-export const STORAGE_KEY_RELEASE = "bb.release";
 export const STORAGE_KEY_ONBOARDING = "bb.onboarding";
 export const STORAGE_KEY_SCHEMA_EDITOR_PREVIEW =
   "bb.schema-editor.preview-expanded";

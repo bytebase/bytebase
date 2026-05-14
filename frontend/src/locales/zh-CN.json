@@ -1240,14 +1240,7 @@
     }
   },
   "landing": {
-    "changelog-for-version": "{version} 的更新日志",
-    "last-visit": "上次访问",
-    "quick-link": {
-      "manage": "管理快捷访问",
-      "self": "快捷访问",
-      "visit-issues": "访问工单",
-      "visit-prjects": "访问项目"
-    }
+    "quick-link": {}
   },
   "masking": {
     "reason": {
@@ -1640,11 +1633,6 @@
     "view-all-files": "查看全部文件"
   },
   "remind": {
-    "release": {
-      "new-version-available": "有新版本可更新",
-      "new-version-available-with-tag": "新版本 {tag} 已推出",
-      "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。"
-    },
     "role-expire": {
       "checkbox": "直到有更新再提醒",
       "content": "您的角色即将到期",

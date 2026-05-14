@@ -4,7 +4,6 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/react/router";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
-import { STORAGE_KEY_RELEASE } from "@/utils/storage-keys";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -149,47 +148,6 @@ describe("VersionMenuItem", () => {
       name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
     });
     expect(mocks.closeMenu).toHaveBeenCalled();
-    unmount();
-  });
-
-  test("opens the release dialog and learn-more link for new releases", () => {
-    localStorage.setItem(
-      STORAGE_KEY_RELEASE,
-      JSON.stringify({
-        latest: {
-          tag_name: "2.0.0",
-          html_url: "https://example.com/release",
-        },
-        ignoreRemindModalTillNextRelease: false,
-        nextCheckTs: 0,
-      })
-    );
-    const { container, render, unmount } = renderIntoContainer(
-      <VersionMenuItem onCloseMenu={mocks.closeMenu} />
-    );
-    render();
-
-    const versionButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("v1.0.0")
-    );
-    act(() => {
-      versionButton?.click();
-    });
-
-    expect(container.textContent).toContain("New version 2.0.0");
-    expect(mocks.closeMenu).toHaveBeenCalled();
-
-    const learnMoreButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent?.includes("Learn more"));
-    act(() => {
-      learnMoreButton?.click();
-    });
-
-    expect(window.open).toHaveBeenCalledWith(
-      "https://example.com/release",
-      "_blank"
-    );
     unmount();
   });
 

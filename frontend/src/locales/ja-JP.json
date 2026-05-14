@@ -1240,14 +1240,7 @@
     }
   },
   "landing": {
-    "changelog-for-version": "{version} の変更履歴",
-    "last-visit": "最終訪問",
-    "quick-link": {
-      "manage": "クイックリンクを管理する",
-      "self": "クイックリンク",
-      "visit-issues": "イシューを開く",
-      "visit-prjects": "プロジェクトを開く"
-    }
+    "quick-link": {}
   },
   "masking": {
     "reason": {
@@ -1640,11 +1633,6 @@
     "view-all-files": "すべてのファイルを表示"
   },
   "remind": {
-    "release": {
-      "new-version-available": "新しいバージョンが利用可能です",
-      "new-version-available-with-tag": "新しいバージョン {tag} が利用可能です",
-      "new-version-content": "新しいバージョン {tag} が正式にリリースされました。新しいバージョンを入手するには、ドキュメントに従ってください。"
-    },
     "role-expire": {
       "checkbox": "更新があるまで通知しない",
       "content": "次のロールは期限切れになります",

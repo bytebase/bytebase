@@ -1240,14 +1240,7 @@
     }
   },
   "landing": {
-    "changelog-for-version": "Registro de cambios para {version}",
-    "last-visit": "Última visita",
-    "quick-link": {
-      "manage": "Administrar enlace rápido",
-      "self": "Enlace rápido",
-      "visit-issues": "Problemas de visita",
-      "visit-prjects": "Visitar Proyectos"
-    }
+    "quick-link": {}
   },
   "masking": {
     "reason": {
@@ -1640,11 +1633,6 @@
     "view-all-files": "Ver todos los archivos"
   },
   "remind": {
-    "release": {
-      "new-version-available": "Nueva versión disponible",
-      "new-version-available-with-tag": "La nueva versión {tag} está disponible",
-      "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación."
-    },
     "role-expire": {
       "checkbox": "No recordar hasta que haya actualizaciones",
       "content": "Tus siguientes roles expirarán",

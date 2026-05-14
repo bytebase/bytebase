@@ -41,11 +41,6 @@
   </teleport>
 
   <AgentWindowMount />
-
-  <ReleaseRemindModal
-    v-if="showReleaseModal && route.name !== WORKSPACE_ROOT_MODULE"
-    @cancel="showReleaseModal = false"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -53,24 +48,15 @@ import { useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AgentWindowMount from "@/components/AgentWindowMount.vue";
-import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  usePermissionStore,
-  useSubscriptionV1Store,
-} from "@/store";
-import { PresetRoleType } from "@/types";
-import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
+import { pushNotification, useActuatorV1Store } from "@/store";
+
 import { provideBodyLayoutContext } from "./common";
 
 const actuatorStore = useActuatorV1Store();
-const permissionStore = usePermissionStore();
-const subscriptionStore = useSubscriptionV1Store();
 const route = useRoute();
 const router = useRouter();
 const { width: windowWidth } = useWindowSize();
@@ -83,7 +69,6 @@ const shellTargets = shallowRef<DashboardShellTargets>({
   mainContainer: null,
 });
 const mainContainerRef = ref<HTMLDivElement>();
-const showReleaseModal = ref(false);
 const routePermissionTarget = shallowRef<HTMLDivElement | null>(null);
 
 const isRootPath = computed(() => {
@@ -118,16 +103,6 @@ watch(
   },
   { flush: "sync" }
 );
-
-actuatorStore.tryToRemindRelease().then((openRemindModal) => {
-  if (
-    subscriptionStore.currentPlan === PlanType.ENTERPRISE &&
-    !permissionStore.currentRolesInWorkspace.has(PresetRoleType.WORKSPACE_ADMIN)
-  ) {
-    return;
-  }
-  showReleaseModal.value = openRemindModal;
-});
 
 const refreshRemindTimer = ref<ReturnType<typeof setTimeout>>();
 onMounted(async () => {

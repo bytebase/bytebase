@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   SquareStack,
   Users,
-  Volume2,
   Workflow,
 } from "lucide-react";
 import {
@@ -61,7 +60,7 @@ import {
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
 } from "@/router/dashboard/workspaceSetting";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useActuatorV1Store, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_PROJECT_NAME } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -435,10 +434,6 @@ export function LandingPage(_: Record<string, never> = {}) {
 
   const email = useCurrentUser()?.email ?? "";
   const { version, changelogURL } = useServerState();
-  const hasNewRelease = useVueState(() => useActuatorV1Store().hasNewRelease);
-  const releaseLatest = useVueState(
-    () => useActuatorV1Store().releaseInfo.latest
-  );
 
   const fullList = useFullQuickLinkList();
   const { config, setConfig } = useQuickAccessConfig(email);
@@ -533,19 +528,6 @@ export function LandingPage(_: Record<string, never> = {}) {
                 href={changelogURL}
               >
                 {t("landing.changelog-for-version", { version })}
-              </a>
-            )}
-            {hasNewRelease && releaseLatest?.html_url && (
-              <a
-                className="underline normal-link flex items-center gap-x-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={releaseLatest.html_url}
-              >
-                <Volume2 className="h-4 w-4" />
-                {t("remind.release.new-version-available-with-tag", {
-                  tag: releaseLatest.tag_name,
-                })}
               </a>
             )}
           </div>

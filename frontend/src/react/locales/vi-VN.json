@@ -1915,9 +1915,6 @@
     "view-all-files": "View all files"
   },
   "remind": {
-    "release": {
-      "new-version-available-with-tag": "Phiên bản mới {{tag}} có sẵn"
-    },
     "role-expire": {
       "checkbox": "Không nhắc nhở cho đến khi có bất kỳ cập nhật nào",
       "content": "Các vai trò sau của bạn sắp hết hạn",

@@ -3,34 +3,18 @@ import { defineStore } from "pinia";
 import semver from "semver";
 import { computed, ref } from "vue";
 import { actuatorServiceClientConnect } from "@/connect";
-import {
-  type AppFeatures,
-  type AppProfile,
-  defaultAppProfile,
-  type Release,
-  type ReleaseInfo,
-} from "@/types";
+import { type AppFeatures, type AppProfile, defaultAppProfile } from "@/types";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
-import {
-  STORAGE_KEY_ONBOARDING,
-  STORAGE_KEY_RELEASE,
-  semverCompare,
-} from "@/utils";
+import { STORAGE_KEY_ONBOARDING } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
   "https://docs.bytebase.com/get-started/self-host/external-url";
-const GITHUB_API_LIST_BYTEBASE_RELEASE =
-  "https://api.github.com/repos/bytebase/bytebase/releases";
 
 export const useActuatorV1Store = defineStore("actuator_v1", () => {
   // State
   const initialized = ref(false);
   const serverInfo = ref<ActuatorInfo | undefined>(undefined);
   const serverInfoTs = ref(0);
-  const releaseInfo = useLocalStorage<ReleaseInfo>(STORAGE_KEY_RELEASE, {
-    ignoreRemindModalTillNextRelease: false,
-    nextCheckTs: 0,
-  });
   const appProfile = ref<AppProfile>(defaultAppProfile());
   const onboardingState = useLocalStorage<{
     consumed: string[];
@@ -75,17 +59,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     if (!serverInfo.value) return false;
     const url = serverInfo.value?.externalUrl ?? "";
     return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
-  });
-
-  const hasNewRelease = computed(() => {
-    return (
-      (serverInfo.value?.version === "development" &&
-        !!releaseInfo.value.latest?.tag_name) ||
-      semverCompare(
-        releaseInfo.value.latest?.tag_name ?? "",
-        serverInfo.value?.version ?? ""
-      )
-    );
   });
 
   const activatedInstanceCount = computed(
@@ -148,55 +121,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return info;
   };
 
-  const fetchLatestRelease = async (): Promise<Release | undefined> => {
-    try {
-      const response = await fetch(
-        `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const releaseList = (await response.json()) as Release[];
-      return releaseList[0];
-    } catch {
-      return;
-    }
-  };
-
-  const tryToRemindRelease = async (): Promise<boolean> => {
-    if (serverInfo.value?.saas ?? false) {
-      return false;
-    }
-    if (!releaseInfo.value.latest) {
-      const release = await fetchLatestRelease();
-      releaseInfo.value.latest = release;
-    }
-    if (!releaseInfo.value.latest) {
-      return false;
-    }
-
-    if (Date.now() >= releaseInfo.value.nextCheckTs) {
-      const release = await fetchLatestRelease();
-      if (!release) {
-        return false;
-      }
-
-      releaseInfo.value.nextCheckTs = Date.now() + 24 * 60 * 60 * 1000;
-
-      if (semverCompare(release.tag_name, releaseInfo.value.latest.tag_name)) {
-        releaseInfo.value.ignoreRemindModalTillNextRelease = false;
-      }
-
-      releaseInfo.value.latest = release;
-    }
-
-    if (releaseInfo.value.ignoreRemindModalTillNextRelease) {
-      return false;
-    }
-
-    return hasNewRelease.value;
-  };
-
   const tryToRemindRefresh = async (): Promise<boolean> => {
     if (Date.now() - serverInfoTs.value >= 1000 * 60 * 30) {
       await fetchServerInfo(workspaceResourceName.value);
@@ -220,7 +144,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     initialized,
     serverInfo,
     serverInfoTs,
-    releaseInfo,
     appProfile,
     onboardingState,
     // Getters
@@ -234,7 +157,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     isSaaSMode,
     workspaceResourceName,
     needConfigureExternalUrl,
-    hasNewRelease,
     activatedInstanceCount,
     totalInstanceCount,
     replicaCount,
@@ -246,8 +168,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     updateUserStat,
     setServerInfo,
     fetchServerInfo,
-    fetchLatestRelease,
-    tryToRemindRelease,
     tryToRemindRefresh,
     setupSample,
     overrideAppFeatures,

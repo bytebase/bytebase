@@ -1240,14 +1240,7 @@
     }
   },
   "landing": {
-    "changelog-for-version": "Nhật ký thay đổi cho phiên bản {version}",
-    "last-visit": "Lần truy cập cuối",
-    "quick-link": {
-      "manage": "Quản lý liên kết nhanh",
-      "self": "Liên kết nhanh",
-      "visit-issues": "Truy cập Vấn đề",
-      "visit-prjects": "Truy cập Dự án"
-    }
+    "quick-link": {}
   },
   "masking": {
     "reason": {
@@ -1640,11 +1633,6 @@
     "view-all-files": "Xem tất cả các tập tin"
   },
   "remind": {
-    "release": {
-      "new-version-available": "Phiên bản mới có sẵn",
-      "new-version-available-with-tag": "Phiên bản mới {tag} có sẵn",
-      "new-version-content": "Phiên bản mới {tag} hiện đã có! Vui lòng xem tài liệu của chúng tôi để cài đặt."
-    },
     "role-expire": {
       "checkbox": "Không nhắc nhở cho đến khi có bất kỳ cập nhật nào",
       "content": "Các vai trò sau của bạn sắp hết hạn",

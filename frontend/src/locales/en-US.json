@@ -1240,14 +1240,7 @@
     }
   },
   "landing": {
-    "changelog-for-version": "Changelog for {version}",
-    "last-visit": "Last visit",
-    "quick-link": {
-      "manage": "Manage quick link",
-      "self": "Quick Link",
-      "visit-issues": "Visit Issues",
-      "visit-prjects": "Visit Projects"
-    }
+    "quick-link": {}
   },
   "masking": {
     "reason": {
@@ -1640,11 +1633,6 @@
     "view-all-files": "View all files"
   },
   "remind": {
-    "release": {
-      "new-version-available": "New version is available",
-      "new-version-available-with-tag": "New version {tag} is available",
-      "new-version-content": "The new version {tag} is available now! Please check our docs for installation."
-    },
     "role-expire": {
       "checkbox": "Do not remind until any updates",
       "content": "Your following roles are going to expire",

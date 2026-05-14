@@ -1915,9 +1915,6 @@
     "view-all-files": "View all files"
   },
   "remind": {
-    "release": {
-      "new-version-available-with-tag": "La nueva versión {{tag}} está disponible"
-    },
     "role-expire": {
       "checkbox": "No recordar hasta que haya actualizaciones",
       "content": "Tus siguientes roles expirarán",
