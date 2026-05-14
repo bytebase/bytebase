@@ -31,6 +31,14 @@ export function Label({ tab }: Props) {
 
   const readonly = tab.viewState.view !== "CODE";
   const displayTitle = tab.title || t("common.untitled");
+  // Captures whether the tab was already current at mousedown time, before
+  // the parent TabItem's onMouseDown handler runs and switches activation.
+  // We can't use a render-captured value: React commits the re-render
+  // between mousedown and click, so by the time onClick fires the new render
+  // already shows this tab as current. Inner mousedown handlers fire before
+  // the parent's (bubble order), giving us a moment to read the *previous*
+  // value from the store.
+  const wasCurrentAtMouseDownRef = useRef(false);
 
   const beginEdit = () => {
     if (readonly) return;
@@ -115,18 +123,24 @@ export function Label({ tab }: Props) {
           editing && "invisible"
         )}
       />
-      {/* Invisible click/dbl-click layer — EllipsisText strips its own
-          handlers. Single-click enters edit when the tab is untitled (so the
-          common "I just made a tab, let me name it" flow saves a step). Named
-          tabs still need a double-click so a casual click doesn't accidentally
-          rename. */}
+      {/* Invisible click layer — EllipsisText strips its own handlers.
+          Click-to-rename behaviour:
+          - Click on the *current* tab's label → enter rename mode.
+          - Click on a non-current tab → just activates the tab (handled by
+            the parent TabItem's onMouseDown). No rename on the first click.
+          We snapshot `wasCurrentAtMouseDownRef` at this layer's mousedown
+          (which fires before the parent's via bubble order). The parent's
+          mousedown then mutates the store; by the time onClick fires, the
+          ref still holds the pre-activation value. */}
       {!editing && !readonly && (
         <div
           className="absolute inset-0 cursor-text"
-          onClick={() => {
-            if (!tab.title) beginEdit();
+          onMouseDown={() => {
+            wasCurrentAtMouseDownRef.current = tabStore.currentTabId === tab.id;
           }}
-          onDoubleClick={beginEdit}
+          onClick={() => {
+            if (wasCurrentAtMouseDownRef.current) beginEdit();
+          }}
         />
       )}
       {editing && (
