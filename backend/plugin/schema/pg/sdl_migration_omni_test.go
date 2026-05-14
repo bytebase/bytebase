@@ -7,7 +7,41 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/omni/pg/catalog"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
+
+const eventTriggerFunctionSDL = `
+CREATE FUNCTION audit_ddl() RETURNS event_trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+END;
+$$;
+`
+
+const eventTriggerSDL = eventTriggerFunctionSDL + `
+CREATE EVENT TRIGGER audit_ddl_start
+	ON ddl_command_start
+	WHEN TAG IN ('CREATE TABLE')
+	EXECUTE FUNCTION audit_ddl();
+`
+
+const eventTriggerModifiedSDL = eventTriggerFunctionSDL + `
+CREATE EVENT TRIGGER audit_ddl_start
+	ON ddl_command_end
+	WHEN TAG IN ('CREATE TABLE')
+	EXECUTE FUNCTION audit_ddl();
+`
+
+const eventTriggerFunctionOnlySDL = eventTriggerFunctionSDL
+
+func diffPostgresSDL(t *testing.T, fromSDL, toSDL string) string {
+	t.Helper()
+	sql, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, strings.TrimSpace(fromSDL), strings.TrimSpace(toSDL))
+	require.NoError(t, err)
+	return sql
+}
 
 // omniSDLMigration is a test helper that runs the omni SDL migration pipeline:
 // from = LoadSDL(fromSDL), to = LoadSDL(toSDL), Diff, GenerateMigration.
@@ -225,6 +259,69 @@ func TestOmniSDLMigration_CreateTrigger(t *testing.T) {
 	`)
 	require.Contains(t, sql, "CREATE TRIGGER")
 	require.Contains(t, sql, "trg_update_timestamp")
+}
+
+func TestOmniSDLMigration_EventTriggerSourceSDL(t *testing.T) {
+	sdl := `
+		CREATE FUNCTION audit_ddl() RETURNS event_trigger
+		LANGUAGE plpgsql AS $$
+		BEGIN
+		END;
+		$$;
+
+		CREATE EVENT TRIGGER audit_ddl_start
+			ON ddl_command_start
+			WHEN TAG IN ('CREATE TABLE')
+			EXECUTE FUNCTION audit_ddl();
+	`
+	sql := omniSDLMigration(t, sdl, sdl)
+	require.Empty(t, sql)
+}
+
+func TestDiffSDLMigration_EventTriggerChanges(t *testing.T) {
+	tests := []struct {
+		name     string
+		fromSDL  string
+		toSDL    string
+		contains []string
+	}{
+		{
+			name:    "add event trigger",
+			fromSDL: eventTriggerFunctionOnlySDL,
+			toSDL:   eventTriggerSDL,
+			contains: []string{
+				`CREATE EVENT TRIGGER "audit_ddl_start" ON "ddl_command_start"`,
+				`WHEN TAG IN ('CREATE TABLE')`,
+				`EXECUTE FUNCTION "public"."audit_ddl"()`,
+			},
+		},
+		{
+			name:    "drop event trigger",
+			fromSDL: eventTriggerSDL,
+			toSDL:   eventTriggerFunctionOnlySDL,
+			contains: []string{
+				`DROP EVENT TRIGGER "audit_ddl_start"`,
+			},
+		},
+		{
+			name:    "modify event trigger",
+			fromSDL: eventTriggerSDL,
+			toSDL:   eventTriggerModifiedSDL,
+			contains: []string{
+				`DROP EVENT TRIGGER "audit_ddl_start"`,
+				`CREATE EVENT TRIGGER "audit_ddl_start" ON "ddl_command_end"`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sql := diffPostgresSDL(t, tt.fromSDL, tt.toSDL)
+			for _, want := range tt.contains {
+				require.Contains(t, sql, want)
+			}
+		})
+	}
 }
 
 func TestOmniSDLMigration_Comment(t *testing.T) {
