@@ -1,6 +1,7 @@
 package plsql
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bytebase/omni/oracle/ast"
@@ -150,4 +151,24 @@ INTERVAL (NUMTODSINTERVAL(1,'DAY'))
 
 	_, ok = stmts[1].AST.(*base.ANTLRAST)
 	require.True(t, ok)
+}
+
+func TestParsePLSQLStatementsFallbackErrorUsesOriginalLine(t *testing.T) {
+	_, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT *
+FROM T;
+CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
+(
+  TXN_DATE DATE
+)
+PARTITION BY RANGE (TXN_DATE)
+INTERVAL (NUMTODSINTERVAL(1,'DAY'))
+(
+  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
+BROKEN`)
+	require.Error(t, err)
+
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.NotNil(t, syntaxErr.Position)
+	require.Equal(t, int32(11), syntaxErr.Position.Line)
 }

@@ -59,7 +59,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		parseResults, err := ParsePLSQL(stmt.Text)
+		parseResults, err := parsePLSQLWithBaseLine(stmt.Text, stmt.BaseLine())
 		if err != nil {
 			return nil, err
 		}
@@ -115,10 +115,14 @@ func ParseVersion(banner string) (*Version, error) {
 // It first parses the whole statement to get the AST, then splits by unit_statement
 // and sql_plus_command nodes, and re-parses each individual statement.
 func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
+	return parsePLSQLWithBaseLine(sql, 0)
+}
+
+func parsePLSQLWithBaseLine(sql string, baseLine int) ([]*base.ANTLRAST, error) {
 	sql = addSemicolonIfNeeded(sql)
 
 	// First pass: parse the whole statement to get the AST for splitting
-	tree, tokens, err := parsePLSQLInternal(sql, 0)
+	tree, tokens, err := parsePLSQLInternal(sql, baseLine)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +165,7 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		// stmtBaseLine is where the leading content starts (for re-parsing with correct offsets).
 		// This ensures token positions in the re-parsed AST are correct when combined with SplitSQL's BaseLine.
 		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
-		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
+		stmtBaseLine = baseLine + startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
 
 		prevStopTokenIndex = consumeTrailingSemicolon(tokens.GetAllTokens(), stopToken.GetTokenIndex())
 
