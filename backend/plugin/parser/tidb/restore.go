@@ -335,13 +335,19 @@ func extractUpdateColumns(setList []*ast.Assignment, database, originalTable str
 		// Qualified column: resolve the qualifier through the alias map
 		// (handles self-joins deterministically). Lookup key is
 		// lowercased to match the case-insensitive insert convention
-		// in collectTableRefs (TiDB identifier comparisons are
-		// case-insensitive in practice).
-		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Table, originalTable) {
+		// in collectTableRefs. BOTH Database AND Table must match —
+		// without the Database check, cross-database joins with
+		// homonymous tables (e.g. `UPDATE db1.test t1 JOIN db2.test t2
+		// SET t2.a = ...`) would incorrectly include the joined-DB
+		// SET column in the target-DB's rollback. Per Codex P1 catch
+		// on PR #20345.
+		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Database, database) && strings.EqualFold(entry.Table, originalTable) {
 			result = append(result, col.Column)
 			continue
 		}
 		// Fallback: qualifier IS the bare table name (no alias used).
+		// col.Schema check above already filtered explicit-schema
+		// mismatches.
 		if strings.EqualFold(col.Table, originalTable) {
 			result = append(result, col.Column)
 		}
@@ -559,11 +565,20 @@ func updateMutatesTable(stmt *ast.UpdateStmt, database, table string, targetCols
 			}
 			continue
 		}
-		// Qualified — resolve qualifier through the alias map.
-		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Table, table) {
+		// Qualified — resolve qualifier through the alias map. Both
+		// Database AND Table must match: for cross-database joins with
+		// homonymous tables (e.g. `UPDATE db1.test t1 JOIN db2.test t2
+		// SET t2.a = ...`), the alias t2 resolves to db2.test; without
+		// the Database check, a backup item targeting db1.test would
+		// incorrectly match db2.test's SET assignments. Per Codex P1
+		// catch on PR #20345.
+		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Database, database) && strings.EqualFold(entry.Table, table) {
 			return true
 		}
 		// Fallback: qualifier IS the bare table name (no alias used).
+		// The col.Schema check at the top of the loop already filtered
+		// out assignments whose explicit schema doesn't match `database`,
+		// so reaching here implies col.Schema is empty or matches.
 		if strings.EqualFold(col.Table, table) {
 			return true
 		}

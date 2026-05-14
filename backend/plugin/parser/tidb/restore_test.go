@@ -466,6 +466,54 @@ func TestGenerateRestoreSQLUnqualifiedSetTargetColumn(t *testing.T) {
 		"unqualified SET on target's column must produce ODKU clause for that column")
 }
 
+// TestGenerateRestoreSQLCrossDatabaseAliasResolution pins that the
+// alias-map qualifier resolution checks BOTH Database AND Table when
+// matching a SET clause against the backup target. Per Codex P1 catch
+// on PR #20345.
+//
+// Pre-fix bug: the alias-map lookup compared only entry.Table. For a
+// cross-database join with homonymous tables —
+//
+//	UPDATE db.test t1 JOIN otherdb.test t2 ON t1.c = t2.c SET t2.a = 1 WHERE t1.c = 1;
+//
+// — alias `t2` resolves to {Database: "otherdb", Table: "test"}.
+// updateMutatesTable's condition `entry.Table == "test"` matched
+// (because the table NAME is "test"), so a backup item targeting
+// db.test mis-classified the UPDATE as mutating db.test even though
+// the SET only touched otherdb.test. extractUpdateColumns had the
+// same bug, so the rollback would have been generated for the wrong
+// table.
+//
+// Post-fix: both branches require `entry.Database == database` AND
+// `entry.Table == table` (case-insensitive). Cross-DB SETs no longer
+// match.
+func TestGenerateRestoreSQLCrossDatabaseAliasResolution(t *testing.T) {
+	const input = "UPDATE db.test t1 JOIN otherdb.test t2 ON t1.c = t2.c SET t2.a = 1 WHERE t1.c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db", // backup targets db.test
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.Error(t, err,
+		"cross-DB alias (t2 → otherdb.test) must not match a backup item targeting db.test")
+	require.Contains(t, err.Error(), "no DML statement found",
+		"expected no-DML error since SET is on otherdb.test, not db.test")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last
