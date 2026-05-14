@@ -110,6 +110,44 @@ func TestTiDBGenerateRestoreSQLRegistration(t *testing.T) {
 	require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_test`;", result)
 }
 
+// TestGenerateRestoreSQLCaseInsensitiveDatabaseQualifier pins the
+// case-insensitive database-qualifier match contract in
+// tableExprReferences. TiDB/MySQL identifier comparisons are typically
+// case-insensitive in practice; the table-name side already uses
+// EqualFold. Codex P2 catch on PR #20345 — the database side previously
+// used == which silently missed schema-qualified references where the
+// SQL's qualifier case differed from the backup item's stored case.
+//
+// Construct: SQL uses uppercase `DB.test`; backupItem stores lowercase
+// `db`. Pre-fix, containsTable returned false, extractStatement returned
+// empty, and the customer saw "no DML statement found" instead of the
+// expected rollback SQL.
+func TestGenerateRestoreSQLCaseInsensitiveDatabaseQualifier(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+
+	result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, "DELETE FROM DB.test WHERE c = 1;", &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.NoError(t, err,
+		"case-mismatched database qualifier (DB vs db) must still match — TiDB identifier comparison is case-insensitive in practice")
+	require.Contains(t, result, "INSERT INTO `db`.`test`",
+		"generated rollback should target the lowercase database name from the backup item")
+}
+
 // TestGenerateRestoreSQLNoDisjointUniqueKey pins the negative path that the
 // yaml golden tests cannot cover (their format is success-only — no
 // WantError field). Rolling back an UPDATE requires at least one unique

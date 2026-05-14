@@ -360,7 +360,12 @@ func tableExprReferences(expr ast.TableExpr, database, table string) bool {
 		if db == "" {
 			db = database
 		}
-		return db == database && strings.EqualFold(n.Name, table)
+		// Both comparisons are case-insensitive — TiDB/MySQL identifier
+		// comparisons are typically case-insensitive in practice, and the
+		// table-name comparison below already uses EqualFold; using == on
+		// the database side would inconsistently miss schema-qualified
+		// references like `DB.test` when backupItem stores `db`.
+		return strings.EqualFold(db, database) && strings.EqualFold(n.Name, table)
 	case *ast.JoinClause:
 		return tableExprReferences(n.Left, database, table) || tableExprReferences(n.Right, database, table)
 	}
