@@ -448,16 +448,14 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 // table (not merely references it via JOIN/USING).
 //
 // For UPDATE: the table must appear as the qualifier of at least one SET
-// assignment — being only joined for filtering is not enough. Per peer
-// review on PR #20345 — pre-fix, an UPDATE like
-// `UPDATE test2 JOIN test ON ... SET test2.a = ...` would incorrectly
-// flag `test` as mutated (because it appears in n.Tables) and trigger
-// rollback for the wrong table, producing invalid SQL with empty ODKU.
+// assignment — being only joined for filtering is not enough.
 //
 // For DELETE: n.Tables holds the explicit delete-targets (mutation set);
-// n.Using holds JOIN-only refs (filter set). Pre-fix checked both —
-// deferred to a follow-up cleanup since peer's specific finding was
-// about UPDATE; existing fixtures don't exercise the DELETE bleed path.
+// n.Using holds JOIN-only refs (filter set). Only n.Tables counts as
+// mutation. Per Codex P1 follow-on catch on PR #20345 — pre-fix
+// matching n.Using too caused a backup item targeting a USING-only
+// table to generate rollback SQL that re-inserted rows that were never
+// deleted (reintroducing stale data).
 func containsTable(node ast.Node, database, table string) bool {
 	switch n := node.(type) {
 	case *ast.UpdateStmt:
@@ -468,11 +466,7 @@ func containsTable(node ast.Node, database, table string) bool {
 				return true
 			}
 		}
-		for _, expr := range n.Using {
-			if tableExprReferences(expr, database, table) {
-				return true
-			}
-		}
+		// n.Using is JOIN-only (filter set), not mutation — do NOT match.
 	default:
 	}
 	return false

@@ -342,6 +342,49 @@ func TestGenerateRestoreSQLGeneratedColumnUKSkipped(t *testing.T) {
 		"error must come from hasDisjointUniqueKey, not a different failure mode")
 }
 
+// TestGenerateRestoreSQLDeleteUsingOnlyTable pins that a DELETE which
+// references the target table only via USING (not as a delete-target in
+// n.Tables) does NOT generate rollback SQL for that table. Per Codex
+// P1 follow-on catch on PR #20345 — symmetric to the UPDATE-side
+// joined-not-mutated fix in commit c4042da055.
+//
+// Pre-fix bug: containsTable's DeleteStmt arm matched n.Tables OR
+// n.Using. For `DELETE test FROM test, test2 as t2 ...` with
+// backupItem targeting `test2`, the match incorrectly fired (test2 is
+// only in the USING-equivalent filter set). doGenerate emitted
+// `INSERT INTO test2 SELECT * FROM bbarchive.prefix_test2` — which
+// would re-introduce stale data if applied as rollback (test2 was
+// never actually deleted).
+//
+// Post-fix: n.Tables is the explicit delete-target set; n.Using is
+// filter-only and no longer triggers a match.
+func TestGenerateRestoreSQLDeleteUsingOnlyTable(t *testing.T) {
+	const input = "DELETE test FROM test, test2 as t2 where test.id = t2.id;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test2", // backup targets USING-only table
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test2",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.Error(t, err,
+		"backup item for USING-only-not-deleted table must not generate (re-stale) rollback SQL")
+	require.Contains(t, err.Error(), "no DML statement found",
+		"expected no-DML error since test2 is only joined for filter, not deleted")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last
