@@ -22,6 +22,10 @@ export function useUnsavedChangesGuard(isDirty: boolean): void {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (dirtyRef.current) {
         e.preventDefault();
+        // Older browsers (and some WebKit builds) still require returnValue
+        // to be set for the unload confirmation to fire; preventDefault alone
+        // is enough on modern Chrome/Firefox but not universal.
+        e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
