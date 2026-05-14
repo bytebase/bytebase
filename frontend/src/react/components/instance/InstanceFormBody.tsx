@@ -1374,7 +1374,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         {basicInfo.engine !== Engine.DYNAMODB && (
                           <span className="text-error"> *</span>
                         )}
-                        {isCreating && onOpenInfoPanel && hasHostInfo && (
+                        {onOpenInfoPanel && hasHostInfo && (
                           <button
                             type="button"
                             className="ml-1 inline-flex items-center gap-x-0.5 text-accent text-xs"
