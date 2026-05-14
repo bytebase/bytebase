@@ -429,3 +429,13 @@ func TestOmniCharLength(t *testing.T) {
 		})
 	}
 }
+
+// TestOmniIsDDLStmt was REMOVED in cumulative #30 Codex-fix-1f:
+// the omniIsDDLStmt helper itself was removed when DDL detection
+// switched to pingcap's authoritative DDLNode interface via the
+// `getTiDBNodes` path. The omni-only enumeration was brittle (4
+// rounds of corrections across Codex-fix-1c/1d/1e) and fundamentally
+// gap-prone for Tier-4-deferred grammar (Sequence, FlashBackDatabase)
+// that omni's parser rejects but pingcap classifies as DDL. The
+// switch eliminates the enumeration. End-to-end coverage of the
+// DDL-detection path is now in TestTiDBPriorBackupCheckAdvisor.

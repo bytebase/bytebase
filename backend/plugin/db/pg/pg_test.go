@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -58,6 +59,42 @@ func TestGetDatabaseInCreateDatabaseStatement(t *testing.T) {
 		}
 		require.Equal(t, test.want, got)
 	}
+}
+
+func TestGetPGConnectionConfigUsesPgBouncerCompatibleQueryMode(t *testing.T) {
+	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Username: "dba",
+			Host:     "pgbouncer.example.com",
+			Port:     "6432",
+		},
+		ConnectionContext: db.ConnectionContext{
+			DatabaseName: "postgres",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, pgx.QueryExecModeExec, connConfig.DefaultQueryExecMode)
+	require.Zero(t, connConfig.StatementCacheCapacity)
+}
+
+func TestGetPGConnectionConfigPreservesExplicitQueryExecMode(t *testing.T) {
+	connConfig, err := getPGConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Username: "dba",
+			Host:     "proxy.example.com",
+			Port:     "6432",
+			ExtraConnectionParameters: map[string]string{
+				"default_query_exec_mode":  "simple_protocol",
+				"statement_cache_capacity": "128",
+			},
+		},
+		ConnectionContext: db.ConnectionContext{
+			DatabaseName: "postgres",
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, pgx.QueryExecModeSimpleProtocol, connConfig.DefaultQueryExecMode)
+	require.Equal(t, 128, connConfig.StatementCacheCapacity)
 }
 
 func TestGetPGConnectionConfigDisablesTLSVerificationForAllHosts(t *testing.T) {
