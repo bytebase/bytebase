@@ -8,7 +8,7 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { generateRolloutPreview } from "../../utils/rolloutPreview";
 import { DeployPendingTasksSection } from "./DeployPendingTasksSection";
 import { DeployStageList } from "./DeployStageCard";

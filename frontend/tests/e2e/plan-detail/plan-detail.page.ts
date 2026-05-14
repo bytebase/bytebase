@@ -11,6 +11,9 @@ export class PlanDetailPage {
   readonly bypassWarningsCheckbox: Locator;
   readonly confirmRolloutButton: Locator;
   readonly retryButton: Locator;
+  // The plan/issue title input rendered in PlanDetailHeader. It is an
+  // <input> bound to the plan or issue title — first textbox on the page.
+  readonly headerTitle: Locator;
 
   constructor(page: Page, baseURL: string) {
     this.page = page;
@@ -23,6 +26,7 @@ export class PlanDetailPage {
     this.bypassWarningsCheckbox = page.getByRole("checkbox", { name: "Bypass warnings" });
     this.confirmRolloutButton = page.getByRole("dialog").getByRole("button", { name: "Confirm" });
     this.retryButton = page.getByRole("button", { name: "Retry" });
+    this.headerTitle = page.getByRole("textbox").first();
   }
 
   async goto(projectId: string, planId: string) {

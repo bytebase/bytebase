@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
-import { PlanDetailProvider } from "../context/PlanDetailContext";
-import type { PlanDetailPageState } from "../hooks/usePlanDetailPage";
+import type { PlanDetailPageState } from "../shell/hooks/types";
+import { PlanDetailProvider } from "../shell/PlanDetailContext";
 import { PlanDetailChangesBranch } from "./PlanDetailChangesBranch";
 
 (

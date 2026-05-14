@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import { PlanDetailProvider } from "../context/PlanDetailContext";
-import type { PlanDetailPageState } from "../hooks/usePlanDetailPage";
+import type { PlanDetailPageState } from "../shell/hooks/types";
+import { PlanDetailProvider } from "../shell/PlanDetailContext";
 import { PlanDetailReviewApprovalFlow } from "./PlanDetailApprovalFlow";
 
 (

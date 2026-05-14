@@ -3,7 +3,10 @@ import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
+import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import type {
   Instance,
   InstanceResource,
@@ -11,6 +14,7 @@ import type {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
+import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
   PlanFeature,
   PlanType,
@@ -124,6 +128,48 @@ export type InstanceSlice = {
   fetchInstance: (name: string) => Promise<Instance | undefined>;
 };
 
+export type DatabaseListParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  filter?: string;
+  orderBy?: string;
+};
+
+export type DatabaseSlice = {
+  databasesByName: Record<string, Database>;
+  databaseRequests: Record<string, Promise<Database | undefined>>;
+  databaseErrorsByName: Record<string, Error | undefined>;
+  fetchDatabase: (name: string) => Promise<Database | undefined>;
+  batchFetchDatabases: (names: string[]) => Promise<Database[]>;
+  fetchDatabases: (params: DatabaseListParams) => Promise<{
+    databases: Database[];
+    nextPageToken: string;
+  }>;
+};
+
+export type DBGroupSlice = {
+  dbGroupsByName: Record<string, DatabaseGroup>;
+  dbGroupRequests: Record<string, Promise<DatabaseGroup | undefined>>;
+  dbGroupErrorsByName: Record<string, Error | undefined>;
+  fetchDBGroup: (name: string) => Promise<DatabaseGroup | undefined>;
+  listDBGroupsForProject: (project: string) => Promise<DatabaseGroup[]>;
+};
+
+export type SheetSlice = {
+  sheetsByName: Record<string, Sheet>;
+  sheetRequests: Record<string, Promise<Sheet | undefined>>;
+  sheetErrorsByName: Record<string, Error | undefined>;
+  fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
+  createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+};
+
+export type InstanceRoleSlice = {
+  rolesByInstance: Record<string, InstanceRole[]>;
+  roleRequests: Record<string, Promise<InstanceRole[]>>;
+  fetchInstanceRoles: (instance: string) => Promise<InstanceRole[]>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -140,6 +186,10 @@ export type AppStoreState = AuthSlice &
   IamSlice &
   ProjectSlice &
   InstanceSlice &
+  DatabaseSlice &
+  DBGroupSlice &
+  SheetSlice &
+  InstanceRoleSlice &
   NotificationSlice &
   PreferencesSlice;
 

@@ -4,7 +4,7 @@ import {
   canRolloutTasks,
   preloadRolloutPermissionContext,
 } from "../../../issue-detail/utils/rollout";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import {
   type DeployTaskActionState,
   getDeployTaskActionState,

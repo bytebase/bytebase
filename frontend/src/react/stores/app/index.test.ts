@@ -4,10 +4,13 @@ import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
+import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import {
   BindingSchema,
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
+import { InstanceRoleSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
@@ -19,6 +22,7 @@ import {
   SettingValueSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
+import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   PlanFeature,
   PlanType,
@@ -61,6 +65,14 @@ const mocks = vi.hoisted(() => ({
   searchProjects: vi.fn(),
   createProject: vi.fn(),
   getInstance: vi.fn(),
+  getDatabase: vi.fn(),
+  batchGetDatabases: vi.fn(),
+  listDatabases: vi.fn(),
+  getDatabaseGroup: vi.fn(),
+  listDatabaseGroups: vi.fn(),
+  getSheet: vi.fn(),
+  createSheet: vi.fn(),
+  listInstanceRoles: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -79,6 +91,22 @@ vi.mock("@/connect", () => ({
   },
   instanceServiceClientConnect: {
     getInstance: mocks.getInstance,
+  },
+  databaseServiceClientConnect: {
+    getDatabase: mocks.getDatabase,
+    batchGetDatabases: mocks.batchGetDatabases,
+    listDatabases: mocks.listDatabases,
+  },
+  databaseGroupServiceClientConnect: {
+    getDatabaseGroup: mocks.getDatabaseGroup,
+    listDatabaseGroups: mocks.listDatabaseGroups,
+  },
+  sheetServiceClientConnect: {
+    getSheet: mocks.getSheet,
+    createSheet: mocks.createSheet,
+  },
+  instanceRoleServiceClientConnect: {
+    listInstanceRoles: mocks.listInstanceRoles,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -564,6 +592,104 @@ describe("useAppStore", () => {
     expect(second).toBe(instance);
     expect(mocks.getInstance).toHaveBeenCalledTimes(1);
     expect(store.getState().instancesByName[instance.name]).toBe(instance);
+  });
+
+  test("deduplicates database fetches and caches the result", async () => {
+    const dbName = "instances/i1/databases/db1";
+    const database = createProto(DatabaseSchema$, { name: dbName });
+    mocks.getDatabase.mockResolvedValueOnce(database);
+    const store = createAppStore();
+
+    const [first, second, third] = await Promise.all([
+      store.getState().fetchDatabase(dbName),
+      store.getState().fetchDatabase(dbName),
+      store.getState().fetchDatabase(dbName),
+    ]);
+
+    expect(first).toEqual(database);
+    expect(second).toEqual(database);
+    expect(third).toEqual(database);
+    expect(mocks.getDatabase).toHaveBeenCalledTimes(1);
+    expect(store.getState().databasesByName[dbName]).toEqual(database);
+  });
+
+  test("fetchDatabases populates databasesByName from the list response", async () => {
+    const dbA = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db1",
+    });
+    const dbB = createProto(DatabaseSchema$, {
+      name: "instances/i1/databases/db2",
+    });
+    mocks.listDatabases.mockResolvedValue({
+      databases: [dbA, dbB],
+      nextPageToken: "next",
+    });
+    const store = createAppStore();
+
+    const result = await store.getState().fetchDatabases({
+      parent: "projects/a",
+      pageSize: 50,
+      filter: 'project == "projects/a"',
+    });
+
+    expect(result.databases).toEqual([dbA, dbB]);
+    expect(result.nextPageToken).toBe("next");
+    expect(store.getState().databasesByName[dbA.name]).toEqual(dbA);
+    expect(store.getState().databasesByName[dbB.name]).toEqual(dbB);
+    expect(mocks.listDatabases).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates db group fetches and caches the result", async () => {
+    const name = "projects/p1/databaseGroups/g1";
+    const group = createProto(DatabaseGroupSchema, { name });
+    mocks.getDatabaseGroup.mockResolvedValueOnce(group);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchDBGroup(name),
+      store.getState().fetchDBGroup(name),
+    ]);
+
+    expect(first).toEqual(group);
+    expect(second).toEqual(group);
+    expect(mocks.getDatabaseGroup).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates sheet fetches and caches the result", async () => {
+    const name = "projects/p1/sheets/s1";
+    const sheet = createProto(SheetSchema, {
+      name,
+      content: new Uint8Array(),
+    });
+    mocks.getSheet.mockResolvedValueOnce(sheet);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchSheet(name),
+      store.getState().fetchSheet(name),
+    ]);
+
+    expect(first).toEqual(sheet);
+    expect(second).toEqual(sheet);
+    expect(mocks.getSheet).toHaveBeenCalledTimes(1);
+  });
+
+  test("deduplicates instance role fetches per instance", async () => {
+    const instance = "instances/i1";
+    const roles = [
+      createProto(InstanceRoleSchema, { name: `${instance}/roles/admin` }),
+    ];
+    mocks.listInstanceRoles.mockResolvedValueOnce({ roles });
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchInstanceRoles(instance),
+      store.getState().fetchInstanceRoles(instance),
+    ]);
+
+    expect(first).toEqual(roles);
+    expect(second).toEqual(roles);
+    expect(mocks.listInstanceRoles).toHaveBeenCalledTimes(1);
   });
 
   test("notify() routes to the React toast manager", async () => {

@@ -21,29 +21,44 @@ import { cn } from "@/react/lib/utils";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { DeployBranch } from "./plan-detail/components/deploy/DeployBranch";
-import { DeployTaskDetailPanel } from "./plan-detail/components/deploy/DeployTaskDetailPanel";
-import { PlanDetailReviewApprovalFlow } from "./plan-detail/components/PlanDetailApprovalFlow";
-import { PlanDetailChangesBranch } from "./plan-detail/components/PlanDetailChangesBranch";
-import { PlanDetailDeployFuture } from "./plan-detail/components/PlanDetailDeployFuture";
-import { PlanDetailHeader } from "./plan-detail/components/PlanDetailHeader";
-import { PlanDetailMetadataSidebar } from "./plan-detail/components/PlanDetailMetadataSidebar";
+import { DeployBranch } from "./components/deploy/DeployBranch";
+import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel";
+import { PlanDetailReviewApprovalFlow } from "./components/PlanDetailApprovalFlow";
+import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
+import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
+import { PlanDetailHeader } from "./components/PlanDetailHeader";
+import { PlanDetailMetadataSidebar } from "./components/PlanDetailMetadataSidebar";
+import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
+import {
+  SIDEBAR_WIDTH_NARROW_PX,
+  WIDE_SIDEBAR_BREAKPOINT_PX,
+} from "./shell/constants";
+import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
 import {
   PlanDetailProvider,
   usePlanDetailContext,
-} from "./plan-detail/context/PlanDetailContext";
-import {
-  SIDEBAR_WIDTH_NARROW_PX,
-  usePlanDetailPage,
-  WIDE_SIDEBAR_BREAKPOINT_PX,
-} from "./plan-detail/hooks/usePlanDetailPage";
+} from "./shell/PlanDetailContext";
 import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
-} from "./plan-detail/utils/phaseSummary";
+} from "./utils/phaseSummary";
 
-export function ProjectPlanDetailPage({
+export function ProjectPlanDetailPage(props: {
+  projectId: string;
+  planId: string;
+  routeName?: string;
+  routeQuery?: Record<string, unknown>;
+  specId?: string;
+}) {
+  return (
+    <PlanDetailStoreProvider>
+      <ProjectPlanDetailPageInner {...props} />
+    </PlanDetailStoreProvider>
+  );
+}
+
+function ProjectPlanDetailPageInner({
   projectId,
   planId,
   routeName,

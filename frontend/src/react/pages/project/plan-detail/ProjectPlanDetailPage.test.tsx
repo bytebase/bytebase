@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { PlanDetailPageState } from "./plan-detail/hooks/usePlanDetailPage";
+import type { PlanDetailPageState } from "./shell/hooks/types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -68,19 +68,19 @@ vi.mock("@/react/lib/utils", () => ({
     classes.filter(Boolean).join(" "),
 }));
 
-vi.mock("./plan-detail/components/deploy/DeployBranch", () => ({
+vi.mock("./components/deploy/DeployBranch", () => ({
   DeployBranch: () => null,
 }));
 
-vi.mock("./plan-detail/components/deploy/DeployTaskDetailPanel", () => ({
+vi.mock("./components/deploy/DeployTaskDetailPanel", () => ({
   DeployTaskDetailPanel: () => null,
 }));
 
-vi.mock("./plan-detail/components/PlanDetailApprovalFlow", () => ({
+vi.mock("./components/PlanDetailApprovalFlow", () => ({
   PlanDetailReviewApprovalFlow: () => null,
 }));
 
-vi.mock("./plan-detail/components/PlanDetailChangesBranch", () => ({
+vi.mock("./components/PlanDetailChangesBranch", () => ({
   PlanDetailChangesBranch: ({
     onSelectedSpecIdChange,
     selectedSpecId,
@@ -97,25 +97,28 @@ vi.mock("./plan-detail/components/PlanDetailChangesBranch", () => ({
   ),
 }));
 
-vi.mock("./plan-detail/components/PlanDetailDeployFuture", () => ({
+vi.mock("./components/PlanDetailDeployFuture", () => ({
   PlanDetailDeployFuture: () => null,
 }));
 
-vi.mock("./plan-detail/components/PlanDetailHeader", () => ({
+vi.mock("./components/PlanDetailHeader", () => ({
   PlanDetailHeader: () => null,
 }));
 
-vi.mock("./plan-detail/components/PlanDetailMetadataSidebar", () => ({
+vi.mock("./components/PlanDetailMetadataSidebar", () => ({
   PlanDetailMetadataSidebar: () => null,
 }));
 
-vi.mock("./plan-detail/hooks/usePlanDetailPage", () => ({
+vi.mock("./shell/constants", () => ({
   SIDEBAR_WIDTH_NARROW_PX: 320,
   WIDE_SIDEBAR_BREAKPOINT_PX: 1024,
+}));
+
+vi.mock("./shell/hooks/usePlanDetailPage", () => ({
   usePlanDetailPage: mocks.usePlanDetailPage,
 }));
 
-vi.mock("./plan-detail/utils/phaseSummary", () => ({
+vi.mock("./utils/phaseSummary", () => ({
   buildChangesSummary: () => "",
   buildDeploySummary: () => "",
   buildReviewSummary: () => "",

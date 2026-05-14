@@ -99,12 +99,13 @@ func TestWalkThrough(t *testing.T) {
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		asts := base.ExtractASTs(stmts)
 		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		if test.Advice != nil {
+			require.NotNil(t, advice)
+			require.Equal(t, test.Advice.Code, advice.Code)
+			require.Equal(t, test.Advice.Content, advice.Content)
+			continue
+		}
 		if advice != nil {
-			// Compare the advice fields
-			if test.Advice != nil {
-				require.Equal(t, test.Advice.Code, advice.Code)
-				require.Equal(t, test.Advice.Content, advice.Content)
-			}
 			continue
 		}
 

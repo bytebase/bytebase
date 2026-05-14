@@ -12,7 +12,7 @@ import {
   preloadRolloutPermissionContext,
   RUNNABLE_TASK_STATUSES,
 } from "../../../issue-detail/utils/rollout";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import {
   type PlanDetailTaskRolloutAction,
   PlanDetailTaskRolloutActionPanel,

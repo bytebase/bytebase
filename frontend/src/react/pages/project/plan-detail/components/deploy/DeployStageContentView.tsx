@@ -15,7 +15,7 @@ import {
   preloadRolloutPermissionContext,
   RUNNABLE_TASK_STATUSES,
 } from "../../../issue-detail/utils/rollout";
-import { usePlanDetailContext } from "../../context/PlanDetailContext";
+import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanDetailTaskRolloutActionPanel } from "../PlanDetailTaskRolloutActionPanel";
 import { DeployStageContentSidebar } from "./DeployStageContentSidebar";
 import { DeployTaskFilter } from "./DeployTaskFilter";

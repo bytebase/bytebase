@@ -1,10 +1,14 @@
 import { create } from "zustand";
 import { createAuthSlice } from "./auth";
+import { createDatabaseSlice } from "./database";
+import { createDBGroupSlice } from "./dbGroup";
 import { createIamSlice } from "./iam";
 import { createInstanceSlice } from "./instance";
+import { createInstanceRoleSlice } from "./instanceRole";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
+import { createSheetSlice } from "./sheet";
 import { createWorkspaceSlice } from "./workspace";
 
 export type { AppStoreState } from "./types";
@@ -23,6 +27,10 @@ export const createAppStore = () =>
     ...createIamSlice(...args),
     ...createProjectSlice(...args),
     ...createInstanceSlice(...args),
+    ...createDatabaseSlice(...args),
+    ...createDBGroupSlice(...args),
+    ...createSheetSlice(...args),
+    ...createInstanceRoleSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));
