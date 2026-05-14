@@ -20,55 +20,39 @@ import (
 )
 
 func init() {
-	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatements)
+	// Phase 1.5 §1.5.N+1 dispatcher flip: register the Option B
+	// omni-first/pingcap-fallback dispatcher (parseTiDBStatementsOmni in
+	// dispatcher.go). See plans/2026-04-23-omni-tidb-completion-plan.md
+	// §1.5.0 invariant #8 for the contract.
+	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatementsOmni)
 	base.RegisterGetStatementTypes(storepb.Engine_TIDB, GetStatementTypes)
 }
 
 // ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.
-// Returns []base.AST with *TiDBAST instances.
+// Returns []base.AST with *AST instances.
+//
+// Per-statement parse + line-tracking is delegated to
+// parsePingCapSingleStatement (in dispatcher.go) so the dispatcher's
+// pingcap-fallback path and this canonical pre-flip path produce
+// structurally identical *AST values. (nil, nil) from the helper
+// signals "non-1 node count, skip" — same semantic as the pre-
+// refactor inline `if len(nodes) != 1 { continue }`.
 func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
 
-	p := newTiDBParser()
 	var results []base.AST
 	for _, singleSQL := range singleSQLs {
-		nodes, _, err := p.Parse(singleSQL.Text, "", "")
-		if err != nil {
-			// Convert parser error to SyntaxError with proper position
-			syntaxErr := convertParserError(err)
-			// Adjust the line number to be absolute (relative to the full statement)
-			// The TiDB parser reports line numbers relative to singleSQL.Text (starting at 1)
-			// We need to add the offset to get the absolute line number
-			if se, ok := syntaxErr.(*base.SyntaxError); ok && se.Position != nil {
-				// errorLine is 1-based relative to singleSQL.Text
-				// singleSQL.BaseLine() is 0-based line number of the first line in the original statement
-				// Absolute line (1-based) = BaseLine (0-based) + errorLine (1-based)
-				se.Position.Line = int32(singleSQL.BaseLine()) + se.Position.Line
-			}
-			return nil, syntaxErr
-		}
-
-		if len(nodes) != 1 {
-			continue
-		}
-
-		node := nodes[0]
-		// node.Text() includes leading whitespace from singleSQL.Text.
-		// This maintains consistency: Statement.Start points to first char of Statement.Text,
-		// and AST position matches Statement position.
-		// Trim only at display points (e.g., error messages) where needed.
-
-		actualStartLine, err := applyTiDBLineTracking(node, singleSQL.BaseLine(), singleSQL.Text)
+		ast, err := parsePingCapSingleStatement(singleSQL)
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, &AST{
-			StartPosition: &storepb.Position{Line: int32(actualStartLine)},
-			Node:          node,
-		})
+		if ast == nil {
+			continue
+		}
+		results = append(results, ast)
 	}
 
 	return results, nil
@@ -100,38 +84,6 @@ func applyTiDBLineTracking(node ast.StmtNode, baseLine int, originalText string)
 		}
 	}
 	return actualStartLine, nil
-}
-
-// parseTiDBStatements is the ParseStatementsFunc for TiDB.
-// Returns []ParsedStatement with both text and AST populated.
-func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
-	// First split to get Statement with text and positions
-	stmts, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Then parse to get ASTs
-	asts, err := ParseTiDBForSyntaxCheck(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, AST provides parsed tree
-	var result []base.ParsedStatement
-	astIndex := 0
-	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
-		}
-		if !stmt.Empty && astIndex < len(asts) {
-			ps.AST = asts[astIndex]
-			astIndex++
-		}
-		result = append(result, ps)
-	}
-
-	return result, nil
 }
 
 func newTiDBParser() *tidbparser.Parser {

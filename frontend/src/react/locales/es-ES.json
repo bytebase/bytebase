@@ -1644,6 +1644,7 @@
   "plan.targets.non-env-warning.other": "{{count}} bases de datos se excluirán del despliegue porque no tienen un entorno efectivo:",
   "plan.targets.title": "Objetivos",
   "plan.targets.view-all": "Ver todo ({{count}})",
+  "plan.title-required": "El título es obligatorio",
   "plan.view-discussion": "Ver discusión",
   "plugin": {
     "ai": {

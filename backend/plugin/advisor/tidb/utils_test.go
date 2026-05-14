@@ -15,11 +15,16 @@ import (
 )
 
 // TestGetTiDBOmniNodesCachesAcrossRules pins the Phase 1.5 single-parse-per-
-// review invariant: when multiple migrated advisors call getTiDBOmniNodes
-// with the same advisor.Context, omni parsing happens once and the result
-// slice is reused. Without this, parse cost scales with migrated-advisor
-// count and review latency degrades monotonically across the migration
-// window. See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0.
+// review invariant at the post-flip layer: when multiple migrated advisors
+// call getTiDBOmniNodes with the same advisor.Context, the type-switch +
+// slice construction happens once and the result slice is reused. Without
+// this, every migrated advisor pays the type-switch + allocation cost.
+//
+// Post-flip (§1.5.N+1) the dispatcher already parsed at split time, so
+// stmt.AST is populated with *OmniAST values directly. This test feeds
+// pre-populated ParsedStatements to mirror the dispatcher's output.
+//
+// See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0 invariant #1.
 func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 	ctx := advisor.Context{
 		ParsedStatements: []base.ParsedStatement{
@@ -27,6 +32,10 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 				Statement: base.Statement{
 					Text:  "CREATE TABLE t (id INT)",
 					Start: &storepb.Position{Line: 1},
+				},
+				AST: &tidbparser.OmniAST{
+					Text:          "CREATE TABLE t (id INT)",
+					StartPosition: &storepb.Position{Line: 1},
 				},
 			},
 		},
@@ -43,21 +52,28 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 
 	// Cache hit: same backing array returned both calls. Address equality
 	// on the first element proves the slice header was reused, not a fresh
-	// re-parse that would allocate a new []OmniStmt.
+	// type-switch walk that would allocate a new []OmniStmt.
 	require.True(t, &first[0] == &second[0],
-		"expected cached []OmniStmt; got fresh re-parse — single-parse-per-review invariant broken")
+		"expected cached []OmniStmt; got fresh walk — single-parse-per-review invariant broken")
 }
 
-// TestGetTiDBOmniNodesSoftFailsOnGrammarGap pins the Phase 1.5 soft-fail
-// invariant: a statement that fails to parse with omni is logged and
-// skipped, not propagated as an error that breaks the advisor. The review
-// continues with whatever statements omni did parse.
+// TestGetTiDBOmniNodesSkipsPingcapFallbackAST pins the Phase 1.5 soft-fail
+// invariant at the post-flip layer: when the dispatcher fell back to
+// pingcap for a statement (omni rejected it), getTiDBOmniNodes silently
+// skips the *AST arm — migrated advisors emit no advice for omni-rejected
+// SQL, but un-migrated advisors using getTiDBNodes still see the pingcap
+// AST.
 //
-// This test feeds a statement that is valid TiDB SQL but uses a deferred
-// Phase 2 grammar feature (BATCH ... DRY RUN ...) that omni/tidb does not
-// yet support. The expectation is that getTiDBOmniNodes returns the
-// successfully-parsed statements and skips the BATCH one, with no error.
-func TestGetTiDBOmniNodesSoftFailsOnGrammarGap(t *testing.T) {
+// Pre-flip this responsibility lived in getTiDBOmniNodes itself (which
+// re-parsed each statement and soft-failed on omni grammar gaps). Post-
+// flip §1.5.N+1, the responsibility moves to the dispatcher: the soft-
+// fail signal arrives as an *AST in stmt.AST instead of a parse error
+// inside getTiDBOmniNodes. The end-to-end soft-fail behavior is
+// preserved; only the layer changes.
+//
+// See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0 invariant #2
+// (soft-fail) + #8 (3-arm switch contract).
+func TestGetTiDBOmniNodesSkipsPingcapFallbackAST(t *testing.T) {
 	ctx := advisor.Context{
 		ParsedStatements: []base.ParsedStatement{
 			{
@@ -65,11 +81,21 @@ func TestGetTiDBOmniNodesSoftFailsOnGrammarGap(t *testing.T) {
 					Text:  "CREATE TABLE t (id INT)",
 					Start: &storepb.Position{Line: 1},
 				},
+				AST: &tidbparser.OmniAST{
+					Text:          "CREATE TABLE t (id INT)",
+					StartPosition: &storepb.Position{Line: 1},
+				},
 			},
 			{
 				Statement: base.Statement{
-					Text:  "BATCH ON id LIMIT 5000 UPDATE t SET v = v + 1",
+					Text:  "FLASHBACK TABLE foo TO BEFORE DROP",
 					Start: &storepb.Position{Line: 2},
+				},
+				// Omni rejected this statement; dispatcher fell back to
+				// pingcap and produced an *AST. Migrated advisors must
+				// SKIP this statement silently — no advice, no error.
+				AST: &tidbparser.AST{
+					StartPosition: &storepb.Position{Line: 2},
 				},
 			},
 			{
@@ -77,15 +103,19 @@ func TestGetTiDBOmniNodesSoftFailsOnGrammarGap(t *testing.T) {
 					Text:  "INSERT INTO t (id) VALUES (1)",
 					Start: &storepb.Position{Line: 3},
 				},
+				AST: &tidbparser.OmniAST{
+					Text:          "INSERT INTO t (id) VALUES (1)",
+					StartPosition: &storepb.Position{Line: 3},
+				},
 			},
 		},
 	}
 	ctx.InitMemo()
 
 	got, err := getTiDBOmniNodes(ctx)
-	require.NoError(t, err, "soft-fail invariant: parse errors must not propagate")
-	require.GreaterOrEqual(t, len(got), 2,
-		"expected at least the two non-BATCH statements to parse and be returned")
+	require.NoError(t, err, "soft-fail invariant: pingcap-fallback AST must not propagate as an error")
+	require.Len(t, got, 2,
+		"expected only the two omni-accepted statements; the *AST arm must be skipped")
 }
 
 // TestGetTiDBNodesSoftFailsOnBridgeMiss pins the post-flip soft-fail
@@ -208,6 +238,17 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 				Statement: base.Statement{
 					Text:  "CREATE INDEX idx_x ON t (a)",
 					Start: &storepb.Position{Line: 1},
+				},
+				// Post-flip §1.5.N+1: the dispatcher pre-populates AST.
+				// Synthetic *OmniAST wrapping a CreateIndexStmt so the
+				// collector closure proceeds to regex compilation.
+				AST: &tidbparser.OmniAST{
+					Node: &omniast.CreateIndexStmt{
+						IndexName: "idx_x",
+						Table:     &omniast.TableRef{Name: "t"},
+					},
+					Text:          "CREATE INDEX idx_x ON t (a)",
+					StartPosition: &storepb.Position{Line: 1},
 				},
 			},
 		},

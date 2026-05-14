@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
+import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
@@ -327,6 +328,17 @@ export function PlanDetailHeader() {
     }
   };
 
+  const createPlanDisabledReasons = useMemo(() => {
+    const reasons: string[] = [];
+    if (!page.plan.title.trim()) {
+      reasons.push(t("plan.title-required"));
+    }
+    if (emptySpecIdSet.size > 0) {
+      reasons.push(t("plan.navigator.statement-empty"));
+    }
+    return reasons;
+  }, [emptySpecIdSet.size, page.plan.title, t]);
+
   const createIssueBlockingErrors = useMemo(
     () =>
       getCreateIssueBlockingErrors({
@@ -345,20 +357,11 @@ export function PlanDetailHeader() {
     () =>
       getCreateIssueConfirmErrors({
         blockingErrors: createIssueBlockingErrors,
-        checksWarningAcknowledged,
         project,
         selectedLabelCount: selectedLabels.length,
-        showChecksWarning,
         t,
       }),
-    [
-      checksWarningAcknowledged,
-      createIssueBlockingErrors,
-      project,
-      selectedLabels.length,
-      showChecksWarning,
-      t,
-    ]
+    [createIssueBlockingErrors, project, selectedLabels.length, t]
   );
 
   const resetReviewPopoverDraft = () => {
@@ -474,15 +477,25 @@ export function PlanDetailHeader() {
 
         <div className="flex shrink-0 items-center gap-x-2">
           {page.isCreating ? (
-            <Button
-              disabled={
-                updating || !page.plan.title.trim() || emptySpecIdSet.size > 0
+            <Tooltip
+              content={
+                createPlanDisabledReasons.length > 0 ? (
+                  <div className="flex flex-col gap-y-1">
+                    {createPlanDisabledReasons.map((reason) => (
+                      <span key={reason}>{reason}</span>
+                    ))}
+                  </div>
+                ) : null
               }
-              onClick={() => void handleCreatePlan()}
             >
-              {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("common.create")}
-            </Button>
+              <Button
+                disabled={updating || createPlanDisabledReasons.length > 0}
+                onClick={() => void handleCreatePlan()}
+              >
+                {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("common.create")}
+              </Button>
+            </Tooltip>
           ) : (
             <>
               {showSubmitForReview && (
@@ -745,7 +758,11 @@ function ReadyForReviewPopoverContent({
       )}
       <div className="flex justify-start gap-x-2 pt-1">
         <Button
-          disabled={confirmErrors.length > 0 || submitting}
+          disabled={
+            confirmErrors.length > 0 ||
+            (showChecksWarning && !checksWarningAcknowledged) ||
+            submitting
+          }
           onClick={onConfirm}
           size="sm"
         >

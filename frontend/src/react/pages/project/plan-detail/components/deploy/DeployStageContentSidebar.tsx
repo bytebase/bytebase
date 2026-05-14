@@ -9,20 +9,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { router } from "@/router";
-import { useUserStore } from "@/store";
+import { useDatabaseV1Store, useUserStore } from "@/store";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import {
   type Stage,
-  Task_Status,
+  type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractDatabaseResourceName, humanizeDate } from "@/utils";
+import { humanizeDate } from "@/utils";
+import { extractTaskNameFromTaskRunName } from "@/utils/v1/issue/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import { DatabaseTarget } from "../PlanDetailChangesBranch";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
-import { PlanDetailTaskRunTable } from "../PlanDetailTaskRunTable";
+import { PlanDetailTaskRunDetail } from "../PlanDetailTaskRunDetail";
 import { DeployTaskStatus } from "./DeployTaskStatus";
-import { getTaskRunDuration } from "./taskRunUtils";
+import { getTaskRunDuration, taskRunStatusToTaskStatus } from "./taskRunUtils";
 import type { RollbackItem } from "./types";
 
 const MAX_DISPLAY_ITEMS = 10;
@@ -31,19 +32,33 @@ export function DeployStageContentSidebar({ stage }: { stage: Stage }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const userStore = useUserStore();
+  const databaseStore = useDatabaseV1Store();
   const [rollbackOpen, setRollbackOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedTaskRun, setSelectedTaskRun] = useState<TaskRun | undefined>();
   const [creatorTitleByRun, setCreatorTitleByRun] = useState<
     Record<string, string>
   >({});
 
+  const tasksByName = useMemo(
+    () => new Map(stage.tasks.map((task) => [task.name, task])),
+    [stage.tasks]
+  );
+
+  const selectedDatabaseEngine = useMemo(() => {
+    if (!selectedTaskRun) return undefined;
+    const target = tasksByName.get(
+      extractTaskNameFromTaskRunName(selectedTaskRun.name)
+    )?.target;
+    return target
+      ? databaseStore.getDatabaseByName(target).instanceResource?.engine
+      : undefined;
+  }, [databaseStore, selectedTaskRun, tasksByName]);
+
   const stageTaskRuns = useMemo(() => {
-    const taskNames = new Set(stage.tasks.map((task) => task.name));
-    return page.taskRuns.filter((taskRun) => {
-      const taskName = taskRun.name.replace(/\/taskRuns\/[^/]+$/, "");
-      return taskNames.has(taskName);
-    });
-  }, [page.taskRuns, stage.tasks]);
+    return page.taskRuns.filter((taskRun) =>
+      tasksByName.has(extractTaskNameFromTaskRunName(taskRun.name))
+    );
+  }, [page.taskRuns, tasksByName]);
 
   const sortedTaskRuns = useMemo(() => {
     return [...stageTaskRuns].sort((left, right) => {
@@ -138,69 +153,35 @@ export function DeployStageContentSidebar({ stage }: { stage: Stage }) {
 
             <div className="flex flex-col gap-y-2 overflow-y-auto px-3 pb-3 pt-1">
               {displayedTaskRuns.map((taskRun) => {
-                const taskName = taskRun.name.replace(/\/taskRuns\/[^/]+$/, "");
-                const task = stage.tasks.find((item) => item.name === taskName);
-                const target = task?.target
-                  ? extractDatabaseResourceName(task.target)
-                  : undefined;
+                const task = tasksByName.get(
+                  extractTaskNameFromTaskRunName(taskRun.name)
+                );
+                if (!task) return null;
                 const creatorTitle = creatorTitleByRun[taskRun.name] ?? "";
                 const duration = getTaskRunDuration(taskRun);
                 const updateDate = taskRun.updateTime
                   ? getDateForPbTimestampProtoEs(taskRun.updateTime)
                   : undefined;
                 return (
-                  <div key={taskRun.name} className="flex items-start gap-2">
+                  <button
+                    key={taskRun.name}
+                    className="flex w-full items-start gap-2 rounded-sm px-1 py-1 text-left hover:bg-gray-50"
+                    onClick={() => setSelectedTaskRun(taskRun)}
+                    type="button"
+                  >
                     <div className="pt-0.5">
                       <DeployTaskStatus
                         size="small"
-                        status={
-                          taskRun.status === TaskRun_Status.DONE
-                            ? Task_Status.DONE
-                            : taskRun.status === TaskRun_Status.FAILED
-                              ? Task_Status.FAILED
-                              : taskRun.status === TaskRun_Status.RUNNING
-                                ? Task_Status.RUNNING
-                                : taskRun.status === TaskRun_Status.PENDING ||
-                                    taskRun.status === TaskRun_Status.AVAILABLE
-                                  ? Task_Status.PENDING
-                                  : Task_Status.CANCELED
-                        }
+                        status={taskRunStatusToTaskStatus(taskRun.status)}
                       />
                     </div>
                     <div className="-mt-0.5 min-w-0 flex-1 px-1 py-0.5">
-                      <button
-                        className="truncate text-left text-sm leading-4 text-gray-700 hover:underline"
-                        onClick={() => {
-                          if (!task) return;
-                          void router.push({
-                            query: {
-                              phase: "deploy",
-                              stageId: stage.name.split("/").pop(),
-                              taskId: task.name.split("/").pop(),
-                            },
-                          });
-                        }}
-                        type="button"
-                      >
-                        {target?.instance ? (
-                          <span className="text-gray-500">
-                            {target.instance}
-                            <span className="mx-0.5 text-gray-400">/</span>
-                          </span>
-                        ) : null}
-                        <span>
-                          {target?.databaseName ?? task?.target ?? ""}
-                        </span>
-                      </button>
+                      <DatabaseTarget target={task.target} />
                       {taskRun.status === TaskRun_Status.FAILED &&
                         taskRun.detail && (
-                          <button
-                            className="mt-0.5 line-clamp-3 text-left text-xs text-error hover:underline"
-                            onClick={() => setDetailOpen(true)}
-                            type="button"
-                          >
+                          <div className="mt-0.5 line-clamp-3 text-xs text-error">
                             {taskRun.detail}
-                          </button>
+                          </div>
                         )}
                       <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
                         <span>
@@ -210,7 +191,7 @@ export function DeployStageContentSidebar({ stage }: { stage: Stage }) {
                         {duration && <span>· {duration}</span>}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
               {sortedTaskRuns.length > MAX_DISPLAY_ITEMS && (
@@ -235,13 +216,21 @@ export function DeployStageContentSidebar({ stage }: { stage: Stage }) {
         />
       )}
 
-      <Sheet onOpenChange={setDetailOpen} open={detailOpen}>
+      <Sheet
+        onOpenChange={(open) => !open && setSelectedTaskRun(undefined)}
+        open={Boolean(selectedTaskRun)}
+      >
         <SheetContent width="wide">
           <SheetHeader>
             <SheetTitle>{t("common.detail")}</SheetTitle>
           </SheetHeader>
           <SheetBody>
-            <PlanDetailTaskRunTable taskRuns={sortedTaskRuns} />
+            {selectedTaskRun && (
+              <PlanDetailTaskRunDetail
+                databaseEngine={selectedDatabaseEngine}
+                taskRun={selectedTaskRun}
+              />
+            )}
           </SheetBody>
         </SheetContent>
       </Sheet>

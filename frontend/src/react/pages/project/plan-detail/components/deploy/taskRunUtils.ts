@@ -1,5 +1,23 @@
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  Task_Status,
+  TaskRun_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
+
+const TASK_RUN_STATUS_TO_TASK_STATUS: Partial<
+  Record<TaskRun_Status, Task_Status>
+> = {
+  [TaskRun_Status.DONE]: Task_Status.DONE,
+  [TaskRun_Status.FAILED]: Task_Status.FAILED,
+  [TaskRun_Status.RUNNING]: Task_Status.RUNNING,
+  [TaskRun_Status.PENDING]: Task_Status.PENDING,
+  [TaskRun_Status.AVAILABLE]: Task_Status.PENDING,
+};
+
+export const taskRunStatusToTaskStatus = (
+  status: TaskRun_Status
+): Task_Status =>
+  TASK_RUN_STATUS_TO_TASK_STATUS[status] ?? Task_Status.CANCELED;
 
 const formatDuration = (durationMs: number): string => {
   const seconds = Math.floor(durationMs / 1000);

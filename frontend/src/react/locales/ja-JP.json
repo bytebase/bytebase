@@ -1644,6 +1644,7 @@
   "plan.targets.non-env-warning.other": "有効な環境がないため、{{count}} 件のデータベースはロールアウトから除外されます:",
   "plan.targets.title": "対象",
   "plan.targets.view-all": "すべて表示 ({{count}})",
+  "plan.title-required": "タイトルは必須です",
   "plan.view-discussion": "ディスカッションを見る",
   "plugin": {
     "ai": {

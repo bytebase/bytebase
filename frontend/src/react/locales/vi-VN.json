@@ -1644,6 +1644,7 @@
   "plan.targets.non-env-warning.other": "{{count}} cơ sở dữ liệu sẽ bị loại khỏi rollout vì không có môi trường hiệu lực:",
   "plan.targets.title": "Mục tiêu",
   "plan.targets.view-all": "Xem tất cả ({{count}})",
+  "plan.title-required": "Tiêu đề là bắt buộc",
   "plan.view-discussion": "Xem thảo luận",
   "plugin": {
     "ai": {

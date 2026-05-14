@@ -109,6 +109,15 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	// Codex-fix-1c through 1e) demonstrated the brittle-enumeration
 	// pattern; switching DDL detection to pingcap's authoritative
 	// DDLNode interface eliminates the enumeration entirely.
+	//
+	// Post-flip cost note (Phase 1.5 §1.5.N+1): post-dispatcher-flip
+	// the dispatcher produces *OmniAST values, and getTiDBNodes routes
+	// each through OmniAST.AsPingCapAST() — a per-statement re-parse
+	// against pingcap. Lazy + cached per OmniAST instance (invariant
+	// #4), so the cost is bounded to one re-parse per statement-per-
+	// review for this dual-path advisor + dml_dry_run. No fix needed;
+	// bridge cleanup happens in Phase 2 when dml_dry_run migrates and
+	// the dual-path collapses.
 	pingcapStmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
