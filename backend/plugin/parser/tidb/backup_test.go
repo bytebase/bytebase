@@ -128,6 +128,20 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 								"c_generated",
 							},
 						},
+						// Unique key with empty Expressions — represents the
+						// TiDB-metadata shape for some expression/functional
+						// index parts that don't populate key.Column (per
+						// backend/plugin/schema/tidb/get_database_metadata.go).
+						// Used by TestGenerateRestoreSQLEmptyExpressionsUKSkipped
+						// to pin that hasDisjointUniqueKey skips empty-
+						// Expressions UKs. Pre-fix: disjoint([]) returns
+						// vacuously true, false-positive disjoint. Post-fix:
+						// empty-Expressions UKs are skipped explicitly.
+						{
+							Name:        "uk_empty_expressions",
+							Unique:      true,
+							Expressions: nil,
+						},
 					},
 				},
 				{

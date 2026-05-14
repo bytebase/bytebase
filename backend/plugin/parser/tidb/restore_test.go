@@ -575,6 +575,56 @@ func TestGenerateRestoreSQLNilBackupItemGuards(t *testing.T) {
 	}
 }
 
+// TestGenerateRestoreSQLEmptyExpressionsUKSkipped pins that
+// hasDisjointUniqueKey skips unique keys with empty Expressions. Per
+// Codex P1 catch on PR #20345.
+//
+// Pre-fix bug: `disjoint([], anyMap)` returns vacuously true (the
+// for-loop iterates zero times). So a UK with empty Expressions
+// passed through the disjoint check as "safe" — even though it has
+// no actual columns to match against. TiDB metadata produces empty
+// Expressions for some expression-based index parts (per
+// backend/plugin/schema/tidb/get_database_metadata.go's
+// getIndexColumnsInfo, parts without key.Column aren't appended).
+// Pre-fix the empty-Expressions UK would short-circuit
+// hasDisjointUniqueKey to true → unsafe rollback SQL generated.
+//
+// Post-fix: explicit empty-Expressions check at the top of each UK
+// iteration; such UKs are skipped (treated as overlapping).
+//
+// Mock setup (backup_test.go): t_generated has PK on b, UK on a,
+// UK on c_generated (skipped per Bug 7), AND a new UK with empty
+// Expressions. The test UPDATE overlaps the regular UKs (a and b
+// in SET); pre-fix the empty-Expressions UK would false-positive
+// as disjoint; post-fix all UKs are correctly classified as
+// overlapping/unsafe → "no disjoint unique key found" error.
+func TestGenerateRestoreSQLEmptyExpressionsUKSkipped(t *testing.T) {
+	const input = "UPDATE t_generated SET a = 1, b = 2 WHERE c_generated = 3;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "t_generated",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_t_generated",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.Error(t, err,
+		"empty-Expressions UK must NOT be treated as disjoint (vacuous truth bug)")
+	require.Contains(t, err.Error(), "no disjoint unique key found",
+		"all UKs must be classified as overlapping/unsafe — empty-Expressions UK skipped explicitly")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last

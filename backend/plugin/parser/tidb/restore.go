@@ -427,6 +427,16 @@ func hasDisjointUniqueKey(ctx context.Context, rCtx base.RestoreContext, origina
 		// Same problem for functional indexes (Expressions = `(LOWER(email))`).
 		// Conservative: treat any UK with non-regular-column expressions
 		// as overlapping (skip). Never returns false-positive disjoint.
+		//
+		// ALSO skip UKs with empty Expressions — disjoint([]) returns
+		// vacuously true, which would falsely mark the UK as safe.
+		// TiDB metadata produces empty Expressions for some expression-
+		// based index parts (per backend/plugin/schema/tidb/
+		// get_database_metadata.go:getIndexColumnsInfo, parts without
+		// key.Column aren't added). Per Codex P1 catch on PR #20345.
+		if len(index.Expressions) == 0 {
+			continue
+		}
 		safe := true
 		for _, expr := range index.Expressions {
 			if !regularColumns[strings.ToLower(expr)] {
