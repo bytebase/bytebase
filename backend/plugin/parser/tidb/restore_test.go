@@ -514,6 +514,67 @@ func TestGenerateRestoreSQLCrossDatabaseAliasResolution(t *testing.T) {
 		"expected no-DML error since SET is on otherdb.test, not db.test")
 }
 
+// TestGenerateRestoreSQLNilBackupItemGuards pins that GenerateRestoreSQL
+// returns a clean error (not a panic) when backupItem or its sub-fields
+// are nil. Per Codex P2 catch on PR #20345 — Bug 9's plumbing refactor
+// moved metadata-fetching ahead of extractStatement (which previously
+// held the nil guard), causing the function to panic on nil input.
+//
+// Three independent nil paths covered: backupItem itself, SourceTable,
+// TargetTable.
+func TestGenerateRestoreSQLNilBackupItemGuards(t *testing.T) {
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	rCtx := base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}
+
+	cases := []struct {
+		name       string
+		backupItem *store.PriorBackupDetail_Item
+		wantErr    string
+	}{
+		{
+			name:       "nil backupItem",
+			backupItem: nil,
+			wantErr:    "backup item is nil",
+		},
+		{
+			name: "nil SourceTable",
+			backupItem: &store.PriorBackupDetail_Item{
+				SourceTable: nil,
+				TargetTable: &store.PriorBackupDetail_Item_Table{
+					Database: "instances/i1/databases/bbarchive",
+					Table:    "prefix_1_test",
+				},
+			},
+			wantErr: "backup item source table is nil",
+		},
+		{
+			name: "nil TargetTable",
+			backupItem: &store.PriorBackupDetail_Item{
+				SourceTable: &store.PriorBackupDetail_Item_Table{
+					Database: "instances/i1/databases/db",
+					Table:    "test",
+				},
+				TargetTable: nil,
+			},
+			wantErr: "backup item target table is nil",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				_, err := GenerateRestoreSQL(context.Background(), rCtx, "DELETE FROM test;", tc.backupItem)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.wantErr)
+			}, "must return error, not panic, on nil input")
+		})
+	}
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last

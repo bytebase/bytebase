@@ -29,6 +29,22 @@ func init() {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+	// Nil guard: backupItem and its SourceTable/TargetTable sub-fields are
+	// dereferenced unconditionally below. Pre-Bug-9 the nil-backupItem check
+	// lived in extractStatement (called first); the Bug 9 refactor moved
+	// metadata fetching ahead of extractStatement, bypassing that guard.
+	// Per Codex P2 catch on PR #20345 — restoring the nil-backupItem check
+	// AND adding sub-field checks since each is independently dereferenced.
+	if backupItem == nil {
+		return "", errors.Errorf("backup item is nil")
+	}
+	if backupItem.SourceTable == nil {
+		return "", errors.Errorf("backup item source table is nil")
+	}
+	if backupItem.TargetTable == nil {
+		return "", errors.Errorf("backup item target table is nil")
+	}
+
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, errMsgFailedToGetSourceDB, backupItem.SourceTable.Database)
@@ -439,9 +455,8 @@ func disjoint(a []string, b map[string]bool) bool {
 }
 
 func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item, sourceDatabase string, targetCols map[string]bool) (string, error) {
-	if backupItem == nil {
-		return "", errors.Errorf("backup item is nil")
-	}
+	// Nil-backupItem guard now lives in GenerateRestoreSQL (the only
+	// caller); extractStatement is unexported and assumes non-nil input.
 
 	list, err := SplitSQL(statement)
 	if err != nil {
