@@ -184,35 +184,25 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         id: "creator",
         title: t("issue.advanced-search.scope.creator.title"),
         description: t("issue.advanced-search.scope.creator.description"),
-        search: async ({
-          keyword,
-          nextPageToken,
-        }: {
-          keyword: string;
-          nextPageToken?: string;
-        }) => {
+        onSearch: async (keyword: string) => {
           const resp = await userStore.fetchUserList({
-            pageToken: nextPageToken,
             pageSize: getDefaultPagination(),
             filter: { query: keyword },
           });
-          return {
-            nextPageToken: resp.nextPageToken,
-            options: resp.users.map<ValueOption>((user) => ({
-              value: user.email,
-              keywords: [user.email, user.title],
-              render: () => (
-                <div className="flex items-center gap-x-1">
-                  <span>{user.title}</span>
-                  {user.name === me?.name && (
-                    <span className="text-xs text-control-light">
-                      ({t("common.you")})
-                    </span>
-                  )}
-                </div>
-              ),
-            })),
-          };
+          return resp.users.map<ValueOption>((user) => ({
+            value: user.email,
+            keywords: [user.email, user.title],
+            render: () => (
+              <div className="flex items-center gap-x-1">
+                <span>{user.title}</span>
+                {user.name === me?.name && (
+                  <span className="text-xs text-control-light">
+                    ({t("common.you")})
+                  </span>
+                )}
+              </div>
+            ),
+          }));
         },
       },
     ],
