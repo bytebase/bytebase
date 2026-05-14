@@ -200,6 +200,53 @@ func TestGenerateRestoreSQLSelfJoinUpdate(t *testing.T) {
 	}
 }
 
+// TestGenerateRestoreSQLSelfJoinMixedCaseAlias pins case-insensitive
+// alias-map matching. Per Codex P1 follow-on catch on PR #20345 (review
+// of the Fix #4 self-join determinism patch).
+//
+// Pre-fix bug: collectTableRefs stored map keys verbatim from
+// omni AST (preserving the user's case), and extractUpdateColumns did
+// an exact-string map lookup. TiDB ACCEPTS statements like
+// `UPDATE test T1 JOIN test T2 ON T1.c = T2.c SET t1.a = 1`
+// (alias referenced with different case in SET), but the map lookup
+// `singleTables["t1"]` against entries keyed "T1"/"T2" missed.
+// Fallback `EqualFold(col.Table, originalTable)` also missed
+// (`EqualFold("t1","test") == false`). Result: empty updateColumns
+// → invalid `... ON DUPLICATE KEY UPDATE ;`.
+//
+// Codex validated TiDB acceptance by executing the input against
+// pingcap/tidb:v8.5.5 directly; mixed-case aliases are valid TiDB
+// SQL.
+//
+// Fix: normalize map keys to lowercase on insert AND lookup.
+func TestGenerateRestoreSQLSelfJoinMixedCaseAlias(t *testing.T) {
+	const input = "UPDATE test T1 JOIN test T2 ON T1.c = T2.c SET t1.a = 1 WHERE T1.c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.NoError(t, err)
+	require.Contains(t, result, "`a` = VALUES(`a`)",
+		"ODKU must mention `a` (from SET t1.a = 1) — alias-map lookup must be case-insensitive")
+	require.NotContains(t, result, "ON DUPLICATE KEY UPDATE ;",
+		"ODKU clause must not be empty (would be invalid TiDB SQL)")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last

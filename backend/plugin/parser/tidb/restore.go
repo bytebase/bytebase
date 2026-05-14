@@ -231,11 +231,18 @@ func collectTableRefs(databaseName string, expr ast.TableExpr, result map[string
 			Table:    n.Name,
 			Alias:    n.Alias,
 		}
+		// Map keys are normalized to lowercase to match TiDB's
+		// case-insensitive identifier semantics — a SET clause that
+		// references the alias with different case (e.g., `T1` declared,
+		// `t1` referenced in SET) must still resolve. Per Codex P1
+		// follow-on catch on PR #20345.
+		var key string
 		if n.Alias != "" {
-			result[n.Alias] = table
+			key = strings.ToLower(n.Alias)
 		} else {
-			result[n.Name] = table
+			key = strings.ToLower(n.Name)
 		}
+		result[key] = table
 	case *ast.JoinClause:
 		collectTableRefs(databaseName, n.Left, result)
 		collectTableRefs(databaseName, n.Right, result)
@@ -283,8 +290,11 @@ func extractUpdateColumns(setList []*ast.Assignment, database, originalTable str
 		}
 
 		// Qualified column: resolve the qualifier through the alias map
-		// (handles self-joins deterministically).
-		if entry, ok := singleTables[col.Table]; ok && strings.EqualFold(entry.Table, originalTable) {
+		// (handles self-joins deterministically). Lookup key is
+		// lowercased to match the case-insensitive insert convention
+		// in collectTableRefs (TiDB identifier comparisons are
+		// case-insensitive in practice).
+		if entry, ok := singleTables[strings.ToLower(col.Table)]; ok && strings.EqualFold(entry.Table, originalTable) {
 			result = append(result, col.Column)
 			continue
 		}
