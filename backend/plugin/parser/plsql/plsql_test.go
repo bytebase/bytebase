@@ -172,3 +172,21 @@ BROKEN`)
 	require.NotNil(t, syntaxErr.Position)
 	require.Equal(t, int32(11), syntaxErr.Position.Line)
 }
+
+func TestParsePLSQLStatementsFallbackErrorUsesOriginalColumn(t *testing.T) {
+	statement := `SELECT * FROM T; CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA (TXN_DATE DATE) PARTITION BY RANGE (TXN_DATE) INTERVAL (NUMTODSINTERVAL(1,'DAY')) (PARTITION P0 VALUES LESS THAN (DATE '2026-01-01') BROKEN`
+
+	_, wholeErr := ParsePLSQL(statement)
+	require.Error(t, wholeErr)
+	var wholeSyntaxErr *base.SyntaxError
+	require.True(t, errors.As(wholeErr, &wholeSyntaxErr))
+	require.NotNil(t, wholeSyntaxErr.Position)
+
+	_, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.NotNil(t, syntaxErr.Position)
+	require.Equal(t, wholeSyntaxErr.Position.Line, syntaxErr.Position.Line)
+	require.Equal(t, wholeSyntaxErr.Position.Column, syntaxErr.Position.Column)
+}

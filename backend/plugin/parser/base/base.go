@@ -37,8 +37,12 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 
 	// Get 0-based line offset from StartPosition (1-based) for calculations
 	lineOffset := int32(0)
+	columnOffset := int32(0)
 	if l.StartPosition != nil {
 		lineOffset = l.StartPosition.Line - 1
+		if line == 1 && l.StartPosition.Column > 0 {
+			columnOffset = l.StartPosition.Column - 1
+		}
 	}
 
 	errMessage := ""
@@ -57,7 +61,7 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 	// ANTLR provides 1-based line and 0-based column
 	// Store as 1-based line and 1-based column in Position
 	posLine := int32(line) + lineOffset
-	posColumn := int32(column + 1)
+	posColumn := int32(column+1) + columnOffset
 	l.Err = &SyntaxError{
 		Position: &storepb.Position{
 			Line:   posLine,
