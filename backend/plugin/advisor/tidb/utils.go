@@ -708,11 +708,27 @@ const omniStmtsCacheKey = "tidb.omniStmts"
 
 // getTiDBOmniNodes returns omni-parsed statements for migrated advisors.
 //
-// Two invariants:
-//   - Single-parse-per-review: result is cached on checkCtx.Memo, so all
-//     migrated advisors in one review share one parse pass.
-//   - Soft-fail per statement: omni parse errors are logged at debug and
-//     the statement is skipped; the review never breaks on grammar gaps.
+// Post-flip (Phase 1.5 §1.5.N+1): the dispatcher in
+// backend/plugin/parser/tidb/dispatcher.go has already done the omni parse
+// and populated stmt.AST. This helper just unwraps OmniAST nodes and
+// preserves the cache contract.
+//
+// Three-arm type switch (per plan §1.5.0 invariant #8):
+//   - *tidbparser.OmniAST: omni accepted — collect the node.
+//   - *tidbparser.AST: dispatcher fell back to pingcap (omni rejected this
+//     statement). Skip — migrated advisors emit no advice for omni-rejected
+//     SQL. Soft-fail invariant preserved end-to-end (responsibility moved
+//     from this helper to the dispatcher).
+//   - default: unknown AST type. Warn (mandatory per invariant #8 — a
+//     future engine introducing a third AST type for tidb shouldn't
+//     silently drop statements).
+//
+// Cache contract (single-parse-per-review): the result slice is memoized
+// on checkCtx.Memo so subsequent calls within the same review return the
+// identical slice without re-walking the type switch. The dispatcher's
+// parse already happened once at split time, so this cache amortizes only
+// the type-switch + slice construction now — but the contract (one
+// observable parse per review) is preserved.
 func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 	if cached, ok := checkCtx.Memo(omniStmtsCacheKey); ok {
 		if stmts, typeOK := cached.([]OmniStmt); typeOK {
@@ -726,25 +742,25 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 
 	var result []OmniStmt
 	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.Empty {
+		if stmt.Empty || stmt.AST == nil {
 			continue
 		}
-		list, err := tidbparser.ParseTiDBOmni(stmt.Text)
-		if err != nil {
-			slog.Debug("omni/tidb parse failed; skipping statement for omni-aware advisors",
-				slog.String("error", err.Error()),
-			)
-			continue
-		}
-		if list == nil {
-			continue
-		}
-		for _, item := range list.Items {
+		switch a := stmt.AST.(type) {
+		case *tidbparser.OmniAST:
 			result = append(result, OmniStmt{
-				Node:     item,
-				Text:     stmt.Text,
+				Node:     a.Node,
+				Text:     a.Text,
 				BaseLine: stmt.BaseLine(),
 			})
+		case *tidbparser.AST:
+			// Dispatcher fell back to pingcap for this statement (omni
+			// rejected). Migrated advisors skip it; un-migrated advisors
+			// using getTiDBNodes still see the pingcap AST. Soft-fail
+			// per invariant #2 preserved.
+			continue
+		default:
+			slog.Warn("unexpected stmt.AST type for tidb dispatcher",
+				slog.String("type", fmt.Sprintf("%T", a)))
 		}
 	}
 
