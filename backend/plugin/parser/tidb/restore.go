@@ -69,9 +69,6 @@ func findMatchingDMLs(statement, database, table string) ([]ast.Node, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
-	if stmtList == nil {
-		return nil, nil
-	}
 	var result []ast.Node
 	for _, item := range stmtList.Items {
 		switch item.(type) {
