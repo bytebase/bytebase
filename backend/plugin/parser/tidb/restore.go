@@ -28,12 +28,20 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	// Parse the filtered SQL and find the first DML node.
-	matchingNode, err := findFirstDML(originalSQL)
+	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
+	}
+
+	// Find ALL DML nodes referencing the target table — backup.go's single-
+	// table path bundles >maxMixedDMLCount same-table DMLs into one backup
+	// item, and rollback must cover every column touched across the bundle
+	// (not just the first stmt's columns). Per Codex P1 catch on PR #20345.
+	matchingNodes, err := findMatchingDMLs(originalSQL, sourceDatabase, backupItem.SourceTable.Table)
 	if err != nil {
 		return "", err
 	}
-	if matchingNode == nil {
+	if len(matchingNodes) == 0 {
 		return "", errors.Errorf("no DML statement found in extracted SQL")
 	}
 
@@ -41,10 +49,16 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	if truncated {
 		sqlForComment += "..."
 	}
-	return doGenerate(ctx, rCtx, sqlForComment, matchingNode, backupItem)
+	return doGenerate(ctx, rCtx, sqlForComment, matchingNodes, backupItem)
 }
 
-func findFirstDML(statement string) (ast.Node, error) {
+// findMatchingDMLs returns ALL UPDATE/DELETE nodes in the parsed statement
+// list that reference the target table. The single-DML form (return-on-
+// first-match) is incorrect for backup.go's single-table-bundling path,
+// where one backup item spans multiple same-table DMLs touching different
+// columns; rolling back only the first stmt's columns leaves later
+// columns mutated. See Codex P1 catch on PR #20345.
+func findMatchingDMLs(statement, database, table string) ([]ast.Node, error) {
 	stmtList, err := ParseTiDBOmni(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
@@ -52,17 +66,20 @@ func findFirstDML(statement string) (ast.Node, error) {
 	if stmtList == nil {
 		return nil, nil
 	}
+	var result []ast.Node
 	for _, item := range stmtList.Items {
 		switch item.(type) {
 		case *ast.UpdateStmt, *ast.DeleteStmt:
-			return item, nil
+			if containsTable(item, database, table) {
+				result = append(result, item)
+			}
 		default:
 		}
 	}
-	return nil, nil
+	return result, nil
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, node ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, nodes []ast.Node, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -79,18 +96,33 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
 	}
 
+	// Partition nodes by type. If any UPDATE exists in the bundle, ODKU
+	// is required — pure INSERT SELECT would FAIL on the surviving UPDATE-
+	// modified rows due to duplicate key. ODKU restores the listed columns
+	// for those rows AND inserts the deleted rows (no conflict). If the
+	// bundle is pure-DELETE, simple INSERT SELECT suffices (no surviving
+	// rows means no conflicts).
+	var updateStmts []*ast.UpdateStmt
+	for _, n := range nodes {
+		switch v := n.(type) {
+		case *ast.UpdateStmt:
+			updateStmts = append(updateStmts, v)
+		case *ast.DeleteStmt:
+			// DELETE doesn't contribute columns; tracked only by partition.
+		default:
+			return "", errors.Errorf("unexpected statement type: %T", n)
+		}
+	}
+
 	var result string
-	switch n := node.(type) {
-	case *ast.DeleteStmt:
-		result = generateDeleteRestore(sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
-	case *ast.UpdateStmt:
-		r, err := generateUpdateRestore(ctx, rCtx, n, sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
+	if len(updateStmts) > 0 {
+		r, err := generateUpdateRestore(ctx, rCtx, updateStmts, sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
 		if err != nil {
 			return "", err
 		}
 		result = r
-	default:
-		return "", errors.Errorf("unexpected statement type: %T", node)
+	} else {
+		result = generateDeleteRestore(sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
 	}
 
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, result), nil
@@ -108,21 +140,35 @@ func generateDeleteRestore(originalDatabase, originalTable, backupDatabase, back
 	return fmt.Sprintf("INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s`;", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable)
 }
 
-func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmt *ast.UpdateStmt, originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) (string, error) {
-	// Extract single tables from the UPDATE table references.
-	singleTables := extractSingleTablesFromTableExprs(originalDatabase, stmt.Tables)
-
-	// Find the table matching the original table.
-	var matchedTable *TableReference
-	for _, table := range singleTables {
-		if strings.EqualFold(table.Table, originalTable) {
-			matchedTable = table
-			break
+func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts []*ast.UpdateStmt, originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) (string, error) {
+	// Union update columns across ALL stmts in the bundle. backup.go's
+	// single-table path bundles >maxMixedDMLCount same-table DMLs into one
+	// backup_item; restore must rollback every column touched across the
+	// whole bundle, not just the first stmt's columns. Per Codex P1 catch
+	// on PR #20345.
+	//
+	// Iteration order is preserved (first-seen-first) for deterministic
+	// ODKU clause output; case-insensitive dedup matches the
+	// hasDisjointUniqueKey lower-case map convention.
+	seen := make(map[string]bool)
+	var updateColumns []string
+	for _, stmt := range stmts {
+		singleTables := extractSingleTablesFromTableExprs(originalDatabase, stmt.Tables)
+		var matchedTable *TableReference
+		for _, table := range singleTables {
+			if strings.EqualFold(table.Table, originalTable) {
+				matchedTable = table
+				break
+			}
+		}
+		for _, col := range extractUpdateColumns(stmt.SetList, originalDatabase, originalTable, matchedTable, normalColumns) {
+			key := strings.ToLower(col)
+			if !seen[key] {
+				seen[key] = true
+				updateColumns = append(updateColumns, col)
+			}
 		}
 	}
-
-	// Extract update column names that belong to the original table.
-	updateColumns := extractUpdateColumns(stmt.SetList, originalDatabase, originalTable, matchedTable, normalColumns)
 
 	has, err := hasDisjointUniqueKey(ctx, rCtx, originalDatabase, originalTable, updateColumns)
 	if err != nil {

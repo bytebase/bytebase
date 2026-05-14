@@ -139,3 +139,25 @@
     UPDATE test SET a = 1 WHERE c = 1;
     */
     INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+- input: |-
+    UPDATE test SET a = 1 WHERE c = 1;
+    UPDATE test SET b = 2 WHERE c = 2;
+    UPDATE test SET a = 3 WHERE c = 3;
+    UPDATE test SET b = 4 WHERE c = 4;
+    UPDATE test SET a = 5 WHERE c = 5;
+    UPDATE test SET b = 6 WHERE c = 6;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET a = 1 WHERE c = 1;
+    UPDATE test SET b = 2 WHERE c = 2;
+    UPDATE test SET a = 3 WHERE c = 3;
+    UPDATE test SET b = 4 WHERE c = 4;
+    UPDATE test SET a = 5 WHERE c = 5;
+    UPDATE test SET b = 6 WHERE c = 6;
+    */
+    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`), `b` = VALUES(`b`);
