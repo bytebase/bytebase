@@ -71,7 +71,26 @@ func parseTiDBStatementsOmni(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		// Omni rejected — Option B fallback to pingcap.
+		// Omni rejected — try Option B fallback to pingcap.
+		ast, fallbackErr := parsePingCapSingleStatement(stmt)
+		if fallbackErr != nil {
+			// Both engines reject. Don't increment the fallback counter —
+			// this is genuine bad SQL, not an omni grammar gap. Inflating
+			// the counter (especially the "unknown" bucket) on bad-SQL
+			// inputs would skew the Option B → A retirement-gate signal:
+			// after omni grammar is complete, malformed customer SQL
+			// would keep the counter non-zero and the gate would never
+			// fire. Surface omni's error so customer-facing expectations
+			// track the eventual Option A state (Q2 design choice — see
+			// plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0
+			// invariant #8 + dispatcher_test.go regression pin).
+			return nil, convertOmniParseError(omniErr, stmt)
+		}
+
+		// Fallback succeeded — record the omni gap that pingcap bridged.
+		// Counter measures "omni rejected AND pingcap accepted" — the
+		// cases that genuinely justify Option B and drive the retirement
+		// decision.
 		reason := classifyOmniParseError(omniErr, stmt.Text)
 		tidbDispatcherOmniFallbackTotal.WithLabelValues(reason).Inc()
 		// Escalate "unknown" reason to Warn so ops sees the log line in
@@ -91,14 +110,6 @@ func parseTiDBStatementsOmni(statement string) ([]base.ParsedStatement, error) {
 			slog.String("error", omniErr.Error()),
 		)
 
-		ast, fallbackErr := parsePingCapSingleStatement(stmt)
-		if fallbackErr != nil {
-			// Both engines reject. Surface omni's error so customer-facing
-			// expectations track the eventual Option A state (Q2 design
-			// choice — see plans/2026-04-23-omni-tidb-completion-plan.md
-			// §1.5.0 invariant #8 + dispatcher_test.go regression pin).
-			return nil, convertOmniParseError(omniErr, stmt)
-		}
 		ps := base.ParsedStatement{Statement: stmt}
 		if ast != nil {
 			ps.AST = ast

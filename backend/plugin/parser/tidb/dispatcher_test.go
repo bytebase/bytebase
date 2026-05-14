@@ -76,11 +76,20 @@ func TestParseTiDBStatementsOmni_OptionBFallback(t *testing.T) {
 // surfaces omni's error, not pingcap's. This sets customer-facing
 // expectations matching the eventual Option A state — when the fallback
 // retires, the same input will still surface the same omni error.
+//
+// Also pins the "no counter inflation on both-reject" contract: malformed
+// SQL must NOT increment tidb_dispatcher_omni_fallback_total. Inflating
+// the counter (especially the "unknown" bucket) on bad-SQL inputs would
+// skew the Option B → A retirement-gate signal — after omni grammar is
+// complete, customer-side garbage SQL would keep the counter non-zero
+// and the gate would never fire. Per Codex round on PR #20340.
 func TestParseTiDBStatementsOmni_BothEnginesReject(t *testing.T) {
 	// SELECT FROM WHERE is genuine syntax garbage — both omni and pingcap
 	// reject it. Verified by the metrics_test parse-test (returns
 	// "unknown" classifier label).
 	const input = "SELECT FROM WHERE;"
+
+	beforeUnknown := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("unknown"))
 
 	_, err := parseTiDBStatementsOmni(input)
 	require.Error(t, err,
@@ -94,6 +103,11 @@ func TestParseTiDBStatementsOmni_BothEnginesReject(t *testing.T) {
 	require.True(t, ok, "error must be base.SyntaxError after conversion; got %T", err)
 	require.Contains(t, syntaxErr.RawMessage, "syntax error",
 		"raw message must come from omni's parser, preserving the eventual Option A surface")
+
+	// Counter contract: both-reject MUST NOT increment any reason bucket.
+	afterUnknown := testutil.ToFloat64(tidbDispatcherOmniFallbackTotal.WithLabelValues("unknown"))
+	require.Equal(t, beforeUnknown, afterUnknown,
+		"both-engines-reject must NOT inflate the fallback counter (retirement-gate signal stays clean)")
 }
 
 // TestParseTiDBStatementsOmni_AllAccepted pins the happy path: when omni
