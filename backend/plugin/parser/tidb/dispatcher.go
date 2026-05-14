@@ -74,7 +74,18 @@ func parseTiDBStatementsOmni(statement string) ([]base.ParsedStatement, error) {
 		// Omni rejected — Option B fallback to pingcap.
 		reason := classifyOmniParseError(omniErr, stmt.Text)
 		tidbDispatcherOmniFallbackTotal.WithLabelValues(reason).Inc()
-		slog.Debug("tidb dispatcher: omni parse failed; falling back to pingcap",
+		// Escalate "unknown" reason to Warn so ops sees the log line in
+		// production aggregation (which typically drops Debug). Without
+		// escalation the counter increments but the input excerpt + error
+		// string needed to add a new classifier pattern — and to drive
+		// the eventual Option B → A retirement gate to zero unknowns —
+		// stays invisible. Known reasons (flashback / sequence / batch_dml)
+		// stay at Debug: high-frequency, expected, counter-tracked.
+		logFn := slog.Debug
+		if reason == "unknown" {
+			logFn = slog.Warn
+		}
+		logFn("tidb dispatcher: omni parse failed; falling back to pingcap",
 			slog.String("reason", reason),
 			slog.String("excerpt", excerptForDebug(stmt.Text, 80)),
 			slog.String("error", omniErr.Error()),
