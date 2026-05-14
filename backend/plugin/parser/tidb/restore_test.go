@@ -148,6 +148,62 @@ func TestGenerateRestoreSQLCaseInsensitiveDatabaseQualifier(t *testing.T) {
 		"generated rollback should target the lowercase database name from the backup item")
 }
 
+// TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
+// of backupItem.EndPosition: it is the EXCLUSIVE end (per
+// base/statement.go:16-18, "points to the position AFTER the last
+// character of the statement"). extractStatement's slice MUST exclude
+// stmts whose Start position equals EndPosition — those belong to the
+// NEXT backup item. Per Codex P1 catch on PR #20345.
+//
+// Why this matters now: pre-Fix-1 (multi-DML union), findFirstDML
+// returned only the first DML, so even when extractStatement bled into
+// the next stmt, only the first stmt's columns reached the rollback SQL.
+// Post-Fix-1, findMatchingDMLs returns ALL matching DMLs from the
+// extraction — so the boundary bleed now contributes columns from the
+// NEXT backup item to the union, producing wrong rollback SQL (extra
+// ODKU columns OR false "no disjoint unique key" errors).
+//
+// Construct: 2 same-table UPDATEs in one input. Use SplitSQL to get the
+// actual position where stmt[0] ends; set backupItem.EndPosition to
+// exactly that (mixed-DML mode where each backup item maps to ONE
+// stmt). Assert the rollback ODKU mentions ONLY stmt[0]'s column (`a`)
+// — not stmt[1]'s column (`b`).
+func TestGenerateRestoreSQLEndPositionExclusive(t *testing.T) {
+	const input = "UPDATE test SET a = 1 WHERE c = 1;\nUPDATE test SET b = 2 WHERE c = 2;"
+
+	// Get actual stmt boundaries from the splitter.
+	stmts, err := SplitSQL(input)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(stmts), 2, "splitter must produce at least 2 stmts")
+	require.NotNil(t, stmts[0].End, "stmt[0].End must be set by splitter")
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "test",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_test",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		// Mixed-DML mode: this backup item covers ONLY stmt[0]. Setting
+		// EndPosition to stmt[0].End (exclusive) MUST exclude stmt[1].
+		EndPosition: stmts[0].End,
+	})
+
+	require.NoError(t, err)
+	require.Contains(t, result, "`a` = VALUES(`a`)",
+		"ODKU must contain stmt[0]'s column `a`")
+	require.NotContains(t, result, "`b` = VALUES(`b`)",
+		"ODKU must NOT contain stmt[1]'s column `b` — that stmt belongs to the NEXT backup item; including it would generate rollback for the wrong scope")
+}
+
 // TestGenerateRestoreSQLNoDisjointUniqueKey pins the negative path that the
 // yaml golden tests cannot cover (their format is success-only — no
 // WantError field). Rolling back an UPDATE requires at least one unique

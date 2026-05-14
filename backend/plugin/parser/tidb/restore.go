@@ -344,8 +344,17 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 	}
 
 	for i := len(list) - 1; i >= 0; i-- {
+		// EndPosition is the EXCLUSIVE end of the range (per
+		// base/statement.go:16-18, "points to the position AFTER the last
+		// character of the statement"). A stmt whose Start is AT or AFTER
+		// EndPosition belongs to the NEXT backup item, not this one — so
+		// it must be EXCLUDED from this slice. Pre-fix used `end = i`
+		// which included the boundary stmt; in mixed-DML mode (each
+		// backup item maps to one stmt), that bled the next backup
+		// item's stmt into this one's rollback. Per Codex P1 catch on
+		// PR #20345.
 		if equalOrGreater(list[i].Start, backupItem.EndPosition) {
-			end = i
+			end = i - 1
 		}
 	}
 
