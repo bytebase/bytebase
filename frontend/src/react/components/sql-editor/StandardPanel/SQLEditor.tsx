@@ -1,4 +1,4 @@
-import type { IDisposable, IRange } from "monaco-editor";
+import type { IRange } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v1 as uuidv1 } from "uuid";
@@ -279,32 +279,27 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   });
 
   // ----- ExplainQuery action (engine-conditional) -----
-  const explainActionRef = useRef<IDisposable | null>(null);
+  // Depend on state-backed `monacoState`/`editorState` (not refs) so the
+  // effect re-runs after `handleReady` publishes them. Refs alone don't
+  // trigger re-renders, which previously left this action unregistered.
   useEffect(() => {
-    const editor = editorRef.current;
-    const m = monacoRef.current;
-    if (!editor || !m || engine === undefined) return;
-    explainActionRef.current?.dispose();
-    explainActionRef.current = null;
-
+    if (!editorState || !monacoState || engine === undefined) return;
     const allows =
       instanceV1AllowsExplain(engine) || engine === Engine.BIGQUERY;
     if (!allows) return;
     const isBigQuery = engine === Engine.BIGQUERY;
-    const action = editor.addAction({
+    const action = editorState.addAction({
       id: "ExplainQuery",
       label: isBigQuery ? "Dry Run Query" : "Explain Query",
-      keybindings: [m.KeyMod.CtrlCmd | m.KeyCode.KeyE],
+      keybindings: [monacoState.KeyMod.CtrlCmd | monacoState.KeyCode.KeyE],
       contextMenuGroupId: "operation",
       contextMenuOrder: 0,
       run: () => runQueryAction({ explain: true, newTab: false }),
     });
-    explainActionRef.current = action;
     return () => {
       action.dispose();
-      explainActionRef.current = null;
     };
-  }, [engine, runQueryAction]);
+  }, [engine, runQueryAction, editorState, monacoState]);
 
   // ----- pendingInsertAtCaret -----
   const pendingInsertAtCaret = useVueState(

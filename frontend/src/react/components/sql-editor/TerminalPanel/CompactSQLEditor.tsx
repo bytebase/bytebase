@@ -1,7 +1,7 @@
 import { debounce } from "lodash-es";
 import type { IDisposable } from "monaco-editor";
 import * as monaco from "monaco-editor";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonacoEditor } from "@/react/components/monaco/MonacoEditor";
 import type {
   IStandaloneCodeEditor,
@@ -129,10 +129,16 @@ export function CompactSQLEditor({
   }, [language]);
 
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
+  // State mirror of `editorRef` so engine-conditional effects (Explain)
+  // re-run after Monaco is ready. Refs alone wouldn't trigger that.
+  const [editorState, setEditorState] = useState<IStandaloneCodeEditor | null>(
+    null
+  );
 
   const handleReady = useCallback(
     (_: MonacoModule, editor: IStandaloneCodeEditor) => {
       editorRef.current = editor;
+      setEditorState(editor);
 
       const execute = (explain = false) => {
         const c = connectionRef.current;
@@ -256,13 +262,12 @@ export function CompactSQLEditor({
   }, [readonly]);
 
   // Engine-conditional Explain Query / Dry Run Query action. Re-registers
-  // when the engine flips so the label and visibility track.
-  const explainActionRef = useRef<IDisposable | null>(null);
+  // when the engine flips so the label and visibility track. Depends on
+  // `editorState` (not the ref) so the effect re-runs when Monaco
+  // publishes the editor instance via `handleReady`.
   useEffect(() => {
-    const editor = editorRef.current;
+    const editor = editorState;
     if (!editor || engine === undefined) return;
-    explainActionRef.current?.dispose();
-    explainActionRef.current = null;
 
     const allows =
       instanceV1AllowsExplain(engine) || engine === Engine.BIGQUERY;
@@ -289,11 +294,10 @@ export function CompactSQLEditor({
         });
       },
     });
-    explainActionRef.current = action;
     return () => {
       action.dispose();
     };
-  }, [engine]);
+  }, [engine, editorState]);
 
   // Format-content event from useSQLEditorContext (Vue `editorEvents`).
   useEffect(() => {
