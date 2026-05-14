@@ -331,8 +331,42 @@ func hasDisjointUniqueKey(ctx context.Context, rCtx base.RestoreContext, origina
 		return false, errors.Errorf("table metadata is nil for %s.%s", originalDatabase, originalTable)
 	}
 
-	for _, index := range tableMetadata.GetProto().Indexes {
+	tableProto := tableMetadata.GetProto()
+
+	// Build a fast lookup of regular (non-generated) column names. Used
+	// to filter out unique keys whose Expressions reference generated
+	// columns or non-column expressions (functional indexes) — those are
+	// unsafe for ODKU rollback because string-comparison disjoint can't
+	// tell whether the SET clause indirectly affects them. Per peer
+	// review on PR #20345 (Finding 4).
+	regularColumns := make(map[string]bool)
+	for _, col := range tableProto.Columns {
+		if col == nil || col.Generation != nil {
+			continue
+		}
+		regularColumns[strings.ToLower(col.Name)] = true
+	}
+
+	for _, index := range tableProto.Indexes {
 		if !index.Primary && !index.Unique {
+			continue
+		}
+		// Skip UKs whose Expressions reference anything other than
+		// regular (non-generated) columns. A UK on a generated column
+		// (e.g., `c_generated = a + b`) appears disjoint from SET cols
+		// {a, b} via string comparison — but updating a or b changes
+		// c_generated's value, so the UK is NOT safe for ODKU matching.
+		// Same problem for functional indexes (Expressions = `(LOWER(email))`).
+		// Conservative: treat any UK with non-regular-column expressions
+		// as overlapping (skip). Never returns false-positive disjoint.
+		safe := true
+		for _, expr := range index.Expressions {
+			if !regularColumns[strings.ToLower(expr)] {
+				safe = false
+				break
+			}
+		}
+		if !safe {
 			continue
 		}
 		if disjoint(index.Expressions, columnMap) {

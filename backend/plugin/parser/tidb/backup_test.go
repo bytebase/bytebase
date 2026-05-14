@@ -115,6 +115,19 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 								"a",
 							},
 						},
+						// Unique key on a generated column (c_generated = a + b).
+						// Used by TestGenerateRestoreSQLGeneratedColumnUKSkipped to
+						// pin that hasDisjointUniqueKey skips UKs whose
+						// expressions reference generated columns. Pre-fix this
+						// UK would false-positive as disjoint via naive string
+						// comparison; post-fix it's correctly skipped.
+						{
+							Name:   "uk_c_generated",
+							Unique: true,
+							Expressions: []string{
+								"c_generated",
+							},
+						},
 					},
 				},
 				{

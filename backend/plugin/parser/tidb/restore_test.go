@@ -293,6 +293,55 @@ func TestGenerateRestoreSQLJoinedNotMutated(t *testing.T) {
 		"expected no-DML error since test is only joined, not mutated")
 }
 
+// TestGenerateRestoreSQLGeneratedColumnUKSkipped pins that
+// hasDisjointUniqueKey skips unique keys whose Expressions reference
+// generated columns (or non-column expressions like functional indexes).
+// Per peer review on PR #20345 (Finding 4).
+//
+// Pre-fix bug: disjoint() did naive string comparison between
+// index.Expressions and the SET-columns map. For a UK on c_generated
+// (where c_generated = a + b), updating columns {a, b} appeared
+// "disjoint" from the UK's Expressions ["c_generated"] — string `c_generated`
+// is not in {a, b}. But updating a or b CHANGES c_generated's value,
+// so the UK is NOT safe for ON DUPLICATE KEY UPDATE matching: pre-fix
+// would generate rollback SQL that silently fails to match rows.
+//
+// Post-fix: hasDisjointUniqueKey filters out UKs whose Expressions
+// don't all map to regular (non-generated) columns. For this input,
+// PK on b and UK on a both overlap with SET {a, b}; the UK on
+// c_generated is skipped (generated). No disjoint UK remains, so
+// the function returns the "no disjoint unique key found" error
+// instead of generating unsafe rollback SQL.
+//
+// Mock setup: t_generated has PK on b, UK on a, AND a new UK on
+// c_generated (added in backup_test.go for this test).
+func TestGenerateRestoreSQLGeneratedColumnUKSkipped(t *testing.T) {
+	const input = "UPDATE t_generated SET a = 1, b = 2 WHERE c_generated = 3;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+	_, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+		IsCaseSensitive:         false,
+	}, input, &store.PriorBackupDetail_Item{
+		SourceTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/db",
+			Table:    "t_generated",
+		},
+		TargetTable: &store.PriorBackupDetail_Item_Table{
+			Database: "instances/i1/databases/bbarchive",
+			Table:    "prefix_1_t_generated",
+		},
+		StartPosition: &store.Position{Line: 0, Column: 0},
+		EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+	})
+
+	require.Error(t, err,
+		"UPDATE that overlaps every regular UK must surface a no-disjoint-key error — the c_generated UK is not safe (its value depends on the SET'd columns)")
+	require.Contains(t, err.Error(), "no disjoint unique key found",
+		"error must come from hasDisjointUniqueKey, not a different failure mode")
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last
