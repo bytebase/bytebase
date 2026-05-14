@@ -148,6 +148,58 @@ func TestGenerateRestoreSQLCaseInsensitiveDatabaseQualifier(t *testing.T) {
 		"generated rollback should target the lowercase database name from the backup item")
 }
 
+// TestGenerateRestoreSQLSelfJoinUpdate pins deterministic alias resolution
+// for self-join UPDATEs. Per Codex P1 catch on PR #20345.
+//
+// Pre-fix bug: extractSingleTablesFromTableExprs returns
+// map[alias]*TableReference; the loop in generateUpdateRestore picked
+// matchedTable by ranging over that map (Go map iteration is randomized).
+// For a self-join `UPDATE test t1 JOIN test t2 ...`, both t1 and t2
+// satisfy the `table.Table == originalTable` check, so either could be
+// picked. If t2 was picked but the SET clause only references t1, then
+// extractUpdateColumns returned EMPTY (col.Table="t1" doesn't match
+// matchedTable.Alias="t2", and col.Table doesn't equal-fold matchedTable.
+// Table="test" either). Empty updateColumns produces invalid rollback
+// SQL: `... ON DUPLICATE KEY UPDATE ;` (semicolon directly after UPDATE).
+//
+// Fix: extractUpdateColumns now takes the full singleTables map; for
+// each qualified SET column it looks up the qualifier directly to
+// determine whether the qualifier resolves to the original table —
+// no need to pre-pick a single matchedTable.
+//
+// We loop the test 50 times to expose the nondeterminism if the fix
+// regresses; one iteration is sufficient post-fix (deterministic).
+func TestGenerateRestoreSQLSelfJoinUpdate(t *testing.T) {
+	const input = "UPDATE test t1 JOIN test t2 ON t1.c = t2.c SET t1.a = 1 WHERE t1.c = 1;"
+
+	getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
+
+	for i := 0; i < 50; i++ {
+		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IsCaseSensitive:         false,
+		}, input, &store.PriorBackupDetail_Item{
+			SourceTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/db",
+				Table:    "test",
+			},
+			TargetTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/bbarchive",
+				Table:    "prefix_1_test",
+			},
+			StartPosition: &store.Position{Line: 0, Column: 0},
+			EndPosition:   &store.Position{Line: math.MaxInt32, Column: 0},
+		})
+
+		require.NoError(t, err, "iteration %d: GenerateRestoreSQL must succeed for self-join UPDATE", i)
+		require.Contains(t, result, "`a` = VALUES(`a`)",
+			"iteration %d: ODKU must mention `a` (from SET t1.a = 1); empty ODKU produces invalid SQL", i)
+		require.NotContains(t, result, "ON DUPLICATE KEY UPDATE ;",
+			"iteration %d: ODKU clause must not be empty (would be invalid TiDB SQL)", i)
+	}
+}
+
 // TestGenerateRestoreSQLEndPositionExclusive pins the boundary semantic
 // of backupItem.EndPosition: it is the EXCLUSIVE end (per
 // base/statement.go:16-18, "points to the position AFTER the last

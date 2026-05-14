@@ -154,14 +154,7 @@ func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts 
 	var updateColumns []string
 	for _, stmt := range stmts {
 		singleTables := extractSingleTablesFromTableExprs(originalDatabase, stmt.Tables)
-		var matchedTable *TableReference
-		for _, table := range singleTables {
-			if strings.EqualFold(table.Table, originalTable) {
-				matchedTable = table
-				break
-			}
-		}
-		for _, col := range extractUpdateColumns(stmt.SetList, originalDatabase, originalTable, matchedTable, normalColumns) {
+		for _, col := range extractUpdateColumns(stmt.SetList, originalDatabase, originalTable, singleTables, normalColumns) {
 			key := strings.ToLower(col)
 			if !seen[key] {
 				seen[key] = true
@@ -244,9 +237,23 @@ func collectTableRefs(databaseName string, expr ast.TableExpr, result map[string
 	}
 }
 
-// extractUpdateColumns extracts column names from SET assignments that belong
-// to the original table.
-func extractUpdateColumns(setList []*ast.Assignment, database, _ string, matchedTable *TableReference, normalColumns []string) []string {
+// extractUpdateColumns extracts column names from SET assignments that
+// belong to the original table.
+//
+// For qualified SET columns (`SET t1.a = ...`), the qualifier is looked
+// up in singleTables (the alias-or-name → TableReference map for this
+// stmt) — if the qualifier resolves to a TableReference whose .Table
+// equals originalTable, the column is included. This is deterministic
+// even for self-join UPDATEs where the same physical table appears
+// under multiple aliases (e.g., `UPDATE test t1 JOIN test t2 SET t1.a
+// = ...`); each SET clause's qualifier independently resolves to the
+// correct alias entry. Per Codex P1 catch on PR #20345.
+//
+// Pre-fix this function took a single matchedTable picked by the caller
+// via map iteration over singleTables. Map iteration is randomized in
+// Go, so for self-joins the wrong alias could be picked, leading to
+// empty result and invalid `... ON DUPLICATE KEY UPDATE ;` rollback SQL.
+func extractUpdateColumns(setList []*ast.Assignment, database, originalTable string, singleTables map[string]*TableReference, normalColumns []string) []string {
 	var result []string
 	for _, assignment := range setList {
 		col := assignment.Column
@@ -269,7 +276,14 @@ func extractUpdateColumns(setList []*ast.Assignment, database, _ string, matched
 			continue
 		}
 
-		if matchedTable != nil && (col.Table == matchedTable.Alias || strings.EqualFold(col.Table, matchedTable.Table)) {
+		// Qualified column: resolve the qualifier through the alias map
+		// (handles self-joins deterministically).
+		if entry, ok := singleTables[col.Table]; ok && strings.EqualFold(entry.Table, originalTable) {
+			result = append(result, col.Column)
+			continue
+		}
+		// Fallback: qualifier IS the bare table name (no alias used).
+		if strings.EqualFold(col.Table, originalTable) {
 			result = append(result, col.Column)
 		}
 	}
