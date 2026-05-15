@@ -6,6 +6,7 @@ export function usePhaseState() {
   const activePhases = usePlanDetailStore((s) => s.activePhases);
   const togglePhase = usePlanDetailStore((s) => s.togglePhase);
   const expandPhase = usePlanDetailStore((s) => s.expandPhase);
+  const focusPhase = usePlanDetailStore((s) => s.focusPhase);
   const collapsePhase = usePlanDetailStore((s) => s.collapsePhase);
 
   const isActive = useCallback(
@@ -13,5 +14,12 @@ export function usePhaseState() {
     [activePhases]
   );
 
-  return { activePhases, isActive, togglePhase, expandPhase, collapsePhase };
+  return {
+    activePhases,
+    isActive,
+    togglePhase,
+    expandPhase,
+    focusPhase,
+    collapsePhase,
+  };
 }

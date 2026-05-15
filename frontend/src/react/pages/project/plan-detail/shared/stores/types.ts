@@ -26,6 +26,7 @@ export type PhaseSlice = {
   activePhases: Set<PlanDetailPhase>;
   togglePhase: (phase: PlanDetailPhase) => void;
   expandPhase: (phase: PlanDetailPhase) => void;
+  focusPhase: (phase: PlanDetailPhase) => void;
   collapsePhase: (phase: PlanDetailPhase) => void;
 };
 

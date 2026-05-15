@@ -23,6 +23,13 @@ export const createPhaseSlice: PlanDetailSliceCreator<PhaseSlice> = (set) => ({
       next.add(phase);
       return { activePhases: next };
     }),
+  focusPhase: (phase) =>
+    set((state) => {
+      if (state.activePhases.size === 1 && state.activePhases.has(phase)) {
+        return state;
+      }
+      return { activePhases: new Set([phase]) };
+    }),
   collapsePhase: (phase) =>
     set((state) => {
       if (!state.activePhases.has(phase)) return state;
