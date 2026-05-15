@@ -1002,7 +1002,7 @@ function DatabaseSelector({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-control-light">
-                <th className="py-2 pr-2 w-8">
+                <th className="py-2 pl-3 pr-2 w-10">
                   <Checkbox
                     checked={someSelected ? "indeterminate" : allSelected}
                     onCheckedChange={toggleAll}
@@ -1037,7 +1037,7 @@ function DatabaseSelector({
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 pr-2">
+                    <td className="py-2 pl-3 pr-2">
                       <Checkbox checked={isSelected} />
                     </td>
                     <td className="py-2 pr-4">
