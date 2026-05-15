@@ -330,7 +330,7 @@ export function DeployTaskItem({
                       : undefined
                   }
                   executorEmail={executorEmail}
-                  status={task.status}
+                  status={latestTaskRun.status}
                   taskRunName={latestTaskRun.name}
                   updateTime={latestTaskRun.updateTime}
                 />

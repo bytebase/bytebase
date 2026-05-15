@@ -50,14 +50,14 @@ export function PlanDetailTaskRunDetail({
       )}
       <TabsPanel value="logs">
         <TaskRunLogViewer
-          key={`logs-${taskRun.name}-${detailKey}`}
+          key={`logs-${taskRun.name}-${taskRun.status}-${detailKey}`}
           taskRunName={taskRun.name}
         />
       </TabsPanel>
       {showSessionTab && (
         <TabsPanel value="session">
           <PlanDetailTaskRunSession
-            key={`session-${taskRun.name}-${detailKey}`}
+            key={`session-${taskRun.name}-${taskRun.status}-${detailKey}`}
             taskRun={taskRun}
           />
         </TabsPanel>

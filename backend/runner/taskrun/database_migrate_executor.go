@@ -76,7 +76,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 	}
 
 	// Ensure baseline changelog exists before running any migration
-	if err := exec.ensureBaselineChangelog(ctx, database, instance); err != nil {
+	if err := exec.ensureBaselineChangelog(ctx, database, instance, taskRunUID); err != nil {
 		return nil, errors.Wrap(err, "failed to ensure baseline changelog")
 	}
 
@@ -127,7 +127,7 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 }
 
 // ensureBaselineChangelog creates a baseline changelog if this is the first migration for the database.
-func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, _ *store.InstanceMessage) error {
+func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context, database *store.DatabaseMessage, _ *store.InstanceMessage, taskRunUID int64) error {
 	// Check if this database has any existing changelogs
 	existingChangelogs, err := exec.store.ListChangelogs(ctx, &store.FindChangelogMessage{
 		InstanceID:   database.InstanceID,
@@ -140,10 +140,25 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 
 	// If no changelogs exist, create a baseline with the current schema
 	if len(existingChangelogs) == 0 {
+		exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+			Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
+			DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
+		})
+
 		baselineSyncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 		if err != nil {
+			exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+				Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+				DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+					Error: err.Error(),
+				},
+			})
 			return errors.Wrapf(err, "failed to sync database schema for baseline")
 		}
+		exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+			Type:            storepb.TaskRunLog_DATABASE_SYNC_END,
+			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{},
+		})
 
 		_, err = exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 			InstanceID:   database.InstanceID,

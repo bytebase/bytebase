@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { getDateForPbTimestampProtoEs } from "@/types";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { formatAbsoluteDateTime, humanizeDate } from "@/utils";
 
 export function DeployLatestTaskRunInfo({
@@ -23,47 +23,47 @@ export function DeployLatestTaskRunInfo({
 }: {
   duration?: string;
   executorEmail?: string;
-  status: Task_Status;
+  status: TaskRun_Status;
   taskRunName?: string;
   updateTime?: Timestamp;
 }) {
   const { t } = useTranslation();
   const updateDate = getDateForPbTimestampProtoEs(updateTime);
   const statusConfig =
-    status === Task_Status.RUNNING
+    status === TaskRun_Status.RUNNING
       ? {
           className: "text-blue-600",
           icon: LoaderCircle,
           label: t("task.status.running"),
           spinning: true,
         }
-      : status === Task_Status.DONE
+      : status === TaskRun_Status.DONE
         ? {
             className: "text-green-600",
             icon: CheckCircle2,
             label: t("task.status.done"),
             spinning: false,
           }
-        : status === Task_Status.FAILED
+        : status === TaskRun_Status.FAILED
           ? {
               className: "text-red-600",
               icon: XCircle,
               label: t("task.status.failed"),
               spinning: false,
             }
-          : {
-              className: "text-gray-500",
-              icon: Circle,
-              label:
-                status === Task_Status.SKIPPED
-                  ? t("task.status.skipped")
-                  : status === Task_Status.CANCELED
-                    ? t("task.status.canceled")
-                    : status === Task_Status.PENDING
-                      ? t("task.status.pending")
-                      : t("task.status.not-started"),
-              spinning: false,
-            };
+          : status === TaskRun_Status.CANCELED
+            ? {
+                className: "text-gray-500",
+                icon: Circle,
+                label: t("task.status.canceled"),
+                spinning: false,
+              }
+            : {
+                className: "text-gray-500",
+                icon: Circle,
+                label: t("task.status.pending"),
+                spinning: false,
+              };
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -115,7 +115,12 @@ export function DeployLatestTaskRunInfo({
         )}
       </div>
 
-      {taskRunName && <TaskRunLogViewer taskRunName={taskRunName} />}
+      {taskRunName && (
+        <TaskRunLogViewer
+          key={`${taskRunName}-${status}`}
+          taskRunName={taskRunName}
+        />
+      )}
     </div>
   );
 }
