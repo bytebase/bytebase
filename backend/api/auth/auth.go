@@ -218,9 +218,12 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 	}
 
 	// Convert to UserMessage for context storage.
-	user, err := in.accountToUser(ctx, account)
+	user, err := in.store.ResolvePrincipalAsUser(ctx, account)
 	if err != nil {
 		return nil, nil, err
+	}
+	if user == nil {
+		return nil, nil, errs.Errorf("user %q not found", account.Email)
 	}
 
 	return user, claims, nil
@@ -266,29 +269,6 @@ func (in *APIAuthInterceptor) verifyWorkspaceMembership(ctx context.Context, wor
 	default:
 		return errs.Errorf("unknown principal type %v", account.Type)
 	}
-}
-
-// accountToUser converts an AccountMessage to a UserMessage for context storage.
-// For END_USER, loads the full user record. For SA/WI, constructs a minimal UserMessage.
-func (in *APIAuthInterceptor) accountToUser(ctx context.Context, account *store.AccountMessage) (*store.UserMessage, error) {
-	if account.Type == storepb.PrincipalType_END_USER {
-		user, err := in.store.GetUserByEmail(ctx, account.Email)
-		if err != nil {
-			return nil, errs.Errorf("failed to get user %q", account.Email)
-		}
-		if user == nil {
-			return nil, errs.Errorf("user %q not found", account.Email)
-		}
-		return user, nil
-	}
-
-	// SA/WI: construct a minimal UserMessage with the fields available from AccountMessage.
-	return &store.UserMessage{
-		Email:         account.Email,
-		Name:          account.Name,
-		Type:          account.Type,
-		MemberDeleted: account.MemberDeleted,
-	}, nil
 }
 
 // authenticateConnect is a ConnectRPC-specific version that returns ConnectRPC errors.

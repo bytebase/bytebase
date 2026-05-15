@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -75,5 +77,33 @@ func (s *Store) GetAccountByEmail(ctx context.Context, email string) (*AccountMe
 		Type:          storepb.PrincipalType_END_USER,
 		PasswordHash:  user.PasswordHash,
 		MemberDeleted: user.MemberDeleted,
+	}, nil
+}
+
+// ResolvePrincipalAsUser converts an AccountMessage into a *UserMessage suitable
+// for downstream code that expects the legacy single-table principal shape.
+//
+// For END_USER, it loads the full record from the principal table. For service
+// accounts and workload identities (which live in separate tables and have no
+// profile/MFA data), it returns a minimal UserMessage with Profile and MFAConfig
+// zero-initialized so downstream code dereferencing those fields does not panic.
+//
+// Returns (nil, nil) if account.Type == END_USER and no matching user exists.
+// Callers map this to their own not-found error.
+func (s *Store) ResolvePrincipalAsUser(ctx context.Context, account *AccountMessage) (*UserMessage, error) {
+	if account.Type == storepb.PrincipalType_END_USER {
+		user, err := s.GetUserByEmail(ctx, account.Email)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get user %q", account.Email)
+		}
+		return user, nil
+	}
+	return &UserMessage{
+		Email:         account.Email,
+		Name:          account.Name,
+		Type:          account.Type,
+		MemberDeleted: account.MemberDeleted,
+		Profile:       &storepb.UserProfile{},
+		MFAConfig:     &storepb.MFAConfig{},
 	}, nil
 }

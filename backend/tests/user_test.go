@@ -8,6 +8,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -351,4 +352,67 @@ func TestUpdateUserEmail(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Empty(oldEmailAuditLogs.Msg.AuditLogs, "Should not have audit logs with old email")
+}
+
+func TestGetCurrentUser_ServiceAccount(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// Create a dummy user to get the workspace reference.
+	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{
+			Title:    "dummy",
+			Email:    "dummy@bytebase.com",
+			Password: "1024bytebase",
+		},
+	}))
+	a.NoError(err)
+	workspace := userResp.Msg.Workspace
+
+	// Get actuator info using the workspace reference.
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{
+		Name: workspace,
+	}))
+	a.NoError(err)
+
+	// Create a service account.
+	saResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
+		Parent:           actuator.Msg.Workspace,
+		ServiceAccountId: "sa-test",
+		ServiceAccount: &v1pb.ServiceAccount{
+			Title: "SA Test",
+		},
+	}))
+	a.NoError(err)
+	sa := saResp.Msg
+
+	// Grant the service account workspace admin role.
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, actuator.Msg.Workspace, fmt.Sprintf("serviceAccount:%v", sa.Email), "roles/workspaceAdmin")
+	a.NoError(err)
+
+	// Login as the service account using its service_key as password.
+	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    sa.Email,
+		Password: sa.ServiceKey,
+	}))
+	a.NoError(err)
+
+	// Swap the controller token to the service account's token.
+	originalToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = loginResp.Msg.Token
+	defer func() {
+		ctl.authInterceptor.token = originalToken
+	}()
+
+	meResp, err := ctl.userServiceClient.GetCurrentUser(ctx, connect.NewRequest(&emptypb.Empty{}))
+
+	// Assertions per the task specification.
+	a.NoError(err)
+	a.NotNil(meResp.Msg)
+	a.Equal(sa.Email, meResp.Msg.Email)
+	a.NotNil(meResp.Msg.Profile)
 }

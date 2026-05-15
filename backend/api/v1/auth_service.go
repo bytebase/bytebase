@@ -541,7 +541,14 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	}
 
 	// Convert AccountMessage to UserMessage for downstream use.
-	return s.accountToUser(ctx, account)
+	user, err := s.store.ResolvePrincipalAsUser(ctx, account)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve principal %q", account.Email))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
+	}
+	return user, nil
 }
 
 // getOrCreateUserWithIDP authenticates a user via an identity provider (SSO).
@@ -1422,29 +1429,6 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{
 		AccessToken: token,
 	}), nil
-}
-
-// accountToUser converts an AccountMessage to a UserMessage.
-// For END_USER, loads the full user record. For SA/WI, constructs a minimal UserMessage.
-func (s *AuthService) accountToUser(ctx context.Context, account *store.AccountMessage) (*store.UserMessage, error) {
-	if account.Type == storepb.PrincipalType_END_USER {
-		user, err := s.store.GetUserByEmail(ctx, account.Email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user %q", account.Email))
-		}
-		if user == nil {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
-		}
-		return user, nil
-	}
-
-	// SA/WI: construct a minimal UserMessage with the fields available from AccountMessage.
-	return &store.UserMessage{
-		Email:         account.Email,
-		Name:          account.Name,
-		Type:          account.Type,
-		MemberDeleted: account.MemberDeleted,
-	}, nil
 }
 
 func getAccountRestriction(
