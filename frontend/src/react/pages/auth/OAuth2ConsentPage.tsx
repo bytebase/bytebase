@@ -1,8 +1,6 @@
-import { create } from "@bufbuild/protobuf";
 import { Building2, Check, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authServiceClientConnect } from "@/connect";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { Button } from "@/react/components/ui/button";
 import {
@@ -16,7 +14,6 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useActuatorV1Store, useAuthStore, useWorkspaceV1Store } from "@/store";
-import { SwitchWorkspaceRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -106,25 +103,20 @@ export function OAuth2ConsentPage() {
   }, [isSaaSMode, workspaceStore]);
 
   // Switch the active workspace in-place, preserving the consent flow.
-  // We call SwitchWorkspace directly (instead of the store's helper, which
-  // redirects to the landing page) and then reload the same URL so the
-  // session cookie carries the new workspace_id into the upcoming POST.
-  //
-  // The bb-workspace-switch BroadcastChannel notification mirrors what the
-  // store's helper does so that other open tabs full-reload to the landing
-  // page and pick up the new workspace, instead of operating in stale
-  // in-memory state against a session cookie that has already changed.
+  // Uses the workspace store's withoutRedirect variant so that
+  //   (a) the bb-workspace-switch channel notification is posted on the
+  //       store's own channel instance, so the store's onmessage listener
+  //       in *this* tab does NOT fire (BroadcastChannel excludes the
+  //       source object) — without this we'd race-redirect to the landing
+  //       page and lose the OAuth query params;
+  //   (b) other tabs still receive the broadcast and refresh as usual.
+  // We then reload the consent URL ourselves so the session cookie carries
+  // the new workspace_id into the upcoming POST /api/oauth2/authorize.
   const onSwitchWorkspace = async (workspaceName: string | null) => {
     if (!workspaceName || workspaceName === currentWorkspace?.name) return;
     setSubmitting(true);
     try {
-      await authServiceClientConnect.switchWorkspace(
-        create(SwitchWorkspaceRequestSchema, {
-          workspace: workspaceName,
-          web: true,
-        })
-      );
-      new BroadcastChannel("bb-workspace-switch").postMessage(workspaceName);
+      await workspaceStore.switchWorkspaceWithoutRedirect(workspaceName);
       globalThis.location.reload();
     } catch {
       setError(t("oauth2.consent.error-switch-failed"));

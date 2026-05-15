@@ -233,15 +233,24 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     workspaceList.value = resp.workspaces;
   };
 
-  const switchWorkspace = async (workspaceName: string) => {
+  // switchWorkspaceWithoutRedirect performs the server-side switch and
+  // notifies other tabs, but leaves navigation to the caller. Posting on the
+  // module-local `workspaceSwitchChannel` does NOT fire its own onmessage —
+  // the BroadcastChannel spec excludes the source object — so this tab is
+  // free to handle its own page lifecycle (e.g. preserving an OAuth consent
+  // URL via location.reload() instead of jumping to the landing page).
+  const switchWorkspaceWithoutRedirect = async (workspaceName: string) => {
     await authServiceClientConnect.switchWorkspace(
       create(SwitchWorkspaceRequestSchema, {
         workspace: workspaceName,
         web: true,
       })
     );
-    // Notify other tabs to reload with the new workspace.
     workspaceSwitchChannel.postMessage(workspaceName);
+  };
+
+  const switchWorkspace = async (workspaceName: string) => {
+    await switchWorkspaceWithoutRedirect(workspaceName);
     // Full-reload to the landing page to reset all frontend state.
     // Reloading the current URL would fail if the page is project-scoped
     // (the project likely doesn't exist in the target workspace).
@@ -263,5 +272,6 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     fetchCurrentWorkspace,
     fetchWorkspaceList,
     switchWorkspace,
+    switchWorkspaceWithoutRedirect,
   };
 });

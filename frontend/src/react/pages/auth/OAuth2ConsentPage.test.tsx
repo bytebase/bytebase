@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
   },
   workspaceList: { value: [] as { name: string; title: string }[] },
   fetchWorkspaceList: vi.fn(async () => {}),
-  switchWorkspace: vi.fn(async () => {}),
+  switchWorkspaceWithoutRedirect: vi.fn(async () => {}),
   routerReplace: vi.fn(),
   routerBack: vi.fn(),
   currentRoute: {
@@ -53,6 +53,7 @@ mocks.useWorkspaceV1Store.mockImplementation(() => ({
     return mocks.workspaceList.value;
   },
   fetchWorkspaceList: mocks.fetchWorkspaceList,
+  switchWorkspaceWithoutRedirect: mocks.switchWorkspaceWithoutRedirect,
 }));
 
 vi.mock("@/react/hooks/useVueState", () => ({
@@ -63,20 +64,6 @@ vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
   useActuatorV1Store: mocks.useActuatorV1Store,
   useWorkspaceV1Store: mocks.useWorkspaceV1Store,
-}));
-
-vi.mock("@/connect", () => ({
-  authServiceClientConnect: {
-    switchWorkspace: mocks.switchWorkspace,
-  },
-}));
-
-vi.mock("@bufbuild/protobuf", () => ({
-  create: (_schema: unknown, value: unknown) => value,
-}));
-
-vi.mock("@/types/proto-es/v1/auth_service_pb", () => ({
-  SwitchWorkspaceRequestSchema: {},
 }));
 
 // Test-only Select stub: Base UI's Select renders its popup through a portal,
@@ -356,11 +343,15 @@ describe("OAuth2ConsentPage", () => {
     });
     await flushPromises();
 
-    expect(mocks.switchWorkspace).toHaveBeenCalledTimes(1);
-    expect(mocks.switchWorkspace).toHaveBeenCalledWith({
-      workspace: "workspaces/ws-2",
-      web: true,
-    });
+    // Verifies the consent page calls the workspace store's
+    // *withoutRedirect* variant, which posts on the store's own channel —
+    // crucially, that variant does NOT fire the store's onmessage handler
+    // in this tab, so we don't race-redirect to the landing page and lose
+    // the OAuth query params.
+    expect(mocks.switchWorkspaceWithoutRedirect).toHaveBeenCalledTimes(1);
+    expect(mocks.switchWorkspaceWithoutRedirect).toHaveBeenCalledWith(
+      "workspaces/ws-2"
+    );
     expect(reload).toHaveBeenCalledTimes(1);
     unmount();
   });
@@ -396,7 +387,7 @@ describe("OAuth2ConsentPage", () => {
       select!.dispatchEvent(new Event("change", { bubbles: true }));
       await Promise.resolve();
     });
-    expect(mocks.switchWorkspace).not.toHaveBeenCalled();
+    expect(mocks.switchWorkspaceWithoutRedirect).not.toHaveBeenCalled();
     unmount();
   });
 
