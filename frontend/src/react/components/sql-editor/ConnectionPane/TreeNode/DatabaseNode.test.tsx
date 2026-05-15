@@ -25,7 +25,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: { MYSQL: "/icon/mysql.svg" },
 }));
 

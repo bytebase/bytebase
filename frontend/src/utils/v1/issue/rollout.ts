@@ -1,4 +1,3 @@
-import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import { t as translate } from "@/plugins/i18n";
 import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName, UNKNOWN_ID, unknownDatabase } from "@/types";
@@ -16,6 +15,7 @@ import {
   extractCoreDatabaseInfoFromDatabaseCreateTask,
   mockDatabase,
 } from "./issue";
+import { TASK_STATUS_FILTERS } from "./task";
 
 export const extractPlanUIDFromRolloutName = (name: string) => {
   const pattern = /(?:^|\/)plans\/([^/]+)\/rollout(?:$|\/)/;

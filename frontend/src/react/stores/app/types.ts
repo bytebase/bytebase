@@ -56,7 +56,9 @@ export type WorkspaceSlice = {
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceList: () => Promise<Workspace[]>;
   switchWorkspace: (workspaceName: string) => Promise<void>;
-  loadWorkspaceProfile: () => Promise<WorkspaceProfileSetting | undefined>;
+  loadWorkspaceProfile: (
+    force?: boolean
+  ) => Promise<WorkspaceProfileSetting | undefined>;
   loadEnvironmentList: (force?: boolean) => Promise<Environment[]>;
   refreshEnvironmentList: () => Promise<Environment[]>;
   loadSubscription: () => Promise<Subscription | undefined>;

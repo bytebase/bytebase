@@ -75,18 +75,6 @@ vi.mock("./AuthContext.vue", async () => {
   };
 });
 
-vi.mock("./components/misc/OverlayStackManager.vue", async () => {
-  const { defineComponent, h } = await import("vue");
-  return {
-    default: defineComponent({
-      name: "MockOverlayStackManager",
-      setup(_, { slots }) {
-        return () => h("div", slots.default?.());
-      },
-    }),
-  };
-});
-
 vi.mock("./customAppProfile", () => ({
   overrideAppProfile: mocks.overrideAppProfile,
 }));

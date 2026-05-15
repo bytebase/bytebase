@@ -136,7 +136,7 @@ vi.mock("@/router/dashboard/projectV1", () => ({
   PROJECT_V1_ROUTE_ISSUE_DETAIL: "issue-detail",
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: {},
 }));
 

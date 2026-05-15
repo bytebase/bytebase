@@ -327,6 +327,7 @@
     "members_one": "Member",
     "members_other": "Members",
     "minutes": "Minutes",
+    "missing-permission": "Missing required permissions",
     "missing-required-permission": "Missing required permissions {{permissions}}",
     "missing-required-permission-for-resource": "Missing required permissions for resource {{resource}}",
     "more": "More",
@@ -1143,7 +1144,7 @@
       "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
       "google-cloud-sql": {
         "instance-name": "Instance Connection Name",
-        "instance-name-tips": "The instance connection name should like {{instance}}.",
+        "instance-name-tips": "The instance connection name should look like {{instance}}.",
         "mysql": {
           "template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user with the needed privileges."
         },
@@ -1298,7 +1299,7 @@
   "instance.sentence.create-user-example.snowflake.template": "Below is an example to create user '{{user}}' with password {{password}} for {{warehouse}} and grant the user with the needed privileges.",
   "instance.sentence.firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
   "instance.sentence.google-cloud-sql.instance-name": "Instance Connection Name",
-  "instance.sentence.google-cloud-sql.instance-name-tips": "The instance connection name should like {{instance}}.",
+  "instance.sentence.google-cloud-sql.instance-name-tips": "The instance connection name should look like {{instance}}.",
   "instance.sentence.google-cloud-sql.mysql.template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@'%'. Grant this user with the needed privileges.",
   "instance.sentence.google-cloud-sql.postgresql.template": "Create a service account named {{user}}, then add it in your Google Cloud SQL as IAM user {{user}}@project-id.iam. Grant the user with the needed privileges.",
   "instance.sentence.host.none-snowflake": "e.g. host.docker.internal | host ip | local socket",

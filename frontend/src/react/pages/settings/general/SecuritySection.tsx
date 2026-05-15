@@ -19,6 +19,7 @@ import {
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
 import { usePlanFeature } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { SectionHandle } from "./useSettingSection";
@@ -165,6 +166,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
           }),
         });
       }
+
+      // Pinia and the React app store both cache the workspace profile.
+      // Pinia's computed updates automatically; the React store is a
+      // load-once cache, so we refresh it here so consumers like
+      // <Watermark /> and <BannersWrapper /> pick up the new values.
+      await useAppStore.getState().loadWorkspaceProfile(true);
     }, [state, domainInput, settingV1Store, getInitialState]);
 
     useImperativeHandle(ref, () => ({ isDirty, revert, update }));

@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getColumnDefaultValuePlaceholder } from "@/react/components/SchemaEditorLite/core/columnDefaultValue";
 import { Input } from "@/react/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/react/components/ui/select";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -353,6 +360,10 @@ export function DatabaseObjectExplorer({
     description: pkg.definition || "-",
   }));
 
+  const selectedSchemaLabel =
+    schemaList.find((schema) => schema.name === selectedSchemaName)?.name ||
+    (selectedSchemaName === "" ? t("db.schema.default") : selectedSchemaName);
+
   return (
     <div className="flex flex-col gap-6 pt-6">
       {supportsSchema && (
@@ -363,21 +374,24 @@ export function DatabaseObjectExplorer({
           >
             {t("common.schema")}
           </label>
-          <select
-            id="schema-select"
-            className="min-w-48 rounded-xs border border-control-border bg-background px-3 py-2 text-sm text-main"
+          <Select
             disabled={loading}
             value={selectedSchemaName}
-            onChange={(event) =>
-              onSelectedSchemaNameChange(event.target.value.trim())
+            onValueChange={(value) =>
+              onSelectedSchemaNameChange(String(value).trim())
             }
           >
-            {schemaList.map((schema) => (
-              <option key={schema.name} value={schema.name}>
-                {schema.name || t("db.schema.default")}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="schema-select" className="min-w-48">
+              <SelectValue>{selectedSchemaLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {schemaList.map((schema) => (
+                <SelectItem key={schema.name} value={schema.name}>
+                  {schema.name || t("db.schema.default")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 

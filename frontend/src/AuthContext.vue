@@ -4,9 +4,15 @@
     <BBSpin />
   </div>
   <template v-if="!isAuthRoute && authStore.isLoggedIn">
-    <!-- Do not show the modal when the user is in auth related pages. -->
-    <SessionExpiredSurfaceMount v-if="authStore.unauthenticatedOccurred" />
-    <ReactPageMount v-else page="InactiveRemindModal" />
+    <!-- Session-expired surface lives in the React app
+         (src/react/app/SessionExpiredSurfaceGate.tsx).
+         InactiveRemindModal stays mounted here because it reads Vue router
+         state via the bridged provide/inject context, which the sibling
+         React app doesn't carry. -->
+    <ReactPageMount
+      v-if="!authStore.unauthenticatedOccurred"
+      page="InactiveRemindModal"
+    />
   </template>
 </template>
 
@@ -14,7 +20,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import SessionExpiredSurfaceMount from "@/components/SessionExpiredSurfaceMount.vue";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import { t } from "./plugins/i18n";

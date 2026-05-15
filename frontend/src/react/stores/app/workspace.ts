@@ -189,11 +189,14 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     window.location.href = "/";
   },
 
-  loadWorkspaceProfile: async () => {
+  loadWorkspaceProfile: async (force = false) => {
     const existing = get().workspaceProfile;
-    if (existing) return existing;
+    if (!force && existing) return existing;
     const pending = get().workspaceProfileRequest;
-    if (pending) return pending;
+    if (!force && pending) return pending;
+    // request is captured so .then handlers can identity-check against
+    // the latest in-flight request before writing — protects against an
+    // older in-flight request resolving after a newer forced reload.
     const request = settingServiceClientConnect
       .getSetting(
         createProto(GetSettingRequestSchema, {
@@ -201,6 +204,9 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         })
       )
       .then((setting) => {
+        if (get().workspaceProfileRequest !== request) {
+          return get().workspaceProfile;
+        }
         const settingValue = setting.value?.value;
         const profile =
           settingValue?.case === "workspaceProfile"
@@ -216,7 +222,9 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         return profile;
       })
       .catch(() => {
-        set({ workspaceProfileRequest: undefined });
+        if (get().workspaceProfileRequest === request) {
+          set({ workspaceProfileRequest: undefined });
+        }
         return undefined;
       });
     set({ workspaceProfileRequest: request });

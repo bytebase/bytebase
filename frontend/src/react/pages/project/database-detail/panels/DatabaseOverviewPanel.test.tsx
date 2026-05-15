@@ -125,6 +125,40 @@ vi.mock("@/react/components/ui/input", () => ({
   ),
 }));
 
+vi.mock("@/react/components/ui/select", () => ({
+  Select: ({
+    children,
+    disabled,
+    onValueChange,
+    value,
+  }: {
+    children: React.ReactNode;
+    disabled?: boolean;
+    onValueChange?: (value: string) => void;
+    value?: string;
+  }) => (
+    <select
+      disabled={disabled}
+      value={value}
+      onChange={(event) => onValueChange?.(event.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectContent: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  SelectItem: ({
+    children,
+    value,
+  }: {
+    children: React.ReactNode;
+    value: string;
+  }) => <option value={value}>{children}</option>,
+  SelectTrigger: () => null,
+  SelectValue: () => null,
+}));
+
 vi.mock("@/react/components/ui/dialog", () => ({
   Dialog: ({
     open,

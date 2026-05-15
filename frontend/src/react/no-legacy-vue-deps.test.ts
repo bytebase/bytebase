@@ -56,7 +56,6 @@ describe("React Project and Settings legacy Vue dependencies", () => {
     const bannedImports = [
       "@/components/Permission/RoutePermissionGuard.vue",
       "@/components/Permission/ComponentPermissionGuard.vue",
-      "@/components/RoleGrantPanel",
       "./RoleGrantPanel.vue",
       "@/components/FeatureGuard",
       "@/components/IssueV1/components/Sidebar/IssueLabels",

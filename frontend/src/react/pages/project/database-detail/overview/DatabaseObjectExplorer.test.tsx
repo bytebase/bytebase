@@ -263,6 +263,42 @@ beforeEach(async () => {
 });
 
 describe("DatabaseObjectExplorer", () => {
+  test("renders the default schema label when the schema name is empty", async () => {
+    mocks.useDBSchemaV1Store.mockReturnValue({
+      getSchemaList: vi.fn(() => [{ name: "" }]),
+      getTableList: vi.fn(() => []),
+      getViewList: vi.fn(() => []),
+      getExtensionList: vi.fn(() => []),
+      getExternalTableList: vi.fn(() => []),
+      getFunctionList: vi.fn(() => []),
+      getDatabaseMetadata: vi.fn(() => ({
+        schemas: [],
+      })),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseObjectExplorer, {
+        database: makeDatabase(),
+        loading: false,
+        selectedSchemaName: "",
+        tableSearchKeyword: "",
+        externalTableSearchKeyword: "",
+        onSelectedSchemaNameChange: vi.fn(),
+        onTableSearchKeywordChange: vi.fn(),
+        onExternalTableSearchKeywordChange: vi.fn(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.querySelector("#schema-select")?.textContent).toContain(
+      "db.schema.default"
+    );
+
+    unmount();
+  });
+
   test("passes serializable detail props after selecting a table row", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseObjectExplorer, {

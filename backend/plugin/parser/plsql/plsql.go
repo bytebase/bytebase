@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/pkg/errors"
 
@@ -28,24 +29,50 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Then parse to get ASTs (note: ParsePLSQL adds semicolon internally)
-	parseResults, err := ParsePLSQL(statement + ";")
-	if err != nil {
-		return nil, err
-	}
-
-	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
-	astIndex := 0
 	for _, stmt := range stmts {
-		ps := base.ParsedStatement{
-			Statement: stmt,
+		if stmt.Empty {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
 		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = parseResults[astIndex]
-			astIndex++
+
+		list, omniErr := ParsePLSQLOmni(stmt.Text)
+		if omniErr == nil {
+			if list == nil || len(list.Items) == 0 {
+				result = append(result, base.ParsedStatement{Statement: stmt})
+				continue
+			}
+			for _, node := range list.Items {
+				raw, ok := node.(*ast.RawStmt)
+				if !ok {
+					continue
+				}
+				result = append(result, base.ParsedStatement{
+					Statement: stmt,
+					AST: &OmniAST{
+						Node:          raw.Stmt,
+						Text:          stmt.Text,
+						StartPosition: stmt.Start,
+					},
+				})
+			}
+			continue
 		}
-		result = append(result, ps)
+
+		parseResults, err := parsePLSQLWithStartPosition(stmt.Text, stmt.Start)
+		if err != nil {
+			return nil, err
+		}
+		if len(parseResults) == 0 {
+			result = append(result, base.ParsedStatement{Statement: stmt})
+			continue
+		}
+		for _, parseResult := range parseResults {
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST:       parseResult,
+			})
+		}
 	}
 
 	return result, nil
@@ -88,10 +115,18 @@ func ParseVersion(banner string) (*Version, error) {
 // It first parses the whole statement to get the AST, then splits by unit_statement
 // and sql_plus_command nodes, and re-parses each individual statement.
 func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
+	return parsePLSQLWithBaseLine(sql, 0)
+}
+
+func parsePLSQLWithBaseLine(sql string, baseLine int) ([]*base.ANTLRAST, error) {
+	return parsePLSQLWithStartPosition(sql, &storepb.Position{Line: int32(baseLine) + 1})
+}
+
+func parsePLSQLWithStartPosition(sql string, startPosition *storepb.Position) ([]*base.ANTLRAST, error) {
 	sql = addSemicolonIfNeeded(sql)
 
 	// First pass: parse the whole statement to get the AST for splitting
-	tree, tokens, err := parsePLSQLInternal(sql, 0)
+	tree, tokens, err := parsePLSQLInternal(sql, startPosition)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +169,7 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		// stmtBaseLine is where the leading content starts (for re-parsing with correct offsets).
 		// This ensures token positions in the re-parsed AST are correct when combined with SplitSQL's BaseLine.
 		// Formula: first token's line - 1 (convert to 0-based) - number of newlines in leading content
-		stmtBaseLine = startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
+		stmtBaseLine = base.GetLineOffset(startPosition) + startToken.GetLine() - 1 - strings.Count(leadingContent, "\n")
 
 		prevStopTokenIndex = consumeTrailingSemicolon(tokens.GetAllTokens(), stopToken.GetTokenIndex())
 
@@ -144,7 +179,7 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 		}
 
 		// Re-parse the individual statement with correct base line
-		stmtTree, stmtTokens, err := parsePLSQLInternal(stmtText, stmtBaseLine)
+		stmtTree, stmtTokens, err := parsePLSQLInternal(stmtText, &storepb.Position{Line: int32(stmtBaseLine) + 1})
 		if err != nil {
 			return nil, err
 		}
@@ -162,13 +197,12 @@ func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 }
 
 // parsePLSQLInternal is the internal parsing function that parses a single SQL statement.
-func parsePLSQLInternal(sql string, baseLine int) (antlr.Tree, *antlr.CommonTokenStream, error) {
+func parsePLSQLInternal(sql string, startPosition *storepb.Position) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	lexer := parser.NewPlSqlLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parser.NewPlSqlParser(stream)
 	p.SetVersion12(true)
 
-	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement:     sql,
 		StartPosition: startPosition,
@@ -201,7 +235,7 @@ func parsePLSQLInternal(sql string, baseLine int) (antlr.Tree, *antlr.CommonToke
 // This is used for strings manipulation which needs to see all statements together.
 func ParsePLSQLForStringsManipulation(sql string) (antlr.Tree, antlr.TokenStream, error) {
 	sql = addSemicolonIfNeeded(sql)
-	return parsePLSQLInternal(sql, 0)
+	return parsePLSQLInternal(sql, &storepb.Position{Line: 1})
 }
 
 func addSemicolonIfNeeded(sql string) string {

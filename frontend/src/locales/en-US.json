@@ -1010,7 +1010,7 @@
       "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
       "google-cloud-sql": {
         "instance-name": "Instance Connection Name",
-        "instance-name-tips": "The instance connection name should like {instance}.",
+        "instance-name-tips": "The instance connection name should look like {instance}.",
         "mysql": {
           "template": "Create a service account named {user}, then add it in your Google Cloud SQL as IAM user {user}{'@'}'%'. Grant this user with the needed privileges."
         },

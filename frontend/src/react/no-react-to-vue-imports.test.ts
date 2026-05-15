@@ -11,10 +11,7 @@ const sources = import.meta.glob("./**/*.{ts,tsx}", {
 
 // Mount-bridge Vue files that React code is permitted to import until Phase B
 // retires the Vue app shell. Adding new entries here requires explicit review.
-const allowedVueImports = new Set([
-  "@/components/SessionExpiredSurfaceMount.vue",
-  "@/components/AgentWindowMount.vue",
-]);
+const allowedVueImports = new Set<string>();
 
 const vueImportPattern = /from\s+["']([^"']+\.vue)["']/g;
 

@@ -367,7 +367,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
           <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5" />
           <div className="flex flex-col gap-2">
             <h5 className="font-medium leading-tight">
-              {t("common.missing-required-permission")}
+              {t("common.missing-permission")}
             </h5>
             <div>
               {t("common.required-permission")}

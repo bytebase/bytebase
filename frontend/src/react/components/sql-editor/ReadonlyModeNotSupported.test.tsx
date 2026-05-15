@@ -46,7 +46,7 @@ vi.mock("@/store", () => ({
   })),
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: {
     [Engine.POSTGRES]: "/icons/postgres.svg",
   } as Record<string, string>,
@@ -104,9 +104,7 @@ describe("ReadonlyModeNotSupported", () => {
     render();
 
     // i18n keys surface as their key text via the stubbed t()
-    expect(container.textContent).toContain(
-      "common.missing-required-permission"
-    );
+    expect(container.textContent).toContain("common.missing-permission");
 
     // Trans component passed the i18n key
     const trans = container.querySelector("[data-testid='trans']");

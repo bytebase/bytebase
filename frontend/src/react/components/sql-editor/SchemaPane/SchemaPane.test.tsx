@@ -123,6 +123,9 @@ vi.mock("@/utils/v1/instance", () => ({
   instanceV1SupportsPackage: () => false,
   instanceV1SupportsSequence: () => false,
 }));
+vi.mock("@/react/components/instance/constants", () => ({
+  EngineIconPath: { MYSQL: "/mysql.svg" } as Record<string, string>,
+}));
 
 vi.mock("@/router", () => ({ router: { resolve: () => ({ href: "/" }) } }));
 vi.mock("@/router/sqlEditor", () => ({
@@ -192,10 +195,6 @@ vi.mock("@/react/components/ui/dialog", () => ({
 
 vi.mock("@/react/components/TableSchemaViewer", () => ({
   TableSchemaViewer: () => <div data-testid="table-schema-viewer" />,
-}));
-
-vi.mock("@/components/InstanceForm/constants", () => ({
-  EngineIconPath: { MYSQL: "/mysql.svg" } as Record<string, string>,
 }));
 
 vi.mock("@base-ui/react/menu", () => ({

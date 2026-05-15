@@ -5,13 +5,9 @@ const projectPageLoaders = import.meta.glob([
   "./pages/project/*.tsx",
   "./pages/project/plan-detail/ProjectPlanDetailPage.tsx",
 ]);
-const pluginComponentLoaders = import.meta.glob(
-  "./plugins/agent/components/AgentWindow.tsx"
-);
 const workspacePageLoaders = import.meta.glob("./pages/workspace/*.tsx");
 const authPageLoaders = import.meta.glob("./pages/auth/*.tsx");
 const authComponentLoaders = import.meta.glob([
-  "./components/auth/SessionExpiredSurface.tsx",
   "./components/auth/InactiveRemindModal.tsx",
 ]);
 const sqlEditorComponentLoaders = import.meta.glob(
@@ -24,7 +20,6 @@ const sharedComponentLoaders = import.meta.glob([
 const pageLoaders = {
   ...settingsPageLoaders,
   ...projectPageLoaders,
-  ...pluginComponentLoaders,
   ...workspacePageLoaders,
   ...authPageLoaders,
   ...authComponentLoaders,
@@ -33,14 +28,14 @@ const pageLoaders = {
 };
 
 // biome-ignore lint/suspicious/noExplicitAny: React types conflict with Vue JSX in vue-tsc
-type ReactDeps = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type ReactDeps = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 // biome-ignore lint/suspicious/noExplicitAny: Component type checked by tsconfig.react.json
-type ReactComponent = (props: any) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type ReactComponent = (props: any) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 let cachedDeps: ReactDeps | null = null;
 const cachedPages = new Map<string, ReactComponent>();
 
-async function loadCoreDeps() {
+export async function loadCoreDeps() {
   if (cachedDeps) return cachedDeps;
   const [
     { createElement, StrictMode },
@@ -68,7 +63,6 @@ const pageDirs = [
   "./pages/settings",
   "./pages/project",
   "./pages/project/plan-detail",
-  "./plugins/agent/components",
   "./pages/workspace",
   "./pages/auth",
   "./components/auth",
@@ -109,7 +103,7 @@ async function loadPage(name: string): Promise<ReactComponent> {
  */
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore -- React createElement types conflict with Vue JSX in vue-tsc
-function buildTree(
+export function buildTree(
   deps: ReactDeps,
   Component: ReactComponent,
   // biome-ignore lint/suspicious/noExplicitAny: Props type varies per page

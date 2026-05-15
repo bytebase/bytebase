@@ -40,14 +40,12 @@
     <ReactPageMount page="Quickstart" container-class="w-full" />
   </teleport>
 
-  <AgentWindowMount />
 </template>
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AgentWindowMount from "@/components/AgentWindowMount.vue";
 import { t } from "@/plugins/i18n";
 import type { DashboardShellTargets } from "@/react/dashboard-shell";
 import ReactPageMount from "@/react/ReactPageMount.vue";

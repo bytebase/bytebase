@@ -72,7 +72,7 @@ export function InstanceActionDropdown({
   const handleDelete = useCallback(async () => {
     if (
       !window.confirm(
-        `${t("common.delete-resource", { resource: instance.title })}\n\n${t("common.cannot-undo-this-action")}`
+        `${t("common.delete-resource", { type: instance.title })}\n\n${t("common.cannot-undo-this-action")}`
       )
     )
       return;

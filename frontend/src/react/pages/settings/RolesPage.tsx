@@ -606,7 +606,7 @@ function RoleSheet({
               {missedBasicPermissions.length > 0 && !isBuiltin && (
                 <Alert
                   variant="error"
-                  title={t("common.missing-required-permission")}
+                  title={t("common.missing-permission")}
                   description={
                     <>
                       <p>{t("common.required-workspace-permission")}</p>

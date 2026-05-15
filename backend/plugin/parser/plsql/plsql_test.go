@@ -1,11 +1,14 @@
 package plsql
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -111,4 +114,79 @@ INSERT INTO t3 VALUES (1, 2);`,
 			require.Equal(t, test.expectedLines[i], base.GetLineOffset(result.StartPosition), "Statement %d", i+1)
 		}
 	}
+}
+
+func TestParsePLSQLStatementsOmniFirst(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "SELECT * FROM T;")
+	require.NoError(t, err)
+	require.Len(t, stmts, 1)
+
+	omniAST, ok := stmts[0].AST.(*OmniAST)
+	require.True(t, ok)
+	require.Equal(t, "SELECT * FROM T", omniAST.Text)
+	require.IsType(t, &ast.SelectStmt{}, omniAST.Node)
+}
+
+func TestParsePLSQLStatementsFallsBackToANTLR(t *testing.T) {
+	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT * FROM T;
+CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
+(
+  TXN_DATE  DATE,
+  USERID    VARCHAR2(100),
+  CUSTID    VARCHAR2(100),
+  SCREENID  VARCHAR2(500),
+  EVENTTIME DATE,
+  STATUS    NUMBER
+)
+PARTITION BY RANGE (TXN_DATE)
+INTERVAL (NUMTODSINTERVAL(1,'DAY'))
+(
+  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
+);`)
+	require.NoError(t, err)
+	require.Len(t, stmts, 2)
+
+	_, ok := stmts[0].AST.(*OmniAST)
+	require.True(t, ok)
+
+	_, ok = stmts[1].AST.(*base.ANTLRAST)
+	require.True(t, ok)
+}
+
+func TestParsePLSQLStatementsFallbackErrorUsesOriginalLine(t *testing.T) {
+	_, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT *
+FROM T;
+CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
+(
+  TXN_DATE DATE
+)
+PARTITION BY RANGE (TXN_DATE)
+INTERVAL (NUMTODSINTERVAL(1,'DAY'))
+(
+  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
+BROKEN`)
+	require.Error(t, err)
+
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.NotNil(t, syntaxErr.Position)
+	require.Equal(t, int32(11), syntaxErr.Position.Line)
+}
+
+func TestParsePLSQLStatementsFallbackErrorUsesOriginalColumn(t *testing.T) {
+	statement := `SELECT * FROM T; CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA (TXN_DATE DATE) PARTITION BY RANGE (TXN_DATE) INTERVAL (NUMTODSINTERVAL(1,'DAY')) (PARTITION P0 VALUES LESS THAN (DATE '2026-01-01') BROKEN`
+
+	_, wholeErr := ParsePLSQL(statement)
+	require.Error(t, wholeErr)
+	var wholeSyntaxErr *base.SyntaxError
+	require.True(t, errors.As(wholeErr, &wholeSyntaxErr))
+	require.NotNil(t, wholeSyntaxErr.Position)
+
+	_, err := base.ParseStatements(storepb.Engine_ORACLE, statement)
+	require.Error(t, err)
+	var syntaxErr *base.SyntaxError
+	require.True(t, errors.As(err, &syntaxErr))
+	require.NotNil(t, syntaxErr.Position)
+	require.Equal(t, wholeSyntaxErr.Position.Line, syntaxErr.Position.Line)
+	require.Equal(t, wholeSyntaxErr.Position.Column, syntaxErr.Position.Column)
 }

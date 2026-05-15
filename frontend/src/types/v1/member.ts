@@ -13,8 +13,7 @@ export interface GroupBinding extends Group {
 
 export interface MemberBinding extends MemberRole {
   title: string;
-  // binidng is the fullname for binding member,
-  // like user:{email} or group:{email}
+  // The fullname for the binding member: `user:{email}` or `group:{email}`.
   binding: string;
   type: "users" | "groups";
   user?: User;

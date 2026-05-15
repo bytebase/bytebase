@@ -137,7 +137,7 @@
       "code-sent-hint": "{{email}} に認証コードを送信しました。",
       "demo-account": "Demo Account",
       "email-code-tab": "メール認証コード",
-      "failed-to-send-code": "認証コードの送信に失敗しました。もう一度お試しください。",
+      "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
       "new-user": "Bytebase を初めて使用しますか?",
@@ -161,9 +161,9 @@
     "deploy": "ローカル展開",
     "external-url": "Bytebase は --extern-url を設定していません",
     "license-expired": "{{plan}} のライセンスは {{expireAt}} に期限切れになりました。",
-    "license-expires": "{{plan}} ライセンスは {{expireAt}} に期限切れになりました",
+    "license-expires": "{{plan}} ライセンスは {{days}} 日後の {{expireAt}} に期限切れになります",
     "request-demo": "30 分間の製品デモを予約してください。",
-    "trial-expires": "{{plan}} トライアルは {{days}} 日後に期限切れになります"
+    "trial-expires": "{{plan}} トライアルは {{days}} 日後の {{expireAt}} に期限切れになります"
   },
   "bbkit": {
     "confirm-button": {
@@ -322,6 +322,7 @@
     "members_one": "メンバー",
     "members_other": "メンバー",
     "minutes": "分",
+    "missing-permission": "必要な権限がありません",
     "missing-required-permission": "必要な権限がありません {{permissions}}",
     "missing-required-permission-for-resource": "リソース {{resource}} に必要な権限がありません",
     "more": "その他",
