@@ -350,7 +350,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
         style: "SUCCESS",
         title: t(
           "db.successfully-synced-schema-for-database-database-value-name",
-          { 0: databaseName }
+          { name: databaseName }
         ),
       });
     } catch (error) {
@@ -358,7 +358,7 @@ function SyncDatabaseButton({ database }: { database: Database }) {
         module: "bytebase",
         style: "CRITICAL",
         title: t("db.failed-to-sync-schema-for-database-database-value-name", {
-          0: databaseName,
+          name: databaseName,
         }),
         description:
           error instanceof ConnectError
