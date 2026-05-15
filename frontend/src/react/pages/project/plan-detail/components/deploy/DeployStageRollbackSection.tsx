@@ -35,20 +35,17 @@ export function DeployStageRollbackSection({ stage }: { stage: Stage }) {
 
   return (
     <>
-      <div className="w-full px-4 py-2">
-        <div className="pb-2">
-          <Button
-            className="px-0 text-control hover:bg-transparent"
-            onClick={() => setRollbackOpen(true)}
-            size="sm"
-            variant="ghost"
-          >
-            <DatabaseBackup className="h-4 w-4" />
-            {t("task-run.rollback.available", {
-              count: rollbackItems.length,
-            })}
-          </Button>
-        </div>
+      <div className="w-full px-4 pb-2">
+        <Button
+          onClick={() => setRollbackOpen(true)}
+          size="sm"
+          variant="ghost"
+        >
+          <DatabaseBackup className="h-4 w-4" />
+          {t("task-run.rollback.available", {
+            count: rollbackItems.length,
+          })}
+        </Button>
       </div>
 
       <PlanDetailRollbackSheet
