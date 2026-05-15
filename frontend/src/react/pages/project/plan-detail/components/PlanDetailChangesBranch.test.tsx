@@ -208,10 +208,6 @@ vi.mock("@/utils/v1/databaseGroup", () => ({
     name.split("/databaseGroups/")[1] ?? name,
 }));
 
-vi.mock("../hooks/usePlanDetailSpecValidation", () => ({
-  usePlanDetailSpecValidation: () => ({ emptySpecIdSet: new Set() }),
-}));
-
 vi.mock("../utils/localSheet", () => ({
   getLocalSheetByName: (name: string) => ({ name, content: "" }),
   getNextLocalSheetUID: () => "-1",

@@ -106,7 +106,6 @@ import {
   getSheetStatement,
   setSheetStatement as setLocalSheetStatement,
 } from "@/utils/v1/sheet";
-import { usePlanDetailSpecValidation } from "../hooks/usePlanDetailSpecValidation";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getDefaultGhostConfig,
@@ -207,7 +206,6 @@ export function PlanDetailChangesBranch({
     () => (pendingNewSpec ? [...specs, pendingNewSpec] : specs),
     [specs, pendingNewSpec]
   );
-  const { emptySpecIdSet } = usePlanDetailSpecValidation(visibleSpecs);
   const selectedSpec = useMemo(() => {
     if (pendingNewSpec && isPendingSelected) {
       return pendingNewSpec;
@@ -556,11 +554,6 @@ export function PlanDetailChangesBranch({
               >
                 <span className="opacity-80">{index + 1}.</span>
                 <span>{getSpecTitle(spec, t)}</span>
-                {emptySpecIdSet.has(spec.id) && (
-                  <Tooltip content={t("plan.navigator.statement-empty")}>
-                    <span className="text-error">*</span>
-                  </Tooltip>
-                )}
               </span>
             </PlanDetailTabItem>
           );
