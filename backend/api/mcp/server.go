@@ -182,21 +182,27 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
 }
 
-// buildResourceMetadataURL returns the absolute URL of this server's
-// /.well-known/oauth-protected-resource endpoint. The configured effective
-// external URL is preferred over request-derived host/proto so that proxied
-// deployments (where the inbound Host can differ from the public endpoint)
-// emit the correct public URL to MCP clients. Request-derived values are the
-// last-resort fallback only.
+// buildResourceMetadataURL returns the absolute URL of the protected resource
+// metadata document for the /mcp endpoint. The `/mcp` path suffix matters:
+// RFC 9728 §3.3 requires the document's `resource` field to match the resource
+// the client is accessing, and the path-suffixed well-known URL is how the
+// metadata handler in the oauth2 package knows to publish `resource=<host>/mcp`.
+//
+// The configured effective external URL is preferred over request-derived
+// host/proto so that proxied deployments (where the inbound Host can differ
+// from the public endpoint) emit the correct public URL to MCP clients.
+// Request-derived values are the last-resort fallback only.
 //
 // The --external-url CLI flag (profile.ExternalURL) short-circuits the lookup;
 // otherwise on self-hosted we resolve the singleton workspace ID first so the
 // DB-backed workspace_profile.external_url setting in GetEffectiveExternalURL
 // can be found. On SaaS there is no singleton — the CLI flag is required.
 func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
+	const resourceMetadataPath = "/.well-known/oauth-protected-resource/mcp"
+
 	ctx := c.Request().Context()
 	if s.profile.ExternalURL != "" {
-		return strings.TrimSuffix(s.profile.ExternalURL, "/") + "/.well-known/oauth-protected-resource"
+		return strings.TrimSuffix(s.profile.ExternalURL, "/") + resourceMetadataPath
 	}
 	workspaceID := ""
 	if !s.profile.SaaS {
@@ -205,7 +211,7 @@ func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 		}
 	}
 	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil && externalURL != "" {
-		return strings.TrimSuffix(externalURL, "/") + "/.well-known/oauth-protected-resource"
+		return strings.TrimSuffix(externalURL, "/") + resourceMetadataPath
 	}
 
 	req := c.Request()
@@ -216,5 +222,5 @@ func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
 		scheme = proto
 	}
-	return fmt.Sprintf("%s://%s/.well-known/oauth-protected-resource", scheme, req.Host)
+	return fmt.Sprintf("%s://%s%s", scheme, req.Host, resourceMetadataPath)
 }

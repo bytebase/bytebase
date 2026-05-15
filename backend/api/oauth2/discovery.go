@@ -92,10 +92,29 @@ func (s *Service) handleDiscovery(c *echo.Context) error {
 
 // handleProtectedResourceMetadata returns RFC 9728 protected resource metadata.
 // This tells clients which authorization server protects this resource.
+//
+// RFC 9728 §3.3 requires the `resource` value to match the resource the client
+// is accessing. We support both:
+//   - GET /.well-known/oauth-protected-resource         → resource = baseURL
+//   - GET /.well-known/oauth-protected-resource/<path>  → resource = baseURL + /<path>
+//
+// The path-suffixed form lets the `/mcp` endpoint advertise metadata that
+// strict clients validate against the resource URL they actually requested.
 func (s *Service) handleProtectedResourceMetadata(c *echo.Context) error {
 	baseURL := s.getBaseURL(c)
+
+	const wellKnownPrefix = "/.well-known/oauth-protected-resource"
+	resource := baseURL
+	if subPath := strings.TrimPrefix(c.Request().URL.Path, wellKnownPrefix); subPath != "" && subPath != "/" {
+		// Ensure leading slash and trim any trailing slash.
+		if !strings.HasPrefix(subPath, "/") {
+			subPath = "/" + subPath
+		}
+		resource = baseURL + strings.TrimRight(subPath, "/")
+	}
+
 	metadata := &protectedResourceMetadata{
-		Resource:               baseURL,
+		Resource:               resource,
 		AuthorizationServers:   []string{baseURL},
 		BearerMethodsSupported: []string{"header"},
 	}

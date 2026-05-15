@@ -96,12 +96,13 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			require.Contains(t, wwwAuth, "Bearer")
 			require.Contains(t, wwwAuth, `realm="OAuth"`)
 			require.Contains(t, wwwAuth, "resource_metadata=")
-			require.Contains(t, wwwAuth, "/.well-known/oauth-protected-resource")
 			require.Contains(t, wwwAuth, `error="invalid_token"`)
-			// The resource_metadata URL must use the configured external URL
-			// rather than the inbound request Host. Locks in the fix for the
-			// proxied-deployment phishing pivot.
-			require.Contains(t, wwwAuth, "https://bb.example.com/.well-known/oauth-protected-resource")
+			// The resource_metadata URL must (a) use the configured external
+			// URL rather than the inbound request Host (proxied-deployment
+			// phishing-pivot fix) and (b) include the /mcp path suffix so
+			// RFC 9728 §3.3 strict clients receive metadata whose `resource`
+			// field matches the URL they were accessing.
+			require.Contains(t, wwwAuth, "https://bb.example.com/.well-known/oauth-protected-resource/mcp")
 		})
 	}
 }
