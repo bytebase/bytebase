@@ -10,6 +10,17 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// Bounds on Dynamic Client Registration input. These are loose enough that no
+// realistic MCP client trips them, but tight enough that degenerate input
+// (megabyte-sized client_name fields, hundreds of redirect URIs) is rejected
+// before any DB or bcrypt work happens — the endpoint is unauthenticated and
+// publicly reachable on SaaS.
+const (
+	maxClientNameLen  = 200
+	maxRedirectURIs   = 5
+	maxRedirectURILen = 2048
+)
+
 type clientRegistrationRequest struct {
 	ClientName              string   `json:"client_name"`
 	RedirectURIs            []string `json:"redirect_uris"`
@@ -41,11 +52,20 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	if req.ClientName == "" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "client_name is required")
 	}
+	if len(req.ClientName) > maxClientNameLen {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "client_name is too long")
+	}
 
 	if len(req.RedirectURIs) == 0 {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "redirect_uris is required")
 	}
+	if len(req.RedirectURIs) > maxRedirectURIs {
+		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "too many redirect_uris")
+	}
 	for _, uri := range req.RedirectURIs {
+		if len(uri) > maxRedirectURILen {
+			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI is too long")
+		}
 		if !isAllowedDynamicClientRedirectURI(uri) {
 			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL or a whitelisted app scheme (cursor://, vscode://, vscode-insiders://, jetbrains://gateway/...)")
 		}
@@ -73,13 +93,21 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client ID")
 	}
-	clientSecret, err := generateClientSecret()
-	if err != nil {
-		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client secret")
-	}
-	secretHash, err := hashSecret(clientSecret)
-	if err != nil {
-		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to hash client secret")
+
+	// Public clients (token_endpoint_auth_method=none) do not authenticate
+	// at the token endpoint and never receive a usable secret, so skip the
+	// (expensive) bcrypt round entirely. The token.go grant path already
+	// gates secret verification on Config.TokenEndpointAuthMethod != "none".
+	var clientSecret, secretHash string
+	if req.TokenEndpointAuthMethod != "none" {
+		clientSecret, err = generateClientSecret()
+		if err != nil {
+			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client secret")
+		}
+		secretHash, err = hashSecret(clientSecret)
+		if err != nil {
+			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to hash client secret")
+		}
 	}
 
 	config := &storepb.OAuth2ClientConfig{
@@ -103,7 +131,7 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		GrantTypes:              req.GrantTypes,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
 	}
-	// Only include client_secret for confidential clients
+	// Only include client_secret for confidential clients.
 	if req.TokenEndpointAuthMethod != "none" {
 		resp.ClientSecret = clientSecret
 	}

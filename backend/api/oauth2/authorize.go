@@ -138,10 +138,16 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	}
 
 	// Resolve the workspace to bind this consent to.
-	// On SaaS the session always carries workspace_id. On self-hosted it
-	// may be empty; fall back to the single workspace in the store.
+	// On SaaS the session always carries workspace_id; if it's missing we
+	// fail closed rather than fall back to GetWorkspaceID(), which would
+	// otherwise pick an arbitrary non-deleted workspace and silently bind
+	// the token there.
 	workspaceID := claims.WorkspaceID
 	if workspaceID == "" {
+		if s.profile.SaaS {
+			return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "session is missing workspace claim")
+		}
+		// Self-hosted: there's exactly one workspace.
 		workspaceID, err = s.store.GetWorkspaceID(ctx)
 		if err != nil {
 			return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to resolve workspace")
@@ -149,6 +155,15 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	}
 	if workspaceID == "" {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "no workspace in session")
+	}
+
+	// Legacy clients registered before the 3.18.2 migration are pinned to a
+	// workspace via oauth2_client.workspace. Refuse to mint a token for a
+	// different workspace via that client — the user is in a workspace it
+	// wasn't authorized for. Post-migration clients have client.Workspace
+	// empty (workspace-agnostic) and bind freely.
+	if client.Workspace != "" && client.Workspace != workspaceID {
+		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "client is registered to a different workspace; switch workspaces and try again")
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, claims.Subject)
