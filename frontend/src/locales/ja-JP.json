@@ -2701,9 +2701,7 @@
     "online-migration": {
       "self": "オンラインでの大規模なテーブル変更"
     },
-    "only-showing-latest-n-runs": "最新の {n} 実行のみを表示",
     "prior-backup": "影響を受けるデータの事前バックアップ",
-    "run-history": "実行履歴",
     "run-immediately": {
       "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。",
       "self": "すぐに実行"

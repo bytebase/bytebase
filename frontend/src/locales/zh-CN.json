@@ -2701,9 +2701,7 @@
     "online-migration": {
       "self": "在线大表变更"
     },
-    "only-showing-latest-n-runs": "仅显示最近 {n} 条记录",
     "prior-backup": "预备份受影响数据",
-    "run-history": "执行历史",
     "run-immediately": {
       "description": "点击“运行”后，任务将立即开始执行。",
       "self": "立即运行"

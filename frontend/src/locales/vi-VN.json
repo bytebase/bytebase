@@ -2701,9 +2701,7 @@
     "online-migration": {
       "self": "Di chuyển trực tuyến"
     },
-    "only-showing-latest-n-runs": "Chỉ hiển thị các lần chạy {n} mới nhất",
     "prior-backup": "Sao lưu trước",
-    "run-history": "Lịch sử chạy",
     "run-immediately": {
       "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
       "self": "Chạy ngay lập tức"

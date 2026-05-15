@@ -17,7 +17,7 @@ import {
 } from "../../../issue-detail/utils/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { PlanDetailTaskRolloutActionPanel } from "../PlanDetailTaskRolloutActionPanel";
-import { DeployStageContentSidebar } from "./DeployStageContentSidebar";
+import { DeployStageRollbackSection } from "./DeployStageRollbackSection";
 import { DeployTaskFilter } from "./DeployTaskFilter";
 import { DeployTaskList } from "./DeployTaskList";
 
@@ -150,7 +150,7 @@ export function DeployStageContentView({
           }}
         />
 
-        {isStageCreated && <DeployStageContentSidebar stage={stage} />}
+        {isStageCreated && <DeployStageRollbackSection stage={stage} />}
       </div>
 
       <PlanDetailTaskRolloutActionPanel
