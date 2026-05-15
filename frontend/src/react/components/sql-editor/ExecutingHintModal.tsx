@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -5,7 +6,6 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorStore } from "@/store";
 import { ExecuteHint } from "./ExecuteHint";
 
 /**
@@ -15,7 +15,7 @@ import { ExecuteHint } from "./ExecuteHint";
  */
 export function ExecutingHintModal() {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
 
   const show = useVueState(() => editorStore.isShowExecutingHint);
   const database = useVueState(() => editorStore.executingHintDatabase);

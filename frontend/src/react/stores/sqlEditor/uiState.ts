@@ -1,9 +1,5 @@
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
-import type {
-  SQLEditorSliceCreator,
-  SQLEditorStoreState,
-  UIStateSlice,
-} from "./types";
+import type { SQLEditorSliceCreator, UIStateSlice } from "./types";
 
 const MINIMUM_EDITOR_PANEL_SIZE = 0.5;
 const DEFAULT_AI_PANEL_SIZE = 0.3;
@@ -58,7 +54,7 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
 });
 
 export const selectEditorPanelSize = (
-  state: SQLEditorStoreState
+  state: UIStateSlice
 ): { size: number; max: number; min: number } => {
   if (!state.showAIPanel) {
     return { size: 1, max: 1, min: 1 };

@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";

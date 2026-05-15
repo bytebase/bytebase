@@ -1,10 +1,11 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 
 type AdminModeButtonProps = {
   readonly size?: "sm" | "default";
@@ -23,7 +24,7 @@ export function AdminModeButton({
   onEnter,
 }: AdminModeButtonProps) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const tabStore = useSQLEditorTabStore();
 
   const allowAdmin = useVueState(() => editorStore.allowAdmin);

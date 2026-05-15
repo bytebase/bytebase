@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Loader2 } from "lucide-react";
 import {
   useCallback,
@@ -24,7 +25,6 @@ import {
   useDatabaseV1Store,
   useIssueV1Store,
   useProjectV1Store,
-  useSQLEditorStore as useSQLEditorPiniaStore,
 } from "@/store";
 import type { AccessFilter } from "@/store/modules/accessGrant";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -48,7 +48,7 @@ export function AccessPane() {
   const { t } = useTranslation();
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const accessGrantStore = useAccessGrantStore();
   const issueStore = useIssueV1Store();
   const databaseStore = useDatabaseV1Store();

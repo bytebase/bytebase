@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -118,19 +119,28 @@ vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => mocks.environmentStore,
   useInstanceV1Store: () => mocks.instanceStore,
   useProjectV1Store: () => mocks.projectStore,
-  useSQLEditorStore: () => mocks.editorStore,
+  useSQLEditorVueState: () => mocks.editorStore,
   useSQLEditorTabStore: () => mocks.tabStore,
-  useSQLEditorTreeStore: () => mocks.treeStore,
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
   useSQLEditorStore: (
-    selector: (s: { setShowConnectionPanel: (v: boolean) => void }) => unknown
+    selector: (s: {
+      setShowConnectionPanel: (v: boolean) => void;
+      treeState: string;
+      setTreeState: (state: string) => void;
+      treeNodeKeysByTarget: () => string[];
+    }) => unknown
   ) =>
     selector({
       setShowConnectionPanel: (next: boolean) => {
         mocks.uiStore.showConnectionPanel = next;
       },
+      treeState: mocks.treeStore.state,
+      setTreeState: (state: string) => {
+        mocks.treeStore.state = state as typeof mocks.treeStore.state;
+      },
+      treeNodeKeysByTarget: mocks.treeStore.nodeKeysByTarget,
     }),
 }));
 

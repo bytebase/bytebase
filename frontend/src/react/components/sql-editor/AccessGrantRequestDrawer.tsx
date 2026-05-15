@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { Loader2 } from "lucide-react";
@@ -27,7 +28,6 @@ import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
 } from "@/store";
 import {
@@ -111,7 +111,7 @@ function AccessGrantRequestDrawerInner({
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUserV1();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const tabStore = useSQLEditorTabStore();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setHighlightAccessGrantName = useSQLEditorStore(

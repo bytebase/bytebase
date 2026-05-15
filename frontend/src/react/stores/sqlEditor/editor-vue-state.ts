@@ -1,7 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import { includes } from "lodash-es";
-import { defineStore } from "pinia";
-import { computed, ref, watchEffect } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { useProjectV1Store } from "@/store";
 import { useQueryDataPolicy } from "@/store/modules/v1/policy";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -14,7 +13,21 @@ import {
   STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT,
 } from "@/utils";
 
-export const useSQLEditorStore = defineStore("sqlEditor", () => {
+/**
+ * Vue-reactive SQL Editor app state. Replaces the Pinia
+ * `useSQLEditorStore` (`store/modules/sqlEditor/editor.ts`) — same
+ * shape and field semantics, but lives as a module-level lazy
+ * singleton instead of a Pinia store. Several fields are derived
+ * computeds whose dependencies (project IAM policy, workspace
+ * permissions) sit in other Pinia stores, so keeping the Vue
+ * reactivity here lets consumers continue to use `useVueState(() =>
+ * editorState.X)` without churning that pattern across ~40 files.
+ *
+ * When SheetTree / other consumers eventually move off `useVueState`,
+ * this is the obvious thing to port to zustand (or selectors over the
+ * zustand store).
+ */
+const buildSQLEditorVueState = () => {
   const projectStore = useProjectV1Store();
 
   const resultRowsLimit = useLocalStorage(
@@ -38,14 +51,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
         ) {
           return defaults;
         }
-        // Otherwise, return the storage value
         return storageValue;
       },
     }
   );
 
-  // `false` if we are preparing project-scoped resources
-  // we should render a skeleton layout with spinner placeholders
+  // `false` while project-scoped resources are loading — consumers
+  // render a skeleton layout with spinner placeholders.
   const projectContextReady = ref<boolean>(false);
 
   const storedLastViewedProject = useLocalStorage<string>(
@@ -83,7 +95,11 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     return hasProjectPermissionV2(project, "bb.sql.admin");
   });
 
-  return {
+  // Wrap with `reactive()` so consumers see the same auto-unwrap /
+  // auto-wrap-on-assign ergonomics they had with the Pinia store. Use
+  // Vue's `toRefs()` (not Pinia's `storeToRefs`) to extract individual
+  // refs when needed.
+  return reactive({
     resultRowsLimit,
     queryDataPolicy,
     project: computed(() => storedLastViewedProject.value),
@@ -95,5 +111,13 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     executingHintDatabase,
     redisCommandOption,
     allowAdmin,
-  };
-});
+  });
+};
+
+let _state: ReturnType<typeof buildSQLEditorVueState> | undefined;
+export const useSQLEditorVueState = () => {
+  if (!_state) _state = buildSQLEditorVueState();
+  return _state;
+};
+
+export type SQLEditorVueState = ReturnType<typeof useSQLEditorVueState>;

@@ -31,7 +31,8 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore, useSQLEditorWorksheetStore } from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { tabListEvents } from "@/views/sql-editor/TabList/events";
 import { TabContextMenu, type TabContextMenuHandle } from "./TabContextMenu";
@@ -58,7 +59,7 @@ type PendingClose = {
 export function TabList() {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const worksheetStore = useSQLEditorWorksheetStore();
+  const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
 
   // `deep: true` so React re-renders when a tab's nested fields change
   // (e.g. `tab.connection` after setConnection, or `tab.status` after
@@ -160,7 +161,7 @@ export function TabList() {
     if (loading) return;
     setLoading(true);
     try {
-      await worksheetStore.createWorksheet({});
+      await createWorksheet({});
       requestAnimationFrame(() => {
         const el = scrollRef.current;
         if (el) el.scrollTo(el.scrollWidth, 0);

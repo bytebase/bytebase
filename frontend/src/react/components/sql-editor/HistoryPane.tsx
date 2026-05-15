@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import dayjs from "dayjs";
 import { Copy, Loader2 } from "lucide-react";
 import {
@@ -12,11 +13,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
 import { useVueState } from "@/react/hooks/useVueState";
-import type { QueryHistoryFilter } from "@/store";
+import type { QueryHistoryFilter } from "@/react/stores/sqlEditor";
+import {
+  selectQueryHistoryEntry,
+  useSQLEditorStore,
+} from "@/react/stores/sqlEditor";
 import {
   pushNotification,
-  useSQLEditorQueryHistoryStore,
-  useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
@@ -32,8 +35,11 @@ export function HistoryPane() {
   const { t } = useTranslation();
 
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
-  const queryHistoryStore = useSQLEditorQueryHistoryStore();
+  const editorStore = useSQLEditorVueState();
+  const fetchQueryHistoryList = useSQLEditorStore(
+    (s) => s.fetchQueryHistoryList
+  );
+  const resetPageToken = useSQLEditorStore((s) => s.resetPageToken);
 
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,18 +63,16 @@ export function HistoryPane() {
     [currentTabDatabase, project, searchText]
   );
 
-  const historyData = useVueState(() =>
-    queryHistoryStore.getQueryHistoryList(historyQuery)
-  );
+  const historyData = useSQLEditorStore(selectQueryHistoryEntry(historyQuery));
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      await queryHistoryStore.fetchQueryHistoryList(historyQuery);
+      await fetchQueryHistoryList(historyQuery);
     } finally {
       setLoading(false);
     }
-  }, [queryHistoryStore, historyQuery]);
+  }, [fetchQueryHistoryList, historyQuery]);
 
   // Debounced fetch on query change — only when list is empty (initial load / filter change)
   useEffect(() => {
@@ -96,10 +100,10 @@ export function HistoryPane() {
 
   const onSearchUpdate = useCallback(
     (next: string) => {
-      queryHistoryStore.resetPageToken({ ...historyQuery, statement: next });
+      resetPageToken({ ...historyQuery, statement: next });
       setSearchText(next);
     },
-    [queryHistoryStore, historyQuery]
+    [resetPageToken, historyQuery]
   );
 
   const titleOfQueryHistory = (h: QueryHistory) =>

@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ChevronRight, Database, SquareStack } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
@@ -8,7 +9,6 @@ import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
@@ -30,7 +30,7 @@ type DatabaseChooserProps = {
 export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );

@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { cloneDeep } from "lodash-es";
 import { ChevronDown, ChevronRight, Info, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -35,9 +36,7 @@ import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorTreeStore,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
@@ -140,7 +139,7 @@ function ConnectionPaneWithHoverState(props: Props) {
 function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );
@@ -149,12 +148,13 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const environmentStore = useEnvironmentV1Store();
   const projectStore = useProjectV1Store();
   const instanceStore = useInstanceV1Store();
-  const treeStore = useSQLEditorTreeStore();
+  const setTreeState = useSQLEditorStore((s) => s.setTreeState);
+  const treeNodeKeysByTarget = useSQLEditorStore((s) => s.treeNodeKeysByTarget);
   const currentUser = useCurrentUserV1();
 
   const supportBatchMode = useVueState(() => tabStore.supportBatchMode);
   const isInBatchMode = useVueState(() => tabStore.isInBatchMode);
-  const treeStoreState = useVueState(() => treeStore.state);
+  const treeStoreState = useSQLEditorStore((s) => s.treeState);
   const currentTab = useVueState(() => tabStore.currentTab);
   const currentUserEmail = useVueState(() => currentUser.value.email);
   const projectName = useVueState(() => editorStore.project);
@@ -340,11 +340,11 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   useEffect(() => {
     if (!isValidProjectName(projectName)) return;
     if (!projectContextReady) {
-      treeStore.state = "LOADING";
+      setTreeState("LOADING");
       return;
     }
-    treeStore.state = "READY";
-  }, [projectName, projectContextReady, treeStore]);
+    setTreeState("READY");
+  }, [projectName, projectContextReady, setTreeState]);
 
   // Highlight the current tab's connection node in the tree. Mirrors
   // Vue's `getSelectedKeys` + `tree-ready` event listener: when the tree
@@ -365,13 +365,13 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           connection.database
         );
         if (cancelled) return;
-        setSelectedKeys(treeStore.nodeKeysByTarget("database", database));
+        setSelectedKeys(treeNodeKeysByTarget("database", database));
         return;
       }
       if (connection.instance) {
         const instance = instanceStore.getInstanceByName(connection.instance);
         if (cancelled) return;
-        setSelectedKeys(treeStore.nodeKeysByTarget("instance", instance));
+        setSelectedKeys(treeNodeKeysByTarget("instance", instance));
         return;
       }
       if (!cancelled) setSelectedKeys([]);
@@ -386,7 +386,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       cancelled = true;
       unsubscribe();
     };
-  }, [tabStore, databaseStore, instanceStore, treeStore]);
+  }, [tabStore, databaseStore, instanceStore, treeNodeKeysByTarget]);
 
   // Context-menu imperative handle.
   const contextMenuRef = useRef<ConnectionContextMenuHandle>(null);

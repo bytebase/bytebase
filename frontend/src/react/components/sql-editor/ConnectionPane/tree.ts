@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   buildTreeImpl,
-  type DatabaseFilter,
   mapTreeNodeByType,
+} from "@/react/stores/sqlEditor/tree-utils";
+import {
+  type DatabaseFilter,
   useDatabaseV1Store,
   useEnvironmentV1Store,
-  useSQLEditorStore,
 } from "@/store";
 import type {
   SQLEditorTreeNode,
@@ -89,7 +91,7 @@ export function useSQLEditorTreeByEnvironment(
   { email }: Options
 ): TreeByEnvironment {
   const databaseStore = useDatabaseV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const environmentStore = useEnvironmentV1Store();
 
   const storageKey = useMemo(

@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorStore: vi.fn(),
+  useSQLEditorVueState: vi.fn(),
   useUIStateStore: vi.fn(),
   useWorkSheetStore: vi.fn(),
   useWorkSheetAndTabStore: vi.fn(),
@@ -34,7 +35,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorStore: mocks.useSQLEditorStore,
+  useSQLEditorVueState: mocks.useSQLEditorVueState,
   useUIStateStore: mocks.useUIStateStore,
   useWorkSheetStore: mocks.useWorkSheetStore,
   useWorkSheetAndTabStore: mocks.useWorkSheetAndTabStore,
@@ -174,7 +175,7 @@ const setup = (options: SetupOptions = {}) => {
     isDisconnected,
     updateCurrentTab,
   });
-  mocks.useSQLEditorStore.mockReturnValue({ resultRowsLimit: 500 });
+  mocks.useSQLEditorVueState.mockReturnValue({ resultRowsLimit: 500 });
   mocks.useUIStateStore.mockReturnValue({ saveIntroStateByKey });
   mocks.useWorkSheetStore.mockReturnValue({
     getWorksheetByName: vi.fn(() => ({

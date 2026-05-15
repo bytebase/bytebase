@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { debounce, head, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,9 +24,7 @@ import {
   useActuatorV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorWorksheetStore,
   useWorkSheetStore,
 } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
@@ -103,11 +102,11 @@ export function SQLEditorRouteShell() {
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const tabStore = useSQLEditorTabStore();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
+  const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
   const worksheetStore = useWorkSheetStore();
-  const sqlEditorWorksheetStore = useSQLEditorWorksheetStore();
 
   const projectContextReady = useVueState(
     () => editorStore.projectContextReady
@@ -167,12 +166,10 @@ export function SQLEditorRouteShell() {
       project = editorStore.storedLastViewedProject;
     }
 
-    let initializeSuccess =
-      !!(await sqlEditorWorksheetStore.maybeSwitchProject(project));
+    let initializeSuccess = !!(await maybeSwitchProject(project));
     if (!initializeSuccess) {
       project = await fallbackToFirstProject();
-      initializeSuccess =
-        !!(await sqlEditorWorksheetStore.maybeSwitchProject(project));
+      initializeSuccess = !!(await maybeSwitchProject(project));
     }
     if (!initializeSuccess) {
       editorStore.setProject("");
@@ -217,7 +214,7 @@ export function SQLEditorRouteShell() {
     const sheetId = route.params.sheet;
     if (typeof projectId !== "string" || !projectId) return false;
     if (typeof sheetId !== "string" || !sheetId) return false;
-    await sqlEditorWorksheetStore.maybeSwitchProject(`projects/${projectId}`);
+    await maybeSwitchProject(`projects/${projectId}`);
     return await switchWorksheet(`projects/${projectId}/worksheets/${sheetId}`);
   };
 
@@ -232,7 +229,7 @@ export function SQLEditorRouteShell() {
     const databaseName = `instances/${route.params.instance}/databases/${route.params.database}`;
     if (!isValidDatabaseName(databaseName)) return false;
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
-    await sqlEditorWorksheetStore.maybeSwitchProject(database.project);
+    await maybeSwitchProject(database.project);
     const { instance } = extractDatabaseResourceName(database.name);
     const connection = { instance, database: database.name };
     tabStore.addTab({

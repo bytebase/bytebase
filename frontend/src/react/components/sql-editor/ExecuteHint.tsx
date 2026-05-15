@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Trans, useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Alert } from "@/react/components/ui/alert";
@@ -10,7 +11,6 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useProjectV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useStorageStore,
 } from "@/store";
@@ -35,7 +35,7 @@ type Props = {
 export function ExecuteHint({ database, onClose }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const storageStore = useStorageStore();

@@ -1,16 +1,24 @@
 import { sortBy } from "lodash-es";
-import { storeToRefs } from "pinia";
-import { computed } from "vue";
-import { useCurrentUserV1, useSQLEditorStore } from "@/store";
+import { computed, toRefs } from "vue";
+import { useCurrentUserV1 } from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   storageKeySqlEditorWorksheetFolder,
   useDynamicLocalStorage,
 } from "@/utils";
 import type { SheetViewMode } from "@/views/sql-editor/Sheet/types";
 
+/**
+ * Vue-reactive folder-tree helper used by the worksheet sheet context.
+ * The only consumer today is the Vue-side singleton at
+ * `views/sql-editor/Sheet/context.ts`, but the file lives under the
+ * React store tree because the whole sqlEditor state surface is
+ * homing there as the Pinia layer is dismantled. The Vue refs and
+ * `storeToRefs` calls stay — the consumer is still Vue-reactive.
+ */
 export const buildFolderContext = (viewMode: SheetViewMode) => {
   const me = useCurrentUserV1();
-  const { project } = storeToRefs(useSQLEditorStore());
+  const { project } = toRefs(useSQLEditorVueState());
 
   const rootPath = computed(() => `/${viewMode}`);
   const localCacheKey = computed(() =>

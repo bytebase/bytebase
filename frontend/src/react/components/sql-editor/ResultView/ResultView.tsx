@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import { ConnectError } from "@connectrpc/connect";
 import dayjs from "dayjs";
@@ -24,7 +25,6 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
@@ -73,7 +73,7 @@ export function ResultView({
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
   const queryDataPolicy = useVueState(
-    () => useSQLEditorStore().queryDataPolicy
+    () => useSQLEditorVueState().queryDataPolicy
   );
   const tabStore = useSQLEditorTabStore();
 

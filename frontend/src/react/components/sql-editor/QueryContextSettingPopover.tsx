@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-react";
 import { useMemo } from "react";
@@ -14,7 +15,6 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -37,7 +37,7 @@ type Props = {
 export function QueryContextSettingPopover({ disabled = false }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const connection = useConnectionOfCurrentSQLEditorTab();
 
   const currentTabMode = useVueState(() => tabStore.currentTab?.mode);

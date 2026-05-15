@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -46,7 +47,7 @@ vi.mock("@/router/dashboard/workspaceRoutes", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorStore: vi.fn(),
+  useSQLEditorVueState: vi.fn(),
   useProjectV1Store: vi.fn(),
   useWorkspaceV1Store: vi.fn(),
 }));

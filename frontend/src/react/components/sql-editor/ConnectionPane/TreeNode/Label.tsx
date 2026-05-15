@@ -1,4 +1,5 @@
 import { ShieldAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -65,6 +66,7 @@ function EnvironmentLabel({
   node: SQLEditorTreeNode;
   keyword: string;
 }) {
+  const { t } = useTranslation();
   const environment = (node as SQLEditorTreeNode<"environment">).meta.target;
   const isUnset =
     environment.name === UNKNOWN_ENVIRONMENT_NAME ||
@@ -92,8 +94,18 @@ function EnvironmentLabel({
           : undefined
       }
     >
-      <HighlightLabelText text={environment.title} keyword={keyword} />
-      {isProtected && (
+      {isUnset ? (
+        // Matches the shared <EnvironmentLabel> treatment: the store's
+        // getEnvironmentByName fallback sets `title = id` for unknown envs,
+        // so rendering `environment.title` would surface raw "-1" in the
+        // tree. Show a localized italic placeholder instead.
+        <span className="text-control-light italic">
+          {t("common.unassigned")}
+        </span>
+      ) : (
+        <HighlightLabelText text={environment.title} keyword={keyword} />
+      )}
+      {isProtected && !isUnset && (
         <ShieldAlert className="size-3.5 shrink-0 text-current" />
       )}
     </span>

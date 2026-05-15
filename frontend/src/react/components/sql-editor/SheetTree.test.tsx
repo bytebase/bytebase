@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -22,8 +23,9 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useWorkSheetStore: vi.fn(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorStore: vi.fn(),
-  useSQLEditorWorksheetStore: vi.fn(),
+  useSQLEditorVueState: vi.fn(),
+  // The new zustand store mock — only `createWorksheet` is used by SheetTree.
+  createWorksheet: vi.fn().mockResolvedValue({}),
   useSheetContext: vi.fn(),
   useSheetContextByView: vi.fn(),
   useDropdown: vi.fn(),
@@ -42,9 +44,14 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/store", () => ({
   useWorkSheetStore: mocks.useWorkSheetStore,
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorStore: mocks.useSQLEditorStore,
-  useSQLEditorWorksheetStore: mocks.useSQLEditorWorksheetStore,
+  useSQLEditorVueState: mocks.useSQLEditorVueState,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/sqlEditor", () => ({
+  useSQLEditorStore: (
+    selector: (s: { createWorksheet: typeof mocks.createWorksheet }) => unknown
+  ) => selector({ createWorksheet: mocks.createWorksheet }),
 }));
 
 vi.mock("@/views/sql-editor/Sheet", () => ({
@@ -384,7 +391,7 @@ const setupDefaultMocks = () => {
 
   mocks.useSheetContext.mockReturnValue(sheetContext);
   mocks.useSheetContextByView.mockReturnValue(viewContext);
-  mocks.useSQLEditorStore.mockReturnValue({
+  mocks.useSQLEditorVueState.mockReturnValue({
     project: "projects/proj1",
   });
   mocks.useWorkSheetStore.mockReturnValue({
@@ -406,9 +413,7 @@ const setupDefaultMocks = () => {
     updateTab: vi.fn(),
     setCurrentTabId: vi.fn(),
   });
-  mocks.useSQLEditorWorksheetStore.mockReturnValue({
-    createWorksheet: vi.fn().mockResolvedValue({}),
-  });
+  mocks.createWorksheet.mockResolvedValue({});
   mocks.useDropdown.mockReturnValue({
     currentNode: undefined,
     options: [],

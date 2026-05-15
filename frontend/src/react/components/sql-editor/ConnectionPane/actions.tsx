@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   ExternalLink,
   Link as LinkIcon,
@@ -11,9 +12,7 @@ import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
-  useSQLEditorWorksheetStore,
 } from "@/store";
 import type {
   BatchQueryContext,
@@ -72,7 +71,8 @@ export function setConnection(options: {
   };
 
   const tabStore = useSQLEditorTabStore();
-  const worksheetStore = useSQLEditorWorksheetStore();
+  const { maybeUpdateWorksheet, createWorksheet } =
+    useSQLEditorStore.getState();
 
   const batchQueryContext: BatchQueryContext = Object.assign(
     { databases: [] } as BatchQueryContext,
@@ -82,7 +82,7 @@ export function setConnection(options: {
 
   const createOrUpdate = () => {
     if (!newTab && tabStore.currentTab) {
-      return worksheetStore.maybeUpdateWorksheet({
+      return maybeUpdateWorksheet({
         tabId: tabStore.currentTab.id,
         worksheet: tabStore.currentTab.worksheet,
         title: tabStore.currentTab.title,
@@ -90,7 +90,7 @@ export function setConnection(options: {
         statement: tabStore.currentTab.statement,
       });
     }
-    return worksheetStore.createWorksheet({
+    return createWorksheet({
       database: connection.database,
     });
   };
@@ -110,7 +110,7 @@ export function setConnection(options: {
  */
 export function useConnectionMenu(node: SQLEditorTreeNode | null) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );

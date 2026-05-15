@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import {
@@ -33,7 +34,7 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -228,7 +229,7 @@ function SingleResultViewInner({
 }: SingleResultViewInnerProps) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const currentTabMode = useVueState(() => tabStore.currentTab?.mode);
   const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
   const policyMaxRows = useVueState(

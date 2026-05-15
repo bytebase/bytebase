@@ -1,6 +1,14 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, type MaybeRef, reactive, unref, watch } from "vue";
+import {
+  computed,
+  type MaybeRef,
+  reactive,
+  toRefs,
+  unref,
+  watch,
+} from "vue";
 import type {
   BatchQueryContext,
   SQLEditorConnection,
@@ -29,12 +37,10 @@ import {
   useWorkSheetStore,
 } from "../v1";
 import { useCurrentUserV1 } from "../v1/auth";
-import { useSQLEditorStore } from "./editor";
 import {
   migrateDraftsFromCache,
   migrateTabViewState,
 } from "./legacy/migration";
-import { useWebTerminalStore } from "./webTerminal";
 
 const PERSISTENT_TAB_FIELDS = [
   "id",
@@ -48,7 +54,7 @@ type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
 export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
-  const { project } = storeToRefs(useSQLEditorStore());
+  const { project } = toRefs(useSQLEditorVueState());
   const tabsById = reactive(new Map<string, SQLEditorTab>());
   const worksheetStore = useWorkSheetStore();
 
@@ -228,7 +234,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
     openTmpTabList.value.splice(position, 1);
     tabsById.delete(tabId);
-    useWebTerminalStore().clearQueryStateByTab(tabId);
+    // Dynamic import avoids a static cycle with the zustand store
+    // (which transitively re-imports this module via `@/store`).
+    void import("@/react/stores/sqlEditor/webTerminal-service").then(
+      ({ disposeWebTerminalQuerySession }) => {
+        disposeWebTerminalQuerySession(tabId);
+      }
+    );
 
     if (tabId === currentTabId.value) {
       const nextIndex = Math.min(position, openTmpTabList.value.length - 1);

@@ -1,67 +1,29 @@
-import { flatten, orderBy, uniq } from "lodash-es";
-import { defineStore } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { orderBy } from "lodash-es";
+import {
+  useEnvironmentV1Store,
+  useInstanceResourceByName,
+} from "@/store/modules/v1";
 import type {
   SQLEditorTreeFactor as Factor,
   SQLEditorTreeNodeTarget as NodeTarget,
   SQLEditorTreeNodeType as NodeType,
   SQLEditorTreeNode as TreeNode,
-  SQLEditorTreeState as TreeState,
 } from "@/types";
 import {
   extractSQLEditorLabelFactor as extractLabelFactor,
-  formatEnvironmentName,
   LeafTreeNodeTypes,
   unknownEnvironment,
 } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import {
   extractDatabaseResourceName,
   getSemanticLabelValue,
   groupBy,
 } from "@/utils";
-import { useEnvironmentV1Store, useInstanceResourceByName } from "../v1";
-
-export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
-  const nodeListMapById = reactive(
-    new Map<
-      string /* node id by type and target */,
-      string[] /* node key list */
-    >()
-  );
-  // states
-  const allNodeKeys = computed(() => {
-    return uniq(flatten([...nodeListMapById.values()]));
-  });
-
-  const state = ref<TreeState>("UNSET");
-
-  const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
-    const { type, target } = node.meta;
-    const id = idForSQLEditorTreeNodeTarget(type, target);
-    const nodeList = nodeListMapById.get(id) ?? [];
-    nodeList.push(node.key);
-    nodeListMapById.set(id, nodeList);
-  };
-
-  const nodeKeysByTarget = <T extends NodeType>(
-    type: T,
-    target: NodeTarget<T>
-  ) => {
-    const id = idForSQLEditorTreeNodeTarget(type, target);
-    return nodeListMapById.get(id) ?? [];
-  };
-
-  return {
-    state,
-    collectNode,
-    nodeKeysByTarget,
-    allNodeKeys,
-  };
-});
+import { useSQLEditorStore } from "./index";
+import { idForSQLEditorTreeNodeTarget } from "./tree";
 
 const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
@@ -76,26 +38,6 @@ const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   return parts.join("/");
 };
 
-export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
-  type: T,
-  target: NodeTarget<T>
-) => {
-  if (type === "instance" || type === "database") {
-    return (target as Project | InstanceResource | Database).name;
-  }
-  if (type === "environment") {
-    return formatEnvironmentName((target as Environment).id);
-  }
-  if (type === "label") {
-    const kv = target as NodeTarget<"label">;
-    return `labels/${kv.key}:${kv.value}`;
-  }
-
-  throw new Error(
-    `should never reach this line, type=${type}, target=${target}, parent=${parent}`
-  );
-};
-
 const buildSubTree = (
   databaseList: Database[],
   parent: TreeNode | undefined,
@@ -103,14 +45,9 @@ const buildSubTree = (
   factorIndex: number
 ): TreeNode[] => {
   if (factorIndex === factorList.length) {
-    // the last dimension is database nodes
-    return databaseList.map((db) => {
-      const node = mapTreeNodeByType("database", db, parent);
-      return node;
-    });
+    return databaseList.map((db) => mapTreeNodeByType("database", db, parent));
   }
 
-  // group (project, instance, environment, label) nodes
   const nodes: TreeNode[] = [];
   const factor = factorList[factorIndex];
 
@@ -132,7 +69,6 @@ const buildSubTree = (
 
 const sortNodesIfNeeded = (nodes: TreeNode[], factor: Factor) => {
   if (factor === "environment") {
-    // Sort by environment order DESC. Put production envs to the first.
     return orderBy(
       nodes as TreeNode<"environment">[],
       [(node) => node.meta.target.order],
@@ -140,31 +76,22 @@ const sortNodesIfNeeded = (nodes: TreeNode[], factor: Factor) => {
     );
   }
   if (factor.startsWith("label:")) {
-    // Sort in lexicographical order, and put <empty value> to the last
     return orderBy(
       nodes as TreeNode<"label">[],
       [
-        (node) => (node.meta.target.value ? -1 : 1), // Empty value to the last,
-        (node) => node.meta.target.value, // lexicographical order then
+        (node) => (node.meta.target.value ? -1 : 1),
+        (node) => node.meta.target.value,
       ],
       ["asc", "asc"]
     );
   }
-
   return nodes;
 };
 
 export const buildTreeImpl = (
   databaseList: Database[],
   factorList: Factor[]
-): TreeNode[] => {
-  return buildSubTree(
-    databaseList,
-    undefined /* parent */,
-    factorList,
-    0 /* factorIndex */
-  );
-};
+): TreeNode[] => buildSubTree(databaseList, undefined, factorList, 0);
 
 const mapGroupNode = (
   factor: Factor,
@@ -181,19 +108,10 @@ const mapGroupNode = (
     const { instance } = useInstanceResourceByName(value);
     return mapTreeNodeByType("instance", instance.value, parent);
   }
-  // factor is label
   const key = extractLabelFactor(factor);
   if (key) {
-    return mapTreeNodeByType(
-      "label",
-      {
-        key,
-        value,
-      },
-      parent
-    );
+    return mapTreeNodeByType("label", { key, value }, parent);
   }
-
   throw new Error(
     `mapGroupNode: should never reach this line. factor=${factor}, factorValue=${value}`
   );
@@ -214,8 +132,7 @@ export const mapTreeNodeByType = <T extends NodeType>(
     ...overrides,
   };
 
-  useSQLEditorTreeStore().collectNode(node);
-
+  useSQLEditorStore.getState().collectTreeNode(node);
   return node;
 };
 
@@ -235,9 +152,7 @@ const readableTargetByType = <T extends NodeType>(
   return (target as NodeTarget<"label">).value;
 };
 
-const isLeafNodeType = (type: NodeType) => {
-  return LeafTreeNodeTypes.includes(type);
-};
+const isLeafNodeType = (type: NodeType) => LeafTreeNodeTypes.includes(type);
 
 const getSemanticFactorValue = (db: Database, factor: Factor) => {
   switch (factor) {
@@ -246,7 +161,6 @@ const getSemanticFactorValue = (db: Database, factor: Factor) => {
     case "instance":
       return extractDatabaseResourceName(db.name).instance;
   }
-
   const key = extractLabelFactor(factor);
   if (key) {
     return getSemanticLabelValue(db, key);

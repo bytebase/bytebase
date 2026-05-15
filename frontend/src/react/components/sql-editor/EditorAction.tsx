@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ChevronLeft, Play, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,7 +13,6 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -43,7 +43,7 @@ type Props = {
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const uiStateStore = useUIStateStore();
   const worksheetStore = useWorkSheetStore();
   const sheetAndTabStore = useWorkSheetAndTabStore();
@@ -236,10 +236,7 @@ export function EditorAction({ onExecute }: Props) {
                 />
               </Tooltip>
               <PopoverContent align="end" sideOffset={4}>
-                <SharePopoverBody
-                  worksheet={currentWorksheet}
-                  onUpdated={() => setShareOpen(false)}
-                />
+                <SharePopoverBody worksheet={currentWorksheet} />
               </PopoverContent>
             </Popover>
           </>

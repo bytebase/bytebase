@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import { BannersWrapper } from "@/react/components/BannersWrapper";
 import { router } from "@/router";
-import {
-  useEnvironmentV1Store,
-  useSettingV1Store,
-  useSQLEditorWorksheetStore,
-} from "@/store";
+import { useEnvironmentV1Store, useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { provideSheetContext } from "@/views/sql-editor/Sheet";
 import { RequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
 import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
@@ -28,10 +25,11 @@ import { useSQLEditorAutoSave } from "./useSQLEditorAutoSave";
 export function SQLEditorLayout() {
   const settingStore = useSettingV1Store();
   const environmentStore = useEnvironmentV1Store();
-  // Mounting the worksheet store eagerly mirrors the legacy
-  // `provideSheetContext()` call — it boots the per-view watchers
-  // (selectedKeys ↔ active tab) the moment the layout appears.
-  useSQLEditorWorksheetStore();
+  // Boots the per-view watchers (selectedKeys ↔ active tab) the moment
+  // the layout appears. The sheet-context singleton is module-level and
+  // lazy — calling it here ensures the watchers are wired before any
+  // child component reads from it.
+  provideSheetContext();
 
   const [ready, setReady] = useState(false);
 

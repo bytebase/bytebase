@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSQLEditorTabStore: vi.fn(),
-  useSQLEditorStore: vi.fn(),
+  useSQLEditorVueState: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   getInstanceResource: vi.fn(),
   readableDataSourceType: vi.fn((type: number) => `type-${type}`),
@@ -28,7 +29,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-  useSQLEditorStore: mocks.useSQLEditorStore,
+  useSQLEditorVueState: mocks.useSQLEditorVueState,
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
 }));
 
@@ -134,7 +135,7 @@ beforeEach(async () => {
     currentTab: { mode: "WORKSHEET" },
     updateCurrentTab: vi.fn(),
   });
-  mocks.useSQLEditorStore.mockReturnValue({
+  mocks.useSQLEditorVueState.mockReturnValue({
     resultRowsLimit: 1000,
     redisCommandOption: 0,
     queryDataPolicy: {

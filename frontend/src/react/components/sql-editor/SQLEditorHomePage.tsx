@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -28,7 +29,6 @@ import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/pro
 import {
   useDatabaseV1Store,
   useProjectV1Store,
-  useSQLEditorStore as useSQLEditorPiniaStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { unknownProject } from "@/types";
@@ -68,7 +68,7 @@ export function SQLEditorHomePage() {
   );
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorPiniaStore();
+  const editorStore = useSQLEditorVueState();
 
   const projectContextReady = useVueState(
     () => editorStore.projectContextReady

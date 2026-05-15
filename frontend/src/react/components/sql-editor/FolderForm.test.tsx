@@ -20,7 +20,7 @@ globalThis.ResizeObserver = class ResizeObserver {
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorWorksheetStore: vi.fn(),
+  useSheetContextByView: vi.fn(),
   useClickOutside: vi.fn(),
   onSelectCallback: vi.fn(),
 }));
@@ -33,8 +33,8 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
-vi.mock("@/store", () => ({
-  useSQLEditorWorksheetStore: mocks.useSQLEditorWorksheetStore,
+vi.mock("@/views/sql-editor/Sheet", () => ({
+  useSheetContextByView: mocks.useSheetContextByView,
 }));
 
 vi.mock("@/react/hooks/useClickOutside", () => ({
@@ -177,9 +177,7 @@ const setupDefaultMocks = () => {
     },
   };
 
-  mocks.useSQLEditorWorksheetStore.mockReturnValue({
-    getContextByView: vi.fn(() => viewContext),
-  });
+  mocks.useSheetContextByView.mockReturnValue(viewContext);
 };
 
 const renderIntoContainer = (element: ReactElement) => {

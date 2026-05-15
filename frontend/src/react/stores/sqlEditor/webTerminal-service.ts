@@ -1,26 +1,22 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create, fromJson, toJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import Emittery from "emittery";
-import { cloneDeep, uniqueId } from "lodash-es";
-import { defineStore } from "pinia";
+import { cloneDeep } from "lodash-es";
 import type { Subscription } from "rxjs";
 import { fromEventPattern, Observable } from "rxjs";
-import { markRaw, ref, shallowRef } from "vue";
+import { markRaw, ref } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useSQLEditorQueryHistoryStore,
-  useSQLEditorStore,
 } from "@/store";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,
   SQLResultSetV1,
   StreamingQueryController,
-  WebTerminalQueryItemV1,
-  WebTerminalQueryState,
 } from "@/types";
 import type {
   AdminExecuteRequest,
@@ -38,55 +34,47 @@ import {
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/connect";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
+import { useSQLEditorStore as useSQLEditorReactStore } from "./index";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Code.Aborted;
 const QUERY_TIMEOUT_MS = 5000;
-const MAX_QUERY_ITEM_COUNT = 20;
 
-export const useWebTerminalStore = defineStore("webTerminal", () => {
-  const map = shallowRef(new Map<string, WebTerminalQueryState>());
+/**
+ * Per-tab admin-mode streaming session. The `tab` + `timer` + `controller`
+ * fields are framework-agnostic mutable services (Emittery / RxJS /
+ * `useCancelableTimeout`); the query items themselves live in the zustand
+ * `webTerminalQueryItemsByTabId` slice so React consumers re-render via
+ * selectors instead of `useVueState` on a Vue ref.
+ */
+export interface WebTerminalQuerySession {
+  tab: SQLEditorTab;
+  timer: ReturnType<typeof useCancelableTimeout>;
+  controller: StreamingQueryController;
+}
 
-  const getQueryStateByTab = (tab: SQLEditorTab) => {
-    const existed = map.value.get(tab.id);
-    if (existed) return existed;
+const sessions = new Map<string, WebTerminalQuerySession>();
 
-    const qs = createQueryState(tab);
-    map.value.set(tab.id, qs);
-    useQueryStateLogic(qs);
-    return qs;
-  };
-
-  const clearQueryStateByTab = (id: string) => {
-    map.value.delete(id);
-  };
-
-  return { getQueryStateByTab, clearQueryStateByTab };
-});
-
-const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
-  return {
+export const getWebTerminalQuerySession = (
+  tab: SQLEditorTab
+): WebTerminalQuerySession => {
+  const existed = sessions.get(tab.id);
+  if (existed) return existed;
+  const session: WebTerminalQuerySession = {
     tab,
-    queryItemList: ref([createInitialQueryItemByTab(tab)]),
     timer: markRaw(useCancelableTimeout(QUERY_TIMEOUT_MS)),
     controller: createStreamingQueryController(),
   };
+  sessions.set(tab.id, session);
+  useSQLEditorReactStore.getState().ensureWebTerminalQueryState(tab.id);
+  bindStreamingLogic(session);
+  return session;
 };
 
-const createInitialQueryItemByTab = (
-  _tab: SQLEditorTab
-): WebTerminalQueryItemV1 => {
-  return createQueryItemV1("");
+export const disposeWebTerminalQuerySession = (tabId: string): void => {
+  sessions.delete(tabId);
+  useSQLEditorReactStore.getState().clearWebTerminalQueryState(tabId);
 };
-
-export const createQueryItemV1 = (
-  statement = "",
-  status: WebTerminalQueryItemV1["status"] = "IDLE"
-): WebTerminalQueryItemV1 => ({
-  id: uniqueId(),
-  statement,
-  status,
-});
 
 const createStreamingQueryController = () => {
   const status: StreamingQueryController["status"] = ref("DISCONNECTED");
@@ -231,36 +219,36 @@ const createStreamingQueryController = () => {
   return controller;
 };
 
-const useQueryStateLogic = (qs: WebTerminalQueryState) => {
-  const activeQuery = () => {
-    return qs.queryItemList.value[qs.queryItemList.value.length - 1];
+const bindStreamingLogic = (session: WebTerminalQuerySession) => {
+  const tabId = session.tab.id;
+
+  const activeItem = () => {
+    const list =
+      useSQLEditorReactStore.getState().webTerminalQueryItemsByTabId[tabId] ??
+      [];
+    return list[list.length - 1];
   };
 
-  const pushQueryItem = () => {
-    const list = qs.queryItemList.value;
-    list.push(createQueryItemV1());
-
-    if (list.length > MAX_QUERY_ITEM_COUNT) {
-      list.shift();
-    }
-  };
-
-  const cleanup = () => {
-    activeQuery().status = "FINISHED";
-    qs.timer.stop();
-
-    pushQueryItem();
-  };
-
-  qs.controller.events.on("query", (input) => {
-    qs.timer.start();
-    activeQuery().params = cloneDeep(input);
-    activeQuery().status = "RUNNING";
+  session.controller.events.on("query", (input) => {
+    session.timer.start();
+    const tail = activeItem();
+    if (!tail) return;
+    useSQLEditorReactStore
+      .getState()
+      .updateWebTerminalQueryItem(tabId, tail.id, {
+        params: cloneDeep(input),
+        status: "RUNNING",
+      });
   });
 
-  qs.controller.events.on("result", (resultSet) => {
+  session.controller.events.on("result", (resultSet) => {
     console.debug("event resultSet", resultSet);
-    activeQuery().resultSet = resultSet;
+    const tail = activeItem();
+    if (tail) {
+      useSQLEditorReactStore
+        .getState()
+        .updateWebTerminalQueryItem(tabId, tail.id, { resultSet });
+    }
     for (const result of resultSet.results) {
       for (const message of result.messages) {
         pushNotification({
@@ -271,14 +259,15 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
         });
       }
     }
-    // Admin-mode queries don't go through `useExecuteSQL`, so mirror
-    // its post-exec history refresh here. `mergeLatest` prepends the
+    // Admin-mode queries don't go through `useExecuteSQL`, so mirror its
+    // post-exec history refresh here. `mergeLatest` prepends the
     // just-run statement without resetting the user's pagination.
-    const database = activeQuery().params?.connection.database;
+    const database = tail?.params?.connection.database;
     if (database) {
-      useSQLEditorQueryHistoryStore()
+      useSQLEditorReactStore
+        .getState()
         .mergeLatest({
-          project: useSQLEditorStore().project,
+          project: useSQLEditorVueState().project,
           database,
         })
         .catch(() => {
@@ -290,7 +279,17 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
     } else {
       void sqlEditorEvents.emit("query-executed");
     }
-    cleanup();
+    // Finish the current item and append a fresh one for the next prompt.
+    const finishedTail = activeItem();
+    if (finishedTail) {
+      useSQLEditorReactStore
+        .getState()
+        .updateWebTerminalQueryItem(tabId, finishedTail.id, {
+          status: "FINISHED",
+        });
+    }
+    session.timer.stop();
+    useSQLEditorReactStore.getState().pushWebTerminalQueryItem(tabId);
   });
 };
 

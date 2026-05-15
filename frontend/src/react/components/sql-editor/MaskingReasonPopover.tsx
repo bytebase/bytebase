@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { EyeOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { useVueState } from "@/react/hooks/useVueState";
-import { hasFeature, useProjectV1Store, useSQLEditorStore } from "@/store";
+import { hasFeature, useProjectV1Store} from "@/store";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
@@ -30,7 +31,7 @@ export function MaskingReasonPopover({
   const [showDrawer, setShowDrawer] = useState(false);
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
 
   const projectName = useVueState(() => editorStore.project);
   const project = useVueState(() => projectStore.getProjectByName(projectName));

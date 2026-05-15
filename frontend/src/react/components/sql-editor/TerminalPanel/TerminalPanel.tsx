@@ -1,17 +1,14 @@
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { watch } from "vue";
 import type { IStandaloneCodeEditor } from "@/react/components/monaco/types";
 import { ConnectionHolder } from "@/react/components/sql-editor/ConnectionHolder";
 import { EditorAction } from "@/react/components/sql-editor/EditorAction";
 import { ResultView } from "@/react/components/sql-editor/ResultView";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-  useWebTerminalStore,
-} from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { getWebTerminalQuerySession } from "@/react/stores/sqlEditor/webTerminal-service";
+import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import { CompactSQLEditor } from "./CompactSQLEditor";
 import { useHistory } from "./useHistory";
@@ -37,52 +34,43 @@ import { useHistory } from "./useHistory";
 export function TerminalPanel() {
   const { t } = useTranslation();
   const tabStore = useSQLEditorTabStore();
-  const webTerminalStore = useWebTerminalStore();
   const databaseStore = useDatabaseV1Store();
+  const updateWebTerminalQueryItem = useSQLEditorStore(
+    (s) => s.updateWebTerminalQueryItem
+  );
+  const replaceWebTerminalQueryItems = useSQLEditorStore(
+    (s) => s.replaceWebTerminalQueryItems
+  );
 
   const isDisconnected = useVueState(() => tabStore.isDisconnected);
   const currentTabId = useVueState(() => tabStore.currentTab?.id);
 
-  // Force a React re-render on every mutation of the active tab's
-  // `queryItemList` (push, shift, per-item field flips). Watching the
-  // ref's `.value` keeps the watch alive even when no tab is loaded
-  // initially — re-arming on `currentTabId` change picks up the new
-  // tab's query list. A plain `useVueState` getter wouldn't work here
-  // because the store mutates the array in place, so the getter would
-  // keep returning the same reference and `useSyncExternalStore` would
-  // skip the re-render.
-  const [, forceRender] = useState(0);
+  // Lazily create the per-tab session (WebSocket + timer + event bus)
+  // when this panel mounts for a new tab. The zustand selector below
+  // does its own subscription for re-renders; the session is only set
+  // up here so the controller and timer exist by the time the user
+  // hits Enter.
   useEffect(() => {
     const tab = tabStore.currentTab;
     if (!tab) return;
-    const qs = webTerminalStore.getQueryStateByTab(tab);
-    const stop = watch(
-      () => qs.queryItemList.value,
-      () => forceRender((v) => v + 1),
-      { deep: true, flush: "sync" }
-    );
-    return () => {
-      stop();
-    };
-  }, [tabStore, webTerminalStore, currentTabId]);
+    getWebTerminalQuerySession(tab);
+  }, [tabStore, currentTabId]);
 
-  // Re-spread on every render so the JSX iteration sees the latest
-  // array. Items are still the same Vue reactive proxies; mutating
-  // `item.statement` etc. flows back to the store via Pinia. Operations
-  // that need to mutate the **list shape** (e.g. clear-screen
-  // `.shift()`) must reach the live `queryItemList.value` directly.
-  const queryList: WebTerminalQueryItemV1[] = (() => {
-    const tab = tabStore.currentTab;
-    if (!tab) return [];
-    const qs = webTerminalStore.getQueryStateByTab(tab);
-    return [...qs.queryItemList.value];
-  })();
+  // Subscribe to the per-tab query items from the zustand slice — every
+  // mutation (push, status flip, resultSet attach) produces a new array
+  // reference, so the component re-renders without any Vue `watch`.
+  const queryList = useSQLEditorStore(
+    (s) =>
+      (currentTabId
+        ? s.webTerminalQueryItemsByTabId[currentTabId]
+        : undefined) ?? EMPTY_QUERY_LIST
+  );
 
   const expired = useVueState(() => {
     const tab = tabStore.currentTab;
     if (!tab) return false;
-    const qs = webTerminalStore.getQueryStateByTab(tab);
-    return qs.timer.expired.value;
+    const session = getWebTerminalQuerySession(tab);
+    return session.timer.expired.value;
   });
 
   // Pre-fetch any database referenced by an existing query item so the
@@ -108,23 +96,23 @@ export function TerminalPanel() {
       }
       const tab = tabStore.currentTab;
       if (!tab) return;
-      const qs = webTerminalStore.getQueryStateByTab(tab);
-      void qs.controller.events.emit("query", params);
+      const session = getWebTerminalQuerySession(tab);
+      void session.controller.events.emit("query", params);
     },
-    [currentQuery, tabStore, webTerminalStore]
+    [currentQuery, tabStore]
   );
 
   const handleClearScreen = useCallback(() => {
-    // Mutate the live Vue array, not our shallow copy — the store's
-    // reactivity is tracked on the source and React re-renders via the
-    // tick-bumped `queryList` snapshot.
     const tab = tabStore.currentTab;
     if (!tab) return;
-    const list = webTerminalStore.getQueryStateByTab(tab).queryItemList.value;
-    while (list.length > 1) {
-      list.shift();
-    }
-  }, [tabStore, webTerminalStore]);
+    // Keep only the live (tail) query item; the slice replaces the
+    // whole array, so React re-renders via the existing selector.
+    const items =
+      useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tab.id] ??
+      EMPTY_QUERY_LIST;
+    if (items.length <= 1) return;
+    replaceWebTerminalQueryItems(tab.id, items.slice(-1));
+  }, [tabStore, replaceWebTerminalQueryItems]);
 
   const handleHistory = useCallback(
     (direction: "up" | "down", editor: IStandaloneCodeEditor) => {
@@ -144,7 +132,7 @@ export function TerminalPanel() {
   const handleCancelQuery = () => {
     const tab = tabStore.currentTab;
     if (!tab) return;
-    webTerminalStore.getQueryStateByTab(tab).controller.abort();
+    getWebTerminalQuerySession(tab).controller.abort();
   };
 
   // Auto-scroll the outer container to the bottom whenever the inner
@@ -170,18 +158,23 @@ export function TerminalPanel() {
 
   // Build a stable handler list per-query for the editor onChange callback,
   // since the editor inside `<CompactSQLEditor>` re-registers actions on
-  // identity change of these props.
+  // identity change of these props. Each handler patches the item via
+  // the zustand slice — direct mutation is not safe with immutable items.
   const handleChangeFor = useMemo(
     () =>
       new Map(
-        queryList.map((q) => [
-          q.id,
-          (value: string) => {
-            q.statement = value;
-          },
-        ])
+        queryList.map((q) => {
+          const tabId = currentTabId;
+          return [
+            q.id,
+            (value: string) => {
+              if (!tabId) return;
+              updateWebTerminalQueryItem(tabId, q.id, { statement: value });
+            },
+          ];
+        })
       ),
-    [queryList]
+    [queryList, currentTabId, updateWebTerminalQueryItem]
   );
 
   return (
@@ -255,3 +248,8 @@ export function TerminalPanel() {
 }
 
 const noop = () => {};
+
+// Stable empty array reference so the zustand selector doesn't return a
+// fresh `[]` on every store change for unconnected tabs (would trigger
+// spurious re-renders).
+const EMPTY_QUERY_LIST: WebTerminalQueryItemV1[] = [];

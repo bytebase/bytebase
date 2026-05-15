@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -10,9 +11,9 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  // Pinia legacy useSQLEditorStore (editor.ts) — still imported by GutterBar
+  // Pinia legacy useSQLEditorVueState (editor.ts) — still imported by GutterBar
   // until that store is migrated.
-  useSQLEditorPiniaStore: vi.fn(),
+  useSQLEditorVueState: vi.fn(),
   useProjectV1Store: vi.fn(),
   // New zustand store.
   state: {
@@ -31,7 +32,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorStore: mocks.useSQLEditorPiniaStore,
+  useSQLEditorVueState: mocks.useSQLEditorVueState,
   useProjectV1Store: mocks.useProjectV1Store,
 }));
 
@@ -95,7 +96,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useSQLEditorPiniaStore.mockReturnValue({ project: "projects/test" });
+  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/test" });
   mocks.useProjectV1Store.mockReturnValue({
     getProjectByName: () => ({ allowJustInTimeAccess: false }),
   });

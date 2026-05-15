@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -24,12 +25,8 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorStore: () => ({ allowAdmin: mocks.allowAdmin }),
+  useSQLEditorVueState: () => ({ allowAdmin: mocks.allowAdmin }),
   useSQLEditorTabStore: () => ({ currentTab: null }),
-  useSQLEditorWorksheetStore: () => ({
-    createWorksheet: vi.fn().mockResolvedValue(undefined),
-    maybeUpdateWorksheet: vi.fn().mockResolvedValue(undefined),
-  }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -43,6 +40,8 @@ vi.mock("@/react/stores/sqlEditor", () => ({
     {
       getState: () => ({
         setAsidePanelTab: mocks.setAsidePanelTab,
+        createWorksheet: vi.fn().mockResolvedValue(undefined),
+        maybeUpdateWorksheet: vi.fn().mockResolvedValue(undefined),
       }),
     }
   ),

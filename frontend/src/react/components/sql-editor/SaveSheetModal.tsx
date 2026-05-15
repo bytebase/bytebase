@@ -8,7 +8,8 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useSQLEditorEvent } from "@/react/hooks/useSQLEditorEvent";
-import { useSQLEditorWorksheetStore, useWorkSheetStore } from "@/store";
+import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { extractWorksheetID } from "@/utils";
@@ -18,7 +19,9 @@ import { FolderForm } from "./FolderForm";
 export function SaveSheetModal() {
   const { t } = useTranslation();
   const worksheetStore = useWorkSheetStore();
-  const editorWorksheetStore = useSQLEditorWorksheetStore();
+  const abortAutoSave = useSQLEditorStore((s) => s.abortAutoSave);
+  const maybeUpdateWorksheet = useSQLEditorStore((s) => s.maybeUpdateWorksheet);
+  const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
   const sheetContext = useSheetContextByView("my");
 
   const [open, setOpen] = useState(false);
@@ -44,14 +47,14 @@ export function SaveSheetModal() {
     const effectiveTitle = tabTitle ?? title;
     const effectiveFolder = tabFolder ?? folder;
 
-    editorWorksheetStore.abortAutoSave();
+    abortAutoSave();
 
     const { worksheet, connection, statement, id: tabId } = effectiveTab;
     const folders = sheetContext.getFoldersForWorksheet(effectiveFolder);
 
     const sheetId = extractWorksheetID(worksheet ?? "");
     if (sheetId !== String(UNKNOWN_ID)) {
-      await editorWorksheetStore.maybeUpdateWorksheet({
+      await maybeUpdateWorksheet({
         tabId,
         worksheet,
         title: effectiveTitle,
@@ -60,7 +63,7 @@ export function SaveSheetModal() {
         folders,
       });
     } else {
-      await editorWorksheetStore.createWorksheet({
+      await createWorksheet({
         tabId,
         title: effectiveTitle,
         statement,

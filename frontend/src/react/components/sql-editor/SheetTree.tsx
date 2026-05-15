@@ -56,11 +56,11 @@ import { Tree } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import {
   pushNotification,
-  useSQLEditorStore,
   useSQLEditorTabStore,
-  useSQLEditorWorksheetStore,
   useWorkSheetStore,
 } from "@/store";
 import {
@@ -182,8 +182,8 @@ export function SheetTree({
   // ---- Pinia stores (called at top level, not inside useVueState) ----------
   const worksheetV1Store = useWorkSheetStore();
   const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorStore();
-  const editorWorksheetStore = useSQLEditorWorksheetStore();
+  const editorStore = useSQLEditorVueState();
+  const createWorksheet = useSQLEditorReactStore((s) => s.createWorksheet);
 
   // ---- Sheet contexts -------------------------------------------------------
   const sheetContext = useSheetContext();
@@ -736,7 +736,7 @@ export function SheetTree({
           break;
         }
         case "add-worksheet":
-          await editorWorksheetStore.createWorksheet({
+          await createWorksheet({
             folders: getFoldersForWorksheet(contextMenuNode.key),
           });
           break;
@@ -761,7 +761,7 @@ export function SheetTree({
       expandedKeysRef,
       folderContext,
       getFoldersForWorksheet,
-      editorWorksheetStore,
+      createWorksheet,
       handleDeleteFolders,
       handleDuplicateSheet,
       handleSharePanelShow,
@@ -1159,7 +1159,7 @@ export function SheetTree({
                 const worksheet =
                   worksheetV1Store.getWorksheetByName(worksheetName);
                 if (!worksheet) return;
-                await editorWorksheetStore.createWorksheet({
+                await createWorksheet({
                   title: worksheet.title,
                   folders: worksheet.folders,
                   database: worksheet.database,
@@ -1359,10 +1359,7 @@ export function SheetTree({
         />
         <PopoverContent align="start" sideOffset={4}>
           {worksheetEntity && (
-            <SharePopoverBody
-              worksheet={worksheetEntity}
-              onUpdated={handleContextMenuClickOutside}
-            />
+            <SharePopoverBody worksheet={worksheetEntity} />
           )}
         </PopoverContent>
       </Popover>

@@ -1,7 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
-import type { SQLEditorStoreState } from "./types";
+import type {
+  QueryHistorySlice,
+  SQLEditorStoreState,
+  TreeSlice,
+  WebTerminalSlice,
+  WorksheetSaveSlice,
+} from "./types";
 
 const originalLocalStorage = globalThis.localStorage;
 const storage = new Map<string, string>();
@@ -22,16 +28,59 @@ const localStorageMock = {
   },
 };
 
+// Inline stub for the queryHistory slice so this test stays decoupled
+// from the real `./queryHistory` module — that module pulls in
+// `@/connect` and (transitively) the Pinia store layout, which can
+// create circular-import issues during test load and isn't relevant
+// to validating uiState behavior.
+const stubQueryHistorySlice = (): QueryHistorySlice => ({
+  queryHistoryByKey: {},
+  fetchQueryHistoryList: vi.fn().mockResolvedValue(undefined),
+  resetPageToken: vi.fn(),
+  mergeLatest: vi.fn().mockResolvedValue(undefined),
+});
+
+const stubTreeSlice = (): TreeSlice => ({
+  treeState: "UNSET",
+  treeNodeKeysById: {},
+  setTreeState: vi.fn(),
+  collectTreeNode: vi.fn(),
+  treeNodeKeysByTarget: vi.fn(() => []),
+});
+
+const stubWebTerminalSlice = (): WebTerminalSlice => ({
+  webTerminalQueryItemsByTabId: {},
+  ensureWebTerminalQueryState: vi.fn(),
+  clearWebTerminalQueryState: vi.fn(),
+  replaceWebTerminalQueryItems: vi.fn(),
+  pushWebTerminalQueryItem: vi.fn(),
+  updateWebTerminalQueryItem: vi.fn(),
+});
+
+const stubWorksheetSaveSlice = (): WorksheetSaveSlice => ({
+  autoSaveController: null,
+  setAutoSaveController: vi.fn(),
+  abortAutoSave: vi.fn(),
+  maybeSwitchProject: vi.fn(async () => undefined),
+  maybeUpdateWorksheet: vi.fn(async () => undefined),
+  createWorksheet: vi.fn(async () => undefined),
+});
+
 // Build a fresh store for each test so the slice's `aiPanelSize`
-// initialiser re-reads the (mocked) localStorage and we don't leak state
-// between tests. The slice module is dynamically imported with a query
-// string so Vitest doesn't cache the module-level read of localStorage.
+// initialiser re-reads the (mocked) localStorage and we don't leak
+// state between tests. The slice module is dynamically re-imported
+// with a query string so the module-level localStorage read in
+// `createUIStateSlice` runs again under the mock.
 const makeStore = async (): Promise<StoreApi<SQLEditorStoreState>> => {
   const mod = (await import(
     `./uiState?t=${Date.now()}`
   )) as typeof import("./uiState");
   return create<SQLEditorStoreState>()((...args) => ({
     ...mod.createUIStateSlice(...args),
+    ...stubQueryHistorySlice(),
+    ...stubTreeSlice(),
+    ...stubWebTerminalSlice(),
+    ...stubWorksheetSaveSlice(),
   }));
 };
 

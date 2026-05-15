@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { head } from "lodash-es";
@@ -18,7 +19,6 @@ import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useSQLEditorStore,
   useSQLEditorTabStore,
   useSQLStore,
 } from "@/store";
@@ -80,7 +80,7 @@ export function BatchQuerySelect({
   const tabStore = useSQLEditorTabStore();
   const databaseStore = useDatabaseV1Store();
   const sqlStore = useSQLStore();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
 
   const [showEmpty, setShowEmpty] = useState(true);
   const [selectedDatabaseNames, setSelectedDatabaseNames] = useState<

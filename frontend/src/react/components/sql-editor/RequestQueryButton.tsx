@@ -1,3 +1,4 @@
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ShieldUser } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,7 +13,6 @@ import {
   hasFeature,
   useProjectV1Store,
   useRoleStore,
-  useSQLEditorStore,
   useSubscriptionV1Store,
 } from "@/store";
 import type { DatabaseResource, Permission } from "@/types";
@@ -81,7 +81,7 @@ export function RequestQueryButton({
   const [showJITDrawer, setShowJITDrawer] = useState(false);
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorStore();
+  const editorStore = useSQLEditorVueState();
   const roleStore = useRoleStore();
   const subscriptionStore = useSubscriptionV1Store();
 
