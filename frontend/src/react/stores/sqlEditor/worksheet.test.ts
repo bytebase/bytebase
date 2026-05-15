@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import type {
@@ -79,10 +78,13 @@ const piniaMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorVueState: () => piniaMocks.editorStore,
   useProjectV1Store: () => piniaMocks.projectStore,
   useSQLEditorTabStore: () => piniaMocks.tabStore,
   useWorkSheetStore: () => piniaMocks.worksheetStore,
+}));
+
+vi.mock("./editor-vue-state", () => ({
+  useSQLEditorVueState: () => piniaMocks.editorStore,
 }));
 
 vi.mock("@/store/modules/v1/projectIamPolicy", () => ({

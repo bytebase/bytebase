@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -38,12 +37,15 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/store", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
   // Transitive imports from AdminModeButton — provide stubs.
-  useSQLEditorVueState: vi.fn(() => ({ allowAdmin: false })),
   useSQLEditorTabStore: vi.fn(() => ({
     currentTab: undefined,
     isDisconnected: true,
     updateCurrentTab: vi.fn(),
   })),
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
+  useSQLEditorVueState: vi.fn(() => ({ allowAdmin: false })),
 }));
 
 vi.mock("@/react/components/instance/constants", () => ({

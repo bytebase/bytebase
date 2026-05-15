@@ -25,8 +25,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorVueState: () => ({ allowAdmin: mocks.allowAdmin }),
   useSQLEditorTabStore: () => ({ currentTab: null }),
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
+  useSQLEditorVueState: () => ({ allowAdmin: mocks.allowAdmin }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({

@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -38,12 +37,15 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
   useAccessGrantStore: mocks.useAccessGrantStore,
   useIssueV1Store: mocks.useIssueV1Store,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
+  useSQLEditorVueState: mocks.useSQLEditorVueState,
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({

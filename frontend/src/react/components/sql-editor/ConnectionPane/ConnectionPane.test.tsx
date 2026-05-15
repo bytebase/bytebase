@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -119,8 +118,11 @@ vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => mocks.environmentStore,
   useInstanceV1Store: () => mocks.instanceStore,
   useProjectV1Store: () => mocks.projectStore,
-  useSQLEditorVueState: () => mocks.editorStore,
   useSQLEditorTabStore: () => mocks.tabStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
+  useSQLEditorVueState: () => mocks.editorStore,
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
