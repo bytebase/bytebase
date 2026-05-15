@@ -3804,9 +3804,7 @@
   "task.no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
   "task.no-tasks-selected": "Không có nhiệm vụ nào được chọn",
   "task.online-migration.self": "Di chuyển trực tuyến",
-  "task.only-showing-latest-n-runs": "Chỉ hiển thị {{n}} lần chạy gần nhất",
   "task.prior-backup": "Sao lưu trước",
-  "task.run-history": "Lịch sử chạy",
   "task.scheduled-time": "Thời gian đã lên lịch",
   "task.select-task": "Chọn tác vụ",
   "two-factor": {

@@ -3804,9 +3804,7 @@
   "task.no-skippable-tasks": "没有可跳过的任务",
   "task.no-tasks-selected": "未选择任何任务",
   "task.online-migration.self": "在线大表变更",
-  "task.only-showing-latest-n-runs": "仅显示最近 {{n}} 条记录",
   "task.prior-backup": "预备份受影响数据",
-  "task.run-history": "执行历史",
   "task.scheduled-time": "计划执行时间",
   "task.select-task": "选择任务",
   "two-factor": {

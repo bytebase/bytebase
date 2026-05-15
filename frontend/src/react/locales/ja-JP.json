@@ -3804,9 +3804,7 @@
   "task.no-skippable-tasks": "スキップ可能なタスクはありません",
   "task.no-tasks-selected": "タスクが選択されていません",
   "task.online-migration.self": "オンラインでの大規模なテーブル変更",
-  "task.only-showing-latest-n-runs": "最新の {{n}} 実行のみを表示",
   "task.prior-backup": "影響を受けるデータの事前バックアップ",
-  "task.run-history": "実行履歴",
   "task.scheduled-time": "スケジュール時刻",
   "task.select-task": "タスクを選択",
   "two-factor": {

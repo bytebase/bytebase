@@ -3816,9 +3816,7 @@
   "task.no-skippable-tasks": "No skippable tasks",
   "task.no-tasks-selected": "No tasks selected",
   "task.online-migration.self": "Online migration",
-  "task.only-showing-latest-n-runs": "Only showing latest {{n}} runs",
   "task.prior-backup": "Prior backup",
-  "task.run-history": "Run History",
   "task.scheduled-time": "Scheduled time",
   "task.select-task": "Select Task",
   "two-factor": {

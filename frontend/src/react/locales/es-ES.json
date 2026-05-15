@@ -3804,9 +3804,7 @@
   "task.no-skippable-tasks": "No hay tareas que se puedan omitir",
   "task.no-tasks-selected": "No hay tareas seleccionadas",
   "task.online-migration.self": "Migración en línea",
-  "task.only-showing-latest-n-runs": "Solo se muestran las últimas {{n}} ejecuciones",
   "task.prior-backup": "Respaldo previo",
-  "task.run-history": "Historial de ejecución",
   "task.scheduled-time": "Hora programada",
   "task.select-task": "Seleccionar tarea",
   "two-factor": {
