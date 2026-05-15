@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import { useColumnWidths } from "./useColumnWidths";
 
 (
@@ -199,5 +199,25 @@ describe("useColumnWidths", () => {
     moveMouse(250); // b: 150
     releaseMouse();
     expect(handle.current!.widths).toEqual([130, 150]);
+  });
+
+  test("mousemove followed immediately by mouseup does not crash even if the state updater runs after teardown", () => {
+    mount([{ key: "a", defaultWidth: 100 }]);
+    startDrag(0, 0);
+    // Dispatch mousemove and mouseup in the same act batch. After mouseup
+    // tears down, the hook's mutable drag ref is nullified. If the updater
+    // closure dereferenced that ref (as the original implementation did),
+    // React's pending-update queue would crash on the next render with
+    // "Cannot read properties of null (reading 'colIndex')". The fixed
+    // updater captures colIndex as a local const, so the schedule survives.
+    expect(() => {
+      act(() => {
+        document.dispatchEvent(new MouseEvent("mousemove", { clientX: 50 }));
+        document.dispatchEvent(new MouseEvent("mouseup"));
+      });
+    }).not.toThrow();
+    // The mousemove's effect must still land — schedule-then-teardown
+    // is not the same as cancellation.
+    expect(handle.current!.widths).toEqual([150]);
   });
 });

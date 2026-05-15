@@ -38,12 +38,17 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
 
       const onMouseMove = (ev: MouseEvent) => {
         if (!dragRef.current) return;
-        const delta = ev.clientX - dragRef.current.startX;
-        const min = columns[dragRef.current.colIndex].minWidth ?? 40;
-        const newWidth = Math.max(min, dragRef.current.startWidth + delta);
+        // Capture everything we need before scheduling the state update.
+        // The setWidths updater may run AFTER teardown nulls dragRef.current
+        // (mouseup → React's pending-update queue → next render's
+        // basicStateReducer), so the updater closure must not deref the ref.
+        const { colIndex, startX, startWidth } = dragRef.current;
+        const delta = ev.clientX - startX;
+        const min = columns[colIndex].minWidth ?? 40;
+        const newWidth = Math.max(min, startWidth + delta);
         setWidths((prev) => {
           const next = [...prev];
-          next[dragRef.current!.colIndex] = newWidth;
+          next[colIndex] = newWidth;
           return next;
         });
       };
