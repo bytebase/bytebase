@@ -155,10 +155,6 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 			})
 			return errors.Wrapf(err, "failed to sync database schema for baseline")
 		}
-		exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
-			Type:            storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{},
-		})
 
 		_, err = exec.store.CreateChangelog(ctx, &store.ChangelogMessage{
 			InstanceID:   database.InstanceID,
@@ -170,8 +166,18 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 			},
 		})
 		if err != nil {
+			exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+				Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+				DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+					Error: err.Error(),
+				},
+			})
 			return errors.Wrapf(err, "failed to create baseline changelog")
 		}
+		exec.store.CreateTaskRunLogS(ctx, database.ProjectID, taskRunUID, time.Now(), exec.profile.ReplicaID, &storepb.TaskRunLog{
+			Type:            storepb.TaskRunLog_DATABASE_SYNC_END,
+			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{},
+		})
 	}
 
 	return nil

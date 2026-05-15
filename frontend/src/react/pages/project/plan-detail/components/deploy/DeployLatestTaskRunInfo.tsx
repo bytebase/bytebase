@@ -29,41 +29,45 @@ export function DeployLatestTaskRunInfo({
 }) {
   const { t } = useTranslation();
   const updateDate = getDateForPbTimestampProtoEs(updateTime);
-  const statusConfig =
-    status === TaskRun_Status.RUNNING
-      ? {
+  const statusConfig = (() => {
+    switch (status) {
+      case TaskRun_Status.RUNNING:
+        return {
           className: "text-blue-600",
           icon: LoaderCircle,
           label: t("task.status.running"),
           spinning: true,
-        }
-      : status === TaskRun_Status.DONE
-        ? {
-            className: "text-green-600",
-            icon: CheckCircle2,
-            label: t("task.status.done"),
-            spinning: false,
-          }
-        : status === TaskRun_Status.FAILED
-          ? {
-              className: "text-red-600",
-              icon: XCircle,
-              label: t("task.status.failed"),
-              spinning: false,
-            }
-          : status === TaskRun_Status.CANCELED
-            ? {
-                className: "text-gray-500",
-                icon: Circle,
-                label: t("task.status.canceled"),
-                spinning: false,
-              }
-            : {
-                className: "text-gray-500",
-                icon: Circle,
-                label: t("task.status.pending"),
-                spinning: false,
-              };
+        };
+      case TaskRun_Status.DONE:
+        return {
+          className: "text-green-600",
+          icon: CheckCircle2,
+          label: t("task.status.done"),
+          spinning: false,
+        };
+      case TaskRun_Status.FAILED:
+        return {
+          className: "text-red-600",
+          icon: XCircle,
+          label: t("task.status.failed"),
+          spinning: false,
+        };
+      case TaskRun_Status.CANCELED:
+        return {
+          className: "text-gray-500",
+          icon: Circle,
+          label: t("task.status.canceled"),
+          spinning: false,
+        };
+      default:
+        return {
+          className: "text-gray-500",
+          icon: Circle,
+          label: t("task.status.pending"),
+          spinning: false,
+        };
+    }
+  })();
   const StatusIcon = statusConfig.icon;
 
   return (
