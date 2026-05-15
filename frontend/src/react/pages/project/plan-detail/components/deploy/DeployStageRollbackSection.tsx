@@ -36,11 +36,7 @@ export function DeployStageRollbackSection({ stage }: { stage: Stage }) {
   return (
     <>
       <div className="w-full px-4 pb-2">
-        <Button
-          onClick={() => setRollbackOpen(true)}
-          size="sm"
-          variant="ghost"
-        >
+        <Button onClick={() => setRollbackOpen(true)} size="sm" variant="ghost">
           <DatabaseBackup className="h-4 w-4" />
           {t("task-run.rollback.available", {
             count: rollbackItems.length,
