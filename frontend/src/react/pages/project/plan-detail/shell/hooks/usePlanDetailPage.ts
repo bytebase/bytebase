@@ -5,7 +5,11 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
 } from "@/router/dashboard/projectV1";
-import { PLAN_DETAIL_PHASE_DEPLOY } from "@/router/dashboard/projectV1RouteHelpers";
+import {
+  PLAN_DETAIL_PHASE_CHANGES,
+  PLAN_DETAIL_PHASE_DEPLOY,
+  PLAN_DETAIL_PHASE_REVIEW,
+} from "@/router/dashboard/projectV1RouteHelpers";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -13,6 +17,7 @@ import { unknownPlan } from "@/types/v1/issue/plan";
 import { unknownProject } from "@/types/v1/project";
 import { unknownUser } from "@/types/v1/user";
 import { setDocumentTitle } from "@/utils";
+import type { PlanDetailPhase } from "../../shared/stores/types";
 import { usePlanDetailStoreApi } from "../../shared/stores/usePlanDetailStore";
 import { fetchPlanSnapshot } from "./fetchPlanSnapshot";
 import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
@@ -105,6 +110,40 @@ export const usePlanDetailPage = ({
   const routePhase = route.phase;
   const routeStageId = route.stageId;
   const routeTaskId = route.taskId;
+  const focusPhase = phase.focusPhase;
+  const routePageKey = `${projectId}/${planId}/${specId ?? ""}`;
+  const currentPhase = useMemo<PlanDetailPhase>(() => {
+    if (
+      routePhase === PLAN_DETAIL_PHASE_CHANGES ||
+      routePhase === PLAN_DETAIL_PHASE_REVIEW ||
+      routePhase === PLAN_DETAIL_PHASE_DEPLOY
+    ) {
+      return routePhase;
+    }
+    if (routeStageId || routeTaskId) {
+      return PLAN_DETAIL_PHASE_DEPLOY;
+    }
+    if (
+      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
+      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
+    ) {
+      return PLAN_DETAIL_PHASE_CHANGES;
+    }
+    if (snapshot.rollout) {
+      return PLAN_DETAIL_PHASE_DEPLOY;
+    }
+    if (snapshot.issue) {
+      return PLAN_DETAIL_PHASE_REVIEW;
+    }
+    return PLAN_DETAIL_PHASE_CHANGES;
+  }, [
+    routeName,
+    routePhase,
+    routeStageId,
+    routeTaskId,
+    snapshot.issue,
+    snapshot.rollout,
+  ]);
 
   useEffect(() => {
     latestSnapshotRef.current = snapshot;
@@ -171,20 +210,8 @@ export const usePlanDetailPage = ({
   });
 
   useEffect(() => {
-    if (
-      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
-      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
-    ) {
-      phase.expandPhase("changes");
-    }
-    if (
-      routePhase === PLAN_DETAIL_PHASE_DEPLOY ||
-      routeStageId ||
-      routeTaskId
-    ) {
-      phase.expandPhase("deploy");
-    }
-  }, [phase, routeName, routePhase, routeStageId, routeTaskId]);
+    focusPhase(currentPhase);
+  }, [currentPhase, focusPhase, routePageKey]);
 
   const isPlanDone = useMemo(() => {
     if (!snapshot.rollout) {

@@ -16,6 +16,8 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "./projectV1";
 
+export const PLAN_DETAIL_PHASE_CHANGES = "changes";
+export const PLAN_DETAIL_PHASE_REVIEW = "review";
 export const PLAN_DETAIL_PHASE_DEPLOY = "deploy";
 
 export const getRouteQueryString = (
