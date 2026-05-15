@@ -2,11 +2,8 @@ import { useCallback, useEffect } from "react";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { ReadonlyModeNotSupported } from "@/react/components/sql-editor/ReadonlyModeNotSupported";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useDatabaseV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { getInstanceResource, instanceV1HasReadonlyMode } from "@/utils";

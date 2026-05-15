@@ -2,10 +2,8 @@ import { ChevronLeft, FileCode } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDBSchemaV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   extractKeyWithPosition,
   keyWithPosition,

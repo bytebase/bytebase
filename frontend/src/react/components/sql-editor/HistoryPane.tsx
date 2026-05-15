@@ -18,10 +18,8 @@ import {
   selectQueryHistoryEntry,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
-import {
-  pushNotification,
-  useSQLEditorTabStore,
-} from "@/store";
+import { pushNotification } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";

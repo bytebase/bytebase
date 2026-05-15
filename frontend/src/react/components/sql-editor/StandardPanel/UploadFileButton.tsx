@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { SQLUploadButton } from "./SQLUploadButton";
 
 interface UploadFileButtonProps {

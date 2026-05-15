@@ -7,10 +7,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import {
   extractDatabaseResourceName,

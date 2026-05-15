@@ -42,8 +42,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useWorkSheetStore: mocks.useWorkSheetStore,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({

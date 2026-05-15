@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { ResultView } from "@/react/components/sql-editor/ResultView";
 import { Button } from "@/react/components/ui/button";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,

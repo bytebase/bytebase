@@ -21,13 +21,8 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useSQLEditorTabStore,
-  useSQLStore,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store, useDBSchemaV1Store, useSQLStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { isValidDatabaseName } from "@/types";

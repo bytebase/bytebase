@@ -34,7 +34,7 @@ import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,

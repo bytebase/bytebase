@@ -6,12 +6,8 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import type { InjectionKey, Ref } from "vue";
 import { computed, nextTick, ref, toRefs, watch } from "vue";
 import { t } from "@/plugins/i18n";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useSQLEditorTabStore,
-  useWorkSheetStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useWorkSheetStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { FolderContext } from "@/react/stores/sqlEditor/folder";
 import { buildFolderContext } from "@/react/stores/sqlEditor/folder";
 import type { SQLEditorTab, SQLEditorTabMode } from "@/types";

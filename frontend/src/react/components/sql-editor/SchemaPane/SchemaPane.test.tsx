@@ -40,6 +40,20 @@ vi.mock("@/react/i18n", () => ({
 }));
 
 vi.mock("@/store", () => ({
+  useDBSchemaV1Store: () => ({
+    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+    syncDatabase: vi.fn(),
+    getTableMetadata: vi.fn(),
+  }),
+  useDatabaseV1Store: () => ({ getDatabaseByName: vi.fn() }),
+  pushNotification: vi.fn(),
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useConnectionOfCurrentSQLEditorTab: () => ({
+    database: { value: mocks.databaseRefValue },
+    instance: { value: mocks.instanceRefValue },
+  }),
   useSQLEditorTabStore: () => ({
     currentTab: mocks.currentTab,
     openTabList: [],
@@ -48,17 +62,6 @@ vi.mock("@/store", () => ({
     updateCurrentTab: vi.fn(),
     updateTab: vi.fn(),
   }),
-  useDBSchemaV1Store: () => ({
-    getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
-    syncDatabase: vi.fn(),
-    getTableMetadata: vi.fn(),
-  }),
-  useDatabaseV1Store: () => ({ getDatabaseByName: vi.fn() }),
-  useConnectionOfCurrentSQLEditorTab: () => ({
-    database: { value: mocks.databaseRefValue },
-    instance: { value: mocks.instanceRefValue },
-  }),
-  pushNotification: vi.fn(),
 }));
 
 vi.mock("@/types", () => ({

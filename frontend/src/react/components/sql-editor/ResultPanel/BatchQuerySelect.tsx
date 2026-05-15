@@ -16,12 +16,8 @@ import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-  useSQLStore,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store, useSQLStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";

@@ -27,9 +27,12 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 
 vi.mock("@/router", () => ({

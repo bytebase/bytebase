@@ -2,7 +2,7 @@ import { ShieldAlert } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { AdminModeButton } from "./AdminModeButton";
 
 /**

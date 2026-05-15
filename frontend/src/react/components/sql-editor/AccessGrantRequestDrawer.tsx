@@ -24,12 +24,8 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   AccessGrant_Status,
   AccessGrantSchema,

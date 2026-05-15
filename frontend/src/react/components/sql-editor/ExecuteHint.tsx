@@ -7,13 +7,8 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useSQLEditorTabStore,
-  useStorageStore,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store, useProjectV1Store, useStorageStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {

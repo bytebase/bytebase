@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 

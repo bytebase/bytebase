@@ -32,7 +32,7 @@ import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { tabListEvents } from "@/views/sql-editor/TabList/events";
 import { TabContextMenu, type TabContextMenuHandle } from "./TabContextMenu";

@@ -74,7 +74,8 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     folders,
     signal,
   }) => {
-    const { useSQLEditorTabStore, useWorkSheetStore } = await importStores();
+    const { useWorkSheetStore } = await importStores();
+    const { useSQLEditorTabStore } = await import("./tab-vue-state");
     const tabStore = useSQLEditorTabStore();
     const worksheetStore = useWorkSheetStore();
 
@@ -132,8 +133,9 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     folders = [],
     database = "",
   }) => {
-    const { useSQLEditorTabStore, useWorkSheetStore } = await importStores();
+    const { useWorkSheetStore } = await importStores();
     const { useSQLEditorVueState } = await import("./editor-vue-state");
+    const { useSQLEditorTabStore } = await import("./tab-vue-state");
     const editorStore = useSQLEditorVueState();
     const tabStore = useSQLEditorTabStore();
     const worksheetStore = useWorkSheetStore();

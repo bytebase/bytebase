@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
 import { DatabaseOverviewInfo } from "@/react/pages/project/database-detail/overview/DatabaseOverviewInfo";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDBSchemaV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   getInstanceResource,
   instanceV1SupportsExternalTable,

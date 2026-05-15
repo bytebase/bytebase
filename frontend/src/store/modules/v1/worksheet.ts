@@ -28,7 +28,7 @@ import {
   getStatementSize,
   isWorksheetWritableV1,
 } from "@/utils";
-import { useSQLEditorTabStore } from "../sqlEditor";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
 import { extractUserEmail } from "./common";

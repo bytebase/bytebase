@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDBSchemaV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";

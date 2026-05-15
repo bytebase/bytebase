@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sqlServiceClientConnect } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,

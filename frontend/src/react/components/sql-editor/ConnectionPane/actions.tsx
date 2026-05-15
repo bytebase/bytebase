@@ -11,9 +11,7 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useSQLEditorTabStore,
-} from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   BatchQueryContext,
   SQLEditorConnection,

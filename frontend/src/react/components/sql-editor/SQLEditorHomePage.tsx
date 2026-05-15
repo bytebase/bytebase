@@ -26,11 +26,8 @@ import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { unknownProject } from "@/types";
 import {
   extractDatabaseResourceName,

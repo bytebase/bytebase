@@ -14,7 +14,7 @@ import {
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useConversationStore } from "../../store";
 import type { Conversation } from "../../types";
 import { useAIContext } from "../context";

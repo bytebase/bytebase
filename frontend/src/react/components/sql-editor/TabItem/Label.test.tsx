@@ -20,8 +20,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/store", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
   useWorkSheetStore: mocks.useWorkSheetStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 
 vi.mock("@/views/sql-editor/TabList/events", () => ({

@@ -1,11 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import {
-  pushNotification,
-  useSQLEditorTabStore,
-  useWorkSheetStore,
-} from "@/store";
+import { pushNotification, useWorkSheetStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { isWorksheetWritableV1 } from "@/utils";
 
 const AUTO_SAVE_DEBOUNCE_MS = 2000;

@@ -13,10 +13,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {

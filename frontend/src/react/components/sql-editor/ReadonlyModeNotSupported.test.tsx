@@ -35,8 +35,11 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
   // Transitive imports from AdminModeButton — provide stubs.
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore: vi.fn(() => ({
     currentTab: undefined,
     isDisconnected: true,

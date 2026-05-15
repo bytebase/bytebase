@@ -2,7 +2,7 @@ import { Box, Info } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,

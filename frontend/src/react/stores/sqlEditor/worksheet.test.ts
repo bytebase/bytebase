@@ -79,8 +79,11 @@ const piniaMocks = vi.hoisted(() => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: () => piniaMocks.projectStore,
-  useSQLEditorTabStore: () => piniaMocks.tabStore,
   useWorkSheetStore: () => piniaMocks.worksheetStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useSQLEditorTabStore: () => piniaMocks.tabStore,
 }));
 
 vi.mock("./editor-vue-state", () => ({

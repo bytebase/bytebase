@@ -6,14 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { t } from "@/plugins/i18n";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
-import {
-  hasFeature,
-  pushNotification,
-  useDatabaseV1Store,
-  useDBGroupStore,
-  useSQLEditorTabStore,
-  useSQLStore,
-} from "@/store";
+import { hasFeature, pushNotification, useDatabaseV1Store, useDBGroupStore, useSQLStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   BBNotificationStyle,
   QueryContextStatus,

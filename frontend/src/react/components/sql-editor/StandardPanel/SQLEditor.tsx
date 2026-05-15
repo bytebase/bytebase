@@ -17,12 +17,8 @@ import {
 } from "@/react/components/monaco/utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-  useUIStateStore,
-  useWorkSheetAndTabStore,
-} from "@/store";
+import { useUIStateStore, useWorkSheetAndTabStore } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   dialectOfEngineV1,
   isValidDatabaseName,

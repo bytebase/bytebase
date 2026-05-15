@@ -19,12 +19,8 @@ import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,

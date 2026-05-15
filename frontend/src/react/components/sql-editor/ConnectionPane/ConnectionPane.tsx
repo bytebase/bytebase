@@ -27,17 +27,8 @@ import { useCommonSearchScopeOptions } from "@/react/components/useCommonSearchS
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import {
-  featureToRef,
-  pushNotification,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBGroupStore,
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-  useProjectV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { featureToRef, pushNotification, useCurrentUserV1, useDatabaseV1Store, useDBGroupStore, useEnvironmentV1Store, useInstanceV1Store, useProjectV1Store } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type {

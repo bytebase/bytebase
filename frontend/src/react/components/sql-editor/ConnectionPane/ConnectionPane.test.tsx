@@ -118,6 +118,9 @@ vi.mock("@/store", () => ({
   useEnvironmentV1Store: () => mocks.environmentStore,
   useInstanceV1Store: () => mocks.instanceStore,
   useProjectV1Store: () => mocks.projectStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useSQLEditorTabStore: () => mocks.tabStore,
 }));
 

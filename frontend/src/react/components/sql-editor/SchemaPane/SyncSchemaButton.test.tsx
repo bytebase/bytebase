@@ -69,12 +69,15 @@ vi.mock("@/react/hooks/useVueState", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useConnectionOfCurrentSQLEditorTab: () => ({
-    database: { value: mocks.databaseRefValue },
-  }),
   useDatabaseV1Store: () => ({ syncDatabase: mocks.syncDatabase }),
   useDBSchemaV1Store: () => ({
     getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+  }),
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+  useConnectionOfCurrentSQLEditorTab: () => ({
+    database: { value: mocks.databaseRefValue },
   }),
 }));
 

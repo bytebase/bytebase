@@ -20,11 +20,8 @@ import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSettingV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useSettingV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
 

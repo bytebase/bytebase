@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { UNKNOWN_ID } from "@/types/const";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import {

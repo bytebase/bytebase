@@ -18,7 +18,7 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorDatabaseQueryContext } from "@/types";
 import { getDataSourceTypeI18n } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";

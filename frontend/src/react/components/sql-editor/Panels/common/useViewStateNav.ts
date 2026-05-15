@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { defaultViewState } from "@/types";
 import type { EditorPanelViewState } from "@/types/sqlEditor/tabViewState";
 

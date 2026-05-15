@@ -19,14 +19,8 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useSQLEditorTabStore,
-  useWorkSheetStore,
-} from "@/store";
+import { pushNotification, useActuatorV1Store, useDatabaseV1Store, useProjectV1Store, useWorkSheetStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,

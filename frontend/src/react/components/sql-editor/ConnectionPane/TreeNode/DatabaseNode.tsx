@@ -7,7 +7,7 @@ import { Checkbox } from "@/react/components/ui/checkbox";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorTreeNode } from "@/types";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import {

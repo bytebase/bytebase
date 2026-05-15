@@ -58,11 +58,8 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
-import {
-  pushNotification,
-  useSQLEditorTabStore,
-  useWorkSheetStore,
-} from "@/store";
+import { pushNotification, useWorkSheetStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   openWorksheetByName,
   revealNodes,

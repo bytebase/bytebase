@@ -9,10 +9,7 @@ import type {
 } from "@/react/components/monaco/types";
 import { formatEditorContent } from "@/react/components/monaco/utils";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";

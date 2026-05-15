@@ -18,6 +18,9 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/store", () => ({
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 

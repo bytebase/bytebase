@@ -1,6 +1,6 @@
 import { last } from "lodash-es";
 import { computed, ref, watch } from "vue";
-import { useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type { SQLEditorTab } from "@/types";
 import { useConversationStore } from "../store";
 import type { AIChatInfo, Conversation } from "../types";

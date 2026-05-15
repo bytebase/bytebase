@@ -2,7 +2,6 @@ export * from "./accessGrant";
 export * from "./v1/auth";
 export * from "./notification";
 export * from "./router";
-export * from "./sqlEditor";
 export * from "./uistate";
 export * from "./sqlReview";
 export * from "./idp";

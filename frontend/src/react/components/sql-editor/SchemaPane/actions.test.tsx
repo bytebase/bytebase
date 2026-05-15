@@ -54,6 +54,9 @@ vi.mock("@/store", () => ({
   pushNotification: vi.fn(),
   useDatabaseV1Store: () => ({ getDatabaseByName: mocks.getDatabaseByName }),
   useDBSchemaV1Store: () => ({ getTableMetadata: mocks.getTableMetadata }),
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useSQLEditorTabStore: () => ({
     currentTab: { id: "t1", viewState: { schema: "" } },
     openTabList: [],

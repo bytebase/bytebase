@@ -7,10 +7,8 @@ import {
   SelectValue,
 } from "@/react/components/ui/select";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDBSchemaV1Store } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { hasSchemaProperty } from "@/utils";
 import { useViewStateNav } from "./useViewStateNav";
 
