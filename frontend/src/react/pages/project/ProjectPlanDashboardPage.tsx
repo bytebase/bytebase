@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
@@ -375,27 +376,243 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 // PlanTable
 // ---------------------------------------------------------------------------
 
+interface PlanColumn {
+  key: string;
+  title: React.ReactNode;
+  defaultWidth: number;
+  minWidth?: number;
+  resizable?: boolean;
+  cellClassName?: string;
+  render: (plan: Plan, ctx: PlanRowContext) => React.ReactNode;
+}
+
+interface PlanRowContext {
+  creator: { title: string; name: string };
+  updateTimeTs: number;
+  approvalTag:
+    | {
+        label: string;
+        variant:
+          | "default"
+          | "secondary"
+          | "destructive"
+          | "warning"
+          | "success";
+      }
+    | undefined;
+  checkSummary: {
+    running: number;
+    success: number;
+    warning: number;
+    error: number;
+  };
+  hasAnyCheck: boolean;
+  isDeleted: boolean;
+  showDraftTag: boolean;
+  environmentStore: ReturnType<typeof useEnvironmentV1Store>;
+}
+
+function getRolloutStageStatus(summary: Plan_RolloutStageSummary): Task_Status {
+  for (const status of TASK_STATUS_FILTERS) {
+    if (summary.taskStatusCounts.some((item) => item.status === status)) {
+      return status;
+    }
+  }
+  return Task_Status.STATUS_UNSPECIFIED;
+}
+
 function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
   const { t } = useTranslation();
 
+  const columns = useMemo<PlanColumn[]>(
+    () => [
+      {
+        key: "name",
+        title: t("issue.table.name"),
+        defaultWidth: 320,
+        minWidth: 200,
+        resizable: true,
+        render: (plan, ctx) => (
+          <div className="flex items-center gap-x-2 overflow-hidden">
+            <span className="whitespace-nowrap text-control opacity-60">
+              {extractPlanUID(plan.name)}
+            </span>
+            {plan.title ? (
+              <span className="truncate normal-nums">{plan.title}</span>
+            ) : (
+              <span className="opacity-60 italic">{t("common.untitled")}</span>
+            )}
+            {ctx.isDeleted && (
+              <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs shrink-0">
+                {t("common.closed")}
+              </span>
+            )}
+            {ctx.showDraftTag && !ctx.isDeleted && (
+              <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
+                {t("common.draft")}
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "checks",
+        title: t("plan.checks.self"),
+        defaultWidth: 200,
+        minWidth: 120,
+        resizable: true,
+        render: (_plan, ctx) =>
+          ctx.hasAnyCheck ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              {ctx.checkSummary.running > 0 && (
+                <div className="flex items-center gap-1 text-control">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>{t("task.status.running")}</span>
+                </div>
+              )}
+              {ctx.checkSummary.error > 0 && (
+                <div className="flex items-center gap-1 text-error">
+                  <XCircle className="size-4" />
+                  <span>{ctx.checkSummary.error}</span>
+                </div>
+              )}
+              {ctx.checkSummary.warning > 0 && (
+                <div className="flex items-center gap-1 text-warning">
+                  <AlertCircle className="size-4" />
+                  <span>{ctx.checkSummary.warning}</span>
+                </div>
+              )}
+              {ctx.checkSummary.success > 0 && (
+                <div className="flex items-center gap-1 text-success">
+                  <CheckCircle className="size-4" />
+                  <span>{ctx.checkSummary.success}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-control-light">-</span>
+          ),
+      },
+      {
+        key: "review",
+        title: t("plan.navigator.review"),
+        defaultWidth: 140,
+        minWidth: 100,
+        resizable: true,
+        render: (_plan, ctx) =>
+          ctx.approvalTag ? (
+            <Badge
+              variant={ctx.approvalTag.variant}
+              className="whitespace-nowrap"
+            >
+              {ctx.approvalTag.label}
+            </Badge>
+          ) : (
+            <span className="text-control-light">-</span>
+          ),
+      },
+      {
+        key: "stages",
+        title: t("rollout.stage.self", { count: 2 }),
+        defaultWidth: 260,
+        minWidth: 140,
+        resizable: true,
+        render: (plan, ctx) =>
+          plan.rolloutStageSummaries.length === 0 ? (
+            <span className="text-control-light">-</span>
+          ) : (
+            <div className="flex items-center gap-1 flex-wrap">
+              {plan.rolloutStageSummaries.map((summary, index) => {
+                const envName = formatEnvironmentName(
+                  extractStageUID(summary.stage)
+                );
+                const environment =
+                  ctx.environmentStore.getEnvironmentByName(envName);
+                const stageStatus = getRolloutStageStatus(summary);
+                return (
+                  <div key={summary.stage} className="flex items-center gap-1">
+                    <div className="flex items-center gap-1">
+                      <TaskStatusIcon status={stageStatus} />
+                      <span className="text-sm">
+                        {environment?.title || envName}
+                      </span>
+                    </div>
+                    {index < plan.rolloutStageSummaries.length - 1 && (
+                      <span className="mx-1 text-control-light">&rarr;</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ),
+      },
+      {
+        key: "updated",
+        title: t("issue.table.updated"),
+        defaultWidth: 152,
+        minWidth: 100,
+        resizable: true,
+        render: (_plan, ctx) => (
+          <Tooltip content={formatAbsoluteDateTime(ctx.updateTimeTs * 1000)}>
+            <span className="text-control-light whitespace-nowrap">
+              {humanizeTs(ctx.updateTimeTs)}
+            </span>
+          </Tooltip>
+        ),
+      },
+      {
+        key: "creator",
+        title: t("issue.table.creator"),
+        defaultWidth: 152,
+        minWidth: 100,
+        resizable: true,
+        render: (_plan, ctx) => (
+          <div className="flex items-center gap-x-1.5">
+            <span className="text-sm truncate">{ctx.creator.title}</span>
+          </div>
+        ),
+      },
+    ],
+    [t]
+  );
+
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+
+  // Keep `overflow-x-auto` only on the wrapper — no `border rounded-sm` here
+  // even though `DatabaseTableView` uses one. The plan list never had a
+  // visible border around the table and we are not adding one as part of
+  // this change.
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[1000px]">
+      <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+        <colgroup>
+          {widths.map((w, i) => (
+            <col key={columns[i].key} style={{ width: `${w}px` }} />
+          ))}
+        </colgroup>
         <TableHeader>
           <TableRow className="bg-control-bg">
-            <TableHead className="min-w-80">{t("issue.table.name")}</TableHead>
-            <TableHead className="w-50">{t("plan.checks.self")}</TableHead>
-            <TableHead className="w-35">{t("plan.navigator.review")}</TableHead>
-            <TableHead className="w-65">
-              {t("rollout.stage.self", { count: 2 })}
-            </TableHead>
-            <TableHead className="w-38">{t("issue.table.updated")}</TableHead>
-            <TableHead className="w-38">{t("issue.table.creator")}</TableHead>
+            {columns.map((col, colIdx) => (
+              <TableHead
+                key={col.key}
+                resizable={col.resizable}
+                onResizeStart={
+                  col.resizable ? (e) => onResizeStart(colIdx, e) : undefined
+                }
+              >
+                {col.title}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {plans.map((plan) => (
-            <PlanRow key={plan.name} plan={plan} projectId={projectId} />
+            <PlanRow
+              key={plan.name}
+              plan={plan}
+              projectId={projectId}
+              columns={columns}
+            />
           ))}
         </TableBody>
       </Table>
@@ -407,10 +624,18 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
 // PlanRow
 // ---------------------------------------------------------------------------
 
-function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
-  const { t } = useTranslation();
+function PlanRow({
+  plan,
+  projectId,
+  columns,
+}: {
+  plan: Plan;
+  projectId: string;
+  columns: PlanColumn[];
+}) {
   const userStore = useUserStore();
   const environmentStore = useEnvironmentV1Store();
+  const { t } = useTranslation();
 
   const isDeleted = plan.state === State.DELETED;
   const showDraftTag = plan.issue === "" && !plan.hasRollout;
@@ -464,7 +689,6 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
     return { label: t(badge.labelKey), variant: badge.variant };
   }, [plan.approvalStatus, plan.hasRollout, plan.issue, t]);
 
-  // Plan check status summary
   const checkSummary = useMemo(() => {
     const statusCount = plan.planCheckRunStatusCount || {};
     const running = statusCount["RUNNING"] || 0;
@@ -481,16 +705,15 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
       checkSummary.error >
     0;
 
-  // Rollout stages
-  const getRolloutStageStatus = (
-    summary: Plan_RolloutStageSummary
-  ): Task_Status => {
-    for (const status of TASK_STATUS_FILTERS) {
-      if (summary.taskStatusCounts.some((item) => item.status === status)) {
-        return status;
-      }
-    }
-    return Task_Status.STATUS_UNSPECIFIED;
+  const ctx: PlanRowContext = {
+    creator,
+    updateTimeTs,
+    approvalTag,
+    checkSummary,
+    hasAnyCheck,
+    isDeleted,
+    showDraftTag,
+    environmentStore,
   };
 
   return (
@@ -498,121 +721,14 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
       className={cn("cursor-pointer", isDeleted && "opacity-60")}
       onClick={onRowClick}
     >
-      {/* Title */}
-      <TableCell>
-        <div className="flex items-center gap-x-2 overflow-hidden">
-          <span className="whitespace-nowrap text-control opacity-60">
-            {extractPlanUID(plan.name)}
-          </span>
-          {plan.title ? (
-            <span className="truncate normal-nums">{plan.title}</span>
-          ) : (
-            <span className="opacity-60 italic">{t("common.untitled")}</span>
-          )}
-          {isDeleted && (
-            <span className="inline-flex items-center rounded-full bg-warning/10 text-warning px-2 py-0.5 text-xs shrink-0">
-              {t("common.closed")}
-            </span>
-          )}
-          {showDraftTag && !isDeleted && (
-            <span className="inline-flex items-center rounded-full bg-control-bg text-control-light px-2 py-0.5 text-xs shrink-0">
-              {t("common.draft")}
-            </span>
-          )}
-        </div>
-      </TableCell>
-
-      {/* Checks */}
-      <TableCell>
-        {hasAnyCheck ? (
-          <div className="flex items-center gap-3 flex-wrap">
-            {checkSummary.running > 0 && (
-              <div className="flex items-center gap-1 text-control">
-                <Loader2 className="size-4 animate-spin" />
-                <span>{t("task.status.running")}</span>
-              </div>
-            )}
-            {checkSummary.error > 0 && (
-              <div className="flex items-center gap-1 text-error">
-                <XCircle className="size-4" />
-                <span>{checkSummary.error}</span>
-              </div>
-            )}
-            {checkSummary.warning > 0 && (
-              <div className="flex items-center gap-1 text-warning">
-                <AlertCircle className="size-4" />
-                <span>{checkSummary.warning}</span>
-              </div>
-            )}
-            {checkSummary.success > 0 && (
-              <div className="flex items-center gap-1 text-success">
-                <CheckCircle className="size-4" />
-                <span>{checkSummary.success}</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <span className="text-control-light">-</span>
-        )}
-      </TableCell>
-
-      {/* Approval */}
-      <TableCell>
-        {approvalTag ? (
-          <Badge variant={approvalTag.variant} className="whitespace-nowrap">
-            {approvalTag.label}
-          </Badge>
-        ) : (
-          <span className="text-control-light">-</span>
-        )}
-      </TableCell>
-
-      {/* Stages */}
-      <TableCell>
-        {plan.rolloutStageSummaries.length === 0 ? (
-          <span className="text-control-light">-</span>
-        ) : (
-          <div className="flex items-center gap-1 flex-wrap">
-            {plan.rolloutStageSummaries.map((summary, index) => {
-              const envName = formatEnvironmentName(
-                extractStageUID(summary.stage)
-              );
-              const environment =
-                environmentStore.getEnvironmentByName(envName);
-              const stageStatus = getRolloutStageStatus(summary);
-              return (
-                <div key={summary.stage} className="flex items-center gap-1">
-                  <div className="flex items-center gap-1">
-                    <TaskStatusIcon status={stageStatus} />
-                    <span className="text-sm">
-                      {environment?.title || envName}
-                    </span>
-                  </div>
-                  {index < plan.rolloutStageSummaries.length - 1 && (
-                    <span className="mx-1 text-control-light">&rarr;</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </TableCell>
-
-      {/* Updated */}
-      <TableCell>
-        <Tooltip content={formatAbsoluteDateTime(updateTimeTs * 1000)}>
-          <span className="text-control-light whitespace-nowrap">
-            {humanizeTs(updateTimeTs)}
-          </span>
-        </Tooltip>
-      </TableCell>
-
-      {/* Creator */}
-      <TableCell>
-        <div className="flex items-center gap-x-1.5">
-          <span className="text-sm truncate">{creator.title}</span>
-        </div>
-      </TableCell>
+      {columns.map((col) => (
+        <TableCell
+          key={col.key}
+          className={cn("overflow-hidden", col.cellClassName)}
+        >
+          {col.render(plan, ctx)}
+        </TableCell>
+      ))}
     </TableRow>
   );
 }
