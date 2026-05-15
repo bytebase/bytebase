@@ -38,10 +38,17 @@ type protectedResourceMetadata struct {
 func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
-	// Discovery is unauthenticated and host-global; no workspace context is
-	// available here, so we ask for the host-level external URL. Per-workspace
-	// external URL overrides (if any) are not applicable to discovery.
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, "")
+	// On self-hosted, the external URL setting is stored against the
+	// singleton workspace; resolve it so GetEffectiveExternalURL can find
+	// the configured value. On SaaS there is no singleton, so we pass ""
+	// and rely on profile.ExternalURL (the --external-url CLI flag).
+	workspaceID := ""
+	if !s.profile.SaaS {
+		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
+			workspaceID = ws
+		}
+	}
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
 	if err != nil {
 		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
 	}

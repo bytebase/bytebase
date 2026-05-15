@@ -188,9 +188,19 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // deployments (where the inbound Host can differ from the public endpoint)
 // emit the correct public URL to MCP clients. Request-derived values are the
 // last-resort fallback only.
+//
+// On self-hosted, the external URL setting is stored against the singleton
+// workspace; resolve it before asking GetEffectiveExternalURL so the
+// workspace-scoped fallback in that helper can find the configured value.
 func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
 	ctx := c.Request().Context()
-	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, ""); err == nil && externalURL != "" {
+	workspaceID := ""
+	if !s.profile.SaaS {
+		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {
+			workspaceID = ws
+		}
+	}
+	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID); err == nil && externalURL != "" {
 		return strings.TrimSuffix(externalURL, "/") + "/.well-known/oauth-protected-resource"
 	}
 

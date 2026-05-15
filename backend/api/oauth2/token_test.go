@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -99,4 +102,38 @@ func TestResolveBoundWorkspace(t *testing.T) {
 		require.NotErrorIs(t, err, errWorkspaceNotMember)
 		require.Contains(t, err.Error(), "failed to resolve workspace")
 	})
+}
+
+// TestIssueTokensPlacesWorkspaceInJWT verifies the in-memory propagation of
+// the workspace argument through GenerateOAuth2AccessToken into the JWT
+// workspace_id claim. This is the last hop of the consent → token binding:
+//
+//	auth code (workspace col) → handler reads it via resolveBoundWorkspace
+//	  → s.issueTokens(c, client, userEmail, workspaceID)
+//	  → auth.GenerateOAuth2AccessToken(... , workspaceID, ...)
+//	  → JWT.workspace_id claim
+//
+// The store-side round-trip is exercised by store_test.TestOAuth2WorkspaceBinding.
+func TestIssueTokensPlacesWorkspaceInJWT(t *testing.T) {
+	const secret = "test-secret"
+	const userEmail = "demo@example.com"
+	const clientID = "client-xyz"
+	const workspaceID = "ws-consent-bound"
+
+	tokenStr, err := auth.GenerateOAuth2AccessToken(userEmail, clientID, workspaceID, secret, time.Hour)
+	require.NoError(t, err)
+
+	// Decode the token (signature-verified) and assert the workspace_id
+	// claim equals what we passed in. Anything else means the consent-time
+	// binding got dropped on the way to the wire.
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(tokenStr, claims, func(_ *jwt.Token) (any, error) {
+		return []byte(secret), nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, workspaceID, claims["workspace_id"])
+	require.Equal(t, userEmail, claims["sub"])
+	require.Equal(t, clientID, claims["client_id"])
+	// `aud` is serialized as a single-element array by jwt.ClaimStrings.
+	require.Equal(t, []any{auth.OAuth2AccessTokenAudience}, claims["aud"])
 }
