@@ -126,8 +126,14 @@ export function PlanDetailHeader() {
   ]);
 
   useEffect(() => {
-    if (titleAutoFocusedRef.current) return;
-    if (!page.isCreating || !page.ready) return;
+    // Route changes within the plan-detail page (create → existing → create)
+    // re-render the same React root, so the guard must reset when leaving
+    // create mode — otherwise the next create visit never re-focuses.
+    if (!page.isCreating) {
+      titleAutoFocusedRef.current = false;
+      return;
+    }
+    if (!page.ready || titleAutoFocusedRef.current) return;
     titleAutoFocusedRef.current = true;
     titleInputRef.current?.focus();
   }, [page.isCreating, page.ready]);
