@@ -21,8 +21,11 @@ import { Tree, type TreeDataNode } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store } from "@/store";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { isValidDatabaseName } from "@/types";
 import type {
   DatabaseMetadata,

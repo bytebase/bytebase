@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   ExternalLink,
   Link as LinkIcon,
@@ -9,9 +8,10 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   BatchQueryContext,
   SQLEditorConnection,

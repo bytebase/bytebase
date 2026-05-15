@@ -38,8 +38,7 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/store", () => ({
-}));
+vi.mock("@/store", () => ({}));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useSQLEditorTabStore: () => ({

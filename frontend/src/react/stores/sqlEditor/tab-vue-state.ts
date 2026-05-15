@@ -1,12 +1,5 @@
 import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
-import {
-  computed,
-  type MaybeRef,
-  reactive,
-  toRefs,
-  unref,
-  watch,
-} from "vue";
+import { computed, type MaybeRef, reactive, toRefs, unref, watch } from "vue";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   hasFeature,

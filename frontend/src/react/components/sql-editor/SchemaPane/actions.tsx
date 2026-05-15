@@ -17,10 +17,14 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,

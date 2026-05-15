@@ -14,7 +14,10 @@ import {
   selectEditorPanelSize,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
 import { instanceV1HasReadonlyMode } from "@/utils";
 import { EditorMain } from "./EditorMain";
 

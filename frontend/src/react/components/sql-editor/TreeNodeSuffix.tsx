@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useUserStore, useWorkSheetStore } from "@/store";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useUserStore, useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
   SheetViewMode,

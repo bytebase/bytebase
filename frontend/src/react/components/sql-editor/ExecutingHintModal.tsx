@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -6,6 +5,7 @@ import {
   DialogTitle,
 } from "@/react/components/ui/dialog";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ExecuteHint } from "./ExecuteHint";
 
 /**

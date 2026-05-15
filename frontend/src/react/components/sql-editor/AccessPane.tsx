@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Loader2 } from "lucide-react";
 import {
   useCallback,
@@ -19,6 +18,7 @@ import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   hasFeature,
   useAccessGrantStore,

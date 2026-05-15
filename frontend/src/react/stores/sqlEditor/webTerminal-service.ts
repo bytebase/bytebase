@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create, fromJson, toJson } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import Emittery from "emittery";
@@ -8,10 +7,8 @@ import { fromEventPattern, Observable } from "rxjs";
 import { markRaw, ref } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-} from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import type {
   SQLEditorQueryParams,
   SQLEditorTab,

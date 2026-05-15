@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ChevronLeft, Play, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,8 +10,16 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useUIStateStore, useWorkSheetAndTabStore, useWorkSheetStore } from "@/store";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  useUIStateStore,
+  useWorkSheetAndTabStore,
+  useWorkSheetStore,
+} from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";

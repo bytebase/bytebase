@@ -1,10 +1,10 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 
 type AdminModeButtonProps = {

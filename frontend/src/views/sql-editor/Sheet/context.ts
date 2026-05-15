@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useDebounceFn } from "@vueuse/core";
 import Emittery from "emittery";
 import { isEqual, orderBy } from "lodash-es";
@@ -6,10 +5,11 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import type { InjectionKey, Ref } from "vue";
 import { computed, nextTick, ref, toRefs, watch } from "vue";
 import { t } from "@/plugins/i18n";
-import { pushNotification, useCurrentUserV1, useWorkSheetStore } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { FolderContext } from "@/react/stores/sqlEditor/folder";
 import { buildFolderContext } from "@/react/stores/sqlEditor/folder";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { pushNotification, useCurrentUserV1, useWorkSheetStore } from "@/store";
 import type { SQLEditorTab, SQLEditorTabMode } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {

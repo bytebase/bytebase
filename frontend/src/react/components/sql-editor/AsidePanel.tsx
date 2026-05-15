@@ -1,13 +1,13 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { defaultProject, isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { AccessPane } from "./AccessPane";

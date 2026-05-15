@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import { DurationSchema, TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { Loader2 } from "lucide-react";
@@ -22,10 +21,15 @@ import {
 import { Textarea } from "@/react/components/ui/textarea";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useCurrentUserV1, useDatabaseV1Store } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+} from "@/store";
 import {
   AccessGrant_Status,
   AccessGrantSchema,

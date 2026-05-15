@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import dayjs from "dayjs";
 import { Copy, Loader2 } from "lucide-react";
 import {
@@ -18,8 +17,9 @@ import {
   selectQueryHistoryEntry,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
-import { pushNotification } from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { pushNotification } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
 import { getHighlightHTMLByKeyWords } from "@/utils";

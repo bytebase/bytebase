@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { cloneDeep } from "lodash-es";
 import { ChevronDown, ChevronRight, Info, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -27,8 +26,18 @@ import { useCommonSearchScopeOptions } from "@/react/components/useCommonSearchS
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { featureToRef, pushNotification, useCurrentUserV1, useDatabaseV1Store, useDBGroupStore, useEnvironmentV1Store, useInstanceV1Store, useProjectV1Store } from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  featureToRef,
+  pushNotification,
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useDBGroupStore,
+  useEnvironmentV1Store,
+  useInstanceV1Store,
+  useProjectV1Store,
+} from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type {

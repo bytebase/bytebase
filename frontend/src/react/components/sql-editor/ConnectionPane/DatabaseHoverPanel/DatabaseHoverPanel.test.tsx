@@ -31,8 +31,7 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
-vi.mock("@/store", () => ({
-}));
+vi.mock("@/store", () => ({}));
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
   useSQLEditorVueState: () => ({ project: "" }),

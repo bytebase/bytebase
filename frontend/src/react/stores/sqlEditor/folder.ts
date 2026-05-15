@@ -1,7 +1,7 @@
 import { sortBy } from "lodash-es";
 import { computed, toRefs } from "vue";
-import { useCurrentUserV1 } from "@/store";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useCurrentUserV1 } from "@/store";
 import {
   storageKeySqlEditorWorksheetFolder,
   useDynamicLocalStorage,

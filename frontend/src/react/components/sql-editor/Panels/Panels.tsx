@@ -31,8 +31,11 @@ import {
   selectEditorPanelSize,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { isValidDatabaseName } from "@/types";
 import {
   extractDatabaseResourceName,

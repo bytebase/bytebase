@@ -15,10 +15,15 @@ import {
 } from "@/react/components/ui/popover";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store, useCurrentUserV1, useWorkSheetStore } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useCurrentUserV1,
+  useWorkSheetStore,
+} from "@/store";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractProjectResourceName, extractWorksheetID } from "@/utils";

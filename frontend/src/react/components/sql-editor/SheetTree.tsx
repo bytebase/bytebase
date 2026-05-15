@@ -56,10 +56,10 @@ import { Tree } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
-import { pushNotification, useWorkSheetStore } from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { pushNotification, useWorkSheetStore } from "@/store";
 import {
   openWorksheetByName,
   revealNodes,
@@ -1355,9 +1355,7 @@ export function SheetTree({
           }
         />
         <PopoverContent align="start" sideOffset={4}>
-          {worksheetEntity && (
-            <SharePopoverBody worksheet={worksheetEntity} />
-          )}
+          {worksheetEntity && <SharePopoverBody worksheet={worksheetEntity} />}
         </PopoverContent>
       </Popover>
 

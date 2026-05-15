@@ -1,12 +1,12 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { LayersIcon, LinkIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { usePermissionCheck } from "@/react/components/PermissionGuard";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { useProjectV1Store} from "@/store";
+import { useProjectV1Store } from "@/store";
 import { WelcomeButton } from "./WelcomeButton";
 
 export type WelcomeProps = {

@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { ChevronRight, Database, SquareStack } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
@@ -7,7 +6,11 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import {
   extractDatabaseResourceName,

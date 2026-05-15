@@ -1,9 +1,12 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { useDBSchemaV1Store } from "@/store";
-import { useConnectionOfCurrentSQLEditorTab, useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
 import { ConnectChooser } from "./ConnectChooser";
 

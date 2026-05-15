@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { create } from "@bufbuild/protobuf";
 import { Code } from "@connectrpc/connect";
 import { cloneDeep, isEmpty } from "lodash-es";
@@ -6,8 +5,15 @@ import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { t } from "@/plugins/i18n";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
-import { hasFeature, pushNotification, useDatabaseV1Store, useDBGroupStore, useSQLStore } from "@/store";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  hasFeature,
+  pushNotification,
+  useDatabaseV1Store,
+  useDBGroupStore,
+  useSQLStore,
+} from "@/store";
 import type {
   BBNotificationStyle,
   QueryContextStatus,

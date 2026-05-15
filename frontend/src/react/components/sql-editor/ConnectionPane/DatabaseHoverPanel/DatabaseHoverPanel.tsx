@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -6,6 +5,7 @@ import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import type { Position, SQLEditorTreeNode } from "@/types";
 import {
   getDatabaseProject,

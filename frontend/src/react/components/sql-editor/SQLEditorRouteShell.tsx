@@ -1,4 +1,3 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { debounce, head, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,6 +10,8 @@ import { useVueState } from "@/react/hooks/useVueState";
 import { useCurrentRoute, useNavigate } from "@/react/router";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
@@ -19,8 +20,13 @@ import {
   SQL_EDITOR_PROJECT_MODULE,
   SQL_EDITOR_WORKSHEET_MODULE,
 } from "@/router/sqlEditor";
-import { pushNotification, useActuatorV1Store, useDatabaseV1Store, useProjectV1Store, useWorkSheetStore } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useDatabaseV1Store,
+  useProjectV1Store,
+  useWorkSheetStore,
+} from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,

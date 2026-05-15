@@ -1,14 +1,19 @@
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { Trans, useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useDatabaseV1Store, useProjectV1Store, useStorageStore } from "@/store";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  pushNotification,
+  useDatabaseV1Store,
+  useProjectV1Store,
+  useStorageStore,
+} from "@/store";
 import { unknownProject } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {

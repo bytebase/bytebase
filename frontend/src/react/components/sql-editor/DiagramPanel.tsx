@@ -1,7 +1,7 @@
 import { SchemaDiagram } from "@/react/components/SchemaDiagram";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useDBSchemaV1Store } from "@/store";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useDBSchemaV1Store } from "@/store";
 
 /**
  * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/DiagramPanel/DiagramPanel.vue`.

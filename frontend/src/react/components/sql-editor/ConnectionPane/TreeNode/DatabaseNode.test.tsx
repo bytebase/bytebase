@@ -17,8 +17,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/store", () => ({
-}));
+vi.mock("@/store", () => ({}));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
   useSQLEditorTabStore: mocks.useSQLEditorTabStore,
