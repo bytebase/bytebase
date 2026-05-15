@@ -108,7 +108,7 @@ import {
   type SearchParams as VueSearchParams,
 } from "@/utils";
 import { extractStageUID } from "@/utils/v1/issue/rollout";
-import { getReviewBadge } from "./utils/reviewBadge";
+import { getReviewBadge, type ReviewBadge } from "./utils/reviewBadge";
 
 // Task status priority order for determining rollout stage status
 const TASK_STATUS_FILTERS: Task_Status[] = [
@@ -389,17 +389,7 @@ interface PlanColumn {
 interface PlanRowContext {
   creator: { title: string; name: string };
   updateTimeTs: number;
-  approvalTag:
-    | {
-        label: string;
-        variant:
-          | "default"
-          | "secondary"
-          | "destructive"
-          | "warning"
-          | "success";
-      }
-    | undefined;
+  approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
   checkSummary: {
     running: number;
     success: number;
