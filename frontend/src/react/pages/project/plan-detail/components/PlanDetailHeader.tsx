@@ -1,6 +1,6 @@
 import { clone, create } from "@bufbuild/protobuf";
 import { Ban, ChevronUp, Loader2, Menu, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
 import {
@@ -72,6 +72,8 @@ export function PlanDetailHeader() {
     useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const { emptySpecIdSet } = usePlanDetailSpecValidation(page.plan.specs ?? []);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleAutoFocusedRef = useRef(false);
 
   useEffect(() => {
     const nextTitle = page.issue?.title ?? page.plan.title;
@@ -122,6 +124,13 @@ export function PlanDetailHeader() {
     page.readonly,
     project,
   ]);
+
+  useEffect(() => {
+    if (titleAutoFocusedRef.current) return;
+    if (!page.isCreating || !page.ready) return;
+    titleAutoFocusedRef.current = true;
+    titleInputRef.current?.focus();
+  }, [page.isCreating, page.ready]);
 
   const showSubmitForReview =
     !!page.plan.name &&
@@ -442,6 +451,7 @@ export function PlanDetailHeader() {
         )}
         <div className="min-w-0 flex-1">
           <input
+            ref={titleInputRef}
             className={cn(
               "h-9 w-full bg-transparent text-xl! font-bold text-main outline-hidden",
               editingTitle
