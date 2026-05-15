@@ -58,15 +58,20 @@ export function useHistory() {
     stack.index = stack.list.length - 1;
   };
 
-  // Push the new query item onto the per-tab history whenever the tail
-  // changes. Mirrors Vue's `watch(currentQuery, push, { immediate: true })`.
-  // `historyByTabIdRef` is stable; `tabStore` is stable; `push` reads
-  // through them, so we only need to refire on `currentQuery` identity.
-  const currentQueryRef = useRef(currentQuery);
-  currentQueryRef.current = currentQuery;
+  // Push the new query item onto the per-tab history only when a new
+  // command row is created — not on every keystroke. The Vue original
+  // got this for free because `updateWebTerminalQueryItem` mutated the
+  // tail in place, so the `computed(() => list[length-1])` kept the
+  // same reference across edits. The zustand slice replaces the tail
+  // immutably (`{...item, ...patch}`), so the selector returns a new
+  // identity on every statement edit; gate on `id` to recover the
+  // original semantics.
+  const lastPushedIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    const q = currentQueryRef.current;
-    if (q) push(q);
+    if (!currentQuery) return;
+    if (currentQuery.id === lastPushedIdRef.current) return;
+    lastPushedIdRef.current = currentQuery.id;
+    push(currentQuery);
   }, [currentQuery]);
 
   const move = (direction: "up" | "down") => {
