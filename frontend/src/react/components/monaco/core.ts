@@ -82,6 +82,7 @@ export const createMonacoEditor = async (config: {
   await initialize();
   const monaco = await loadMonacoEditor();
   const baseOptions = {
+    editContext: false,
     experimentalEditContextEnabled: false,
   } as const;
 
@@ -103,6 +104,7 @@ export const createMonacoDiffEditor = async (config: {
   await initialize();
   const monaco = await loadMonacoEditor();
   const baseOptions = {
+    editContext: false,
     experimentalEditContextEnabled: false,
   } as const;
 
