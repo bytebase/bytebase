@@ -38,10 +38,14 @@ type protectedResourceMetadata struct {
 func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
-	// On self-hosted, the external URL setting is stored against the
-	// singleton workspace; resolve it so GetEffectiveExternalURL can find
-	// the configured value. On SaaS there is no singleton, so we pass ""
-	// and rely on profile.ExternalURL (the --external-url CLI flag).
+	// The --external-url CLI flag (profile.ExternalURL) short-circuits the
+	// lookup. Otherwise on self-hosted we resolve the singleton workspace ID
+	// first so GetEffectiveExternalURL can find the DB-backed
+	// workspace_profile.external_url setting. On SaaS there is no singleton
+	// — the CLI flag is required.
+	if s.profile.ExternalURL != "" {
+		return strings.TrimSuffix(s.profile.ExternalURL, "/")
+	}
 	workspaceID := ""
 	if !s.profile.SaaS {
 		if ws, err := s.store.GetWorkspaceID(ctx); err == nil {

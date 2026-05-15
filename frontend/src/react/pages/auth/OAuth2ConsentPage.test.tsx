@@ -328,11 +328,13 @@ describe("OAuth2ConsentPage", () => {
       json: async () => ({ client_name: "Acme" }),
     });
 
-    // Stub window.location.reload so the test doesn't actually navigate.
+    // Stub globalThis.location.reload so the test doesn't actually navigate.
+    // window === globalThis in jsdom, so this also stubs the value the
+    // component reads via globalThis.location.reload().
     const reload = vi.fn();
-    Object.defineProperty(window, "location", {
+    Object.defineProperty(globalThis, "location", {
       writable: true,
-      value: { ...window.location, reload },
+      value: { ...globalThis.location, reload },
     });
 
     const { container, render, unmount } = renderIntoContainer(

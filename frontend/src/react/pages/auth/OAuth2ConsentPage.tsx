@@ -27,16 +27,22 @@ export function OAuth2ConsentPage() {
   const [error, setError] = useState("");
   const [clientName, setClientName] = useState("");
 
-  const isLoggedIn = useVueState(() => useAuthStore().isLoggedIn);
+  // Pinia store singletons are resolved once at the top of the component so
+  // the useVueState selector closures don't repeat the use*-prefixed call —
+  // which trips the React-hooks-in-callback lint rule (typescript:S6440)
+  // despite Pinia memoizing the factory.
+  const authStore = useAuthStore();
+  const actuatorStore = useActuatorV1Store();
+  const workspaceStore = useWorkspaceV1Store();
+
+  const isLoggedIn = useVueState(() => authStore.isLoggedIn);
   // Workspace context shown on the consent card. On SaaS, every Bytebase
   // user belongs to at least one workspace; on self-hosted there's a single
   // implicit workspace. We display it so the user can confirm which
   // workspace this OAuth grant will be bound to.
-  const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
-  const currentWorkspace = useVueState(
-    () => useWorkspaceV1Store().currentWorkspace
-  );
-  const workspaceList = useVueState(() => useWorkspaceV1Store().workspaceList);
+  const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const currentWorkspace = useVueState(() => workspaceStore.currentWorkspace);
+  const workspaceList = useVueState(() => workspaceStore.workspaceList);
 
   const query = router.currentRoute.value.query;
   const clientId = (query.client_id as string) || "";
@@ -96,10 +102,8 @@ export function OAuth2ConsentPage() {
   useEffect(() => {
     if (!isSaaSMode || prefetchRef.current) return;
     prefetchRef.current = true;
-    useWorkspaceV1Store()
-      .fetchWorkspaceList()
-      .catch(() => {});
-  }, [isSaaSMode]);
+    workspaceStore.fetchWorkspaceList().catch(() => {});
+  }, [isSaaSMode, workspaceStore]);
 
   // Switch the active workspace in-place, preserving the consent flow.
   // We call SwitchWorkspace directly (instead of the store's helper, which
@@ -121,7 +125,7 @@ export function OAuth2ConsentPage() {
         })
       );
       new BroadcastChannel("bb-workspace-switch").postMessage(workspaceName);
-      window.location.reload();
+      globalThis.location.reload();
     } catch {
       setError(t("oauth2.consent.error-switch-failed"));
       setSubmitting(false);
