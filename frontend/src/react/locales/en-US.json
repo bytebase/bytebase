@@ -1564,9 +1564,14 @@
   "oauth2": {
     "consent": {
       "description": "{{clientName}} is requesting access to your account",
+      "error-client-not-found": "Client not found",
+      "error-load-failed": "Failed to load client information",
+      "error-missing-params": "Missing required OAuth2 parameters",
+      "error-switch-failed": "Failed to switch workspace",
       "permission-access": "Access your Bytebase account with your permissions",
       "permissions": "This application will be able to:",
-      "title": "Authorization Request"
+      "title": "Authorization Request",
+      "workspace-label": "Granting access to workspace"
     }
   },
   "plan": {

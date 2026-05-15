@@ -1556,9 +1556,14 @@
   "oauth2": {
     "consent": {
       "description": "{{clientName}} があなたのアカウントへのアクセスを要求しています",
+      "error-client-not-found": "クライアントが見つかりません",
+      "error-load-failed": "クライアント情報の読み込みに失敗しました",
+      "error-missing-params": "必須の OAuth2 パラメータが不足しています",
+      "error-switch-failed": "ワークスペースの切り替えに失敗しました",
       "permission-access": "あなたの権限で Bytebase アカウントにアクセス",
       "permissions": "このアプリケーションは以下のことができます:",
-      "title": "認証リクエスト"
+      "title": "認証リクエスト",
+      "workspace-label": "アクセスを許可するワークスペース"
     }
   },
   "plan": {

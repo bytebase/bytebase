@@ -33,12 +33,7 @@ func (s *Service) handleRevoke(c *echo.Context) error {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client authentication required")
 	}
 
-	workspaceID, err := s.getWorkspaceFromRequest(c)
-	if err != nil {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
-	}
-
-	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
+	client, err := s.store.GetOAuth2Client(ctx, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}

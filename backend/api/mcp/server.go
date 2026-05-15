@@ -2,6 +2,7 @@
 package mcp
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -71,18 +72,23 @@ func (s *Server) registerTools() {
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
+//
+// On 401, it emits an RFC 9728 / MCP-authorization-spec compliant
+// WWW-Authenticate header pointing at the protected-resource-metadata URL.
+// MCP clients (Claude Code, Cursor, etc.) use this header to bootstrap the
+// OAuth flow without out-of-band configuration.
 func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		// Extract Authorization header
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "authorization required")
+			return unauthorized(c, "authorization required")
 		}
 
 		// Validate Bearer format
 		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "authorization header format must be Bearer {token}")
+			return unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
 
@@ -90,28 +96,28 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		claims := jwt.MapClaims{}
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 			if t.Method.Alg() != jwt.SigningMethodHS256.Name {
-				return nil, echo.NewHTTPError(http.StatusUnauthorized, "invalid token signing method")
+				return nil, errors.New("invalid token signing method")
 			}
 			if kid, ok := t.Header["kid"].(string); ok && kid == "v1" {
 				return []byte(s.secret), nil
 			}
-			return nil, echo.NewHTTPError(http.StatusUnauthorized, "invalid token key id")
+			return nil, errors.New("invalid token key id")
 		})
 		if err != nil {
 			if strings.Contains(err.Error(), "expired") {
-				return echo.NewHTTPError(http.StatusUnauthorized, "token expired")
+				return unauthorized(c, "token expired")
 			}
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+			return unauthorized(c, "invalid token")
 		}
 
 		if !token.Valid {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
+			return unauthorized(c, "invalid token")
 		}
 
 		// Validate audience - accept both user access tokens and OAuth2 access tokens
 		aud, ok := claims["aud"]
 		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing audience")
+			return unauthorized(c, "invalid token: missing audience")
 		}
 
 		validAudience := false
@@ -128,13 +134,13 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		default:
 		}
 		if !validAudience {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: audience mismatch")
+			return unauthorized(c, "invalid token: audience mismatch")
 		}
 
 		// Extract user email from subject
 		sub, ok := claims["sub"].(string)
 		if !ok || sub == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing subject")
+			return unauthorized(c, "invalid token: missing subject")
 		}
 
 		// Extract workspace ID from token claims.
@@ -157,4 +163,37 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 func (s *Server) RegisterRoutes(e *echo.Echo) {
 	// MCP Streamable HTTP endpoint with authentication
 	e.Any("/mcp", echo.WrapHandler(s.httpHandler), s.authMiddleware)
+}
+
+// unauthorized writes a 401 with an RFC 9728 / MCP-authorization-spec
+// WWW-Authenticate header so compliant MCP clients can auto-discover the
+// authorization server. The header references the host-global protected
+// resource metadata endpoint (served by the oauth2 package).
+func unauthorized(c *echo.Context, errDescription string) error {
+	resourceMetadataURL := buildResourceMetadataURL(c)
+	c.Response().Header().Set(
+		"WWW-Authenticate",
+		fmt.Sprintf(
+			`Bearer realm="OAuth", resource_metadata=%q, error="invalid_token", error_description=%q`,
+			resourceMetadataURL, errDescription,
+		),
+	)
+	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
+}
+
+// buildResourceMetadataURL returns the absolute URL of this server's
+// /.well-known/oauth-protected-resource endpoint, derived from the incoming
+// request. We don't have access to the server's externalURL config here, so
+// we derive from Host + scheme; for SaaS that's cloud.bytebase.com over https,
+// and the X-Forwarded-Proto header handles proxied self-hosted setups.
+func buildResourceMetadataURL(c *echo.Context) string {
+	req := c.Request()
+	scheme := "https"
+	if req.TLS == nil {
+		scheme = "http"
+	}
+	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	return fmt.Sprintf("%s://%s/.well-known/oauth-protected-resource", scheme, req.Host)
 }

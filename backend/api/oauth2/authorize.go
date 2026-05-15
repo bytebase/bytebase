@@ -18,6 +18,15 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// sessionClaims is the subset of session JWT claims we need at the OAuth2
+// authorize step. workspace_id carries the workspace the user is currently
+// acting in; that workspace becomes the one bound to the issued authorization
+// code (and ultimately the OAuth2 access token).
+type sessionClaims struct {
+	jwt.RegisteredClaims
+	WorkspaceID string `json:"workspace_id,omitempty"`
+}
+
 func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -29,21 +38,15 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 	codeChallenge := c.QueryParam("code_challenge")
 	codeChallengeMethod := c.QueryParam("code_challenge_method")
 
-	// Validate response_type
 	if responseType != "code" {
 		return oauth2Error(c, http.StatusBadRequest, "unsupported_response_type", "only 'code' response type is supported")
 	}
 
-	// Validate client_id
 	if clientID == "" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "client_id is required")
 	}
 
-	workspaceID, err := s.getWorkspaceFromRequest(c)
-	if err != nil {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
-	}
-	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
+	client, err := s.store.GetOAuth2Client(ctx, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}
@@ -51,7 +54,6 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client", "client not found")
 	}
 
-	// Validate redirect_uri
 	if redirectURI == "" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "redirect_uri is required")
 	}
@@ -59,7 +61,7 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect_uri not registered")
 	}
 
-	// Validate PKCE (required)
+	// PKCE is required
 	if codeChallenge == "" {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge is required")
 	}
@@ -67,8 +69,9 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge_method must be S256")
 	}
 
-	// Redirect to frontend consent page
-	// The frontend will handle login if needed and display consent UI
+	// Redirect to frontend consent page.
+	// The frontend handles login if needed and binds consent to the user's
+	// currently active workspace (see handleAuthorizePost).
 	consentURL := fmt.Sprintf("/oauth2/consent?client_id=%s&redirect_uri=%s&state=%s&code_challenge=%s&code_challenge_method=%s",
 		url.QueryEscape(clientID),
 		url.QueryEscape(redirectURI),
@@ -82,7 +85,6 @@ func (s *Service) handleAuthorizeGet(c *echo.Context) error {
 func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	ctx := c.Request().Context()
 
-	// Parse form values
 	clientID := c.FormValue("client_id")
 	redirectURI := c.FormValue("redirect_uri")
 	state := c.FormValue("state")
@@ -90,23 +92,15 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	codeChallengeMethod := c.FormValue("code_challenge_method")
 	action := c.FormValue("action")
 
-	workspaceID, err := s.getWorkspaceFromRequest(c)
-	if err != nil {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
-	}
-
-	// Validate client
-	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
+	client, err := s.store.GetOAuth2Client(ctx, clientID)
 	if err != nil || client == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client", "client not found")
 	}
 
-	// Validate redirect_uri
 	if !validateRedirectURI(redirectURI, client.Config.RedirectUris) {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect_uri not registered")
 	}
 
-	// Handle denial
 	if action == "deny" {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user denied the request")
 	}
@@ -120,8 +114,10 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not authenticated")
 	}
 
-	// Validate the access token and extract user email
-	claims := &jwt.RegisteredClaims{}
+	// Parse the session token to get the user and their active workspace.
+	// The workspace_id claim is the workspace the user is currently in;
+	// that's the workspace OAuth consent is granted for.
+	claims := &sessionClaims{}
 	_, err = jwt.ParseWithClaims(accessToken, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
 			return nil, errors.Errorf("unexpected access token signing method=%v, expect %v", t.Header["alg"], jwt.SigningMethodHS256)
@@ -137,9 +133,22 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid session")
 	}
 
-	// Validate audience
 	if !audienceContains(claims.Audience, auth.AccessTokenAudience) {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid token audience")
+	}
+
+	// Resolve the workspace to bind this consent to.
+	// On SaaS the session always carries workspace_id. On self-hosted it
+	// may be empty; fall back to the single workspace in the store.
+	workspaceID := claims.WorkspaceID
+	if workspaceID == "" {
+		workspaceID, err = s.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to resolve workspace")
+		}
+	}
+	if workspaceID == "" {
+		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "no workspace in session")
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, claims.Subject)
@@ -150,13 +159,11 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not found")
 	}
 
-	// Generate authorization code
 	code, err := generateAuthCode()
 	if err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to generate code")
 	}
 
-	// Store authorization code
 	codeConfig := &storepb.OAuth2AuthorizationCodeConfig{
 		RedirectUri:         redirectURI,
 		CodeChallenge:       codeChallenge,
@@ -166,18 +173,17 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		Code:      code,
 		ClientID:  clientID,
 		UserEmail: user.Email,
+		Workspace: workspaceID,
 		Config:    codeConfig,
 		ExpiresAt: time.Now().Add(authCodeExpiry),
 	}); err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to store code")
 	}
 
-	// Update client last active
-	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.Workspace, clientID); err != nil {
+	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, clientID); err != nil {
 		slog.Warn("failed to update OAuth2 client last active", slog.String("clientID", clientID), log.BBError(err))
 	}
 
-	// Build redirect URL with code
 	u, err := url.Parse(redirectURI)
 	if err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to parse redirect URI")
@@ -190,8 +196,8 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 	u.RawQuery = q.Encode()
 	redirectURL := u.String()
 
-	// Return HTML page that redirects to callback URL
-	// This avoids CSP form-action restrictions
+	// Return HTML page that redirects to callback URL.
+	// This avoids CSP form-action restrictions.
 	return c.HTML(http.StatusOK, buildRedirectHTML(redirectURL))
 }
 

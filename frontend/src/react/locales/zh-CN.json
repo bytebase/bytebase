@@ -1556,9 +1556,14 @@
   "oauth2": {
     "consent": {
       "description": "{{clientName}} 正在请求访问您的账户",
+      "error-client-not-found": "未找到客户端",
+      "error-load-failed": "加载客户端信息失败",
+      "error-missing-params": "缺少必需的 OAuth2 参数",
+      "error-switch-failed": "切换工作空间失败",
       "permission-access": "使用您的权限访问您的 Bytebase 账户",
       "permissions": "此应用程序将能够:",
-      "title": "授权请求"
+      "title": "授权请求",
+      "workspace-label": "授权访问的工作空间"
     }
   },
   "plan": {

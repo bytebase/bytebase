@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,16 +14,14 @@ import (
 )
 
 type OAuth2ClientMessage struct {
-	ClientID         string
+	ClientID string
+	// Workspace is empty for clients registered via unauthenticated DCR
+	// (the workspace is bound to the issued authorization code / refresh
+	// token at consent time instead).
 	Workspace        string
 	ClientSecretHash string
 	Config           *storepb.OAuth2ClientConfig
 	LastActiveAt     time.Time
-}
-
-type FindOAuth2ClientMessage struct {
-	ClientID  *string
-	Workspace string
 }
 
 func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMessage) (*OAuth2ClientMessage, error) {
@@ -31,11 +30,16 @@ func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMess
 		return nil, errors.Wrap(err, "failed to marshal config")
 	}
 
+	var workspaceArg any
+	if create.Workspace != "" {
+		workspaceArg = create.Workspace
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config, last_active_at)
 		VALUES (?, ?, ?, ?, NOW())
 		RETURNING last_active_at
-	`, create.ClientID, create.Workspace, create.ClientSecretHash, configBytes)
+	`, create.ClientID, workspaceArg, create.ClientSecretHash, configBytes)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -48,64 +52,46 @@ func (s *Store) CreateOAuth2Client(ctx context.Context, create *OAuth2ClientMess
 	return create, nil
 }
 
-func (s *Store) GetOAuth2Client(ctx context.Context, workspace, clientID string) (*OAuth2ClientMessage, error) {
-	clients, err := s.listOAuth2Clients(ctx, &FindOAuth2ClientMessage{ClientID: &clientID, Workspace: workspace})
-	if err != nil {
-		return nil, err
-	}
-	if len(clients) == 0 {
-		return nil, nil
-	}
-	return clients[0], nil
-}
-
-func (s *Store) listOAuth2Clients(ctx context.Context, find *FindOAuth2ClientMessage) ([]*OAuth2ClientMessage, error) {
+// GetOAuth2Client looks up a client by client_id (the table's primary key).
+// Workspace is no longer a lookup key — clients are workspace-agnostic since
+// DCR runs unauthenticated.
+func (s *Store) GetOAuth2Client(ctx context.Context, clientID string) (*OAuth2ClientMessage, error) {
 	q := qb.Q().Space(`
 		SELECT client_id, workspace, client_secret_hash, config, last_active_at
 		FROM oauth2_client
-		WHERE workspace = ?
-	`, find.Workspace)
-
-	if v := find.ClientID; v != nil {
-		q.And("client_id = ?", *v)
-	}
+		WHERE client_id = ?
+	`, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...) // NOSONAR: query is parameterized via qb.Query
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to query OAuth2 clients")
-	}
-	defer rows.Close()
-
-	var clients []*OAuth2ClientMessage
-	for rows.Next() {
-		client := &OAuth2ClientMessage{}
-		var configBytes []byte
-		if err := rows.Scan(&client.ClientID, &client.Workspace, &client.ClientSecretHash, &configBytes, &client.LastActiveAt); err != nil {
-			return nil, errors.Wrap(err, "failed to scan OAuth2 client")
+	client := &OAuth2ClientMessage{}
+	var workspace sql.NullString
+	var configBytes []byte
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
+		&client.ClientID, &workspace, &client.ClientSecretHash, &configBytes, &client.LastActiveAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
 		}
-		client.Config = &storepb.OAuth2ClientConfig{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, client.Config); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal config")
-		}
-		clients = append(clients, client)
+		return nil, errors.Wrap(err, "failed to query OAuth2 client")
 	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to iterate OAuth2 clients")
+	client.Workspace = workspace.String
+	client.Config = &storepb.OAuth2ClientConfig{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, client.Config); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal config")
 	}
-	return clients, nil
+	return client, nil
 }
 
-func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, workspace, clientID string) error {
+func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, clientID string) error {
 	q := qb.Q().Space(`
 		UPDATE oauth2_client
 		SET last_active_at = NOW()
-		WHERE client_id = ? AND workspace = ?
-	`, clientID, workspace)
+		WHERE client_id = ?
+	`, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -118,11 +104,11 @@ func (s *Store) UpdateOAuth2ClientLastActiveAt(ctx context.Context, workspace, c
 	return nil
 }
 
-func (s *Store) DeleteOAuth2Client(ctx context.Context, workspace, clientID string) error {
+func (s *Store) DeleteOAuth2Client(ctx context.Context, clientID string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_client
-		WHERE client_id = ? AND workspace = ?
-	`, clientID, workspace)
+		WHERE client_id = ?
+	`, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

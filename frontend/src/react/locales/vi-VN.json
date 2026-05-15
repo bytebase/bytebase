@@ -1556,9 +1556,14 @@
   "oauth2": {
     "consent": {
       "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
+      "error-client-not-found": "Không tìm thấy client",
+      "error-load-failed": "Tải thông tin client thất bại",
+      "error-missing-params": "Thiếu các tham số OAuth2 bắt buộc",
+      "error-switch-failed": "Chuyển workspace thất bại",
       "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn",
       "permissions": "Ứng dụng này sẽ có thể:",
-      "title": "Yêu cầu ủy quyền"
+      "title": "Yêu cầu ủy quyền",
+      "workspace-label": "Cấp quyền truy cập vào workspace"
     }
   },
   "plan": {

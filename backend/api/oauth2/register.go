@@ -26,6 +26,10 @@ type clientRegistrationResponse struct {
 	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
 }
 
+// handleRegister implements RFC 7591 Dynamic Client Registration. The endpoint
+// is unauthenticated — clients are workspace-agnostic and get bound to a
+// workspace when the user grants consent at /authorize. This matches the
+// pattern used by Linear, Atlassian, Notion, and Cloudflare MCP servers.
 func (s *Service) handleRegister(c *echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -34,12 +38,10 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "failed to parse request body")
 	}
 
-	// Validate client_name
 	if req.ClientName == "" {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "client_name is required")
 	}
 
-	// Validate redirect_uris
 	if len(req.RedirectURIs) == 0 {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "redirect_uris is required")
 	}
@@ -49,7 +51,6 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		}
 	}
 
-	// Validate grant_types (default to authorization_code)
 	if len(req.GrantTypes) == 0 {
 		req.GrantTypes = []string{"authorization_code"}
 	}
@@ -60,7 +61,6 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		}
 	}
 
-	// Validate token_endpoint_auth_method (default to none for public clients)
 	if req.TokenEndpointAuthMethod == "" {
 		req.TokenEndpointAuthMethod = "none"
 	}
@@ -69,7 +69,6 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "unsupported token_endpoint_auth_method")
 	}
 
-	// Generate credentials
 	clientID, err := generateClientID()
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate client ID")
@@ -83,11 +82,6 @@ func (s *Service) handleRegister(c *echo.Context) error {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to hash client secret")
 	}
 
-	// Store client
-	workspaceID, err := s.getWorkspaceFromRequest(c)
-	if err != nil {
-		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to get workspace")
-	}
 	config := &storepb.OAuth2ClientConfig{
 		ClientName:              req.ClientName,
 		RedirectUris:            req.RedirectURIs,
@@ -96,7 +90,6 @@ func (s *Service) handleRegister(c *echo.Context) error {
 	}
 	if _, err := s.store.CreateOAuth2Client(ctx, &store.OAuth2ClientMessage{
 		ClientID:         clientID,
-		Workspace:        workspaceID,
 		ClientSecretHash: secretHash,
 		Config:           config,
 	}); err != nil {

@@ -38,8 +38,10 @@ type protectedResourceMetadata struct {
 func (s *Service) getBaseURL(c *echo.Context) string {
 	ctx := c.Request().Context()
 
-	workspaceID, _ := s.getWorkspaceFromRequest(c)
-	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, workspaceID)
+	// Discovery is unauthenticated and host-global; no workspace context is
+	// available here, so we ask for the host-level external URL. Per-workspace
+	// external URL overrides (if any) are not applicable to discovery.
+	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, "")
 	if err != nil {
 		slog.Warn("failed to get external url for OAuth2", log.BBError(err))
 	}
@@ -62,7 +64,7 @@ func (s *Service) getBaseURL(c *echo.Context) string {
 
 func (s *Service) handleDiscovery(c *echo.Context) error {
 	baseURL := s.getBaseURL(c)
-	oauthBase := s.getOAuthBasePath(c, baseURL)
+	oauthBase := fmt.Sprintf("%s/api/oauth2", baseURL)
 	metadata := &authorizationServerMetadata{
 		Issuer:                            baseURL,
 		AuthorizationEndpoint:             fmt.Sprintf("%s/authorize", oauthBase),
@@ -75,18 +77,6 @@ func (s *Service) handleDiscovery(c *echo.Context) error {
 		TokenEndpointAuthMethodsSupported: []string{"none"},
 	}
 	return c.JSON(http.StatusOK, metadata)
-}
-
-// getOAuthBasePath returns the base path for OAuth2 endpoints.
-// In self-hosted mode, it uses legacy paths that don't require a workspace ID.
-// In SaaS mode, the discovery endpoint cannot resolve a workspace ID (the route
-// has no :workspaceID param), so it falls back to templated URLs. SaaS workspace
-// discovery requires a separate mechanism (e.g., workspace-scoped well-known endpoint).
-func (s *Service) getOAuthBasePath(_ *echo.Context, baseURL string) string {
-	if !s.profile.SaaS {
-		return fmt.Sprintf("%s/api/oauth2", baseURL)
-	}
-	return fmt.Sprintf("%s/api/workspaces/:workspaceID/oauth2", baseURL)
 }
 
 // handleProtectedResourceMetadata returns RFC 9728 protected resource metadata.

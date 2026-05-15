@@ -1556,9 +1556,14 @@
   "oauth2": {
     "consent": {
       "description": "{{clientName}} está solicitando acceso a tu cuenta",
+      "error-client-not-found": "Cliente no encontrado",
+      "error-load-failed": "Error al cargar la información del cliente",
+      "error-missing-params": "Faltan parámetros obligatorios de OAuth2",
+      "error-switch-failed": "Error al cambiar de workspace",
       "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos",
       "permissions": "Esta aplicación podrá:",
-      "title": "Solicitud de autorización"
+      "title": "Solicitud de autorización",
+      "workspace-label": "Concediendo acceso al workspace"
     }
   },
   "plan": {

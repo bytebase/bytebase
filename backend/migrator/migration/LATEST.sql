@@ -600,7 +600,10 @@ CREATE TABLE task_run_log (
 
 CREATE TABLE oauth2_client (
     client_id text PRIMARY KEY,
-    workspace text NOT NULL REFERENCES workspace(resource_id),
+    -- workspace is nullable: clients registered via unauthenticated DCR are
+    -- workspace-agnostic and get bound to a workspace at consent time on the
+    -- issued authorization code / refresh token.
+    workspace text REFERENCES workspace(resource_id),
     client_secret_hash text NOT NULL,
     config jsonb NOT NULL,
     last_active_at timestamptz NOT NULL DEFAULT now()
@@ -610,6 +613,9 @@ CREATE TABLE oauth2_authorization_code (
     code text PRIMARY KEY,
     client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
     user_email text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    -- Workspace selected at consent time. Carried through into the issued
+    -- access token's workspace_id claim.
+    workspace text REFERENCES workspace(resource_id),
     config jsonb NOT NULL,
     expires_at timestamptz NOT NULL
 );
@@ -618,6 +624,9 @@ CREATE TABLE oauth2_refresh_token (
     token_hash text PRIMARY KEY,
     client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
     user_email text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    -- Workspace inherited from the authorization code that originally issued
+    -- this refresh token; preserved across refresh.
+    workspace text REFERENCES workspace(resource_id),
     expires_at timestamptz NOT NULL
 );
 

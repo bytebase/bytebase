@@ -17,6 +17,12 @@ type OAuth2AuthorizationCodeMessage struct {
 	Code      string
 	ClientID  string
 	UserEmail string
+	// Workspace is the workspace the user was acting in when they granted
+	// consent. It is propagated into the issued access token's workspace_id
+	// claim. Empty only for codes created before the workspace column
+	// migration (3.18.2); handlers fall back to the client's workspace in
+	// that case.
+	Workspace string
 	Config    *storepb.OAuth2AuthorizationCodeConfig
 	ExpiresAt time.Time
 }
@@ -27,10 +33,15 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 		return nil, errors.Wrap(err, "failed to marshal config")
 	}
 
+	var workspaceArg any
+	if create.Workspace != "" {
+		workspaceArg = create.Workspace
+	}
+
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_authorization_code (code, client_id, user_email, config, expires_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, create.Code, create.ClientID, create.UserEmail, configBytes, create.ExpiresAt)
+		INSERT INTO oauth2_authorization_code (code, client_id, user_email, workspace, config, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, create.Code, create.ClientID, create.UserEmail, workspaceArg, configBytes, create.ExpiresAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -45,7 +56,7 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 
 func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (*OAuth2AuthorizationCodeMessage, error) {
 	q := qb.Q().Space(`
-		SELECT code, client_id, user_email, config, expires_at
+		SELECT code, client_id, user_email, workspace, config, expires_at
 		FROM oauth2_authorization_code
 		WHERE code = ? AND client_id = ?
 	`, code, clientID)
@@ -56,15 +67,17 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code s
 	}
 
 	msg := &OAuth2AuthorizationCodeMessage{}
+	var workspace sql.NullString
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
-		&msg.Code, &msg.ClientID, &msg.UserEmail, &configBytes, &msg.ExpiresAt,
+		&msg.Code, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to get OAuth2 authorization code")
 	}
+	msg.Workspace = workspace.String
 
 	msg.Config = &storepb.OAuth2AuthorizationCodeConfig{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(configBytes, msg.Config); err != nil {

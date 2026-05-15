@@ -15,8 +15,6 @@ import (
 	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -50,39 +48,33 @@ func NewService(store *store.Store, profile *config.Profile, secret string) *Ser
 }
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {
-	// Workspace-scoped OAuth2 routes (SaaS and self-hosted).
+	// RFC 8414 / RFC 9728 discovery endpoints (host-global, no workspace).
 	e.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
 	e.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
 	e.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
 	e.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
 
+	// Primary OAuth2 routes. Workspace binding now lives on the issued
+	// authorization code / refresh token (set at consent time from the
+	// user's session), not on the URL or the client. Same routes serve
+	// self-hosted and SaaS.
+	e.POST("/api/oauth2/register", s.handleRegister)
+	e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
+	e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
+	e.GET("/api/oauth2/clients/:clientID", s.handleGetClient)
+	e.POST("/api/oauth2/token", s.handleToken)
+	e.POST("/api/oauth2/revoke", s.handleRevoke)
+
+	// Workspace-scoped routes are kept for backward compatibility with any
+	// client that hardcoded the older URL shape. The :workspaceID segment
+	// is now informational — workspace resolution comes from the session
+	// at consent time, just like the unscoped routes above.
 	e.POST("/api/workspaces/:workspaceID/oauth2/register", s.handleRegister)
 	e.GET("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizeGet)
 	e.POST("/api/workspaces/:workspaceID/oauth2/authorize", s.handleAuthorizePost)
 	e.GET("/api/workspaces/:workspaceID/oauth2/clients/:clientID", s.handleGetClient)
 	e.POST("/api/workspaces/:workspaceID/oauth2/token", s.handleToken)
 	e.POST("/api/workspaces/:workspaceID/oauth2/revoke", s.handleRevoke)
-
-	// Legacy routes (self-hosted only, disabled in SaaS mode).
-	if !s.profile.SaaS {
-		e.POST("/api/oauth2/register", s.handleRegister)
-		e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
-		e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
-		e.GET("/api/oauth2/clients/:clientID", s.handleGetClient)
-		e.POST("/api/oauth2/token", s.handleToken)
-		e.POST("/api/oauth2/revoke", s.handleRevoke)
-	}
-}
-
-// getWorkspaceFromRequest extracts workspace ID from URL param or falls back to store for legacy routes.
-func (s *Service) getWorkspaceFromRequest(c *echo.Context) (string, error) {
-	if ws := c.Param("workspaceID"); ws != "" {
-		return ws, nil
-	}
-	if s.profile.SaaS {
-		return "", errors.New("workspace ID required in URL for SaaS mode")
-	}
-	return s.store.GetWorkspaceID(c.Request().Context())
 }
 
 // handleGetClient returns public client info for the consent page.
@@ -90,12 +82,7 @@ func (s *Service) handleGetClient(c *echo.Context) error {
 	ctx := c.Request().Context()
 	clientID := c.Param("clientID")
 
-	workspaceID, err := s.getWorkspaceFromRequest(c)
-	if err != nil {
-		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "workspace is required")
-	}
-
-	client, err := s.store.GetOAuth2Client(ctx, workspaceID, clientID)
+	client, err := s.store.GetOAuth2Client(ctx, clientID)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
 	}

@@ -14,14 +14,24 @@ type OAuth2RefreshTokenMessage struct {
 	TokenHash string
 	ClientID  string
 	UserEmail string
+	// Workspace is the workspace the original consent was granted for.
+	// Preserved across refresh so re-issued access tokens carry the same
+	// workspace_id claim. Empty only for refresh tokens created before the
+	// 3.18.2 migration.
+	Workspace string
 	ExpiresAt time.Time
 }
 
 func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2RefreshTokenMessage) (*OAuth2RefreshTokenMessage, error) {
+	var workspaceArg any
+	if create.Workspace != "" {
+		workspaceArg = create.Workspace
+	}
+
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_refresh_token (token_hash, client_id, user_email, expires_at)
-		VALUES (?, ?, ?, ?)
-	`, create.TokenHash, create.ClientID, create.UserEmail, create.ExpiresAt)
+		INSERT INTO oauth2_refresh_token (token_hash, client_id, user_email, workspace, expires_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, create.TokenHash, create.ClientID, create.UserEmail, workspaceArg, create.ExpiresAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -36,7 +46,7 @@ func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2Refr
 
 func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, client_id, user_email, expires_at
+		SELECT token_hash, client_id, user_email, workspace, expires_at
 		FROM oauth2_refresh_token
 		WHERE token_hash = ? AND client_id = ?
 	`, tokenHash, clientID)
@@ -47,14 +57,16 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash s
 	}
 
 	msg := &OAuth2RefreshTokenMessage{}
+	var workspace sql.NullString
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &workspace, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to get OAuth2 refresh token")
 	}
+	msg.Workspace = workspace.String
 	return msg, nil
 }
 

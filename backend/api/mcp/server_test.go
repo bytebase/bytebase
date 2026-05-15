@@ -84,6 +84,17 @@ func TestMCPAuthMiddleware(t *testing.T) {
 
 			require.Equal(t, tc.expectedStatus, rec.Code)
 			require.Contains(t, strings.ToLower(rec.Body.String()), strings.ToLower(tc.expectedBody))
+
+			// Every 401 must carry an RFC 9728 / MCP-authorization-spec
+			// WWW-Authenticate header so unauthenticated clients can
+			// auto-discover the authorization server.
+			wwwAuth := rec.Header().Get("WWW-Authenticate")
+			require.NotEmpty(t, wwwAuth, "401 response missing WWW-Authenticate header")
+			require.Contains(t, wwwAuth, "Bearer")
+			require.Contains(t, wwwAuth, `realm="OAuth"`)
+			require.Contains(t, wwwAuth, "resource_metadata=")
+			require.Contains(t, wwwAuth, "/.well-known/oauth-protected-resource")
+			require.Contains(t, wwwAuth, `error="invalid_token"`)
 		})
 	}
 }

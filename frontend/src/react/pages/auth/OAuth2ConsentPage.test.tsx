@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -10,7 +10,21 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
   useAuthStore: vi.fn(),
+  useActuatorV1Store: vi.fn(),
+  useWorkspaceV1Store: vi.fn(),
   isLoggedIn: { value: true },
+  isSaaSMode: { value: false },
+  currentWorkspace: {
+    value: { name: "workspaces/ws-1", title: "Acme Corp" } as
+      | {
+          name: string;
+          title: string;
+        }
+      | undefined,
+  },
+  workspaceList: { value: [] as { name: string; title: string }[] },
+  fetchWorkspaceList: vi.fn(async () => {}),
+  switchWorkspace: vi.fn(async () => {}),
   routerReplace: vi.fn(),
   routerBack: vi.fn(),
   currentRoute: {
@@ -26,6 +40,20 @@ mocks.useAuthStore.mockImplementation(() => ({
     return mocks.isLoggedIn.value;
   },
 }));
+mocks.useActuatorV1Store.mockImplementation(() => ({
+  get isSaaSMode() {
+    return mocks.isSaaSMode.value;
+  },
+}));
+mocks.useWorkspaceV1Store.mockImplementation(() => ({
+  get currentWorkspace() {
+    return mocks.currentWorkspace.value;
+  },
+  get workspaceList() {
+    return mocks.workspaceList.value;
+  },
+  fetchWorkspaceList: mocks.fetchWorkspaceList,
+}));
 
 vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
@@ -33,6 +61,59 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useAuthStore: mocks.useAuthStore,
+  useActuatorV1Store: mocks.useActuatorV1Store,
+  useWorkspaceV1Store: mocks.useWorkspaceV1Store,
+}));
+
+vi.mock("@/connect", () => ({
+  authServiceClientConnect: {
+    switchWorkspace: mocks.switchWorkspace,
+  },
+}));
+
+vi.mock("@bufbuild/protobuf", () => ({
+  create: (_schema: unknown, value: unknown) => value,
+}));
+
+vi.mock("@/types/proto-es/v1/auth_service_pb", () => ({
+  SwitchWorkspaceRequestSchema: {},
+}));
+
+// Test-only Select stub: Base UI's Select renders its popup through a portal,
+// which makes click-through-portal flows fragile in jsdom. We swap in a native
+// <select> here so we can exercise the consent page's switch wiring directly.
+// The real Select component is covered by its own tests.
+vi.mock("@/react/components/ui/select", () => ({
+  Select: ({
+    value,
+    onValueChange,
+    children,
+    disabled,
+  }: {
+    value: string;
+    onValueChange?: (v: string) => void;
+    children: ReactNode;
+    disabled?: boolean;
+  }) => (
+    <select
+      data-testid="workspace-select"
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onValueChange?.(e.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  SelectValue: () => null,
+  SelectContent: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
+    <option value={value}>{children}</option>
+  ),
 }));
 
 vi.mock("@/router", () => ({
@@ -87,6 +168,12 @@ const flushPromises = () =>
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.isLoggedIn.value = true;
+  mocks.isSaaSMode.value = false;
+  mocks.currentWorkspace.value = {
+    name: "workspaces/ws-1",
+    title: "Acme Corp",
+  };
+  mocks.workspaceList.value = [];
   mocks.currentRoute.value.query = {};
   mocks.currentRoute.value.fullPath = "/oauth2/consent";
   globalThis.fetch = mocks.fetchImpl as typeof fetch;
@@ -115,8 +202,10 @@ describe("OAuth2ConsentPage", () => {
     );
     render();
     await flushPromises();
+    // The component now resolves error text via the i18n key. Our t() mock
+    // returns the key as-is, so we assert on the key rather than English.
     expect(container.textContent).toContain(
-      "Missing required OAuth2 parameters"
+      "oauth2.consent.error-missing-params"
     );
     unmount();
   });
@@ -166,6 +255,146 @@ describe("OAuth2ConsentPage", () => {
     render();
     await flushPromises();
     expect(container.textContent).toContain("client unknown");
+    unmount();
+  });
+
+  test("shows current workspace title on the consent card", async () => {
+    mocks.currentRoute.value.query = {
+      client_id: "c1",
+      redirect_uri: "https://app/callback",
+      state: "s",
+      code_challenge: "ch",
+      code_challenge_method: "S256",
+    };
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+    expect(container.textContent).toContain("oauth2.consent.workspace-label");
+    expect(container.textContent).toContain("Acme Corp");
+    // Self-hosted (default in this test) does NOT prefetch the workspace list.
+    expect(mocks.fetchWorkspaceList).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("prefetches workspace list and shows picker on SaaS with multiple workspaces", async () => {
+    mocks.isSaaSMode.value = true;
+    mocks.workspaceList.value = [
+      { name: "workspaces/ws-1", title: "Acme Corp" },
+      { name: "workspaces/ws-2", title: "Side Project" },
+    ];
+    mocks.currentRoute.value.query = {
+      client_id: "c1",
+      redirect_uri: "https://app/callback",
+      state: "s",
+      code_challenge: "ch",
+      code_challenge_method: "S256",
+    };
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+    expect(mocks.fetchWorkspaceList).toHaveBeenCalledTimes(1);
+    // Picker trigger renders the current workspace title.
+    expect(container.textContent).toContain("Acme Corp");
+    unmount();
+  });
+
+  test("picking a different workspace calls SwitchWorkspace and reloads", async () => {
+    mocks.isSaaSMode.value = true;
+    mocks.workspaceList.value = [
+      { name: "workspaces/ws-1", title: "Acme Corp" },
+      { name: "workspaces/ws-2", title: "Side Project" },
+    ];
+    mocks.currentRoute.value.query = {
+      client_id: "c1",
+      redirect_uri: "https://app/callback",
+      state: "s",
+      code_challenge: "ch",
+      code_challenge_method: "S256",
+    };
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+
+    // Stub window.location.reload so the test doesn't actually navigate.
+    const reload = vi.fn();
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { ...window.location, reload },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+
+    const select = container.querySelector<HTMLSelectElement>(
+      'select[data-testid="workspace-select"]'
+    );
+    expect(select).not.toBeNull();
+    expect(select?.value).toBe("workspaces/ws-1");
+
+    await act(async () => {
+      select!.value = "workspaces/ws-2";
+      select!.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+    });
+    await flushPromises();
+
+    expect(mocks.switchWorkspace).toHaveBeenCalledTimes(1);
+    expect(mocks.switchWorkspace).toHaveBeenCalledWith({
+      workspace: "workspaces/ws-2",
+      web: true,
+    });
+    expect(reload).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test("picking the same workspace is a no-op", async () => {
+    mocks.isSaaSMode.value = true;
+    mocks.workspaceList.value = [
+      { name: "workspaces/ws-1", title: "Acme Corp" },
+      { name: "workspaces/ws-2", title: "Side Project" },
+    ];
+    mocks.currentRoute.value.query = {
+      client_id: "c1",
+      redirect_uri: "https://app/callback",
+      state: "s",
+      code_challenge: "ch",
+      code_challenge_method: "S256",
+    };
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+
+    const select = container.querySelector<HTMLSelectElement>(
+      'select[data-testid="workspace-select"]'
+    );
+    await act(async () => {
+      // Re-dispatching the same value should not trigger a switch.
+      select!.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(mocks.switchWorkspace).not.toHaveBeenCalled();
     unmount();
   });
 
