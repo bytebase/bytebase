@@ -18,9 +18,10 @@
     ></div>
 
     <div id="app"></div>
-    <!-- React Toaster root: hosts the persistent toast renderer.
-         Visually empty; toasts portal into getLayerRoot("overlay"). -->
-    <div id="bb-toaster-root"></div>
+    <!-- React app root for globally-portaled surfaces (AgentWindow,
+         SessionExpiredSurface, Toaster). Visually empty; children portal
+         into getLayerRoot(...). -->
+    <div id="react-app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

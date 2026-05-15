@@ -48,7 +48,7 @@ vi.mock("@/utils", () => ({
   getInstanceResource: mocks.getInstanceResource,
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: mocks.EngineIconPath,
 }));
 

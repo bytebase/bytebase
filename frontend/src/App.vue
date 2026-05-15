@@ -4,13 +4,9 @@
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
   >
-    <ReactPageMount page="Watermark" container-class="contents" />
-
-    <OverlayStackManager>
-      <AuthContext>
-        <router-view />
-      </AuthContext>
-    </OverlayStackManager>
+    <AuthContext>
+      <router-view />
+    </AuthContext>
   </NConfigProvider>
 </template>
 
@@ -26,10 +22,8 @@ import {
   watchEffect,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import ReactPageMount from "@/react/ReactPageMount.vue";
 import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
 import AuthContext from "./AuthContext.vue";
-import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import { locale, t } from "./plugins/i18n";
 import {

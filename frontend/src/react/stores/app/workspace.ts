@@ -189,11 +189,11 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     window.location.href = "/";
   },
 
-  loadWorkspaceProfile: async () => {
+  loadWorkspaceProfile: async (force = false) => {
     const existing = get().workspaceProfile;
-    if (existing) return existing;
+    if (!force && existing) return existing;
     const pending = get().workspaceProfileRequest;
-    if (pending) return pending;
+    if (!force && pending) return pending;
     const request = settingServiceClientConnect
       .getSetting(
         createProto(GetSettingRequestSchema, {

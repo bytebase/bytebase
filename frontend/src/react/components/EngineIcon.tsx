@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from "react";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
+import { EngineIconPath } from "@/react/components/instance/constants";
 import { cn } from "@/react/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 

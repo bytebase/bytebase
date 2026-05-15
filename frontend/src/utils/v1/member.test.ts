@@ -2,10 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import {
-  getProjectRoleBindingKey,
-  groupProjectRoleBindings,
-} from "./projectRoleBindings";
+import { getProjectRoleBindingKey, groupProjectRoleBindings } from "./member";
 
 describe("groupProjectRoleBindings", () => {
   test("groups repeated roles without dropping distinct bindings", () => {

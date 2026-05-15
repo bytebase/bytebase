@@ -37,7 +37,7 @@ vi.mock("@/store", () => ({
   hasFeature: mocks.hasFeature,
 }));
 
-vi.mock("@/components/RoleGrantPanel/DatabaseResourceForm/common", () => ({
+vi.mock("@/utils/v1/databaseResource", () => ({
   parseStringToResource: mocks.parseStringToResource,
 }));
 

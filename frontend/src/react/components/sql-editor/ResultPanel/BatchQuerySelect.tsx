@@ -4,13 +4,13 @@ import { head } from "lodash-es";
 import { CircleAlert, Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { EngineIconPath } from "@/components/InstanceForm/constants";
 import {
   DataExportButton,
   type DataExportRequest,
   type DownloadContent,
 } from "@/react/components/DataExportButton";
 import { DatabaseTableView } from "@/react/components/database";
+import { EngineIconPath } from "@/react/components/instance/constants";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";

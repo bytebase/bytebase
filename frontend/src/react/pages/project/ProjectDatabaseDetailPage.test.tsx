@@ -290,10 +290,6 @@ vi.mock("@/connect", () => ({
   },
 }));
 
-vi.mock("@/components/SchemaDiagram", () => ({
-  default: mocks.schemaDiagram,
-}));
-
 vi.mock("@/plugins/highlight", () => ({
   default: mocks.highlightPlugin,
 }));

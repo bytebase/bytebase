@@ -16,7 +16,7 @@ vi.mock("@/utils", () => ({
   instanceV1Name: (inst: { title: string }) => inst.title,
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: {
     MYSQL: "/icon/mysql.svg",
     UNSUPPORTED: "",

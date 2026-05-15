@@ -18,9 +18,6 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { groupProjectRoleBindings } from "@/components/Member/projectRoleBindings";
-import type { GroupBinding, MemberBinding } from "@/components/Member/types";
-import { getMemberBindings } from "@/components/Member/utils";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
@@ -96,6 +93,7 @@ import { type Binding, BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type { GroupBinding, MemberBinding } from "@/types/v1/member";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   displayRoleTitle,
@@ -110,6 +108,7 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
+import { getMemberBindings, groupProjectRoleBindings } from "@/utils/v1/member";
 import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
 import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";

@@ -35,11 +35,11 @@ export interface DatabaseTreeOption<L = DatabaseResourceType>
 export const mapTreeOptions = ({
   databaseList,
   filterValueList,
-  includeCloumn,
+  includeColumn,
 }: {
   databaseList: Database[];
   filterValueList?: string[];
-  includeCloumn: boolean;
+  includeColumn: boolean;
 }) => {
   const databaseNodes: DatabaseTreeOption<"databases">[] = [];
   const filteredDatabaseList = filterValueList
@@ -58,7 +58,7 @@ export const mapTreeOptions = ({
       children: getSchemaOrTableTreeOptions({
         database,
         filterValueList,
-        includeCloumn,
+        includeColumn,
       }),
     };
     if (!isUndefined(databaseNode.children)) {
@@ -74,12 +74,12 @@ const getTableTreeOptions = ({
   prefix,
   tableList,
   filterValueList,
-  includeCloumn,
+  includeColumn,
 }: {
   prefix: string;
   tableList: TableMetadata[];
   filterValueList?: string[];
-  includeCloumn: boolean;
+  includeColumn: boolean;
 }): DatabaseTreeOption<"tables">[] => {
   const tableNodes = tableList.map((table): DatabaseTreeOption<"tables"> => {
     const option: DatabaseTreeOption<"tables"> = {
@@ -88,7 +88,7 @@ const getTableTreeOptions = ({
       label: table.name,
       isLeaf: true,
     };
-    if (includeCloumn) {
+    if (includeColumn) {
       option.children = table.columns.map(
         (column): DatabaseTreeOption<"columns"> => ({
           level: "columns",
@@ -120,11 +120,11 @@ const getTableTreeOptions = ({
 export const getSchemaOrTableTreeOptions = ({
   database,
   filterValueList,
-  includeCloumn,
+  includeColumn,
 }: {
   database: Database;
   filterValueList?: string[];
-  includeCloumn: boolean;
+  includeColumn: boolean;
 }) => {
   if (getInstanceResource(database).engine === Engine.MONGODB) {
     // do not support table level select for MongoDB.
@@ -149,7 +149,7 @@ export const getSchemaOrTableTreeOptions = ({
             prefix: value,
             tableList: schema.tables,
             filterValueList,
-            includeCloumn,
+            includeColumn,
           }),
           isLeaf: true,
         };
@@ -173,7 +173,7 @@ export const getSchemaOrTableTreeOptions = ({
         databaseMetadata.schemas.map((schema) => schema.tables)
       ),
       filterValueList,
-      includeCloumn,
+      includeColumn,
     });
   }
 };

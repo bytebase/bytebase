@@ -1,7 +1,6 @@
 import { ShieldUser } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { parseStringToResource } from "@/components/RoleGrantPanel/DatabaseResourceForm/common";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
@@ -20,6 +19,7 @@ import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { parseStringToResource } from "@/utils/v1/databaseResource";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
 import { useRequestDrawerHost } from "./RequestDrawerHost";
 

@@ -45,7 +45,7 @@ vi.mock("@/store", () => ({
   })),
 }));
 
-vi.mock("@/components/InstanceForm/constants", () => ({
+vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: {
     [Engine.POSTGRES]: "/icons/postgres.svg",
   } as Record<string, string>,

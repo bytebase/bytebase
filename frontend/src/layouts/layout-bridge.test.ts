@@ -115,31 +115,6 @@ vi.mock("@/react/ReactPageMount.vue", async () => {
   };
 });
 
-vi.mock("@/components/AgentWindowMount.vue", async () => {
-  const { defineComponent, h } = await import("vue");
-  return {
-    default: defineComponent({
-      name: "MockAgentWindowMount",
-      setup() {
-        return () => h("div", { "data-testid": "agent-window" });
-      },
-    }),
-  };
-});
-
-vi.mock("@/components/ReleaseRemindModal.vue", async () => {
-  const { defineComponent, h } = await import("vue");
-  return {
-    default: defineComponent({
-      name: "MockReleaseRemindModal",
-      emits: ["cancel"],
-      setup() {
-        return () => h("div", { "data-testid": "release-remind-modal" });
-      },
-    }),
-  };
-});
-
 vi.mock("@/plugins/i18n", () => ({
   t: (key: string) => key,
 }));

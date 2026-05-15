@@ -45,8 +45,6 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/components/ExprEditor/context", () => ({}));
-
 vi.mock("@/react/lib/sensitive-data/components-utils", () => ({
   getClassificationLevelOptions: () => [],
 }));
