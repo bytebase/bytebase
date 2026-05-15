@@ -1361,10 +1361,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         </span>
                         <div className="textinfolabel mb-1">
                           {t(
-                            "instance.sentence.google-cloud-sql.instance-name-tips"
-                          ).replace(
-                            "{instance}",
-                            "{project-id}:{region}:{instance-name}"
+                            "instance.sentence.google-cloud-sql.instance-name-tips",
+                            {
+                              instance: "{project-id}:{region}:{instance-name}",
+                            }
                           )}
                         </div>
                       </div>

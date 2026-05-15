@@ -137,7 +137,7 @@
       "code-sent-hint": "Se ha enviado un código de verificación a {{email}}.",
       "demo-account": "Demo Account",
       "email-code-tab": "Código por email",
-      "failed-to-send-code": "No se pudo enviar el código de verificación. Inténtalo de nuevo.",
+      "failed-to-send-code": "No se pudo enviar el código de verificación. {{error}}",
       "forget-password": "¿Olvidaste tu contraseña?",
       "invited-email": "Has sido invitado. Inicia sesión con {{email}}",
       "new-user": "¿Nuevo en Bytebase?",
@@ -161,7 +161,7 @@
     "deploy": "Auto Hospedaje",
     "external-url": "Bytebase no ha configurado --external-url",
     "license-expired": "Su licencia para {{plan}} ha expirado el {{expireAt}}.",
-    "license-expires": "Su licencia para {{plan}} ha caducado el {{expireAt}}.",
+    "license-expires": "Su licencia para {{plan}} caducará en {{days}} días el {{expireAt}}.",
     "request-demo": "Reserva una demo de producto de 30 minutos.",
     "trial-expires": "Su prueba gratuita para {{plan}} caducará en {{days}} días el {{expireAt}}."
   },
@@ -322,6 +322,7 @@
     "members_one": "Miembro",
     "members_other": "Miembros",
     "minutes": "Minutos",
+    "missing-permission": "Faltan permisos requeridos",
     "missing-required-permission": "Faltan permisos requeridos {{permissions}}",
     "missing-required-permission-for-resource": "Faltan permisos requeridos para el recurso {{resource}}",
     "more": "Más",
@@ -1130,7 +1131,7 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario {{user}} con la contraseña {{password}} y otorgar al usuario los privilegios necesarios."
         },
         "snowflake": {
-          "template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios."
+          "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios."
         }
       },
       "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
@@ -1288,7 +1289,7 @@
   "instance.sentence.create-user-example.postgresql.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} y otorgar al usuario los privilegios necesarios. Si la instancia de conexión está alojada por ti mismo, puedes otorgar SUPERUSER.",
   "instance.sentence.create-user-example.postgresql.warn": "Si la instancia de conexión es administrada por el proveedor de la nube, entonces SUPERUSER no está disponible y debes crear el usuario a través de la consola de administración del proveedor. El usuario creado tendrá privilegios semi-SUPERUSER específicos del proveedor. Debes otorgar privilegios de Bytebase con 'GRANT role_name TO bytebase;' para todos los roles existentes, de lo contrario Bytebase puede no tener acceso a las bases de datos o tablas existentes.",
   "instance.sentence.create-user-example.redis.template": "A continuación se muestra un ejemplo para crear el usuario {{user}} con la contraseña {{password}} y otorgar al usuario los privilegios necesarios.",
-  "instance.sentence.create-user-example.snowflake.template": "A continuación se muestra un ejemplo para crear el usuario 'bytebase' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios.",
+  "instance.sentence.create-user-example.snowflake.template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios.",
   "instance.sentence.firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
   "instance.sentence.google-cloud-sql.instance-name": "Nombre de conexión de instancia",
   "instance.sentence.google-cloud-sql.instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
@@ -1517,7 +1518,7 @@
   "label.empty-label-value": "Valor",
   "label.error.key-duplicated": "Claves duplicadas",
   "label.error.key-necessary": "Se requiere una clave",
-  "label.error.max-value-length-exceeded": "La longitud del valor no puede exceder {{longitud}} caracteres",
+  "label.error.max-value-length-exceeded": "La longitud del valor no puede exceder {{length}} caracteres",
   "label.error.value-necessary": "Se requiere un valor",
   "landing": {
     "changelog-for-version": "Registro de cambios para {{version}}",
@@ -1935,7 +1936,7 @@
       "duplicated": "El ID de {{resource}} ya existe. Por favor, elige otro.",
       "empty": "El ID {{resource}} no puede estar vacío",
       "overflow": "El ID de {{resource}} es demasiado largo. Debe tener menos de 64 caracteres.",
-      "pattern": "La identificación {{recurso}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número."
+      "pattern": "La identificación {{resource}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número."
     }
   },
   "resource-id.cannot-be-changed-later": "No se puede cambiar posteriormente.",
@@ -1944,7 +1945,7 @@
   "resource-id.validation.duplicated": "El ID de {{resource}} ya existe. Por favor, elige otro.",
   "resource-id.validation.empty": "El ID {{resource}} no puede estar vacío",
   "resource-id.validation.overflow": "El ID de {{resource}} es demasiado largo. Debe tener menos de 64 caracteres.",
-  "resource-id.validation.pattern": "La identificación {{recurso}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
+  "resource-id.validation.pattern": "La identificación {{resource}} puede tener letras, dígitos o guiones minúsculas. Debe comenzar con una letra minúscula y terminar con una letra o número.",
   "role": {
     "custom-roles": {
       "self": "Roles personalizados"

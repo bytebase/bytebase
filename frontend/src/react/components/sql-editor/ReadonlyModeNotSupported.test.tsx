@@ -103,9 +103,7 @@ describe("ReadonlyModeNotSupported", () => {
     render();
 
     // i18n keys surface as their key text via the stubbed t()
-    expect(container.textContent).toContain(
-      "common.missing-required-permission"
-    );
+    expect(container.textContent).toContain("common.missing-permission");
 
     // Trans component passed the i18n key
     const trans = container.querySelector("[data-testid='trans']");

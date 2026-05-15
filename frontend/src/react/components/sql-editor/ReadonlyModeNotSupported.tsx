@@ -20,7 +20,7 @@ export function ReadonlyModeNotSupported() {
       <div className="flex items-center gap-x-2 text-error">
         <ShieldAlert className="size-6" />
         <span className="text-base font-medium">
-          {t("common.missing-required-permission")}
+          {t("common.missing-permission")}
         </span>
       </div>
       <div className="text-sm text-control-light flex items-center gap-x-1">

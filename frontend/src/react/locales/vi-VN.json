@@ -137,7 +137,7 @@
       "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
       "demo-account": "Demo Account",
       "email-code-tab": "Mã qua email",
-      "failed-to-send-code": "Không gửi được mã xác minh. Vui lòng thử lại.",
+      "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
       "new-user": "Mới sử dụng Bytebase?",
@@ -322,6 +322,7 @@
     "members_one": "Thành viên",
     "members_other": "Thành viên",
     "minutes": "Phút",
+    "missing-permission": "Thiếu quyền cần thiết",
     "missing-required-permission": "Thiếu quyền cần thiết {{permissions}}",
     "missing-required-permission-for-resource": "Thiếu quyền cần thiết cho tài nguyên {{resource}}",
     "more": "Thêm",
@@ -1687,7 +1688,7 @@
     "rollout": {
       "auto": "Triển khai tự động",
       "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
-      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau.",
+      "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền '{{permission}}' hoặc các vai trò sau.",
       "name": "Chính sách triển khai",
       "tip": "Chính sách được áp dụng cho các vấn đề hồi tố."
     }
