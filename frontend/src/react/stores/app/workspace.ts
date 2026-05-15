@@ -13,6 +13,10 @@ import {
   settingNamePrefix,
   workspaceNamePrefix,
 } from "@/react/lib/resourceName";
+import {
+  broadcastWorkspaceSwitch,
+  workspaceSwitchChannel,
+} from "@/store/workspaceSwitchChannel";
 import { defaultAppProfile } from "@/types/appProfile";
 import {
   hasFeature as checkFeature,
@@ -43,11 +47,14 @@ import type { Environment } from "@/types/v1/environment";
 import { formatAbsoluteDateTime } from "@/utils/datetime";
 import type { AppSliceCreator, WorkspaceSlice } from "./types";
 
-// Notify other tabs when the user switches workspace.
-const workspaceSwitchChannel = new BroadcastChannel("bb-workspace-switch");
-workspaceSwitchChannel.onmessage = () => {
+// Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
+// Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
+// store to register its own handler on the same object, and source-object
+// exclusion correctly suppresses both handlers when a post originates from
+// this tab (e.g. the OAuth2 consent page's in-place switch).
+workspaceSwitchChannel.addEventListener("message", () => {
   window.location.href = "/";
-};
+});
 
 const workspaceProfileSettingName = `${settingNamePrefix}${
   Setting_SettingName[Setting_SettingName.WORKSPACE_PROFILE]
@@ -184,7 +191,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       })
     );
     // Notify other tabs to reload with the new workspace.
-    workspaceSwitchChannel.postMessage(workspaceName);
+    broadcastWorkspaceSwitch(workspaceName);
     // Full-reload to the landing page to reset all frontend state.
     window.location.href = "/";
   },
