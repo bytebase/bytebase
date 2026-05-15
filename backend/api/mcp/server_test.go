@@ -18,7 +18,10 @@ import (
 
 func TestMCPAuthMiddleware(t *testing.T) {
 	secret := "test-secret-key"
-	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	// ExternalURL short-circuits utils.GetEffectiveExternalURL away from
+	// the nil store; it's also the canonical URL the WWW-Authenticate
+	// resource_metadata pointer should resolve to.
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
 
 	tests := []struct {
 		name           string
@@ -95,6 +98,10 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			require.Contains(t, wwwAuth, "resource_metadata=")
 			require.Contains(t, wwwAuth, "/.well-known/oauth-protected-resource")
 			require.Contains(t, wwwAuth, `error="invalid_token"`)
+			// The resource_metadata URL must use the configured external URL
+			// rather than the inbound request Host. Locks in the fix for the
+			// proxied-deployment phishing pivot.
+			require.Contains(t, wwwAuth, "https://bb.example.com/.well-known/oauth-protected-resource")
 		})
 	}
 }

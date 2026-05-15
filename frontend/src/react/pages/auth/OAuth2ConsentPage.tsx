@@ -105,6 +105,11 @@ export function OAuth2ConsentPage() {
   // We call SwitchWorkspace directly (instead of the store's helper, which
   // redirects to the landing page) and then reload the same URL so the
   // session cookie carries the new workspace_id into the upcoming POST.
+  //
+  // The bb-workspace-switch BroadcastChannel notification mirrors what the
+  // store's helper does so that other open tabs full-reload to the landing
+  // page and pick up the new workspace, instead of operating in stale
+  // in-memory state against a session cookie that has already changed.
   const onSwitchWorkspace = async (workspaceName: string | null) => {
     if (!workspaceName || workspaceName === currentWorkspace?.name) return;
     setSubmitting(true);
@@ -115,6 +120,7 @@ export function OAuth2ConsentPage() {
           web: true,
         })
       );
+      new BroadcastChannel("bb-workspace-switch").postMessage(workspaceName);
       window.location.reload();
     } catch {
       setError(t("oauth2.consent.error-switch-failed"));

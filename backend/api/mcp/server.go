@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // Server is the MCP server for Bytebase.
@@ -82,13 +83,13 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Extract Authorization header
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			return unauthorized(c, "authorization required")
+			return s.unauthorized(c, "authorization required")
 		}
 
 		// Validate Bearer format
 		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			return unauthorized(c, "authorization header format must be Bearer {token}")
+			return s.unauthorized(c, "authorization header format must be Bearer {token}")
 		}
 		tokenStr := parts[1]
 
@@ -105,19 +106,19 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		})
 		if err != nil {
 			if strings.Contains(err.Error(), "expired") {
-				return unauthorized(c, "token expired")
+				return s.unauthorized(c, "token expired")
 			}
-			return unauthorized(c, "invalid token")
+			return s.unauthorized(c, "invalid token")
 		}
 
 		if !token.Valid {
-			return unauthorized(c, "invalid token")
+			return s.unauthorized(c, "invalid token")
 		}
 
 		// Validate audience - accept both user access tokens and OAuth2 access tokens
 		aud, ok := claims["aud"]
 		if !ok {
-			return unauthorized(c, "invalid token: missing audience")
+			return s.unauthorized(c, "invalid token: missing audience")
 		}
 
 		validAudience := false
@@ -134,13 +135,13 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		default:
 		}
 		if !validAudience {
-			return unauthorized(c, "invalid token: audience mismatch")
+			return s.unauthorized(c, "invalid token: audience mismatch")
 		}
 
 		// Extract user email from subject
 		sub, ok := claims["sub"].(string)
 		if !ok || sub == "" {
-			return unauthorized(c, "invalid token: missing subject")
+			return s.unauthorized(c, "invalid token: missing subject")
 		}
 
 		// Extract workspace ID from token claims.
@@ -169,8 +170,8 @@ func (s *Server) RegisterRoutes(e *echo.Echo) {
 // WWW-Authenticate header so compliant MCP clients can auto-discover the
 // authorization server. The header references the host-global protected
 // resource metadata endpoint (served by the oauth2 package).
-func unauthorized(c *echo.Context, errDescription string) error {
-	resourceMetadataURL := buildResourceMetadataURL(c)
+func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
+	resourceMetadataURL := s.buildResourceMetadataURL(c)
 	c.Response().Header().Set(
 		"WWW-Authenticate",
 		fmt.Sprintf(
@@ -182,11 +183,17 @@ func unauthorized(c *echo.Context, errDescription string) error {
 }
 
 // buildResourceMetadataURL returns the absolute URL of this server's
-// /.well-known/oauth-protected-resource endpoint, derived from the incoming
-// request. We don't have access to the server's externalURL config here, so
-// we derive from Host + scheme; for SaaS that's cloud.bytebase.com over https,
-// and the X-Forwarded-Proto header handles proxied self-hosted setups.
-func buildResourceMetadataURL(c *echo.Context) string {
+// /.well-known/oauth-protected-resource endpoint. The configured effective
+// external URL is preferred over request-derived host/proto so that proxied
+// deployments (where the inbound Host can differ from the public endpoint)
+// emit the correct public URL to MCP clients. Request-derived values are the
+// last-resort fallback only.
+func (s *Server) buildResourceMetadataURL(c *echo.Context) string {
+	ctx := c.Request().Context()
+	if externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, ""); err == nil && externalURL != "" {
+		return strings.TrimSuffix(externalURL, "/") + "/.well-known/oauth-protected-resource"
+	}
+
 	req := c.Request()
 	scheme := "https"
 	if req.TLS == nil {
