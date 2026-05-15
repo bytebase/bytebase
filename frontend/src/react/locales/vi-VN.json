@@ -3725,7 +3725,6 @@
   "task": {
     "cancel-task": "Hủy tác vụ | Hủy các tác vụ",
     "cancel-task-description": "Các lần chạy tác vụ đang chờ và sẵn sàng sẽ được hủy ngay. Các lần chạy đang chạy sẽ nhận yêu cầu hủy theo cách cố gắng tối đa và có thể tiếp tục chạy; hãy thử lại nếu cần.",
-    "checking": "Đang kiểm tra...",
     "created": "Đã tạo",
     "data-export-creator-only": "Chỉ người tạo sự cố mới có thể thực hiện tác vụ xuất dữ liệu",
     "error": {

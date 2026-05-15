@@ -3737,7 +3737,6 @@
   "task": {
     "cancel-task": "Cancel task | Cancel tasks",
     "cancel-task-description": "Pending and available task runs are canceled immediately. Running task runs receive a best-effort cancel request and may keep running; retry if needed.",
-    "checking": "Checking...",
     "created": "Created",
     "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "error": {

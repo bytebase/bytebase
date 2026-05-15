@@ -2685,7 +2685,6 @@
         "self": "Revisión de SQL"
       }
     },
-    "checking": "Comprobando...",
     "created": "Creado",
     "data-export-creator-only": "Sólo el creador del problema puede ejecutar tareas de exportación de datos",
     "error": {

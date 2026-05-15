@@ -2685,7 +2685,6 @@
         "self": "SQL 审核"
       }
     },
-    "checking": "检查中…",
     "created": "创建于",
     "data-export-creator-only": "只有工单创建者可以执行数据导出任务",
     "error": {

@@ -2685,7 +2685,6 @@
         "self": "SQL レビュー"
       }
     },
-    "checking": "検査中…",
     "created": "内蔵",
     "data-export-creator-only": "イシュー作成者のみがデータエクスポートタスクを実行できます",
     "error": {

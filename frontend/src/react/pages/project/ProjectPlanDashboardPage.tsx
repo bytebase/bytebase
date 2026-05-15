@@ -24,6 +24,7 @@ import {
   usePermissionCheck,
 } from "@/react/components/PermissionGuard";
 import { Alert } from "@/react/components/ui/alert";
+import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { SearchInput } from "@/react/components/ui/search-input";
@@ -76,7 +77,7 @@ import {
   isValidDatabaseGroupName,
   unknownUser,
 } from "@/types";
-import { ApprovalStatus, State } from "@/types/proto-es/v1/common_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
@@ -106,6 +107,7 @@ import {
   type SearchParams as VueSearchParams,
 } from "@/utils";
 import { extractStageUID } from "@/utils/v1/issue/rollout";
+import { getReviewBadge } from "./utils/reviewBadge";
 
 // Task status priority order for determining rollout stage status
 const TASK_STATUS_FILTERS: Task_Status[] = [
@@ -442,26 +444,25 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
   );
 
   // Approval status
+  // Plan List passes issueStatus=undefined because the Plan proto does not
+  // expose issue_status. Two divergence categories vs Plan Detail remain by
+  // design (see the spec's "Residual divergences" table):
+  //   Category A — CANCELED issues render the approval-derived badge here
+  //     instead of "Closed".
+  //   Category C₂ — issue manually marked DONE with no rollout while approval
+  //     is still PENDING renders "Under Review" here instead of "Bypassed".
+  // To close those gaps, expose issue_status on the Plan proto and pass it
+  // through here. Bug history: BYT-9551.
   const approvalTag = useMemo(() => {
-    if (plan.issue === "") return undefined;
-    switch (plan.approvalStatus) {
-      case ApprovalStatus.CHECKING:
-        return { label: t("task.checking"), variant: "default" as const };
-      case ApprovalStatus.APPROVED:
-        return {
-          label: t("issue.table.approved"),
-          variant: "success" as const,
-        };
-      case ApprovalStatus.SKIPPED:
-        return { label: t("common.skipped"), variant: "default" as const };
-      case ApprovalStatus.REJECTED:
-        return { label: t("common.rejected"), variant: "warning" as const };
-      case ApprovalStatus.PENDING:
-        return { label: t("common.under-review"), variant: "info" as const };
-      default:
-        return undefined;
-    }
-  }, [plan.approvalStatus, plan.issue, t]);
+    const badge = getReviewBadge({
+      hasIssue: plan.issue !== "",
+      issueStatus: undefined,
+      hasRollout: plan.hasRollout,
+      approvalStatus: plan.approvalStatus,
+    });
+    if (!badge) return undefined;
+    return { label: t(badge.labelKey), variant: badge.variant };
+  }, [plan.approvalStatus, plan.hasRollout, plan.issue, t]);
 
   // Plan check status summary
   const checkSummary = useMemo(() => {
@@ -558,7 +559,9 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
       {/* Approval */}
       <TableCell>
         {approvalTag ? (
-          <StatusTag label={approvalTag.label} variant={approvalTag.variant} />
+          <Badge variant={approvalTag.variant} className="whitespace-nowrap">
+            {approvalTag.label}
+          </Badge>
         ) : (
           <span className="text-control-light">-</span>
         )}
@@ -611,35 +614,6 @@ function PlanRow({ plan, projectId }: { plan: Plan; projectId: string }) {
         </div>
       </TableCell>
     </TableRow>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// StatusTag
-// ---------------------------------------------------------------------------
-
-function StatusTag({
-  label,
-  variant = "default",
-}: {
-  label: string;
-  variant?: "default" | "success" | "warning" | "info";
-}) {
-  const variantClasses: Record<string, string> = {
-    default: "bg-control-bg text-control-light",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/10 text-warning",
-    info: "bg-accent/10 text-accent",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs",
-        variantClasses[variant]
-      )}
-    >
-      {label}
-    </span>
   );
 }
 

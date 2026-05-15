@@ -11,7 +11,11 @@ import { readFileSync, readdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
-// Keys constructed at runtime via template literals — exempt from unused check.
+// Keys whose usage the checker cannot trace statically — exempt from the
+// unused-key check. Matched with String.startsWith, so an entry ending in
+// "." is a prefix family (matches any key under it) and an entry without a
+// trailing "." matches itself (and, technically, anything that starts with
+// it — see `instance.selected-n-instances` for that convention).
 const DYNAMIC_PREFIXES = [
   "dynamic.subscription.features.",
   "dynamic.subscription.purchase.features.",
@@ -25,6 +29,14 @@ const DYNAMIC_PREFIXES = [
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",
+  // Returned from getReviewBadge as labelKey string literals, not invoked
+  // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
+  "common.bypassed",
+  "common.closed",
+  "common.rejected",
+  "common.skipped",
+  "common.under-review",
+  "issue.table.approved",
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -172,7 +184,7 @@ if (unused.length > 0) {
     error(`  - ${key}`);
   }
   console.error(
-    "\nRemove from frontend/src/react/locales/ or add to DYNAMIC_PREFIXES if constructed at runtime.\n"
+    "\nRemove from frontend/src/react/locales/ or add to DYNAMIC_PREFIXES if referenced indirectly (helper return, template literal).\n"
   );
 }
 

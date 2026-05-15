@@ -18,9 +18,9 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
-import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { getReviewBadge } from "../utils/reviewBadge";
 import { DeployBranch } from "./components/deploy/DeployBranch";
 import { DeployTaskDetailPanel } from "./components/deploy/DeployTaskDetailPanel";
 import { PlanDetailReviewApprovalFlow } from "./components/PlanDetailApprovalFlow";
@@ -174,37 +174,18 @@ function ProjectPlanDetailPageInner({
       changesStatus === "active" && !page.isCreating
         ? { label: t("common.draft"), variant: "default" as const }
         : undefined;
-    const reviewBadge = (() => {
-      if (!page.issue) return undefined;
-      if (page.issue.status === IssueStatus.CANCELED) {
-        return { label: t("common.closed"), variant: "default" as const };
-      }
-      if (review === "future") return undefined;
-      if (
-        review === "completed" &&
-        page.issue.approvalStatus === ApprovalStatus.PENDING
-      ) {
-        return { label: t("common.bypassed"), variant: "default" as const };
-      }
-      switch (page.issue.approvalStatus) {
-        case ApprovalStatus.APPROVED:
-          return {
-            label: t("issue.table.approved"),
-            variant: "success" as const,
-          };
-        case ApprovalStatus.SKIPPED:
-          return { label: t("common.skipped"), variant: "default" as const };
-        case ApprovalStatus.REJECTED:
-          return { label: t("common.rejected"), variant: "warning" as const };
-        case ApprovalStatus.PENDING:
-          return {
-            label: t("common.under-review"),
-            variant: "secondary" as const,
-          };
-        default:
-          return undefined;
-      }
-    })();
+    const rawReviewBadge = getReviewBadge({
+      hasIssue,
+      issueStatus: page.issue?.status,
+      hasRollout,
+      approvalStatus: page.issue?.approvalStatus,
+    });
+    const reviewBadge = rawReviewBadge
+      ? {
+          label: t(rawReviewBadge.labelKey),
+          variant: rawReviewBadge.variant,
+        }
+      : undefined;
     const deployBadge = (() => {
       if (deployStatus !== "active" || !page.rollout) return undefined;
       const hasCompletedTasks = allTasks.some(

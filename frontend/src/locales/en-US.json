@@ -2685,7 +2685,6 @@
         "self": "SQL review"
       }
     },
-    "checking": "Checking...",
     "created": "Created",
     "data-export-creator-only": "Only the issue creator can execute data export tasks",
     "error": {
