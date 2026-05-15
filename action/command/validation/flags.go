@@ -3,7 +3,6 @@ package validation
 import (
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -76,10 +75,4 @@ func validateTargets(targets []string) error {
 		return errors.Errorf("targets must be a single databaseGroup")
 	}
 	return nil
-}
-
-// IsCloudURL checks if the given URL is a Bytebase cloud URL.
-func IsCloudURL(u *url.URL) bool {
-	cloudURLPattern := regexp.MustCompile(`^[a-z0-9]+\.us-central1\.bytebase\.com$`)
-	return cloudURLPattern.MatchString(u.Host)
 }

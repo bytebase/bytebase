@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/net/http/httpguts"
 
-	"github.com/bytebase/bytebase/action/command/cloud"
 	"github.com/bytebase/bytebase/action/command/validation"
 	"github.com/bytebase/bytebase/action/world"
 )
@@ -54,11 +53,6 @@ func rootPreRun(w *world.World) func(cmd *cobra.Command, args []string) error {
 		// Validate all flags and environment variables
 		if err := validation.ValidateFlags(w); err != nil {
 			return errors.Wrapf(err, "failed to validate flags")
-		}
-
-		// Special handling for Bytebase cloud URLs (*.us-central1.bytebase.com)
-		if err := cloud.EnsureWorkspaceAwake(w); err != nil {
-			return errors.Wrapf(err, "failed to ensure workspace awake")
 		}
 
 		return nil
