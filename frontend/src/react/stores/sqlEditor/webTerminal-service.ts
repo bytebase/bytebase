@@ -242,6 +242,11 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
   });
 
   session.controller.events.on("result", (resultSet) => {
+    // The tab may have been closed mid-flight; disposeWebTerminalQuerySession
+    // dropped our session entry, but the WebSocket is still bound and this
+    // handler is still subscribed. Bail before pushing a new query item,
+    // which would resurrect store state for a tab that no longer exists.
+    if (!sessions.has(tabId)) return;
     console.debug("event resultSet", resultSet);
     const tail = activeItem();
     if (tail) {
