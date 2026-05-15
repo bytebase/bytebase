@@ -53,7 +53,7 @@ interface PlanColumn {
 
 The `ctx` argument carries per-row derived values that `PlanRow` already computes today (`creator`, `updateTimeTs`, `approvalTag`, `checkSummary`, `hasAnyCheck`, `isDeleted`, `showDraftTag`, `environmentStore`). `DatabaseTableView` doesn't need a context arg because its render functions only use the row object and a couple of utility imports; plan rows have heavier per-row state, so passing a context object is cleaner than duplicating the memos inside each `render`.
 
-Default and minimum widths (Tailwind v3 default scale: `w-N` = `N * 4px`):
+Default and minimum widths (Tailwind default scale: `w-N` = `N * 4px`, i.e. `--spacing = 0.25rem`):
 
 | Column   | Current Tailwind | `defaultWidth` (px) | `minWidth` (px) | `resizable` |
 |----------|------------------|---------------------|-----------------|-------------|
