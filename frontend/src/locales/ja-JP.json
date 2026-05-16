@@ -1324,7 +1324,6 @@
       "deploy-checks-optional": "このプロジェクトでは、チェック失敗は手動ロールアウトを妨げません。",
       "deploy-checks-ready": "チェックはロールアウトの自動作成が可能な状態です。",
       "deploy-checks-running": "実行中のチェックが終わるまで、ロールアウトの自動作成は続行されません。",
-      "deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
       "deploy-manual-create-description": "現在のプロジェクト設定に応じて、ロールアウトを手動で作成することもできます。",
       "deploy-manual-create-description-readonly": "Create Rollout 権限を持つユーザーがロールアウトを手動で作成できます。",
       "hide-details": "詳細を非表示 ↑",

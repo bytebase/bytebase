@@ -1324,7 +1324,6 @@
       "deploy-checks-optional": "Các kiểm tra lỗi sẽ không chặn rollout thủ công trong dự án này.",
       "deploy-checks-ready": "Các kiểm tra đã sẵn sàng để tạo rollout tự động.",
       "deploy-checks-running": "Hãy chờ các kiểm tra đang chạy hoàn tất trước khi rollout tự động có thể tiếp tục.",
-      "deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
       "deploy-manual-create-description": "Dựa trên cài đặt dự án hiện tại, bạn cũng có thể tạo rollout thủ công.",
       "deploy-manual-create-description-readonly": "Người dùng có quyền Create Rollout có thể tạo rollout thủ công.",
       "hide-details": "Ẩn chi tiết ↑",

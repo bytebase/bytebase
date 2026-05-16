@@ -1324,7 +1324,6 @@
       "deploy-checks-optional": "在当前项目中，未通过的检查不会阻止手动创建发布。",
       "deploy-checks-ready": "检查结果已满足系统自动创建发布的条件。",
       "deploy-checks-running": "请等待运行中的检查完成，系统才能继续自动创建发布。",
-      "deploy-description": "当所有检查都通过且工单审批完成后，Bytebase 会自动创建发布。",
       "deploy-manual-create-description": "根据当前项目设置，你也可以手动创建发布。",
       "deploy-manual-create-description-readonly": "拥有“创建发布”权限的用户可以手动创建发布。",
       "hide-details": "收起详情 ↑",
