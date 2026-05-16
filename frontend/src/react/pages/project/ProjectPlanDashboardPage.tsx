@@ -382,7 +382,6 @@ interface PlanColumn {
   defaultWidth: number;
   minWidth?: number;
   resizable?: boolean;
-  cellClassName?: string;
   render: (plan: Plan, ctx: PlanRowContext) => React.ReactNode;
 }
 
@@ -428,7 +427,9 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
               {extractPlanUID(plan.name)}
             </span>
             {plan.title ? (
-              <span className="truncate normal-nums">{plan.title}</span>
+              <span className="truncate normal-nums min-w-0 flex-1">
+                {plan.title}
+              </span>
             ) : (
               <span className="opacity-60 italic">{t("common.untitled")}</span>
             )}
@@ -558,7 +559,9 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
         resizable: true,
         render: (_plan, ctx) => (
           <div className="flex items-center gap-x-1.5">
-            <span className="text-sm truncate">{ctx.creator.title}</span>
+            <span className="text-sm truncate min-w-0">
+              {ctx.creator.title}
+            </span>
           </div>
         ),
       },
@@ -568,10 +571,6 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
 
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
-  // Keep `overflow-x-auto` only on the wrapper — no `border rounded-sm` here
-  // even though `DatabaseTableView` uses one. The plan list never had a
-  // visible border around the table and we are not adding one as part of
-  // this change.
   return (
     <div className="overflow-x-auto">
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
@@ -712,10 +711,7 @@ function PlanRow({
       onClick={onRowClick}
     >
       {columns.map((col) => (
-        <TableCell
-          key={col.key}
-          className={cn("overflow-hidden", col.cellClassName)}
-        >
+        <TableCell key={col.key} className="overflow-hidden">
           {col.render(plan, ctx)}
         </TableCell>
       ))}
