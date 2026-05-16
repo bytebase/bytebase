@@ -215,6 +215,41 @@ describe("useColumnWidths", () => {
     expect(handle.current!.widths).toEqual([150]);
   });
 
+  test("a second onResizeStart tears down the prior drag's listeners", () => {
+    // Regression: if a second drag started without an intervening mouseup
+    // (rapid sequential mousedowns, missed mouseup, multi-touch trackpad),
+    // the prior drag's document listeners used to leak — only the latest
+    // teardown was reachable. Now onResizeStart tears down any in-flight
+    // drag first.
+    mount([
+      { key: "a", defaultWidth: 100 },
+      { key: "b", defaultWidth: 200 },
+    ]);
+    startDrag(0, 0); // drag column a
+    moveMouse(30); // a: 130
+    expect(handle.current!.widths).toEqual([130, 200]);
+
+    // Start a second drag without releasing — this must tear down
+    // drag #1's mousemove listener.
+    startDrag(1, 100);
+    moveMouse(120); // should only affect column b
+    expect(handle.current!.widths).toEqual([130, 220]);
+
+    releaseMouse();
+    // After release, the only set of listeners (drag #2's) is gone.
+    // Body styles must be cleared exactly once (otherwise the unconditional
+    // clear on each teardown would still leave a working state, but a
+    // doubled-teardown leak would surface as cursor/userSelect already
+    // cleared while drag was visually still in progress — covered by the
+    // sibling-isolation assertion above).
+    expect(document.body.style.cursor).toBe("");
+    expect(document.body.style.userSelect).toBe("");
+
+    // No listeners remain: a stray mousemove must not change widths.
+    moveMouse(500);
+    expect(handle.current!.widths).toEqual([130, 220]);
+  });
+
   test("onResizeStart identity is stable across width changes", () => {
     // Regression: putting `widths` in onResizeStart's deps caused it to rebind
     // on every mousemove tick, re-rendering every header / row consumer.

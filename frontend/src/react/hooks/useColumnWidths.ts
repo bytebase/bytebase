@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ColumnWithWidth {
   defaultWidth: number;
@@ -28,16 +34,27 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
   // Closures should capture state eagerly via refs, not via React deps.
   // Putting `widths` in onResizeStart's dep array would rebind the callback
   // on every mousemove (since each tick calls setWidths), which would
-  // re-render every header consumer mid-drag. We sync the latest values
-  // into refs during render so onResizeStart can stay referentially stable.
+  // re-render every header consumer mid-drag. Mirror the latest values
+  // into refs via useLayoutEffect (runs synchronously after commit, before
+  // paint and before any subsequent event handler can fire) so onResizeStart
+  // stays referentially stable AND avoids render-phase ref writes that
+  // React 19 concurrent mode could expose from a discarded render.
   const widthsRef = useRef(widths);
-  widthsRef.current = widths;
   const columnsRef = useRef(columns);
-  columnsRef.current = columns;
+  useLayoutEffect(() => {
+    widthsRef.current = widths;
+    columnsRef.current = columns;
+  });
 
   const onResizeStart = useCallback((colIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Defensively tear down any in-flight drag before starting a new one.
+    // A second onResizeStart without an intervening mouseup (rapid
+    // sequential mousedowns, missed mouseup outside the document,
+    // multi-touch trackpad, programmatic dispatch) would otherwise leak
+    // the prior drag's document listeners and orphan its cleanup.
+    dragCleanupRef.current();
     dragRef.current = {
       colIndex,
       startX: e.clientX,
