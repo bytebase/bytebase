@@ -18,11 +18,18 @@ export interface ColumnWithWidth {
  *
  * Widths are not persisted across remounts.
  *
- * Contract: callers should keep the column count and the index→column
- * mapping stable for the duration of any drag (typically by memoizing
- * `columns`). If a column at the dragged index disappears or is
- * replaced mid-drag, the hook bails out of subsequent mousemoves on
- * that drag rather than crashing.
+ * Eager-capture contract: at drag start the hook snapshots colIndex,
+ * startX, startWidth, and minWidth into a closure-local drag record.
+ * Once captured, the in-flight drag is immune to subsequent changes in
+ * `widths` or `columns` (reordering, equal-length swaps, minWidth
+ * tweaks, even removal). Callers don't need to memoize aggressively —
+ * just don't expect a drag to react to column changes mid-gesture.
+ *
+ * If a caller grows the column array after mount without remounting the
+ * hook, `widths` state stays at its initial length until the next user
+ * resize on the new column. The drag's `startWidth` falls back to the
+ * column's `defaultWidth` so the gesture starts from a sensible value
+ * rather than NaN.
  */
 export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
   const [widths, setWidths] = useState<number[]>(() =>
@@ -32,6 +39,7 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
     colIndex: number;
     startX: number;
     startWidth: number;
+    minWidth: number;
   } | null>(null);
   // Holds the teardown function for an active drag so an unmount-mid-drag
   // (route change, modal close, etc.) tears down document-level listeners
@@ -61,27 +69,33 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
     // multi-touch trackpad, programmatic dispatch) would otherwise leak
     // the prior drag's document listeners and orphan its cleanup.
     dragCleanupRef.current();
+    // Defensive: the user clicked a header that was just rendered, so the
+    // column at this index should be defined. Guard against the edge case
+    // where columnsRef has been synced to a shorter array via a commit
+    // that's interleaved with this click.
+    const col = columnsRef.current[colIndex];
+    if (!col) return;
     dragRef.current = {
       colIndex,
       startX: e.clientX,
-      startWidth: widthsRef.current[colIndex],
+      // Fall back to defaultWidth if widths state hasn't grown to include
+      // a column added after mount (widths state is sized at first render
+      // and never auto-extends). Without this, startWidth would be
+      // undefined and the drag's newWidth math would produce NaN.
+      startWidth: widthsRef.current[colIndex] ?? col.defaultWidth,
+      minWidth: col.minWidth ?? 40,
     };
 
     const onMouseMove = (ev: MouseEvent) => {
       if (!dragRef.current) return;
-      // Capture everything we need before scheduling the state update.
-      // The setWidths updater may run AFTER teardown nulls dragRef.current
-      // (mouseup → React's pending-update queue → next render's
-      // basicStateReducer), so the updater closure must not deref the ref.
-      const { colIndex, startX, startWidth } = dragRef.current;
-      // The columns array may have shrunk or reordered between drag start
-      // and this tick if the caller swapped its memoized column set.
-      // Bail rather than dereferencing undefined.
-      const col = columnsRef.current[colIndex];
-      if (!col) return;
+      // All drag math reads only from the snapshotted dragRef record —
+      // no live reads of widthsRef / columnsRef. This makes the drag
+      // immune to: state-update queue races that null the ref (the
+      // earlier null-deref crash), column reordering, equal-length
+      // column swaps, and minWidth drift during the gesture.
+      const { colIndex, startX, startWidth, minWidth } = dragRef.current;
       const delta = ev.clientX - startX;
-      const min = col.minWidth ?? 40;
-      const newWidth = Math.max(min, startWidth + delta);
+      const newWidth = Math.max(minWidth, startWidth + delta);
       setWidths((prev) => {
         const next = [...prev];
         next[colIndex] = newWidth;

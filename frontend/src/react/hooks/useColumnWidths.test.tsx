@@ -263,22 +263,44 @@ describe("useColumnWidths", () => {
     }
   });
 
-  test("mousemove bails out if columns shrink mid-drag", () => {
-    // Regression: an active drag captures colIndex once, then reads the
-    // latest columnsRef on each tick. If the caller's column array shrinks
-    // (column removed) or is replaced while the drag is in flight, the
-    // captured index can deref undefined. The hook must bail rather than
-    // crash, leaving widths untouched until either a fresh drag or release.
+  test("drag uses snapshotted minWidth, not the live column constraint", () => {
+    // Eager-capture contract: a drag's minWidth is fixed at gesture start.
+    // If the caller swaps the column at the dragged index for one with a
+    // more permissive minWidth, the drag must still clamp at the original.
+    // This is the "equal-length column swap" regression.
     mount([
       { key: "a", defaultWidth: 100 },
-      { key: "b", defaultWidth: 200 },
-      { key: "c", defaultWidth: 50 },
+      { key: "b", defaultWidth: 200, minWidth: 150 },
     ]);
-    startDrag(2, 800); // drag the last column
-    moveMouse(900);
-    expect(handle.current!.widths).toEqual([100, 200, 150]);
+    startDrag(1, 200); // snapshot minWidth = 150
+    expect(handle.current!.widths).toEqual([100, 200]);
 
-    // Caller re-renders with fewer columns while drag is still in flight.
+    // Caller swaps column at index 1 for one with a far more permissive minWidth.
+    act(() => {
+      root.render(
+        <Harness
+          columns={[
+            { key: "a", defaultWidth: 100 },
+            { key: "c", defaultWidth: 200, minWidth: 50 },
+          ]}
+          handleRef={handle}
+        />
+      );
+    });
+
+    // Drag the column far to the left. Live minWidth=50 would allow it, but
+    // the snapshotted minWidth=150 must clamp.
+    moveMouse(0); // delta = -200, raw new = 0, clamp to snapshotted 150
+    expect(handle.current!.widths[1]).toBe(150);
+    releaseMouse();
+  });
+
+  test("drag starts with defaultWidth fallback if widths state lags behind a newly added column", () => {
+    // The widths state is sized once at mount; if a caller adds a column
+    // afterwards, widthsRef.current[newIndex] is undefined. The hook must
+    // fall back to the column's defaultWidth so the gesture starts from a
+    // sensible value rather than producing NaN.
+    mount([{ key: "a", defaultWidth: 100 }]);
     act(() => {
       root.render(
         <Harness
@@ -291,10 +313,11 @@ describe("useColumnWidths", () => {
       );
     });
 
-    expect(() => {
-      moveMouse(950);
-    }).not.toThrow();
-
+    // widths state is still [100]; widthsRef.current[1] is undefined.
+    startDrag(1, 500);
+    moveMouse(560); // delta = 60, startWidth fallback = 200, new = 260
+    expect(handle.current!.widths[1]).toBe(260);
+    expect(Number.isNaN(handle.current!.widths[1])).toBe(false);
     releaseMouse();
   });
 
