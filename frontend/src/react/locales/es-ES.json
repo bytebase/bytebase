@@ -354,6 +354,7 @@
     "reject": "Reject",
     "rejected": "Rechazado",
     "release": "Versión",
+    "remove": "Eliminar",
     "reorder": "Reordenar",
     "required-permission": "Permisos necesarios",
     "required-workspace-permission": "Se requieren los siguientes permisos para inicializar el espacio de trabajo UX",
@@ -443,7 +444,6 @@
   "common.archived": "Archivada",
   "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Cancelar",
-  "common.canceled": "Cancelado",
   "common.cannot-undo-this-action": "No se puede deshacer esta acción",
   "common.catalog": "Catálogo",
   "common.close": "Cerrar",
@@ -465,7 +465,6 @@
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Eliminado",
   "common.demo-mode": "Demo",
-  "common.deploying": "Desplegando",
   "common.detail": "Detail",
   "common.detailed-guide": "guía detallada",
   "common.edit": "Editar",
@@ -473,7 +472,6 @@
   "common.environment": "Entorno",
   "common.import": "Importar",
   "common.in-progress": "En progreso",
-  "common.in-review": "En revisión",
   "common.issue": "Issue",
   "common.key": "Clave",
   "common.labels": "Etiquetas",
@@ -1575,6 +1573,9 @@
     "editor": {
       "save-changes-before-continuing": "Guarde o cancele sus cambios antes de continuar."
     },
+    "meta": {
+      "created-by-at": "Creado por {{user}} · {{time}}"
+    },
     "navigator": {
       "changes": "Cambios",
       "deploy": "Desplegar",
@@ -1582,10 +1583,6 @@
     },
     "new-plan": "Nuevo plan",
     "plans": "Planes",
-    "sidebar": {
-      "created-by-at": "Creado por {{user}} · {{time}}",
-      "future-sections-hint": "La revisión, las etiquetas y el despliegue aparecen después del envío"
-    },
     "subtitle": "Redactar cambios en la base de datos y ejecutar comprobaciones previas antes de crear un problema para su aprobación.",
     "targets": {
       "title": "Objetivos"

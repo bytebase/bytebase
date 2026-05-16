@@ -354,6 +354,7 @@
     "reject": "Reject",
     "rejected": "Đã từ chối",
     "release": "Phiên bản",
+    "remove": "Gỡ bỏ",
     "reorder": "Sắp xếp lại",
     "required-permission": "Quyền hạn cần thiết",
     "required-workspace-permission": "Các quyền sau đây cần thiết để khởi tạo không gian làm việc UX",
@@ -443,7 +444,6 @@
   "common.archived": "Đã lưu trữ",
   "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Hủy",
-  "common.canceled": "Đã hủy",
   "common.cannot-undo-this-action": "Bạn không thể hoàn tác hành động này.",
   "common.catalog": "Danh mục",
   "common.close": "Đóng",
@@ -465,7 +465,6 @@
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Đã xóa",
   "common.demo-mode": "Demo",
-  "common.deploying": "Đang triển khai",
   "common.detail": "Detail",
   "common.detailed-guide": "Hướng dẫn chi tiết",
   "common.edit": "Chỉnh sửa",
@@ -473,7 +472,6 @@
   "common.environment": "Môi trường",
   "common.import": "Nhập",
   "common.in-progress": "Đang thực hiện",
-  "common.in-review": "Đang xem xét",
   "common.issue": "Issue",
   "common.key": "Khóa",
   "common.labels": "Nhãn",
@@ -1575,6 +1573,9 @@
     "editor": {
       "save-changes-before-continuing": "Vui lòng lưu hoặc hủy thay đổi của bạn trước khi tiếp tục"
     },
+    "meta": {
+      "created-by-at": "Tạo bởi {{user}} · {{time}}"
+    },
     "navigator": {
       "changes": "Thay đổi",
       "deploy": "Triển khai",
@@ -1582,10 +1583,6 @@
     },
     "new-plan": "Kế hoạch mới",
     "plans": "Kế hoạch",
-    "sidebar": {
-      "created-by-at": "Tạo bởi {{user}} · {{time}}",
-      "future-sections-hint": "Sau khi gửi sẽ hiển thị review, nhãn và thông tin triển khai"
-    },
     "subtitle": "Soạn thảo các thay đổi cơ sở dữ liệu và chạy các bước kiểm tra sơ bộ trước khi tạo vấn đề để phê duyệt.",
     "targets": {
       "title": "Mục tiêu"

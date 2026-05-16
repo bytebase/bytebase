@@ -5,12 +5,12 @@ import type {
   PlanDetailPhase,
 } from "./types";
 import type { useEditingScopes } from "./useEditingScopes";
+import type { useLayoutMode } from "./useLayoutMode";
 import type { usePhaseState } from "./usePhaseState";
-import type { useSidebarMode } from "./useSidebarMode";
 
 type EditingScopes = ReturnType<typeof useEditingScopes>;
+type Layout = ReturnType<typeof useLayoutMode>;
 type PhaseState = ReturnType<typeof usePhaseState>;
-type Sidebar = ReturnType<typeof useSidebarMode>;
 
 export function useDerivedPlanState(params: {
   snapshot: PlanDetailPageSnapshot;
@@ -18,10 +18,9 @@ export function useDerivedPlanState(params: {
   isRefreshing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;
-  lastRefreshTime: number;
   phase: PhaseState;
   editing: EditingScopes;
-  sidebar: Sidebar;
+  layout: Layout;
   routeName?: string;
   routePhase?: PlanDetailPhase;
   routeStageId?: string;
@@ -37,10 +36,9 @@ export function useDerivedPlanState(params: {
     isRefreshing,
     isRunningChecks,
     setIsRunningChecks,
-    lastRefreshTime,
     phase,
     editing,
-    sidebar,
+    layout,
     routeName,
     routePhase,
     routeStageId,
@@ -73,7 +71,6 @@ export function useDerivedPlanState(params: {
       isRefreshing,
       isRunningChecks,
       setIsRunningChecks,
-      lastRefreshTime,
       activePhases: phase.activePhases,
       routeName,
       routePhase,
@@ -81,15 +78,12 @@ export function useDerivedPlanState(params: {
       routeTaskId,
       selectedTaskName,
       pendingLeaveConfirm: editing.pendingLeaveConfirm,
-      sidebarMode: sidebar.sidebarMode,
-      containerWidth: sidebar.containerWidth,
-      desktopSidebarWidth: sidebar.sidebarWidth,
-      mobileSidebarOpen: sidebar.isMobileSidebarOpen,
+      layoutMode: layout.layoutMode,
+      containerWidth: layout.containerWidth,
       bypassLeaveGuardOnce: editing.bypassLeaveGuardOnce,
       patchState,
       refreshState,
       setEditing: editing.setEditing,
-      setMobileSidebarOpen: sidebar.setMobileSidebarOpen,
       togglePhase: phase.togglePhase,
       expandPhase: phase.expandPhase,
       closeTaskPanel,
@@ -101,7 +95,6 @@ export function useDerivedPlanState(params: {
       isEditing,
       isRefreshing,
       isRunningChecks,
-      lastRefreshTime,
       patchState,
       phase,
       refreshState,
@@ -110,8 +103,8 @@ export function useDerivedPlanState(params: {
       routePhase,
       routeStageId,
       routeTaskId,
+      layout,
       selectedTaskName,
-      sidebar,
       snapshot,
     ]
   );

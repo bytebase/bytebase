@@ -360,6 +360,7 @@
     "reject": "Reject",
     "rejected": "Rejected",
     "release": "Release",
+    "remove": "Remove",
     "reorder": "Reorder",
     "required-permission": "Required permissions",
     "required-workspace-permission": "Following permissions are required to initialize the workspace UX",
@@ -450,7 +451,6 @@
   "common.archived": "Archived",
   "common.back-to-workspace": "Back to workspace",
   "common.cancel": "Cancel",
-  "common.canceled": "Canceled",
   "common.cannot-undo-this-action": "You cannot undo this action",
   "common.catalog": "Catalog",
   "common.close": "Close",
@@ -472,7 +472,6 @@
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Deleted",
   "common.demo-mode": "Demo",
-  "common.deploying": "Deploying",
   "common.detail": "Detail",
   "common.detailed-guide": "detailed guide",
   "common.edit": "Edit",
@@ -480,7 +479,6 @@
   "common.environment": "Environment",
   "common.import": "Import",
   "common.in-progress": "In progress",
-  "common.in-review": "In Review",
   "common.issue": "Issue",
   "common.key": "Key",
   "common.labels": "Labels",
@@ -1583,6 +1581,9 @@
     "editor": {
       "save-changes-before-continuing": "Please save or cancel your changes before continuing"
     },
+    "meta": {
+      "created-by-at": "Created by {{user}} · {{time}}"
+    },
     "navigator": {
       "changes": "Changes",
       "deploy": "Deploy",
@@ -1590,10 +1591,6 @@
     },
     "new-plan": "New Plan",
     "plans": "Plans",
-    "sidebar": {
-      "created-by-at": "Created by {{user}} · {{time}}",
-      "future-sections-hint": "Review, labels, and rollout details appear after submission"
-    },
     "subtitle": "Draft database changes and run pre-checks before creating an issue for approval.",
     "targets": {
       "title": "Targets"

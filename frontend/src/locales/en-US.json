@@ -261,7 +261,6 @@
     "deleted": "Deleted",
     "demo-mode": "Demo",
     "deny": "Deny",
-    "deploying": "Deploying",
     "description": "Description",
     "detail": "Detail",
     "detailed-guide": "detailed guide",
@@ -308,7 +307,6 @@
     "id": "ID",
     "import": "Import",
     "in-progress": "In Progress",
-    "in-review": "In Review",
     "info": "Info",
     "instance": "Instance",
     "instances": "Instances",
@@ -1297,6 +1295,9 @@
       "self": "Isolation Level"
     },
     "labels-required-for-review": "Labels are required before requesting review",
+    "meta": {
+      "created-by-at": "Created by {user} · {time}"
+    },
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",
@@ -1335,10 +1336,6 @@
     "run": "Run checks",
     "select-isolation-level": "Select isolation level",
     "select-targets": "Select Targets",
-    "sidebar": {
-      "created-by-at": "Created by {user} · {time}",
-      "future-sections-hint": "Review, Labels, Issue link appear after submission"
-    },
     "spec": {
       "change": "Change",
       "type": {

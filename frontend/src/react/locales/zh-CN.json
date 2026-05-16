@@ -354,6 +354,7 @@
     "reject": "驳回",
     "rejected": "已拒绝",
     "release": "版本",
+    "remove": "移除",
     "reorder": "排序",
     "required-permission": "所需权限",
     "required-workspace-permission": "初始化工作空间 UX 需要以下权限",
@@ -443,7 +444,6 @@
   "common.archived": "已归档",
   "common.back-to-workspace": "Back to workspace",
   "common.cancel": "取消",
-  "common.canceled": "已取消",
   "common.cannot-undo-this-action": "这个操作无法撤销",
   "common.catalog": "Catalog",
   "common.close": "关闭",
@@ -465,7 +465,6 @@
   "common.delete-resource": "删除{{type}}",
   "common.deleted": "已删除",
   "common.demo-mode": "Demo",
-  "common.deploying": "部署中",
   "common.detail": "Detail",
   "common.detailed-guide": "详细指南",
   "common.edit": "编辑",
@@ -473,7 +472,6 @@
   "common.environment": "环境",
   "common.import": "导入",
   "common.in-progress": "进行中",
-  "common.in-review": "审批中",
   "common.issue": "工单",
   "common.key": "键",
   "common.labels": "标签",
@@ -1575,6 +1573,9 @@
     "editor": {
       "save-changes-before-continuing": "请保存或取消更改，然后再继续"
     },
+    "meta": {
+      "created-by-at": "由 {{user}} 创建 · {{time}}"
+    },
     "navigator": {
       "changes": "变更项",
       "deploy": "部署",
@@ -1582,10 +1583,6 @@
     },
     "new-plan": "创建变更计划",
     "plans": "变更计划",
-    "sidebar": {
-      "created-by-at": "由 {{user}} 创建 · {{time}}",
-      "future-sections-hint": "提交后会显示审批、标签和部署信息"
-    },
     "subtitle": "草拟数据库变更并运行预检查，然后创建工单以请求审批。",
     "targets": {
       "title": "目标库"

@@ -261,7 +261,6 @@
     "deleted": "Eliminado",
     "demo-mode": "Demostración",
     "deny": "Denegar",
-    "deploying": "Desplegando",
     "description": "Descripción",
     "detail": "Detalle",
     "detailed-guide": "guía detallada",
@@ -308,7 +307,6 @@
     "id": "ID",
     "import": "Importar",
     "in-progress": "En progreso",
-    "in-review": "En revisión",
     "info": "Información",
     "instance": "Instancia",
     "instances": "Instancias",
@@ -1297,6 +1295,9 @@
       "self": "Nivel de Aislamiento"
     },
     "labels-required-for-review": "Se requieren etiquetas antes de solicitar revisión",
+    "meta": {
+      "created-by-at": "Creado por {user} · {time}"
+    },
     "navigator": {
       "changes": "Cambios",
       "checks": "Verificaciones",
@@ -1335,10 +1336,6 @@
     "run": "Volver a verificar",
     "select-isolation-level": "Seleccionar nivel de aislamiento",
     "select-targets": "Seleccionar objetivos",
-    "sidebar": {
-      "created-by-at": "Creado por {user} · {time}",
-      "future-sections-hint": "Revisión, etiquetas y enlace del issue aparecen después del envío"
-    },
     "spec": {
       "change": "Cambiar",
       "type": {

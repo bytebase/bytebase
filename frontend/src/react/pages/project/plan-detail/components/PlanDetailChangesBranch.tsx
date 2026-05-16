@@ -131,7 +131,7 @@ import {
   getDatabaseGroupRouteParams,
   splitInlineDatabases,
 } from "../utils/targets";
-import { PlanDetailChecks } from "./PlanDetailChecks";
+import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
@@ -576,21 +576,20 @@ export function PlanDetailChangesBranch({
             spec={selectedSpec}
           />
           {!specHasRelease &&
-            (page.isCreating ? (
-              selectedSpec.config.case === "changeDatabaseConfig" ? (
-                <PlanDetailDraftChecks
-                  key={selectedSpec.id}
-                  checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
-                  onCheckResultsChange={handleDraftCheckResultsChange}
-                  selectedSpec={selectedSpec}
-                />
-              ) : null
-            ) : (
-              <PlanDetailChecks selectedSpec={selectedSpec} />
-            ))}
+            page.isCreating &&
+            selectedSpec.config.case === "changeDatabaseConfig" && (
+              <PlanDetailDraftChecks
+                key={selectedSpec.id}
+                checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
+                onCheckResultsChange={handleDraftCheckResultsChange}
+                selectedSpec={selectedSpec}
+              />
+            )}
           {!specHasRelease && <OptionsSection selectedSpec={selectedSpec} />}
         </div>
       </div>
+
+      {!page.isCreating && <PlanDetailAggregateChecks />}
 
       <TargetSelectorSheet
         currentTargets={currentTargets}

@@ -105,13 +105,8 @@ vi.mock("./components/PlanDetailHeader", () => ({
   PlanDetailHeader: () => null,
 }));
 
-vi.mock("./components/PlanDetailMetadataSidebar", () => ({
-  PlanDetailMetadataSidebar: () => null,
-}));
-
 vi.mock("./shell/constants", () => ({
-  SIDEBAR_WIDTH_NARROW_PX: 320,
-  WIDE_SIDEBAR_BREAKPOINT_PX: 1024,
+  INLINE_TASK_PANEL_BREAKPOINT_PX: 1024,
 }));
 
 vi.mock("./shell/hooks/usePlanDetailPage", () => ({
@@ -150,14 +145,11 @@ const buildPage = (): PlanDetailPageState =>
     closeTaskPanel: vi.fn(),
     containerWidth: 1200,
     currentUser: { name: "users/me@example.com" },
-    desktopSidebarWidth: 320,
     expandPhase: vi.fn(),
     isCreating: true,
     isEditing: false,
     isInitializing: false,
     isRefreshing: false,
-    lastRefreshTime: 0,
-    mobileSidebarOpen: false,
     pageKey: "foo/create/spec-1",
     patchState: vi.fn(),
     pendingLeaveConfirm: false,
@@ -184,8 +176,7 @@ const buildPage = (): PlanDetailPageState =>
     routePhase: "changes",
     selectedTaskName: undefined,
     setEditing: vi.fn(),
-    setMobileSidebarOpen: vi.fn(),
-    sidebarMode: "NONE",
+    layoutMode: "NONE",
     taskRuns: [],
     togglePhase: vi.fn(),
   }) as unknown as PlanDetailPageState;

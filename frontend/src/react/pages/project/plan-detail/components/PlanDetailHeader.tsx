@@ -1,5 +1,5 @@
 import { clone, create } from "@bufbuild/protobuf";
-import { Ban, ChevronUp, Loader2, Menu, Plus } from "lucide-react";
+import { Ban, ChevronUp, Loader2, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/connect";
@@ -52,6 +52,7 @@ import {
   shouldStayOnPlanDetailPage,
 } from "../utils/header";
 import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
+import { PlanDetailMeta } from "./PlanDetailMeta";
 
 export function PlanDetailHeader() {
   const { t } = useTranslation();
@@ -577,15 +578,6 @@ export function PlanDetailHeader() {
               )}
             </>
           )}
-          {page.sidebarMode === "MOBILE" && (
-            <Button
-              onClick={() => page.setMobileSidebarOpen(true)}
-              size="sm"
-              variant="ghost"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
         </div>
       </div>
 
@@ -708,6 +700,8 @@ export function PlanDetailHeader() {
           </Button>
         ) : null}
       </div>
+
+      <PlanDetailMeta />
     </div>
   );
 }

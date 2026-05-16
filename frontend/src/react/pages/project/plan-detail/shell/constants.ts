@@ -7,9 +7,8 @@ export const POLLER_INTERVAL = {
 
 export const PROJECT_NAME_PREFIX = "projects/";
 
-// Width below which the sidebar collapses into a mobile drawer.
+// Width below which the layout switches to mobile mode.
 export const MOBILE_BREAKPOINT_PX = 780;
-// Width at or above which the sidebar widens.
-export const WIDE_SIDEBAR_BREAKPOINT_PX = 1280;
-export const SIDEBAR_WIDTH_NARROW_PX = 240;
-export const SIDEBAR_WIDTH_WIDE_PX = 336;
+// Width at or above which the task detail panel renders inline as a
+// side-by-side column instead of as a drawer.
+export const INLINE_TASK_PANEL_BREAKPOINT_PX = 1024;

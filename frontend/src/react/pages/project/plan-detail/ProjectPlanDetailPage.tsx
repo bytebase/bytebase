@@ -27,12 +27,8 @@ import { PlanDetailReviewApprovalFlow } from "./components/PlanDetailApprovalFlo
 import { PlanDetailChangesBranch } from "./components/PlanDetailChangesBranch";
 import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
-import { PlanDetailMetadataSidebar } from "./components/PlanDetailMetadataSidebar";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
-import {
-  SIDEBAR_WIDTH_NARROW_PX,
-  WIDE_SIDEBAR_BREAKPOINT_PX,
-} from "./shell/constants";
+import { INLINE_TASK_PANEL_BREAKPOINT_PX } from "./shell/constants";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
 import {
   PlanDetailProvider,
@@ -97,28 +93,16 @@ function ProjectPlanDetailPageInner({
     return undefined;
   }, [page.rollout, page.routeTaskId]);
   const supportsInlineDetailPanel =
-    page.sidebarMode === "DESKTOP" &&
-    page.containerWidth >= WIDE_SIDEBAR_BREAKPOINT_PX;
-  const showDesktopSidebar = page.sidebarMode === "DESKTOP" && !selectedTask;
+    page.layoutMode === "DESKTOP" &&
+    page.containerWidth >= INLINE_TASK_PANEL_BREAKPOINT_PX;
   const showDesktopDetail = supportsInlineDetailPanel && !!selectedTask;
   const showTaskDrawer =
-    !!selectedTask && !showDesktopDetail && page.sidebarMode !== "NONE";
-  const showMobileSidebar = page.sidebarMode === "MOBILE";
+    !!selectedTask && !showDesktopDetail && page.layoutMode !== "NONE";
 
-  const desktopSidebarStyle = useMemo(
-    () => ({
-      width: `${page.desktopSidebarWidth || SIDEBAR_WIDTH_NARROW_PX}px`,
-    }),
-    [page.desktopSidebarWidth]
-  );
   const desktopLayoutStyle = useMemo<CSSProperties>(() => {
     const baseStyle: CSSProperties = {
       minHeight: "calc(100vh - 4rem)",
     };
-
-    if (page.sidebarMode !== "DESKTOP") {
-      return baseStyle;
-    }
 
     if (showDesktopDetail) {
       return {
@@ -127,20 +111,8 @@ function ProjectPlanDetailPageInner({
       };
     }
 
-    if (showDesktopSidebar) {
-      return {
-        ...baseStyle,
-        gridTemplateColumns: `minmax(0, 1fr) ${page.desktopSidebarWidth || SIDEBAR_WIDTH_NARROW_PX}px`,
-      };
-    }
-
     return baseStyle;
-  }, [
-    page.desktopSidebarWidth,
-    page.sidebarMode,
-    showDesktopDetail,
-    showDesktopSidebar,
-  ]);
+  }, [showDesktopDetail]);
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
     const hasRollout = !!page.rollout;
@@ -340,14 +312,6 @@ function ProjectPlanDetailPageInner({
               </div>
             </main>
 
-            {showDesktopSidebar && (
-              <DesktopColumn tag="aside" style={desktopSidebarStyle}>
-                <div className="p-4">
-                  <PlanDetailMetadataSidebar />
-                </div>
-              </DesktopColumn>
-            )}
-
             {showDesktopDetail && selectedTask && (
               <DesktopColumn
                 header={
@@ -378,23 +342,6 @@ function ProjectPlanDetailPageInner({
             </div>
           </div>
         )}
-
-        <Sheet
-          onOpenChange={page.setMobileSidebarOpen}
-          open={showMobileSidebar && page.mobileSidebarOpen}
-        >
-          <SheetContent
-            className="w-[20rem] max-w-[calc(100vw-2rem)]"
-            width="standard"
-          >
-            <SheetHeader>
-              <SheetTitle>{t("common.detail")}</SheetTitle>
-            </SheetHeader>
-            <SheetBody className="p-4">
-              <PlanDetailMetadataSidebar />
-            </SheetBody>
-          </SheetContent>
-        </Sheet>
 
         <Sheet
           onOpenChange={(open) => {
@@ -582,20 +529,16 @@ function ReviewBranch() {
 function DesktopColumn({
   children,
   header,
-  style,
-  tag: Tag = "div",
 }: {
   children: ReactNode;
   header?: ReactNode;
-  style?: CSSProperties;
-  tag?: "aside" | "div";
 }) {
   return (
-    <Tag className="min-w-0 border-l bg-white" style={style}>
+    <div className="min-w-0 border-l bg-white">
       <div className="sticky top-0 flex max-h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)] flex-col overflow-hidden">
         {header ? <div className="shrink-0">{header}</div> : null}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
-    </Tag>
+    </div>
   );
 }

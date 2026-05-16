@@ -7,7 +7,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { PlanDetailPhase } from "../../shared/stores/types";
-import type { PlanDetailSidebarMode } from "./useSidebarMode";
+import type { PlanDetailLayoutMode } from "./useLayoutMode";
 
 export type { PlanDetailPhase } from "../../shared/stores/types";
 
@@ -38,7 +38,6 @@ export interface PlanDetailPageState extends PlanDetailPageSnapshot {
   isRefreshing: boolean;
   isRunningChecks: boolean;
   setIsRunningChecks: (running: boolean) => void;
-  lastRefreshTime: number;
   activePhases: Set<PlanDetailPhase>;
   routeName?: string;
   routePhase?: string;
@@ -46,15 +45,12 @@ export interface PlanDetailPageState extends PlanDetailPageSnapshot {
   routeTaskId?: string;
   selectedTaskName?: string;
   pendingLeaveConfirm: boolean;
-  sidebarMode: PlanDetailSidebarMode;
+  layoutMode: PlanDetailLayoutMode;
   containerWidth: number;
-  desktopSidebarWidth: number;
-  mobileSidebarOpen: boolean;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
   refreshState: () => Promise<void>;
   bypassLeaveGuardOnce: () => void;
   setEditing: (scope: string, editing: boolean) => void;
-  setMobileSidebarOpen: (open: boolean) => void;
   togglePhase: (phase: PlanDetailPhase) => void;
   expandPhase: (phase: PlanDetailPhase) => void;
   closeTaskPanel: () => void;

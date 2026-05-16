@@ -24,12 +24,12 @@ import type { PlanDetailPageSnapshot, PlanDetailPageState } from "./types";
 import { useDerivedPlanState } from "./useDerivedPlanState";
 import { useEditingScopes } from "./useEditingScopes";
 import { useInitialFetch } from "./useInitialFetch";
+import { useLayoutMode } from "./useLayoutMode";
 import { useLeaveGuard } from "./useLeaveGuard";
 import { usePhaseState } from "./usePhaseState";
 import { usePolling } from "./usePolling";
 import { useRedirects } from "./useRedirects";
 import { useRouteSelection } from "./useRouteSelection";
-import { useSidebarMode } from "./useSidebarMode";
 
 const buildDefaultSnapshot = (
   projectId: string,
@@ -92,10 +92,9 @@ export const usePlanDetailPage = ({
   const phase = usePhaseState();
   const editing = useEditingScopes();
   const storeApi = usePlanDetailStoreApi();
-  const sidebar = useSidebarMode(pageHost);
+  const layout = useLayoutMode(pageHost);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRunningChecks, setIsRunningChecks] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState(0);
   const latestSnapshotRef = useRef(snapshot);
   const { resolveLeaveConfirm } = useLeaveGuard();
   const isEditing = editing.isEditing;
@@ -163,7 +162,6 @@ export const usePlanDetailPage = ({
         routeQueryRef.current
       );
       patchState(patch);
-      setLastRefreshTime(Date.now());
     } finally {
       setIsRefreshing(false);
     }
@@ -239,10 +237,9 @@ export const usePlanDetailPage = ({
     isRefreshing,
     isRunningChecks,
     setIsRunningChecks,
-    lastRefreshTime,
     phase,
     editing,
-    sidebar,
+    layout,
     routeName,
     routePhase,
     routeStageId,

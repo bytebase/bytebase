@@ -57,11 +57,9 @@ export type SelectionSlice = {
 export type PollingSlice = {
   isRefreshing: boolean;
   isRunningChecks: boolean;
-  lastRefreshTime: number;
   pollTimerId: number | undefined;
   setRefreshing: (v: boolean) => void;
   setRunningChecks: (v: boolean) => void;
-  setLastRefreshTime: (t: number) => void;
   setPollTimerId: (id: number | undefined) => void;
 };
 

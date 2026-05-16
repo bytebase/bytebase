@@ -261,7 +261,6 @@
     "deleted": "Đã xóa",
     "demo-mode": "Chế độ Demo",
     "deny": "Từ chối",
-    "deploying": "Đang triển khai",
     "description": "Mô tả",
     "detail": "Chi tiết",
     "detailed-guide": "Hướng dẫn chi tiết",
@@ -308,7 +307,6 @@
     "id": "ID",
     "import": "Nhập",
     "in-progress": "Đang tiến hành",
-    "in-review": "Đang xem xét",
     "info": "Thông tin",
     "instance": "Phiên bản",
     "instances": "Phiên bản",
@@ -1297,6 +1295,9 @@
       "self": "Mức Độ Cô Lập"
     },
     "labels-required-for-review": "Cần có nhãn trước khi yêu cầu xem xét",
+    "meta": {
+      "created-by-at": "Tạo bởi {user} · {time}"
+    },
     "navigator": {
       "changes": "Thay đổi",
       "checks": "Kiểm tra",
@@ -1335,10 +1336,6 @@
     "run": "Kiểm tra lại",
     "select-isolation-level": "Chọn mức độ cô lập",
     "select-targets": "Chọn mục tiêu",
-    "sidebar": {
-      "created-by-at": "Tạo bởi {user} · {time}",
-      "future-sections-hint": "Xem xét, nhãn và liên kết issue sẽ xuất hiện sau khi gửi"
-    },
     "spec": {
       "change": "Thay đổi",
       "type": {

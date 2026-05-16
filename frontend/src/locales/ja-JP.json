@@ -261,7 +261,6 @@
     "deleted": "削除されました",
     "demo-mode": "デモモード",
     "deny": "拒否",
-    "deploying": "デプロイ中",
     "description": "説明",
     "detail": "詳細",
     "detailed-guide": "詳細ガイド",
@@ -308,7 +307,6 @@
     "id": "ID",
     "import": "輸入",
     "in-progress": "進行中",
-    "in-review": "レビュー中",
     "info": "情報",
     "instance": "インスタンス",
     "instances": "インスタンス",
@@ -1297,6 +1295,9 @@
       "self": "分離レベル"
     },
     "labels-required-for-review": "レビューをリクエストする前にラベルが必要です",
+    "meta": {
+      "created-by-at": "{user} が作成 · {time}"
+    },
     "navigator": {
       "changes": "変更点",
       "checks": "チェック",
@@ -1335,10 +1336,6 @@
     "run": "再チェック",
     "select-isolation-level": "分離レベルを選択",
     "select-targets": "ターゲットを選択",
-    "sidebar": {
-      "created-by-at": "{user} が作成 · {time}",
-      "future-sections-hint": "レビュー、ラベル、Issue リンクは送信後に表示されます"
-    },
     "spec": {
       "change": "変化",
       "type": {

@@ -354,6 +354,7 @@
     "reject": "Reject",
     "rejected": "却下",
     "release": "リリース",
+    "remove": "削除",
     "reorder": "並び替え",
     "required-permission": "必要な権限",
     "required-workspace-permission": "ワークスペース UX の初期化には以下の権限が必要です",
@@ -443,7 +444,6 @@
   "common.archived": "アーカイブ済み",
   "common.back-to-workspace": "Back to workspace",
   "common.cancel": "キャンセル",
-  "common.canceled": "キャンセル",
   "common.cannot-undo-this-action": "この操作は元に戻せません",
   "common.catalog": "カタログ",
   "common.close": "閉じる",
@@ -465,7 +465,6 @@
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "削除されました",
   "common.demo-mode": "Demo",
-  "common.deploying": "デプロイ中",
   "common.detail": "Detail",
   "common.detailed-guide": "詳細ガイド",
   "common.edit": "編集",
@@ -473,7 +472,6 @@
   "common.environment": "環境",
   "common.import": "インポート",
   "common.in-progress": "進行中",
-  "common.in-review": "レビュー中",
   "common.issue": "Issue",
   "common.key": "キー",
   "common.labels": "ラベル",
@@ -1575,6 +1573,9 @@
     "editor": {
       "save-changes-before-continuing": "続行する前に変更を保存またはキャンセルしてください"
     },
+    "meta": {
+      "created-by-at": "{{user}} が作成 · {{time}}"
+    },
     "navigator": {
       "changes": "変更点",
       "deploy": "デプロイ",
@@ -1582,10 +1583,6 @@
     },
     "new-plan": "プランの作成",
     "plans": "プラン",
-    "sidebar": {
-      "created-by-at": "{{user}} が作成 · {{time}}",
-      "future-sections-hint": "送信後にレビュー、ラベル、デプロイ情報が表示されます"
-    },
     "subtitle": "承認のためにイシューを作成する前に、データベースの変更を下書きし、事前チェックを実行します。",
     "targets": {
       "title": "ターゲット"

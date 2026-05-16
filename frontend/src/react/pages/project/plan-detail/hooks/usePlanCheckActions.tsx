@@ -19,11 +19,8 @@ import {
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 
-// Wraps the run / refresh logic shared between PlanDetailChecks (per-spec
-// section in the body) and the plan-level summary in PlanDetailMetadataSidebar.
-// The running flag lives on the page context so both surfaces disable their
-// Run buttons together — otherwise the user could trigger two concurrent
-// runPlanChecks calls from the same page.
+// The running flag lives on the page context so concurrent triggers of
+// runPlanChecks on the same page are disabled together.
 export function usePlanCheckActions() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();

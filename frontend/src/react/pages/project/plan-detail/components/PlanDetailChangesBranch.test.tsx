@@ -242,8 +242,8 @@ vi.mock("../utils/specMutation", () => ({
   updateSpecSheetWithStatement: vi.fn(),
 }));
 
-vi.mock("./PlanDetailChecks", () => ({
-  PlanDetailChecks: () => null,
+vi.mock("./PlanDetailAggregateChecks", () => ({
+  PlanDetailAggregateChecks: () => null,
 }));
 
 vi.mock("./PlanDetailDraftChecks", () => ({
@@ -364,15 +364,12 @@ function buildPageState(): PlanDetailPageState {
     currentUser: {
       name: "users/me@example.com",
     } as PlanDetailPageState["currentUser"],
-    desktopSidebarWidth: 320,
     expandPhase: vi.fn(),
     isCreating: true,
     isEditing: false,
     isInitializing: false,
     isRefreshing: false,
     isRunningChecks: false,
-    lastRefreshTime: 0,
-    mobileSidebarOpen: false,
     pageKey: "foo/create/spec-1",
     patchState: mocks.patchState,
     pendingLeaveConfirm: false,
@@ -413,8 +410,7 @@ function buildPageState(): PlanDetailPageState {
     selectedTaskName: undefined,
     setEditing: vi.fn(),
     setIsRunningChecks: vi.fn(),
-    setMobileSidebarOpen: vi.fn(),
-    sidebarMode: "DESKTOP",
+    layoutMode: "DESKTOP",
     taskRuns: [],
     togglePhase: vi.fn(),
   };

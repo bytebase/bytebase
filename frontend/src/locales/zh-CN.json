@@ -261,7 +261,6 @@
     "deleted": "已删除",
     "demo-mode": "演示模式",
     "deny": "拒绝",
-    "deploying": "部署中",
     "description": "描述",
     "detail": "详情",
     "detailed-guide": "详细指南",
@@ -308,7 +307,6 @@
     "id": "ID",
     "import": "导入",
     "in-progress": "进行中",
-    "in-review": "审批中",
     "info": "信息",
     "instance": "实例",
     "instances": "实例",
@@ -1297,6 +1295,9 @@
       "self": "隔离级别"
     },
     "labels-required-for-review": "提交审批前需要选择标签",
+    "meta": {
+      "created-by-at": "由 {user} 创建 · {time}"
+    },
     "navigator": {
       "changes": "变更项",
       "checks": "SQL 检查",
@@ -1335,10 +1336,6 @@
     "run": "重新检查",
     "select-isolation-level": "选择隔离级别",
     "select-targets": "选择目标库",
-    "sidebar": {
-      "created-by-at": "由 {user} 创建 · {time}",
-      "future-sections-hint": "审批、标签、工单链接将在提交后显示"
-    },
     "spec": {
       "change": "变更项",
       "type": {
