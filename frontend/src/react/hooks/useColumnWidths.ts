@@ -88,15 +88,16 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
 
     const onMouseMove = (ev: MouseEvent) => {
       if (!dragRef.current) return;
-      // All drag math reads only from the snapshotted dragRef record —
-      // no live reads of widthsRef / columnsRef. This makes the drag
-      // immune to: state-update queue races that null the ref (the
-      // earlier null-deref crash), column reordering, equal-length
-      // column swaps, and minWidth drift during the gesture.
+      // Read only the snapshot — see "Eager-capture contract" in JSDoc.
       const { colIndex, startX, startWidth, minWidth } = dragRef.current;
       const delta = ev.clientX - startX;
       const newWidth = Math.max(minWidth, startWidth + delta);
       setWidths((prev) => {
+        // Short-circuit no-op updates. While clamped at minWidth (cursor
+        // moving farther past the edge), this fires once per pixel of
+        // mouse motion with the same newWidth — without this guard,
+        // React would still re-render every consumer per tick.
+        if (prev[colIndex] === newWidth) return prev;
         const next = [...prev];
         next[colIndex] = newWidth;
         return next;

@@ -295,6 +295,33 @@ describe("useColumnWidths", () => {
     releaseMouse();
   });
 
+  test("setWidths short-circuits when clamped at minWidth (no-op re-renders)", () => {
+    // Without the prev[colIndex] === newWidth guard, dragging the cursor
+    // past minWidth would fire setWidths with the same clamped value on
+    // every pixel of motion, re-rendering every consumer. Verify the
+    // widths array reference is preserved (no new allocation) across a
+    // clamped tick — that's how React skips the re-render.
+    mount([{ key: "a", defaultWidth: 200, minWidth: 150 }]);
+    startDrag(0, 200);
+    moveMouse(100); // delta=-100, raw=100, clamped to 150 — first allocation
+    const widthsAfterClamp = handle.current!.widths;
+    expect(widthsAfterClamp).toEqual([150]);
+
+    // Move further past minWidth. newWidth still clamps to 150 — no-op.
+    moveMouse(50); // delta=-150, raw=50, clamped to 150
+    expect(handle.current!.widths).toBe(widthsAfterClamp); // same ref
+    moveMouse(0); // delta=-200, raw=0, clamped to 150
+    expect(handle.current!.widths).toBe(widthsAfterClamp); // still same ref
+
+    // Move back above minWidth. Now a real change — new allocation.
+    moveMouse(120); // delta=-80, raw=120, clamps not engaged → 120 < 150 → 150
+    // Still clamped. Move higher:
+    moveMouse(180); // delta=-20, raw=180 > 150 — real change to 180
+    expect(handle.current!.widths).toEqual([180]);
+    expect(handle.current!.widths).not.toBe(widthsAfterClamp);
+    releaseMouse();
+  });
+
   test("drag starts with defaultWidth fallback if widths state lags behind a newly added column", () => {
     // The widths state is sized once at mount; if a caller adds a column
     // afterwards, widthsRef.current[newIndex] is undefined. The hook must
