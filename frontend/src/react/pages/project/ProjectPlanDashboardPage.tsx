@@ -427,9 +427,7 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
               {extractPlanUID(plan.name)}
             </span>
             {plan.title ? (
-              <span className="truncate normal-nums min-w-0 flex-1">
-                {plan.title}
-              </span>
+              <span className="truncate normal-nums min-w-0">{plan.title}</span>
             ) : (
               <span className="opacity-60 italic">{t("common.untitled")}</span>
             )}
