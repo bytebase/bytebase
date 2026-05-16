@@ -615,11 +615,11 @@ function PlanRow({
   plan,
   projectId,
   columns,
-}: {
+}: Readonly<{
   plan: Plan;
   projectId: string;
   columns: PlanColumn[];
-}) {
+}>) {
   const userStore = useUserStore();
   const environmentStore = useEnvironmentV1Store();
   const { t } = useTranslation();
