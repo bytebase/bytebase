@@ -1,6 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import {
-  AlertCircle,
   CheckCircle,
   Database as DatabaseIcon,
   FolderTree,
@@ -389,13 +388,6 @@ interface PlanRowContext {
   creator: { title: string; name: string };
   updateTimeTs: number;
   approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
-  checkSummary: {
-    running: number;
-    success: number;
-    warning: number;
-    error: number;
-  };
-  hasAnyCheck: boolean;
   isDeleted: boolean;
   showDraftTag: boolean;
   environmentStore: ReturnType<typeof useEnvironmentV1Store>;
@@ -418,7 +410,7 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
       {
         key: "name",
         title: t("issue.table.name"),
-        defaultWidth: 320,
+        defaultWidth: 400,
         minWidth: 200,
         resizable: true,
         render: (plan, ctx) => (
@@ -445,42 +437,14 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
         ),
       },
       {
-        key: "checks",
-        title: t("plan.checks.self"),
-        defaultWidth: 200,
-        minWidth: 120,
+        key: "creator",
+        title: t("issue.table.creator"),
+        defaultWidth: 160,
+        minWidth: 100,
         resizable: true,
-        render: (_plan, ctx) =>
-          ctx.hasAnyCheck ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              {ctx.checkSummary.running > 0 && (
-                <div className="flex items-center gap-1 text-control">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>{t("task.status.running")}</span>
-                </div>
-              )}
-              {ctx.checkSummary.error > 0 && (
-                <div className="flex items-center gap-1 text-error">
-                  <XCircle className="size-4" />
-                  <span>{ctx.checkSummary.error}</span>
-                </div>
-              )}
-              {ctx.checkSummary.warning > 0 && (
-                <div className="flex items-center gap-1 text-warning">
-                  <AlertCircle className="size-4" />
-                  <span>{ctx.checkSummary.warning}</span>
-                </div>
-              )}
-              {ctx.checkSummary.success > 0 && (
-                <div className="flex items-center gap-1 text-success">
-                  <CheckCircle className="size-4" />
-                  <span>{ctx.checkSummary.success}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <span className="text-control-light">-</span>
-          ),
+        render: (_plan, ctx) => (
+          <span className="block truncate">{ctx.creator.title}</span>
+        ),
       },
       {
         key: "review",
@@ -547,20 +511,6 @@ function PlanTable({ plans, projectId }: { plans: Plan[]; projectId: string }) {
               {humanizeTs(ctx.updateTimeTs)}
             </span>
           </Tooltip>
-        ),
-      },
-      {
-        key: "creator",
-        title: t("issue.table.creator"),
-        defaultWidth: 152,
-        minWidth: 100,
-        resizable: true,
-        render: (_plan, ctx) => (
-          <div className="flex items-center gap-x-1.5">
-            <span className="text-sm truncate min-w-0">
-              {ctx.creator.title}
-            </span>
-          </div>
         ),
       },
     ],
@@ -676,28 +626,10 @@ function PlanRow({
     return { label: t(badge.labelKey), variant: badge.variant };
   }, [plan.approvalStatus, plan.hasRollout, plan.issue, t]);
 
-  const checkSummary = useMemo(() => {
-    const statusCount = plan.planCheckRunStatusCount || {};
-    const running = statusCount["RUNNING"] || 0;
-    const success = statusCount["SUCCESS"] || 0;
-    const warning = statusCount["WARNING"] || 0;
-    const error = (statusCount["ERROR"] || 0) + (statusCount["FAILED"] || 0);
-    return { running, success, warning, error };
-  }, [plan.planCheckRunStatusCount]);
-
-  const hasAnyCheck =
-    checkSummary.running +
-      checkSummary.success +
-      checkSummary.warning +
-      checkSummary.error >
-    0;
-
   const ctx: PlanRowContext = {
     creator,
     updateTimeTs,
     approvalTag,
-    checkSummary,
-    hasAnyCheck,
     isDeleted,
     showDraftTag,
     environmentStore,
