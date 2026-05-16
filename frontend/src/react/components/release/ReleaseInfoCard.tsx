@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import type { TFunction } from "i18next";
 import { ExternalLink, Loader2, Package } from "lucide-react";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/react/lib/utils";
@@ -17,27 +18,29 @@ export function ReleaseInfoCard({
   isLoading = false,
   release,
   releaseName,
-}: {
+}: Readonly<{
   className?: string;
   isLoading?: boolean;
   release?: Release;
   releaseName: string;
-}) {
+}>) {
   const { t } = useTranslation();
   const releaseTitle = useMemo(() => {
     const name = release?.name || releaseName;
     const parts = name.split("/");
     return parts[parts.length - 1] || name;
   }, [release?.name, releaseName]);
-  const displayedFiles =
-    release?.files.slice(0, MAX_DISPLAYED_RELEASE_FILES) ?? [];
-  const createdTime = release?.createTime
-    ? dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
-        "YYYY-MM-DD HH:mm:ss"
-      )
-    : undefined;
   const hasValidName = isValidReleaseName(release?.name ?? "");
   const isDeleted = release?.state === State.DELETED;
+
+  let body: ReactNode;
+  if (isLoading) {
+    body = <LoadingBlock />;
+  } else if (release) {
+    body = <ReleaseBlock hasValidName={hasValidName} release={release} />;
+  } else {
+    body = <NotFoundBlock />;
+  }
 
   return (
     <div className={cn("flex flex-col gap-y-2", className)}>
@@ -60,95 +63,118 @@ export function ReleaseInfoCard({
           </a>
         )}
       </div>
+      {body}
+    </div>
+  );
+}
 
-      {isLoading ? (
-        <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3 text-sm text-control-light">
-          <div className="flex items-center gap-x-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{t("common.loading")}</span>
-          </div>
-        </div>
-      ) : release ? (
-        <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3">
-          <div className="flex flex-col gap-y-3">
-            {release.files.length > 0 && (
-              <div className="flex flex-col gap-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-control">
-                    {t("release.files")} ({release.files.length})
+function LoadingBlock() {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3 text-sm text-control-light">
+      <div className="flex items-center gap-x-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>{t("common.loading")}</span>
+      </div>
+    </div>
+  );
+}
+
+function NotFoundBlock() {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+      {t("release.not-found")}
+    </div>
+  );
+}
+
+function ReleaseBlock({
+  hasValidName,
+  release,
+}: Readonly<{ hasValidName: boolean; release: Release }>) {
+  const { t } = useTranslation();
+  const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
+  const createdTime = release.createTime
+    ? dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
+        "YYYY-MM-DD HH:mm:ss"
+      )
+    : undefined;
+
+  return (
+    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3">
+      <div className="flex flex-col gap-y-3">
+        {release.files.length > 0 && (
+          <div className="flex flex-col gap-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-control">
+                {t("release.files")} ({release.files.length})
+              </div>
+              {release.files.length > MAX_DISPLAYED_RELEASE_FILES &&
+                hasValidName && (
+                  <a
+                    className="text-sm text-accent hover:underline"
+                    href={`/${release.name}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {t("release.view-all-files")}
+                  </a>
+                )}
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+              {displayedFiles.map((file) => (
+                <div
+                  key={file.path}
+                  className="flex items-center justify-between rounded-sm bg-white p-2 text-xs"
+                >
+                  <div className="mr-2 min-w-0 flex-1">
+                    <div className="truncate font-medium">{file.path}</div>
+                    <div className="text-control-light">{file.version}</div>
                   </div>
-                  {release.files.length > MAX_DISPLAYED_RELEASE_FILES &&
-                    hasValidName && (
-                      <a
-                        className="text-sm text-accent hover:underline"
-                        href={`/${release.name}`}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {t("release.view-all-files")}
-                      </a>
-                    )}
+                  <div className="shrink-0 rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">
+                    {getReleaseFileTypeText(release.type, t)}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {displayedFiles.map((file) => (
-                    <div
-                      key={file.path}
-                      className="flex items-center justify-between rounded-sm bg-white p-2 text-xs"
-                    >
-                      <div className="mr-2 min-w-0 flex-1">
-                        <div className="truncate font-medium">{file.path}</div>
-                        <div className="text-control-light">{file.version}</div>
-                      </div>
-                      <div className="shrink-0 rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">
-                        {getReleaseFileTypeText(release.type, t)}
-                      </div>
-                    </div>
-                  ))}
-                  {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
-                    <div className="flex items-center justify-center rounded-sm border border-dashed border-control-border bg-white p-2 text-xs text-control-light">
-                      {t("release.and-n-more-files", {
-                        count:
-                          release.files.length - MAX_DISPLAYED_RELEASE_FILES,
-                      })}
-                    </div>
-                  )}
+              ))}
+              {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
+                <div className="flex items-center justify-center rounded-sm border border-dashed border-control-border bg-white p-2 text-xs text-control-light">
+                  {t("release.and-n-more-files", {
+                    count: release.files.length - MAX_DISPLAYED_RELEASE_FILES,
+                  })}
                 </div>
-              </div>
-            )}
-
-            {release.vcsSource && (
-              <div className="flex flex-col gap-y-1">
-                <div className="text-sm font-medium text-control">
-                  {t("release.vcs-source")}
-                </div>
-                <div className="text-xs">
-                  <span className="text-control-light">
-                    {getVCSTypeText(release.vcsSource.vcsType, t)}:
-                  </span>
-                  {release.vcsSource.url && (
-                    <a
-                      className="ml-1 text-accent hover:underline"
-                      href={release.vcsSource.url}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      {release.vcsSource.url}
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {createdTime && (
-              <div className="text-xs text-control-light">{createdTime}</div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
-          {t("release.not-found")}
-        </div>
-      )}
+        )}
+
+        {release.vcsSource && (
+          <div className="flex flex-col gap-y-1">
+            <div className="text-sm font-medium text-control">
+              {t("release.vcs-source")}
+            </div>
+            <div className="text-xs">
+              <span className="text-control-light">
+                {getVCSTypeText(release.vcsSource.vcsType, t)}:
+              </span>
+              {release.vcsSource.url && (
+                <a
+                  className="ml-1 text-accent hover:underline"
+                  href={release.vcsSource.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {release.vcsSource.url}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {createdTime && (
+          <div className="text-xs text-control-light">{createdTime}</div>
+        )}
+      </div>
     </div>
   );
 }
