@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { useColumnWidths } from "./useColumnWidths";
 
 (
@@ -215,39 +215,87 @@ describe("useColumnWidths", () => {
     expect(handle.current!.widths).toEqual([150]);
   });
 
-  test("a second onResizeStart tears down the prior drag's listeners", () => {
+  test("a second onResizeStart removes the prior drag's document listeners", () => {
     // Regression: if a second drag started without an intervening mouseup
     // (rapid sequential mousedowns, missed mouseup, multi-touch trackpad),
     // the prior drag's document listeners used to leak — only the latest
-    // teardown was reachable. Now onResizeStart tears down any in-flight
-    // drag first.
+    // teardown was reachable. The behavioral end state is identical whether
+    // or not the leak exists (both leaked + new listeners read from the same
+    // dragRef and produce the same widths), so this test counts net
+    // mousemove/mouseup registrations via spies to prove the cleanup.
+    const addSpy = vi.spyOn(document, "addEventListener");
+    const removeSpy = vi.spyOn(document, "removeEventListener");
+    const netDragListeners = () => {
+      const added = addSpy.mock.calls.filter(
+        ([type]) => type === "mousemove" || type === "mouseup"
+      ).length;
+      const removed = removeSpy.mock.calls.filter(
+        ([type]) => type === "mousemove" || type === "mouseup"
+      ).length;
+      return added - removed;
+    };
+    try {
+      mount([
+        { key: "a", defaultWidth: 100 },
+        { key: "b", defaultWidth: 200 },
+      ]);
+      addSpy.mockClear();
+      removeSpy.mockClear();
+
+      startDrag(0, 0);
+      expect(netDragListeners()).toBe(2); // mousemove + mouseup
+
+      // Second drag without intervening mouseup: defensive teardown must
+      // remove drag #1's pair before registering drag #2's pair.
+      startDrag(1, 100);
+      expect(netDragListeners()).toBe(2);
+
+      moveMouse(120); // should only affect column b
+      expect(handle.current!.widths).toEqual([100, 220]);
+
+      releaseMouse();
+      expect(netDragListeners()).toBe(0);
+      expect(document.body.style.cursor).toBe("");
+      expect(document.body.style.userSelect).toBe("");
+    } finally {
+      addSpy.mockRestore();
+      removeSpy.mockRestore();
+    }
+  });
+
+  test("mousemove bails out if columns shrink mid-drag", () => {
+    // Regression: an active drag captures colIndex once, then reads the
+    // latest columnsRef on each tick. If the caller's column array shrinks
+    // (column removed) or is replaced while the drag is in flight, the
+    // captured index can deref undefined. The hook must bail rather than
+    // crash, leaving widths untouched until either a fresh drag or release.
     mount([
       { key: "a", defaultWidth: 100 },
       { key: "b", defaultWidth: 200 },
+      { key: "c", defaultWidth: 50 },
     ]);
-    startDrag(0, 0); // drag column a
-    moveMouse(30); // a: 130
-    expect(handle.current!.widths).toEqual([130, 200]);
+    startDrag(2, 800); // drag the last column
+    moveMouse(900);
+    expect(handle.current!.widths).toEqual([100, 200, 150]);
 
-    // Start a second drag without releasing — this must tear down
-    // drag #1's mousemove listener.
-    startDrag(1, 100);
-    moveMouse(120); // should only affect column b
-    expect(handle.current!.widths).toEqual([130, 220]);
+    // Caller re-renders with fewer columns while drag is still in flight.
+    act(() => {
+      root.render(
+        <Harness
+          columns={[
+            { key: "a", defaultWidth: 100 },
+            { key: "b", defaultWidth: 200 },
+          ]}
+          handleRef={handle}
+        />
+      );
+    });
+
+    expect(() => {
+      moveMouse(950);
+    }).not.toThrow();
 
     releaseMouse();
-    // After release, the only set of listeners (drag #2's) is gone.
-    // Body styles must be cleared exactly once (otherwise the unconditional
-    // clear on each teardown would still leave a working state, but a
-    // doubled-teardown leak would surface as cursor/userSelect already
-    // cleared while drag was visually still in progress — covered by the
-    // sibling-isolation assertion above).
-    expect(document.body.style.cursor).toBe("");
-    expect(document.body.style.userSelect).toBe("");
-
-    // No listeners remain: a stray mousemove must not change widths.
-    moveMouse(500);
-    expect(handle.current!.widths).toEqual([130, 220]);
   });
 
   test("onResizeStart identity is stable across width changes", () => {

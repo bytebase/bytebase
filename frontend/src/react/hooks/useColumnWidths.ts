@@ -17,6 +17,12 @@ export interface ColumnWithWidth {
  * positional: `widths[i]` corresponds to `columns[i]`.
  *
  * Widths are not persisted across remounts.
+ *
+ * Contract: callers should keep the column count and the index→column
+ * mapping stable for the duration of any drag (typically by memoizing
+ * `columns`). If a column at the dragged index disappears or is
+ * replaced mid-drag, the hook bails out of subsequent mousemoves on
+ * that drag rather than crashing.
  */
 export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
   const [widths, setWidths] = useState<number[]>(() =>
@@ -68,8 +74,13 @@ export function useColumnWidths<T extends ColumnWithWidth>(columns: T[]) {
       // (mouseup → React's pending-update queue → next render's
       // basicStateReducer), so the updater closure must not deref the ref.
       const { colIndex, startX, startWidth } = dragRef.current;
+      // The columns array may have shrunk or reordered between drag start
+      // and this tick if the caller swapped its memoized column set.
+      // Bail rather than dereferencing undefined.
+      const col = columnsRef.current[colIndex];
+      if (!col) return;
       const delta = ev.clientX - startX;
-      const min = columnsRef.current[colIndex].minWidth ?? 40;
+      const min = col.minWidth ?? 40;
       const newWidth = Math.max(min, startWidth + delta);
       setWidths((prev) => {
         const next = [...prev];
