@@ -313,9 +313,10 @@ describe("useColumnWidths", () => {
     moveMouse(0); // delta=-200, raw=0, clamped to 150
     expect(handle.current!.widths).toBe(widthsAfterClamp); // still same ref
 
-    // Move back above minWidth. Now a real change — new allocation.
-    moveMouse(120); // delta=-80, raw=120, clamps not engaged → 120 < 150 → 150
-    // Still clamped. Move higher:
+    // Drag back up. At raw=120 the clamp is still engaged (120 < 150).
+    moveMouse(120); // delta=-80, raw=120, still clamped to 150 — no-op
+    expect(handle.current!.widths).toBe(widthsAfterClamp); // same ref
+    // Cross above minWidth — now a real change, fresh allocation.
     moveMouse(180); // delta=-20, raw=180 > 150 — real change to 180
     expect(handle.current!.widths).toEqual([180]);
     expect(handle.current!.widths).not.toBe(widthsAfterClamp);
