@@ -201,23 +201,33 @@ describe("useColumnWidths", () => {
     expect(handle.current!.widths).toEqual([130, 150]);
   });
 
-  test("mousemove followed immediately by mouseup does not crash even if the state updater runs after teardown", () => {
+  test("schedule-then-teardown invariant: setWidths updater must not deref the drag ref", () => {
+    // Regression: mousemove + mouseup in one batch used to crash because the
+    // updater closure read dragRef.current after teardown nulled it.
     mount([{ key: "a", defaultWidth: 100 }]);
     startDrag(0, 0);
-    // Dispatch mousemove and mouseup in the same act batch. After mouseup
-    // tears down, the hook's mutable drag ref is nullified. If the updater
-    // closure dereferenced that ref (as the original implementation did),
-    // React's pending-update queue would crash on the next render with
-    // "Cannot read properties of null (reading 'colIndex')". The fixed
-    // updater captures colIndex as a local const, so the schedule survives.
     expect(() => {
       act(() => {
         document.dispatchEvent(new MouseEvent("mousemove", { clientX: 50 }));
         document.dispatchEvent(new MouseEvent("mouseup"));
       });
     }).not.toThrow();
-    // The mousemove's effect must still land — schedule-then-teardown
-    // is not the same as cancellation.
     expect(handle.current!.widths).toEqual([150]);
+  });
+
+  test("onResizeStart identity is stable across width changes", () => {
+    // Regression: putting `widths` in onResizeStart's deps caused it to rebind
+    // on every mousemove tick, re-rendering every header / row consumer.
+    mount([
+      { key: "a", defaultWidth: 100 },
+      { key: "b", defaultWidth: 200 },
+    ]);
+    const originalOnResizeStart = handle.current!.onResizeStart;
+    startDrag(0, 50);
+    moveMouse(80);
+    moveMouse(120);
+    releaseMouse();
+    expect(handle.current!.widths).toEqual([170, 200]);
+    expect(handle.current!.onResizeStart).toBe(originalOnResizeStart);
   });
 });
