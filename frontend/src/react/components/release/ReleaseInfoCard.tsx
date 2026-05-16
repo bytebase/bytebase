@@ -25,19 +25,23 @@ export function ReleaseInfoCard({
   releaseName: string;
 }>) {
   const { t } = useTranslation();
+  // useReleaseByName returns a sentinel unknownRelease() when the release
+  // can't be found, so `release` is truthy even on a miss. Treat it as
+  // missing when the name doesn't parse as a real release resource name.
+  const effectiveRelease =
+    release && isValidReleaseName(release.name) ? release : undefined;
   const releaseTitle = useMemo(() => {
-    const name = release?.name || releaseName;
+    const name = effectiveRelease?.name || releaseName;
     const parts = name.split("/");
     return parts[parts.length - 1] || name;
-  }, [release?.name, releaseName]);
-  const hasValidName = isValidReleaseName(release?.name ?? "");
-  const isDeleted = release?.state === State.DELETED;
+  }, [effectiveRelease?.name, releaseName]);
+  const isDeleted = effectiveRelease?.state === State.DELETED;
 
   let body: ReactNode;
   if (isLoading) {
     body = <LoadingBlock />;
-  } else if (release) {
-    body = <ReleaseBlock hasValidName={hasValidName} release={release} />;
+  } else if (effectiveRelease) {
+    body = <ReleaseBlock release={effectiveRelease} />;
   } else {
     body = <NotFoundBlock />;
   }
@@ -51,10 +55,10 @@ export function ReleaseInfoCard({
             {releaseTitle}
           </span>
         </div>
-        {hasValidName && (
+        {effectiveRelease && (
           <a
             className="inline-flex items-center gap-x-1 text-sm text-accent hover:underline"
-            href={`/${release?.name}`}
+            href={`/${effectiveRelease.name}`}
             rel="noreferrer"
             target="_blank"
           >
@@ -89,10 +93,7 @@ function NotFoundBlock() {
   );
 }
 
-function ReleaseBlock({
-  hasValidName,
-  release,
-}: Readonly<{ hasValidName: boolean; release: Release }>) {
+function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
   const { t } = useTranslation();
   const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
   const createdTime = release.createTime
@@ -110,17 +111,16 @@ function ReleaseBlock({
               <div className="text-sm font-medium text-control">
                 {t("release.files")} ({release.files.length})
               </div>
-              {release.files.length > MAX_DISPLAYED_RELEASE_FILES &&
-                hasValidName && (
-                  <a
-                    className="text-sm text-accent hover:underline"
-                    href={`/${release.name}`}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {t("release.view-all-files")}
-                  </a>
-                )}
+              {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
+                <a
+                  className="text-sm text-accent hover:underline"
+                  href={`/${release.name}`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {t("release.view-all-files")}
+                </a>
+              )}
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
               {displayedFiles.map((file) => (

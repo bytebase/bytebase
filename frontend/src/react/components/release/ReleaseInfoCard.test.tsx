@@ -110,4 +110,24 @@ describe("ReleaseInfoCard", () => {
     expect(container.textContent).toContain("release.not-found");
     unmount();
   });
+
+  test("renders the not-found state when release is the unknown sentinel", async () => {
+    ({ ReleaseInfoCard } = await import("./ReleaseInfoCard"));
+    // useReleaseByName returns an unknownRelease() sentinel on miss; its
+    // name is the placeholder "projects/-1/releases/-1" which fails
+    // isValidReleaseName. The component must treat that as not-found.
+    const sentinel = create(ReleaseSchema, {
+      name: "projects/-1/releases/-1",
+    });
+    const { container, unmount } = renderIntoContainer(
+      createElement(ReleaseInfoCard, {
+        release: sentinel,
+        releaseName: "projects/p/releases/r1",
+      })
+    );
+
+    expect(container.textContent).toContain("release.not-found");
+    expect(container.textContent).not.toContain("release.files");
+    unmount();
+  });
 });
