@@ -319,7 +319,7 @@ export function DeployTaskItem({
                   )}
                 </div>
               ) : releaseName ? (
-                <DeployReleaseInfoCard compact releaseName={releaseName} />
+                <DeployReleaseInfoCard releaseName={releaseName} />
               ) : null}
 
               {latestTaskRun && (

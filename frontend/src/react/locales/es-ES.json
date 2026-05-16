@@ -1619,6 +1619,7 @@
   "plan.phase.deploy-checks-ready": "Las verificaciones ya permiten la creación automática del rollout.",
   "plan.phase.deploy-checks-running": "Espera a que terminen las verificaciones en ejecución antes de que el rollout automático pueda continuar.",
   "plan.phase.deploy-description": "Bytebase creará automáticamente el rollout cuando todas las comprobaciones pasen y el issue esté aprobado.",
+  "plan.phase.deploy-description-gitops": "Este plan está listo para implementarse. Crea un rollout para desplegar la versión vinculada.",
   "plan.phase.deploy-manual-create-description": "Según la configuración actual del proyecto, también puede crear el rollout manualmente.",
   "plan.phase.deploy-manual-create-description-readonly": "Un usuario con el permiso Create Rollout puede crear el rollout manualmente.",
   "plan.phase.hide-details": "Ocultar detalles",

@@ -124,7 +124,11 @@ import {
   planCheckRunListForSpec,
   transformReleaseCheckResultsToPlanCheckRuns,
 } from "../utils/planCheck";
-import { getSelectedSpec, getSpecTitle } from "../utils/spec";
+import {
+  getSelectedSpec,
+  getSpecTitle,
+  isReleaseBackedPlan,
+} from "../utils/spec";
 import { updateSpecSheetWithStatement } from "../utils/specMutation";
 import {
   filterPlanTargets,
@@ -215,6 +219,9 @@ export function PlanDetailChangesBranch({
   const canModifySpecs = useMemo(() => {
     if (page.plan.state === State.DELETED) return false;
     if (page.readonly) return false;
+    // Release-backed plans are locked to the release artifact — neither the
+    // spec list nor the targets can be edited after the plan exists.
+    if (isReleaseBackedPlan(page.plan.specs)) return false;
     if (page.isCreating) return true;
     return (
       !page.plan.hasRollout &&
@@ -226,6 +233,7 @@ export function PlanDetailChangesBranch({
     page.isCreating,
     page.plan.creator,
     page.plan.hasRollout,
+    page.plan.specs,
     page.plan.state,
     page.readonly,
     project,
@@ -589,7 +597,7 @@ export function PlanDetailChangesBranch({
         </div>
       </div>
 
-      {!page.isCreating && <PlanDetailAggregateChecks />}
+      {!page.isCreating && !specHasRelease && <PlanDetailAggregateChecks />}
 
       <TargetSelectorSheet
         currentTargets={currentTargets}

@@ -1619,6 +1619,7 @@
   "plan.phase.deploy-checks-ready": "Các kiểm tra đã sẵn sàng để tạo rollout tự động.",
   "plan.phase.deploy-checks-running": "Hãy chờ các kiểm tra đang chạy hoàn tất trước khi rollout tự động có thể tiếp tục.",
   "plan.phase.deploy-description": "Bytebase sẽ tự động tạo rollout khi tất cả kiểm tra đều đạt và issue đã được phê duyệt.",
+  "plan.phase.deploy-description-gitops": "Kế hoạch này đã sẵn sàng để triển khai. Tạo một rollout để triển khai bản phát hành được liên kết.",
   "plan.phase.deploy-manual-create-description": "Dựa trên cài đặt dự án hiện tại, bạn cũng có thể tạo rollout thủ công.",
   "plan.phase.deploy-manual-create-description-readonly": "Người dùng có quyền Create Rollout có thể tạo rollout thủ công.",
   "plan.phase.hide-details": "Ẩn chi tiết",

@@ -39,6 +39,7 @@ import {
   buildDeploySummary,
   buildReviewSummary,
 } from "./utils/phaseSummary";
+import { isReleaseBackedPlan } from "./utils/spec";
 
 export function ProjectPlanDetailPage(props: {
   projectId: string;
@@ -113,6 +114,11 @@ function ProjectPlanDetailPageInner({
 
     return baseStyle;
   }, [showDesktopDetail]);
+  const isGitOpsPlan = useMemo(
+    () => isReleaseBackedPlan(page.plan.specs),
+    [page.plan.specs]
+  );
+
   const phaseConfigs = useMemo(() => {
     const hasIssue = !!page.issue;
     const hasRollout = !!page.rollout;
@@ -138,7 +144,9 @@ function ProjectPlanDetailPageInner({
     }
 
     const changesStatus: "completed" | "closed" | "active" | "future" =
-      page.isCreating || (!hasIssue && !hasRollout) ? "active" : "completed";
+      page.isCreating || (!isGitOpsPlan && !hasIssue && !hasRollout)
+        ? "active"
+        : "completed";
     const deployStatus: "completed" | "closed" | "active" | "future" =
       hasRollout ? (allDone ? "completed" : "active") : "future";
 
@@ -202,7 +210,10 @@ function ProjectPlanDetailPageInner({
       changes: {
         status: changesStatus,
         badge: changesBadge,
-        lineClass: lineClass(changesStatus, review),
+        lineClass: lineClass(
+          changesStatus,
+          isGitOpsPlan ? deployStatus : review
+        ),
       },
       review: {
         status: review,
@@ -215,7 +226,7 @@ function ProjectPlanDetailPageInner({
         lineClass: "",
       },
     };
-  }, [page.isCreating, page.issue, page.rollout, t]);
+  }, [isGitOpsPlan, page.isCreating, page.issue, page.rollout, t]);
 
   // Mirror the URL specId into local state. We deliberately don't include
   // selectedSpecId in the deps — children (e.g. PlanDetailChangesBranch) may
@@ -273,24 +284,26 @@ function ProjectPlanDetailPageInner({
                   />
                 </PhaseSection>
 
-                <PhaseSection
-                  badge={phaseConfigs.review.badge}
-                  expanded={page.activePhases.has("review")}
-                  icon={<MessageSquareMore className="h-4 w-4 text-white" />}
-                  lineClass={phaseConfigs.review.lineClass}
-                  label={t("plan.navigator.review")}
-                  onSelect={() => page.expandPhase("review")}
-                  status={phaseConfigs.review.status}
-                  onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t)}
-                  future={
-                    <p className="mt-0.5 text-sm text-control-placeholder">
-                      {t("plan.phase.review-description")}
-                    </p>
-                  }
-                >
-                  <ReviewBranch />
-                </PhaseSection>
+                {!isGitOpsPlan && (
+                  <PhaseSection
+                    badge={phaseConfigs.review.badge}
+                    expanded={page.activePhases.has("review")}
+                    icon={<MessageSquareMore className="h-4 w-4 text-white" />}
+                    lineClass={phaseConfigs.review.lineClass}
+                    label={t("plan.navigator.review")}
+                    onSelect={() => page.expandPhase("review")}
+                    status={phaseConfigs.review.status}
+                    onToggle={() => page.togglePhase("review")}
+                    summary={buildReviewSummary(page.issue, t)}
+                    future={
+                      <p className="mt-0.5 text-sm text-control-placeholder">
+                        {t("plan.phase.review-description")}
+                      </p>
+                    }
+                  >
+                    <ReviewBranch />
+                  </PhaseSection>
+                )}
 
                 <PhaseSection
                   badge={phaseConfigs.deploy.badge}

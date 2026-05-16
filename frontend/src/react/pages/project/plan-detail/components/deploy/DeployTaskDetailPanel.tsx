@@ -242,11 +242,7 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
       )}
 
       {isReleaseTask && releaseName && (
-        <DeployReleaseInfoCard
-          className="w-full"
-          compact
-          releaseName={releaseName}
-        />
+        <DeployReleaseInfoCard className="w-full" releaseName={releaseName} />
       )}
 
       {stage && taskAction && (

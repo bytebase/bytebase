@@ -1627,6 +1627,7 @@
   "plan.phase.deploy-checks-ready": "Checks are ready for automatic rollout creation.",
   "plan.phase.deploy-checks-running": "Wait for running checks to finish before automatic rollout can proceed.",
   "plan.phase.deploy-description": "Bytebase will automatically create the rollout when all checks pass and the issue is approved.",
+  "plan.phase.deploy-description-gitops": "This plan is ready to roll out. Create a rollout to deploy the linked release.",
   "plan.phase.deploy-manual-create-description": "Based on the current project settings, you can also create the rollout manually.",
   "plan.phase.deploy-manual-create-description-readonly": "User with Create Rollout permission can create the rollout manually.",
   "plan.phase.hide-details": "Hide details",

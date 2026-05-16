@@ -52,6 +52,7 @@ import {
   shouldStayOnPlanDetailPage,
 } from "../utils/header";
 import { getLocalSheetByName, removeLocalSheet } from "../utils/localSheet";
+import { isReleaseBackedPlan } from "../utils/spec";
 import { PlanDetailMeta } from "./PlanDetailMeta";
 
 export function PlanDetailHeader() {
@@ -139,10 +140,15 @@ export function PlanDetailHeader() {
     titleInputRef.current?.focus();
   }, [page.isCreating, page.ready]);
 
+  const isGitOpsPlan = useMemo(
+    () => isReleaseBackedPlan(page.plan.specs),
+    [page.plan.specs]
+  );
   const showSubmitForReview =
     !!page.plan.name &&
     !page.isCreating &&
     !page.plan.issue &&
+    !isGitOpsPlan &&
     page.plan.state === State.ACTIVE;
   const showClosePlan =
     !page.isCreating &&

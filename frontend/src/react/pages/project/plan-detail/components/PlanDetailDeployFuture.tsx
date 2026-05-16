@@ -29,6 +29,7 @@ import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { isApprovalCompleted } from "../../issue-detail/utils/approval";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { isReleaseBackedPlan } from "../utils/spec";
 
 export function PlanDetailDeployFuture() {
   const { t } = useTranslation();
@@ -49,22 +50,26 @@ export function PlanDetailDeployFuture() {
     return (counts.RUNNING ?? 0) > 0;
   }, [page.plan.planCheckRunStatusCount]);
   const issueApproved = isApprovalCompleted(page.issue);
+  const isGitOpsPlan = useMemo(
+    () => isReleaseBackedPlan(page.plan.specs),
+    [page.plan.specs]
+  );
+  // GitOps (release-backed) plans never get an issue, so allow rollout
+  // creation as soon as the plan is active.
+  const planReadyForManualRollout =
+    !page.plan.hasRollout &&
+    page.plan.state === State.ACTIVE &&
+    (isGitOpsPlan || (!!page.issue && page.issue.status === IssueStatus.OPEN));
   const canCreateRollout = Boolean(
-    page.issue &&
-      !page.plan.hasRollout &&
-      page.plan.state === State.ACTIVE &&
-      page.issue.status === IssueStatus.OPEN &&
-      page.projectCanCreateRollout
+    planReadyForManualRollout && page.projectCanCreateRollout
   );
   const showManualCreateRolloutHint = Boolean(
-    page.issue &&
-      !page.plan.hasRollout &&
-      page.plan.state === State.ACTIVE &&
-      page.issue.status === IssueStatus.OPEN &&
-      !(page.projectRequireIssueApproval && !issueApproved) &&
-      !(page.projectRequirePlanCheckNoError && planChecksFailed) &&
-      (!page.projectRequireIssueApproval ||
-        !page.projectRequirePlanCheckNoError)
+    planReadyForManualRollout &&
+      (isGitOpsPlan ||
+        (!(page.projectRequireIssueApproval && !issueApproved) &&
+          !(page.projectRequirePlanCheckNoError && planChecksFailed) &&
+          (!page.projectRequireIssueApproval ||
+            !page.projectRequirePlanCheckNoError)))
   );
   const manualCreateRolloutDescription = canCreateRollout
     ? t("plan.phase.deploy-manual-create-description")
@@ -78,7 +83,7 @@ export function PlanDetailDeployFuture() {
         })
       );
     }
-    if (page.projectRequireIssueApproval && !issueApproved) {
+    if (!isGitOpsPlan && page.projectRequireIssueApproval && !issueApproved) {
       messages.push(
         t("project.settings.issue-related.require-issue-approval.description")
       );
@@ -92,6 +97,7 @@ export function PlanDetailDeployFuture() {
     }
     return messages;
   }, [
+    isGitOpsPlan,
     issueApproved,
     page.projectCanCreateRollout,
     page.projectRequireIssueApproval,
@@ -101,7 +107,7 @@ export function PlanDetailDeployFuture() {
   ]);
   const warningMessages = useMemo(() => {
     const messages: string[] = [];
-    if (!page.projectRequireIssueApproval && !issueApproved) {
+    if (!isGitOpsPlan && !page.projectRequireIssueApproval && !issueApproved) {
       messages.push(
         t("project.settings.issue-related.require-issue-approval.description")
       );
@@ -121,6 +127,7 @@ export function PlanDetailDeployFuture() {
     }
     return messages;
   }, [
+    isGitOpsPlan,
     issueApproved,
     page.projectRequireIssueApproval,
     page.projectRequirePlanCheckNoError,
@@ -245,7 +252,9 @@ export function PlanDetailDeployFuture() {
   return (
     <div className="mt-1.5">
       <p className="text-sm text-control-placeholder">
-        {t("plan.phase.deploy-description")}
+        {isGitOpsPlan
+          ? t("plan.phase.deploy-description-gitops")
+          : t("plan.phase.deploy-description")}
       </p>
 
       {page.issue && (
@@ -285,23 +294,36 @@ export function PlanDetailDeployFuture() {
         </ul>
       )}
 
-      {showManualCreateRolloutHint && (
-        <div className="mt-3 flex max-w-[28rem] flex-col items-start gap-y-2">
-          <p className="text-xs text-control-placeholder">
-            {manualCreateRolloutDescription}
-          </p>
-          {canCreateRollout && (
-            <Button
-              disabled={creatingRollout}
-              onClick={() => setRolloutConfirmOpen(true)}
-              size="sm"
-              variant="outline"
-            >
-              {t("plan.phase.create-rollout-action")}
-            </Button>
-          )}
-        </div>
-      )}
+      {showManualCreateRolloutHint &&
+        (isGitOpsPlan ? canCreateRollout : true) && (
+          <div className="mt-3 flex max-w-[28rem] flex-col items-start gap-y-2">
+            {!isGitOpsPlan && (
+              <p className="text-xs text-control-placeholder">
+                {manualCreateRolloutDescription}
+              </p>
+            )}
+            {canCreateRollout && (
+              <Button
+                disabled={creatingRollout}
+                onClick={() => {
+                  // GitOps plans skip the confirm sheet — there's no issue or
+                  // approval context to display, and the user already has
+                  // bb.rollouts.create at this point. Note this also bypasses
+                  // soft warnings (running checks, optional approval) by design.
+                  if (isGitOpsPlan) {
+                    void createRollout();
+                    return;
+                  }
+                  setRolloutConfirmOpen(true);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                {t("plan.phase.create-rollout-action")}
+              </Button>
+            )}
+          </div>
+        )}
 
       <Sheet
         onOpenChange={(open) => {

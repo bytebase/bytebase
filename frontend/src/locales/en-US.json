@@ -1324,7 +1324,6 @@
       "deploy-checks-optional": "Failed checks won't block manual rollout in this project.",
       "deploy-checks-ready": "Checks are ready for automatic rollout creation.",
       "deploy-checks-running": "Wait for running checks to finish before automatic rollout can proceed.",
-      "deploy-description": "Bytebase will automatically create the rollout when all checks pass and the issue is approved.",
       "deploy-manual-create-description": "Based on the current project settings, you can also create the rollout manually.",
       "deploy-manual-create-description-readonly": "User with Create Rollout permission can create the rollout manually.",
       "hide-details": "Hide details ↑",

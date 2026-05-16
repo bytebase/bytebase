@@ -212,4 +212,53 @@ describe("ProjectPlanDetailPage", () => {
 
     expect(selectedSpecIdText()).toBe("spec-2");
   });
+
+  it("renders the review phase for sheet-backed plans", async () => {
+    mocks.usePlanDetailPage.mockReturnValue(buildPage());
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          specId="spec-1"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("plan.navigator.review");
+  });
+
+  it("hides the review phase for GitOps plans with release-backed specs", async () => {
+    const page = buildPage();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            release: "projects/foo/releases/abc",
+            sheet: "",
+            targets: [],
+            enablePriorBackup: false,
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage
+          planId="create"
+          projectId="foo"
+          specId="spec-1"
+        />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain("plan.navigator.review");
+  });
 });

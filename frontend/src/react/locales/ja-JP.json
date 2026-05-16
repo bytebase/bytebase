@@ -1619,6 +1619,7 @@
   "plan.phase.deploy-checks-ready": "チェックはロールアウトの自動作成が可能な状態です。",
   "plan.phase.deploy-checks-running": "実行中のチェックが終わるまで、ロールアウトの自動作成は続行されません。",
   "plan.phase.deploy-description": "すべてのチェックが通過し、Issue が承認されると、Bytebase は自動的にロールアウトを作成します。",
+  "plan.phase.deploy-description-gitops": "このプランはロールアウトの準備ができています。リンクされたリリースをデプロイするにはロールアウトを作成してください。",
   "plan.phase.deploy-manual-create-description": "現在のプロジェクト設定に応じて、ロールアウトを手動で作成することもできます。",
   "plan.phase.deploy-manual-create-description-readonly": "Create Rollout 権限を持つユーザーがロールアウトを手動で作成できます。",
   "plan.phase.hide-details": "詳細を隠す",
