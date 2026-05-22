@@ -77,7 +77,7 @@ export function OtpInput({
   );
 
   return (
-    <div className={cn("flex gap-2", className)}>
+    <div className={cn("flex w-full gap-2", className)}>
       {Array.from({ length }, (_, i) => (
         <input
           key={i}
