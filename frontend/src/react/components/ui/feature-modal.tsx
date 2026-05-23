@@ -154,7 +154,11 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
               <Button
                 variant="default"
                 onClick={() => {
-                  window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+                  window.open(
+                    ENTERPRISE_INQUIRE_LINK,
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
                   // Vue's BBModal default-closes after a CTA click; mirror
                   // that so the paywall doesn't linger after the inquiry
                   // tab opens.

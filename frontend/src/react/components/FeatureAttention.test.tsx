@@ -138,7 +138,11 @@ describe("FeatureAttention", () => {
       );
     });
 
-    expect(openSpy).toHaveBeenCalledWith(ENTERPRISE_INQUIRE_LINK, "_blank");
+    expect(openSpy).toHaveBeenCalledWith(
+      ENTERPRISE_INQUIRE_LINK,
+      "_blank",
+      "noopener,noreferrer"
+    );
 
     openSpy.mockRestore();
     unmount();

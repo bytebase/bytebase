@@ -211,4 +211,27 @@ describe("DashboardHeader", () => {
 
     unmount();
   });
+
+  test("want help opens docs in a detached tab", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DashboardHeader showLogo={false} />
+    );
+
+    render();
+
+    const helpButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Want help")
+    );
+    expect(helpButton).not.toBeUndefined();
+    act(() => {
+      helpButton?.click();
+    });
+    expect(window.open).toHaveBeenCalledWith(
+      "https://docs.bytebase.com/faq#how-to-reach-us",
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+    unmount();
+  });
 });

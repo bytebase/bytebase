@@ -143,7 +143,8 @@ export function DashboardHeader({
             onClick={() => {
               window.open(
                 "https://docs.bytebase.com/faq#how-to-reach-us",
-                "_blank"
+                "_blank",
+                "noopener,noreferrer"
               );
             }}
           >

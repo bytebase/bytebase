@@ -109,7 +109,7 @@ export function FeatureAttention({
 
   const onAction = () => {
     if (!hasFeature) {
-      window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank", "noopener,noreferrer");
       return;
     }
     if (instanceMissingLicense || existInstanceWithoutLicense) {

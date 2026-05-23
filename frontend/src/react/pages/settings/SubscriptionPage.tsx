@@ -67,7 +67,8 @@ export function SubscriptionPage({
   const disabled = loading || !license;
   const onRequireEnterprise =
     onRequireEnterpriseProp ??
-    (() => window.open(ENTERPRISE_INQUIRE_LINK, "_blank"));
+    (() =>
+      window.open(ENTERPRISE_INQUIRE_LINK, "_blank", "noopener,noreferrer"));
   const onManageInstanceLicenses =
     onManageInstanceLicensesProp ??
     (() => setShowInstanceAssignmentSheet(true));

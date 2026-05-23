@@ -1255,7 +1255,8 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         e.preventDefault();
                         window.open(
                           urlfy(basicInfo.externalLink ?? ""),
-                          "_blank"
+                          "_blank",
+                          "noopener,noreferrer"
                         );
                       }}
                     >

@@ -138,6 +138,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  window.open = vi.fn();
   mocks.instanceMissingLicense = false;
   mocks.requiredPlan = 1;
   mocks.showTrial = false;
@@ -213,6 +214,38 @@ describe("FeatureModal", () => {
     expect(buttons[0].textContent).toBe(
       "subscription.instance-assignment.assign-license"
     );
+    unmount();
+  });
+
+  test("trial CTA opens inquiry page without an opener and closes the modal", () => {
+    mocks.showTrial = true;
+    mocks.useSubscriptionState.mockReturnValue({
+      showTrial: true,
+      trialingDays: mocks.trialingDays,
+    });
+    const onOpenChange = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureModal open feature={1} onOpenChange={onOpenChange} />
+    );
+
+    render();
+
+    const trialButton = Array.from(
+      container.querySelectorAll("[data-testid='button']")
+    ).find((button) =>
+      button.textContent?.includes("subscription.request-n-days-trial")
+    );
+    expect(trialButton).not.toBeUndefined();
+    act(() => {
+      (trialButton as HTMLButtonElement).click();
+    });
+    expect(window.open).toHaveBeenCalledWith(
+      "https://enterprise",
+      "_blank",
+      "noopener,noreferrer"
+    );
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
     unmount();
   });
 });
