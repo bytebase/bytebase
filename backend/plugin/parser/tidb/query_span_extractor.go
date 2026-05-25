@@ -77,15 +77,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		// Surface ResourceNotFoundError on the span so the SQL service can resync stale metadata and retry.
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
-			sourceColumns := accessTables
-			// getAccessTables drops tables not yet in cached metadata, so for an
-			// out-of-band CREATE TABLE the set is empty. Fall back to the
-			// not-found resource itself so the resync loop has a target.
-			if len(sourceColumns) == 0 {
-				sourceColumns = base.SourceColumnSet{
-					notFoundSyncTarget(resourceNotFound, q.defaultDatabase): true,
-				}
+			// Union the not-found target into SourceColumns so the pre-execute ACL check sees the missing resource (the check isn't rerun after resync+retry).
+			sourceColumns := make(base.SourceColumnSet, len(accessTables)+1)
+			for k := range accessTables {
+				sourceColumns[k] = true
 			}
+			sourceColumns[notFoundSyncTarget(resourceNotFound, q.defaultDatabase)] = true
 			return &base.QuerySpan{
 				Type:          queryType,
 				Results:       []base.QuerySpanResult{},

@@ -177,6 +177,57 @@ func TestGetQuerySpanMissingTableFallsBackToNotFoundDatabase(t *testing.T) {
 	a.True(foundDatabase, "resync target must reference the database where the missing table lives")
 }
 
+// SourceColumns must include the not-found target alongside known tables — the
+// pre-execute ACL check isn't rerun after resync+retry, so dropping the missing
+// resource would let an out-of-band CREATE TABLE bypass table-level ACL.
+func TestGetQuerySpanMissingTableUnionedWithAccessTables(t *testing.T) {
+	a := require.New(t)
+
+	// Metadata has the "known" table but not the "unknown" one.
+	staleMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "cif",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "byt9385_known",
+						Columns: []*storepb.ColumnMetadata{{Name: "a"}},
+					},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+
+	span, err := GetQuerySpan(
+		context.TODO(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNamesLister,
+		},
+		base.Statement{Text: "SELECT a FROM byt9385_known UNION SELECT a FROM byt9385_unknown"},
+		"cif",
+		"",
+		false,
+	)
+	a.NoError(err)
+	a.NotNil(span)
+	a.NotNil(span.NotFoundError)
+
+	foundKnown, foundUnknown := false, false
+	for k := range span.SourceColumns {
+		if k.Database == "cif" && k.Table == "byt9385_known" {
+			foundKnown = true
+		}
+		if k.Database == "cif" && k.Table == "byt9385_unknown" {
+			foundUnknown = true
+		}
+	}
+	a.True(foundKnown, "known table must remain in SourceColumns")
+	a.True(foundUnknown, "not-found table must be unioned into SourceColumns so the pre-execute ACL check sees it")
+}
+
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
