@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AuthFooter } from "@/react/components/auth/AuthFooter";
-import { DemoSigninForm } from "@/react/components/auth/DemoSigninForm";
 import { EmailCodeSigninForm } from "@/react/components/auth/EmailCodeSigninForm";
 import { PasswordSigninForm } from "@/react/components/auth/PasswordSigninForm";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
@@ -49,7 +48,6 @@ export function SigninPage(props: SigninPageProps) {
   const [initialized, setInitialized] = useState(false);
 
   const serverInfo = useVueState(() => useActuatorV1Store().serverInfo);
-  const isDemo = useVueState(() => useActuatorV1Store().isDemo);
   const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
   const activeUserCount = useVueState(
     () => useActuatorV1Store().activeUserCount
@@ -205,33 +203,27 @@ export function SigninPage(props: SigninPageProps) {
               </TabsList>
               {!serverInfo?.restriction?.disallowPasswordSignin && (
                 <TabsPanel value="standard" className="pt-3">
-                  {isDemo ? (
-                    <DemoSigninForm loading={isLoading} onSignin={trySignin} />
-                  ) : (
-                    <>
-                      <PasswordSigninForm
-                        loading={isLoading}
-                        onSignin={trySignin}
-                      />
-                      {!disallowSignup && (
-                        <div className="mt-3 flex justify-center items-center text-sm text-control gap-x-2">
-                          <span>{t("auth.sign-in.new-user")}</span>
-                          <a
-                            href="#"
-                            className="accent-link"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              router.push({
-                                name: AUTH_SIGNUP_MODULE,
-                                query,
-                              });
-                            }}
-                          >
-                            {t("common.sign-up")}
-                          </a>
-                        </div>
-                      )}
-                    </>
+                  <PasswordSigninForm
+                    loading={isLoading}
+                    onSignin={trySignin}
+                  />
+                  {!disallowSignup && (
+                    <div className="mt-3 flex justify-center items-center text-sm text-control gap-x-2">
+                      <span>{t("auth.sign-in.new-user")}</span>
+                      <a
+                        href="#"
+                        className="accent-link"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push({
+                            name: AUTH_SIGNUP_MODULE,
+                            query,
+                          });
+                        }}
+                      >
+                        {t("common.sign-up")}
+                      </a>
+                    </div>
                   )}
                 </TabsPanel>
               )}

@@ -59,6 +59,24 @@ export class BytebaseApiClient {
     return token;
   }
 
+  // Signup creates the first user on a fresh server. The first user becomes
+  // workspace admin. Signup always sets cookies (no body token), so callers
+  // should login() afterwards to obtain a body token for non-browser API calls.
+  async signup(email: string, password: string, title: string): Promise<void> {
+    const resp = await fetch(`${this.baseURL}/v1/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, title }),
+    });
+    if (!resp.ok) {
+      throw new Error(`API POST /v1/auth/signup failed (${resp.status}): ${await resp.text()}`);
+    }
+  }
+
+  async setupSample(): Promise<void> {
+    await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
+  }
+
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");

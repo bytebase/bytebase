@@ -126,7 +126,6 @@
     "profile-setup": "Configurar perfil",
     "sign-in": {
       "code-sent-hint": "Se ha enviado un código de verificación a {email}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Código por email",
       "failed-to-send-code": "No se pudo enviar el código de verificación. Inténtalo de nuevo.",
       "forget-password": "¿Olvidaste tu contraseña?",
@@ -147,12 +146,9 @@
     "token-expired-title": "Token expirado"
   },
   "banner": {
-    "cloud": "Cloud",
-    "deploy": "Auto Hospedaje",
     "external-url": "Bytebase no ha configurado --external-url",
     "license-expired": "Su licencia para {plan} ha expirado el {expireAt}.",
     "license-expires": "Su licencia para {plan} ha caducado el {expireAt}.",
-    "request-demo": "Reserva una demo de producto de 30 minutos.",
     "trial-expires": "Su prueba gratuita para {plan} caducará en {days} días el {expireAt}."
   },
   "bbkit": {
@@ -259,7 +255,6 @@
     "delete-resource": "Delete {type}",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "deleted": "Eliminado",
-    "demo-mode": "Demostración",
     "deny": "Denegar",
     "description": "Descripción",
     "detail": "Detalle",

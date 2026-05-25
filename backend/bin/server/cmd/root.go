@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/jackc/pgconn"
@@ -67,8 +66,6 @@ var (
 		debug       bool
 		// output logs in json format
 		enableJSONLogging bool
-		// demo mode.
-		demo bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
 		memoryProfileThreshold uint64
 	}
@@ -111,8 +108,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "enable debug level log")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
-	// Must be one of the subpath name in the ../migrator/demo directory
-	rootCmd.PersistentFlags().BoolVar(&flags.demo, "demo", false, "run in demo mode.")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")
 }
 
@@ -172,21 +167,6 @@ func start() {
 	profile := activeProfile(flags.dataDir)
 
 	fmt.Printf("Starting Bytebase %s(%s)...\n", profile.Version, profile.GitCommit)
-
-	// A safety measure to prevent accidentally resetting user's actual data with demo data.
-	// For embedded mode, we control where data is stored and we put demo data in a separate directory
-	// from the non-demo data.
-	// For external mode, only allow localhost bbdev database for demo purposes.
-	if flags.demo && profile.PgURL != "" {
-		if !strings.Contains(profile.PgURL, "localhost") && !strings.Contains(profile.PgURL, "127.0.0.1") {
-			slog.Error("demo mode only allows localhost PostgreSQL connections")
-			return
-		}
-		if !strings.Contains(profile.PgURL, "/bbdev") || !strings.Contains(profile.PgURL, "bbdev@") {
-			slog.Error("demo mode requires database and username to be 'bbdev'")
-			return
-		}
-	}
 
 	// The ideal bootstrap order is:
 	// 1. Connect to the metadb

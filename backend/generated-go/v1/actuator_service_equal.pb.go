@@ -80,9 +80,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.Saas != y.Saas {
 		return false
 	}
-	if x.Demo != y.Demo {
-		return false
-	}
 	if x.Host != y.Host {
 		return false
 	}

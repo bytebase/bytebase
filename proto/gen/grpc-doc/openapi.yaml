@@ -16847,11 +16847,6 @@ components:
           title: saas
           description: Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
           readOnly: true
-        demo:
-          type: boolean
-          title: demo
-          description: Whether the Bytebase instance is running in demo mode.
-          readOnly: true
         host:
           type: string
           title: host

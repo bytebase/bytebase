@@ -133,7 +133,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		Version:             s.profile.Version,
 		GitCommit:           s.profile.GitCommit,
 		Saas:                s.profile.SaaS,
-		Demo:                s.profile.Demo,
 		LastActiveTime:      timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
 		Docker:              s.profile.IsDocker,
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",

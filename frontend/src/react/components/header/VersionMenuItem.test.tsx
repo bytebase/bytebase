@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
     version: "1.0.0",
     gitCommit: "backend123",
     saas: false,
-    demo: false,
   },
   subscription: {
     plan: 1,
@@ -28,7 +27,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, string>) =>
       ({
-        "common.demo-mode": "Demo Mode",
         "subscription.plan.free.title": "Free",
         "subscription.plan.team.title": "Team",
         "subscription.plan.enterprise.title": "Enterprise",
@@ -120,7 +118,6 @@ beforeEach(async () => {
     version: "1.0.0",
     gitCommit: "backend123",
     saas: false,
-    demo: false,
   };
   mocks.subscription = {
     plan: PlanType.TEAM,
@@ -156,7 +153,6 @@ describe("VersionMenuItem", () => {
       version: "1.0.0",
       gitCommit: "backend123",
       saas: true,
-      demo: false,
     };
     const { container, render, unmount } = renderIntoContainer(
       <VersionMenuItem onCloseMenu={mocks.closeMenu} />

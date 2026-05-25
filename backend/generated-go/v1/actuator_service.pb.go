@@ -241,8 +241,6 @@ type ActuatorInfo struct {
 	Readonly bool `protobuf:"varint,3,opt,name=readonly,proto3" json:"readonly,omitempty"`
 	// Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
 	Saas bool `protobuf:"varint,4,opt,name=saas,proto3" json:"saas,omitempty"`
-	// Whether the Bytebase instance is running in demo mode.
-	Demo bool `protobuf:"varint,5,opt,name=demo,proto3" json:"demo,omitempty"`
 	// The host address of the Bytebase instance.
 	Host string `protobuf:"bytes,6,opt,name=host,proto3" json:"host,omitempty"`
 	// The port number of the Bytebase instance.
@@ -334,13 +332,6 @@ func (x *ActuatorInfo) GetReadonly() bool {
 func (x *ActuatorInfo) GetSaas() bool {
 	if x != nil {
 		return x.Saas
-	}
-	return false
-}
-
-func (x *ActuatorInfo) GetDemo() bool {
-	if x != nil {
-		return x.Demo
 	}
 	return false
 }
@@ -472,14 +463,13 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
 	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xbd\a\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xaa\a\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
 	"git_commit\x18\x02 \x01(\tB\x03\xe0A\x03R\tgitCommit\x12\x1f\n" +
 	"\breadonly\x18\x03 \x01(\bB\x03\xe0A\x03R\breadonly\x12\x17\n" +
 	"\x04saas\x18\x04 \x01(\bB\x03\xe0A\x03R\x04saas\x12\x17\n" +
-	"\x04demo\x18\x05 \x01(\bB\x03\xe0A\x03R\x04demo\x12\x17\n" +
 	"\x04host\x18\x06 \x01(\tB\x03\xe0A\x03R\x04host\x12\x17\n" +
 	"\x04port\x18\a \x01(\tB\x03\xe0A\x03R\x04port\x12&\n" +
 	"\fexternal_url\x18\b \x01(\tB\x03\xe0A\x03R\vexternalUrl\x12I\n" +
@@ -495,7 +485,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12?\n" +
 	"\vrestriction\x18\x19 \x01(\v2\x18.bytebase.v1.RestrictionB\x03\xe0A\x03R\vrestriction\x12,\n" +
 	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
-	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIamJ\x04\b\t\x10\n" +
+	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIamJ\x04\b\x05\x10\x06J\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x10\x10\x11J\x04\b\x11\x10\x12J\x04\b\x0e\x10\x0f2\x9d\x03\n" +
 	"\x0fActuatorService\x12\x9c\x01\n" +

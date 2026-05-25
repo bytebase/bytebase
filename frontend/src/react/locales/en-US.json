@@ -136,7 +136,6 @@
     },
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {{email}}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Email Code",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
@@ -158,12 +157,9 @@
   },
   "auth.token-expired-title": "Token expired",
   "banner": {
-    "cloud": "Cloud",
-    "deploy": "Self Host",
     "external-url": "Bytebase has not configured --external-url",
     "license-expired": "Your license for {{plan}} has expired on {{expireAt}}.",
     "license-expires": "Your license for {{plan}} will expire in {{days}} days on {{expireAt}}.",
-    "request-demo": "Book a 30-minute product demo.",
     "trial-expires": "Your free trial for {{plan}} will expire in {{days}} days on {{expireAt}}."
   },
   "bbkit": {
@@ -262,7 +258,6 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
-    "demo-mode": "Demo",
     "deny": "Deny",
     "description": "Description",
     "deselect-all": "Deselect all",
@@ -472,7 +467,6 @@
   "common.delete": "Delete",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Deleted",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "detailed guide",
   "common.edit": "Edit",

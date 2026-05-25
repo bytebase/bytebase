@@ -12,16 +12,9 @@ setup("authenticate and discover", async ({ page }) => {
   // Browser login for auth cookies
   await page.goto(`${env.baseURL}/auth/signin`);
   if (page.url().includes("/auth")) {
-    const emailField = page.getByRole("textbox", { name: /email/i });
-    const hasDemoLogin = await emailField.count() === 0;
-
-    if (hasDemoLogin) {
-      await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    } else {
-      await emailField.fill(env.adminEmail);
-      await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
-      await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    }
+    await page.getByRole("textbox", { name: /email/i }).fill(env.adminEmail);
+    await page.getByRole("textbox", { name: /password/i }).fill(env.adminPassword);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page).not.toHaveURL(/\/auth/, { timeout: 60000 });
   }
 

@@ -83,7 +83,7 @@ message Restriction {
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 9, 10, 12, 16, 17, 14;
+  reserved 5, 9, 10, 12, 16, 17, 14;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -96,9 +96,6 @@ message ActuatorInfo {
 
   // Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
   bool saas = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether the Bytebase instance is running in demo mode.
-  bool demo = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The host address of the Bytebase instance.
   string host = 6 [(google.api.field_behavior) = OUTPUT_ONLY];

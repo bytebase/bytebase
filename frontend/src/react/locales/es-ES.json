@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "Se ha enviado un código de verificación a {{email}}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Código por email",
       "failed-to-send-code": "No se pudo enviar el código de verificación. {{error}}",
       "forget-password": "¿Olvidaste tu contraseña?",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "Token expirado",
   "banner": {
-    "cloud": "Cloud",
-    "deploy": "Auto Hospedaje",
     "external-url": "Bytebase no ha configurado --external-url",
     "license-expired": "Su licencia para {{plan}} ha expirado el {{expireAt}}.",
     "license-expires": "Su licencia para {{plan}} caducará en {{days}} días el {{expireAt}}.",
-    "request-demo": "Reserva una demo de producto de 30 minutos.",
     "trial-expires": "Su prueba gratuita para {{plan}} caducará en {{days}} días el {{expireAt}}."
   },
   "bbkit": {
@@ -465,7 +461,6 @@
   "common.delete": "Eliminar",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Eliminado",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "guía detallada",
   "common.edit": "Editar",

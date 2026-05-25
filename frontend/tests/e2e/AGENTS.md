@@ -18,7 +18,7 @@ execSql(env, dbName, `INSERT INTO my_feature_test.t VALUES (1, 'KnownValue')`);
 execSql(env, dbName, `DROP SCHEMA IF EXISTS my_feature_test CASCADE`);
 ```
 
-**Don't:** Query `information_schema` or scan the demo data to find something usable. Discovery-based tests are fragile — they fail when demo data changes, when tables are empty, or when pre-existing masking hides the values you need.
+**Don't:** Query `information_schema` or scan the sample data to find something usable. Discovery-based tests are fragile — they fail when sample data changes, when tables are empty, or when pre-existing masking hides the values you need.
 
 **Why:** A test that owns its fixtures is deterministic. You know exactly what values exist, what's masked, what's not, and what state is left when the test completes. `masking-exemption.spec.ts:createMaskingTestData` is the canonical example.
 
@@ -144,8 +144,9 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 
 ## Known Constraints
 
-- **Demo mode only**: tests run against `--demo` data. Demo data is pre-seeded with sample instances and has a built-in enterprise license.
+- **Sample-data bootstrap**: tests run against data provisioned by `SetupSample` (called from `globalSetup`). The two sample Postgres instances (`test-sample-instance`, `prod-sample-instance`) come up on `PORT+3` / `PORT+4`.
+- **Free plan by default**: the freshly signed-up workspace has no enterprise license. Specs that exercise gated features (masking, masking exemptions, classification, etc.) must inject a license first. To do so, PATCH `/v1/subscription/license` with a JWT signed by Bytebase's license RSA key — set the key via `LICENSE_PRIVATE_KEY` when running the server. The key is not stored in this repo; see Bytebase ops for a dev/test license.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
-- **Demo admin credentials**: hardcoded `demo@example.com` / `12345678` (the well-known demo defaults, not a secret).
+- **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.

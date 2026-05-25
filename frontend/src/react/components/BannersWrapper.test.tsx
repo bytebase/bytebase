@@ -27,12 +27,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const translations: Record<string, string> = {
-  "banner.cloud": "Cloud",
-  "banner.deploy": "Self Host",
   "banner.external-url": "Bytebase has not configured --external-url",
   "banner.license-expired": "{{plan}} expired on {{expireAt}}",
   "banner.license-expires": "{{plan}} expires in {{days}} days on {{expireAt}}",
-  "banner.request-demo": "Book a demo",
   "banner.trial-expires":
     "{{plan}} trial expires in {{days}} days on {{expireAt}}",
   "common.configure-now": "Configure now",
@@ -154,26 +151,6 @@ beforeEach(async () => {
 });
 
 describe("BannersWrapper", () => {
-  test("renders and dismisses demo banner", () => {
-    mocks.useServerState.mockReturnValue({
-      needConfigureExternalUrl: false,
-      serverInfo: { demo: true },
-    });
-    const { container, unmount } = renderIntoContainer(<BannersWrapper />);
-
-    expect(container.textContent).toContain("Book a demo");
-
-    const dismissButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "Dismiss"
-    );
-    act(() => {
-      dismissButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(container.textContent).not.toContain("Book a demo");
-    unmount();
-  });
-
   test("renders trialing subscription banner with subscription action", () => {
     mocks.useSubscriptionState.mockReturnValue({
       ...defaultSubscriptionState,
