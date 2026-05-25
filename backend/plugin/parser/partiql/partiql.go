@@ -1,6 +1,7 @@
 package partiql
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/bytebase/omni/partiql/ast"
@@ -39,12 +40,18 @@ func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
 			Statement: stmt,
 		}
 		if !stmt.Empty {
-			text := strings.TrimSpace(stmt.Text)
-			if text == "" {
+			if strings.TrimSpace(stmt.Text) == "" {
 				ps.Empty = true
 			} else {
-				list, err := parser.Parse(text)
+				// Parse the segment as-is so that ParseError byte offsets
+				// align with stmt.Text; convertParseError then offsets them
+				// by stmt.Start to refer back to the original script.
+				list, err := parser.Parse(stmt.Text)
 				if err != nil {
+					var parseErr *parser.ParseError
+					if errors.As(err, &parseErr) {
+						return nil, convertParseError(stmt.Text, parseErr, stmt.Start)
+					}
 					return nil, err
 				}
 				var node ast.Node
