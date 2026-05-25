@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "{{email}} に認証コードを送信しました。",
-      "demo-account": "Demo Account",
       "email-code-tab": "メール認証コード",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
-    "cloud": "クラウドサービス",
-    "deploy": "ローカル展開",
     "external-url": "Bytebase は --extern-url を設定していません",
     "license-expired": "{{plan}} のライセンスは {{expireAt}} に期限切れになりました。",
     "license-expires": "{{plan}} ライセンスは {{days}} 日後の {{expireAt}} に期限切れになります",
-    "request-demo": "30 分間の製品デモを予約してください。",
     "trial-expires": "{{plan}} トライアルは {{days}} 日後の {{expireAt}} に期限切れになります"
   },
   "bbkit": {
@@ -465,7 +461,6 @@
   "common.delete": "消去",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "削除されました",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "詳細ガイド",
   "common.edit": "編集",

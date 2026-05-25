@@ -45,8 +45,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     return commit === "" ? "unknown" : commit;
   });
 
-  const isDemo = computed(() => serverInfo.value?.demo);
-
   const isDocker = computed(() => serverInfo.value?.docker || false);
 
   const isSaaSMode = computed(() => serverInfo.value?.saas || false);
@@ -152,7 +150,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", () => {
     version,
     gitCommitBE,
     gitCommitFE,
-    isDemo,
     isDocker,
     isSaaSMode,
     workspaceResourceName,

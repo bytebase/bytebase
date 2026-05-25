@@ -18,7 +18,7 @@ execSql(env, dbName, `INSERT INTO my_feature_test.t VALUES (1, 'KnownValue')`);
 execSql(env, dbName, `DROP SCHEMA IF EXISTS my_feature_test CASCADE`);
 ```
 
-**Don't:** Query `information_schema` or scan the demo data to find something usable. Discovery-based tests are fragile — they fail when demo data changes, when tables are empty, or when pre-existing masking hides the values you need.
+**Don't:** Query `information_schema` or scan the sample data to find something usable. Discovery-based tests are fragile — they fail when sample data changes, when tables are empty, or when pre-existing masking hides the values you need.
 
 **Why:** A test that owns its fixtures is deterministic. You know exactly what values exist, what's masked, what's not, and what state is left when the test completes. `masking-exemption.spec.ts:createMaskingTestData` is the canonical example.
 
@@ -144,8 +144,10 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 
 ## Known Constraints
 
-- **Demo mode only**: tests run against `--demo` data. Demo data is pre-seeded with sample instances and has a built-in enterprise license.
+- **Sample-data bootstrap**: tests run against data provisioned by `SetupSample` (called from `globalSetup`). The two sample Postgres instances (`test-sample-instance`, `prod-sample-instance`) come up on `PORT+3` / `PORT+4`.
+- **Free plan by default**: the freshly signed-up workspace has no enterprise license. Specs that exercise gated features (masking, classification, etc.) need one. Set `BYTEBASE_E2E_LICENSE` to a license JWT before running and `globalSetup` will install it via `PATCH /v1/subscription/license`; the bootstrap then sets `env.hasLicense = true`. The JWT must be signed by Bytebase's license RSA key — not stored in this repo; ask Bytebase ops for a dev/test license. Without the env var, `env.hasLicense` is false and the bootstrap logs a warning. Enterprise-gated specs must call `test.skip(!env.hasLicense, "…")` in their `beforeAll` (see `masking-exemption.spec.ts` for the pattern) so they're skipped rather than failed on free-plan setups.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
-- **Demo admin credentials**: hardcoded `demo@example.com` / `12345678` (the well-known demo defaults, not a secret).
+- **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.
+- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs. If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.

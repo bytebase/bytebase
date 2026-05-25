@@ -12,7 +12,6 @@
 <p align="center">
   <a href="https://docs.bytebase.com/get-started/self-host-vs-cloud" target="_blank">⚙️ Install</a> •
   <a href="https://docs.bytebase.com">📚 Docs</a> •
-  <a href="https://demo.bytebase.com">🎮 Demo</a> •
   <a href="https://discord.gg/huyw7gRsyA">💬 Discord</a> •
   <a href="https://www.bytebase.com/request-demo/">🙋‍♀️ Book Demo</a>
 </p>

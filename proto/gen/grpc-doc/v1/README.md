@@ -6820,7 +6820,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | git_commit | [string](#string) |  | The git commit hash of the build. |
 | readonly | [bool](#bool) |  | Whether the Bytebase instance is running in read-only mode. |
 | saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
-| demo | [bool](#bool) |  | Whether the Bytebase instance is running in demo mode. |
 | host | [string](#string) |  | The host address of the Bytebase instance. |
 | port | [string](#string) |  | The port number of the Bytebase instance. |
 | external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |

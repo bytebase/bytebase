@@ -126,7 +126,6 @@
     "profile-setup": "プロフィール設定",
     "sign-in": {
       "code-sent-hint": "{email} に認証コードを送信しました。",
-      "demo-account": "Demo Account",
       "email-code-tab": "メール認証コード",
       "failed-to-send-code": "認証コードの送信に失敗しました。もう一度お試しください。",
       "forget-password": "パスワードを忘れましたか？",
@@ -147,12 +146,9 @@
     "token-expired-title": "トークンの有効期限が切れました"
   },
   "banner": {
-    "cloud": "クラウドサービス",
-    "deploy": "ローカル展開",
     "external-url": "Bytebase は --extern-url を設定していません",
     "license-expired": "{plan} のライセンスは {expireAt} に期限切れになりました。",
     "license-expires": "{plan} ライセンスは {expireAt} に期限切れになりました",
-    "request-demo": "30 分間の製品デモを予約してください。",
     "trial-expires": "{plan} トライアルは {days} 日後に期限切れになります"
   },
   "bbkit": {
@@ -259,7 +255,6 @@
     "delete-resource": "Delete {type}",
     "delete-resource-description": "Once you delete \"{name}\", there is no going back. Please be certain.",
     "deleted": "削除されました",
-    "demo-mode": "デモモード",
     "deny": "拒否",
     "description": "説明",
     "detail": "詳細",

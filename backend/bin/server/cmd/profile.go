@@ -19,7 +19,6 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Debug:               flags.debug,
 		IsDocker:            isDocker(),
 		DataDir:             dataDir,
-		Demo:                flags.demo,
 		Version:             version,
 		GitCommit:           gitcommit,
 		PgURL:               os.Getenv("PG_URL"),

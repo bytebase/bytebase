@@ -126,7 +126,6 @@
     "profile-setup": "设置个人资料",
     "sign-in": {
       "code-sent-hint": "验证码已发送至 {email}。",
-      "demo-account": "Demo Account",
       "email-code-tab": "邮箱验证码",
       "failed-to-send-code": "发送验证码失败，请重试。",
       "forget-password": "忘记密码?",
@@ -147,12 +146,9 @@
     "token-expired-title": "Token 已过期"
   },
   "banner": {
-    "cloud": "云服务",
-    "deploy": "本地部署",
     "external-url": "Bytebase 还没有配置 --external-url",
     "license-expired": "您的{plan}证书已在 {expireAt} 过期",
     "license-expires": "您的{plan}证书将在 {days} 天后（{expireAt}）过期",
-    "request-demo": "预约一个 30 分钟的产品演示。",
     "trial-expires": "您的{plan}试用将在 {days} 天后（{expireAt}）过期"
   },
   "bbkit": {
@@ -259,7 +255,6 @@
     "delete-resource": "删除{type}",
     "delete-resource-description": "删除「{name}」后将无法恢复，请确认。",
     "deleted": "已删除",
-    "demo-mode": "演示模式",
     "deny": "拒绝",
     "description": "描述",
     "detail": "详情",

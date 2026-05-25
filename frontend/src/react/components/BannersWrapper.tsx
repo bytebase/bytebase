@@ -1,8 +1,6 @@
 import {
   AlertCircle,
   ArrowRight,
-  Cloud,
-  Download,
   ShoppingCart,
   Sparkles,
   Wrench,
@@ -76,60 +74,6 @@ function BannerDismissButton({
       <span className="sr-only">{label}</span>
       <X className="size-5" />
     </Button>
-  );
-}
-
-function BannerDemo() {
-  const { t } = useTranslation();
-  const [show, setShow] = useState(true);
-
-  if (!show) return null;
-
-  return (
-    <div className="bg-accent">
-      <div className="mx-auto px-3 py-1">
-        <div className="flex flex-wrap items-center justify-between">
-          <div className="flex w-0 flex-1 items-center">
-            <p className="flex items-center truncate font-medium text-white">
-              <a
-                href="https://cal.com/bytebase/product-walkthrough"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-x-1 underline"
-              >
-                {t("banner.request-demo")}
-              </a>
-            </p>
-          </div>
-          <div className="order-3 my-2 flex w-full shrink-0 flex-row gap-x-4 sm:order-2 sm:my-0 sm:w-auto sm:py-1">
-            <a
-              href="https://docs.bytebase.com/get-started/self-host-vs-cloud/?source=demo"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center rounded-xs border border-transparent bg-white py-1 pr-2 pl-4 text-base font-medium text-accent hover:bg-indigo-50"
-            >
-              {t("banner.deploy")}
-              <Download className="ml-1 size-5" />
-            </a>
-            <a
-              href="https://hub.bytebase.com/workspace?source=demo"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center justify-center rounded-xs border border-transparent bg-white py-1 pr-2 pl-4 text-base font-medium text-accent hover:bg-indigo-50"
-            >
-              {t("banner.cloud")}
-              <Cloud className="ml-1 size-5" />
-            </a>
-          </div>
-          <div className="order-2 -mr-1 shrink-0 sm:order-3 sm:ml-3">
-            <BannerDismissButton
-              label={t("common.dismiss")}
-              onClick={() => setShow(false)}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -396,7 +340,7 @@ function BannerUpgradeSubscription() {
 }
 
 export function BannersWrapper() {
-  const { serverInfo, needConfigureExternalUrl } = useServerState();
+  const { needConfigureExternalUrl } = useServerState();
   const { currentPlan, daysBeforeExpire, isExpired, isTrialing } =
     useSubscriptionState();
 
@@ -410,7 +354,6 @@ export function BannersWrapper() {
   return (
     <>
       <BannerUpgradeSubscription />
-      {serverInfo?.demo ? <BannerDemo /> : null}
       {shouldShowSubscriptionBanner ? <BannerSubscription /> : null}
       {shouldShowExternalUrlBanner ? <BannerExternalUrl /> : null}
       <BannerAnnouncement />

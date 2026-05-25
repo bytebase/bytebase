@@ -186,6 +186,12 @@ async function revokeAllExemptions(): Promise<void> {
 
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
+  // Masking and classification are enterprise-gated; without a license the
+  // policies cannot be created, so skip the entire suite rather than failing.
+  test.skip(
+    !env.hasLicense,
+    "BYTEBASE_E2E_LICENSE not set — masking specs require an enterprise license"
+  );
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
