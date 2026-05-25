@@ -29,7 +29,7 @@ func validateQuery(statement string) (bool, bool, error) {
 	// syntactically valid but not read-only.
 	var parseErr *parser.ParseError
 	if errors.As(err, &parseErr) {
-		return false, false, convertParseError(statement, parseErr)
+		return false, false, convertParseError(statement, parseErr, nil)
 	}
 	return false, false, nil
 }
@@ -39,8 +39,20 @@ func validateQuery(statement string) (bool, bool, error) {
 // error diagnostics. It converts the byte offset in ParseError.Loc
 // to 1-based line and 1-based column (rune-based) matching the
 // storepb.Position convention used across all omni parser adapters.
-func convertParseError(statement string, pe *parser.ParseError) *base.SyntaxError {
+//
+// If basePos is non-nil, the computed position is offset by it so that
+// errors from parsing an isolated statement segment are reported in the
+// coordinates of the original multi-statement script.
+func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
 	line, col := byteOffsetToPosition(statement, pe.Loc.Start)
+	if basePos != nil {
+		// The first line of the segment shares a line with basePos, so
+		// column offsets only apply when the error is on that line.
+		if line == 1 {
+			col = int(basePos.Column) + col - 1
+		}
+		line = int(basePos.Line) + line - 1
+	}
 	return &base.SyntaxError{
 		Position: &storepb.Position{
 			Line:   int32(line),
