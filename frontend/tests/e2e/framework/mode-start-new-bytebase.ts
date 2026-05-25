@@ -127,6 +127,7 @@ export async function startServer(): Promise<{
   baseURL: string;
   adminEmail: string;
   adminPassword: string;
+  hasLicense: boolean;
 }> {
   // Check both CWD-relative and repo-root-relative paths
   const candidates = [
@@ -198,16 +199,17 @@ export async function startServer(): Promise<{
 
   // Phase 3b: Install an enterprise license if one was provided via
   // BYTEBASE_E2E_LICENSE. Specs that exercise gated features (masking,
-  // classification) require this; without it those suites will fail on
-  // free-plan errors. See frontend/tests/e2e/AGENTS.md for how to obtain
-  // a dev license.
+  // classification) require this; specs read env.hasLicense and skip
+  // themselves when it's false. See frontend/tests/e2e/AGENTS.md for how
+  // to obtain a dev license.
   const license = process.env.BYTEBASE_E2E_LICENSE?.trim();
+  const hasLicense = Boolean(license);
   if (license) {
     await api.uploadLicense(license);
   } else {
     // eslint-disable-next-line no-console
     console.warn(
-      "[e2e bootstrap] BYTEBASE_E2E_LICENSE not set — workspace will run on the free plan. Enterprise-gated specs (masking, classification) will fail."
+      "[e2e bootstrap] BYTEBASE_E2E_LICENSE not set — workspace will run on the free plan. Enterprise-gated specs will skip themselves."
     );
   }
 
@@ -254,7 +256,7 @@ export async function startServer(): Promise<{
     "Sample Postgres instances did not start listening on PORT+3 / PORT+4."
   );
 
-  return { baseURL, adminEmail: ADMIN_EMAIL, adminPassword: ADMIN_PASSWORD };
+  return { baseURL, adminEmail: ADMIN_EMAIL, adminPassword: ADMIN_PASSWORD, hasLicense };
 }
 
 export function stopServer(): void {
