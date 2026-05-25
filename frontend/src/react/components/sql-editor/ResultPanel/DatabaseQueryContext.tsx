@@ -1,9 +1,9 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { ResultView } from "@/react/components/sql-editor/ResultView";
 import { Button } from "@/react/components/ui/button";
+import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import type {
   SQLEditorDatabaseQueryContext,
@@ -114,9 +114,8 @@ export function DatabaseQueryContext({
 
 /**
  * Returns a humanized elapsed-time string ("3.2s") that ticks once per
- * second while `running` is true. Replaces the Vue `useCurrentTimestamp`
- * + computed combo. Stops/clears the interval on unmount or when
- * `running` flips to false.
+ * second while `running` is true. Stops/clears the interval on unmount
+ * or when `running` flips to false.
  */
 function useElapsed(running: boolean, beginMS: number | undefined): string {
   const [now, setNow] = useState(() => Date.now());

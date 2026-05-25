@@ -30,26 +30,6 @@ const mocks = vi.hoisted(() => ({
   ),
 }));
 
-vi.mock("naive-ui", async () => {
-  const { defineComponent, h } = await import("vue");
-  const passthrough = (name: string) =>
-    defineComponent({
-      name,
-      setup(_, { slots }) {
-        return () => h("div", slots.default?.());
-      },
-    });
-  return {
-    NConfigProvider: passthrough("NConfigProvider"),
-  };
-});
-
-vi.mock("../naive-ui.config", () => ({
-  dateLang: {},
-  generalLang: {},
-  themeOverrides: {},
-}));
-
 vi.mock("@/react/ReactPageMount.vue", async () => {
   const { defineComponent, h } = await import("vue");
   return {

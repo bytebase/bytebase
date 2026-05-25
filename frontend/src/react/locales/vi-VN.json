@@ -406,6 +406,7 @@
     "system": "Hệ thống",
     "table": "Bảng",
     "text-wrap": "Ngắt dòng văn bản",
+    "tips": "Mẹo",
     "title": "Tiêu đề",
     "to": "Đến",
     "total": "Total",
@@ -2708,6 +2709,7 @@
     },
     "binary-format": "Định dạng nhị phân",
     "boolean-format": "Định dạng boolean",
+    "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "cancel-selection": "Hủy chọn",
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
@@ -2744,6 +2746,7 @@
         "title": "Đóng trang tính chưa lưu?"
       }
     },
+    "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
     "jit": "Just-In-Time Access",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
@@ -2761,6 +2764,7 @@
       "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào."
     },
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
+    "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
     "pending-query": "Đang chờ truy vấn",
@@ -2783,6 +2787,7 @@
       "self": "Chạy lệnh redis trên",
       "single-node": "Nút đơn"
     },
+    "request-aborted": "Người dùng đã hủy yêu cầu",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
     "request-jit": "Request just-in-time access",
@@ -2805,6 +2810,7 @@
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
     "search-scope-row-number-title": "Số dòng",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
+    "select-connection": "Vui lòng chọn kết nối",
     "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",

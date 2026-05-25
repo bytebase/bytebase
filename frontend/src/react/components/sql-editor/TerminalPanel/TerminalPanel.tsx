@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { IStandaloneCodeEditor } from "@/react/components/monaco/types";
 import { ConnectionHolder } from "@/react/components/sql-editor/ConnectionHolder";
@@ -67,12 +67,24 @@ export function TerminalPanel() {
         : undefined) ?? EMPTY_QUERY_LIST
   );
 
-  const expired = useVueState(() => {
-    const tab = tabStore.currentTab;
-    if (!tab) return false;
-    const session = getWebTerminalQuerySession(tab);
-    return session.timer.expired.value;
-  });
+  // Poll the per-tab timer's expired flag every 250ms so the Cancel
+  // button appears once the running query passes the timeout. Cheap
+  // enough at this cadence; the timer object itself has no reactive
+  // hook to subscribe to.
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    const tick = () => {
+      const tab = tabStore.currentTab;
+      if (!tab) {
+        setExpired(false);
+        return;
+      }
+      setExpired(getWebTerminalQuerySession(tab).timer.expired());
+    };
+    tick();
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
+  }, [tabStore, currentTabId]);
 
   // Pre-fetch any database referenced by an existing query item so the
   // ResultView can render `database.environment` etc. synchronously.

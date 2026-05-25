@@ -37,7 +37,7 @@ import {
   activeInterceptor,
 } from "./middlewares";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
-import { isDev } from "@/utils";
+import { isDev } from "@/utils/util";
 
 const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
 

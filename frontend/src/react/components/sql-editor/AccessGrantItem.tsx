@@ -13,7 +13,6 @@ import {
   getAccessGrantStatusTagType,
 } from "@/utils/accessGrant";
 
-// Map naive-ui tag type to shadcn Badge variant.
 function mapTagTypeToBadgeVariant(
   tagType: "success" | "warning" | "error" | "default"
 ): "default" | "secondary" | "destructive" | "warning" | "success" {

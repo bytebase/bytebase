@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useVueState } from "@/react/hooks/useVueState";
+import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import { DatabaseOverviewInfo } from "@/react/pages/project/database-detail/overview/DatabaseOverviewInfo";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store } from "@/store";
@@ -10,7 +11,6 @@ import {
   instanceV1SupportsPackage,
   instanceV1SupportsSequence,
 } from "@/utils";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";
 import { ExternalTablesTable } from "../ExternalTablesPanel/ExternalTablesTable";

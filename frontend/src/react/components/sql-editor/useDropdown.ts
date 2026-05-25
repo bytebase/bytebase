@@ -1,24 +1,10 @@
 /**
- * useDropdown — React port of Vue dropdown.ts
+ * useDropdown — context-menu state for the worksheet tree.
  *
- * Key differences from the Vue source:
- *
- * 1. Positioning: Vue's NDropdown uses manual x/y coordinates. Base UI's
- *    ContextMenu handles positioning internally on right-click. Therefore
- *    `x`/`y` are dropped and `handleMenuShow` is renamed to
- *    `handleContextMenu` to reflect it is the onContextMenu handler.
- *
- * 2. Delete confirm: Vue uses naive-ui `useDialog`. React dependency-inverts
- *    this: the hook exposes `confirmDelete` state; the consumer (SheetTree)
- *    binds a shadcn AlertDialog to it.
- *
- * 3. Share panel: Vue uses a naive-ui Popover. React side exposes
- *    `showSharePanel` + `handleSharePanelShow` so that SheetTree can mount
- *    the actual SharePopoverBody component. No dialog logic lives here.
- *
- * 4. Vue refs/reactive → React useState/useMemo.
- *    Vue computed → useMemo.
- *    t() from @/plugins/i18n → useTranslation from react-i18next.
+ * The hook exposes `confirmDelete` state that the consumer (SheetTree) binds
+ * to a shadcn AlertDialog, and `showSharePanel` + `handleSharePanelShow` so
+ * SheetTree can mount the SharePopoverBody component itself. No dialog logic
+ * lives here.
  */
 
 import { useMemo, useState } from "react";
@@ -45,7 +31,7 @@ export type DropdownOptionType =
   | "multi-select"
   | "duplicate";
 
-/** A single menu entry.  Mirrors naive-ui's DropdownOption in shape. */
+/** A single menu entry. */
 export type MenuItem =
   | { type: "item"; key: DropdownOptionType; label: string; disabled?: boolean }
   | { type: "separator" };

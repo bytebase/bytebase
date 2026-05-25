@@ -124,7 +124,7 @@ vi.mock("@/router/sqlEditor", () => ({
   SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
 }));
 
-vi.mock("@/views/sql-editor/EditorCommon/utils", () => ({
+vi.mock("@/react/lib/keyWithPosition", () => ({
   keyWithPosition: (k: string, p: number) => `${k}###${p}`,
 }));
 
@@ -132,7 +132,7 @@ vi.mock("@/views/sql-editor/events", () => ({
   sqlEditorEvents: { emit: vi.fn() },
 }));
 
-vi.mock("@/composables/useExecuteSQL", () => ({
+vi.mock("@/react/hooks/useExecuteSQL", () => ({
   useExecuteSQL: () => ({ execute: vi.fn() }),
 }));
 

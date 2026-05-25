@@ -22,7 +22,7 @@ export function PrettyJSON({ content }: PrettyJSONProps) {
           await Promise.all([
             import("pretty-print-json"),
             import("lossless-json"),
-            import("@/composables/utils"),
+            import("@/utils/sqlResult"),
           ]);
         await import("./pretty-print-json.css");
         if (controller.signal.aborted) return;

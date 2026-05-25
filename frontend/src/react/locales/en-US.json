@@ -412,6 +412,7 @@
     "system": "System",
     "table": "Table",
     "text-wrap": "Text Wrap",
+    "tips": "Tips",
     "title": "Title",
     "to": "To",
     "total": "Total",
@@ -2720,6 +2721,7 @@
     },
     "binary-format": "Binary format",
     "boolean-format": "Boolean format",
+    "can-not-execute-query": "Cannot execute query when loading data.",
     "cancel-selection": "Cancel selection",
     "choose-folder": "Choose or create folder",
     "choose-folder-tips": "You can create a new folder by entering a non-existent path. The folders should be joined with a \"/\".",
@@ -2756,6 +2758,7 @@
         "title": "Close the unsaved sheet?"
       }
     },
+    "invalid-database": "Invalid database {database}",
     "jit": "Just-In-Time Access",
     "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
@@ -2773,6 +2776,7 @@
       "not-member-of-any-projects": "You are not any member of any projects."
     },
     "no-queriable-database": "No queriable database",
+    "notify-empty-statement": "Please input your SQL statements in the editor",
     "only-select-allowed": "Only read-only statements are allowed to execute.",
     "open-in-new-tab": "Open in new tab",
     "pending-query": "Pending query",
@@ -2795,6 +2799,7 @@
       "self": "Run redis command on",
       "single-node": "Single node"
     },
+    "request-aborted": "User aborted the request",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
     "request-jit": "Request just-in-time access",
@@ -2817,6 +2822,7 @@
     "search-scope-row-number-description": "Enter a row number to jump to that row.",
     "search-scope-row-number-title": "Row number",
     "select-a-database-to-start": "Select a database to start",
+    "select-connection": "Please select connections",
     "select-encoding": "Select encoding",
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Tracks the container element's available height so the inner table
- * can size its scroll area to fill the panel without spilling. React
- * counterpart of Vue's `useAutoHeightDataTable` — without naive-ui.
+ * can size its scroll area to fill the panel without spilling.
  *
  * Returns a `ref` to attach to the outer container plus the observed
  * `maxHeight` in pixels (0 until the first measurement).

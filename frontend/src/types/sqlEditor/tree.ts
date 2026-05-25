@@ -1,4 +1,3 @@
-import type { TreeOption } from "naive-ui";
 import type { Database } from "../proto-es/v1/database_service_pb";
 import type { InstanceResource } from "../proto-es/v1/instance_service_pb";
 import type { Environment } from "../v1/environment";
@@ -49,9 +48,12 @@ type SQLEditorTreeNodeMeta<
 
 export type SQLEditorTreeNode<
   T extends SQLEditorTreeNodeType = SQLEditorTreeNodeType,
-> = TreeOption & {
+> = {
   meta: SQLEditorTreeNodeMeta<T>;
   key: string;
+  label?: string;
+  disabled?: boolean;
+  isLeaf?: boolean;
   children?: SQLEditorTreeNode[];
 };
 

@@ -9,12 +9,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   SequenceMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 import { EllipsisCell } from "../common/EllipsisCell";
 import { useViewStateNav } from "../common/useViewStateNav";
 
