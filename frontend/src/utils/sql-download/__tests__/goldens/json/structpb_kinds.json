@@ -1,0 +1,20 @@
+[
+  {
+    "v": "null_value:NULL_VALUE"
+  },
+  {
+    "v": "string_value:\"ab\""
+  },
+  {
+    "v": "number_value:1.5"
+  },
+  {
+    "v": "bool_value:true"
+  },
+  {
+    "v": "list_value:{values:{number_value:1} values:{string_value:\"x\"}}"
+  },
+  {
+    "v": "struct_value:{fields:{key:\"a\" value:{number_value:1}} fields:{key:\"b\" value:{number_value:2}}}"
+  }
+]

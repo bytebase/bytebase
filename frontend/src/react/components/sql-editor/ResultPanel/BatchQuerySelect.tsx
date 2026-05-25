@@ -18,6 +18,7 @@ import { cn } from "@/react/lib/utils";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { pushNotification, useDatabaseV1Store, useSQLStore } from "@/store";
+import { isValidDatabaseName } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
@@ -28,6 +29,10 @@ import {
   getInstanceResource,
   hexToRgb,
 } from "@/utils";
+import { buildDownloadBlob, type DownloadGroup } from "@/utils/sql-download";
+import { SQL_ENGINE_QUOTES } from "@/utils/sql-download/engines";
+import { downloadErrorMessage } from "@/utils/sql-download/error-messages";
+import { isDev } from "@/utils/util";
 import { TabContextMenu } from "./ContextMenu";
 import { type CloseTabAction, resultTabEvents } from "./resultTabContext";
 
@@ -84,6 +89,10 @@ export function BatchQuerySelect({
   >(new Set());
 
   const queryDataPolicy = useVueState(() => editorStore.queryDataPolicy);
+  // Editor's per-execution row limit. Used by the dev-path export to infer
+  // probable truncation: `r.rows.length === resultRowsLimit` → query
+  // capped, likely more rows available.
+  const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
 
   // Read the Map's `.keys()` directly inside the Vue getter so Vue's
   // reactivity tracks the iteration. `useVueState(() => tabStore.currentTab)`
@@ -145,6 +154,31 @@ export function BatchQuerySelect({
     [queriedDatabaseNames, databaseStore]
   );
 
+  // Drop SQL from the export drawer when isDev() is active and any
+  // user-SELECTED database's engine can't be rendered as INSERTs. Gating
+  // on the full queried-database set was too conservative (a tab with one
+  // MongoDB + one MySQL would hide SQL even when the user selected only
+  // MySQL). Empty selection shows all formats so the user sees the SQL
+  // option before picking incompatible databases.
+  const supportFormats = useMemo(() => {
+    const all = [
+      ExportFormat.CSV,
+      ExportFormat.JSON,
+      ExportFormat.SQL,
+      ExportFormat.XLSX,
+    ];
+    if (!isDev()) return all;
+    if (selectedDatabaseNames.size === 0) return all;
+    const allSupportSql = Array.from(selectedDatabaseNames).every((name) => {
+      const db = databaseStore.getDatabaseByName(name);
+      if (!isValidDatabaseName(db.name)) return true; // skipped at export time
+      return SQL_ENGINE_QUOTES.has(getInstanceResource(db).engine);
+    });
+    return allSupportSql
+      ? all
+      : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
+  }, [selectedDatabaseNames, databaseStore]);
+
   const handleCloseSingleResultView = (item: BatchQueryItem) => {
     const tab = tabStore.currentTab;
     const contexts = tab?.databaseQueryContexts?.get(item.database.name);
@@ -196,8 +230,112 @@ export function BatchQuerySelect({
   const validateExport = () =>
     selectedDatabaseNames.size > 0 && selectedDatabaseNames.size <= MAX_EXPORT;
 
-  const handleExport = ({ options, resolve }: DataExportRequest) => {
+  const handleExport = ({ options, resolve, reject }: DataExportRequest) => {
     void (async () => {
+      // === Dev path: client-side ZIP via buildDownloadBlob ===
+      if (isDev()) {
+        try {
+          // Stale format guard: drop the export if the user-selected format
+          // is no longer in the (selection-aware) supportFormats list.
+          if (!supportFormats.includes(options.format)) {
+            reject(
+              "The selected format is not supported for the current database selection. Pick a different format."
+            );
+            return;
+          }
+          const tab = tabStore.currentTab;
+          const groups: DownloadGroup[] = [];
+          const limit = options.limit > 0 ? options.limit : Infinity;
+          for (const databaseName of Array.from(selectedDatabaseNames)) {
+            const database = databaseStore.getDatabaseByName(databaseName);
+            // Skip stub-database returns with a WARN toast so the user
+            // knows their selection became stale (tab torn down mid-export).
+            if (!isValidDatabaseName(database.name)) {
+              pushNotification({
+                module: "bytebase",
+                style: "WARN",
+                title: t("sql-editor.batch-export.failed-for-db", {
+                  db: databaseName,
+                }),
+                description:
+                  "Database is no longer available in the current tab.",
+              });
+              continue;
+            }
+            const context = head(tab?.databaseQueryContexts?.get(databaseName));
+            const resultSet = context?.resultSet;
+            const resultError =
+              resultSet?.error ||
+              resultSet?.results.find((r) => r.error)?.error;
+            if (resultError) {
+              pushNotification({
+                module: "bytebase",
+                style: "CRITICAL",
+                title: t("sql-editor.batch-export.failed-for-db", {
+                  db: databaseName,
+                }),
+                description: resultError,
+              });
+              continue;
+            }
+            const results = resultSet?.results ?? [];
+            if (results.length === 0) continue;
+            // Truncation inference using execution-time limit.
+            const executedLimit = context?.params.limit ?? resultRowsLimit;
+            if (
+              options.limit > 0 &&
+              results.some(
+                (r) =>
+                  r.rows.length === executedLimit &&
+                  options.limit > r.rows.length
+              )
+            ) {
+              pushNotification({
+                module: "bytebase",
+                style: "WARN",
+                title: t("sql-editor.batch-export.failed-for-db", {
+                  db: databaseName,
+                }),
+                description: `Export limit ${options.limit} exceeds the executed query's row limit (${executedLimit}); exporting cached rows only.`,
+              });
+            }
+            const { databaseName: dbSeg, instanceName } =
+              extractDatabaseResourceName(database.name);
+            groups.push({
+              instanceId: instanceName,
+              databaseName: dbSeg,
+              engine: getInstanceResource(database).engine,
+              statements: results.map((r) => ({
+                result:
+                  r.rows.length > limit
+                    ? { ...r, rows: r.rows.slice(0, limit) }
+                    : r,
+                statement: r.statement || context?.params.statement || "",
+              })),
+            });
+          }
+          if (groups.length === 0) {
+            reject(t("sql-editor.batch-export.no-results"));
+            return;
+          }
+          const out = await buildDownloadBlob({
+            groups,
+            format: options.format,
+            baseFilename: `batch-export.${dayjs().format(
+              "YYYY-MM-DDTHH-mm-ss"
+            )}`,
+            password: options.password,
+          });
+          const content = new Uint8Array(await out.blob.arrayBuffer());
+          resolve([{ content, filename: out.filename }]);
+          setSelectedDatabaseNames(new Set());
+        } catch (e) {
+          reject(downloadErrorMessage(e, t));
+        }
+        return;
+      }
+
+      // === Prod path: per-database backend Export RPC ===
       const contents: DownloadContent[] = [];
       const tab = tabStore.currentTab;
       for (const databaseName of Array.from(selectedDatabaseNames)) {
@@ -274,12 +412,7 @@ export function BatchQuerySelect({
         <DataExportButton
           size="sm"
           viewMode="DRAWER"
-          supportFormats={[
-            ExportFormat.CSV,
-            ExportFormat.JSON,
-            ExportFormat.SQL,
-            ExportFormat.XLSX,
-          ]}
+          supportFormats={supportFormats}
           supportPassword
           text={t("sql-editor.batch-export.self")}
           tooltip={t("sql-editor.batch-export.tooltip", { max: MAX_EXPORT })}

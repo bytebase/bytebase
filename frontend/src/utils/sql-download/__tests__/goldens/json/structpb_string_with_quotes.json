@@ -1,0 +1,26 @@
+[
+  {
+    "v": "string_value:\"a\\\"b\""
+  },
+  {
+    "v": "string_value:\"a\\\\b\""
+  },
+  {
+    "v": "string_value:\"a\\nb\""
+  },
+  {
+    "v": "string_value:\"a\\tb\""
+  },
+  {
+    "v": "string_value:\"a\\x00b\""
+  },
+  {
+    "v": "string_value:\"a\\u0080b\""
+  },
+  {
+    "v": "string_value:\"a\\u009fb\""
+  },
+  {
+    "v": "struct_value:{fields:{key:\"k\\\"y\" value:{string_value:\"a\\\"b\"}}}"
+  }
+]

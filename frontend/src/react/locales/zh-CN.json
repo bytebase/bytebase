@@ -2692,6 +2692,7 @@
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
+      "no-results": "没有可下载的结果。",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
@@ -2725,6 +2726,9 @@
     "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
+    "download-encryption-failed": "加密下载失败。",
+    "download-failed": "下载失败。",
+    "download-too-large": "结果过大，无法下载。请减少行数或使用导出。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -2815,6 +2819,7 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
+    "sql-download-unavailable": "当前连接不支持 SQL 下载。",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {

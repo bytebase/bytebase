@@ -2361,6 +2361,7 @@
     "and-n-more-databases": "and {n} more databases",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {db}",
+      "no-results": "No hay resultados para descargar.",
       "self": "Exportación por lotes",
       "tooltip": "Seleccione como máximo {max} bases de datos para exportar por lotes los resultados de las últimas consultas"
     },
@@ -2392,6 +2393,9 @@
     "copy-name": "Copiar nombre",
     "copy-url": "Copiar URL",
     "download-as-file": "Descargar como {file}",
+    "download-encryption-failed": "No se pudo cifrar la descarga.",
+    "download-failed": "Error en la descarga.",
+    "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
@@ -2476,6 +2480,7 @@
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "show-in-editor": "Mostrar en el editor",
+    "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión.",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {

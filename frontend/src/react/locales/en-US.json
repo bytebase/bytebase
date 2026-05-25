@@ -2704,6 +2704,7 @@
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "failed-for-db": "Failed to export data for {{db}}",
+      "no-results": "No results to download.",
       "self": "Batch export",
       "tooltip": "Select at most {{max}} databases to batch export latest query results"
     },
@@ -2737,6 +2738,9 @@
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
+    "download-encryption-failed": "Failed to encrypt download.",
+    "download-failed": "Download failed.",
+    "download-too-large": "Result is too large for download. Reduce the row count or use Export.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -2827,6 +2831,7 @@
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "show-in-editor": "Show in Editor",
+    "sql-download-unavailable": "SQL download is unavailable for this connection.",
     "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {

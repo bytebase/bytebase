@@ -2361,6 +2361,7 @@
     "and-n-more-databases": "and {n} more databases",
     "batch-export": {
       "failed-for-db": "{db} のデータのエクスポートに失敗しました",
+      "no-results": "ダウンロードできる結果がありません。",
       "self": "一括エクスポート",
       "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {max} 個のデータベースを選択してください"
     },
@@ -2392,6 +2393,9 @@
     "copy-name": "名前をコピーする",
     "copy-url": "URLをコピー",
     "download-as-file": "{file} 形式でダウンロード",
+    "download-encryption-failed": "ダウンロードの暗号化に失敗しました。",
+    "download-failed": "ダウンロードに失敗しました。",
+    "download-too-large": "ダウンロードするには結果が大きすぎます。行数を減らすか、エクスポートを使用してください。",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
@@ -2476,6 +2480,7 @@
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "show-in-editor": "エディタで表示",
+    "sql-download-unavailable": "この接続では SQL ダウンロードを利用できません。",
     "sync-in-progress": "同期中",
     "tab": {
       "context-menu": {

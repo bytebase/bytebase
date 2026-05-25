@@ -2361,6 +2361,7 @@
     "and-n-more-databases": "and {n} more databases",
     "batch-export": {
       "failed-for-db": "Không xuất được dữ liệu cho {db}",
+      "no-results": "Không có kết quả để tải xuống.",
       "self": "Xuất hàng loạt",
       "tooltip": "Chọn tối đa {max} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
     },
@@ -2392,6 +2393,9 @@
     "copy-name": "Sao chép tên",
     "copy-url": "Sao chép URL",
     "download-as-file": "Tải xuống dưới dạng {file}",
+    "download-encryption-failed": "Không thể mã hóa bản tải xuống.",
+    "download-failed": "Tải xuống thất bại.",
+    "download-too-large": "Kết quả quá lớn để tải xuống. Hãy giảm số dòng hoặc sử dụng Xuất.",
     "duration-day": "{days} day",
     "duration-days": "{days} days",
     "duration-hours": "{hours} hour | {hours} hours",
@@ -2476,6 +2480,7 @@
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "show-in-editor": "Hiển thị trong trình soạn thảo",
+    "sql-download-unavailable": "Tải xuống SQL không khả dụng cho kết nối này.",
     "sync-in-progress": "Đang đồng bộ",
     "tab": {
       "context-menu": {

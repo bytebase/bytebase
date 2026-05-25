@@ -3,6 +3,7 @@ package export
 import (
 	"encoding/hex"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -126,10 +127,16 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 		result = append(result, '"')
 		return result
 	case *structpb.Value_StructValue:
+		fields := value.GetStructValue().Fields
+		keys := make([]string, 0, len(fields))
+		for k := range fields {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
 		first := true
 		var buf []byte
 		buf = append(buf, '"')
-		for k, v := range value.GetStructValue().Fields {
+		for _, k := range keys {
 			if first {
 				first = false
 			} else {
@@ -137,7 +144,7 @@ func convertValueValueToBytes(value *structpb.Value) []byte {
 			}
 			buf = append(buf, []byte(k)...)
 			buf = append(buf, ':')
-			buf = append(buf, convertValueValueToBytes(v)...)
+			buf = append(buf, convertValueValueToBytes(fields[k])...)
 		}
 		buf = append(buf, '"')
 		return buf

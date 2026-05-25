@@ -1,0 +1,1 @@
+INSERT INTO "<table_name>" ("x","y") VALUES (NULL,NULL);

@@ -1,0 +1,3 @@
+INSERT INTO `<table_name>` (`ts`,`tstz`) VALUES ('1970-01-01 00:00:00.000000','1970-01-01T00:00:00Z');
+INSERT INTO `<table_name>` (`ts`,`tstz`) VALUES ('2023-11-14 22:13:20.123456','2023-11-15T07:13:20.5+09:00');
+INSERT INTO `<table_name>` (`ts`,`tstz`) VALUES ('2023-11-14 22:13:20.123456','2023-11-14T15:13:20-07:00');
