@@ -313,6 +313,90 @@ where a.reviewer_by in ('****** ', '******')
 	mustHaveExactSource(t, span.Results[7], "compliance_cases", "case_info")
 }
 
+func TestLoaderIntegration_MultipleCTEsWithLateralJoinKeepsJSONBLineage(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{{
+				Name: "ai_conversation",
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "id", Type: "text"},
+					{Name: "parts", Type: "jsonb"},
+				},
+			}},
+		}},
+	}
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{
+			name: "single_cte",
+			sql: `
+WITH convs AS (
+  SELECT ac.id, ac.parts AS conv_parts
+  FROM ai_conversation ac
+  LIMIT 1
+)
+SELECT
+  LEFT(
+    COALESCE(
+      (SELECT string_agg(v::text, ' ')
+       FROM jsonb_array_elements_text(
+         jsonb_path_query_array(t.part->'bodyData', 'strict $.**.text', '{}'::jsonb, true)
+       ) AS v),
+      '<no text>'
+    ),
+    2000
+  ) AS content
+FROM convs c
+CROSS JOIN LATERAL jsonb_array_elements(c.conv_parts) WITH ORDINALITY AS t(part, part_ord)
+WHERE t.part->>'type' IN ('prompt', 'text');
+`,
+		},
+		{
+			name: "multiple_ctes",
+			sql: `
+WITH cte1 AS (
+  SELECT ac.id, ac.parts AS conv_parts
+  FROM ai_conversation ac
+  LIMIT 1
+),
+cte2 AS (
+  SELECT id, conv_parts
+  FROM cte1
+)
+SELECT
+  LEFT(
+    COALESCE(
+      (SELECT string_agg(v::text, ' ')
+       FROM jsonb_array_elements_text(
+         jsonb_path_query_array(t.part->'bodyData', 'strict $.**.text', '{}'::jsonb, true)
+       ) AS v),
+      '<no text>'
+    ),
+    2000
+  ) AS content
+FROM cte2 c
+CROSS JOIN LATERAL jsonb_array_elements(c.conv_parts) WITH ORDINALITY AS t(part, part_ord)
+WHERE t.part->>'type' IN ('prompt', 'text');
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := mustGetQuerySpan(t, meta, tt.sql)
+			if len(span.Results) != 1 {
+				t.Fatalf("got %d results, want 1", len(span.Results))
+			}
+			mustHaveExactSource(t, span.Results[0], "ai_conversation", "parts")
+		})
+	}
+}
+
 func TestAppendQueryDoesNotMutateSharedStack(t *testing.T) {
 	outer := &catalog.Query{}
 	parent := &catalog.Query{}

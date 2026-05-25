@@ -799,12 +799,9 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 		}
 
 	case catalog.RTECTE:
-		if rte.CTEIndex >= 0 && rte.CTEIndex < len(q.CTEList) {
-			cte := q.CTEList[rte.CTEIndex]
-			if cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
-				te := cte.Query.TargetList[colIdx]
-				e.walkExprWithVisited(appendQuery(effectiveStack, cte.Query), te.Expr, result, visited)
-			}
+		if cte := findCTEForRangeTableEntry(effectiveStack, rte); cte != nil && cte.Query != nil && colIdx >= 0 && colIdx < len(cte.Query.TargetList) {
+			te := cte.Query.TargetList[colIdx]
+			e.walkExprWithVisited(appendQuery(effectiveStack, cte.Query), te.Expr, result, visited)
 		}
 
 	case catalog.RTEJoin:
@@ -834,6 +831,29 @@ func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *cata
 	default:
 		// Unknown RTE kind — skip.
 	}
+}
+
+func findCTEForRangeTableEntry(queryStack []*catalog.Query, rte *catalog.RangeTableEntry) *catalog.CommonTableExprQ {
+	if len(queryStack) == 0 || rte == nil {
+		return nil
+	}
+
+	current := currentQuery(queryStack)
+	if current != nil && rte.CTEIndex >= 0 && rte.CTEIndex < len(current.CTEList) {
+		return current.CTEList[rte.CTEIndex]
+	}
+
+	if rte.CTEName == "" {
+		return nil
+	}
+	for i := len(queryStack) - 1; i >= 0; i-- {
+		for _, cte := range queryStack[i].CTEList {
+			if strings.EqualFold(cte.Name, rte.CTEName) {
+				return cte
+			}
+		}
+	}
+	return nil
 }
 
 // extractFallbackColumns attempts to extract column names and lineage from the parse tree
