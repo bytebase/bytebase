@@ -132,6 +132,51 @@ func TestGetQuerySpanStaleMetadataReturnsNotFoundError(t *testing.T) {
 	a.True(foundTable, "span.SourceColumns must reference the FROM table for resync to target the right database")
 }
 
+// When the referenced table is missing from cached metadata, accessTables is
+// empty; SourceColumns must still expose a sync target so resync+retry can run.
+func TestGetQuerySpanMissingTableFallsBackToNotFoundDatabase(t *testing.T) {
+	a := require.New(t)
+
+	// Metadata is missing the table entirely.
+	staleMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "cif",
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "", Tables: []*storepb.TableMetadata{}},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+
+	span, err := GetQuerySpan(
+		context.TODO(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNamesLister,
+		},
+		base.Statement{Text: "SELECT name FROM byt9385_caseB"},
+		"cif",
+		"",
+		false,
+	)
+	a.NoError(err)
+	a.NotNil(span)
+	a.NotNil(span.NotFoundError, "missing-table case must populate span.NotFoundError")
+
+	var resourceNotFound *base.ResourceNotFoundError
+	a.True(errors.As(span.NotFoundError, &resourceNotFound))
+	a.NotNil(resourceNotFound.Table)
+	a.Equal("byt9385_caseB", *resourceNotFound.Table)
+
+	a.NotEmpty(span.SourceColumns, "SourceColumns must not be empty — sql_service iterates it to build the resync target list")
+	foundDatabase := false
+	for k := range span.SourceColumns {
+		if k.Database == "cif" {
+			foundDatabase = true
+			break
+		}
+	}
+	a.True(foundDatabase, "resync target must reference the database where the missing table lives")
+}
+
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)

@@ -77,10 +77,19 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		// Surface ResourceNotFoundError on the span so the SQL service can resync stale metadata and retry.
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
+			sourceColumns := accessTables
+			// getAccessTables drops tables not yet in cached metadata, so for an
+			// out-of-band CREATE TABLE the set is empty. Fall back to the
+			// not-found resource itself so the resync loop has a target.
+			if len(sourceColumns) == 0 {
+				sourceColumns = base.SourceColumnSet{
+					notFoundSyncTarget(resourceNotFound, q.defaultDatabase): true,
+				}
+			}
 			return &base.QuerySpan{
 				Type:          queryType,
 				Results:       []base.QuerySpanResult{},
-				SourceColumns: accessTables,
+				SourceColumns: sourceColumns,
 				NotFoundError: resourceNotFound,
 			}, nil
 		}
@@ -99,6 +108,24 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		Results:       tableSource.GetQuerySpanResult(),
 		SourceColumns: accessTables,
 	}, nil
+}
+
+// notFoundSyncTarget derives a sync target for the resync loop, falling back to defaultDatabase when the error lacks one.
+func notFoundSyncTarget(e *base.ResourceNotFoundError, defaultDatabase string) base.ColumnResource {
+	r := base.ColumnResource{Database: defaultDatabase}
+	if e.Database != nil && *e.Database != "" {
+		r.Database = *e.Database
+	}
+	if e.Schema != nil {
+		r.Schema = *e.Schema
+	}
+	if e.Table != nil {
+		r.Table = *e.Table
+	}
+	if e.Column != nil {
+		r.Column = *e.Column
+	}
+	return r
 }
 
 func skipQuerySpan(node tidbast.Node, queryType base.QueryType) bool {
