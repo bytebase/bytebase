@@ -77,12 +77,17 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		// Surface ResourceNotFoundError on the span so the SQL service can resync stale metadata and retry.
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
-			// Union the not-found target into SourceColumns so the pre-execute ACL check sees the missing resource (the check isn't rerun after resync+retry).
 			sourceColumns := make(base.SourceColumnSet, len(accessTables)+1)
 			for k := range accessTables {
 				sourceColumns[k] = true
 			}
-			sourceColumns[notFoundSyncTarget(resourceNotFound, q.defaultDatabase)] = true
+			// Add the not-found target only when it carries a distinct ACL/resync anchor.
+			// For unqualified column-not-found, target.Table is empty and the FROM tables
+			// in accessTables already provide the right table-level ACL keys, so skip.
+			target := notFoundSyncTarget(resourceNotFound, q.defaultDatabase)
+			if len(sourceColumns) == 0 || target.Table != "" {
+				sourceColumns[target] = true
+			}
 			return &base.QuerySpan{
 				Type:          queryType,
 				Results:       []base.QuerySpanResult{},

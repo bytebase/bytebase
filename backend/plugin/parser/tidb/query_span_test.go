@@ -126,8 +126,11 @@ func TestGetQuerySpanStaleMetadataReturnsNotFoundError(t *testing.T) {
 	for k := range span.SourceColumns {
 		if k.Database == "cif" && k.Table == "byt9385_repro" {
 			foundTable = true
-			break
 		}
+		// optionalAccessCheck validates every SourceColumns entry against table-scoped
+		// CEL policies; a synthesized table-less entry would deny least-privilege users
+		// on the recovery path even when the FROM table is already authorized.
+		a.NotEmpty(k.Table, "SourceColumns must not contain table-less entries when the FROM table is known: got %+v", k)
 	}
 	a.True(foundTable, "span.SourceColumns must reference the FROM table for resync to target the right database")
 }
