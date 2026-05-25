@@ -1,5 +1,5 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentBadge } from "@/react/components/EnvironmentLabel";
@@ -143,29 +143,37 @@ export function DatabaseTableView({
     }
   };
 
-  // Stable per-name toggler that the memoized row uses. Reads
-  // `selectedNames` via the closure of THIS render — fine because the
-  // returned callback is passed via a ref to the row (see `selectionRef`
-  // below), so the row itself doesn't re-render when this closure changes.
-  const toggleSelection = useCallback(
-    (name: string) => {
-      if (!selectedNames || !onSelectedNamesChange) return;
-      const next = new Set(selectedNames);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      onSelectedNamesChange(next);
-    },
-    [selectedNames, onSelectedNamesChange]
-  );
+  // Refs so per-row handlers stay referentially stable across selection
+  // changes — without this, every selection toggle re-creates the closure
+  // and `React.memo` on `DatabaseRowView` is defeated for every row.
+  const selectedNamesRef = useRef(selectedNames);
+  selectedNamesRef.current = selectedNames;
+  const onSelectedNamesChangeRef = useRef(onSelectedNamesChange);
+  onSelectedNamesChangeRef.current = onSelectedNamesChange;
+  const databasesRef = useRef(databases);
+  databasesRef.current = databases;
+
+  const toggleSelection = useCallback((name: string) => {
+    const current = selectedNamesRef.current;
+    const cb = onSelectedNamesChangeRef.current;
+    if (!current || !cb) return;
+    const next = new Set(current);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    cb(next);
+  }, []);
 
   const toggleSelectAll = useCallback(() => {
-    if (!selectedNames || !onSelectedNamesChange) return;
-    if (selectedNames.size === databases.length) {
-      onSelectedNamesChange(new Set());
+    const current = selectedNamesRef.current;
+    const cb = onSelectedNamesChangeRef.current;
+    const dbs = databasesRef.current;
+    if (!current || !cb) return;
+    if (current.size === dbs.length) {
+      cb(new Set());
     } else {
-      onSelectedNamesChange(new Set(databases.map((db) => db.name)));
+      cb(new Set(dbs.map((db) => db.name)));
     }
-  }, [selectedNames, onSelectedNamesChange, databases]);
+  }, []);
 
   const allSelected =
     databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
