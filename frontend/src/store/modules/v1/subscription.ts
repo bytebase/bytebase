@@ -312,8 +312,8 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", () => {
     return response.paymentUrl;
   };
 
-  const cancelPurchase = async () => {
-    const request = create(CancelPurchaseRequestSchema, {});
+  const cancelPurchase = async (feedback: string, comment: string) => {
+    const request = create(CancelPurchaseRequestSchema, { feedback, comment });
     await subscriptionServiceClientConnect.cancelPurchase(request);
     await fetchSubscription();
   };

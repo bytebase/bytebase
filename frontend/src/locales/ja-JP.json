@@ -2610,7 +2610,16 @@
       "and": "および",
       "billing-period": "請求期間",
       "cancel": "サブスクリプションをキャンセル",
-      "cancel-confirm": "サブスクリプションをキャンセルしてもよろしいですか？",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {},
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "サブスクリプションはキャンセル済みで、{date} に終了します。",
       "canceled": "サブスクリプションがキャンセルされました",
       "custom": "カスタム",

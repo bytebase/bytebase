@@ -26,6 +26,7 @@ const DYNAMIC_PREFIXES = [
   "sql-review.rule.",
   "sql-review.template.",
   "subscription.plan.",
+  "subscription.purchase.cancel-dialog.reason.",
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",

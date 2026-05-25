@@ -232,7 +232,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check subscription"))
 	}
 	if sub != nil && sub.Payload != nil && sub.Payload.StripeSubscriptionId != "" {
-		if _, err := stripeplugin.CancelSubscription(sub.Payload.StripeSubscriptionId, workspaceID, true); err != nil {
+		if _, err := stripeplugin.CancelSubscription(sub.Payload.StripeSubscriptionId, workspaceID, true, "other", "Delete workspace"); err != nil {
 			slog.Warn("failed to cancel Stripe subscription during workspace deletion",
 				slog.String("workspace", workspaceID),
 				log.BBError(err),

@@ -2610,7 +2610,16 @@
       "and": "和",
       "billing-period": "账单周期",
       "cancel": "取消订阅",
-      "cancel-confirm": "确定要取消订阅吗？",
+      "cancel-dialog": {
+        "comment-label": "还有什么想告诉我们的吗？（可选）",
+        "comment-placeholder": "告诉我们更多以便我们改进...",
+        "confirm": "确认取消",
+        "description": "很遗憾看到您离开。您的反馈将帮助我们改进。",
+        "keep": "保留订阅",
+        "reason": {},
+        "reason-label": "您为什么要取消？（必填）",
+        "title": "取消您的订阅"
+      },
       "cancel-pending": "您的订阅已取消，将于 {date} 到期。",
       "canceled": "订阅已取消",
       "custom": "自定义",

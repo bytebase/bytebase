@@ -2610,7 +2610,16 @@
       "and": "và",
       "billing-period": "Kỳ thanh toán",
       "cancel": "Hủy đăng ký",
-      "cancel-confirm": "Bạn có chắc chắn muốn hủy đăng ký không?",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {},
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {date}.",
       "canceled": "Đã hủy đăng ký",
       "custom": "Tùy chỉnh",

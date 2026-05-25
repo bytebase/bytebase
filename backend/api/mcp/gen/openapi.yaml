@@ -9172,6 +9172,19 @@ components:
       additionalProperties: false
     bytebase.v1.CancelPurchaseRequest:
       type: object
+      properties:
+        feedback:
+          type: string
+          title: feedback
+          description: |-
+            Reason the customer is canceling. Maps to Stripe's cancellation_details.feedback.
+             Valid Stripe values: "customer_service", "low_quality", "missing_features",
+             "switched_service", "too_complex", "too_expensive", "unused", "other".
+             Required.
+        comment:
+          type: string
+          title: comment
+          description: Optional free-form comment. Max 500 chars (Stripe limit).
       title: CancelPurchaseRequest
       additionalProperties: false
     bytebase.v1.Changelog:
