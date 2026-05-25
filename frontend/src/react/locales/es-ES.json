@@ -903,10 +903,8 @@
   },
   "db.catalog.description": "Editar y cargar el catálogo de tablas.",
   "db.failed-to-sync-schema": "No se pudo sincronizar el esquema",
-  "db.failed-to-sync-schema-for-database-database-value-name": "Error al sincronizar el esquema para la base de datos '{{0}}'.",
   "db.n-databases-had-sync-errors": "{{0}} base(s) de datos tuvieron errores de sincronización",
   "db.start-to-sync-schema": "Comenzar a sincronizar el esquema",
-  "db.successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado exitosamente para la base de datos '{{0}}'.",
   "db.syncing-databases-for-instance": "Sincronizando bases de datos para {{0}}...",
   "environment": {
     "delete-description": "Eliminar el entorno también lo eliminará de las instancias y bases de datos relacionadas. No se puede deshacer esta acción",

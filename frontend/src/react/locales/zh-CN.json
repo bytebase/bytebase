@@ -903,10 +903,8 @@
   },
   "db.catalog.description": "编辑并上传表的 Catalog",
   "db.failed-to-sync-schema": "同步 schema 失败",
-  "db.failed-to-sync-schema-for-database-database-value-name": "为数据库 '{{0}}' 同步 schema 失败。",
   "db.n-databases-had-sync-errors": "{{0}} 个数据库同步出错",
   "db.start-to-sync-schema": "开始同步 schema",
-  "db.successfully-synced-schema-for-database-database-value-name": "成功为数据库 '{{0}}' 同步 schema。",
   "db.syncing-databases-for-instance": "正在同步 {{0}} 的数据库...",
   "environment": {
     "delete-description": "删除环境也会将其从相关实例和数据库中删除。这个操作无法撤销",

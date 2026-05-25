@@ -45,7 +45,7 @@ export function DatabaseSyncButton({
         title: t(
           "db.successfully-synced-schema-for-database-database-value-name",
           {
-            0: extractDatabaseName(database.name),
+            name: extractDatabaseName(database.name),
           }
         ),
       });
@@ -54,7 +54,7 @@ export function DatabaseSyncButton({
         module: "bytebase",
         style: "CRITICAL",
         title: t("db.failed-to-sync-schema-for-database-database-value-name", {
-          0: extractDatabaseName(database.name),
+          name: extractDatabaseName(database.name),
         }),
         description: (error as ConnectError).message,
       });
