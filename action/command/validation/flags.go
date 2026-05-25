@@ -40,10 +40,16 @@ func ValidateFlags(w *world.World) error {
 		}
 	}
 
-	// Validate URL format
+	// Validate URL: must be a non-empty absolute URL.
+	if w.URL == "" {
+		return errors.Errorf("--url is required")
+	}
 	u, err := url.Parse(w.URL)
 	if err != nil {
 		return errors.Wrapf(err, "invalid URL format: %s", w.URL)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return errors.Errorf("--url must be an absolute URL (e.g. https://bytebase.example.com), got %q", w.URL)
 	}
 	w.URL = strings.TrimSuffix(u.String(), "/") // update the URL to the canonical form
 

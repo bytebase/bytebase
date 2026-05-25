@@ -77,6 +77,12 @@ export class BytebaseApiClient {
     await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
   }
 
+  // Installs an enterprise license JWT. The JWT must be signed by Bytebase's
+  // license RSA key — generate it out of band; this client only uploads it.
+  async uploadLicense(license: string): Promise<void> {
+    await this.request<unknown>("PATCH", "/v1/subscription/license", { license });
+  }
+
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");

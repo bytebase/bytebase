@@ -196,6 +196,21 @@ export async function startServer(): Promise<{
   // Signup sets cookies only; this api-client uses bearer tokens.
   await api.login(ADMIN_EMAIL, ADMIN_PASSWORD);
 
+  // Phase 3b: Install an enterprise license if one was provided via
+  // BYTEBASE_E2E_LICENSE. Specs that exercise gated features (masking,
+  // classification) require this; without it those suites will fail on
+  // free-plan errors. See frontend/tests/e2e/AGENTS.md for how to obtain
+  // a dev license.
+  const license = process.env.BYTEBASE_E2E_LICENSE?.trim();
+  if (license) {
+    await api.uploadLicense(license);
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[e2e bootstrap] BYTEBASE_E2E_LICENSE not set — workspace will run on the free plan. Enterprise-gated specs (masking, classification) will fail."
+    );
+  }
+
   // Phase 4: Provision the sample project + instances on PORT+3 / PORT+4.
   // SetupSample is async on the server but returns immediately; sample
   // Postgres instances come up shortly after.

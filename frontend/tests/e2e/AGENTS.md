@@ -145,7 +145,7 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 ## Known Constraints
 
 - **Sample-data bootstrap**: tests run against data provisioned by `SetupSample` (called from `globalSetup`). The two sample Postgres instances (`test-sample-instance`, `prod-sample-instance`) come up on `PORT+3` / `PORT+4`.
-- **Free plan by default**: the freshly signed-up workspace has no enterprise license. Specs that exercise gated features (masking, masking exemptions, classification, etc.) must inject a license first. To do so, PATCH `/v1/subscription/license` with a JWT signed by Bytebase's license RSA key — set the key via `LICENSE_PRIVATE_KEY` when running the server. The key is not stored in this repo; see Bytebase ops for a dev/test license.
+- **Free plan by default**: the freshly signed-up workspace has no enterprise license. Specs that exercise gated features (masking, masking exemptions, classification, etc.) need one. Set `BYTEBASE_E2E_LICENSE` to a license JWT before running and `globalSetup` will install it via `PATCH /v1/subscription/license`. The JWT must be signed by Bytebase's license RSA key — not stored in this repo; ask Bytebase ops for a dev/test license. Without the env var, the bootstrap logs a warning and continues on the free plan; enterprise-gated specs will fail.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
