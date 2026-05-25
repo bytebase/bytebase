@@ -104,6 +104,27 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	a.Len(queryResp.Msg.Results[0].Rows, 1)
 	a.Equal("Bytebase", queryResp.Msg.Results[0].Rows[0].Values[0].GetStringValue())
 
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
+		Parent: common.FormatWorkspace(common.GetWorkspaceIDFromContext(ctx)),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DATA_QUERY,
+			Policy: &v1pb.Policy_QueryDataPolicy{
+				QueryDataPolicy: &v1pb.QueryDataPolicy{
+					AllowAdminDataSource: true,
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	queryResp, err = ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "INSERT INTO books VALUES (2, 'Bytebase Admin');",
+	}))
+	a.NoError(err)
+	a.Len(queryResp.Msg.Results, 1)
+	a.Empty(queryResp.Msg.Results[0].Error)
+
 	instanceID, err := common.GetInstanceID(instance.Name)
 	a.NoError(err)
 	stores := getStore(t, ctl.server)

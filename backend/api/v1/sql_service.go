@@ -250,7 +250,14 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
+	queryDataPolicy := getEffectiveQueryDataPolicy(
+		ctx,
+		s.store,
+		s.licenseService,
+		0,
+		database.ProjectID,
+	)
+	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
 	if err != nil {
 		return nil, err
 	}
@@ -878,7 +885,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		}
 	}
 
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
+	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId, statement, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1785,7 +1792,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (string, error) {
+func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string, statement string, allowAdminDataSource bool) (string, error) {
 	if dataSourceID != "" {
 		return dataSourceID, nil
 	}
@@ -1804,6 +1811,10 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (
 		}
 	}
 
+	if allowAdminDataSource && adminDataSourceID != "" && requiresAdminDataSource(instance.Metadata.GetEngine(), statement) {
+		return adminDataSourceID, nil
+	}
+
 	switch {
 	case readOnlyCount == 1:
 		return readOnlyDataSourceID, nil
@@ -1814,6 +1825,11 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (
 	default:
 		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("instance has no admin data source"))
 	}
+}
+
+func requiresAdminDataSource(engine storepb.Engine, statement string) bool {
+	readOnly, _, err := parserbase.ValidateSQLForEditor(engine, statement)
+	return err == nil && !readOnly
 }
 
 func checkAndGetDataSourceQueriable(
