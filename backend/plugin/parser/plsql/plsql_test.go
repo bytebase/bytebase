@@ -128,21 +128,20 @@ func TestParsePLSQLStatementsOmniFirst(t *testing.T) {
 }
 
 func TestParsePLSQLStatementsFallsBackToANTLR(t *testing.T) {
+	// The second statement exercises a CREATE TRIGGER with a REFERENCING
+	// OLD/NEW clause — currently rejected by omni-oracle's parser but
+	// accepted by ANTLR, so dispatch must fall back. If omni-oracle later
+	// adds REFERENCING support, swap this for another omni-rejected
+	// statement to preserve the fallback path's coverage.
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT * FROM T;
-CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
-(
-  TXN_DATE  DATE,
-  USERID    VARCHAR2(100),
-  CUSTID    VARCHAR2(100),
-  SCREENID  VARCHAR2(500),
-  EVENTTIME DATE,
-  STATUS    NUMBER
-)
-PARTITION BY RANGE (TXN_DATE)
-INTERVAL (NUMTODSINTERVAL(1,'DAY'))
-(
-  PARTITION P0 VALUES LESS THAN (DATE '2026-01-01')
-);`)
+CREATE OR REPLACE TRIGGER trg
+BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
+REFERENCING OLD AS o NEW AS n
+FOR EACH ROW
+WHEN (n.col1 > 0)
+BEGIN
+  :n.col2 := :o.col2 + 1;
+END;`)
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 
