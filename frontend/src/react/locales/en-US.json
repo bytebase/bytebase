@@ -3680,7 +3680,25 @@
       "and": "and",
       "billing-period": "Billing Period",
       "cancel": "Cancel Subscription",
-      "cancel-confirm": "Are you sure you want to cancel your subscription?",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {
+          "customer-service": "Customer service issues",
+          "low-quality": "Quality didn't meet expectations",
+          "missing-features": "Missing features I need",
+          "other": "Other reason",
+          "switched-service": "Switched to a different product",
+          "too-complex": "Too complex to use",
+          "too-expensive": "Too expensive",
+          "unused": "Not using it enough"
+        },
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "Your subscription has been canceled and will end on {{date}}.",
       "canceled": "Subscription canceled",
       "custom": "Custom",

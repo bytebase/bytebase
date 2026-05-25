@@ -841,7 +841,14 @@ func (x *UpdatePurchaseRequest) GetEtag() string {
 }
 
 type CancelPurchaseRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Reason the customer is canceling. Maps to Stripe's cancellation_details.feedback.
+	// Valid Stripe values: "customer_service", "low_quality", "missing_features",
+	// "switched_service", "too_complex", "too_expensive", "unused", "other".
+	// Required.
+	Feedback string `protobuf:"bytes,1,opt,name=feedback,proto3" json:"feedback,omitempty"`
+	// Optional free-form comment. Max 500 chars (Stripe limit).
+	Comment       string `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -874,6 +881,20 @@ func (x *CancelPurchaseRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CancelPurchaseRequest.ProtoReflect.Descriptor instead.
 func (*CancelPurchaseRequest) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CancelPurchaseRequest) GetFeedback() string {
+	if x != nil {
+		return x.Feedback
+	}
+	return ""
+}
+
+func (x *CancelPurchaseRequest) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
 }
 
 type GetPaymentInfoRequest struct {
@@ -1586,8 +1607,10 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04plan\x128\n" +
 	"\binterval\x18\x02 \x01(\x0e2\x1c.bytebase.v1.BillingIntervalR\binterval\x12\x14\n" +
 	"\x05seats\x18\x03 \x01(\x05R\x05seats\x12\x12\n" +
-	"\x04etag\x18\x04 \x01(\tR\x04etag\"\x17\n" +
-	"\x15CancelPurchaseRequest\"\x17\n" +
+	"\x04etag\x18\x04 \x01(\tR\x04etag\"M\n" +
+	"\x15CancelPurchaseRequest\x12\x1a\n" +
+	"\bfeedback\x18\x01 \x01(\tR\bfeedback\x12\x18\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\x17\n" +
 	"\x15GetPaymentInfoRequest\"\xde\x01\n" +
 	"\vPaymentInfo\x12\x1f\n" +
 	"\vtotal_price\x18\x01 \x01(\tR\n" +

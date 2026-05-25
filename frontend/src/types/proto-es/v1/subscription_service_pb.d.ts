@@ -160,6 +160,22 @@ export declare const UpdatePurchaseRequestSchema: GenMessage<UpdatePurchaseReque
  * @generated from message bytebase.v1.CancelPurchaseRequest
  */
 export declare type CancelPurchaseRequest = Message<"bytebase.v1.CancelPurchaseRequest"> & {
+  /**
+   * Reason the customer is canceling. Maps to Stripe's cancellation_details.feedback.
+   * Valid Stripe values: "customer_service", "low_quality", "missing_features",
+   * "switched_service", "too_complex", "too_expensive", "unused", "other".
+   * Required.
+   *
+   * @generated from field: string feedback = 1;
+   */
+  feedback: string;
+
+  /**
+   * Optional free-form comment. Max 500 chars (Stripe limit).
+   *
+   * @generated from field: string comment = 2;
+   */
+  comment: string;
 };
 
 /**

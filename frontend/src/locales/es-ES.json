@@ -2610,7 +2610,6 @@
       "and": "y",
       "billing-period": "Período de facturación",
       "cancel": "Cancelar suscripción",
-      "cancel-confirm": "¿Está seguro de que desea cancelar su suscripción?",
       "cancel-pending": "Su suscripción ha sido cancelada y finalizará el {date}.",
       "canceled": "Suscripción cancelada",
       "custom": "Personalizado",

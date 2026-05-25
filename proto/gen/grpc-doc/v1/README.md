@@ -11093,6 +11093,12 @@ SheetService manages SQL scripts and saved queries.
 
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| feedback | [string](#string) |  | Reason the customer is canceling. Maps to Stripe&#39;s cancellation_details.feedback. Valid Stripe values: &#34;customer_service&#34;, &#34;low_quality&#34;, &#34;missing_features&#34;, &#34;switched_service&#34;, &#34;too_complex&#34;, &#34;too_expensive&#34;, &#34;unused&#34;, &#34;other&#34;. Required. |
+| comment | [string](#string) |  | Optional free-form comment. Max 500 chars (Stripe limit). |
+
+
 
 
 

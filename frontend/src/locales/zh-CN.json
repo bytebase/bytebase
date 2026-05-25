@@ -2610,7 +2610,6 @@
       "and": "和",
       "billing-period": "账单周期",
       "cancel": "取消订阅",
-      "cancel-confirm": "确定要取消订阅吗？",
       "cancel-pending": "您的订阅已取消，将于 {date} 到期。",
       "canceled": "订阅已取消",
       "custom": "自定义",

@@ -2610,7 +2610,6 @@
       "and": "and",
       "billing-period": "Billing Period",
       "cancel": "Cancel Subscription",
-      "cancel-confirm": "Are you sure you want to cancel your subscription?",
       "cancel-pending": "Your subscription has been canceled and will end on {date}.",
       "canceled": "Subscription canceled",
       "custom": "Custom",

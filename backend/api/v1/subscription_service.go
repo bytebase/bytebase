@@ -155,7 +155,8 @@ func (s *SubscriptionService) UpdatePurchase(ctx context.Context, req *connect.R
 
 	// Cancel old subscription. The webhook may briefly set status=CANCELED,
 	// but the invoice.paid from the new subscription will upsert back to ACTIVE.
-	if _, err := stripeplugin.CancelSubscription(oldPayload.StripeSubscriptionId, workspaceID, true); err != nil {
+	// No cancellation feedback — this is an internal plan-switch, not a user-initiated cancel.
+	if _, err := stripeplugin.CancelSubscription(oldPayload.StripeSubscriptionId, workspaceID, true, "", ""); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel old subscription"))
 	}
 
@@ -208,9 +209,20 @@ func (s *SubscriptionService) createCheckout(workspaceID string, v1Plan v1pb.Pla
 }
 
 // CancelPurchase cancels an active subscription (SaaS only).
-func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.PurchaseResponse], error) {
+func (s *SubscriptionService) CancelPurchase(ctx context.Context, req *connect.Request[v1pb.CancelPurchaseRequest]) (*connect.Response[v1pb.PurchaseResponse], error) {
 	if !s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("purchase is only available in SaaS mode"))
+	}
+
+	feedback := req.Msg.Feedback
+	if feedback == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("feedback is required"))
+	}
+	// Silently truncate to Stripe's 500-char limit; the frontend already enforces this.
+	// Slice by runes (not bytes) so multibyte characters (CJK etc.) aren't split mid-codepoint.
+	comment := req.Msg.Comment
+	if runes := []rune(comment); len(runes) > 500 {
+		comment = string(runes[:500])
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
@@ -231,7 +243,7 @@ func (s *SubscriptionService) CancelPurchase(ctx context.Context, _ *connect.Req
 	// Monthly: immediate cancel with proration + refund.
 	// Annual: cancel at period end.
 	prorate := payload.Interval == storepb.SubscriptionPayload_MONTH
-	if _, err := stripeplugin.CancelSubscription(payload.StripeSubscriptionId, workspaceID, prorate); err != nil {
+	if _, err := stripeplugin.CancelSubscription(payload.StripeSubscriptionId, workspaceID, prorate, feedback, comment); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel subscription"))
 	}
 
