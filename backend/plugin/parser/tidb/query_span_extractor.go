@@ -74,6 +74,16 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	tableSource, err := q.extractTableSourceFromNode(node)
 	if err != nil {
+		// Surface ResourceNotFoundError on the span so the SQL service can resync stale metadata and retry.
+		var resourceNotFound *base.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return &base.QuerySpan{
+				Type:          queryType,
+				Results:       []base.QuerySpanResult{},
+				SourceColumns: accessTables,
+				NotFoundError: resourceNotFound,
+			}, nil
+		}
 		return nil, err
 	}
 	if tableSource == nil {

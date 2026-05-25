@@ -74,6 +74,64 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
+// When a referenced column is missing from cached metadata, the extractor must
+// surface ResourceNotFoundError on the span (not as a top-level error) so the
+// SQL service's resync+retry path can recover.
+func TestGetQuerySpanStaleMetadataReturnsNotFoundError(t *testing.T) {
+	a := require.New(t)
+
+	// Metadata omits distribute_level to mimic a stale cache after out-of-band ALTER TABLE ADD COLUMN.
+	staleMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "cif",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "byt9385_repro",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id"},
+							{Name: "existing_col"},
+							{Name: "create_time"},
+						},
+					},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+
+	span, err := GetQuerySpan(
+		context.TODO(),
+		base.GetQuerySpanContext{
+			GetDatabaseMetadataFunc: databaseMetadataGetter,
+			ListDatabaseNamesFunc:   databaseNamesLister,
+		},
+		base.Statement{Text: "SELECT distribute_level FROM byt9385_repro ORDER BY create_time DESC"},
+		"cif",
+		"",
+		false,
+	)
+	a.NoError(err, "expected stale-metadata case to return a span, not a wrapped error")
+	a.NotNil(span)
+	a.NotNil(span.NotFoundError, "stale-metadata case must populate span.NotFoundError so sql_service can resync+retry")
+
+	var resourceNotFound *base.ResourceNotFoundError
+	a.True(errors.As(span.NotFoundError, &resourceNotFound))
+	a.NotNil(resourceNotFound.Column)
+	a.Equal("distribute_level", *resourceNotFound.Column)
+
+	// SourceColumns must reference the FROM table so sql_service knows which database to resync.
+	foundTable := false
+	for k := range span.SourceColumns {
+		if k.Database == "cif" && k.Table == "byt9385_repro" {
+			foundTable = true
+			break
+		}
+	}
+	a.True(foundTable, "span.SourceColumns must reference the FROM table for resync to target the right database")
+}
+
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
