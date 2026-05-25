@@ -50,12 +50,4 @@ jobs:
             exit 1
           fi
       - name: golangci-lint
-        run: |
-          while true; do
-            sleep 60
-            echo "golangci-lint is still running..."
-          done &
-          heartbeat_pid=$!
-          trap 'kill "$heartbeat_pid" 2>/dev/null || true' EXIT
-
-          golangci-lint run --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
+        run: golangci-lint run --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
