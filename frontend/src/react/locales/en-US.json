@@ -2703,6 +2703,7 @@
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
+      "database-no-longer-available": "Database is no longer available in the current tab.",
       "failed-for-db": "Failed to export data for {{db}}",
       "no-results": "No results to download.",
       "self": "Batch export",

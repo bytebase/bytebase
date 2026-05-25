@@ -257,8 +257,9 @@ export function BatchQuerySelect({
                 title: t("sql-editor.batch-export.failed-for-db", {
                   db: databaseName,
                 }),
-                description:
-                  "Database is no longer available in the current tab.",
+                description: t(
+                  "sql-editor.batch-export.database-no-longer-available"
+                ),
               });
               continue;
             }

@@ -2,6 +2,15 @@ peerDependencyRules:
   allowedVersions:
     typescript: '6'
 
+overrides:
+  # Patch transitive minimatch <5.1.8 reached through exceljs > archiver >
+  # readdir-glob. The 5.x line has three high-severity ReDoS advisories
+  # (GHSA-3ppc-4f35-3m26, GHSA-7r86-cg39-jmmj, GHSA-3vr3-vh78-x7vq) fixed
+  # in 5.1.8+. exceljs's internal use is not user-controllable but the
+  # advisory still trips Snyk. Scoped via parent so we don't disturb
+  # archiver-utils' minimatch@3.x chain.
+  readdir-glob>minimatch: ^5.1.9
+
 allowBuilds:
   core-js: true
   esbuild: true

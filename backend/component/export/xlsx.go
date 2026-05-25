@@ -114,7 +114,7 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 	case *v1pb.RowValue_TimestampTzValue:
 		return formatTimestampTz(value.GetTimestampTzValue())
 	case *v1pb.RowValue_ValueValue:
-		return value.GetValueValue().String()
+		return protoTextStringifyValue(value.GetValueValue())
 	default:
 		return ""
 	}

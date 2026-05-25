@@ -184,27 +184,20 @@ export function ResultView({
           viewMode === "MULTI-RESULT"
             ? filteredResults
             : (resultSet?.results?.slice(0, 1) ?? []);
-        // Drop errored sub-results (matches the prod RPC's behavior; a
-        // failed statement shouldn't become a silent empty entry in the ZIP).
-        // Surface each drop as a CRITICAL toast.
-        const sourceResults = candidates.filter((r) => {
-          if (r.error) {
-            pushNotification({
-              module: "bytebase",
-              style: "CRITICAL",
-              title: t("sql-editor.batch-export.failed-for-db", {
-                db: databaseName,
-              }),
-              description: r.error,
-            });
-            return false;
-          }
-          return true;
-        });
-        if (sourceResults.length === 0) {
+        // Abort the whole export if any sub-result errored, matching the
+        // prod RPC's behavior in doExport (sql_service.go) which aborts on
+        // the first errored result. Skipping would produce a "successful"
+        // download silently missing the failed statement's data.
+        const erroredResult = candidates.find((r) => r.error);
+        if (erroredResult) {
+          reject(erroredResult.error);
+          return;
+        }
+        if (candidates.length === 0) {
           reject(t("sql-editor.batch-export.no-results"));
           return;
         }
+        const sourceResults = candidates;
         const baseFilename = `${databaseName}.${dayjs().format(
           "YYYY-MM-DDTHH-mm-ss"
         )}`;

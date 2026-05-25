@@ -2360,6 +2360,7 @@
     },
     "and-n-more-databases": "and {n} more databases",
     "batch-export": {
+      "database-no-longer-available": "現在のタブでデータベースを利用できません。",
       "failed-for-db": "{db} のデータのエクスポートに失敗しました",
       "no-results": "ダウンロードできる結果がありません。",
       "self": "一括エクスポート",

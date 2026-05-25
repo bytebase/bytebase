@@ -2691,6 +2691,7 @@
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
+      "database-no-longer-available": "该数据库在当前标签页中已不可用。",
       "failed-for-db": "无法导出 {{db}} 的数据",
       "no-results": "没有可下载的结果。",
       "self": "批量导出",
