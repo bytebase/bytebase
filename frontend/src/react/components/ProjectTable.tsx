@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { Badge } from "@/react/components/ui/badge";
@@ -109,14 +110,22 @@ export function ProjectTable({
 }: ProjectTableProps) {
   const { t } = useTranslation();
   const showLeadingCheck = !!currentProject && !showSelection;
-  const selectableProjects = projectList.filter(
-    (p) => getProjectName(p.name) !== "default"
+  const currentProjectName = currentProject?.name;
+  const allSelectableNames = useMemo(
+    () =>
+      projectList
+        .filter((p) => getProjectName(p.name) !== "default")
+        .map((p) => p.name),
+    [projectList]
   );
-  const allSelectableNames = selectableProjects.map((p) => p.name);
+  const selectedNameSet = useMemo(
+    () => new Set(selectedProjectNames),
+    [selectedProjectNames]
+  );
   const allSelected =
     showSelection &&
     allSelectableNames.length > 0 &&
-    allSelectableNames.every((name) => selectedProjectNames.includes(name));
+    allSelectableNames.every((name) => selectedNameSet.has(name));
 
   const totalColumns =
     (showSelection || showLeadingCheck ? 1 : 0) +
@@ -125,18 +134,48 @@ export function ProjectTable({
     (showLabels ? 1 : 0) +
     (showActions ? 1 : 0);
 
-  const handleSelectAll = () => {
-    if (!onSelectedChange) return;
-    onSelectedChange(allSelected ? [] : allSelectableNames);
-  };
+  // Use refs so per-row handlers stay stable across selection changes.
+  const selectedNameSetRef = useRef(selectedNameSet);
+  selectedNameSetRef.current = selectedNameSet;
+  const selectedProjectNamesRef = useRef(selectedProjectNames);
+  selectedProjectNamesRef.current = selectedProjectNames;
+  const onSelectedChangeRef = useRef(onSelectedChange);
+  onSelectedChangeRef.current = onSelectedChange;
+  const onRowClickRef = useRef(onRowClick);
+  onRowClickRef.current = onRowClick;
+  const renderActionsRef = useRef(renderActions);
+  renderActionsRef.current = renderActions;
 
-  const handleToggleRow = (name: string) => {
-    if (!onSelectedChange) return;
-    const next = selectedProjectNames.includes(name)
-      ? selectedProjectNames.filter((n) => n !== name)
-      : [...selectedProjectNames, name];
-    onSelectedChange(next as string[]);
-  };
+  const handleSelectAll = useCallback(() => {
+    const cb = onSelectedChangeRef.current;
+    if (!cb) return;
+    const everyCurrentlySelected =
+      allSelectableNames.length > 0 &&
+      allSelectableNames.every((name) => selectedNameSetRef.current.has(name));
+    cb(everyCurrentlySelected ? [] : [...allSelectableNames]);
+  }, [allSelectableNames]);
+
+  const handleToggleRow = useCallback((name: string) => {
+    const cb = onSelectedChangeRef.current;
+    if (!cb) return;
+    const current = selectedProjectNamesRef.current;
+    const next = selectedNameSetRef.current.has(name)
+      ? current.filter((n) => n !== name)
+      : [...current, name];
+    cb(next as string[]);
+  }, []);
+
+  const handleRowClick = useCallback(
+    (project: Project, event: ReactMouseEvent<HTMLTableRowElement>) => {
+      onRowClickRef.current?.(project, event);
+    },
+    []
+  );
+
+  const renderActionsStable = useCallback(
+    (project: Project) => renderActionsRef.current?.(project) ?? null,
+    []
+  );
 
   return (
     <Table className={className}>
@@ -201,88 +240,123 @@ export function ProjectTable({
             </TableCell>
           </TableRow>
         ) : (
-          projectList.map((project) => {
-            const resourceId = getProjectName(project.name);
-            const isDefault = resourceId === "default";
-            const isCurrent = currentProject?.name === project.name;
-            const isSelected = selectedProjectNames.includes(project.name);
-            return (
-              <TableRow
-                key={project.name}
-                className={cn(onRowClick && "cursor-pointer")}
-                onClick={(event) => onRowClick?.(project, event)}
-              >
-                {showSelection ? (
-                  <TableCell
-                    className={cn("w-12", !isDefault && "cursor-pointer")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isDefault) return;
-                      handleToggleRow(project.name);
-                    }}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      aria-label={t("common.select")}
-                      disabled={isDefault}
-                      onCheckedChange={() => handleToggleRow(project.name)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="disabled:opacity-50"
-                    />
-                  </TableCell>
-                ) : showLeadingCheck ? (
-                  <TableCell className="w-8 px-2">
-                    {isCurrent ? (
-                      <Check className="size-4 text-accent" />
-                    ) : null}
-                  </TableCell>
-                ) : null}
-                <TableCell>
-                  <EllipsisText text={resourceId}>
-                    <HighlightLabelText text={resourceId} keyword={keyword} />
-                  </EllipsisText>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-x-2 min-w-0">
-                    <EllipsisText
-                      text={project.title || resourceId}
-                      className="min-w-0"
-                    >
-                      <HighlightLabelText
-                        text={project.title || resourceId}
-                        keyword={keyword}
-                      />
-                    </EllipsisText>
-                    {project.state === State.DELETED ? (
-                      <Badge variant="warning" className="text-xs shrink-0">
-                        {t("common.archived")}
-                      </Badge>
-                    ) : null}
-                  </div>
-                </TableCell>
-                {showLabels ? (
-                  <TableCell className="hidden md:table-cell">
-                    <LabelsCell labels={project.labels ?? {}} />
-                  </TableCell>
-                ) : null}
-                {showActions ? (
-                  <TableCell
-                    className="w-[50px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex justify-end">
-                      {renderActions?.(project)}
-                    </div>
-                  </TableCell>
-                ) : null}
-              </TableRow>
-            );
-          })
+          projectList.map((project) => (
+            <ProjectRowView
+              key={project.name}
+              project={project}
+              isCurrent={currentProjectName === project.name}
+              isSelected={selectedNameSet.has(project.name)}
+              showSelection={showSelection}
+              showLeadingCheck={showLeadingCheck}
+              showLabels={showLabels}
+              showActions={showActions}
+              clickable={!!onRowClick}
+              keyword={keyword}
+              onToggleRow={handleToggleRow}
+              onRowClick={handleRowClick}
+              renderActions={renderActionsStable}
+            />
+          ))
         )}
       </TableBody>
     </Table>
   );
 }
+
+interface ProjectRowViewProps {
+  project: Project;
+  isCurrent: boolean;
+  isSelected: boolean;
+  showSelection: boolean;
+  showLeadingCheck: boolean;
+  showLabels: boolean;
+  showActions: boolean;
+  clickable: boolean;
+  keyword: string;
+  onToggleRow: (name: string) => void;
+  onRowClick: (
+    project: Project,
+    event: ReactMouseEvent<HTMLTableRowElement>
+  ) => void;
+  renderActions: (project: Project) => ReactNode;
+}
+
+const ProjectRowView = memo(function ProjectRowView({
+  project,
+  isCurrent,
+  isSelected,
+  showSelection,
+  showLeadingCheck,
+  showLabels,
+  showActions,
+  clickable,
+  keyword,
+  onToggleRow,
+  onRowClick,
+  renderActions,
+}: ProjectRowViewProps) {
+  const { t } = useTranslation();
+  const resourceId = getProjectName(project.name);
+  const isDefault = resourceId === "default";
+  const titleText = project.title || resourceId;
+  return (
+    <TableRow
+      className={cn(clickable && "cursor-pointer")}
+      onClick={(event) => onRowClick(project, event)}
+    >
+      {showSelection ? (
+        <TableCell
+          className={cn("w-12", !isDefault && "cursor-pointer")}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isDefault) return;
+            onToggleRow(project.name);
+          }}
+        >
+          <Checkbox
+            checked={isSelected}
+            aria-label={t("common.select")}
+            disabled={isDefault}
+            onCheckedChange={() => onToggleRow(project.name)}
+            onClick={(e) => e.stopPropagation()}
+            className="disabled:opacity-50"
+          />
+        </TableCell>
+      ) : showLeadingCheck ? (
+        <TableCell className="w-8 px-2">
+          {isCurrent ? <Check className="size-4 text-accent" /> : null}
+        </TableCell>
+      ) : null}
+      <TableCell>
+        <EllipsisText text={resourceId}>
+          <HighlightLabelText text={resourceId} keyword={keyword} />
+        </EllipsisText>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-x-2 min-w-0">
+          <EllipsisText text={titleText} className="min-w-0">
+            <HighlightLabelText text={titleText} keyword={keyword} />
+          </EllipsisText>
+          {project.state === State.DELETED ? (
+            <Badge variant="warning" className="text-xs shrink-0">
+              {t("common.archived")}
+            </Badge>
+          ) : null}
+        </div>
+      </TableCell>
+      {showLabels ? (
+        <TableCell className="hidden md:table-cell">
+          <LabelsCell labels={project.labels ?? {}} />
+        </TableCell>
+      ) : null}
+      {showActions ? (
+        <TableCell className="w-[50px]" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-end">{renderActions(project)}</div>
+        </TableCell>
+      ) : null}
+    </TableRow>
+  );
+});
 
 /**
  * Mirrors Vue's `LabelsCell` — show up to N labels inline, "..." for

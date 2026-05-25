@@ -259,7 +259,7 @@ export function ProjectIssueDashboardPage({
               key={issue.name}
               issue={issue}
               selected={selectedNames.has(issue.name)}
-              onToggleSelection={() => toggleSelection(issue.name)}
+              onToggleSelection={toggleSelection}
               highlightText={searchParams.query}
             />
           ))

@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -227,6 +227,28 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       .map((name) => databaseStore.getDatabaseByName(name));
   }, [selectedNames, databaseStore]);
 
+  // Stable references for downstream sheets. Without these the JSX would
+  // rebuild a fresh array + fresh object literal on every parent re-render
+  // (e.g. opening any drawer flips state on this page) — DataExportPrepSheet
+  // would then see a new `seed` prop reference each render and re-run its
+  // `seedKey = selectedDatabaseNames.join(",")` work (O(N) on every render).
+  const selectedDatabaseNames = useMemo(
+    () => selectedDatabases.map((db) => db.name),
+    [selectedDatabases]
+  );
+  const exportPrepSeed = useMemo(
+    () => ({ selectedDatabaseNames, step: 2 as const }),
+    [selectedDatabaseNames]
+  );
+
+  // Mirror `selectedDatabases` into a ref so the batch-operation handlers
+  // below can read the latest value without listing it as a dep. Otherwise
+  // every selection toggle re-creates the handler closures, which cascades
+  // down as fresh prop refs into `DatabaseBatchOperationsBar` and forces
+  // it to re-render (with N selected items, this compounds quickly).
+  const selectedDatabasesRef = useRef(selectedDatabases);
+  selectedDatabasesRef.current = selectedDatabases;
+
   const refresh = useCallback(() => {
     setRefreshToken((prev) => prev + 1);
     setSelectedNames(new Set());
@@ -269,7 +291,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database, i) =>
+            requests: selectedDatabasesRef.current.map((database, i) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   ...database,
@@ -294,7 +316,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
@@ -303,7 +325,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -328,7 +350,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleUnassign = useCallback(async () => {
@@ -337,7 +359,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       await databaseStore.batchUpdateDatabases(
         create(BatchUpdateDatabasesRequestSchema, {
           parent: "-",
-          requests: selectedDatabases.map((database) =>
+          requests: selectedDatabasesRef.current.map((database) =>
             create(UpdateDatabaseRequestSchema, {
               database: create(DatabaseSchema$, {
                 name: database.name,
@@ -361,14 +383,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         title: t("common.failed"),
       });
     }
-  }, [selectedDatabases, databaseStore, actuatorStore, refresh, t]);
+  }, [databaseStore, actuatorStore, refresh, t]);
 
   const handleChangeDatabase = useCallback(() => {
-    preCreateIssue(
-      projectName,
-      selectedDatabases.map((db) => db.name)
-    );
-  }, [projectName, selectedDatabases]);
+    preCreateIssue(projectName, selectedDatabaseNames);
+  }, [projectName, selectedDatabaseNames]);
 
   const [showExportDrawer, setShowExportDrawer] = useState(false);
 
@@ -465,10 +484,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         open={showExportDrawer}
         onClose={() => setShowExportDrawer(false)}
         projectName={projectName}
-        seed={{
-          selectedDatabaseNames: selectedDatabases.map((db) => db.name),
-          step: 2,
-        }}
+        seed={exportPrepSeed}
       />
 
       {/* Unassign confirmation dialog */}

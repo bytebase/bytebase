@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -314,6 +314,14 @@ export function DatabasesPage() {
       .map((name) => databaseStore.getDatabaseByName(name));
   }, [selectedNames, databaseStore]);
 
+  // Mirror `selectedDatabases` into a ref so the batch-operation handlers
+  // below can read the latest value without listing it as a dep. Otherwise
+  // every selection toggle re-creates the handler closures, which cascades
+  // down as fresh prop refs into `DatabaseBatchOperationsBar` and forces
+  // it to re-render (with N selected items, this compounds quickly).
+  const selectedDatabasesRef = useRef(selectedDatabases);
+  selectedDatabasesRef.current = selectedDatabases;
+
   const refresh = useCallback(() => {
     setRefreshToken((prev) => prev + 1);
     setSelectedNames(new Set());
@@ -356,7 +364,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database, i) =>
+            requests: selectedDatabasesRef.current.map((database, i) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   ...database,
@@ -381,7 +389,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
@@ -390,7 +398,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -415,7 +423,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleTransferProject = useCallback(
@@ -424,7 +432,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -449,7 +457,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   return (
