@@ -83,6 +83,42 @@ export class BytebaseApiClient {
     await this.request<unknown>("PATCH", "/v1/subscription/license", { license });
   }
 
+  // Returns server info — notably the current workspace resource name.
+  async getActuatorInfo(): Promise<{ workspace: string }> {
+    return this.request<{ workspace: string }>("GET", "/v1/actuator");
+  }
+
+  // Creates an end-user with the given email/password/title in the caller's
+  // workspace. Caller must be a workspace admin.
+  async createUser(email: string, password: string, title: string): Promise<void> {
+    await this.request<unknown>("POST", "/v1/users", { email, password, title });
+  }
+
+  // Grants `email` the given role at the workspace level by merging a new
+  // binding into the existing IAM policy. Idempotent: if the binding already
+  // includes the member, returns without re-issuing setIamPolicy.
+  async addWorkspaceRoleMember(workspace: string, email: string, role: string): Promise<void> {
+    type Binding = { role: string; members: string[]; condition?: unknown };
+    const policy = await this.request<{ bindings: Binding[]; etag: string }>(
+      "GET",
+      `/v1/${workspace}:getIamPolicy`
+    );
+    const member = `user:${email}`;
+    const bindings: Binding[] = policy.bindings ?? [];
+    const existing = bindings.find((b) => b.role === role);
+    if (existing) {
+      if (existing.members?.includes(member)) return;
+      existing.members = [...(existing.members ?? []), member];
+    } else {
+      bindings.push({ role, members: [member] });
+    }
+    await this.request<unknown>("POST", `/v1/${workspace}:setIamPolicy`, {
+      resource: workspace,
+      policy: { bindings, etag: policy.etag },
+      etag: policy.etag,
+    });
+  }
+
   // Discovery
   async listInstances() {
     return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");

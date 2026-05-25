@@ -150,3 +150,4 @@ Get the correct port from `getInstance(env.instance)` rather than hardcoding the
 - **`psql` dependency**: must be on PATH for DDL/DML setup.
 - **Unix-like OS only**: the sample Postgres uses Unix sockets in `/tmp`.
 - **Admin credentials**: hardcoded `demo@example.com` / `12345678`. The first user created via `/v1/auth/signup` becomes workspace admin, so e2e signs up this fixture.
+- **DBA fixture**: `dba1@example.com` / `12345678` is created during `globalSetup` and granted `roles/workspaceDBA`. Used as the second approver by plan-detail approval specs. If a spec needs additional users (developer, QA, etc.), provision them the same way in `mode-start-new-bytebase.ts` — don't assume they exist.

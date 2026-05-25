@@ -12,6 +12,12 @@ const DEFAULT_TIMEOUT = 300000; // 5 minutes — server startup includes embedde
 const ADMIN_EMAIL = "demo@example.com";
 const ADMIN_PASSWORD = "12345678"; // NOSONAR: e2e fixture
 const ADMIN_TITLE = "Demo";
+// DBA fixture used as the second approver by plan-detail approval specs.
+// Previously seeded by the demo dump; now provisioned explicitly post-signup.
+const DBA_EMAIL = "dba1@example.com";
+const DBA_PASSWORD = "12345678"; // NOSONAR: e2e fixture
+const DBA_TITLE = "DBA1";
+const DBA_ROLE = "roles/workspaceDBA";
 
 let serverProcess: child_process.ChildProcess | undefined;
 let tempDir: string | undefined;
@@ -212,6 +218,14 @@ export async function startServer(): Promise<{
       "[e2e bootstrap] BYTEBASE_E2E_LICENSE not set — workspace will run on the free plan. Enterprise-gated specs will skip themselves."
     );
   }
+
+  // Phase 3c: Provision the DBA fixture user that plan-detail approval
+  // specs use as the second approver. The previous demo dump pre-seeded
+  // additional users (dba1/dev1/qa1); now we create only what's actually
+  // referenced. Add more fixtures here if new specs need them.
+  const { workspace } = await api.getActuatorInfo();
+  await api.createUser(DBA_EMAIL, DBA_PASSWORD, DBA_TITLE);
+  await api.addWorkspaceRoleMember(workspace, DBA_EMAIL, DBA_ROLE);
 
   // Phase 4: Provision the sample project + instances on PORT+3 / PORT+4.
   // SetupSample is async on the server but returns immediately; sample
