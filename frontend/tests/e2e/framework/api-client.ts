@@ -85,7 +85,7 @@ export class BytebaseApiClient {
 
   // Returns server info — notably the current workspace resource name.
   async getActuatorInfo(): Promise<{ workspace: string }> {
-    return this.request<{ workspace: string }>("GET", "/v1/actuator");
+    return this.request<{ workspace: string }>("GET", "/v1/actuator/info");
   }
 
   // Creates an end-user with the given email/password/title in the caller's
