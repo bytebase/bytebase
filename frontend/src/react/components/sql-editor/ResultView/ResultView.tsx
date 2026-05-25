@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import { InfoIcon, LoaderCircle } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
 import {
   DataExportButton,
   type DataExportRequest,
@@ -18,6 +17,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { isDisallowChangeDatabaseError } from "@/react/hooks/useExecuteSQL";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";

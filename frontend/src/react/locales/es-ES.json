@@ -406,6 +406,7 @@
     "system": "Sistema",
     "table": "Tabla",
     "text-wrap": "Ajuste de texto",
+    "tips": "Consejos",
     "title": "Título",
     "to": "Hasta",
     "total": "Total",
@@ -2708,6 +2709,7 @@
     },
     "binary-format": "Formato binario",
     "boolean-format": "Formato booleano",
+    "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "cancel-selection": "Cancelar selección",
     "choose-folder": "Seleccionar o crear una carpeta",
     "choose-folder-tips": "Puedes crear una nueva carpeta introduciendo una ruta que no exista. Las carpetas deben unirse con una barra diagonal (\"/\").",
@@ -2744,6 +2746,7 @@
         "title": "¿Cerrar la hoja no guardada?"
       }
     },
+    "invalid-database": "Base de datos no válida {database}",
     "jit": "Just-In-Time Access",
     "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
@@ -2761,6 +2764,7 @@
       "not-member-of-any-projects": "No eres miembro de ningún proyecto."
     },
     "no-queriable-database": "No hay base de datos consultable",
+    "notify-empty-statement": "Ingrese sus declaraciones SQL en el editor",
     "only-select-allowed": "Solo se permiten ejecutar declaraciones de solo lectura.",
     "open-in-new-tab": "Abrir en nueva pestaña",
     "pending-query": "Consulta pendiente",
@@ -2783,6 +2787,7 @@
       "self": "Ejecute el comando redis en",
       "single-node": "Nodo único"
     },
+    "request-aborted": "El usuario abortó la solicitud",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
     "request-jit": "Request just-in-time access",
@@ -2805,6 +2810,7 @@
     "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
     "search-scope-row-number-title": "Número de fila",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-connection": "Por favor seleccione conexiones",
     "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",

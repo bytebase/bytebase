@@ -1,5 +1,4 @@
 import { flatten, isUndefined } from "lodash-es";
-import type { TransferOption, TreeOption } from "naive-ui";
 import { useDBSchemaV1Store } from "@/store";
 import {
   databaseNamePrefix,
@@ -23,12 +22,12 @@ export type DatabaseResourceType =
   | "tables"
   | "columns";
 
-export interface DatabaseTreeOption<L = DatabaseResourceType>
-  extends TreeOption,
-    TransferOption {
+export interface DatabaseTreeOption<L = DatabaseResourceType> {
   label: string;
   level: L;
   value: string;
+  isLeaf?: boolean;
+  disabled?: boolean;
   children?: DatabaseTreeOption[];
 }
 

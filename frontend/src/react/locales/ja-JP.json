@@ -406,6 +406,7 @@
     "system": "システム",
     "table": "テーブル",
     "text-wrap": "テキストの折り返し",
+    "tips": "プロンプトメッセージ",
     "title": "タイトル",
     "to": "終了",
     "total": "Total",
@@ -2708,6 +2709,7 @@
     },
     "binary-format": "バイナリ形式",
     "boolean-format": "ブール形式",
+    "can-not-execute-query": "データのロード中にクエリを実行できません",
     "cancel-selection": "選択をキャンセル",
     "choose-folder": "フォルダを選択または作成",
     "choose-folder-tips": "存在しないパスを入力することで新しいフォルダを作成できます。フォルダは「/」で結合する必要があります。",
@@ -2744,6 +2746,7 @@
         "title": "未保存のワークシートを閉じてもよろしいですか?"
       }
     },
+    "invalid-database": "無効なデータベース {database}",
     "jit": "Just-In-Time Access",
     "last-synced": "最終同期時間: <time></time>",
     "link-access": "リンクアクセス",
@@ -2761,6 +2764,7 @@
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。"
     },
     "no-queriable-database": "クエリ可能なデータベースがありません",
+    "notify-empty-statement": "エディターに SQL ステートメントを入力してください",
     "only-select-allowed": "読み取り専用ステートメントのみが実行を許可されます",
     "open-in-new-tab": "新しいタブで開く",
     "pending-query": "保留中のクエリ",
@@ -2783,6 +2787,7 @@
       "self": "redisコマンドを実行する",
       "single-node": "単一ノード"
     },
+    "request-aborted": "ユーザーがリクエストを中止しました",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
     "request-jit": "Request just-in-time access",
@@ -2805,6 +2810,7 @@
     "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
     "search-scope-row-number-title": "行番号",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-connection": "データ接続を選択してください",
     "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",

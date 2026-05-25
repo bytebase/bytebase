@@ -1,7 +1,11 @@
 <template>
   <slot v-if="ready"></slot>
   <div v-else class="flex items-center justify-center h-screen">
-    <BBSpin />
+    <Loader2
+      class="size-5 text-accent animate-spin"
+      aria-label="Loading"
+      role="status"
+    />
   </div>
   <template v-if="!isAuthRoute && authStore.isLoggedIn">
     <!-- Session-expired surface lives in the React app
@@ -17,9 +21,9 @@
 </template>
 
 <script setup lang="ts">
+import { Loader2 } from "lucide-vue-next";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import ReactPageMount from "@/react/ReactPageMount.vue";
 import { isAuthRelatedRoute } from "@/utils/auth";
 import { t } from "./plugins/i18n";

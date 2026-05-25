@@ -2,11 +2,8 @@ import { Inbox } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 /**
- * React port of `plugins/ai/components/ChatView/EmptyView.vue`.
  * Empty-state placeholder shown when a `mode="VIEW"` conversation has
- * no messages. Replaces naive-ui's `NEmpty` with a simple inline icon +
- * caption — the only place in the AI plugin that used `NEmpty` so
- * keeping naive-ui just for this would be wasteful.
+ * no messages.
  */
 export function EmptyView() {
   const { t } = useTranslation();

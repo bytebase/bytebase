@@ -60,8 +60,7 @@ export function Toaster() {
           className="fixed bottom-4 right-4 flex w-(--toast-width) flex-col gap-2"
           style={{
             // Tailwind v4 reads CSS vars; expose toast width here so the
-            // toast card class can reference it. Width matches naive-ui's
-            // default.
+            // toast card class can reference it.
             ["--toast-width" as string]: "24rem",
             zIndex: LAYER_Z_INDEX.overlay,
           }}

@@ -418,13 +418,6 @@
   transform: scale(1);
 }
 
-/* compatibility fixes for tailwindcss and naive-ui */
-.n-base-selection-input:focus,
-.n-base-selection-input-tag__input:focus,
-.n-input__input-el:focus {
-  box-shadow: 0 0 0 0;
-}
-
 /* SchemaDiagram screenshot capture: while `useScreenshot` flips this
    attribute on <body>, any element marked `data-screenshot-hide` is
    omitted from the html-to-image pass. Used for chrome affordances

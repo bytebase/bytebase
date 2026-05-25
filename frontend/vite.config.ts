@@ -95,10 +95,6 @@ export default defineConfig({
           if (id.includes("sql-formatter") || id.includes("antlr4")) {
             return "sql-tools";
           }
-          // UI framework
-          if (id.includes("naive-ui")) {
-            return "ui-framework";
-          }
           // Utilities
           if (id.includes("lodash") || id.includes("dayjs")) {
             return "utils";

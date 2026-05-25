@@ -1,12 +1,12 @@
 import { Diamond, Key, Pencil } from "lucide-react";
 import { useCallback, useMemo } from "react";
-import { hashCode } from "@/bbkit/BBUtil";
 import { cn } from "@/react/lib/utils";
 import type {
   ColumnMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { hashCode } from "@/utils/string";
 import { useGeometry, useSchemaDiagramContext } from "../common/context";
 import { FocusButton } from "../common/FocusButton";
 import { isIndex, isPrimaryKey } from "../common/schema";

@@ -5,8 +5,11 @@ import { cloneDeep } from "lodash-es";
 import type { Subscription } from "rxjs";
 import { fromEventPattern, Observable } from "rxjs";
 import { markRaw, ref } from "vue";
-import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import { refreshTokens } from "@/connect/refreshToken";
+import {
+  type CancelableTimer,
+  createCancelableTimer,
+} from "@/react/lib/cancelableTimer";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import type {
@@ -40,13 +43,13 @@ const QUERY_TIMEOUT_MS = 5000;
 /**
  * Per-tab admin-mode streaming session. The `tab` + `timer` + `controller`
  * fields are framework-agnostic mutable services (Emittery / RxJS /
- * `useCancelableTimeout`); the query items themselves live in the zustand
+ * `createCancelableTimer`); the query items themselves live in the zustand
  * `webTerminalQueryItemsByTabId` slice so React consumers re-render via
  * selectors instead of `useVueState` on a Vue ref.
  */
 export interface WebTerminalQuerySession {
   tab: SQLEditorTab;
-  timer: ReturnType<typeof useCancelableTimeout>;
+  timer: CancelableTimer;
   controller: StreamingQueryController;
 }
 
@@ -59,7 +62,7 @@ export const getWebTerminalQuerySession = (
   if (existed) return existed;
   const session: WebTerminalQuerySession = {
     tab,
-    timer: markRaw(useCancelableTimeout(QUERY_TIMEOUT_MS)),
+    timer: createCancelableTimer(QUERY_TIMEOUT_MS),
     controller: createStreamingQueryController(),
   };
   sessions.set(tab.id, session);

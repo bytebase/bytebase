@@ -7,7 +7,6 @@ import {
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { aiContextEvents } from "@/plugins/ai/logic";
 import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
@@ -26,6 +25,7 @@ import { TerminalPanel } from "@/react/components/sql-editor/TerminalPanel/Termi
 import { TriggersPanel } from "@/react/components/sql-editor/TriggersPanel";
 import { ViewsPanel } from "@/react/components/sql-editor/ViewsPanel";
 import { Alert } from "@/react/components/ui/alert";
+import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   selectEditorPanelSize,

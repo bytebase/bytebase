@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
+import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store } from "@/store";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";
 import { SequencesTable } from "./SequencesTable";

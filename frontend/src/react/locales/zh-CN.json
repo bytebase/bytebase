@@ -406,6 +406,7 @@
     "system": "系统",
     "table": "表",
     "text-wrap": "文本折行",
+    "tips": "提示信息",
     "title": "标题",
     "to": "到",
     "total": "Total",
@@ -2708,6 +2709,7 @@
     },
     "binary-format": "二进制格式",
     "boolean-format": "布尔格式",
+    "can-not-execute-query": "加载数据时无法执行查询",
     "cancel-selection": "取消选择",
     "choose-folder": "选择或创建文件夹",
     "choose-folder-tips": "您可以通过输入不存在的路径来创建新文件夹。文件夹之间应以\"/\"连接。",
@@ -2744,6 +2746,7 @@
         "title": "确定关闭未保存的工作表？"
       }
     },
+    "invalid-database": "数据库 {database} 无效",
     "jit": "即时访问",
     "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",
@@ -2761,6 +2764,7 @@
       "not-member-of-any-projects": "你不是任何项目的成员。"
     },
     "no-queriable-database": "没有可查询的数据库",
+    "notify-empty-statement": "请在编辑器中输入 SQL 语句",
     "only-select-allowed": "只允许执行只读语句",
     "open-in-new-tab": "在新选项卡中打开",
     "pending-query": "待处理查询",
@@ -2783,6 +2787,7 @@
       "self": "运行 redis 命令",
       "single-node": "单节点"
     },
+    "request-aborted": "用户中止了请求",
     "request-access": "申请访问",
     "request-data-access": "申请数据访问",
     "request-jit": "申请即时访问",
@@ -2805,6 +2810,7 @@
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-connection": "请选择数据连接",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",

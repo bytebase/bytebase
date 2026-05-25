@@ -11,11 +11,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import {
-  flattenElasticsearchSearchResult,
-  flattenNoSQLQueryResult,
-} from "@/composables/utils";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -31,6 +26,7 @@ import { Button } from "@/react/components/ui/button";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
@@ -48,6 +44,10 @@ import {
   type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { createExplainToken } from "@/utils/pev2";
+import {
+  flattenElasticsearchSearchResult,
+  flattenNoSQLQueryResult,
+} from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
 import { isNullOrUndefined } from "@/utils/util";
 import {

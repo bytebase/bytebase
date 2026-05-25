@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import i18n from "@/react/i18n";
+import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import type {
   CheckConstraintMetadata,
   ColumnMetadata,
@@ -15,7 +16,6 @@ import type {
 // Deep-import both helpers to avoid pulling barrels that transitively
 // reach monaco / Vue surfaces. Both files are framework-agnostic pure TS.
 import { keyForDependencyColumn } from "@/utils/v1/dbSchema";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 
 /**
  * React port of `src/views/sql-editor/AsidePanel/SchemaPane/tree.ts`.
@@ -166,8 +166,7 @@ export type NodeMeta<T extends NodeType = NodeType> = {
 };
 
 /**
- * Minimal tree-row contract we share with the React `Tree` primitive.
- * Mirrors the subset of naive-ui's `TreeOption` the schema pane uses:
+ * Minimal tree-row contract we share with the React `Tree` primitive:
  * `key`, `label`, `disabled`, `isLeaf`, plus our `meta` payload and
  * recursive `children`.
  */

@@ -5,7 +5,7 @@ import {
   QueryRowSchema,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { flattenNoSQLQueryResult } from "./utils";
+import { flattenNoSQLQueryResult } from "./sqlResult";
 
 describe("flattenNoSQLQueryResult", () => {
   test("flattens raw MongoDB document rows into table columns on demand", () => {

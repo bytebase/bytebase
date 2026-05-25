@@ -353,8 +353,6 @@ export function TabList() {
               {t("common.cancel")}
             </Button>
             <Button
-              // Vue's confirm dialog used naive-ui's primary (accent) button
-              // for the affirmative action — not destructive (red). Match.
               variant="default"
               onClick={() => {
                 pendingClose?.resolve(true);
