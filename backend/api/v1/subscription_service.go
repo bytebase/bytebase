@@ -219,9 +219,10 @@ func (s *SubscriptionService) CancelPurchase(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("feedback is required"))
 	}
 	// Silently truncate to Stripe's 500-char limit; the frontend already enforces this.
+	// Slice by runes (not bytes) so multibyte characters (CJK etc.) aren't split mid-codepoint.
 	comment := req.Msg.Comment
-	if len(comment) > 500 {
-		comment = comment[:500]
+	if runes := []rune(comment); len(runes) > 500 {
+		comment = string(runes[:500])
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
