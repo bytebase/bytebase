@@ -3,7 +3,7 @@ import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Download, ExternalLink, Maximize2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { auditLogServiceClientConnect } from "@/connect";
 import { ALL_METHODS_WITH_AUDIT } from "@/connect/methods";
@@ -445,6 +445,26 @@ function useColumnDefs(): ColumnDef[] {
   );
 }
 
+interface AuditLogRowProps {
+  log: AuditLog;
+  columns: ColumnDef[];
+}
+
+const AuditLogRowView = memo(function AuditLogRowView({
+  log,
+  columns,
+}: AuditLogRowProps) {
+  return (
+    <TableRow>
+      {columns.map((col) => (
+        <TableCell key={col.key} className="align-top overflow-hidden">
+          {col.render(log)}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+});
+
 // ============================================================
 // AuditLogTable — shared component
 // ============================================================
@@ -775,16 +795,11 @@ export function AuditLogTable({
                   </TableRow>
                 ) : (
                   auditLogs.map((log, idx) => (
-                    <TableRow key={log.name || idx}>
-                      {columns.map((col) => (
-                        <TableCell
-                          key={col.key}
-                          className="align-top overflow-hidden"
-                        >
-                          {col.render(log)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                    <AuditLogRowView
+                      key={log.name || idx}
+                      log={log}
+                      columns={columns}
+                    />
                   ))
                 )}
               </TableBody>

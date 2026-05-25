@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { ArrowUpDown, Check, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import {
@@ -558,7 +558,7 @@ export function useIssueSearchScopeOptions(
 // IssueListItem
 // ===========================================================================
 
-export function IssueListItem({
+export const IssueListItem = memo(function IssueListItem({
   issue,
   selected,
   onToggleSelection,
@@ -567,7 +567,8 @@ export function IssueListItem({
 }: {
   issue: Issue;
   selected: boolean;
-  onToggleSelection: () => void;
+  /** Called with the issue's name; pass a stable callback from the parent. */
+  onToggleSelection: (name: string) => void;
   highlightText?: string;
   showProject?: boolean;
 }) {
@@ -634,12 +635,12 @@ export function IssueListItem({
         className="shrink-0 self-stretch cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
-          onToggleSelection();
+          onToggleSelection(issue.name);
         }}
       >
         <Checkbox
           checked={selected}
-          onCheckedChange={() => onToggleSelection()}
+          onCheckedChange={() => onToggleSelection(issue.name)}
           onClick={(e) => e.stopPropagation()}
         />
       </div>
@@ -744,7 +745,7 @@ export function IssueListItem({
       </div>
     </div>
   );
-}
+});
 
 // ===========================================================================
 // IssueStatusIcon

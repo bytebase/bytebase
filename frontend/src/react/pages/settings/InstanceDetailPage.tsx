@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -106,6 +106,14 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
       .map((name) => databaseStore.getDatabaseByName(name));
   }, [selectedNames, databaseStore]);
 
+  // Mirror `selectedDatabases` into a ref so the batch-operation handlers
+  // below can read the latest value without listing it as a dep. Otherwise
+  // every selection toggle re-creates the handler closures, which cascades
+  // down as fresh prop refs into `DatabaseBatchOperationsBar` and forces
+  // it to re-render (with N selected items, this compounds quickly).
+  const selectedDatabasesRef = useRef(selectedDatabases);
+  selectedDatabasesRef.current = selectedDatabases;
+
   const refresh = useCallback(() => {
     setRefreshToken((prev) => prev + 1);
     setSelectedNames(new Set());
@@ -147,7 +155,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database, i) =>
+            requests: selectedDatabasesRef.current.map((database, i) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   ...database,
@@ -172,7 +180,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
@@ -181,7 +189,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -206,7 +214,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleTransferProject = useCallback(
@@ -215,7 +223,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -240,7 +248,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
   // Trigger a Pinia-side fetch on mount. The parent `InstanceRouteShell`
   // populates the React-side `useAppStore` cache, but this page reads
