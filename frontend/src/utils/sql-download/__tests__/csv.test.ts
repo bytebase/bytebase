@@ -61,6 +61,23 @@ describe("serializeCSV", () => {
     expect(csv(r)).toBe("f32,f64\n1.5,1e+21");
   });
 
+  it("emits NaN / +Inf / -Inf as textual float tokens, not empty cells", () => {
+    // Regression: prior to this guard, non-finite float64 became "", which
+    // is indistinguishable from a NULL cell and silently loses data. Now
+    // matches the backend's strconv.FormatFloat tokens.
+    const r = create(QueryResultSchema, {
+      columnNames: ["nan", "posinf", "neginf"],
+      rows: [
+        rowOf(
+          f64Row(Number.NaN),
+          f64Row(Number.POSITIVE_INFINITY),
+          f64Row(Number.NEGATIVE_INFINITY)
+        ),
+      ],
+    });
+    expect(csv(r)).toBe("nan,posinf,neginf\nNaN,+Inf,-Inf");
+  });
+
   it("emits structpb cells as CSV-quoted JSON (Tier 2)", () => {
     const struct = create(ValueSchema, {
       kind: {

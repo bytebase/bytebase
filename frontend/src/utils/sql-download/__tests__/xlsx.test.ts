@@ -15,6 +15,8 @@ const intRow = (n: bigint): RowValue =>
   create(RowValueSchema, { kind: { case: "int64Value", value: n } });
 const strRow = (s: string): RowValue =>
   create(RowValueSchema, { kind: { case: "stringValue", value: s } });
+const f64Row = (n: number): RowValue =>
+  create(RowValueSchema, { kind: { case: "doubleValue", value: n } });
 const valueRow = (v: Value): RowValue =>
   create(RowValueSchema, { kind: { case: "valueValue", value: v } });
 
@@ -50,6 +52,26 @@ describe("serializeXLSX", () => {
       ["id", "name"],
       ["1", "Alice"],
       ["2", "Bob"],
+    ]);
+  });
+
+  it("emits NaN / +Inf / -Inf as textual float tokens in cell text, not empty cells", async () => {
+    // Regression: prior to this guard, non-finite float64 became "", which
+    // is indistinguishable from a NULL cell in XLSX. Now matches the
+    // backend's strconv.FormatFloat tokens.
+    const r = create(QueryResultSchema, {
+      columnNames: ["nan", "posinf", "neginf"],
+      rows: [
+        rowOf(
+          f64Row(Number.NaN),
+          f64Row(Number.POSITIVE_INFINITY),
+          f64Row(Number.NEGATIVE_INFINITY)
+        ),
+      ],
+    });
+    expect(await loadCells(await serializeXLSX(r))).toEqual([
+      ["nan", "posinf", "neginf"],
+      ["NaN", "+Inf", "-Inf"],
     ]);
   });
 

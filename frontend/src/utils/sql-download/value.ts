@@ -397,10 +397,18 @@ export function csvCellFromRowValue(v: RowValue | undefined): string {
       return v.kind.value.toString();
     case "floatValue":
       return formatFloat32(v.kind.value);
-    case "doubleValue":
+    case "doubleValue": {
       // Tier 2 relaxation: language-natural number emission for CSV/JSON/XLSX
-      // float64. SQL float64 still uses formatFloat64 (engine-literal compat).
-      return Number.isFinite(v.kind.value) ? String(v.kind.value) : "";
+      // float64 when finite. SQL float64 still uses formatFloat64 (engine-
+      // literal compat). NaN / ±Inf cannot be expressed as a JS-native number
+      // token (`String(NaN)` is "NaN" but `String(Infinity)` is "Infinity",
+      // diverging from Go's "+Inf"/"-Inf"), AND emitting "" would lose the
+      // distinction between a non-finite value and a NULL cell — so fall
+      // through to formatFloat64 for non-finite, which produces the same
+      // "NaN" / "+Inf" / "-Inf" tokens as the backend.
+      const n = v.kind.value;
+      return Number.isFinite(n) ? String(n) : formatFloat64(n);
+    }
     case "bytesValue":
       return csvQuoteString("0x" + bytesToHex(v.kind.value));
     case "timestampValue":
@@ -668,9 +676,14 @@ export function xlsxValueFromRowValue(v: RowValue | undefined): string {
       return v.kind.value.toString();
     case "floatValue":
       return formatFloat32(v.kind.value);
-    case "doubleValue":
-      // Tier 2 relaxation: language-natural number emission for XLSX float64.
-      return Number.isFinite(v.kind.value) ? String(v.kind.value) : "";
+    case "doubleValue": {
+      // See csvCellFromRowValue's doubleValue branch for the rationale.
+      // Native String() for finite; formatFloat64 for NaN / ±Inf so we emit
+      // textual tokens matching the backend ("NaN" / "+Inf" / "-Inf") instead
+      // of "" (which would be indistinguishable from a NULL cell).
+      const n = v.kind.value;
+      return Number.isFinite(n) ? String(n) : formatFloat64(n);
+    }
     case "bytesValue":
       return bytesToBase64(v.kind.value);
     case "timestampValue":
