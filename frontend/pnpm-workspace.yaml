@@ -9,7 +9,7 @@ overrides:
   # in 5.1.8+. exceljs's internal use is not user-controllable but the
   # advisory still trips Snyk. Scoped via parent so we don't disturb
   # archiver-utils' minimatch@3.x chain.
-  readdir-glob>minimatch: ^5.1.9
+  readdir-glob>minimatch: ^9.0.7
   # Patch transitive tmp@0.2.3 reached through exceljs. The 0.2.3 line is
   # vulnerable to a symlink attack via the `dir` parameter; fixed in 0.2.4+.
   # exceljs's internal use of tmp is for creating XLSX shared-strings temp
