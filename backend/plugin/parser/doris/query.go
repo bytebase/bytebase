@@ -24,6 +24,11 @@ func init() {
 // The (bool, bool, error) return shape matches the bytebase QueryValidator
 // contract: (isReadOnly, isExplicitReadOnly, syntaxError).
 func validateQuery(statement string) (bool, bool, error) {
+	// Surface syntax errors before classifying — otherwise a truncated
+	// "SELECT" still classifies as QueryTypeSelect and would be accepted.
+	if _, err := parseDorisSQL(statement); err != nil {
+		return false, false, err
+	}
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return false, false, err

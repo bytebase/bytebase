@@ -76,14 +76,14 @@ func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// ParseDorisSQL parses the given SQL statement using the omni Doris parser.
+// parseDorisSQL parses the given SQL statement using the omni Doris parser.
 // Returns one *omniAST per non-empty segment (empty / comment-only segments
 // are skipped).
 //
 // This retains the historical signature shape used by other doris package
 // files; on the first parse error it returns a *base.SyntaxError with the
 // position translated into the coordinates of the original input.
-func ParseDorisSQL(statement string) ([]*omniAST, error) {
+func parseDorisSQL(statement string) ([]*omniAST, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err

@@ -40,21 +40,23 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	return out, nil
 }
 
-// byteOffsetToLineCol returns the 1-based line and 0-based column for a byte
-// offset within the statement. Counts \n as line breaks.
+// byteOffsetToLineCol returns the 1-based line and 1-based column for a byte
+// offset within the statement. Counts \n as line breaks. The 1-based column
+// matches the storepb.Position convention that ConvertSyntaxErrorToDiagnostic
+// expects (it subtracts 1 internally to land on the 0-based LSP offset).
 func byteOffsetToLineCol(s string, offset int) (int, int) {
 	if offset < 0 {
-		return 1, 0
+		return 1, 1
 	}
 	if offset > len(s) {
 		offset = len(s)
 	}
-	line, col := 1, 0
+	line, col := 1, 1
 	for i := 0; i < offset; {
 		r, size := utf8.DecodeRuneInString(s[i:])
 		if r == '\n' {
 			line++
-			col = 0
+			col = 1
 		} else {
 			col++
 		}

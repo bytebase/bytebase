@@ -25,7 +25,7 @@ func TestDorisSQLParser(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res, err := ParseDorisSQL(test.statement)
+		res, err := parseDorisSQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 			require.NotEmpty(t, res)

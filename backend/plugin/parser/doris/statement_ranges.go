@@ -6,8 +6,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/bytebase/omni/doris/parser"
 	protocol "github.com/bytebase/lsp-protocol"
+	"github.com/bytebase/omni/doris/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
