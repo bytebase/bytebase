@@ -67,7 +67,7 @@ func convertValueToJSONValue(value *v1pb.RowValue) any {
 	case *v1pb.RowValue_TimestampTzValue:
 		return formatTimestampTz(value.GetTimestampTzValue())
 	case *v1pb.RowValue_ValueValue:
-		return structpbValueAsJSON(value.GetValueValue())
+		return value.GetValueValue().String()
 	default:
 		return nil
 	}

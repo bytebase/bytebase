@@ -3,6 +3,7 @@ package export
 import (
 	"encoding/hex"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -96,14 +97,66 @@ func escapeCSVString(str string) string {
 	return strings.ReplaceAll(str, `"`, `""`)
 }
 
-// convertValueValueToBytes renders a structpb.Value as a CSV-quoted JSON cell.
-// Tier 2: inner content is the canonical compact JSON form (was a custom
-// bracket-form prototext-style encoding under Tier 1); the CSV-style outer
-// quoting + double-quote doubling stays so the cell remains a valid CSV
-// (and incidentally a valid SQL literal-ish — sql.go reuses this same encoding
-// because structpb cells in SQL exports historically went through CSV-style
-// quoting, not engine-native SQL string quoting).
 func convertValueValueToBytes(value *structpb.Value) []byte {
-	s := structpbValueAsJSON(value)
-	return []byte(`"` + strings.ReplaceAll(s, `"`, `""`) + `"`)
+	if value == nil || value.Kind == nil {
+		return []byte("")
+	}
+	switch value.Kind.(type) {
+	case *structpb.Value_NullValue:
+		return []byte("")
+	case *structpb.Value_StringValue:
+		var result []byte
+		result = append(result, '"')
+		result = append(result, []byte(value.GetStringValue())...)
+		result = append(result, '"')
+		return result
+	case *structpb.Value_NumberValue:
+		return []byte(strconv.FormatFloat(value.GetNumberValue(), 'f', -1, 64))
+	case *structpb.Value_BoolValue:
+		return []byte(strconv.FormatBool(value.GetBoolValue()))
+	case *structpb.Value_ListValue:
+		var buf [][]byte
+		for _, v := range value.GetListValue().Values {
+			buf = append(buf, convertValueValueToBytes(v))
+		}
+		var result []byte
+		result = append(result, '"')
+		result = append(result, '[')
+		result = append(result, []byte(strings.Join(toStringSlice(buf), ","))...)
+		result = append(result, ']')
+		result = append(result, '"')
+		return result
+	case *structpb.Value_StructValue:
+		fields := value.GetStructValue().Fields
+		keys := make([]string, 0, len(fields))
+		for k := range fields {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		first := true
+		var buf []byte
+		buf = append(buf, '"')
+		for _, k := range keys {
+			if first {
+				first = false
+			} else {
+				buf = append(buf, ',')
+			}
+			buf = append(buf, []byte(k)...)
+			buf = append(buf, ':')
+			buf = append(buf, convertValueValueToBytes(fields[k])...)
+		}
+		buf = append(buf, '"')
+		return buf
+	default:
+		return []byte("")
+	}
+}
+
+func toStringSlice(bufs [][]byte) []string {
+	result := make([]string, len(bufs))
+	for i, buf := range bufs {
+		result[i] = string(buf)
+	}
+	return result
 }
