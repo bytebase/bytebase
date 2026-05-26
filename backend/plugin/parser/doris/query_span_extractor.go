@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/doris/analysis"
+	"github.com/bytebase/omni/doris/ast"
+	"github.com/bytebase/omni/doris/parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -70,8 +72,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", nonEmpty)
 	}
 
+	// omni's span walker only descends into SELECT/SetOp at the top level,
+	// so EXPLAIN <query> would return zero AccessTables. Unwrap an EXPLAIN
+	// to the inner statement's text before delegating; that way table-level
+	// ACL checks still see what the underlying query reads.
+	spanInput := unwrapExplainForSpan(single)
+
 	// Delegate to omni for table-access extraction + classification.
-	omniSpan, err := analysis.GetQuerySpan(single)
+	omniSpan, err := analysis.GetQuerySpan(spanInput)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +103,28 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		SourceColumns: sources,
 		Results:       []base.QuerySpanResult{},
 	}, nil
+}
+
+// unwrapExplainForSpan returns the inner statement's text when `statement`
+// parses to a top-level EXPLAIN; otherwise it returns the original string.
+//
+// omni's span walker only descends into SELECT/SetOp at the top level, so
+// without this unwrap an `EXPLAIN SELECT ... FROM t` would yield zero
+// AccessTables — table-level ACL checks need to see `t`.
+func unwrapExplainForSpan(statement string) string {
+	file, errs := parser.Parse(statement)
+	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		return statement
+	}
+	explain, ok := file.Stmts[0].(*ast.ExplainStmt)
+	if !ok || explain.Query == nil {
+		return statement
+	}
+	inner := ast.NodeLoc(explain.Query)
+	if inner.Start < 0 || inner.End > len(statement) || inner.Start >= inner.End {
+		return statement
+	}
+	return statement[inner.Start:inner.End]
 }
 
 // toSourceColumnSet converts an omni QuerySpan's AccessTables into the

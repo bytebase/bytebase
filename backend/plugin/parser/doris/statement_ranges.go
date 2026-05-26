@@ -27,7 +27,12 @@ func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, stateme
 
 	segs := parser.Split(trimmed)
 	if len(segs) == 0 {
-		return nil, nil
+		// omni's splitter drops comment-only buffers entirely. The legacy
+		// ANTLR helper still emitted a range for trailing comment tokens, so
+		// editor features that count statement positions don't lose ground
+		// to a file that contains only `-- note` or `/* ... */`. Emit a
+		// single range covering the non-whitespace span when present.
+		return commentOnlyRanges(trimmed), nil
 	}
 
 	type pos struct{ line, char uint32 }
@@ -171,6 +176,82 @@ func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, stateme
 	}
 
 	return ranges, nil
+}
+
+// commentOnlyRanges emits a single Range covering the non-whitespace span of
+// `trimmed`, or nil when nothing in `trimmed` looks like a comment. Used
+// when the splitter finds zero segments — typically that means comment-only
+// input like `-- note` or `/* ... */`, which the legacy ANTLR helper would
+// have emitted a range for. Pure delimiters (e.g. a single `;`) are NOT
+// turned into ranges; the legacy helper dropped single-terminator inputs.
+func commentOnlyRanges(trimmed string) []base.Range {
+	if !containsCommentMarker(trimmed) {
+		return nil
+	}
+	start := 0
+	for start < len(trimmed) {
+		c := trimmed[start]
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			start++
+			continue
+		}
+		break
+	}
+	if start >= len(trimmed) {
+		return nil
+	}
+	var startLine, startChar uint32
+	for i := 0; i < start; {
+		r, size := utf8.DecodeRuneInString(trimmed[i:])
+		if r == '\n' {
+			startLine++
+			startChar = 0
+		} else if r <= 0xFFFF {
+			startChar++
+		} else {
+			startChar += 2
+		}
+		i += size
+	}
+	endLine, endChar := startLine, startChar
+	for i := start; i < len(trimmed); {
+		r, size := utf8.DecodeRuneInString(trimmed[i:])
+		if r == '\n' {
+			endLine++
+			endChar = 0
+		} else if r <= 0xFFFF {
+			endChar++
+		} else {
+			endChar += 2
+		}
+		i += size
+	}
+	return []base.Range{{
+		Start: protocol.Position{Line: startLine, Character: startChar},
+		End:   protocol.Position{Line: endLine, Character: endChar},
+	}}
+}
+
+// containsCommentMarker reports whether s contains one of the SQL comment
+// introducers (`--`, `/*`, `#`). Anything inside a string literal could
+// false-positive, but the splitter only routes us here when there are
+// no segments at all — i.e. no string literals to worry about.
+func containsCommentMarker(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '#' {
+			return true
+		}
+		if i+1 < len(s) {
+			if c == '-' && s[i+1] == '-' {
+				return true
+			}
+			if c == '/' && s[i+1] == '*' {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // hasNonWhitespace reports whether s contains any non-whitespace character.

@@ -142,6 +142,25 @@ func TestValidateQuery(t *testing.T) {
 			statement:   "SELECT a > (select max(a) from t1) FROM",
 			description: "Truncated SELECT must be rejected as syntax error",
 		},
+		{
+			// omni's stub parser accepts bare SHOW as *ast.ShowStmt with
+			// Type="". AST-content validation rejects it.
+			statement:   "SHOW",
+			description: "Bare SHOW must be rejected",
+		},
+		{
+			statement:   "DESCRIBE",
+			description: "Bare DESCRIBE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN",
+			description: "Bare EXPLAIN must be rejected",
+		},
+		{
+			// EXPLAIN over DDL is not a real read-only operation.
+			statement:   "EXPLAIN DROP TABLE t",
+			description: "EXPLAIN over DDL must be rejected",
+		},
 	}
 	for _, tc := range rejectCases {
 		t.Run(tc.description, func(t *testing.T) {
