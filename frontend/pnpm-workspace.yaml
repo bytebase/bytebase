@@ -10,6 +10,22 @@ overrides:
   # advisory still trips Snyk. Scoped via parent so we don't disturb
   # archiver-utils' minimatch@3.x chain.
   readdir-glob>minimatch: ^5.1.9
+  # Patch transitive tmp@0.2.3 reached through exceljs. The 0.2.3 line is
+  # vulnerable to a symlink attack via the `dir` parameter; fixed in 0.2.4+.
+  # exceljs's internal use of tmp is for creating XLSX shared-strings temp
+  # files on disk; in our browser bundle the temp paths are managed by
+  # exceljs itself and not user-influenced, but the advisory still trips
+  # Snyk. 0.2.x is API-stable, so the bump is drop-in.
+  tmp: ^0.2.5
+  # Force exceljs's archiver + unzipper to versions that drop the
+  # glob@7 → inflight@1.0.6 transitive chain. inflight is unmaintained
+  # with no published fix for its memory-leak advisory (CVSS 6.2).
+  # archiver@7 uses archiver-utils@5 → glob@10 (no inflight); unzipper@0.12
+  # uses fs-extra (no fstream/rimraf/glob@7 chain). Both retain the same
+  # outer API exceljs consumes (Archiver.pipe / Open.file), so the bump
+  # is drop-in — verified by the serializeXLSX tests.
+  exceljs>archiver: ^7.0.0
+  exceljs>unzipper: ^0.12.0
 
 allowBuilds:
   core-js: true
