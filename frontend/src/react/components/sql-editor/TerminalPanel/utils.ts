@@ -33,6 +33,13 @@ export const checkCursorAtLast = (
   return false;
 };
 
+export const checkCursorAtFirst = (
+  editor: Editor.IStandaloneCodeEditor
+): boolean => {
+  const cursor = editor.getPosition();
+  return cursor?.lineNumber === 1 && cursor?.column === 1;
+};
+
 export const checkCursorAtFirstLine = (
   editor: Editor.IStandaloneCodeEditor
 ): boolean => {
