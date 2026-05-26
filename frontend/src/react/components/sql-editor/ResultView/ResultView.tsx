@@ -180,19 +180,24 @@ export function ResultView({
           database.name
         );
         const engine = getInstanceResource(database).engine;
-        const candidates =
-          viewMode === "MULTI-RESULT"
-            ? filteredResults
-            : (resultSet?.results?.slice(0, 1) ?? []);
-        // Abort the whole export if any sub-result errored, matching the
-        // prod RPC's behavior in doExport (sql_service.go) which aborts on
-        // the first errored result. Skipping would produce a "successful"
-        // download silently missing the failed statement's data.
-        const erroredResult = candidates.find((r) => r.error);
+        // Abort the whole export if ANY sub-result errored — including
+        // SET statements (which we drop from `candidates` below for
+        // serialization purposes). Backend's doExport (sql_service.go:1109)
+        // iterates every result and aborts on the first error regardless of
+        // whether the statement would have produced rows, so scanning the
+        // unfiltered resultSet here keeps us in lockstep. Skipping the SET
+        // filter for the error check covers cases like
+        // `SELECT ...; SET unknown_var = 1;` where the failing statement
+        // is non-row-producing.
+        const erroredResult = resultSet?.results?.find((r) => r.error);
         if (erroredResult) {
           reject(erroredResult.error);
           return;
         }
+        const candidates =
+          viewMode === "MULTI-RESULT"
+            ? filteredResults
+            : (resultSet?.results?.slice(0, 1) ?? []);
         if (candidates.length === 0) {
           reject(t("sql-editor.batch-export.no-results"));
           return;
