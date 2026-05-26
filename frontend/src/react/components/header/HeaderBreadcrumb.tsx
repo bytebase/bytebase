@@ -17,6 +17,7 @@ import {
 import {
   isValidProjectName,
   projectNamePrefix,
+  workspaceNamePrefix,
 } from "@/react/lib/resourceName";
 import { cn } from "@/react/lib/utils";
 import {
@@ -126,24 +127,39 @@ function WorkspaceSegment() {
             sideOffset={6}
             className="min-w-[14rem] p-1!"
           >
-            {workspaceList.map((ws) => (
-              <button
-                key={ws.name}
-                type="button"
-                className={cn(
-                  "w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm cursor-pointer",
-                  ws.name === currentWorkspaceName
-                    ? "bg-control-bg font-medium text-accent"
-                    : "text-control hover:bg-control-bg"
-                )}
-                onClick={() => onSwitch(ws.name)}
-              >
-                <span className="truncate">{ws.title}</span>
-                {ws.name === currentWorkspaceName && (
-                  <Check className="size-4 shrink-0" />
-                )}
-              </button>
-            ))}
+            {workspaceList.map((ws) => {
+              const workspaceId = ws.name.startsWith(workspaceNamePrefix)
+                ? ws.name.slice(workspaceNamePrefix.length)
+                : ws.name;
+              return (
+                <button
+                  key={ws.name}
+                  type="button"
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm cursor-pointer gap-x-2",
+                    ws.name === currentWorkspaceName
+                      ? "bg-control-bg font-medium text-accent"
+                      : "text-control hover:bg-control-bg"
+                  )}
+                  onClick={() => onSwitch(ws.name)}
+                >
+                  <span className="flex flex-col items-start min-w-0">
+                    <span className="truncate w-full text-left">
+                      {ws.title}
+                    </span>
+                    <span
+                      className="truncate w-full text-left text-xs font-normal text-control-light"
+                      title={workspaceId}
+                    >
+                      {workspaceId}
+                    </span>
+                  </span>
+                  {ws.name === currentWorkspaceName && (
+                    <Check className="size-4 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
           </PopoverContent>
         </Popover>
       )}
