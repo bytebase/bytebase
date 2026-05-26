@@ -942,15 +942,15 @@
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
-      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {{branch}} 提交拉取请求。",
       "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
       "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
       "title": "测试您的首次 GitOps 迁移"
     },
     "workflow": {
       "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库中的 {filePath}",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
+      "file-hint": "保存为仓库中的 {{filePath}}",
+      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {{provider}}。",
       "self-hosted-runner": "自托管 runner",
       "title": "工作流文件生成"
     },
@@ -1495,7 +1495,7 @@
   "issue.task-run.logs": "日志",
   "issue.task-run.session": "会话",
   "issue.transaction-mode.label": "事务模式",
-  "issue.upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
+  "issue.upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {{size}}。",
   "label": {
     "add-label": "添加标签",
     "empty-label-value": "空",
@@ -1658,7 +1658,7 @@
         "new-conversation": "开启新对话",
         "no-message": "无消息",
         "rename": "修改会话名称",
-        "select-or-create": "选择或{create}一个会话以开始。",
+        "select-or-create": "选择或{{create}}一个会话以开始。",
         "tips": {
           "no-more": "没有了",
           "suggest-prompt": "生成提示词..."
@@ -2741,7 +2741,7 @@
         "title": "确定关闭未保存的工作表？"
       }
     },
-    "invalid-database": "数据库 {database} 无效",
+    "invalid-database": "数据库 {{database}} 无效",
     "jit": "即时访问",
     "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",

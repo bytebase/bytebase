@@ -1,22 +1,4 @@
 {
-  "announcement": "You can upgrade, downgrade, or {cancel} anytime. No hidden charges.",
-  "billed-annually": "Billed annually",
-  "billed-monthly": "Billed monthly",
-  "buy": "Buy {plan} plan",
-  "cancel": "cancel your subscription",
-  "contact-us": "Contact us",
-  "current": "Current plan",
-  "current-plan": "Current plan",
-  "deploy": "Deploy",
-  "disabled-feature": "This is a premium feature in subscription plan",
-  "enterprise-price-intro": "Customized, billed annually",
-  "expired": "expired",
-  "expires-at": "Expires at",
-  "free-price-intro": "Up to {users} users and {instances} instances",
-  "free-trial": "You can start a free trial for 14 days - no credit card required",
-  "max-instance-count": "Max instance count",
-  "per-instance": "Per instance",
-  "per-month": "/ month",
   "plan": {
     "enterprise": {
       "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
@@ -35,19 +17,5 @@
     },
     "title": "Community",
     "try": "Start free trial"
-  },
-  "plan-compare": "Compare features between different plans",
-  "price-unit-for-instance": "/ instance / month",
-  "price-unit-for-user": "/ user / month",
-  "purchase-license": "Purchase a License",
-  "sensitive-placeholder": "Paste your license here - write only",
-  "start-free-trial": "Start free trial",
-  "start-trial": "Try free now",
-  "subscribe": "Subscribe now",
-  "team-price-intro": "{instances} free instances, purchase up to {users} users",
-  "trialing": "trialing",
-  "unlimited": "Unlimited",
-  "update-license": "Update license",
-  "upgrade": "Upgrade subscription",
-  "user-count": "User count"
+  }
 }

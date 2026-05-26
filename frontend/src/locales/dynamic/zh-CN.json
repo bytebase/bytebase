@@ -1,33 +1,5 @@
 {
-  "activity": {
-    "sentence": {
-      "changed-x-link": "修改了 {name}。{link}",
-      "modified-sql-of-spec-link": "修改了 {spec} 的 SQL。{link}",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
-    }
-  },
-  "resource": {
-    "database-group": "数据库分组",
-    "environment": "环境",
-    "idp": "身份提供商",
-    "instance": "实例",
-    "project": "项目",
-    "review-config": "审查配置",
-    "role": "角色"
-  },
   "settings": {
-    "general": {
-      "workspace": {
-        "announcement-alert-level": {
-          "field": {
-            "critical": "重要",
-            "info": "普通",
-            "warning": "警告"
-          }
-        }
-      }
-    },
     "sensitive-data": {
       "semantic-types": {
         "template": {
@@ -331,7 +303,6 @@
       }
     },
     "purchase": {
-      "enterprise-description": "安全合规地扩展您的业务。",
       "features": {
         "enterprise": {
           "2fa": "双因素认证和高级认证策略",
@@ -371,9 +342,7 @@
           "sso": "Google 和 GitHub SSO",
           "support": "邮件支持"
         }
-      },
-      "free-description": "适用于个人开发者、副业项目和实验。",
-      "pro-description": "适用于构建生产级应用的团队。"
+      }
     }
   }
 }

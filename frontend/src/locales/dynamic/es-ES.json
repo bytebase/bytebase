@@ -1,33 +1,5 @@
 {
-  "activity": {
-    "sentence": {
-      "changed-x-link": "cambiado {name}. \n{link}",
-      "modified-sql-of-spec-link": "SQL modificado de {spec}. {link}",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
-    }
-  },
-  "resource": {
-    "database-group": "grupo de bases de datos",
-    "environment": "Entorno",
-    "idp": "Proveedor de Identidad",
-    "instance": "Instancia",
-    "project": "Proyecto",
-    "review-config": "Revisar configuración",
-    "role": "Rol"
-  },
   "settings": {
-    "general": {
-      "workspace": {
-        "announcement-alert-level": {
-          "field": {
-            "critical": "Importante",
-            "info": "Común",
-            "warning": "Advertencia"
-          }
-        }
-      }
-    },
     "sensitive-data": {
       "semantic-types": {
         "template": {
@@ -331,7 +303,6 @@
       }
     },
     "purchase": {
-      "enterprise-description": "Escala tu negocio de forma segura y cumpliendo normativas.",
       "features": {
         "enterprise": {
           "2fa": "2FA y políticas de autenticación avanzadas",
@@ -371,9 +342,7 @@
           "sso": "SSO de Google y GitHub",
           "support": "Soporte por correo electrónico"
         }
-      },
-      "free-description": "Diseñado para desarrolladores individuales, proyectos paralelos y experimentos.",
-      "pro-description": "Creado para equipos que construyen aplicaciones listas para producción."
+      }
     }
   }
 }
