@@ -1,33 +1,5 @@
 {
-  "activity": {
-    "sentence": {
-      "changed-x-link": "{name} が変更されました。 {link}",
-      "modified-sql-of-spec-link": "{spec} の SQL が変更されました。{link}",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
-    }
-  },
-  "resource": {
-    "database-group": "データベースのグループ化",
-    "environment": "環境",
-    "idp": "アイデンティティプロバイダー",
-    "instance": "例",
-    "project": "プロジェクト",
-    "review-config": "設定を確認する",
-    "role": "ロール"
-  },
   "settings": {
-    "general": {
-      "workspace": {
-        "announcement-alert-level": {
-          "field": {
-            "critical": "重要",
-            "info": "情報",
-            "warning": "警告"
-          }
-        }
-      }
-    },
     "sensitive-data": {
       "semantic-types": {
         "template": {
@@ -331,7 +303,6 @@
       }
     },
     "purchase": {
-      "enterprise-description": "コンプライアンスを維持しながら安全にビジネスを拡大。",
       "features": {
         "enterprise": {
           "2fa": "二要素認証と高度な認証ポリシー",
@@ -371,9 +342,7 @@
           "sso": "Google & GitHub SSO",
           "support": "メールサポート"
         }
-      },
-      "free-description": "個人開発者、サイドプロジェクト、実験向け。",
-      "pro-description": "本番対応アプリケーションを構築するチーム向け。"
+      }
     }
   }
 }

@@ -1,9 +1,11 @@
 // frontend/scripts/check-react-i18n.mjs
 //
 // Enforces strict 1:1 mapping between React code and React locale files:
-//   1. Missing keys  — t("key") in code but key not in locale files
-//   2. Unused keys   — key in locale files but not referenced in code
-//   3. Consistency   — all locale files must have the exact same key set
+//   1. Missing keys      — t("key") in code but key not in locale files
+//   2. Unused keys       — key in locale files but not referenced in code
+//   3. Consistency       — all locale files must have the exact same key set
+//   4. Placeholder syntax — react-i18next uses {{name}}; flag stray Vue-style
+//                           {name} placeholders left over from migration
 //
 // Usage: node frontend/scripts/check-react-i18n.mjs
 
@@ -217,10 +219,56 @@ for (const locale of LOCALES) {
 }
 
 // ---------------------------------------------------------------------------
+// Check 4: Vue-style {name} placeholders (must be {{name}} for react-i18next)
+// ---------------------------------------------------------------------------
+// react-i18next interpolates {{name}}. A bare {name} (not part of {{name}})
+// is a left-over from Vue's vue-i18n syntax and renders literally — see
+// the bug fixed alongside this check.
+const SINGLE_BRACE_RE = /(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g;
+
+function findSingleBracePlaceholders(obj, path = "") {
+  const issues = [];
+  if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+    for (const [k, v] of Object.entries(obj)) {
+      issues.push(...findSingleBracePlaceholders(v, path ? `${path}.${k}` : k));
+    }
+  } else if (typeof obj === "string") {
+    SINGLE_BRACE_RE.lastIndex = 0;
+    const names = [];
+    let m;
+    while ((m = SINGLE_BRACE_RE.exec(obj))) names.push(m[1]);
+    if (names.length > 0) issues.push({ key: path, value: obj, names });
+  }
+  return issues;
+}
+
+for (const locale of LOCALES) {
+  const main = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `${locale}.json`), "utf-8")
+  );
+  const dynamic = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `dynamic/${locale}.json`), "utf-8")
+  );
+  const issues = [
+    ...findSingleBracePlaceholders(main),
+    ...findSingleBracePlaceholders(dynamic, "dynamic"),
+  ];
+  if (issues.length > 0) {
+    console.error(
+      `${locale}: ${issues.length} string(s) with Vue-style {name} placeholders — react-i18next needs {{name}}:\n`
+    );
+    for (const { key, value, names } of issues) {
+      error(`  - ${key} → ${JSON.stringify(value)} (placeholders: ${names.join(", ")})`);
+    }
+    console.error();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Result
 // ---------------------------------------------------------------------------
 if (errors > 0) {
   process.exit(1);
 } else {
-  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency).");
+  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency, placeholder syntax).");
 }

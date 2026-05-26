@@ -1,33 +1,5 @@
 {
-  "activity": {
-    "sentence": {
-      "changed-x-link": "đã thay đổi {name}. {link}",
-      "modified-sql-of-spec-link": "Đã sửa đổi SQL của {spec}. {link}",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
-    }
-  },
-  "resource": {
-    "database-group": "Nhóm cơ sở dữ liệu",
-    "environment": "Môi trường",
-    "idp": "Nhà cung cấp danh tính",
-    "instance": "Phiên bản",
-    "project": "Dự án",
-    "review-config": "Cấu hình đánh giá",
-    "role": "Vai trò"
-  },
   "settings": {
-    "general": {
-      "workspace": {
-        "announcement-alert-level": {
-          "field": {
-            "critical": "Quan trọng",
-            "info": "Bình thường",
-            "warning": "Cảnh báo"
-          }
-        }
-      }
-    },
     "sensitive-data": {
       "semantic-types": {
         "template": {
@@ -331,7 +303,6 @@
       }
     },
     "purchase": {
-      "enterprise-description": "Mở rộng doanh nghiệp một cách an toàn và tuân thủ.",
       "features": {
         "enterprise": {
           "2fa": "Xác thực hai yếu tố và chính sách xác thực nâng cao",
@@ -371,9 +342,7 @@
           "sso": "Google & GitHub SSO",
           "support": "Hỗ trợ qua email"
         }
-      },
-      "free-description": "Dành cho lập trình viên cá nhân, dự án phụ và thử nghiệm.",
-      "pro-description": "Xây dựng cho các nhóm tạo ứng dụng sẵn sàng cho sản xuất."
+      }
     }
   }
 }

@@ -942,15 +942,15 @@
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
-      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
+      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {{branch}}.",
       "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
       "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
       "title": "Thử nghiệm migration GitOps đầu tiên"
     },
     "workflow": {
       "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
-      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {provider}.",
+      "file-hint": "Lưu dưới dạng {{filePath}} trong kho lưu trữ của bạn",
+      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {{provider}}.",
       "self-hosted-runner": "Runner tự lưu trữ",
       "title": "Tạo tệp workflow"
     },
@@ -1495,7 +1495,7 @@
   "issue.task-run.logs": "Nhật ký",
   "issue.task-run.session": "Phiên",
   "issue.transaction-mode.label": "Chế độ giao dịch",
-  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
+  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({{size}}).",
   "label": {
     "add-label": "Thêm nhãn",
     "empty-label-value": "Trống",
@@ -1658,7 +1658,7 @@
         "new-conversation": "Bắt đầu cuộc trò chuyện mới",
         "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
         "rename": "Đổi tên cuộc trò chuyện",
-        "select-or-create": "Chọn hoặc {create} một cuộc trò chuyện để bắt đầu.",
+        "select-or-create": "Chọn hoặc {{create}} một cuộc trò chuyện để bắt đầu.",
         "tips": {
           "no-more": "không còn nữa",
           "suggest-prompt": "Gợi ý nhắc nhở..."
@@ -2741,7 +2741,7 @@
         "title": "Đóng trang tính chưa lưu?"
       }
     },
-    "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
+    "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",

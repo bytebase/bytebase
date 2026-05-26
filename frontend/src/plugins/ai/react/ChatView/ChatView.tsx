@@ -51,12 +51,13 @@ export function ChatView({ mode = "CHAT", conversation }: Props) {
 
   const chatViewValue = useMemo(() => ({ mode }), [mode]);
 
-  // i18n: "Select or {create} a conversation to start." — split on the
+  // i18n: "Select or {{create}} a conversation to start." — split on the
   // placeholder so we can render the localized prefix/suffix around a
-  // clickable button. Matches every locale's structure since they all
-  // keep the same `{create}` placeholder.
+  // clickable button. With no `create` value passed, i18next leaves the
+  // `{{create}}` token in the output (skipOnVariables default), so the
+  // split round-trips cleanly across every locale.
   const selectOrCreateTemplate = t("plugin.ai.conversation.select-or-create");
-  const selectOrCreateParts = selectOrCreateTemplate.split("{create}");
+  const selectOrCreateParts = selectOrCreateTemplate.split("{{create}}");
 
   return (
     <ChatViewProvider value={chatViewValue}>
