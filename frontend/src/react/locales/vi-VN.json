@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Mã qua email",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
-    "cloud": "Đám mây",
-    "deploy": "Tự lưu trữ",
     "external-url": "Bytebase chưa được cấu hình --external-url",
     "license-expired": "Giấy phép {{plan}} của bạn đã hết hạn vào {{expireAt}}.",
     "license-expires": "Giấy phép {{plan}} của bạn sẽ hết hạn sau {{days}} ngày vào {{expireAt}}.",
-    "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
     "trial-expires": "Bản dùng thử miễn phí {{plan}} của bạn sẽ hết hạn trong {{days}} ngày nữa vào {{expireAt}}."
   },
   "bbkit": {
@@ -465,7 +461,6 @@
   "common.delete": "Xóa",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Đã xóa",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "Hướng dẫn chi tiết",
   "common.edit": "Chỉnh sửa",
@@ -947,15 +942,15 @@
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
-      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
+      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {{branch}}.",
       "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
       "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
       "title": "Thử nghiệm migration GitOps đầu tiên"
     },
     "workflow": {
       "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
-      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {provider}.",
+      "file-hint": "Lưu dưới dạng {{filePath}} trong kho lưu trữ của bạn",
+      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {{provider}}.",
       "self-hosted-runner": "Runner tự lưu trữ",
       "title": "Tạo tệp workflow"
     },
@@ -1500,7 +1495,7 @@
   "issue.task-run.logs": "Nhật ký",
   "issue.task-run.session": "Phiên",
   "issue.transaction-mode.label": "Chế độ giao dịch",
-  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
+  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({{size}}).",
   "label": {
     "add-label": "Thêm nhãn",
     "empty-label-value": "Trống",
@@ -1663,7 +1658,7 @@
         "new-conversation": "Bắt đầu cuộc trò chuyện mới",
         "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
         "rename": "Đổi tên cuộc trò chuyện",
-        "select-or-create": "Chọn hoặc {create} một cuộc trò chuyện để bắt đầu.",
+        "select-or-create": "Chọn hoặc {{create}} một cuộc trò chuyện để bắt đầu.",
         "tips": {
           "no-more": "không còn nữa",
           "suggest-prompt": "Gợi ý nhắc nhở..."
@@ -2756,7 +2751,7 @@
         "title": "Đóng trang tính chưa lưu?"
       }
     },
-    "invalid-database": "Cơ sở dữ liệu không hợp lệ {database}",
+    "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
@@ -3680,7 +3675,25 @@
       "and": "và",
       "billing-period": "Kỳ thanh toán",
       "cancel": "Hủy đăng ký",
-      "cancel-confirm": "Bạn có chắc chắn muốn hủy đăng ký không?",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {
+          "customer-service": "Customer service issues",
+          "low-quality": "Quality didn't meet expectations",
+          "missing-features": "Missing features I need",
+          "other": "Other reason",
+          "switched-service": "Switched to a different product",
+          "too-complex": "Too complex to use",
+          "too-expensive": "Too expensive",
+          "unused": "Not using it enough"
+        },
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {{date}}.",
       "canceled": "Đã hủy đăng ký",
       "custom": "Tùy chỉnh",

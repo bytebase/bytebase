@@ -1,22 +1,4 @@
 {
-  "announcement": "いつでもアップグレード、ダウングレード、または{cancel}できます。隠れた料金はありません。",
-  "billed-annually": "年間請求",
-  "billed-monthly": "月額請求",
-  "buy": "{plan}プランを購入する",
-  "cancel": "サブスクリプションをキャンセルする",
-  "contact-us": "お問い合わせ",
-  "current": "現在のプラン",
-  "current-plan": "現在のプラン",
-  "deploy": "デプロイ",
-  "disabled-feature": "これはサブスクリプションプランのプレミアム機能です",
-  "enterprise-price-intro": "カスタマイズされ、年間請求",
-  "expired": "期限切れ",
-  "expires-at": "有効期限",
-  "free-price-intro": "最大{users}ユーザーと{instances}インスタンスまで",
-  "free-trial": "14日間の無料トライアルを開始できます - クレジットカードは必要ありません",
-  "max-instance-count": "最大インスタンス数",
-  "per-instance": "インスタンスごと",
-  "per-month": "/ 月",
   "plan": {
     "enterprise": {
       "desc": "追加のセキュリティ、コンプライアンス、および権限機能。SLA付きの専任サポート。",
@@ -35,19 +17,5 @@
     },
     "title": "コミュニティ",
     "try": "無料トライアルを開始する"
-  },
-  "plan-compare": "異なるプラン間の機能を比較する",
-  "price-unit-for-instance": "/ インスタンス / 月",
-  "price-unit-for-user": "/ ユーザー / 月",
-  "purchase-license": "ライセンスを購入する",
-  "sensitive-placeholder": "ここにライセンスを貼り付けてください - 書き込みのみ",
-  "start-free-trial": "無料トライアルを開始する",
-  "start-trial": "今すぐ無料でお試しください",
-  "subscribe": "今すぐ購読する",
-  "team-price-intro": "{instances} インスタンスは無料、最大 {users} ユーザーまで購入可能",
-  "trialing": "トライアル中",
-  "unlimited": "無制限",
-  "update-license": "ライセンスの更新",
-  "upgrade": "サブスクリプションをアップグレードする",
-  "user-count": "ユーザー数"
+  }
 }

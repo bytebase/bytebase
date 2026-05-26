@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "{{email}} に認証コードを送信しました。",
-      "demo-account": "Demo Account",
       "email-code-tab": "メール認証コード",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "トークンの期限切れ",
   "banner": {
-    "cloud": "クラウドサービス",
-    "deploy": "ローカル展開",
     "external-url": "Bytebase は --extern-url を設定していません",
     "license-expired": "{{plan}} のライセンスは {{expireAt}} に期限切れになりました。",
     "license-expires": "{{plan}} ライセンスは {{days}} 日後の {{expireAt}} に期限切れになります",
-    "request-demo": "30 分間の製品デモを予約してください。",
     "trial-expires": "{{plan}} トライアルは {{days}} 日後の {{expireAt}} に期限切れになります"
   },
   "bbkit": {
@@ -465,7 +461,6 @@
   "common.delete": "消去",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "削除されました",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "詳細ガイド",
   "common.edit": "編集",
@@ -947,15 +942,15 @@
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
-      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{branch} へのプルリクエストを作成します。",
+      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{{branch}} へのプルリクエストを作成します。",
       "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
       "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
       "title": "最初の GitOps マイグレーションをテスト"
     },
     "workflow": {
       "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
-      "file-hint": "リポジトリ内に {filePath} として保存",
-      "provider-not-match": "選択された ワークロード アイデンティティ は {provider} 専用です。",
+      "file-hint": "リポジトリ内に {{filePath}} として保存",
+      "provider-not-match": "選択された ワークロード アイデンティティ は {{provider}} 専用です。",
       "self-hosted-runner": "セルフホスト runner",
       "title": "ワークフローファイル生成"
     },
@@ -1500,7 +1495,7 @@
   "issue.task-run.logs": "ログ",
   "issue.task-run.session": "セッション",
   "issue.transaction-mode.label": "トランザクションモード",
-  "issue.upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {size} を超えることはできません。",
+  "issue.upload-sql-file-max-size-exceeded": "アップロード ファイルのサイズは {{size}} を超えることはできません。",
   "label": {
     "add-label": "タグ付けする",
     "empty-label-value": "ヌル",
@@ -1663,7 +1658,7 @@
         "new-conversation": "新しい会話を開始する",
         "no-message": "この会話にはメッセージはありません",
         "rename": "セッション名の変更",
-        "select-or-create": "開始するセッションを選択または {create} します。",
+        "select-or-create": "開始するセッションを選択または {{create}} します。",
         "tips": {
           "no-more": "何も残っていない",
           "suggest-prompt": "プロンプト単語を生成..."
@@ -2756,7 +2751,7 @@
         "title": "未保存のワークシートを閉じてもよろしいですか?"
       }
     },
-    "invalid-database": "無効なデータベース {database}",
+    "invalid-database": "無効なデータベース {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "最終同期時間: <time></time>",
     "link-access": "リンクアクセス",
@@ -3680,7 +3675,25 @@
       "and": "および",
       "billing-period": "請求期間",
       "cancel": "サブスクリプションをキャンセル",
-      "cancel-confirm": "サブスクリプションをキャンセルしてもよろしいですか？",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {
+          "customer-service": "Customer service issues",
+          "low-quality": "Quality didn't meet expectations",
+          "missing-features": "Missing features I need",
+          "other": "Other reason",
+          "switched-service": "Switched to a different product",
+          "too-complex": "Too complex to use",
+          "too-expensive": "Too expensive",
+          "unused": "Not using it enough"
+        },
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "サブスクリプションはキャンセル済みで、{{date}} に終了します。",
       "canceled": "サブスクリプションがキャンセルされました",
       "custom": "カスタム",

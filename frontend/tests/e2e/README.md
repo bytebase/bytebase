@@ -1,6 +1,6 @@
 # E2E Tests
 
-Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase server with `--demo` data, runs tests, tears down.
+Playwright-based end-to-end tests for Bytebase. Starts a disposable Bytebase server, signs up an admin, provisions sample instances, runs tests, tears down.
 
 ## Prerequisites
 
@@ -56,8 +56,8 @@ frontend/tests/e2e/
 
 ## How It Works
 
-1. **`globalSetup`**: Cleans orphaned processes, starts Bytebase with `--demo` + embedded Postgres on a random high port, reconciles sample instance data source ports.
-2. **Setup project** (runs as a Playwright test before all others): Logs in as the demo admin (`demo@example.com` / `12345678`), discovers instances/databases/projects, saves auth state to `.auth/state.json`.
+1. **`globalSetup`**: Cleans orphaned processes, starts Bytebase + embedded Postgres on a random high port, signs up the admin (`demo@example.com` / `12345678`), and calls `SetupSample` to provision the sample project and instances on `PORT+3` / `PORT+4`.
+2. **Setup project** (runs as a Playwright test before all others): Logs in as the admin, discovers instances/databases/projects, saves auth state to `.auth/state.json`.
 3. **Tests run**: Each spec file shares one browser context/page (see [AGENTS.md](./AGENTS.md)). Tests call `loadTestEnv()` to get the API client and env data, create their own test data, and run UI-driven verification.
 4. **`globalTeardown`**: Kills the server process group, removes temp data dir and PID file.
 

@@ -20,9 +20,8 @@ import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import {
-  checkCursorAtFirstLine,
+  checkCursorAtFirst,
   checkCursorAtLast,
-  checkCursorAtLastLine,
   checkIsEnterEndsStatement,
 } from "./utils";
 
@@ -169,13 +168,9 @@ export function CompactSQLEditor({
         "cursorAtLast",
         checkCursorAtLast(editor)
       );
-      const cursorAtFirstLine = editor.createContextKey<boolean>(
-        "cursorAtFirstLine",
-        checkCursorAtFirstLine(editor)
-      );
-      const cursorAtLastLine = editor.createContextKey<boolean>(
-        "cursorAtLastLine",
-        checkCursorAtLastLine(editor)
+      const cursorAtFirst = editor.createContextKey<boolean>(
+        "cursorAtFirst",
+        checkCursorAtFirst(editor)
       );
 
       const subscriptions: IDisposable[] = [];
@@ -189,8 +184,7 @@ export function CompactSQLEditor({
       subscriptions.push(
         editor.onDidChangeCursorPosition(() => {
           cursorAtLast.set(checkCursorAtLast(editor));
-          cursorAtFirstLine.set(checkCursorAtFirstLine(editor));
-          cursorAtLastLine.set(checkCursorAtLastLine(editor));
+          cursorAtFirst.set(checkCursorAtFirst(editor));
         })
       );
 
@@ -228,15 +222,18 @@ export function CompactSQLEditor({
         () => execute(false),
         "!readonly && isEnterEndsStatement && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
       );
+      // History only fires at the cursor extremes — beginning of input for
+      // Up, end of input for Down. Inside the buffer the arrows behave as
+      // normal cursor navigation, so multi-line edits aren't trapped.
       editor.addCommand(
         monaco.KeyCode.UpArrow,
         () => propsRef.current.onHistory("up", editor),
-        "isTerminalEditor && !readonly && !content && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+        "isTerminalEditor && !readonly && cursorAtFirst && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
       );
       editor.addCommand(
         monaco.KeyCode.DownArrow,
         () => propsRef.current.onHistory("down", editor),
-        "isTerminalEditor && !readonly && cursorAtLastLine && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
+        "isTerminalEditor && !readonly && cursorAtLast && editorTextFocus && !suggestWidgetVisible && !renameInputVisible && !inSnippetMode && !quickFixWidgetVisible"
       );
 
       // Stash the readonly key so the outer effect can flip it on

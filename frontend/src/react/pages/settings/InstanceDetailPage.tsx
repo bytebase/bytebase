@@ -38,6 +38,7 @@ import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   pushNotification,
+  useActuatorV1Store,
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useEnvironmentV1Store,
@@ -318,21 +319,42 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
   );
 
   const projectStore = useProjectV1Store();
+  const actuatorStore = useActuatorV1Store();
+  // Reactive: the actuator's `defaultProject` is fetched asynchronously, so
+  // we must subscribe through `useVueState` — otherwise the value is
+  // captured as `""` on first render and the API filter becomes broken.
+  const defaultProjectId = useVueState(() =>
+    extractProjectResourceName(actuatorStore.serverInfo?.defaultProject ?? "")
+  );
+  const unassignedProjectOption = useMemo<ValueOption>(
+    () => ({
+      value: defaultProjectId,
+      keywords: ["unassigned", "default"],
+      custom: true,
+      render: () => (
+        <span className="italic text-control-light">
+          {t("common.unassigned")}
+        </span>
+      ),
+    }),
+    [defaultProjectId, t]
+  );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
       const { projects } = await projectStore.fetchProjectList({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
-      return projects.map((p) => {
+      return projects.map<ValueOption>((p) => {
         const id = extractProjectResourceName(p.name);
+        if (id === defaultProjectId) return unassignedProjectOption;
         return {
           value: id,
           keywords: [id, p.title],
         };
       });
     },
-    [projectStore]
+    [projectStore, defaultProjectId, unassignedProjectOption]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(
@@ -357,6 +379,9 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         id: "project",
         title: t("common.project"),
         description: t("issue.advanced-search.scope.project.description"),
+        // Static option lets the selected-tag display resolve the default
+        // project id to "Unassigned".
+        options: [unassignedProjectOption],
         onSearch: searchProjects,
       },
       {
@@ -366,7 +391,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
         allowMultiple: true,
       },
     ],
-    [t, environments, searchProjects]
+    [t, environments, searchProjects, unassignedProjectOption]
   );
 
   const handleTabChange = useCallback((tab: string | number | null) => {

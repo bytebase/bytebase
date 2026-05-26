@@ -99,7 +99,6 @@ beforeEach(async () => {
         disallowSignup: false,
       },
     },
-    isDemo: false,
     isSaaSMode: false,
     activeUserCount: 1,
     fetchServerInfo: vi.fn(async () => ({})),

@@ -3,9 +3,9 @@ import { cleanupOrphans, startServer } from "./mode-start-new-bytebase";
 
 async function globalSetup() {
   cleanupOrphans();
-  const { baseURL, adminEmail, adminPassword } = await startServer();
+  const { baseURL, adminEmail, adminPassword, hasLicense } = await startServer();
   saveTestEnv({
-    baseURL, adminEmail, adminPassword,
+    baseURL, adminEmail, adminPassword, hasLicense,
     project: "", instance: "", instanceId: "", database: "", databaseId: "",
   });
 }

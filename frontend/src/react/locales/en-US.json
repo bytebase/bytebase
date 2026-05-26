@@ -136,7 +136,6 @@
     },
     "sign-in": {
       "code-sent-hint": "A verification code was sent to {{email}}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Email Code",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
@@ -158,12 +157,9 @@
   },
   "auth.token-expired-title": "Token expired",
   "banner": {
-    "cloud": "Cloud",
-    "deploy": "Self Host",
     "external-url": "Bytebase has not configured --external-url",
     "license-expired": "Your license for {{plan}} has expired on {{expireAt}}.",
     "license-expires": "Your license for {{plan}} will expire in {{days}} days on {{expireAt}}.",
-    "request-demo": "Book a 30-minute product demo.",
     "trial-expires": "Your free trial for {{plan}} will expire in {{days}} days on {{expireAt}}."
   },
   "bbkit": {
@@ -262,7 +258,6 @@
     "delete-resource": "Delete {{type}}",
     "delete-resource-description": "Once you delete \"{{name}}\", there is no going back. Please be certain.",
     "deleted": "Deleted",
-    "demo-mode": "Demo",
     "deny": "Deny",
     "description": "Description",
     "deselect-all": "Deselect all",
@@ -472,7 +467,6 @@
   "common.delete": "Delete",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Deleted",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "detailed guide",
   "common.edit": "Edit",
@@ -954,15 +948,15 @@
     "test-setup": {
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
-      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
+      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {{branch}}.",
       "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
       "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
       "title": "Test your first GitOps migration"
     },
     "workflow": {
       "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
-      "file-hint": "Save as {filePath} in your repository {repository}",
-      "provider-not-match": "The selected workload identity only works for {provider}.",
+      "file-hint": "Save as {{filePath}} in your repository {{repository}}",
+      "provider-not-match": "The selected workload identity only works for {{provider}}.",
       "self-hosted-runner": "Self-hosted runner",
       "title": "Workflow file generation"
     },
@@ -1508,7 +1502,7 @@
   "issue.task-run.logs": "Logs",
   "issue.task-run.session": "Session",
   "issue.transaction-mode.label": "Transaction Mode",
-  "issue.upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
+  "issue.upload-sql-file-max-size-exceeded": "Max file size ({{size}}) exceeded.",
   "label": {
     "add-label": "Add label",
     "empty-label-value": "Empty",
@@ -1671,7 +1665,7 @@
         "new-conversation": "Start new conversation",
         "no-message": "No message in this conversation",
         "rename": "Rename conversation",
-        "select-or-create": "Select or {create} a conversation to start.",
+        "select-or-create": "Select or {{create}} a conversation to start.",
         "tips": {
           "no-more": "no more",
           "suggest-prompt": "Suggesting prompts..."
@@ -2768,7 +2762,7 @@
         "title": "Close the unsaved sheet?"
       }
     },
-    "invalid-database": "Invalid database {database}",
+    "invalid-database": "Invalid database {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
@@ -3692,7 +3686,25 @@
       "and": "and",
       "billing-period": "Billing Period",
       "cancel": "Cancel Subscription",
-      "cancel-confirm": "Are you sure you want to cancel your subscription?",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {
+          "customer-service": "Customer service issues",
+          "low-quality": "Quality didn't meet expectations",
+          "missing-features": "Missing features I need",
+          "other": "Other reason",
+          "switched-service": "Switched to a different product",
+          "too-complex": "Too complex to use",
+          "too-expensive": "Too expensive",
+          "unused": "Not using it enough"
+        },
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "Your subscription has been canceled and will end on {{date}}.",
       "canceled": "Subscription canceled",
       "custom": "Custom",

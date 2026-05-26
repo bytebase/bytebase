@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "验证码已发送至 {{email}}。",
-      "demo-account": "Demo Account",
       "email-code-tab": "邮箱验证码",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "令牌已过期",
   "banner": {
-    "cloud": "云服务",
-    "deploy": "本地部署",
     "external-url": "Bytebase 还没有配置 --external-url",
     "license-expired": "您的{{plan}}证书已在 {{expireAt}} 过期",
     "license-expires": "您的{{plan}}证书将在 {{days}} 天后（{{expireAt}}）过期",
-    "request-demo": "预约一个 30 分钟的产品演示。",
     "trial-expires": "您的{{plan}}试用将在 {{days}} 天后（{{expireAt}}）过期"
   },
   "bbkit": {
@@ -465,7 +461,6 @@
   "common.delete": "删除",
   "common.delete-resource": "删除{{type}}",
   "common.deleted": "已删除",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "详细指南",
   "common.edit": "编辑",
@@ -947,15 +942,15 @@
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
-      "step-create-branch": "创建新分支，添加上面的文件，然后向 {branch} 提交拉取请求。",
+      "step-create-branch": "创建新分支，添加上面的文件，然后向 {{branch}} 提交拉取请求。",
       "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
       "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
       "title": "测试您的首次 GitOps 迁移"
     },
     "workflow": {
       "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库中的 {filePath}",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {provider}。",
+      "file-hint": "保存为仓库中的 {{filePath}}",
+      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {{provider}}。",
       "self-hosted-runner": "自托管 runner",
       "title": "工作流文件生成"
     },
@@ -1500,7 +1495,7 @@
   "issue.task-run.logs": "日志",
   "issue.task-run.session": "会话",
   "issue.transaction-mode.label": "事务模式",
-  "issue.upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {size}。",
+  "issue.upload-sql-file-max-size-exceeded": "上传文件大小不能超过 {{size}}。",
   "label": {
     "add-label": "添加标签",
     "empty-label-value": "空",
@@ -1663,7 +1658,7 @@
         "new-conversation": "开启新对话",
         "no-message": "无消息",
         "rename": "修改会话名称",
-        "select-or-create": "选择或{create}一个会话以开始。",
+        "select-or-create": "选择或{{create}}一个会话以开始。",
         "tips": {
           "no-more": "没有了",
           "suggest-prompt": "生成提示词..."
@@ -2756,7 +2751,7 @@
         "title": "确定关闭未保存的工作表？"
       }
     },
-    "invalid-database": "数据库 {database} 无效",
+    "invalid-database": "数据库 {{database}} 无效",
     "jit": "即时访问",
     "last-synced": "上次同步时间：<time></time>",
     "link-access": "链接访问权限",
@@ -3680,7 +3675,25 @@
       "and": "和",
       "billing-period": "账单周期",
       "cancel": "取消订阅",
-      "cancel-confirm": "确定要取消订阅吗？",
+      "cancel-dialog": {
+        "comment-label": "还有什么想告诉我们的吗？（可选）",
+        "comment-placeholder": "告诉我们更多以便我们改进...",
+        "confirm": "确认取消",
+        "description": "很遗憾看到您离开。您的反馈将帮助我们改进。",
+        "keep": "保留订阅",
+        "reason": {
+          "customer-service": "客户服务问题",
+          "low-quality": "质量未达预期",
+          "missing-features": "缺少我需要的功能",
+          "other": "其他原因",
+          "switched-service": "切换到其他产品",
+          "too-complex": "使用过于复杂",
+          "too-expensive": "价格过高",
+          "unused": "使用不够频繁"
+        },
+        "reason-label": "您为什么要取消？（必填）",
+        "title": "取消您的订阅"
+      },
       "cancel-pending": "您的订阅已取消，将于 {{date}} 到期。",
       "canceled": "订阅已取消",
       "custom": "自定义",

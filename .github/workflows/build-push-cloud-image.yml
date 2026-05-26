@@ -50,7 +50,6 @@ jobs:
           build-args: |
             VERSION=cloud
             GIT_COMMIT=${{ env.GIT_COMMIT }}
-            RELEASE=release
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v3

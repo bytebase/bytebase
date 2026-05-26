@@ -13,7 +13,6 @@ RUN pnpm --dir ./frontend release-docker
 FROM golang:1.26.3-alpine3.23 AS backend
 ARG VERSION
 ARG GIT_COMMIT
-ARG RELEASE="release"
 
 ADD go.mod go.sum /
 
@@ -29,7 +28,7 @@ COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN CC=clang go build \
-  --tags "${RELEASE},embed_frontend,docker" \
+  --tags "release,embed_frontend,docker" \
   -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
@@ -45,8 +44,6 @@ LABEL org.opencontainers.image.revision=${GIT_COMMIT}
 RUN addgroup --gid 113 --system bytebase && adduser --uid 113 --system bytebase && adduser bytebase bytebase
 # Directory to store the data, which can be referenced as the mounting point.
 RUN mkdir -p /var/opt/bytebase
-# Directory to store the demo data.
-RUN mkdir -p /var/opt/bytebase/pgdata-demo
 RUN apk update
 RUN apk add --no-cache gnupg curl psmisc procps ncurses krb5
 # Install postgresql.

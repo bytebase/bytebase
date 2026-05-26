@@ -19821,13 +19821,6 @@ Permissions required: bb.settings.set</p></td>
                 </tr>
               
                 <tr>
-                  <td>demo</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether the Bytebase instance is running in demo mode. </p></td>
-                </tr>
-              
-                <tr>
                   <td>host</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -31355,6 +31348,33 @@ Permissions required: bb.sheets.get</p></td>
         <p></p>
 
         
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>feedback</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Reason the customer is canceling. Maps to Stripe&#39;s cancellation_details.feedback.
+Valid Stripe values: &#34;customer_service&#34;, &#34;low_quality&#34;, &#34;missing_features&#34;,
+&#34;switched_service&#34;, &#34;too_complex&#34;, &#34;too_expensive&#34;, &#34;unused&#34;, &#34;other&#34;.
+Required. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional free-form comment. Max 500 chars (Stripe limit). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       

@@ -146,13 +146,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   saas: boolean;
 
   /**
-   * Whether the Bytebase instance is running in demo mode.
-   *
-   * @generated from field: bool demo = 5;
-   */
-  demo: boolean;
-
-  /**
    * The host address of the Bytebase instance.
    *
    * @generated from field: string host = 6;

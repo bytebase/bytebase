@@ -124,8 +124,29 @@ export function DatabasesPage() {
   );
 
   const projectStore = useProjectV1Store();
-  const defaultProjectId = extractProjectResourceName(
-    actuatorStore.serverInfo?.defaultProject ?? ""
+  // `serverInfo.defaultProject` is fetched asynchronously by the actuator
+  // store; wrap with `useVueState` so the filter value updates the moment
+  // it arrives instead of being captured as an empty string on first
+  // render (which sends a broken `projects/` filter to the backend).
+  const defaultProjectId = useVueState(() =>
+    extractProjectResourceName(actuatorStore.serverInfo?.defaultProject ?? "")
+  );
+  // Shared "Unassigned" option used both by the dropdown (via onSearch) and
+  // by the selected-tag display (via the scope's static `options`). `custom`
+  // hides the raw "default-<random>" id from the dropdown so users only see
+  // the friendly label.
+  const unassignedProjectOption = useMemo<ValueOption>(
+    () => ({
+      value: defaultProjectId,
+      keywords: ["unassigned", "default"],
+      custom: true,
+      render: () => (
+        <span className="italic text-control-light">
+          {t("common.unassigned")}
+        </span>
+      ),
+    }),
+    [defaultProjectId, t]
   );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
@@ -133,13 +154,6 @@ export function DatabasesPage() {
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
-      const unassigned: ValueOption = {
-        value: defaultProjectId,
-        keywords: ["unassigned", "default"],
-        render: () => (
-          <span className="italic text-control-light">Unassigned</span>
-        ),
-      };
       const matchesUnassigned =
         !keyword.trim() || "unassigned".includes(keyword.trim().toLowerCase());
       const remote = projects
@@ -148,9 +162,9 @@ export function DatabasesPage() {
           const id = extractProjectResourceName(p.name);
           return { value: id, keywords: [id, p.title] };
         });
-      return matchesUnassigned ? [unassigned, ...remote] : remote;
+      return matchesUnassigned ? [unassignedProjectOption, ...remote] : remote;
     },
-    [projectStore, defaultProjectId]
+    [projectStore, defaultProjectId, unassignedProjectOption]
   );
 
   const instanceStore = useInstanceV1Store();
@@ -178,6 +192,10 @@ export function DatabasesPage() {
         id: "project",
         title: t("common.project"),
         description: t("issue.advanced-search.scope.project.description"),
+        // Static option lets the selected-tag display resolve the default
+        // project id to "Unassigned" — the tag renderer only looks at
+        // `options`, not async results.
+        options: [unassignedProjectOption],
         onSearch: searchProjects,
       },
       {
@@ -226,7 +244,13 @@ export function DatabasesPage() {
         allowMultiple: true,
       },
     ];
-  }, [t, environments, searchInstances, searchProjects]);
+  }, [
+    t,
+    environments,
+    searchInstances,
+    searchProjects,
+    unassignedProjectOption,
+  ]);
 
   // Derived filter values
   const projectVal = getValueFromScopes(searchParams, "project");
@@ -288,6 +312,26 @@ export function DatabasesPage() {
       });
     }
   }, [uiStateStore]);
+
+  // Backfill the project scope once the actuator's default project ID
+  // arrives. The initial `useState` initializer reads the actuator
+  // synchronously — if it hasn't finished fetching yet, the project value
+  // is captured as "" and the API filter becomes broken (`projects/`).
+  useEffect(() => {
+    if (!defaultProjectId) return;
+    setSearchParams((prev) => {
+      const projectScope = prev.scopes.find((s) => s.id === "project");
+      if (!projectScope || projectScope.value !== "") return prev;
+      return {
+        ...prev,
+        scopes: prev.scopes.map((s) =>
+          s.id === "project" && s.value === ""
+            ? { ...s, value: defaultProjectId }
+            : s
+        ),
+      };
+    });
+  }, [defaultProjectId]);
 
   // Sync search state to URL
   useEffect(() => {

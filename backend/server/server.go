@@ -28,7 +28,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	"github.com/bytebase/bytebase/backend/demo"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -101,7 +100,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	slog.Info("-----Config BEGIN-----")
 	slog.Info(fmt.Sprintf("mode=%s", profile.Mode))
 	slog.Info(fmt.Sprintf("dataDir=%s", profile.DataDir))
-	slog.Info(fmt.Sprintf("demo=%v", profile.Demo))
 	slog.Info(fmt.Sprintf("replicaID=%s", profile.ReplicaID))
 	slog.Info("-----Config END-------")
 
@@ -119,9 +117,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	var pgURL string
 	if profile.UseEmbedDB() {
 		pgDataDir := path.Join(profile.DataDir, "pgdata")
-		if profile.Demo {
-			pgDataDir = path.Join(profile.DataDir, "pgdata-demo")
-		}
 
 		stopper, err := postgres.StartMetadataInstance(ctx, pgDataDir, profile.DatastorePort, profile.Mode)
 		if err != nil {
@@ -139,12 +134,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}
 
-	if profile.Demo {
-		if err := demo.LoadDemoData(ctx, stores.GetDB()); err != nil {
-			stores.Close()
-			return nil, errors.Wrapf(err, "failed to load demo data")
-		}
-	}
 	if err := migrator.MigrateSchema(ctx, stores.GetDB()); err != nil {
 		stores.Close()
 		return nil, errors.Wrapf(err, "failed to migrate schema")
