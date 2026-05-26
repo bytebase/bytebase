@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  readdir-glob>minimatch: ^5.1.9
+  readdir-glob>minimatch: ^9.0.7
   tmp: ^0.2.5
   exceljs>archiver: ^7.0.0
   exceljs>unzipper: ^0.12.0
@@ -4398,10 +4398,6 @@ packages:
 
   minimatch@5.1.6:
     resolution: {integrity: sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==}
-    engines: {node: '>=10'}
-
-  minimatch@5.1.9:
-    resolution: {integrity: sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==}
     engines: {node: '>=10'}
 
   minimatch@9.0.1:
@@ -9988,10 +9984,6 @@ snapshots:
     dependencies:
       brace-expansion: 2.0.2
 
-  minimatch@5.1.9:
-    dependencies:
-      brace-expansion: 2.0.2
-
   minimatch@9.0.1:
     dependencies:
       brace-expansion: 2.0.2
@@ -10499,7 +10491,7 @@ snapshots:
 
   readdir-glob@1.1.3:
     dependencies:
-      minimatch: 5.1.9
+      minimatch: 9.0.9
 
   readdirp@5.0.0: {}
 
