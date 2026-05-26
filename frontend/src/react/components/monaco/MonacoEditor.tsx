@@ -224,7 +224,6 @@ export function MonacoEditor({
       selection && !selection.isEmpty()
         ? selection
         : resolveActiveRangeByCursor(ranges, cursorPosition);
-    const hadPriorDecoration = activeDecorationIdsRef.current.length > 0;
 
     const willDraw = !!(
       enableDecorations &&

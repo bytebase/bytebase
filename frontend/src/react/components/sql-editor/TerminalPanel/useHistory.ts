@@ -35,11 +35,15 @@ export function useHistory() {
   const historyByTabIdRef = useRef(new Map<string, HistoryState>());
 
   const currentTabId = useVueState(() => tabStore.currentTab?.id);
-  // Subscribe to list length only — statement edits replace the tail
-  // identity but don't grow the list, so they don't trigger this effect.
-  const queryListLength = useSQLEditorStore((s) => {
-    if (!currentTabId) return 0;
-    return s.webTerminalQueryItemsByTabId[currentTabId]?.length ?? 0;
+  // Subscribe to the tail item's id. The id changes only when a new tail is
+  // appended (the slice patches statement updates in place by id, preserving
+  // it). Tracking the id — not the list length — lets detection survive
+  // after the list hits its 20-item cap and length stops growing on each
+  // append.
+  const currentTailId = useSQLEditorStore((s) => {
+    if (!currentTabId) return undefined;
+    const list = s.webTerminalQueryItemsByTabId[currentTabId];
+    return list && list.length > 0 ? list[list.length - 1].id : undefined;
   });
 
   const currentStack = (): HistoryState | undefined => {
@@ -65,30 +69,33 @@ export function useHistory() {
     stack.index = stack.list.length;
   };
 
-  // Detect a new live tail being appended — at that moment, the item now
-  // at `length - 2` was the just-finalized query (status FINISHED, statement
-  // locked). Capture it as a history snapshot.
+  // Detect a new live tail being appended via tail-id change. When the id
+  // moves to a fresh one, the previous tail (whose id we just rotated off)
+  // is now finalized — its statement is locked in. The finalized item is at
+  // `length - 2` in the current list regardless of whether the list grew or
+  // was capped (cap evicts oldest from the head, so position from the tail
+  // is stable).
   const lastTabIdRef = useRef<string | undefined>(undefined);
-  const lastLengthRef = useRef(0);
+  const lastSeenTailIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (lastTabIdRef.current !== currentTabId) {
       lastTabIdRef.current = currentTabId;
-      lastLengthRef.current = queryListLength;
+      lastSeenTailIdRef.current = currentTailId;
       return;
     }
-    if (queryListLength > lastLengthRef.current) {
+    if (currentTailId && currentTailId !== lastSeenTailIdRef.current) {
       const tab = tabStore.currentTab;
       if (tab && tab.mode === "ADMIN") {
         const items =
           useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tab.id];
-        // The just-appended tail is at length-1; the finalized previous
-        // item is at length-2. Skip empty statements (e.g. initial blank).
-        const finalized = items?.[queryListLength - 2];
-        if (finalized && finalized.statement) push(finalized);
+        if (items && items.length >= 2) {
+          const finalized = items[items.length - 2];
+          if (finalized?.statement) push(finalized);
+        }
       }
     }
-    lastLengthRef.current = queryListLength;
-  }, [queryListLength, currentTabId, tabStore]);
+    lastSeenTailIdRef.current = currentTailId;
+  }, [currentTailId, currentTabId, tabStore]);
 
   const move = (direction: "up" | "down") => {
     const stack = currentStack();
