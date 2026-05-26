@@ -62,6 +62,22 @@ func TestGetQueryType(t *testing.T) {
 			statement: "SHOW CREATE TABLE users",
 			want:      base.SelectInfoSchema,
 		},
+		{
+			// EXPLAIN over a query is read-only.
+			statement: "EXPLAIN SELECT * FROM users",
+			want:      base.Select,
+		},
+		{
+			// EXPLAIN defers to the inner statement's type — EXPLAIN over
+			// DML is classified as DML for ACL purposes, not Select.
+			statement: "EXPLAIN INSERT INTO users (id) VALUES (1)",
+			want:      base.DML,
+		},
+		{
+			// EXPLAIN over DDL is DDL, not a read-only downgrade.
+			statement: "EXPLAIN DROP TABLE users",
+			want:      base.DDL,
+		},
 	}
 
 	for _, tc := range tests {
