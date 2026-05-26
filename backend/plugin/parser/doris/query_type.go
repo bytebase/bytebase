@@ -2,30 +2,36 @@ package doris
 
 import (
 	"github.com/bytebase/omni/doris/analysis"
+	"github.com/bytebase/omni/doris/ast"
+	"github.com/bytebase/omni/doris/parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// getQueryType classifies a single statement by delegating to omni's
-// analysis.Classify and mapping the result to base.QueryType.
+// getQueryType classifies a single statement.
+//
+// Uses AST inspection where possible — keyword-based Classify alone would
+// mislabel CTE-prefixed DML (`WITH ... UPDATE ...`) as Select because `WITH`
+// is its first token, which would propagate into ACL checks. AST inspection
+// surfaces the real operation. If parsing fails or produces no statements
+// (e.g. comment-only input), we fall back to the keyword-based classifier so
+// callers still receive a best-effort classification.
 //
 // allSystems is the flag computed by the query-span extractor that indicates
 // whether every accessed table belongs to a system database. When true and
-// the omni classification is a user SELECT, the result is promoted to
-// SelectInfoSchema to match the legacy ANTLR listener's behaviour.
+// the resolved type is a user SELECT, the result is promoted to
+// SelectInfoSchema to match the legacy ANTLR listener behaviour.
 //
-// The omni classifier treats anything starting with EXPLAIN as
-// SelectInfoSchema; that includes EXPLAIN-on-DML, which the legacy listener
-// promoted to base.Select. We mirror that promotion: if a statement starts
-// with EXPLAIN, the result is base.Select.
+// EXPLAIN-prefixed statements are mapped to base.Select to match the legacy
+// listener (which promoted EXPLAIN-on-DML to Select).
 func getQueryType(statement string, allSystems bool) base.QueryType {
-	omniType := analysis.Classify(statement)
-
 	if isExplainStatement(statement) {
 		return base.Select
 	}
 
-	switch omniType {
+	qt := classifyByAST(statement)
+
+	switch qt {
 	case analysis.QueryTypeSelect:
 		if allSystems {
 			return base.SelectInfoSchema
@@ -42,10 +48,45 @@ func getQueryType(statement string, allSystems bool) base.QueryType {
 	}
 }
 
+// classifyByAST parses the statement and inspects the first top-level AST
+// node. On parse failure or empty input it falls back to the keyword-based
+// Classify.
+func classifyByAST(statement string) analysis.QueryType {
+	file, errs := parser.Parse(statement)
+	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		return analysis.Classify(statement)
+	}
+	if qt, ok := astQueryType(file.Stmts[0]); ok {
+		return qt
+	}
+	return analysis.Classify(statement)
+}
+
+// astQueryType maps a top-level AST node to its QueryType. The bool return
+// is false when the node's type is not in our table — callers should fall
+// back to Classify in that case.
+func astQueryType(node ast.Node) (analysis.QueryType, bool) {
+	switch node.(type) {
+	case *ast.SelectStmt, *ast.SetOpStmt:
+		return analysis.QueryTypeSelect, true
+	case *ast.ShowStmt,
+		*ast.ShowRoutineLoadStmt, *ast.ShowRoutineLoadTaskStmt,
+		*ast.ShowJobStmt, *ast.ShowJobTaskStmt,
+		*ast.ShowConstraintsStmt, *ast.ShowAnalyzeStmt, *ast.ShowStatsStmt:
+		return analysis.QueryTypeSelectInfoSchema, true
+	case *ast.DescribeStmt, *ast.ExplainStmt, *ast.HelpStmt:
+		return analysis.QueryTypeSelectInfoSchema, true
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
+		*ast.MergeStmt, *ast.TruncateTableStmt:
+		return analysis.QueryTypeDML, true
+	}
+	return 0, false
+}
+
 // isExplainStatement reports whether the first meaningful keyword of the
-// statement is EXPLAIN. Used to override omni's SelectInfoSchema
-// classification with base.Select for EXPLAIN-prefixed queries, matching
-// the legacy ANTLR listener.
+// statement is EXPLAIN. Used to override the SelectInfoSchema classification
+// with base.Select for EXPLAIN-prefixed queries, matching the legacy ANTLR
+// listener.
 func isExplainStatement(statement string) bool {
 	// Walk over leading whitespace and -- / /* */ comments before sniffing the
 	// first identifier-like token. We deliberately don't bring in the full
