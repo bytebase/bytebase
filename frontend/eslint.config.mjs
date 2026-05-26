@@ -21,6 +21,14 @@ export default [
       "no-console": ["error", { allow: ["warn", "error", "debug", "assert"] }],
       "no-debugger": "error",
       "no-empty-pattern": "error",
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "crypto",
+          property: "randomUUID",
+          message: "Use v4 from 'uuid' package instead of crypto.randomUUID() for compatibility.",
+        },
+      ],
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
       "@typescript-eslint/no-empty-interface": "error",
