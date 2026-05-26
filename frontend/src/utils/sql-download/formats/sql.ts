@@ -10,9 +10,15 @@ const TEXT_ENCODER = new TextEncoder();
 function buildPrefix(engine: Engine, columnNames: readonly string[]): string {
   const q = SQL_ENGINE_QUOTES.get(engine);
   if (!q) {
+    const engineName = Engine[engine] ?? String(engine);
     throw downloadError(
       "UnsupportedFormat",
-      `SQL download is not supported for engine ${Engine[engine] ?? engine}`
+      `SQL download is not supported for engine ${engineName}`,
+      undefined,
+      {
+        key: "sql-editor.sql-download-engine-unsupported",
+        params: { engine: engineName },
+      }
     );
   }
   const cols = columnNames.map((c) => `${q}${c}${q}`).join(",");

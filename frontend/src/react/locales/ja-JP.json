@@ -2730,6 +2730,10 @@
     "download-encryption-failed": "ダウンロードの暗号化に失敗しました。",
     "download-failed": "ダウンロードに失敗しました。",
     "download-too-large": "ダウンロードするには結果が大きすぎます。行数を減らすか、エクスポートを使用してください。",
+    "download-too-large-bytes": "{{statements}} 件のステートメントで合計約 {{megabytes}} MB のダウンロードです。上限は {{capMb}} MB です。結果サイズを減らすか、エクスポートを使用してください。",
+    "download-too-large-cells": "{{statements}} 件のステートメントで合計 {{cells}} セルのダウンロードです。上限は {{limit}} セルです。行数を減らすか、エクスポートを使用してください。",
+    "download-too-large-xlsx-columns": "XLSX の列数は {{limit}} を超えられません(取得: {{count}})。エクスポートまたは別の形式を使用してください。",
+    "download-too-large-xlsx-rows": "XLSX のデータ行数は {{limit}} を超えられません(取得: {{count}})。エクスポートまたは別の形式を使用してください。",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} 時間",
@@ -2820,6 +2824,7 @@
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "show-in-editor": "エディタに表示",
+    "sql-download-engine-unsupported": "エンジン {{engine}} では SQL ダウンロードがサポートされていません。",
     "sql-download-unavailable": "この接続では SQL ダウンロードを利用できません。",
     "sync-in-progress": "同期中",
     "tab": {

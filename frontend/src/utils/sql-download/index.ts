@@ -95,7 +95,16 @@ export async function buildDownloadBlob(
       if (totalCells > MAX_DOWNLOADABLE_CELLS) {
         throw downloadError(
           "ResultTooLarge",
-          `Download has ${totalCells.toLocaleString()} cells across ${totalStmts} statement(s); limit is ${MAX_DOWNLOADABLE_CELLS.toLocaleString()}. Reduce the row count or use Export.`
+          `Download has ${totalCells.toLocaleString()} cells across ${totalStmts} statement(s); limit is ${MAX_DOWNLOADABLE_CELLS.toLocaleString()}. Reduce the row count or use Export.`,
+          undefined,
+          {
+            key: "sql-editor.download-too-large-cells",
+            params: {
+              cells: totalCells.toLocaleString(),
+              statements: totalStmts,
+              limit: MAX_DOWNLOADABLE_CELLS.toLocaleString(),
+            },
+          }
         );
       }
       totalEstBytes += estimateResultBytes(
@@ -107,7 +116,16 @@ export async function buildDownloadBlob(
         const capMB = (MAX_ESTIMATED_BYTES / (1024 * 1024)).toFixed(0);
         throw downloadError(
           "ResultTooLarge",
-          `Download is ~${estMB} MB across ${totalStmts} statement(s); limit is ${capMB} MB. Reduce the result size or use Export.`
+          `Download is ~${estMB} MB across ${totalStmts} statement(s); limit is ${capMB} MB. Reduce the result size or use Export.`,
+          undefined,
+          {
+            key: "sql-editor.download-too-large-bytes",
+            params: {
+              megabytes: estMB,
+              statements: totalStmts,
+              capMb: capMB,
+            },
+          }
         );
       }
     }

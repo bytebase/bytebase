@@ -54,9 +54,20 @@ export type DownloadErrorCode =
   | "UnsupportedFormat"
   | "ResultTooLarge";
 
+/** Translation hint attached to a DownloadError. When present, downloadErrorMessage
+ *  surfaces `t(i18n.key, i18n.params)` so the user gets locale-aware copy with
+ *  the runtime numeric details (cell counts, byte limits, engine names) folded
+ *  in via interpolation. Throw sites still set a plain-English `message` as a
+ *  developer-readable fallback (used by tests and console errors). */
+export interface DownloadErrorI18n {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
 export interface DownloadError extends Error {
   code: DownloadErrorCode;
   cause?: unknown;
+  i18n?: DownloadErrorI18n;
 }
 
 /** Narrow an unknown thrown value to a DownloadError without enumerating the
@@ -74,12 +85,16 @@ export function isDownloadError(e: unknown): e is DownloadError {
 export function downloadError(
   code: DownloadErrorCode,
   message: string,
-  cause?: unknown
+  cause?: unknown,
+  i18n?: DownloadErrorI18n
 ): DownloadError {
   const err = new Error(message) as DownloadError;
   err.code = code;
   if (cause !== undefined) {
     err.cause = cause;
+  }
+  if (i18n !== undefined) {
+    err.i18n = i18n;
   }
   return err;
 }

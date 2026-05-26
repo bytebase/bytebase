@@ -29,6 +29,14 @@ const DYNAMIC_PREFIXES = [
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",
+  // Referenced via error.i18n.key on a thrown DownloadError, not as a literal
+  // `t("…")` call in source. See sql-download/error-messages.ts and the
+  // throw sites in sql-download/index.ts / formats/{sql,xlsx}.ts.
+  "sql-editor.download-too-large-bytes",
+  "sql-editor.download-too-large-cells",
+  "sql-editor.download-too-large-xlsx-columns",
+  "sql-editor.download-too-large-xlsx-rows",
+  "sql-editor.sql-download-engine-unsupported",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
   "common.bypassed",

@@ -2730,6 +2730,10 @@
     "download-encryption-failed": "Không thể mã hóa bản tải xuống.",
     "download-failed": "Tải xuống thất bại.",
     "download-too-large": "Kết quả quá lớn để tải xuống. Hãy giảm số dòng hoặc sử dụng Xuất.",
+    "download-too-large-bytes": "Tải xuống ~{{megabytes}} MB qua {{statements}} câu lệnh; giới hạn là {{capMb}} MB. Hãy giảm kích thước kết quả hoặc sử dụng Xuất.",
+    "download-too-large-cells": "Tải xuống có {{cells}} ô qua {{statements}} câu lệnh; giới hạn là {{limit}}. Hãy giảm số dòng hoặc sử dụng Xuất.",
+    "download-too-large-xlsx-columns": "XLSX không thể vượt quá {{limit}} cột; nhận được {{count}}. Hãy sử dụng Xuất hoặc định dạng khác.",
+    "download-too-large-xlsx-rows": "XLSX không thể vượt quá {{limit}} dòng dữ liệu; nhận được {{count}}. Hãy sử dụng Xuất hoặc định dạng khác.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} giờ",
@@ -2820,6 +2824,7 @@
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "show-in-editor": "Hiển thị trong editor",
+    "sql-download-engine-unsupported": "Tải xuống SQL không được hỗ trợ cho engine {{engine}}.",
     "sql-download-unavailable": "Tải xuống SQL không khả dụng cho kết nối này.",
     "sync-in-progress": "Đang đồng bộ",
     "tab": {

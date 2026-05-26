@@ -2730,6 +2730,10 @@
     "download-encryption-failed": "No se pudo cifrar la descarga.",
     "download-failed": "Error en la descarga.",
     "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
+    "download-too-large-bytes": "La descarga es de ~{{megabytes}} MB en {{statements}} sentencia(s); el límite es {{capMb}} MB. Reduzca el tamaño del resultado o use Exportar.",
+    "download-too-large-cells": "La descarga tiene {{cells}} celdas en {{statements}} sentencia(s); el límite es {{limit}}. Reduzca el número de filas o use Exportar.",
+    "download-too-large-xlsx-columns": "XLSX no puede superar {{limit}} columnas; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
+    "download-too-large-xlsx-rows": "XLSX no puede superar {{limit}} filas de datos; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hora",
@@ -2820,6 +2824,7 @@
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "show-in-editor": "Mostrar en editor",
+    "sql-download-engine-unsupported": "La descarga SQL no es compatible con el motor {{engine}}.",
     "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión.",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {

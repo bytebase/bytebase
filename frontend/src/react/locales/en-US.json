@@ -2742,6 +2742,10 @@
     "download-encryption-failed": "Failed to encrypt download.",
     "download-failed": "Download failed.",
     "download-too-large": "Result is too large for download. Reduce the row count or use Export.",
+    "download-too-large-bytes": "Download is ~{{megabytes}} MB across {{statements}} statement(s); limit is {{capMb}} MB. Reduce the result size or use Export.",
+    "download-too-large-cells": "Download has {{cells}} cells across {{statements}} statement(s); limit is {{limit}}. Reduce the row count or use Export.",
+    "download-too-large-xlsx-columns": "XLSX cannot exceed {{limit}} columns; got {{count}}. Use Export or a different format.",
+    "download-too-large-xlsx-rows": "XLSX cannot exceed {{limit}} data rows; got {{count}}. Use Export or a different format.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -2832,6 +2836,7 @@
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "show-in-editor": "Show in Editor",
+    "sql-download-engine-unsupported": "SQL download is not supported for engine {{engine}}.",
     "sql-download-unavailable": "SQL download is unavailable for this connection.",
     "sync-in-progress": "Sync in progress",
     "tab": {

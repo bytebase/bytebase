@@ -2730,6 +2730,10 @@
     "download-encryption-failed": "加密下载失败。",
     "download-failed": "下载失败。",
     "download-too-large": "结果过大，无法下载。请减少行数或使用导出。",
+    "download-too-large-bytes": "下载在 {{statements}} 条语句中约 {{megabytes}} MB；上限为 {{capMb}} MB。请减小结果体积或使用导出。",
+    "download-too-large-cells": "下载在 {{statements}} 条语句中包含 {{cells}} 个单元格；上限为 {{limit}}。请减少行数或使用导出。",
+    "download-too-large-xlsx-columns": "XLSX 列数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
+    "download-too-large-xlsx-rows": "XLSX 数据行数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -2820,6 +2824,7 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
+    "sql-download-engine-unsupported": "数据库引擎 {{engine}} 不支持 SQL 下载。",
     "sql-download-unavailable": "当前连接不支持 SQL 下载。",
     "sync-in-progress": "正在同步",
     "tab": {

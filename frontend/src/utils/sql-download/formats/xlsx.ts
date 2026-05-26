@@ -19,13 +19,29 @@ export async function serializeXLSX(result: QueryResult): Promise<Uint8Array> {
   if (result.columnNames.length > EXCEL_MAX_COLUMN) {
     throw downloadError(
       "ResultTooLarge",
-      `XLSX cannot exceed ${EXCEL_MAX_COLUMN} columns; got ${result.columnNames.length}. Use Export or a different format.`
+      `XLSX cannot exceed ${EXCEL_MAX_COLUMN} columns; got ${result.columnNames.length}. Use Export or a different format.`,
+      undefined,
+      {
+        key: "sql-editor.download-too-large-xlsx-columns",
+        params: {
+          limit: EXCEL_MAX_COLUMN,
+          count: result.columnNames.length,
+        },
+      }
     );
   }
   if (result.rows.length > EXCEL_MAX_ROWS - 1) {
     throw downloadError(
       "ResultTooLarge",
-      `XLSX cannot exceed ${EXCEL_MAX_ROWS - 1} data rows; got ${result.rows.length}. Use Export or a different format.`
+      `XLSX cannot exceed ${EXCEL_MAX_ROWS - 1} data rows; got ${result.rows.length}. Use Export or a different format.`,
+      undefined,
+      {
+        key: "sql-editor.download-too-large-xlsx-rows",
+        params: {
+          limit: (EXCEL_MAX_ROWS - 1).toLocaleString(),
+          count: result.rows.length.toLocaleString(),
+        },
+      }
     );
   }
   // ExcelJS ships as CJS. Vite's dep-prebundle exposes only the default
