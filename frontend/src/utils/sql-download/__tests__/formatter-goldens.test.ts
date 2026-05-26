@@ -8,11 +8,7 @@ import {
   RowValue_TimestampSchema,
   RowValue_TimestampTZSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  formatFloat32,
-  formatTimestamp,
-  formatTimestampTZ,
-} from "../value";
+import { formatFloat32, formatTimestamp, formatTimestampTZ } from "../value";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const formattersDir = resolve(here, "goldens", "formatters");
@@ -42,7 +38,7 @@ describe("formatter cross-side goldens", () => {
     }
   });
 
-  it("formatTimestamp matches Go time.Format(\"2006-01-02 15:04:05.000000\")", () => {
+  it('formatTimestamp matches Go time.Format("2006-01-02 15:04:05.000000")', () => {
     for (const [secStr, nanosStr, expected] of readTSV("timestamp.tsv")) {
       const ts = create(RowValue_TimestampSchema, {
         googleTimestamp: create(TimestampSchema, {
@@ -56,13 +52,9 @@ describe("formatter cross-side goldens", () => {
   });
 
   it("formatTimestampTZ matches Go time.RFC3339Nano in FixedZone", () => {
-    for (const [
-      secStr,
-      nanosStr,
-      zoneRaw,
-      offsetStr,
-      expected,
-    ] of readTSV("timestamptz.tsv")) {
+    for (const [secStr, nanosStr, zoneRaw, offsetStr, expected] of readTSV(
+      "timestamptz.tsv"
+    )) {
       const zone = zoneRaw === "-" ? "" : zoneRaw;
       const tz = create(RowValue_TimestampTZSchema, {
         googleTimestamp: create(TimestampSchema, {
@@ -73,7 +65,10 @@ describe("formatter cross-side goldens", () => {
         offset: Number.parseInt(offsetStr, 10),
       });
       const got = formatTimestampTZ(tz);
-      expect(got, `seconds=${secStr} nanos=${nanosStr} zone=${zoneRaw} offset=${offsetStr}`).toBe(expected);
+      expect(
+        got,
+        `seconds=${secStr} nanos=${nanosStr} zone=${zoneRaw} offset=${offsetStr}`
+      ).toBe(expected);
     }
   });
 });

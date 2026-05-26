@@ -6,7 +6,6 @@ import type {
   RowValue_Timestamp,
   RowValue_TimestampTZ,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { downloadError } from "./types";
 
 const pad = (n: number, width: number): string =>
   n.toString().padStart(width, "0");
@@ -107,75 +106,6 @@ export function formatFloat32(v: number): string {
     }
   }
   return expandExponential(f32.toString());
-}
-
-/**
- * Mirror Go encoding/json float emission (verb 'g' with thresholds).
- *  - bits=64: 'f' if abs in [1e-6, 1e21), else 'e'.
- *  - bits=32: same thresholds against float32(abs).
- *  - 'e' form: single-digit mantissa, signed exponent without leading zeros
- *    EXCEPT positive exponents below 10 keep no leading zero either; only
- *    two-digit negative exponents have their leading zero stripped: e-09 -> e-9.
- *  - NaN / +Inf / -Inf throw — Go's json.MarshalIndent rejects them.
- *
- * Used only by the JSON encoder. CSV/SQL/XLSX continue to use formatFloat32/64
- * which always emit non-exponential decimal.
- */
-export function formatJSONNumber(v: number, bits: 32 | 64): string {
-  if (Number.isNaN(v)) {
-    throw downloadError("SerializationFailed", "JSON cannot encode NaN");
-  }
-  if (v === Number.POSITIVE_INFINITY) {
-    throw downloadError("SerializationFailed", "JSON cannot encode +Inf");
-  }
-  if (v === Number.NEGATIVE_INFINITY) {
-    throw downloadError("SerializationFailed", "JSON cannot encode -Inf");
-  }
-
-  // Handle zero separately — Go emits "0" or "-0", never "0e+0".
-  if (v === 0) {
-    return Object.is(v, -0) ? "-0" : "0";
-  }
-
-  const abs = Math.abs(v);
-  const ref = bits === 32 ? Math.fround(abs) : abs;
-  const useExp = ref < 1e-6 || ref >= 1e21;
-  if (!useExp) {
-    if (bits === 32) {
-      // formatFloat32 gives shortest round-trip decimal without exponent.
-      // But for the 'f' (non-exp) range we want formatFloat64-like behavior
-      // using the float32 value. formatFloat32 already does this correctly.
-      return formatFloat32(v);
-    }
-    return formatFloat64(v);
-  }
-
-  // 'e' form. For float32, find the shortest significand that round-trips
-  // through float32, then emit in exponential notation matching Go.
-  if (bits === 32) {
-    const f32 = Math.fround(v);
-    for (let p = 1; p <= 17; p++) {
-      const s = f32.toPrecision(p);
-      if (Math.fround(Number.parseFloat(s)) === f32) {
-        // Convert to exponential and normalize to match Go's format.
-        return normalizeExp(Number.parseFloat(s).toExponential());
-      }
-    }
-    return normalizeExp(f32.toExponential());
-  }
-
-  // 'e' form for float64. JS Number.prototype.toExponential never pads
-  // single-digit exponents (it emits "1e+21", "1e-7", not "1e+021"/"1e-07"),
-  // so its output already matches Go's strconv.AppendFloat(_, 'e', -1, 64).
-  return normalizeExp(v.toExponential());
-}
-
-/** Normalize an exponential string to match Go's strconv.AppendFloat output:
- *  strip leading zeros from exponent digits, keep the sign.
- *  e.g. "1e+07" → "1e+7", "1.5e-07" → "1.5e-7". JS already does this for
- *  most cases but toExponential() may emit "1.5e+0" for the identity — keep. */
-function normalizeExp(s: string): string {
-  return s.replace(/e([+-])0*(\d+)$/, (_, sign, digits) => `e${sign}${digits}`);
 }
 
 // Hot-path TextEncoder/TextDecoder — `goQuoteInner` runs per SQL string cell,
@@ -359,118 +289,64 @@ export function pqQuoteLiteral(s: string): string {
   return `'${s.replaceAll("'", "''")}'`;
 }
 
-/** CSV/SQL recursive helper — mirrors backend csv.go:99-147. */
-export function csvCellFromStructpbValue(v: StructpbValue | undefined): string {
-  if (!v?.kind) return "";
+/**
+ * Compact JSON encoding of a structpb.Value — the cell-content string used
+ * for VARIANT-style columns across every export format under the Tier 2
+ * relaxation. Each side emits canonical JSON via JSON.stringify on the
+ * unwrapped tree; the cross-side byte-equal contract no longer covers
+ * structpb cells (each side picks its language-natural JSON form, which
+ * happens to agree for ASCII content and may diverge on HTML-unsafe chars
+ * or struct field order).
+ * Inf / NaN → null to mirror JSON.stringify and JSON-spec restrictions.
+ */
+export function structpbValueAsJSON(v: StructpbValue | undefined): string {
+  return JSON.stringify(unwrapStructpbValue(v));
+}
+
+function unwrapStructpbValue(v: StructpbValue | undefined): unknown {
+  if (!v?.kind) return null;
   switch (v.kind.case) {
     case "nullValue":
-      return "";
-    case "stringValue":
-      return `"${v.kind.value}"`;
-    case "numberValue":
-      return formatFloat64(v.kind.value);
+      return null;
     case "boolValue":
-      return v.kind.value ? "true" : "false";
-    case "listValue": {
-      const items = v.kind.value.values.map(csvCellFromStructpbValue);
-      return `"[${items.join(",")}]"`;
+      return v.kind.value;
+    case "numberValue": {
+      const n = v.kind.value;
+      return Number.isFinite(n) ? n : null;
     }
+    case "stringValue":
+      return v.kind.value;
+    case "listValue":
+      return v.kind.value.values.map(unwrapStructpbValue);
     case "structValue": {
-      const entries = Object.entries(v.kind.value.fields ?? {}).sort(
-        ([a], [b]) => {
-          if (a < b) return -1;
-          if (a > b) return 1;
-          return 0;
-        }
-      );
-      const parts = entries.map(
-        ([k, val]) => `${k}:${csvCellFromStructpbValue(val)}`
-      );
-      return `"${parts.join(",")}"`;
+      // Object.create(null) so a column literally named "__proto__" inside
+      // a structpb cell can't pollute the output via Object.prototype.
+      const out: Record<string, unknown> = Object.create(null);
+      for (const [k, val] of Object.entries(v.kind.value.fields ?? {})) {
+        out[k] = unwrapStructpbValue(val);
+      }
+      return out;
     }
     default:
-      return "";
+      return null;
   }
 }
 
-/**
- * Escape a string for embedding inside a proto-text `"..."` literal.
- * Mirrors Go's `prototext` escaping rules used by `proto.Message.String()`,
- * verified empirically against `structpb.NewStringValue(s).String()`:
- *   `\` → `\\`, `"` → `\"`, `\n` → `\n`, `\r` → `\r`, `\t` → `\t`.
- *   ASCII C0 controls (< 0x20) and DEL (0x7F)  → `\xHH` (2-digit lowercase hex).
- *   C1 controls (0x80–0x9F)                    → `\uHHHH` (4-digit lowercase hex).
- *   Everything else (including U+00A0, U+00AD soft hyphen, U+200B ZWSP,
- *   U+FEFF BOM, U+FFFE noncharacter, PUA, supplementary planes) → verbatim.
- *   Single quote is NOT escaped. Note: differs from goQuoteInner — no
- *   symbolic `\a`/`\b`/`\f`/`\v` and no `\u` for ZWSP / BOM / etc.
- */
-function prototextEscape(s: string): string {
-  let out = "";
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    if (c === 0x5c) out += "\\\\";
-    else if (c === 0x22) out += '\\"';
-    else if (c === 0x0a) out += "\\n";
-    else if (c === 0x0d) out += "\\r";
-    else if (c === 0x09) out += "\\t";
-    else if (c < 0x20 || c === 0x7f) out += "\\x" + hex2(c);
-    else if (c >= 0x80 && c <= 0x9f) out += "\\u" + hex4(c);
-    else out += s[i];
-  }
-  return out;
+/** CSV cell rendering of a structpb value: JSON content surrounded by CSV
+ *  quotes with embedded quotes doubled. Kept exported for compatibility
+ *  with the `value.test.ts` import path; previously emitted the bracket
+ *  "a:1,b:2" form (Tier 1) — now emits JSON-as-string (Tier 2). */
+export function csvCellFromStructpbValue(v: StructpbValue | undefined): string {
+  return csvQuoteString(structpbValueAsJSON(v));
 }
 
-/**
- * XLSX/JSON helper — proto's text-format `.String()` representation.
- * Matches Go's `protoreflect.Value.String()` shape, sufficient for byte-equal
- * goldens. Struct fields are emitted in sorted-key order (deterministic).
- * String body and struct keys are prototext-escaped.
- *
- * Note on whitespace: Go's prototext intentionally inserts random whitespace
- * to discourage relying on the exact format. In practice, modern protobuf-go
- * (v1.36+) emits TWO spaces between repeated fields and between key/value
- * within a single struct field — that's what the goldens capture. If a
- * future Go upgrade flips this, regenerate goldens AND update both the
- * SEP constant below and the existing structpb_kinds golden in lockstep.
- */
-const PROTOTEXT_SEP = " "; // single space — protobuf-go on main; see note above
+/** XLSX cell rendering of a structpb value: raw JSON string (no CSV quoting,
+ *  no surrounding quotes). Also used by the JSON encoder as the scalar
+ *  string value for VARIANT columns. */
 export function xlsxStringFromStructpbValue(
   v: StructpbValue | undefined
 ): string {
-  if (!v?.kind) return "";
-  switch (v.kind.case) {
-    case "nullValue":
-      return "null_value:NULL_VALUE";
-    case "stringValue":
-      return `string_value:"${prototextEscape(v.kind.value)}"`;
-    case "numberValue":
-      return `number_value:${formatFloat64(v.kind.value)}`;
-    case "boolValue":
-      return `bool_value:${v.kind.value ? "true" : "false"}`;
-    case "listValue": {
-      const items = v.kind.value.values.map(
-        (x) => `values:{${xlsxStringFromStructpbValue(x)}}`
-      );
-      return `list_value:{${items.join(PROTOTEXT_SEP)}}`;
-    }
-    case "structValue": {
-      const entries = Object.entries(v.kind.value.fields ?? {}).sort(
-        ([a], [b]) => {
-          if (a < b) return -1;
-          if (a > b) return 1;
-          return 0;
-        }
-      );
-      const parts = entries.map(
-        ([k, val]) =>
-          `fields:{key:"${prototextEscape(k)}"${PROTOTEXT_SEP}value:{${xlsxStringFromStructpbValue(val)}}}`
-      );
-      return `struct_value:{${parts.join(PROTOTEXT_SEP)}}`;
-    }
-    default:
-      return "";
-  }
+  return structpbValueAsJSON(v);
 }
 
 const ENGINES_PG_LIKE: ReadonlySet<Engine> = new Set([
@@ -522,7 +398,9 @@ export function csvCellFromRowValue(v: RowValue | undefined): string {
     case "floatValue":
       return formatFloat32(v.kind.value);
     case "doubleValue":
-      return formatFloat64(v.kind.value);
+      // Tier 2 relaxation: language-natural number emission for CSV/JSON/XLSX
+      // float64. SQL float64 still uses formatFloat64 (engine-literal compat).
+      return Number.isFinite(v.kind.value) ? String(v.kind.value) : "";
     case "bytesValue":
       return csvQuoteString("0x" + bytesToHex(v.kind.value));
     case "timestampValue":
@@ -627,7 +505,15 @@ export function sqlValueFromRowValue(
     case "timestampTzValue":
       return quoteSqlString(formatTimestampTZ(v.kind.value), isPg);
     case "valueValue":
-      return csvCellFromStructpbValue(v.kind.value);
+      // Structpb cells use proper engine-aware SQL string quoting (single-
+      // quote literals with embedded `'` doubled, or `pq.QuoteLiteral` for
+      // PG/Redshift). Backend currently still emits CSV-style double-quoted
+      // strings here (a long-standing quirk noted in HANDOFF.md's "Known
+      // SQL identifier / CSV header parity gap"); fixing the backend would
+      // also require regenerating its tests and is intentionally deferred.
+      // Tier 2 already drops cross-side byte equality for structpb cells,
+      // so the frontend gets to be correct on its own.
+      return quoteSqlString(structpbValueAsJSON(v.kind.value), isPg);
     default:
       return "";
   }
@@ -783,7 +669,8 @@ export function xlsxValueFromRowValue(v: RowValue | undefined): string {
     case "floatValue":
       return formatFloat32(v.kind.value);
     case "doubleValue":
-      return formatFloat64(v.kind.value);
+      // Tier 2 relaxation: language-natural number emission for XLSX float64.
+      return Number.isFinite(v.kind.value) ? String(v.kind.value) : "";
     case "bytesValue":
       return bytesToBase64(v.kind.value);
     case "timestampValue":

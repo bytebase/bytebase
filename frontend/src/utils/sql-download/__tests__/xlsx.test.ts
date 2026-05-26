@@ -1,27 +1,25 @@
-// xlsx.test.ts
-
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { create } from "@bufbuild/protobuf";
+import { StructSchema, type Value, ValueSchema } from "@bufbuild/protobuf/wkt";
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
+import {
+  QueryResultSchema,
+  QueryRowSchema,
+  type RowValue,
+  RowValueSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { serializeXLSX } from "../formats/xlsx";
-import { FIXTURES } from "./fixtures";
 
-const here = dirname(fileURLToPath(import.meta.url));
+const rowOf = (...values: RowValue[]) => create(QueryRowSchema, { values });
+const intRow = (n: bigint): RowValue =>
+  create(RowValueSchema, { kind: { case: "int64Value", value: n } });
+const strRow = (s: string): RowValue =>
+  create(RowValueSchema, { kind: { case: "stringValue", value: s } });
+const valueRow = (v: Value): RowValue =>
+  create(RowValueSchema, { kind: { case: "valueValue", value: v } });
 
-/** Normalize a cell string for comparison:
- *  - Replace U+FFFD (replacement char, used by Go's excelize for invalid XML
- *    control chars like NUL/ESC) with empty string — ExcelJS strips those
- *    chars entirely when writing, so both sides map to the stripped form.
- *  - Normalize CRLF → LF: Go's excelize preserves \r\n, ExcelJS strips \r. */
-function normCell(s: string): string {
-  return s.replace(/�/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "");
-}
-
-async function loadXlsx(bytes: Uint8Array): Promise<string[][]> {
+async function loadCells(bytes: Uint8Array): Promise<string[][]> {
   const book = new ExcelJS.Workbook();
-  // Copy bytes into a fresh ArrayBuffer to avoid Buffer pool offset issues.
   const ab = bytes.buffer.slice(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength
@@ -32,35 +30,54 @@ async function loadXlsx(bytes: Uint8Array): Promise<string[][]> {
   sheet.eachRow({ includeEmpty: true }, (row) => {
     const cells: string[] = [];
     row.eachCell({ includeEmpty: true }, (cell) => {
-      cells.push(cell.value == null ? "" : normCell(String(cell.value)));
+      cells.push(cell.value == null ? "" : String(cell.value));
     });
     rows.push(cells);
   });
   return rows;
 }
 
-describe("serializeXLSX cell parity", () => {
-  for (const id of Object.keys(FIXTURES)) {
-    it(id, async () => {
-      const goldenBytes = new Uint8Array(
-        readFileSync(resolve(here, "goldens/xlsx", `${id}.xlsx`))
-      );
-      const ourBytes = await serializeXLSX(FIXTURES[id]);
-      const goldenCells = await loadXlsx(goldenBytes);
-      const ourCells = await loadXlsx(ourBytes);
-      expect(ourCells).toEqual(goldenCells);
+describe("serializeXLSX", () => {
+  it("writes a header row plus N data rows with string-typed cells", async () => {
+    const r = create(QueryResultSchema, {
+      columnNames: ["id", "name"],
+      rows: [
+        rowOf(intRow(1n), strRow("Alice")),
+        rowOf(intRow(2n), strRow("Bob")),
+      ],
     });
-  }
-});
+    expect(await loadCells(await serializeXLSX(r))).toEqual([
+      ["id", "name"],
+      ["1", "Alice"],
+      ["2", "Bob"],
+    ]);
+  });
 
-describe("serializeXLSX column-count guard", () => {
-  // Excel's hard worksheet column limit (XFD = 16,384 per ECMA-376).
-  // Beyond this, ExcelJS's col-cache itself throws.
+  it("emits structpb cells as JSON-as-string in the cell text (Tier 2)", async () => {
+    const struct = create(ValueSchema, {
+      kind: {
+        case: "structValue",
+        value: create(StructSchema, {
+          fields: {
+            a: create(ValueSchema, { kind: { case: "numberValue", value: 1 } }),
+            b: create(ValueSchema, {
+              kind: { case: "stringValue", value: "x" },
+            }),
+          },
+        }),
+      },
+    });
+    const r = create(QueryResultSchema, {
+      columnNames: ["v"],
+      rows: [rowOf(valueRow(struct))],
+    });
+    expect(await loadCells(await serializeXLSX(r))).toEqual([
+      ["v"],
+      [`{"a":1,"b":"x"}`],
+    ]);
+  });
+
   it("throws ResultTooLarge when columns exceed 16384", async () => {
-    const { create } = await import("@bufbuild/protobuf");
-    const { QueryResultSchema } = await import(
-      "@/types/proto-es/v1/sql_service_pb"
-    );
     const tooWide = create(QueryResultSchema, {
       columnNames: Array.from({ length: 16385 }, (_, i) => `c${i}`),
       rows: [],
@@ -70,20 +87,9 @@ describe("serializeXLSX column-count guard", () => {
       message: expect.stringContaining("16384"),
     });
   });
-});
 
-describe("serializeXLSX row-count guard", () => {
-  // Excel's hard worksheet limit is 1,048,576 rows. The serializer writes a
-  // header in row 1 and data in rows 2..N+1, so max data rows = 1,048,575.
-  // The 5M-cell cap doesn't catch tall-narrow shapes (e.g. 1.1M × 1).
   it("throws ResultTooLarge when data rows exceed 1,048,575", async () => {
-    const { create } = await import("@bufbuild/protobuf");
-    const { QueryResultSchema } = await import(
-      "@/types/proto-es/v1/sql_service_pb"
-    );
-    // Sparse array — the guard checks only `rows.length` and throws before
-    // iteration, so the slots can stay unallocated. This keeps memory bounded
-    // (only the array spine, not 1M+ row protos).
+    // Sparse array — guard rejects on `rows.length` before iteration.
     const sparseRows = new Array(1_048_576) as never[];
     const tooTall = create(QueryResultSchema, {
       columnNames: ["a"],

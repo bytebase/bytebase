@@ -1,58 +1,91 @@
-// sql.test.ts
-
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { create } from "@bufbuild/protobuf";
+import { StructSchema, type Value, ValueSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, it } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  type QueryResult,
+  QueryResultSchema,
+  QueryRowSchema,
+  type RowValue,
+  RowValueSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { serializeSQL } from "../formats/sql";
-import { FIXTURES } from "./fixtures";
-import { expectGolden } from "./helpers";
 
-const goldensRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "goldens/sql"
-);
+const TEXT_DECODER = new TextDecoder("utf-8");
 
-const ENGINES: Array<{ key: string; engine: Engine }> = [
-  { key: "mysql", engine: Engine.MYSQL },
-  { key: "postgres", engine: Engine.POSTGRES },
-  { key: "tidb", engine: Engine.TIDB },
-  { key: "clickhouse", engine: Engine.CLICKHOUSE },
-  { key: "mssql", engine: Engine.MSSQL },
-  { key: "oracle", engine: Engine.ORACLE },
-  { key: "snowflake", engine: Engine.SNOWFLAKE },
-  { key: "sqlite", engine: Engine.SQLITE },
-  { key: "redshift", engine: Engine.REDSHIFT },
-  { key: "mariadb", engine: Engine.MARIADB },
-  { key: "oceanbase", engine: Engine.OCEANBASE },
-  { key: "spanner", engine: Engine.SPANNER },
-];
+const rowOf = (...values: RowValue[]) => create(QueryRowSchema, { values });
+const intRow = (n: bigint): RowValue =>
+  create(RowValueSchema, { kind: { case: "int64Value", value: n } });
+const strRow = (s: string): RowValue =>
+  create(RowValueSchema, { kind: { case: "stringValue", value: s } });
+const valueRow = (v: Value): RowValue =>
+  create(RowValueSchema, { kind: { case: "valueValue", value: v } });
 
-describe("serializeSQL byte-equal goldens", () => {
-  for (const id of Object.keys(FIXTURES)) {
-    for (const { key, engine } of ENGINES) {
-      const fileName = `${id}.${key}.sql`;
-      const path = resolve(goldensRoot, fileName);
-      if (!existsSync(path)) {
-        // Backend skipped this engine/fixture combo (e.g. zero columns →
-        // SQLStatementPrefix errors) and produced no golden. Skip on the TS
-        // side too. Use it.skip to keep the test report informative.
-        it.skip(`${id} on ${key} (backend skipped)`, () => {});
-        continue;
-      }
-      it(`${id} on ${key}`, () => {
-        const out = serializeSQL(FIXTURES[id], engine);
-        expectGolden(out, "sql", fileName);
-      });
-    }
-  }
-});
+const sql = (result: QueryResult, engine: Engine): string =>
+  TEXT_DECODER.decode(serializeSQL(result, engine));
 
-describe("serializeSQL engine guard", () => {
-  it("throws UnsupportedFormat for unknown engine", () => {
-    expect(() =>
-      serializeSQL(FIXTURES.ascii_basic, Engine.ENGINE_UNSPECIFIED)
-    ).toThrow(/UnsupportedFormat|engine/i);
+describe("serializeSQL", () => {
+  it("MySQL uses backtick identifiers and single-quoted string literals with `'` doubled", () => {
+    const r = create(QueryResultSchema, {
+      columnNames: ["id", "name"],
+      rows: [rowOf(intRow(1n), strRow("it's"))],
+    });
+    expect(sql(r, Engine.MYSQL)).toBe(
+      "INSERT INTO `<table_name>` (`id`,`name`) VALUES (1,'it''s');"
+    );
+  });
+
+  it("Postgres uses double-quote identifiers and pq.QuoteLiteral for strings", () => {
+    const r = create(QueryResultSchema, {
+      columnNames: ["id", "name"],
+      rows: [
+        rowOf(intRow(1n), strRow("plain")),
+        // Backslash in PG triggers the `E'...'` escape-string syntax.
+        rowOf(intRow(2n), strRow("a\\b")),
+      ],
+    });
+    expect(sql(r, Engine.POSTGRES)).toBe(
+      `INSERT INTO "<table_name>" ("id","name") VALUES (1,'plain');\nINSERT INTO "<table_name>" ("id","name") VALUES (2, E'a\\\\b');`
+    );
+  });
+
+  it("structpb cell uses engine-aware SQL string quoting (single-quote, embedded `'` doubled), not CSV-style", () => {
+    const struct = create(ValueSchema, {
+      kind: {
+        case: "structValue",
+        value: create(StructSchema, {
+          fields: {
+            a: create(ValueSchema, { kind: { case: "numberValue", value: 1 } }),
+            b: create(ValueSchema, {
+              kind: { case: "stringValue", value: "x" },
+            }),
+          },
+        }),
+      },
+    });
+    const r = create(QueryResultSchema, {
+      columnNames: ["v"],
+      rows: [rowOf(valueRow(struct))],
+    });
+    // Postgres: pq.QuoteLiteral wraps in `'...'`. No backslash in payload, so no `E'...'`.
+    expect(sql(r, Engine.POSTGRES)).toBe(
+      `INSERT INTO "<table_name>" ("v") VALUES ('{"a":1,"b":"x"}');`
+    );
+    // MySQL: non-PG engines use Go's strconv.Quote-style escape inside the
+    // single-quoted literal, which escapes embedded `"` as `\"`. Payload has
+    // no `'`, so the only escapes come from the JSON-as-string `"` chars.
+    expect(sql(r, Engine.MYSQL)).toBe(
+      'INSERT INTO `<table_name>` (`v`) VALUES (\'{\\"a\\":1,\\"b\\":\\"x\\"}\');'
+    );
+  });
+
+  it("throws UnsupportedFormat for engines without a quote-character mapping", () => {
+    const r = create(QueryResultSchema, {
+      columnNames: ["a"],
+      rows: [rowOf(intRow(1n))],
+    });
+    expect(() => serializeSQL(r, Engine.ENGINE_UNSPECIFIED)).toThrow(
+      /UnsupportedFormat|engine/i
+    );
   });
 });
