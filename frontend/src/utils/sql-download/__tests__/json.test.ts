@@ -95,22 +95,38 @@ describe("serializeJSON", () => {
 ]`);
   });
 
-  it("emits NaN / +Inf / -Inf as null (matches JSON.stringify)", () => {
+  it("emits NaN / +Inf / -Inf as null (matches JSON.stringify) for both float32 and float64 cells", () => {
+    // Regression: prior to the JSONFloat32 non-finite guard, float32 NaN/Inf
+    // cells emitted bare `NaN` / `+Inf` / `-Inf` tokens (formatFloat32 output)
+    // which are not valid JSON and would fail downstream parsers.
     const r = create(QueryResultSchema, {
-      columnNames: ["nan", "posinf", "neginf"],
+      columnNames: [
+        "nan64",
+        "posinf64",
+        "neginf64",
+        "nan32",
+        "posinf32",
+        "neginf32",
+      ],
       rows: [
         rowOf(
           f64Row(Number.NaN),
           f64Row(Number.POSITIVE_INFINITY),
-          f64Row(Number.NEGATIVE_INFINITY)
+          f64Row(Number.NEGATIVE_INFINITY),
+          f32Row(Number.NaN),
+          f32Row(Number.POSITIVE_INFINITY),
+          f32Row(Number.NEGATIVE_INFINITY)
         ),
       ],
     });
     expect(json(r)).toBe(`[
   {
-    "nan": null,
-    "posinf": null,
-    "neginf": null
+    "nan64": null,
+    "posinf64": null,
+    "neginf64": null,
+    "nan32": null,
+    "posinf32": null,
+    "neginf32": null
   }
 ]`);
   });

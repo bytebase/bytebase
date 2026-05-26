@@ -28,7 +28,14 @@ function encode(v: JSONInput, indent: string, prefix: string): string {
   if (typeof v === "boolean") return v ? "true" : "false";
   if (typeof v === "string") return JSON.stringify(v);
   if (typeof v === "bigint") return v.toString();
-  if (v instanceof JSONFloat32) return formatFloat32(v.value);
+  if (v instanceof JSONFloat32) {
+    // `formatFloat32` emits "NaN" / "+Inf" / "-Inf" for non-finite values —
+    // valid output for CSV/SQL/XLSX text cells but NOT valid JSON, so the
+    // download would be a parse error. Match the bare-number guard just
+    // below and emit `null` instead.
+    if (!Number.isFinite(v.value)) return "null";
+    return formatFloat32(v.value);
+  }
   if (typeof v === "number") {
     if (!Number.isFinite(v)) return "null";
     return String(v);
