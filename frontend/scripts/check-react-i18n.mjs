@@ -32,6 +32,14 @@ const DYNAMIC_PREFIXES = [
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",
+  // Referenced via error.i18n.key on a thrown DownloadError, not as a literal
+  // `t("…")` call in source. See sql-download/error-messages.ts and the
+  // throw sites in sql-download/index.ts / formats/{sql,xlsx}.ts.
+  "sql-editor.download-too-large-bytes",
+  "sql-editor.download-too-large-cells",
+  "sql-editor.download-too-large-xlsx-columns",
+  "sql-editor.download-too-large-xlsx-rows",
+  "sql-editor.sql-download-engine-unsupported",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
   "common.bypassed",
@@ -50,7 +58,13 @@ const LOCALES_DIR = resolve(REACT_DIR, "locales");
 // keeps its React tree co-located with its framework-agnostic logic at
 // `src/plugins/ai/react/`; include those files when scanning for `t(...)`
 // usage so its i18n keys don't read as "unused".
-const EXTRA_REACT_DIRS = [resolve(ROOT, "src/plugins/ai/react")];
+const EXTRA_REACT_DIRS = [
+  resolve(ROOT, "src/plugins/ai/react"),
+  // sql-download lives outside src/react/ as a framework-neutral module
+  // but its `t(...)` calls (e.g. in error-messages.ts) consume keys from
+  // src/react/locales — include it so those keys don't read as "unused".
+  resolve(ROOT, "src/utils/sql-download"),
+];
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
 let errors = 0;

@@ -44,12 +44,13 @@ import {
   type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { createExplainToken } from "@/utils/pev2";
+import { SQL_ENGINE_QUOTES } from "@/utils/sql-download/engines";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { isNullOrUndefined } from "@/utils/util";
+import { isDev, isNullOrUndefined } from "@/utils/util";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
@@ -237,6 +238,23 @@ function SingleResultViewInner({
   );
   const { runQuery } = useExecuteSQL();
   const { copyAll } = useSelectionContext();
+
+  // Under isDev() (client-side download), drop SQL from the format list
+  // when the engine isn't in SQL_ENGINE_QUOTES — otherwise selecting SQL
+  // would reach serializeSQL and throw UnsupportedFormat at runtime.
+  // Production (backend Export RPC) handles all engines.
+  const supportFormats = useMemo(() => {
+    const all = [
+      ExportFormat.CSV,
+      ExportFormat.JSON,
+      ExportFormat.SQL,
+      ExportFormat.XLSX,
+    ];
+    if (!isDev()) return all;
+    return SQL_ENGINE_QUOTES.has(engine)
+      ? all
+      : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
+  }, [engine]);
 
   const dataTableRef = useRef<
     VirtualDataTableHandle | VirtualDataBlockHandle | null
@@ -553,12 +571,7 @@ function SingleResultViewInner({
                 <DataExportButton
                   size="sm"
                   disabled={!result || isEmpty(result)}
-                  supportFormats={[
-                    ExportFormat.CSV,
-                    ExportFormat.JSON,
-                    ExportFormat.SQL,
-                    ExportFormat.XLSX,
-                  ]}
+                  supportFormats={supportFormats}
                   viewMode="DRAWER"
                   supportPassword
                   maximumExportCount={maximumExportCount}

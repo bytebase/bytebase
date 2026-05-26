@@ -2686,7 +2686,10 @@
     "allow-admin-mode-only": "实例<instance></instance>只能通过管理员模式访问。",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
+      "database-no-longer-available": "该数据库在当前标签页中已不可用。",
+      "export-limit-exceeds-executed": "导出上限 {{exportLimit}} 超过了已执行查询的行数上限 ({{executedLimit}})；仅导出已缓存的行。",
       "failed-for-db": "无法导出 {{db}} 的数据",
+      "no-results": "没有可下载的结果。",
       "self": "批量导出",
       "tooltip": "最多选择 {{max}} 个数据库，批量导出最后一次执行的查询结果"
     },
@@ -2720,6 +2723,13 @@
     "copy-url": "复制 URL",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
+    "download-encryption-failed": "加密下载失败。",
+    "download-failed": "下载失败。",
+    "download-too-large": "结果过大，无法下载。请减少行数或使用导出。",
+    "download-too-large-bytes": "下载在 {{statements}} 条语句中约 {{megabytes}} MB；上限为 {{capMb}} MB。请减小结果体积或使用导出。",
+    "download-too-large-cells": "下载在 {{statements}} 条语句中包含 {{cells}} 个单元格；上限为 {{limit}}。请减少行数或使用导出。",
+    "download-too-large-xlsx-columns": "XLSX 列数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
+    "download-too-large-xlsx-rows": "XLSX 数据行数不能超过 {{limit}}；当前为 {{count}}。请使用导出或其他格式。",
     "duration-day": "{{days}} 天",
     "duration-days": "{{days}} 天",
     "duration-hour": "{{hours}} 小时",
@@ -2810,6 +2820,8 @@
     "self": "SQL 编辑器",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "show-in-editor": "在编辑器中显示",
+    "sql-download-engine-unsupported": "数据库引擎 {{engine}} 不支持 SQL 下载。",
+    "sql-download-unavailable": "当前连接不支持 SQL 下载。",
     "sync-in-progress": "正在同步",
     "tab": {
       "context-menu": {
