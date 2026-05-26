@@ -140,7 +140,12 @@ export function MonacoEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   const modelRef = useRef<ITextModel | null>(null);
-  const activeDecorationRef = useRef<{ clear(): void } | null>(null);
+  // Track decoration IDs (not a collection object). `editor.deltaDecorations`
+  // is atomic — swapping IDs replaces or removes decorations in a single
+  // model edit. The previous `createDecorationsCollection().clear()`
+  // approach silently no-op'd in some cases (observed after the model
+  // mutated between ticks), leaving stale highlights on screen.
+  const activeDecorationIdsRef = useRef<string[]>([]);
   const contentRef = useRef(safeContent);
   const languageRef = useRef(safeLanguage);
   const readOnlyRef = useRef(readOnly);
@@ -219,26 +224,30 @@ export function MonacoEditor({
       selection && !selection.isEmpty()
         ? selection
         : resolveActiveRangeByCursor(ranges, cursorPosition);
+    const hadPriorDecoration = activeDecorationIdsRef.current.length > 0;
 
-    activeDecorationRef.current?.clear();
-    activeDecorationRef.current = null;
-    if (
+    const willDraw = !!(
       enableDecorations &&
       activeRange &&
       (!selection || selection.isEmpty())
-    ) {
-      activeDecorationRef.current = editor.createDecorationsCollection([
-        {
-          range: activeRange,
-          options: {
-            isWholeLine: false,
-            shouldFillLineOnLineBreak: true,
-            className: "bg-gray-200",
-          },
-        },
-      ]);
-    }
-
+    );
+    const nextDecorations =
+      willDraw && activeRange
+        ? [
+            {
+              range: activeRange,
+              options: {
+                isWholeLine: false,
+                shouldFillLineOnLineBreak: true,
+                className: "bg-gray-200",
+              },
+            },
+          ]
+        : [];
+    activeDecorationIdsRef.current = editor.deltaDecorations(
+      activeDecorationIdsRef.current,
+      nextDecorations
+    );
     onActiveContentChangeRef.current?.(
       activeRange ? model.getValueInRange(activeRange) : ""
     );
@@ -399,8 +408,10 @@ export function MonacoEditor({
           ws.removeEventListener("message", messageHandler!)
         );
       }
-      activeDecorationRef.current?.clear();
-      activeDecorationRef.current = null;
+      if (editorRef.current && activeDecorationIdsRef.current.length > 0) {
+        editorRef.current.deltaDecorations(activeDecorationIdsRef.current, []);
+      }
+      activeDecorationIdsRef.current = [];
       if (editorRef.current) {
         storeViewState(editorRef.current, modelRef.current);
       }
@@ -683,15 +694,27 @@ const resolveActiveRangeByCursor = (
   if (!position) return undefined;
   for (const range of ranges) {
     if (range.endLineNumber < position.lineNumber) continue;
-    if (
-      range.startLineNumber <= position.lineNumber &&
-      range.endLineNumber >= position.lineNumber
-    ) {
-      if (range.endColumn >= position.column) {
-        return range;
-      }
-    }
     if (range.startLineNumber > position.lineNumber) break;
+    // Cursor line is inside [startLine, endLine]. Apply column gates only
+    // at the boundary lines. LSP ranges (and the Monaco conversion used
+    // here) are END-EXCLUSIVE, so `position.column >= range.endColumn` on
+    // the end line means the cursor sits past the last covered position
+    // and is NOT inside the range — e.g. cursor at the start of the
+    // blank line that follows `SELECT 1;\n` was incorrectly matching the
+    // statement range that ends at that exact position.
+    if (
+      range.startLineNumber === position.lineNumber &&
+      position.column < range.startColumn
+    ) {
+      continue;
+    }
+    if (
+      range.endLineNumber === position.lineNumber &&
+      position.column >= range.endColumn
+    ) {
+      continue;
+    }
+    return range;
   }
   return undefined;
 };
@@ -801,7 +824,10 @@ const processStatementRangeMessage = (
       endColumn: range.end.character + 1,
     }));
     ref.current.set(payload.params.uri, ranges);
-  } catch {
-    // ignore
+  } catch (e) {
+    console.debug("[sql-editor:statementRanges] failed to parse LSP message", {
+      data: message.data,
+      error: e,
+    });
   }
 };

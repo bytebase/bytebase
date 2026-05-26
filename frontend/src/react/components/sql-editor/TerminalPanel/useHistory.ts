@@ -8,17 +8,24 @@ import { minmax } from "@/utils";
 const MAX_HISTORY_ITEM_COUNT = 1000;
 
 interface HistoryState {
+  // Position in `list`. `list.length` means "live tail" (no history loaded).
   index: number;
+  // Snapshots of FINALIZED query items, captured at the moment a new tail
+  // gets appended (so the captured statement is the one that was actually
+  // executed, not the empty initial value).
   list: WebTerminalQueryItemV1[];
 }
 
 /**
  * React port of `frontend/src/views/sql-editor/EditorPanel/TerminalPanel/useHistory.ts`.
+ *
  * Tracks an in-memory command history per ADMIN-mode tab so the up/down
- * arrow keys cycle through previously executed statements (replacing the
- * editor's current statement). Mirrors the Vue composable exactly:
- * push on every new query item, move respecting bounds, clear current
- * statement when stepping past the tail.
+ * arrow keys cycle through previously executed statements. Differs from the
+ * Vue original in HOW it captures snapshots: Vue mutated reactive proxies in
+ * place, so it could safely push the live tail at creation time and read its
+ * statement later. zustand replaces items immutably on every patch, so we
+ * push only when an item is *finalized* (a new tail just got appended,
+ * meaning the prior tail's statement is locked in).
  */
 export function useHistory() {
   const tabStore = useSQLEditorTabStore();
@@ -27,13 +34,12 @@ export function useHistory() {
   );
   const historyByTabIdRef = useRef(new Map<string, HistoryState>());
 
-  // The selector returns the (immutable) tail item from zustand; React
-  // re-renders whenever the underlying array changes.
   const currentTabId = useVueState(() => tabStore.currentTab?.id);
-  const currentQuery = useSQLEditorStore((s) => {
-    if (!currentTabId) return undefined;
-    const list = s.webTerminalQueryItemsByTabId[currentTabId];
-    return list && list.length > 0 ? list[list.length - 1] : undefined;
+  // Subscribe to list length only — statement edits replace the tail
+  // identity but don't grow the list, so they don't trigger this effect.
+  const queryListLength = useSQLEditorStore((s) => {
+    if (!currentTabId) return 0;
+    return s.webTerminalQueryItemsByTabId[currentTabId]?.length ?? 0;
   });
 
   const currentStack = (): HistoryState | undefined => {
@@ -43,7 +49,7 @@ export function useHistory() {
     const map = historyByTabIdRef.current;
     const existed = map.get(tab.id);
     if (existed) return existed;
-    const initial: HistoryState = { index: -1, list: [] };
+    const initial: HistoryState = { index: 0, list: [] };
     map.set(tab.id, initial);
     return initial;
   };
@@ -55,31 +61,42 @@ export function useHistory() {
     if (stack.list.length > MAX_HISTORY_ITEM_COUNT) {
       stack.list.shift();
     }
-    stack.index = stack.list.length - 1;
+    // After push, position the cursor "past the tail" so Up goes one back.
+    stack.index = stack.list.length;
   };
 
-  // Push the new query item onto the per-tab history only when a new
-  // command row is created — not on every keystroke. The Vue original
-  // got this for free because `updateWebTerminalQueryItem` mutated the
-  // tail in place, so the `computed(() => list[length-1])` kept the
-  // same reference across edits. The zustand slice replaces the tail
-  // immutably (`{...item, ...patch}`), so the selector returns a new
-  // identity on every statement edit; gate on `id` to recover the
-  // original semantics.
-  const lastPushedIdRef = useRef<string | undefined>(undefined);
+  // Detect a new live tail being appended — at that moment, the item now
+  // at `length - 2` was the just-finalized query (status FINISHED, statement
+  // locked). Capture it as a history snapshot.
+  const lastTabIdRef = useRef<string | undefined>(undefined);
+  const lastLengthRef = useRef(0);
   useEffect(() => {
-    if (!currentQuery) return;
-    if (currentQuery.id === lastPushedIdRef.current) return;
-    lastPushedIdRef.current = currentQuery.id;
-    push(currentQuery);
-  }, [currentQuery]);
+    if (lastTabIdRef.current !== currentTabId) {
+      lastTabIdRef.current = currentTabId;
+      lastLengthRef.current = queryListLength;
+      return;
+    }
+    if (queryListLength > lastLengthRef.current) {
+      const tab = tabStore.currentTab;
+      if (tab && tab.mode === "ADMIN") {
+        const items =
+          useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tab.id];
+        // The just-appended tail is at length-1; the finalized previous
+        // item is at length-2. Skip empty statements (e.g. initial blank).
+        const finalized = items?.[queryListLength - 2];
+        if (finalized && finalized.statement) push(finalized);
+      }
+    }
+    lastLengthRef.current = queryListLength;
+  }, [queryListLength, currentTabId, tabStore]);
 
   const move = (direction: "up" | "down") => {
     const stack = currentStack();
     if (!stack) return;
     const { index, list } = stack;
+    if (list.length === 0) return;
     const delta = direction === "up" ? -1 : 1;
-    const nextIndex = minmax(index + delta, 0, list.length - 1);
+    const nextIndex = minmax(index + delta, 0, list.length);
     if (nextIndex === index) return;
 
     const tab = tabStore.currentTab;
@@ -89,7 +106,8 @@ export function useHistory() {
     const tail = tabItems?.[tabItems.length - 1];
     if (!tail) return;
 
-    if (nextIndex === list.length - 1) {
+    if (nextIndex === list.length) {
+      // Stepped past the newest entry — back to the live (empty) tail.
       updateWebTerminalQueryItem(tab.id, tail.id, { statement: "" });
     } else {
       const historyQuery = list[nextIndex];

@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
   const editor = {
     addAction: vi.fn(() => subscription),
     createDecorationsCollection: vi.fn(() => ({ clear: vi.fn() })),
+    deltaDecorations: vi.fn(() => []),
     dispose: vi.fn(),
     focus: vi.fn(),
     getContentHeight: vi.fn(() => 120),
