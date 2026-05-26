@@ -33,28 +33,32 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
-			Name: fmt.Sprintf("%s/planCheckRun", plan.Name),
-		}))
-		if err != nil {
-			return nil, err
-		}
-		check := resp.Msg
-		hasStatementAdvise := false
-		for _, result := range check.Results {
-			if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
-				hasStatementAdvise = true
-				break
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+			resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+				Name: fmt.Sprintf("%s/planCheckRun", plan.Name),
+			}))
+			if err != nil {
+				return nil, err
 			}
-		}
-		if hasStatementAdvise {
-			if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
-				return check, nil
+			check := resp.Msg
+			hasStatementAdvise := false
+			for _, result := range check.Results {
+				if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
+					hasStatementAdvise = true
+					break
+				}
+			}
+			if hasStatementAdvise {
+				if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
+					return check, nil
+				}
 			}
 		}
 	}
-	return nil, nil
 }
 
 // getSchemaDiff gets the schema diff.
