@@ -2692,6 +2692,7 @@
     "and-n-more-databases": "及其他 {{n}} 个数据库",
     "batch-export": {
       "database-no-longer-available": "该数据库在当前标签页中已不可用。",
+      "export-limit-exceeds-executed": "导出上限 {{exportLimit}} 超过了已执行查询的行数上限 ({{executedLimit}})；仅导出已缓存的行。",
       "failed-for-db": "无法导出 {{db}} 的数据",
       "no-results": "没有可下载的结果。",
       "self": "批量导出",

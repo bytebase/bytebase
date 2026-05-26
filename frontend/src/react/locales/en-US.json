@@ -2704,6 +2704,7 @@
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "database-no-longer-available": "Database is no longer available in the current tab.",
+      "export-limit-exceeds-executed": "Export limit {{exportLimit}} exceeds the executed query's row limit ({{executedLimit}}); exporting cached rows only.",
       "failed-for-db": "Failed to export data for {{db}}",
       "no-results": "No results to download.",
       "self": "Batch export",

@@ -297,7 +297,13 @@ export function BatchQuerySelect({
                 title: t("sql-editor.batch-export.failed-for-db", {
                   db: databaseName,
                 }),
-                description: `Export limit ${options.limit} exceeds the executed query's row limit (${executedLimit}); exporting cached rows only.`,
+                description: t(
+                  "sql-editor.batch-export.export-limit-exceeds-executed",
+                  {
+                    exportLimit: options.limit,
+                    executedLimit,
+                  }
+                ),
               });
             }
             const { databaseName: dbSeg, instanceName } =

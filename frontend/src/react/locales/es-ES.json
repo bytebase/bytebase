@@ -2692,6 +2692,7 @@
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "database-no-longer-available": "La base de datos ya no está disponible en la pestaña actual.",
+      "export-limit-exceeds-executed": "El límite de exportación {{exportLimit}} supera el límite de filas de la consulta ejecutada ({{executedLimit}}); se exportarán solo las filas en caché.",
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
       "no-results": "No hay resultados para descargar.",
       "self": "Exportación por lotes",

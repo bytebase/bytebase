@@ -2692,6 +2692,7 @@
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "database-no-longer-available": "現在のタブでデータベースを利用できません。",
+      "export-limit-exceeds-executed": "エクスポート上限 {{exportLimit}} が実行済みクエリの行数上限 ({{executedLimit}}) を超えています。キャッシュされた行のみエクスポートします。",
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
       "no-results": "ダウンロードできる結果がありません。",
       "self": "一括エクスポート",

@@ -2692,6 +2692,7 @@
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
       "database-no-longer-available": "Cơ sở dữ liệu không còn khả dụng trong tab hiện tại.",
+      "export-limit-exceeds-executed": "Giới hạn xuất {{exportLimit}} vượt quá giới hạn số dòng của truy vấn đã thực thi ({{executedLimit}}); chỉ xuất các dòng đã được lưu trong bộ nhớ đệm.",
       "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
       "no-results": "Không có kết quả để tải xuống.",
       "self": "Xuất hàng loạt",
