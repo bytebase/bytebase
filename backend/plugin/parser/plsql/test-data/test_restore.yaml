@@ -68,7 +68,7 @@
     Original SQL:
     DELETE FROM T_GENERATED where a = 1
     */
-    INSERT INTO "DB"."T_GENERATED" SELECT * FROM "bbarchive"."prefix_1_T_GENERATED";
+    INSERT INTO "DB"."T_GENERATED" ("A", "B") SELECT "A", "B" FROM "bbarchive"."prefix_1_T_GENERATED";
 - input: UPDATE T_GENERATED SET a = 1 WHERE a = 2;
   backupdatabase: bbarchive
   backuptable: prefix_1_T_GENERATED
