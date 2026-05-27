@@ -24,10 +24,8 @@ import {
   extractPlanNameFromRolloutName,
 } from "@/utils";
 import { generateRolloutPreview } from "../../utils/rolloutPreview";
-import {
-  DatabaseGroupTarget,
-  DatabaseTarget,
-} from "../PlanDetailChangesBranch";
+import { DatabaseGroupTarget } from "../PlanDetailChangesBranch";
+import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import type { PendingTaskGroup } from "./types";
 
 async function buildPendingTaskGroups(
@@ -213,7 +211,7 @@ export function DeployPendingTasksSection({
                       {group.tasks.map((task) => (
                         <li key={`${task.target}:${task.specId}`}>
                           {isValidDatabaseName(task.target) ? (
-                            <DatabaseTarget
+                            <PlanTargetDisplay
                               showEnvironment
                               target={task.target}
                             />

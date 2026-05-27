@@ -17,6 +17,7 @@ import { getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { getLocalSheetByName } from "../utils/localSheet";
 import { transformReleaseCheckResultsToPlanCheckRuns } from "../utils/planCheck";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 export function PlanDetailDraftChecks({
   checkResults,
@@ -104,6 +105,9 @@ export function PlanDetailDraftChecks({
       isRunning={isRunningChecks}
       onRun={runChecks}
       planCheckRuns={formattedCheckRuns}
+      renderTarget={(target) => (
+        <PlanTargetDisplay showEnvironment target={target} />
+      )}
       runDisabled={statement.length === 0}
       trailingSummary={trailingSummary}
     />
