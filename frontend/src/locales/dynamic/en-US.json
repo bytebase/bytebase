@@ -1,33 +1,5 @@
 {
-  "activity": {
-    "sentence": {
-      "changed-x-link": "changed {name}. {link}",
-      "modified-sql-of-spec-link": "Modified SQL of {spec}. {link}",
-      "verb-type-target-by-people": "{verb} {type} {target}",
-      "verb-type-target-by-system-bot": "{type} {target} {verb}"
-    }
-  },
-  "resource": {
-    "database-group": "Database Group",
-    "environment": "Environment",
-    "idp": "Identity Provider",
-    "instance": "Instance",
-    "project": "Project",
-    "review-config": "Review Config",
-    "role": "Role"
-  },
   "settings": {
-    "general": {
-      "workspace": {
-        "announcement-alert-level": {
-          "field": {
-            "critical": "Critical",
-            "info": "Normal",
-            "warning": "Warning"
-          }
-        }
-      }
-    },
     "sensitive-data": {
       "semantic-types": {
         "template": {
@@ -331,7 +303,6 @@
       }
     },
     "purchase": {
-      "enterprise-description": "Scale your business securely while staying compliant.",
       "features": {
         "enterprise": {
           "2fa": "2FA & advanced authentication policies",
@@ -371,9 +342,7 @@
           "sso": "Google & GitHub SSO",
           "support": "Email support"
         }
-      },
-      "free-description": "Designed for solo devs, side-projects, and experiments.",
-      "pro-description": "Built for teams creating production-ready applications."
+      }
     }
   }
 }

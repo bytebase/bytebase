@@ -1,22 +1,4 @@
 {
-  "announcement": "Bạn có thể nâng cấp, hạ cấp hoặc {cancel} bất cứ lúc nào. Không có phí ẩn.",
-  "billed-annually": "Thanh toán hàng năm",
-  "billed-monthly": "Thanh toán hàng tháng",
-  "buy": "Mua gói {plan}",
-  "cancel": "hủy đăng ký của bạn",
-  "contact-us": "Liên hệ chúng tôi",
-  "current": "Gói hiện tại",
-  "current-plan": "Gói hiện tại",
-  "deploy": "Triển khai",
-  "disabled-feature": "Đây là một tính năng cao cấp trong gói đăng ký",
-  "enterprise-price-intro": "Tùy chỉnh, thanh toán hàng năm",
-  "expired": "đã hết hạn",
-  "expires-at": "Hết hạn vào",
-  "free-price-intro": "Tối đa {users} người dùng và {instances} phiên bản",
-  "free-trial": "Bạn có thể bắt đầu dùng thử miễn phí trong 14 ngày - không cần thẻ tín dụng",
-  "max-instance-count": "Số lượng phiên bản tối đa",
-  "per-instance": "Mỗi phiên bản",
-  "per-month": "/ tháng",
   "plan": {
     "enterprise": {
       "desc": "Các tính năng bảo mật, tuân thủ và quyền bổ sung. Hỗ trợ chuyên dụng với SLA.",
@@ -35,19 +17,5 @@
     },
     "title": "Cộng đồng",
     "try": "Bắt đầu dùng thử miễn phí"
-  },
-  "plan-compare": "So sánh tính năng giữa các gói khác nhau",
-  "price-unit-for-instance": "/ phiên bản / tháng",
-  "price-unit-for-user": "/ người dùng / tháng",
-  "purchase-license": "Mua giấy phép",
-  "sensitive-placeholder": "Dán giấy phép của bạn vào đây - chỉ ghi",
-  "start-free-trial": "Bắt đầu dùng thử miễn phí",
-  "start-trial": "Dùng thử miễn phí ngay",
-  "subscribe": "Đăng ký ngay",
-  "team-price-intro": "{instances} phiên bản miễn phí, mua tối đa {users} người dùng",
-  "trialing": "đang dùng thử",
-  "unlimited": "Không giới hạn",
-  "update-license": "Cập nhật giấy phép",
-  "upgrade": "Nâng cấp gói đăng ký",
-  "user-count": "Số lượng người dùng"
+  }
 }

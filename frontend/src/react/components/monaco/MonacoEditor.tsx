@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import type { Language, SQLDialect } from "@/types";
@@ -162,10 +163,7 @@ export function MonacoEditor({
     if (filename) {
       return filename;
     }
-    const id =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
+    const id = uuidv4();
     return `${id}.${extensionNameOfLanguage(safeLanguage)}`;
   }, [filename, safeLanguage]);
   const [contentHeight, setContentHeight] = useState(min);

@@ -78,6 +78,12 @@ func TestGetQueryType(t *testing.T) {
 			statement: "EXPLAIN DROP TABLE users",
 			want:      base.DDL,
 		},
+		{
+			// USE is intentionally Unknown so ACL rejects it as a hard
+			// deny rather than authorising it under bb.sql.ddl.
+			statement: "USE db1",
+			want:      base.QueryTypeUnknown,
+		},
 	}
 
 	for _, tc := range tests {

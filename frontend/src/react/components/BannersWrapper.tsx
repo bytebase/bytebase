@@ -283,7 +283,7 @@ function BannerUpgradeSubscription() {
                   neededPlan: (
                     <button
                       type="button"
-                      className="cursor-pointer underline hover:opacity-60"
+                      className="mr-1 cursor-pointer underline hover:opacity-60"
                       onClick={() => setShowModal(true)}
                     >
                       {neededPlanFeatures}
@@ -294,8 +294,8 @@ function BannerUpgradeSubscription() {
             </div>
             <div className="ml-2">
               <Button size="sm" onClick={gotoSubscriptionPage}>
+                <Sparkles className="h-auto w-4" />
                 {t("subscription.upgrade")}
-                <Sparkles className="ml-1 h-auto w-4 text-accent" />
               </Button>
             </div>
           </div>

@@ -942,15 +942,15 @@
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
-      "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {branch}.",
+      "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {{branch}}.",
       "step-merge": "Una vez que la revisión pase, fusione el PR. Bytebase creará automáticamente un despliegue y lo implementará en los entornos de destino.",
       "step-sql-review": "SQL Review se ejecuta automáticamente en la pull request y publica comentarios de revisión.",
       "title": "Pruebe su primera migración GitOps"
     },
     "workflow": {
       "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
-      "file-hint": "Guardar como {filePath} en su repositorio",
-      "provider-not-match": "La workload identity seleccionada solo funciona para {provider}.",
+      "file-hint": "Guardar como {{filePath}} en su repositorio",
+      "provider-not-match": "La workload identity seleccionada solo funciona para {{provider}}.",
       "self-hosted-runner": "Runner self-hosted",
       "title": "Generación de archivo de flujo de trabajo"
     },
@@ -1495,7 +1495,7 @@
   "issue.task-run.logs": "Registros",
   "issue.task-run.session": "Sesión",
   "issue.transaction-mode.label": "Modo de transacción",
-  "issue.upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({size}).",
+  "issue.upload-sql-file-max-size-exceeded": "Se ha excedido el tamaño máximo del archivo ({{size}}).",
   "label": {
     "add-label": "Agregar etiqueta",
     "empty-label-value": "Valor",
@@ -1658,7 +1658,7 @@
         "new-conversation": "Comenzar nueva conversación",
         "no-message": "No hay mensajes en esta conversación",
         "rename": "Renombrar conversación",
-        "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
+        "select-or-create": "Seleccione o {{create}} una conversación para comenzar.",
         "tips": {
           "no-more": "No más",
           "suggest-prompt": "Sugiriendo promts..."
@@ -2686,7 +2686,10 @@
     "allow-admin-mode-only": "La instancia <instance></instance> solo es accesible en modo administrador.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
+      "database-no-longer-available": "La base de datos ya no está disponible en la pestaña actual.",
+      "export-limit-exceeds-executed": "El límite de exportación {{exportLimit}} supera el límite de filas de la consulta ejecutada ({{executedLimit}}); se exportarán solo las filas en caché.",
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
+      "no-results": "No hay resultados para descargar.",
       "self": "Exportación por lotes",
       "tooltip": "Seleccione como máximo {{max}} bases de datos para exportar por lotes los resultados de las últimas consultas"
     },
@@ -2720,6 +2723,13 @@
     "copy-url": "Copiar URL",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
+    "download-encryption-failed": "No se pudo cifrar la descarga.",
+    "download-failed": "Error en la descarga.",
+    "download-too-large": "El resultado es demasiado grande para descargar. Reduzca el número de filas o use Exportar.",
+    "download-too-large-bytes": "La descarga es de ~{{megabytes}} MB en {{statements}} sentencia(s); el límite es {{capMb}} MB. Reduzca el tamaño del resultado o use Exportar.",
+    "download-too-large-cells": "La descarga tiene {{cells}} celdas en {{statements}} sentencia(s); el límite es {{limit}}. Reduzca el número de filas o use Exportar.",
+    "download-too-large-xlsx-columns": "XLSX no puede superar {{limit}} columnas; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
+    "download-too-large-xlsx-rows": "XLSX no puede superar {{limit}} filas de datos; se obtuvieron {{count}}. Use Exportar o un formato diferente.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hora",
@@ -2741,7 +2751,7 @@
         "title": "¿Cerrar la hoja no guardada?"
       }
     },
-    "invalid-database": "Base de datos no válida {database}",
+    "invalid-database": "Base de datos no válida {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Última sincronización: <time></time>",
     "link-access": "Acceso al enlace",
@@ -2810,6 +2820,8 @@
     "self": "Editor de SQL",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "show-in-editor": "Mostrar en editor",
+    "sql-download-engine-unsupported": "La descarga SQL no es compatible con el motor {{engine}}.",
+    "sql-download-unavailable": "La descarga SQL no está disponible para esta conexión.",
     "sync-in-progress": "Sincronización en progreso",
     "tab": {
       "context-menu": {

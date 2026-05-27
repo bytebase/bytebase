@@ -92,6 +92,12 @@ func astQueryType(node ast.Node) (analysis.QueryType, bool) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
 		*ast.MergeStmt, *ast.TruncateTableStmt:
 		return analysis.QueryTypeDML, true
+	case *ast.UseStmt:
+		// USE was rejected as Unknown by the legacy listener — its ACL flow
+		// treats Unknown as a hard deny while DDL is permitted via
+		// bb.sql.ddl. Keep the classification at Unknown so users with DDL
+		// rights cannot run USE.
+		return analysis.QueryTypeUnknown, true
 	}
 	return analysis.QueryTypeDDL, true
 }

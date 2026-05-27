@@ -948,15 +948,15 @@
     "test-setup": {
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
-      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {branch}.",
+      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {{branch}}.",
       "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
       "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
       "title": "Test your first GitOps migration"
     },
     "workflow": {
       "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
-      "file-hint": "Save as {filePath} in your repository {repository}",
-      "provider-not-match": "The selected workload identity only works for {provider}.",
+      "file-hint": "Save as {{filePath}} in your repository {{repository}}",
+      "provider-not-match": "The selected workload identity only works for {{provider}}.",
       "self-hosted-runner": "Self-hosted runner",
       "title": "Workflow file generation"
     },
@@ -1502,7 +1502,7 @@
   "issue.task-run.logs": "Logs",
   "issue.task-run.session": "Session",
   "issue.transaction-mode.label": "Transaction Mode",
-  "issue.upload-sql-file-max-size-exceeded": "Max file size ({size}) exceeded.",
+  "issue.upload-sql-file-max-size-exceeded": "Max file size ({{size}}) exceeded.",
   "label": {
     "add-label": "Add label",
     "empty-label-value": "Empty",
@@ -1665,7 +1665,7 @@
         "new-conversation": "Start new conversation",
         "no-message": "No message in this conversation",
         "rename": "Rename conversation",
-        "select-or-create": "Select or {create} a conversation to start.",
+        "select-or-create": "Select or {{create}} a conversation to start.",
         "tips": {
           "no-more": "no more",
           "suggest-prompt": "Suggesting prompts..."
@@ -2697,7 +2697,10 @@
     "allow-admin-mode-only": "Instance <instance></instance> is accessible in admin mode only.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
+      "database-no-longer-available": "Database is no longer available in the current tab.",
+      "export-limit-exceeds-executed": "Export limit {{exportLimit}} exceeds the executed query's row limit ({{executedLimit}}); exporting cached rows only.",
       "failed-for-db": "Failed to export data for {{db}}",
+      "no-results": "No results to download.",
       "self": "Batch export",
       "tooltip": "Select at most {{max}} databases to batch export latest query results"
     },
@@ -2731,6 +2734,13 @@
     "copy-url": "Copy URL",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
+    "download-encryption-failed": "Failed to encrypt download.",
+    "download-failed": "Download failed.",
+    "download-too-large": "Result is too large for download. Reduce the row count or use Export.",
+    "download-too-large-bytes": "Download is ~{{megabytes}} MB across {{statements}} statement(s); limit is {{capMb}} MB. Reduce the result size or use Export.",
+    "download-too-large-cells": "Download has {{cells}} cells across {{statements}} statement(s); limit is {{limit}}. Reduce the row count or use Export.",
+    "download-too-large-xlsx-columns": "XLSX cannot exceed {{limit}} columns; got {{count}}. Use Export or a different format.",
+    "download-too-large-xlsx-rows": "XLSX cannot exceed {{limit}} data rows; got {{count}}. Use Export or a different format.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} hour",
@@ -2752,7 +2762,7 @@
         "title": "Close the unsaved sheet?"
       }
     },
-    "invalid-database": "Invalid database {database}",
+    "invalid-database": "Invalid database {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Last synced: <time></time>",
     "link-access": "Link access",
@@ -2821,6 +2831,8 @@
     "self": "SQL Editor",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "show-in-editor": "Show in Editor",
+    "sql-download-engine-unsupported": "SQL download is not supported for engine {{engine}}.",
+    "sql-download-unavailable": "SQL download is unavailable for this connection.",
     "sync-in-progress": "Sync in progress",
     "tab": {
       "context-menu": {

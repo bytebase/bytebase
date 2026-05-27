@@ -18,6 +18,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
@@ -1220,7 +1221,7 @@ function EditMemberRoleDrawer({
   const [showNestedGrant, setShowNestedGrant] = useState(false);
 
   const [form, setForm] = useState<RoleBindingFormState>(() => ({
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     role: "",
     reason: "",
     expirationDays: 7,
