@@ -191,11 +191,15 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 		} else if claimed {
 			// Get plan and project for webhook
 			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
-			if err != nil || plan == nil {
+			if err != nil {
 				logger.Error("failed to get plan for failure webhook", log.BBError(err))
+			} else if plan == nil {
+				logger.Error("failed to get plan for failure webhook", log.BBError(errors.New("plan not found")))
 			} else {
-				if project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID); err != nil || project == nil {
+				if project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID); err != nil {
 					logger.Error("failed to get project for failure webhook", log.BBError(err))
+				} else if project == nil {
+					logger.Error("failed to get project for failure webhook", log.BBError(errors.New("project not found")))
 				} else {
 					// Send PIPELINE_FAILED webhook
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
