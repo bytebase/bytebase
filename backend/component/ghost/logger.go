@@ -8,68 +8,73 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ghostLogger struct{}
-
-func newGhostLogger() *ghostLogger {
-	return &ghostLogger{}
+type ghostLogger struct {
+	logger *slog.Logger
 }
 
-func (*ghostLogger) Debug(args ...any) {
-	slog.Debug(fmt.Sprintf(args[0].(string), args[1:]))
+func newGhostLogger(logger *slog.Logger) *ghostLogger {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return &ghostLogger{logger: logger}
 }
 
-func (*ghostLogger) Debugf(format string, args ...any) {
-	slog.Debug(format, args...)
+func (l *ghostLogger) Debug(args ...any) {
+	l.logger.Debug(fmt.Sprintf(args[0].(string), args[1:]...))
 }
 
-func (*ghostLogger) Info(args ...any) {
-	slog.Info(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Debugf(format string, args ...any) {
+	l.logger.Debug(fmt.Sprintf(format, args...))
 }
 
-func (*ghostLogger) Infof(format string, args ...any) {
-	slog.Info(format, args...)
+func (l *ghostLogger) Info(args ...any) {
+	l.logger.Info(fmt.Sprintf(args[0].(string), args[1:]...))
 }
 
-func (*ghostLogger) Warning(args ...any) error {
-	slog.Warn(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Infof(format string, args ...any) {
+	l.logger.Info(fmt.Sprintf(format, args...))
+}
+
+func (l *ghostLogger) Warning(args ...any) error {
+	l.logger.Warn(fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Warningf(format string, args ...any) error {
-	slog.Warn(format, args...)
+func (l *ghostLogger) Warningf(format string, args ...any) error {
+	l.logger.Warn(fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Error(args ...any) error {
-	slog.Error(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Error(args ...any) error {
+	l.logger.Error(fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Errorf(format string, args ...any) error {
-	slog.Error(format, args...)
+func (l *ghostLogger) Errorf(format string, args ...any) error {
+	l.logger.Error(fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Errore(err error) error {
+func (l *ghostLogger) Errore(err error) error {
 	if err != nil {
-		slog.Error(err.Error())
+		l.logger.Error(err.Error())
 	}
 	return err
 }
 
-func (*ghostLogger) Fatal(args ...any) error {
-	slog.Error(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Fatal(args ...any) error {
+	l.logger.Error(fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Fatalf(format string, args ...any) error {
-	slog.Error(format, args...)
+func (l *ghostLogger) Fatalf(format string, args ...any) error {
+	l.logger.Error(fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Fatale(err error) error {
+func (l *ghostLogger) Fatale(err error) error {
 	if err != nil {
-		slog.Error(err.Error())
+		l.logger.Error(err.Error())
 	}
 	return err
 }

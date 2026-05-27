@@ -216,7 +216,10 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(ctx context.Context, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, func(), error) { // NOSONAR(go:S107) This existing internal API wires gh-ost configuration fields explicitly.
+func NewMigrationContext(ctx context.Context, logger *slog.Logger, taskID int64, database *store.DatabaseMessage, dataSource *storepb.DataSource, tableName string, tmpTableNameSuffix string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*ghostbase.MigrationContext, func(), error) { // NOSONAR(go:S107) This existing internal API wires gh-ost configuration fields explicitly.
+	if logger == nil {
+		logger = slog.Default()
+	}
 	resolvedDataSource, err := util.ResolveTLSMaterial(dataSource)
 	if err != nil {
 		return nil, nil, err
@@ -231,7 +234,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	}
 
 	migrationContext := ghostbase.NewMigrationContext()
-	migrationContext.Log = newGhostLogger()
+	migrationContext.Log = newGhostLogger(logger)
 	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.GetHost()
 	port := 3306
 	if dataSource.GetPort() != "" {
@@ -311,14 +314,14 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	if maxAuthRetries := os.Getenv("GHOST_MAX_AUTH_RETRIES"); maxAuthRetries != "" {
 		if retries, err := strconv.Atoi(maxAuthRetries); err == nil && retries > 0 {
 			migrationContext.MaxAuthFailures = retries
-			slog.Info("gh-ost auth retry limit set",
+			logger.Info("gh-ost auth retry limit set",
 				slog.Int("max_failures", migrationContext.MaxAuthFailures),
 				slog.String("source", "environment"))
 		}
 	} else {
 		// Default to 10 retries to prevent retry storms
 		migrationContext.MaxAuthFailures = 10
-		slog.Info("gh-ost auth retry limit set",
+		logger.Info("gh-ost auth retry limit set",
 			slog.Int("max_failures", migrationContext.MaxAuthFailures),
 			slog.String("source", "default"))
 	}

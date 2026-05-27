@@ -1,6 +1,7 @@
 package ghost
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -10,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net"
 	"path/filepath"
@@ -22,6 +24,34 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestNewMigrationContextUsesScopedLogger(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil)).With(
+		slog.String("project", "db333"),
+		slog.Int64("task_run_id", 9213),
+		slog.String("replica_id", "replica-1"),
+	)
+
+	ctx := context.Background()
+	database := &store.DatabaseMessage{DatabaseName: "ghostdb"}
+	dataSource := &storepb.DataSource{
+		Host:               "127.0.0.1",
+		Port:               "3306",
+		Username:           "root",
+		AuthenticationType: storepb.DataSource_PASSWORD,
+	}
+
+	_, cleanup, err := NewMigrationContext(ctx, logger, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	require.NoError(t, err)
+	t.Cleanup(cleanup)
+
+	output := buf.String()
+	require.Contains(t, output, `msg="gh-ost auth retry limit set"`)
+	require.Contains(t, output, `project=db333`)
+	require.Contains(t, output, `task_run_id=9213`)
+	require.Contains(t, output, `replica_id=replica-1`)
+}
 
 func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 	certPEM, keyPEM := generateSelfSignedPEM(t)
@@ -40,7 +70,7 @@ func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 		AuthenticationType:   storepb.DataSource_PASSWORD,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 	require.True(t, migrationContext.UseTLS)
@@ -72,7 +102,7 @@ func TestNewMigrationContextRespectsVerifyTlsCertificate(t *testing.T) {
 		SslKey:               keyPEM,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 	require.False(t, migrationContext.TLSAllowInsecure)
@@ -101,7 +131,7 @@ func TestNewMigrationContextUsesSSHNetworkDialersAndCleanup(t *testing.T) {
 		AuthenticationType: storepb.DataSource_PASSWORD,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	cleanedUp := false
 	t.Cleanup(func() {
