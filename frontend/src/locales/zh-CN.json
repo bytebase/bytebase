@@ -298,8 +298,12 @@
         "readonly": "只读数据源"
       }
     },
+    "download-encryption-failed": "下载加密失败。",
+    "download-failed": "下载失败。",
+    "download-too-large": "结果过大，无法下载。请减少行数或使用导出。",
     "expired": "已过期",
-    "self": "SQL 编辑器"
+    "self": "SQL 编辑器",
+    "sql-download-unavailable": "当前连接不支持 SQL 下载。"
   },
   "sql-review": {
     "category": {},

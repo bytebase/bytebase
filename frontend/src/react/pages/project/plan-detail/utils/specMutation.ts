@@ -27,7 +27,7 @@ export const updateSpecSheetWithStatement = async (
   });
   specToPatch.config.value.sheet = createdSheet.name;
 
-  await planServiceClientConnect.updatePlan(
+  return await planServiceClientConnect.updatePlan(
     create(UpdatePlanRequestSchema, {
       plan: planPatch,
       updateMask: { paths: ["specs"] },

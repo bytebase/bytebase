@@ -298,8 +298,12 @@
         "readonly": "Read-only"
       }
     },
+    "download-encryption-failed": "Failed to encrypt download.",
+    "download-failed": "Download failed.",
+    "download-too-large": "Result is too large for download. Reduce the row count or use Export.",
     "expired": "Expired",
-    "self": "SQL Editor"
+    "self": "SQL Editor",
+    "sql-download-unavailable": "SQL download is unavailable for this connection."
   },
   "sql-review": {
     "category": {},

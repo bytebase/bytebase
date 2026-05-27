@@ -2686,7 +2686,10 @@
     "allow-admin-mode-only": "インスタンス <instance></instance> には管理者モードでのみアクセスできます。",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
+      "database-no-longer-available": "現在のタブでデータベースを利用できません。",
+      "export-limit-exceeds-executed": "エクスポート上限 {{exportLimit}} が実行済みクエリの行数上限 ({{executedLimit}}) を超えています。キャッシュされた行のみエクスポートします。",
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
+      "no-results": "ダウンロードできる結果がありません。",
       "self": "一括エクスポート",
       "tooltip": "最新のクエリ結果を一括エクスポートするには、最大 {{max}} 個のデータベースを選択してください"
     },
@@ -2720,6 +2723,13 @@
     "copy-url": "URLをコピー",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{{file}} 形式でダウンロード",
+    "download-encryption-failed": "ダウンロードの暗号化に失敗しました。",
+    "download-failed": "ダウンロードに失敗しました。",
+    "download-too-large": "ダウンロードするには結果が大きすぎます。行数を減らすか、エクスポートを使用してください。",
+    "download-too-large-bytes": "{{statements}} 件のステートメントで合計約 {{megabytes}} MB のダウンロードです。上限は {{capMb}} MB です。結果サイズを減らすか、エクスポートを使用してください。",
+    "download-too-large-cells": "{{statements}} 件のステートメントで合計 {{cells}} セルのダウンロードです。上限は {{limit}} セルです。行数を減らすか、エクスポートを使用してください。",
+    "download-too-large-xlsx-columns": "XLSX の列数は {{limit}} を超えられません(取得: {{count}})。エクスポートまたは別の形式を使用してください。",
+    "download-too-large-xlsx-rows": "XLSX のデータ行数は {{limit}} を超えられません(取得: {{count}})。エクスポートまたは別の形式を使用してください。",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} 時間",
@@ -2810,6 +2820,8 @@
     "self": "SQLエディタ",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "show-in-editor": "エディタに表示",
+    "sql-download-engine-unsupported": "エンジン {{engine}} では SQL ダウンロードがサポートされていません。",
+    "sql-download-unavailable": "この接続では SQL ダウンロードを利用できません。",
     "sync-in-progress": "同期中",
     "tab": {
       "context-menu": {

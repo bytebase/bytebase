@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
@@ -18,7 +18,13 @@ const mocks = vi.hoisted(() => ({
   fetchDBGroupListByProjectName: vi.fn(),
   getDatabaseByName: vi.fn(),
   getDBGroupByName: vi.fn(),
+  getInstanceResource: vi.fn(),
+  getPlanOptionVisibility: vi.fn(),
   getProjectByName: vi.fn(),
+  localSheets: new Map<
+    string,
+    { content: Uint8Array; contentSize: bigint; name: string }
+  >(),
   patchState: vi.fn(),
   routerPush: vi.fn(),
   databaseStore: {
@@ -135,7 +141,23 @@ vi.mock("@/react/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/react/components/ui/switch", () => ({
-  Switch: () => null,
+  Switch: ({
+    checked,
+    disabled,
+    onCheckedChange,
+  }: {
+    checked: boolean;
+    disabled?: boolean;
+    onCheckedChange: (checked: boolean) => void;
+  }) => (
+    <button
+      disabled={disabled}
+      onClick={() => onCheckedChange(!checked)}
+      type="button"
+    >
+      {checked ? "switch-on" : "switch-off"}
+    </button>
+  ),
 }));
 
 vi.mock("@/react/components/ui/tooltip", () => ({
@@ -195,7 +217,7 @@ vi.mock("@/utils", () => ({
   }),
   getDatabaseEnvironment: () => undefined,
   getDefaultTransactionMode: () => false,
-  getInstanceResource: () => undefined,
+  getInstanceResource: mocks.getInstanceResource,
   hasProjectPermissionV2: () => true,
 }));
 
@@ -209,19 +231,20 @@ vi.mock("@/utils/v1/databaseGroup", () => ({
 }));
 
 vi.mock("../utils/localSheet", () => ({
-  getLocalSheetByName: (name: string) => ({ name, content: "" }),
+  getLocalSheetByName: (name: string) => {
+    const existing = mocks.localSheets.get(name);
+    if (existing) return existing;
+    const sheet = { name, content: new Uint8Array(), contentSize: 0n };
+    mocks.localSheets.set(name, sheet);
+    return sheet;
+  },
   getNextLocalSheetUID: () => "-1",
   removeLocalSheet: vi.fn(),
 }));
 
 vi.mock("../utils/options", () => ({
   allowGhostForDatabase: () => false,
-  getPlanOptionVisibility: () => ({
-    showGhost: false,
-    showPreBackup: false,
-    showRole: false,
-    showTransactionMode: false,
-  }),
+  getPlanOptionVisibility: mocks.getPlanOptionVisibility,
 }));
 
 vi.mock("../utils/planCheck", () => ({
@@ -278,12 +301,15 @@ vi.mock("./PlanDetailStatementSection", () => ({
   PlanDetailStatementSection: ({
     planCheckRuns,
     spec,
+    statementVersion,
   }: {
     planCheckRuns?: PlanCheckRun[];
+    statementVersion?: number;
     spec: { id: string };
   }) => (
     <div data-testid="statement-section">
-      {spec.id}:{planCheckRuns?.map((run) => run.name).join(",") ?? ""}
+      {spec.id}:{planCheckRuns?.map((run) => run.name).join(",") ?? ""}:
+      {statementVersion ?? 0}
     </div>
   ),
 }));
@@ -319,6 +345,21 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  mocks.localSheets.clear();
+  mocks.getPlanOptionVisibility.mockReturnValue({
+    shouldShow: false,
+    showGhost: false,
+    showInstanceRole: false,
+    showIsolationLevel: false,
+    showPreBackup: false,
+    showTransactionMode: false,
+  });
+  mocks.getInstanceResource.mockReturnValue({
+    engine: Engine.MYSQL,
+    engineVersion: "",
+    name: "instances/test",
+    title: "test",
+  });
   mocks.databaseStore.fetchDatabases.mockResolvedValue({
     databases: [{ name: DB_WIDGETS }, { name: DB_COGS }],
     nextPageToken: "",
@@ -595,5 +636,54 @@ describe("PlanDetailChangesBranch", () => {
 
     expect(container.textContent).toContain("spec-2:");
     expect(container.textContent).not.toContain("spec-2:check-run-for-spec-1");
+  });
+
+  it("refreshes the statement section after changing create-plan options", async () => {
+    mocks.getPlanOptionVisibility.mockReturnValue({
+      shouldShow: true,
+      showGhost: false,
+      showInstanceRole: false,
+      showIsolationLevel: false,
+      showPreBackup: false,
+      showTransactionMode: true,
+    });
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            sheet: "projects/foo/sheets/-1",
+            targets: [DB_WIDGETS],
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1::0");
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "switch-off"
+        ) as HTMLButtonElement | undefined
+      )?.click();
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1::1");
   });
 });
