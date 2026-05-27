@@ -14,8 +14,8 @@ import {
   workloadIdentityNamePrefix,
 } from "@/store/modules/v1/common";
 import {
-  ALL_USERS_USER_EMAIL,
   AccountType,
+  ALL_USERS_USER_EMAIL,
   getAccountTypeByEmail,
   serviceAccountBindingPrefix,
   userBindingPrefix,
