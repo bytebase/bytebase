@@ -54,10 +54,12 @@ export function PlanDetailStatementSection({
   className,
   planCheckRuns = [],
   spec,
+  statementVersion = 0,
 }: {
   className?: string;
   planCheckRuns?: PlanCheckRun[];
   spec: Plan_Spec;
+  statementVersion?: number;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -213,7 +215,7 @@ export function PlanDetailStatementSection({
     return () => {
       canceled = true;
     };
-  }, [releaseName, sheetName, sheetStore]);
+  }, [releaseName, sheetName, sheetStore, statementVersion]);
 
   if (isValidReleaseName(releaseName)) {
     return (
