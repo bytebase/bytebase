@@ -9,3 +9,12 @@ func taskRunLogAttrs(projectID string, taskRunUID int64, replicaID string) []slo
 		slog.String("replica_id", replicaID),
 	}
 }
+
+func taskRunLogger(projectID string, taskRunUID int64, replicaID string) *slog.Logger {
+	attrs := taskRunLogAttrs(projectID, taskRunUID, replicaID)
+	args := make([]any, 0, len(attrs))
+	for _, attr := range attrs {
+		args = append(args, attr)
+	}
+	return slog.With(args...)
+}

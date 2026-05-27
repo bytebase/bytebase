@@ -2,13 +2,23 @@ package taskrun
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestExecuteGhostMigrationAcceptsLogger(t *testing.T) {
+	requireExecuteGhostMigrationLoggerSignature(t, executeGhostMigration)
+}
+
+func requireExecuteGhostMigrationLoggerSignature(_ *testing.T, _ func(context.Context, context.Context, *slog.Logger, *store.TaskMessage, *store.SheetMessage, *store.InstanceMessage, *store.DatabaseMessage, db.Driver, *db.ExecuteOptions) error) {
+}
 
 func TestWrappedContextCanceledMatchesErrorsIs(t *testing.T) {
 	driverCtx, cancel := context.WithCancel(context.Background())

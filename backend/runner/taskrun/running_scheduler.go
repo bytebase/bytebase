@@ -239,15 +239,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 	s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: task.ProjectID, PlanID: task.PlanID}
 }
 
-func taskRunLogger(projectID string, taskRunUID int64, replicaID string) *slog.Logger {
-	attrs := taskRunLogAttrs(projectID, taskRunUID, replicaID)
-	args := make([]any, 0, len(attrs))
-	for _, attr := range attrs {
-		args = append(args, attr)
-	}
-	return slog.With(args...)
-}
-
 // validateTaskFreshness checks for state drift between task creation and execution time.
 // Returns an error if the target database has been deleted, its project has changed,
 // or its environment has changed since the task was created.
