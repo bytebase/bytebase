@@ -175,7 +175,7 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases.has("deploy")).toBe(true);
   });
 
-  test("defaults to only the review phase after an issue is created", async () => {
+  test("defaults to the changes and review phases after an issue is created", async () => {
     mocks.fetchPlanSnapshot.mockResolvedValue(
       buildSnapshotPatch({
         issue: {
@@ -196,9 +196,101 @@ describe("usePlanDetailPage", () => {
     );
 
     await waitFor(() => expect(result.current.ready).toBe(true));
-    expect(result.current.activePhases.has("changes")).toBe(false);
+    expect(result.current.activePhases.has("changes")).toBe(true);
     expect(result.current.activePhases.has("review")).toBe(true);
     expect(result.current.activePhases.has("deploy")).toBe(false);
+  });
+
+  test("keeps the review section visible for reviewed plans on the specs route", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        issue: {
+          name: "projects/foo/issues/1",
+        } as PlanDetailPageSnapshot["issue"],
+        planId: "plan-1",
+      })
+    );
+
+    const { result } = renderHook(
+      () =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName: "project.plan.detail.specs",
+          pageHost: null,
+        }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.activePhases.has("changes")).toBe(true);
+    expect(result.current.activePhases.has("review")).toBe(true);
+    expect(result.current.activePhases.has("deploy")).toBe(false);
+  });
+
+  test("has review default phases on the first ready render", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        issue: {
+          name: "projects/foo/issues/1",
+        } as PlanDetailPageSnapshot["issue"],
+        planId: "plan-1",
+      })
+    );
+    const readyRenders: Set<string>[] = [];
+
+    const { result } = renderHook(
+      () => {
+        const page = usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          pageHost: null,
+        });
+        if (page.ready) {
+          readyRenders.push(new Set(page.activePhases));
+        }
+        return page;
+      },
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(readyRenders[0].has("changes")).toBe(true);
+    expect(readyRenders[0].has("review")).toBe(true);
+    expect(readyRenders[0].has("deploy")).toBe(false);
+  });
+
+  test("has deploy as the only phase on the first ready render for rollout plans", async () => {
+    mocks.fetchPlanSnapshot.mockResolvedValue(
+      buildSnapshotPatch({
+        planId: "plan-1",
+        rollout: {
+          name: "projects/foo/rollouts/1",
+          stages: [],
+        } as unknown as PlanDetailPageSnapshot["rollout"],
+      })
+    );
+    const readyRenders: Set<string>[] = [];
+
+    const { result } = renderHook(
+      () => {
+        const page = usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          pageHost: null,
+        });
+        if (page.ready) {
+          readyRenders.push(new Set(page.activePhases));
+        }
+        return page;
+      },
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(readyRenders[0].has("changes")).toBe(false);
+    expect(readyRenders[0].has("review")).toBe(false);
+    expect(readyRenders[0].has("deploy")).toBe(true);
   });
 
   test("does not refetch the page snapshot when only the route spec changes", async () => {

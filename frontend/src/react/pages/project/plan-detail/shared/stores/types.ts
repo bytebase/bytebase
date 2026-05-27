@@ -24,10 +24,9 @@ export type SnapshotSlice = {
 
 export type PhaseSlice = {
   activePhases: Set<PlanDetailPhase>;
+  setActivePhases: (phases: Iterable<PlanDetailPhase>) => void;
   togglePhase: (phase: PlanDetailPhase) => void;
   expandPhase: (phase: PlanDetailPhase) => void;
-  focusPhase: (phase: PlanDetailPhase) => void;
-  collapsePhase: (phase: PlanDetailPhase) => void;
 };
 
 export type EditingSlice = {
