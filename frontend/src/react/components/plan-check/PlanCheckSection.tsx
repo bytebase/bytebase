@@ -58,6 +58,7 @@ interface PlanCheckSectionProps {
   onRefreshOnOpen?: () => Promise<PlanCheckRun[]>;
   // Optional trailing element rendered after status counts (e.g. affected rows).
   trailingSummary?: ReactNode;
+  renderTarget?: (target: string) => ReactNode;
   // If true, FAILED check runs without results render as a synthetic error
   // group. Used by plan-detail regular checks.
   includeRunFailure?: boolean;
@@ -74,6 +75,7 @@ export function PlanCheckSection({
   onRun,
   onRefreshOnOpen,
   trailingSummary,
+  renderTarget,
   includeRunFailure = false,
   headingClassName = "textlabel uppercase",
 }: PlanCheckSectionProps) {
@@ -127,6 +129,7 @@ export function PlanCheckSection({
         onRefreshOnOpen={onRefreshOnOpen}
         open={drawerOpen}
         planCheckRuns={planCheckRuns}
+        renderTarget={renderTarget}
       />
     </div>
   );
@@ -240,6 +243,7 @@ interface PlanCheckResultsDrawerProps {
   planCheckRuns: PlanCheckRun[];
   onRefreshOnOpen?: () => Promise<PlanCheckRun[]>;
   includeRunFailure?: boolean;
+  renderTarget?: (target: string) => ReactNode;
 }
 
 export function PlanCheckResultsDrawer({
@@ -248,6 +252,7 @@ export function PlanCheckResultsDrawer({
   planCheckRuns,
   onRefreshOnOpen,
   includeRunFailure = false,
+  renderTarget,
 }: PlanCheckResultsDrawerProps) {
   const { t } = useTranslation();
   const [selectedStatus, setSelectedStatus] = useState<
@@ -358,7 +363,9 @@ export function PlanCheckResultsDrawer({
                         </div>
                         {group.target && (
                           <div className="min-w-0 max-w-[50%] truncate text-sm text-control-light">
-                            {formatCheckTarget(group.target)}
+                            {renderTarget
+                              ? renderTarget(group.target)
+                              : formatCheckTarget(group.target)}
                           </div>
                         )}
                       </div>

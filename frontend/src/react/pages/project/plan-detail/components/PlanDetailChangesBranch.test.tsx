@@ -7,7 +7,10 @@ import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
 import { PlanDetailProvider } from "../shell/PlanDetailContext";
-import { PlanDetailChangesBranch } from "./PlanDetailChangesBranch";
+import {
+  DatabaseGroupTarget,
+  PlanDetailChangesBranch,
+} from "./PlanDetailChangesBranch";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -38,7 +41,7 @@ const mocks = vi.hoisted(() => ({
     getDBGroupByName: vi.fn(),
     getOrFetchDBGroupByName: vi.fn(async () => ({
       name: "projects/foo/databaseGroups/group-a",
-      matchedDatabases: [],
+      matchedDatabases: [] as Array<{ name: string }>,
     })),
   },
   environmentStore: {
@@ -164,6 +167,16 @@ vi.mock("@/react/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("@/react/components/ui/popover", () => ({
+  Popover: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  PopoverContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PopoverTrigger: ({ children }: { children: ReactNode }) => (
+    <button type="button">{children}</button>
+  ),
+}));
+
 vi.mock("@/react/lib/utils", () => ({
   cn: (...classes: Array<string | false | null | undefined>) =>
     classes.filter(Boolean).join(" "),
@@ -172,6 +185,7 @@ vi.mock("@/react/lib/utils", () => ({
 vi.mock("@/router", () => ({
   router: {
     push: mocks.routerPush,
+    resolve: () => ({ href: "/database-group-detail" }),
   },
 }));
 
@@ -519,6 +533,35 @@ async function flush() {
 }
 
 describe("PlanDetailChangesBranch", () => {
+  it("renders database group overflow as a popover action", async () => {
+    mocks.dbGroupStore.getDBGroupByName.mockReturnValue({
+      name: "projects/foo/databaseGroups/group-a",
+      matchedDatabases: Array.from({ length: 8 }, (_, index) => ({
+        name: `instances/test/databases/db_${index}`,
+      })),
+    });
+    mocks.dbGroupStore.getOrFetchDBGroupByName.mockResolvedValue({
+      name: "projects/foo/databaseGroups/group-a",
+      matchedDatabases: Array.from({ length: 8 }, (_, index) => ({
+        name: `instances/test/databases/db_${index}`,
+      })),
+    });
+
+    act(() => {
+      root.render(
+        <DatabaseGroupTarget target="projects/foo/databaseGroups/group-a" />
+      );
+    });
+    await flush();
+
+    const moreButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.n-more"
+    );
+
+    expect(moreButton).toBeTruthy();
+    expect(container.textContent).toContain("common.databases");
+  });
+
   it("keeps Add Change target selection when the page rerenders", async () => {
     renderHarness(0);
 

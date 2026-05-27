@@ -4,7 +4,6 @@ import { Check, FastForward, Loader2, Pause, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/connect";
-import { EngineIcon } from "@/react/components/EngineIcon";
 import { Button } from "@/react/components/ui/button";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Input } from "@/react/components/ui/input";
@@ -23,7 +22,6 @@ import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
   useCurrentUserV1,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -39,11 +37,7 @@ import {
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractDatabaseResourceName,
-  extractInstanceResourceName,
-  extractStageUID,
-} from "@/utils";
+import { extractStageUID } from "@/utils";
 import {
   CANCELABLE_TASK_STATUSES,
   canRolloutTasks,
@@ -51,6 +45,7 @@ import {
   RUNNABLE_TASK_STATUSES,
 } from "../../issue-detail/utils/rollout";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
 
@@ -601,42 +596,9 @@ function parseDatetimeLocalValue(value: string) {
 
 function PlanDetailTaskDatabaseName({ task }: { task: Task }) {
   if (task.target) {
-    return <PlanDetailDatabaseTarget target={task.target} />;
+    return <PlanTargetDisplay showEnvironment target={task.target} />;
   }
   return <span className="truncate">{task.name.split("/").at(-1)}</span>;
-}
-
-function PlanDetailDatabaseTarget({ target }: { target: string }) {
-  const { t } = useTranslation();
-  const databaseStore = useDatabaseV1Store();
-  const environmentStore = useEnvironmentV1Store();
-  const database = databaseStore.getDatabaseByName(target);
-  const environment = environmentStore.getEnvironmentByName(
-    database.effectiveEnvironment ??
-      database.instanceResource?.environment ??
-      ""
-  );
-  const instance = database.instanceResource;
-  const { databaseName } = extractDatabaseResourceName(target);
-  const instanceTitle =
-    instance?.title ||
-    extractInstanceResourceName(target) ||
-    t("common.unknown");
-
-  return (
-    <div className="flex min-w-0 items-center truncate text-sm">
-      {instance && (
-        <EngineIcon
-          engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4"
-        />
-      )}
-      <span className="mr-1 truncate text-gray-400">{environment.title}</span>
-      <span className="truncate text-gray-600">{instanceTitle}</span>
-      <span className="mx-1 shrink-0 text-gray-500 opacity-60">›</span>
-      <span className="truncate text-gray-800">{databaseName}</span>
-    </div>
-  );
 }
 
 function PlanDetailStageEnvironment({

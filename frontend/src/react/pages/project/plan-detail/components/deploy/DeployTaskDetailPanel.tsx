@@ -23,7 +23,6 @@ import {
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-import { DatabaseTarget } from "../PlanDetailChangesBranch";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {
   type PlanDetailTaskRolloutAction,
@@ -31,6 +30,7 @@ import {
 } from "../PlanDetailTaskRolloutActionPanel";
 import { PlanDetailTaskRunDetail } from "../PlanDetailTaskRunDetail";
 import { PlanDetailTaskRunTable } from "../PlanDetailTaskRunTable";
+import { PlanTargetDisplay } from "../PlanTargetDisplay";
 import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
 import { DeployTaskStatus } from "./DeployTaskStatus";
 import { useDeployTaskActions } from "./taskActions";
@@ -112,9 +112,11 @@ export function DeployTaskDetailPanel({ task }: { task: Task }) {
                 {stageTitle}
               </span>
             )}
-            <div className="min-w-0 text-xl">
-              <DatabaseTarget showEnvironment target={database.name} />
-            </div>
+            <PlanTargetDisplay
+              showEnvironment
+              size="md"
+              target={database.name}
+            />
             {scheduledTimeDisplay && task.status === Task_Status.PENDING && (
               <Tooltip
                 content={
