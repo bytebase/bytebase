@@ -24,6 +24,14 @@ const mocks = vi.hoisted(() => ({
   getInstanceResource: vi.fn(),
   getPlanOptionVisibility: vi.fn(),
   getProjectByName: vi.fn(),
+  selectedSelectValueChange: undefined as
+    | ((value: string | null | undefined) => void)
+    | undefined,
+  instanceRoleServiceClientConnect: {
+    listInstanceRoles: vi.fn(async () => ({
+      roles: [] as Array<{ roleName: string }>,
+    })),
+  },
   localSheets: new Map<
     string,
     { content: Uint8Array; contentSize: bigint; name: string }
@@ -118,11 +126,33 @@ vi.mock("@/react/components/ui/search-input", () => ({
 }));
 
 vi.mock("@/react/components/ui/select", () => ({
-  Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Select: ({
+    children,
+    onValueChange,
+  }: {
+    children: ReactNode;
+    onValueChange?: (value: string | null | undefined) => void;
+  }) => {
+    mocks.selectedSelectValueChange = onValueChange;
+    return <div>{children}</div>;
+  },
   SelectContent: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
-  SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectItem: ({
+    children,
+    value,
+  }: {
+    children: ReactNode;
+    value?: string;
+  }) => {
+    const onValueChange = mocks.selectedSelectValueChange;
+    return (
+      <button onClick={() => onValueChange?.(value)} type="button">
+        {children}
+      </button>
+    );
+  },
   SelectTrigger: ({ children }: { children: ReactNode }) => (
     <button>{children}</button>
   ),
@@ -202,9 +232,7 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/connect", () => ({
-  instanceRoleServiceClientConnect: {
-    listInstanceRoles: vi.fn(async () => ({ roles: [] })),
-  },
+  instanceRoleServiceClientConnect: mocks.instanceRoleServiceClientConnect,
   planServiceClientConnect: {
     updatePlan: vi.fn(async (request) => request.plan),
   },
@@ -728,5 +756,69 @@ describe("PlanDetailChangesBranch", () => {
     await flush();
 
     expect(container.textContent).toContain("spec-1::1");
+  });
+
+  it("clears the selected role with the default role option", async () => {
+    mocks.getPlanOptionVisibility.mockReturnValue({
+      shouldShow: true,
+      showGhost: false,
+      showInstanceRole: true,
+      showIsolationLevel: false,
+      showPreBackup: false,
+      showTransactionMode: false,
+    });
+    mocks.instanceRoleServiceClientConnect.listInstanceRoles.mockResolvedValue({
+      roles: [{ roleName: "bbsample" }],
+    });
+    const sheetName = "projects/foo/sheets/-1";
+    const statement =
+      "/* === Bytebase Role Setter. DO NOT EDIT. === */\nSET ROLE bbsample;\nSELECT 1;";
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode(statement),
+      contentSize: 0n,
+    });
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            sheet: sheetName,
+            targets: [DB_WIDGETS],
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    expect(container.textContent).toContain("instance.default-role");
+    expect(container.textContent).toContain("bbsample");
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "instance.default-role"
+        ) as HTMLButtonElement | undefined
+      )?.click();
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1::1");
+    expect(
+      new TextDecoder().decode(mocks.localSheets.get(sheetName)?.content)
+    ).toBe("SELECT 1;");
   });
 });

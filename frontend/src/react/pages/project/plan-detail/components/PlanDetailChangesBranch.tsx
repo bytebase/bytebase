@@ -968,10 +968,15 @@ function OptionsSection({
                   disabled={!allowChange || isSheetOversize}
                   onValueChange={(value) => {
                     void persistStatement(
-                      updateRoleSetter(sheetStatement, value || undefined)
+                      updateRoleSetter(
+                        sheetStatement,
+                        value && value !== EMPTY_SELECT_VALUE
+                          ? value
+                          : undefined
+                      )
                     );
                   }}
-                  value={selectedRole}
+                  value={selectedRole || EMPTY_SELECT_VALUE}
                 >
                   <SelectTrigger className="w-44" size="sm">
                     <SelectValue>
@@ -981,6 +986,9 @@ function OptionsSection({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={EMPTY_SELECT_VALUE}>
+                      {t("instance.default-role")}
+                    </SelectItem>
                     {instanceRoleOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}

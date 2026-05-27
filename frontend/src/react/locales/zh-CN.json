@@ -1181,6 +1181,7 @@
   "instance.connection-options": "连接选项",
   "instance.create-gcp-credentials": "创建凭据的方法见",
   "instance.database-region": "数据库区域",
+  "instance.default-role": "默认角色",
   "instance.endpoint": "端点",
   "instance.external-id": "外部 ID",
   "instance.external-id-description": "承担角色时用于额外安全性的外部 ID（可选）",

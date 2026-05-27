@@ -1181,6 +1181,7 @@
   "instance.connection-options": "Tùy chọn kết nối",
   "instance.create-gcp-credentials": "Để tạo thông tin xác thực, xem",
   "instance.database-region": "Khu vực cơ sở dữ liệu",
+  "instance.default-role": "Vai trò mặc định",
   "instance.endpoint": "Điểm cuối",
   "instance.external-id": "ID bên ngoài",
   "instance.external-id-description": "ID bên ngoài để bảo mật bổ sung khi đảm nhận vai trò (tùy chọn)",
