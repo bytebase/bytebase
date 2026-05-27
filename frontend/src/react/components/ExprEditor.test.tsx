@@ -290,6 +290,7 @@ describe("ExprEditor", () => {
     expect(input?.className).toContain("border-0");
     expect(input?.className).toContain("focus:ring-0");
     expect(input?.className).toContain("focus:border-0");
+    expect(input?.className).toContain("placeholder:text-control-placeholder");
 
     unmount();
   });
