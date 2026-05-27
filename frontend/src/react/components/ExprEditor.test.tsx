@@ -99,6 +99,19 @@ const optionConfigMap = new Map<Factor, OptionConfig>([
   ],
 ]);
 
+const searchableOptionConfigMap = new Map<Factor, OptionConfig>([
+  [
+    CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+    {
+      options: [],
+      search: async () => ({
+        options: [],
+        nextPageToken: "",
+      }),
+    },
+  ],
+]);
+
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -266,6 +279,42 @@ describe("ExprEditor", () => {
     expect(input?.className).toContain("border-0");
     expect(input?.className).toContain("focus:ring-0");
     expect(input?.className).toContain("focus:border-0");
+
+    unmount();
+  });
+
+  test("searchable value trigger aligns with select trigger sizing", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "_==_",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ""],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        optionConfigMap={searchableOptionConfigMap}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const trigger = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("cel.condition.select-value")
+    );
+
+    expect(trigger).toBeInstanceOf(HTMLButtonElement);
+    expect(trigger?.className).toContain("h-9");
+    expect(trigger?.className).not.toContain("h-8");
+    expect(trigger?.querySelector("span")?.className).toContain("flex-1");
+    expect(trigger?.querySelector("span")?.className).toContain("truncate");
 
     unmount();
   });

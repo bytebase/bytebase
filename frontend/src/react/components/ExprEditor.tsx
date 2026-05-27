@@ -369,13 +369,17 @@ function SearchableSelect({
       <button
         ref={triggerRef}
         type="button"
-        className="h-8 px-2 text-sm rounded-xs border border-control-border bg-background w-full text-left disabled:opacity-50 truncate"
+        className="inline-flex h-9 w-full items-center rounded-xs border border-control-border bg-background px-3 text-left text-sm leading-5 text-control disabled:opacity-50"
         disabled={disabled}
         onClick={handleOpen}
       >
-        {selectedLabel || (
-          <span className="text-control-placeholder">{placeholder ?? ""}</span>
-        )}
+        <span className="min-w-0 flex-1 truncate">
+          {selectedLabel || (
+            <span className="text-control-placeholder">
+              {placeholder ?? ""}
+            </span>
+          )}
+        </span>
       </button>
       {open && (
         <PortaledDropdown
