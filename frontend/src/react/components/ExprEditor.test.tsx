@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/plugins/cel/types/factor";
 import { type ConditionGroupExpr, ExprType } from "@/plugins/cel/types/simple";
 import {
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
@@ -100,6 +101,16 @@ const optionConfigMap = new Map<Factor, OptionConfig>([
 ]);
 
 const searchableOptionConfigMap = new Map<Factor, OptionConfig>([
+  [
+    CEL_ATTRIBUTE_RESOURCE_DATABASE,
+    {
+      options: [],
+      search: async () => ({
+        options: [],
+        nextPageToken: "",
+      }),
+    },
+  ],
   [
     CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
     {
@@ -279,6 +290,142 @@ describe("ExprEditor", () => {
     expect(input?.className).toContain("border-0");
     expect(input?.className).toContain("focus:ring-0");
     expect(input?.className).toContain("focus:border-0");
+
+    unmount();
+  });
+
+  test("plain value input aligns with select trigger sizing", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "_==_",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ""],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const input = container.querySelector(
+      'input[placeholder="cel.condition.input-value"]'
+    );
+
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(input?.className).toContain("h-9");
+    expect(input?.className).not.toContain("h-7");
+
+    unmount();
+  });
+
+  test("multi value input aligns with select trigger sizing", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, []],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const input = container.querySelector(
+      'input[placeholder="cel.condition.input-value-press-enter"]'
+    );
+    const field = input?.parentElement;
+
+    expect(field).toBeInstanceOf(HTMLDivElement);
+    expect(field?.className).toContain("min-h-9");
+    expect(field?.className).not.toContain("min-h-8");
+
+    unmount();
+  });
+
+  test("static multi-select value aligns with select trigger sizing", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_STATEMENT_SQL_TYPE, []],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_STATEMENT_SQL_TYPE]}
+        optionConfigMap={optionConfigMap}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const trigger = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("cel.condition.select-value")
+    );
+
+    expect(trigger).toBeInstanceOf(HTMLButtonElement);
+    expect(trigger?.className).toContain("min-h-9");
+    expect(trigger?.className).not.toContain("min-h-8");
+
+    unmount();
+  });
+
+  test("searchable multi-select value aligns with select trigger sizing", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_DATABASE, []],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_DATABASE]}
+        optionConfigMap={searchableOptionConfigMap}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const placeholder = Array.from(container.querySelectorAll("span")).find(
+      (span) => span.textContent?.includes("cel.condition.select-value")
+    );
+    const trigger = placeholder?.parentElement;
+
+    expect(trigger).toBeInstanceOf(HTMLDivElement);
+    expect(trigger?.className).toContain("min-h-9");
+    expect(trigger?.className).not.toContain("min-h-8");
 
     unmount();
   });

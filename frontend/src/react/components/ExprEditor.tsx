@@ -87,6 +87,9 @@ function getDefaultValue(
   return "";
 }
 
+const VALUE_MULTI_FIELD_CLASS =
+  "min-h-9 px-3 py-1 text-sm leading-5 rounded-xs border border-control-border bg-background";
+
 // Clone root, apply a mutation to the clone, return the clone.
 function updateExpr(
   root: ConditionGroupExpr,
@@ -551,13 +554,14 @@ function MultiSearchableSelect({
     <div className="min-w-32 max-w-xs">
       <div
         ref={triggerRef}
-        className="min-h-8 px-2 py-0.5 text-sm rounded-xs border border-control-border bg-background flex flex-wrap gap-1 cursor-pointer"
+        className={cn(
+          VALUE_MULTI_FIELD_CLASS,
+          "flex flex-wrap items-center gap-1 cursor-pointer"
+        )}
         onClick={disabled ? undefined : handleOpen}
       >
         {value.length === 0 && (
-          <span className="text-control-placeholder text-sm leading-6">
-            {placeholder ?? ""}
-          </span>
+          <span className="text-control-placeholder">{placeholder ?? ""}</span>
         )}
         {value.map((v) => (
           <span
@@ -672,7 +676,12 @@ function TagInput({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 min-h-8 px-2 py-0.5 rounded-xs border border-control-border bg-background min-w-64 max-w-xs">
+    <div
+      className={cn(
+        VALUE_MULTI_FIELD_CLASS,
+        "flex flex-wrap items-center gap-1 min-w-64 max-w-xs"
+      )}
+    >
       {value.map((tag) => (
         <span
           key={tag}
@@ -692,7 +701,7 @@ function TagInput({
       ))}
       {!disabled && (
         <input
-          className="flex-1 min-w-16 h-6 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus:border-0 focus:ring-0"
+          className="flex-1 min-w-16 h-5 border-0 bg-transparent p-0 text-sm leading-5 shadow-none outline-none focus:border-0 focus:ring-0"
           placeholder={value.length === 0 ? (placeholder ?? "") : ""}
           value={inputValue}
           disabled={disabled}
@@ -755,7 +764,10 @@ function MultiCheckSelect({
       <button
         ref={triggerRef}
         type="button"
-        className="inline-flex items-center gap-1 min-h-8 w-full px-2 py-0.5 text-sm rounded-xs border border-control-border bg-background text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50 flex-wrap"
+        className={cn(
+          VALUE_MULTI_FIELD_CLASS,
+          "inline-flex w-full flex-wrap items-center gap-1 text-left hover:bg-control-bg disabled:pointer-events-none disabled:opacity-50"
+        )}
         disabled={disabled}
         onClick={() => setOpen(!open)}
       >
@@ -1081,7 +1093,6 @@ function ValueInput({
       return (
         <Input
           type="number"
-          size="sm"
           className="max-w-20"
           value={getNumberValue()}
           disabled={readonly}
@@ -1115,7 +1126,6 @@ function ValueInput({
     }
     return (
       <Input
-        size="sm"
         className="min-w-28"
         value={getStringValue()}
         disabled={readonly}
