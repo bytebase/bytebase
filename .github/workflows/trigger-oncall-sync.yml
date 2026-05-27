@@ -1,0 +1,20 @@
+name: Trigger oncall sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 00:00 UTC. Hosted here because bytebase/oncall has too little
+    # activity for GitHub to keep its own scheduled workflow alive.
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Trigger sync-oncall workflow on bytebase/oncall
+        env:
+          GH_TOKEN: ${{ secrets.GHA_DISPATCH_TOKEN }}
+        run: gh workflow run sync-oncall.yml --repo bytebase/oncall
