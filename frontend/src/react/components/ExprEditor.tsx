@@ -679,7 +679,7 @@ function TagInput({
     <div
       className={cn(
         VALUE_MULTI_FIELD_CLASS,
-        "flex flex-wrap items-center gap-1 min-w-64 max-w-xs"
+        "flex w-full min-w-0 flex-wrap items-center gap-1"
       )}
     >
       {value.map((tag) => (

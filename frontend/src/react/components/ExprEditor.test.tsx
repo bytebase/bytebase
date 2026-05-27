@@ -358,6 +358,9 @@ describe("ExprEditor", () => {
     expect(field).toBeInstanceOf(HTMLDivElement);
     expect(field?.className).toContain("min-h-9");
     expect(field?.className).not.toContain("min-h-8");
+    expect(field?.className).toContain("w-full");
+    expect(field?.className).toContain("min-w-0");
+    expect(field?.className).not.toContain("min-w-64");
 
     unmount();
   });
