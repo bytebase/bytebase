@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Factor } from "@/plugins/cel/types/factor";
 import { type ConditionGroupExpr, ExprType } from "@/plugins/cel/types/simple";
 import {
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
 } from "@/utils/cel-attributes";
@@ -231,6 +232,40 @@ describe("ExprEditor", () => {
     expect(dropdown).toBeInstanceOf(HTMLDivElement);
     expect(dropdown?.className).toContain("max-h-48");
     expect(dropdown?.className).toContain("overflow-y-auto");
+
+    unmount();
+  });
+
+  test("tag input uses only the outer field border", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, []],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const input = container.querySelector(
+      'input[placeholder="cel.condition.input-value-press-enter"]'
+    );
+
+    expect(input).toBeInstanceOf(HTMLInputElement);
+    expect(input?.className).toContain("border-0");
+    expect(input?.className).toContain("focus:ring-0");
+    expect(input?.className).toContain("focus:border-0");
 
     unmount();
   });

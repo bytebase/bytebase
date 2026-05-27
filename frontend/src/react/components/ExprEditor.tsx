@@ -688,7 +688,7 @@ function TagInput({
       ))}
       {!disabled && (
         <input
-          className="flex-1 min-w-16 h-6 text-sm outline-none bg-transparent"
+          className="flex-1 min-w-16 h-6 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus:border-0 focus:ring-0"
           placeholder={value.length === 0 ? (placeholder ?? "") : ""}
           value={inputValue}
           disabled={disabled}
