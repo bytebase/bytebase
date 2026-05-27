@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,22 +35,8 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 	}
 
 	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnAddNotNullColumnRequireDefaultRule is the rule implementation for adding not null column requires default.
@@ -73,6 +59,32 @@ func NewColumnAddNotNullColumnRequireDefaultRule(level storepb.Advice_Status, ti
 // Name returns the rule name.
 func (*ColumnAddNotNullColumnRequireDefaultRule) Name() string {
 	return "column.add-not-null-column-require-default"
+}
+
+// OnStatement checks ADD COLUMN actions for NOT NULL columns without DEFAULT.
+func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
+	stmt, ok := node.(*ast.AlterTableStmt)
+	if !ok {
+		return
+	}
+	for _, cmd := range omniAlterTableCmds(stmt) {
+		if cmd.Action != ast.AT_ADD_COLUMN {
+			continue
+		}
+		for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+			if col == nil || col.Default != nil {
+				continue
+			}
+			if col.NotNull || omniColumnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) {
+				r.AddAdvice(
+					r.level,
+					code.NotNullColumnWithNoDefault.Int32(),
+					fmt.Sprintf("Adding not null column %q requires default.", col.Name),
+					common.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
+				)
+			}
+		}
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

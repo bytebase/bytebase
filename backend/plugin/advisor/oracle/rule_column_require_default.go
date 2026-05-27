@@ -7,13 +7,13 @@ import (
 	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -36,22 +36,8 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	}
 
 	rule := NewColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnRequireDefaultRule is the rule implementation for column default requirement.
@@ -75,6 +61,45 @@ func NewColumnRequireDefaultRule(level storepb.Advice_Status, title string, curr
 // Name returns the rule name.
 func (*ColumnRequireDefaultRule) Name() string {
 	return "column.require-default"
+}
+
+// OnStatement records columns without defaults from omni CREATE/ALTER TABLE nodes.
+func (r *ColumnRequireDefaultRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, col := range omniColumnDefs(n.Columns) {
+			r.recordNoDefaultColumn(tableName, col)
+		}
+	case *ast.AlterTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, cmd := range omniAlterTableCmds(n) {
+			for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+				if col == nil {
+					continue
+				}
+				columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
+				if col.Default != nil {
+					delete(r.noDefaultColumns, columnID)
+				} else if cmd.Action == ast.AT_ADD_COLUMN {
+					r.noDefaultColumns[columnID] = r.locLine(col.Loc)
+				}
+			}
+		}
+	default:
+	}
+}
+
+func (r *ColumnRequireDefaultRule) recordNoDefaultColumn(tableName string, col *ast.ColumnDef) {
+	if col == nil {
+		return
+	}
+	columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
+	if col.Default == nil {
+		r.noDefaultColumns[columnID] = r.locLine(col.Loc)
+	} else {
+		delete(r.noDefaultColumns, columnID)
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

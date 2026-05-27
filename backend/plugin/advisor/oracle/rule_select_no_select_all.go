@@ -5,13 +5,13 @@ import (
 	"context"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -34,22 +34,8 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // SelectNoSelectAllRule is the rule implementation for no select all.
@@ -70,6 +56,25 @@ func NewSelectNoSelectAllRule(level storepb.Advice_Status, title string, current
 // Name returns the rule name.
 func (*SelectNoSelectAllRule) Name() string {
 	return "select.no-select-all"
+}
+
+// OnStatement checks SELECT targets in the omni AST.
+func (r *SelectNoSelectAllRule) OnStatement(node ast.Node) {
+	omniWalk(node, func(n ast.Node) {
+		target, ok := n.(*ast.ResTarget)
+		if !ok {
+			return
+		}
+		if _, ok := target.Expr.(*ast.Star); !ok {
+			return
+		}
+		r.AddAdvice(
+			r.level,
+			code.StatementSelectAll.Int32(),
+			"Avoid using SELECT *.",
+			common.ConvertANTLRLineToPosition(r.locLine(target.Loc)),
+		)
+	})
 }
 
 // OnEnter is called when the parser enters a rule context.

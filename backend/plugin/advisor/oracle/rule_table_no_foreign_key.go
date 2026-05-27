@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,22 +35,8 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // TableNoForeignKeyRule is the rule implementation for table disallow foreign key.
@@ -76,6 +62,41 @@ func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string, current
 // Name returns the rule name.
 func (*TableNoForeignKeyRule) Name() string {
 	return "table.no-foreign-key"
+}
+
+// OnStatement checks foreign keys from omni CREATE/ALTER TABLE nodes.
+func (r *TableNoForeignKeyRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		if r.createTableHasFK(n) {
+			r.tableWithFK[tableName] = true
+			r.tableLine[tableName] = r.locLine(n.Loc)
+		}
+	case *ast.AlterTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, cmd := range omniAlterTableCmds(n) {
+			if cmd.Constraint != nil && cmd.Constraint.Type == ast.CONSTRAINT_FOREIGN {
+				r.tableWithFK[tableName] = true
+				r.tableLine[tableName] = r.locLine(cmd.Constraint.Loc)
+			}
+		}
+	default:
+	}
+}
+
+func (*TableNoForeignKeyRule) createTableHasFK(stmt *ast.CreateTableStmt) bool {
+	for _, col := range omniColumnDefs(stmt.Columns) {
+		if omniColumnHasConstraint(col, ast.CONSTRAINT_FOREIGN) {
+			return true
+		}
+	}
+	for _, c := range omniTableConstraints(stmt.Constraints) {
+		if c.Type == ast.CONSTRAINT_FOREIGN {
+			return true
+		}
+	}
+	return false
 }
 
 // OnEnter is called when the parser enters a rule context.

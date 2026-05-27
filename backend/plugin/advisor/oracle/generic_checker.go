@@ -3,9 +3,11 @@ package oracle
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 // Rule is the interface for Oracle advisor rules.
@@ -27,6 +29,7 @@ type BaseRule struct {
 	title      string
 	adviceList []*storepb.Advice
 	baseLine   int
+	stmtText   string
 }
 
 // NewBaseRule creates a new BaseRule.
@@ -58,6 +61,29 @@ func (r *BaseRule) GetAdviceList() ([]*storepb.Advice, error) {
 func (r *BaseRule) SetBaseLine(baseLine int) {
 	r.baseLine = baseLine
 }
+
+// SetStatement sets the current statement context for omni-based rules.
+func (r *BaseRule) SetStatement(baseLine int, stmtText string) {
+	r.baseLine = baseLine
+	r.stmtText = stmtText
+}
+
+func (r *BaseRule) locLine(loc ast.Loc) int {
+	if loc.Start < 0 || r.stmtText == "" {
+		return r.baseLine + 1
+	}
+	return r.baseLine + int(plsqlparser.ByteOffsetToRunePosition(r.stmtText, loc.Start).Line)
+}
+
+func (r *BaseRule) rawText(loc ast.Loc) string {
+	if loc.Start < 0 || loc.End < loc.Start || r.stmtText == "" || loc.End > len(r.stmtText) {
+		return ""
+	}
+	return r.stmtText[loc.Start:loc.End]
+}
+
+// OnStatement is a no-op default for rules while they are migrated to omni.
+func (*BaseRule) OnStatement(_ ast.Node) {}
 
 // GenericChecker is the only type that embeds BasePlSqlParserListener.
 // It dispatches parse tree events to registered rules.

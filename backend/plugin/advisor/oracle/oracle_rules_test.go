@@ -2,10 +2,15 @@
 package oracle
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 func TestOracleRules(t *testing.T) {
@@ -37,5 +42,100 @@ func TestOracleRules(t *testing.T) {
 
 	for _, rule := range rules {
 		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, false /* record */)
+	}
+}
+
+func TestOracleAdvisorUsesOmniWithoutANTLRFallback(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		rule      *storepb.SQLReviewRule
+		advisor   advisor.Advisor
+		wantCount int
+	}{
+		{
+			name:      "select no select all",
+			statement: "SELECT * FROM users",
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+				Level: storepb.SQLReviewRule_WARNING,
+			},
+			advisor:   &SelectNoSelectAllAdvisor{},
+			wantCount: 1,
+		},
+		{
+			name:      "update inline view target",
+			statement: "UPDATE (SELECT * FROM tech_book WHERE UPPER(name) = 'X') v SET v.creator = 'y'",
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+				Level: storepb.SQLReviewRule_WARNING,
+			},
+			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
+			wantCount: 1,
+		},
+		{
+			name:      "delete inline view target",
+			statement: "DELETE FROM (SELECT * FROM tech_book WHERE ABS(id) > 5) v",
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+				Level: storepb.SQLReviewRule_WARNING,
+			},
+			advisor:   &StatementWhereDisallowFunctionsAndCalculationsAdvisor{},
+			wantCount: 1,
+		},
+		{
+			name:      "json column type",
+			statement: "CREATE TABLE t(a int, b JSON)",
+			rule: &storepb.SQLReviewRule{
+				Type:  storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST,
+				Level: storepb.SQLReviewRule_WARNING,
+				Payload: &storepb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"JSON"},
+					},
+				},
+			},
+			advisor:   &ColumnTypeDisallowListAdvisor{},
+			wantCount: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			stmts, err := base.ParseStatements(storepb.Engine_ORACLE, test.statement)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			adviceList, err := test.advisor.Check(context.Background(), advisor.Context{
+				Rule:                  test.rule,
+				DBType:                storepb.Engine_ORACLE,
+				CurrentDatabase:       "TEST_DB",
+				DBSchema:              advisor.MockOracleDatabase,
+				IsObjectCaseSensitive: true,
+				ParsedStatements:      stmts,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(adviceList) != test.wantCount {
+				t.Fatalf("got %d advices, want %d", len(adviceList), test.wantCount)
+			}
+
+			assertOracleStmtsDidNotUseANTLRFallback(t, stmts)
+		})
+	}
+}
+
+func assertOracleStmtsDidNotUseANTLRFallback(t *testing.T, stmts []base.ParsedStatement) {
+	t.Helper()
+	for _, stmt := range stmts {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrParsed := reflect.ValueOf(stmt.AST).Elem().FieldByName("antlrParsed").Bool()
+		if antlrParsed {
+			t.Fatalf("Oracle advisor used ANTLR fallback for %T", stmt.AST)
+		}
 	}
 }

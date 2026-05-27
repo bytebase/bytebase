@@ -4,15 +4,16 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -38,22 +39,8 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnTypeDisallowListRule is the rule implementation for column type disallow list.
@@ -76,6 +63,28 @@ func NewColumnTypeDisallowListRule(level storepb.Advice_Status, title string, cu
 // Name returns the rule name.
 func (*ColumnTypeDisallowListRule) Name() string {
 	return "column.type-disallow-list"
+}
+
+// OnStatement checks column data types in the omni AST.
+func (r *ColumnTypeDisallowListRule) OnStatement(node ast.Node) {
+	omniWalk(node, func(n ast.Node) {
+		col, ok := n.(*ast.ColumnDef)
+		if !ok || col.TypeName == nil {
+			return
+		}
+		typeName := omniTypeName(col.TypeName)
+		for _, disallowType := range r.disallowList {
+			if strings.EqualFold(typeName, disallowType) {
+				r.AddAdvice(
+					r.level,
+					code.DisabledColumnType.Int32(),
+					fmt.Sprintf("Disallow column type %s but column \"%s\" is", typeName, col.Name),
+					common.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
+				)
+				return
+			}
+		}
+	})
 }
 
 // OnEnter is called when the parser enters a rule context.

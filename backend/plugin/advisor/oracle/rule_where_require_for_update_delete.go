@@ -5,13 +5,13 @@ import (
 	"context"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -34,22 +34,8 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 	}
 
 	rule := NewWhereRequireForUpdateDeleteRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // WhereRequireForUpdateDeleteRule is the rule implementation for WHERE clause requirement in UPDATE/DELETE.
@@ -70,6 +56,31 @@ func NewWhereRequireForUpdateDeleteRule(level storepb.Advice_Status, title strin
 // Name returns the rule name.
 func (*WhereRequireForUpdateDeleteRule) Name() string {
 	return "where.require-for-update-delete"
+}
+
+// OnStatement checks top-level UPDATE and DELETE statements in the omni AST.
+func (r *WhereRequireForUpdateDeleteRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		if n.WhereClause == nil {
+			r.AddAdvice(
+				r.level,
+				code.StatementNoWhere.Int32(),
+				"WHERE clause is required for UPDATE statement.",
+				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+			)
+		}
+	case *ast.DeleteStmt:
+		if n.WhereClause == nil {
+			r.AddAdvice(
+				r.level,
+				code.StatementNoWhere.Int32(),
+				"WHERE clause is required for DELETE statement.",
+				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+			)
+		}
+	default:
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

@@ -8,13 +8,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -45,22 +45,8 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 
 	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, int(numberPayload.Number))
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // IndexKeyNumberLimitRule is the rule implementation for index key number limit.
@@ -83,6 +69,46 @@ func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, curre
 // Name returns the rule name.
 func (*IndexKeyNumberLimitRule) Name() string {
 	return "index.key-number-limit"
+}
+
+// OnStatement checks CREATE INDEX and constraint column counts in the omni AST.
+func (r *IndexKeyNumberLimitRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateIndexStmt:
+		if n.Columns != nil && len(n.Columns.Items) > r.max {
+			r.AddAdvice(
+				r.level,
+				code.IndexKeyNumberExceedsLimit.Int32(),
+				fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
+				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+			)
+		}
+	case *ast.CreateTableStmt:
+		for _, c := range omniTableConstraints(n.Constraints) {
+			r.checkConstraint(c)
+		}
+	case *ast.AlterTableStmt:
+		for _, cmd := range omniAlterTableCmds(n) {
+			if cmd.Constraint != nil {
+				r.checkConstraint(cmd.Constraint)
+			}
+		}
+	default:
+	}
+}
+
+func (r *IndexKeyNumberLimitRule) checkConstraint(c *ast.TableConstraint) {
+	if c == nil || (c.Type != ast.CONSTRAINT_PRIMARY && c.Type != ast.CONSTRAINT_UNIQUE) {
+		return
+	}
+	if c.Columns != nil && len(c.Columns.Items) > r.max {
+		r.AddAdvice(
+			r.level,
+			code.IndexKeyNumberExceedsLimit.Int32(),
+			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
+			common.ConvertANTLRLineToPosition(r.locLine(c.Loc)),
+		)
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

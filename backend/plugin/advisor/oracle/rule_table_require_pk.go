@@ -4,15 +4,16 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,22 +36,8 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	rule := NewTableRequirePKRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // TableRequirePKRule is the rule implementation for table requires PK.
@@ -76,6 +63,54 @@ func NewTableRequirePKRule(level storepb.Advice_Status, title string, currentDat
 // Name returns the rule name.
 func (*TableRequirePKRule) Name() string {
 	return "table.require-pk"
+}
+
+// OnStatement checks primary-key state from omni DDL nodes.
+func (r *TableRequirePKRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		r.tableWitPK[tableName] = r.createTableHasPK(n)
+		r.tableLine[tableName] = r.locLine(n.Loc)
+	case *ast.AlterTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, cmd := range omniAlterTableCmds(n) {
+			switch cmd.Action {
+			case ast.AT_ADD_CONSTRAINT:
+				if cmd.Constraint != nil && cmd.Constraint.Type == ast.CONSTRAINT_PRIMARY {
+					r.tableWitPK[tableName] = true
+				}
+			case ast.AT_DROP_CONSTRAINT:
+				if strings.Contains(strings.ToUpper(cmd.Subtype), "PRIMARY") || strings.EqualFold(cmd.ColumnName, "PRIMARY") {
+					r.tableWitPK[tableName] = false
+					r.tableLine[tableName] = r.locLine(cmd.Loc)
+				}
+			default:
+			}
+		}
+	case *ast.DropStmt:
+		for _, item := range listItems(n.Names) {
+			name, ok := item.(*ast.ObjectName)
+			if ok {
+				delete(r.tableWitPK, omniObjectName(name, r.currentDatabase))
+			}
+		}
+	default:
+	}
+}
+
+func (*TableRequirePKRule) createTableHasPK(stmt *ast.CreateTableStmt) bool {
+	for _, col := range omniColumnDefs(stmt.Columns) {
+		if omniColumnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
+			return true
+		}
+	}
+	for _, c := range omniTableConstraints(stmt.Constraints) {
+		if c.Type == ast.CONSTRAINT_PRIMARY {
+			return true
+		}
+	}
+	return false
 }
 
 // OnEnter is called when the parser enters a rule context.
