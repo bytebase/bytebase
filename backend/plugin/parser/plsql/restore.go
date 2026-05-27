@@ -127,7 +127,27 @@ func (g *generator) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	}
 
 	g.isFirst = false
-	g.result = fmt.Sprintf(`INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s";`, g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable)
+	columnList := quoteOracleColumns(g.restorableColumns())
+	g.result = fmt.Sprintf(`INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s";`, g.originalDatabase, g.originalTable, columnList, columnList, g.backupDatabase, g.backupTable)
+}
+
+func (g *generator) restorableColumns() []string {
+	var columns []string
+	for _, column := range g.table.GetProto().GetColumns() {
+		if column.GetGeneration() != nil {
+			continue
+		}
+		columns = append(columns, column.Name)
+	}
+	return columns
+}
+
+func quoteOracleColumns(columns []string) string {
+	var quotedColumns []string
+	for _, column := range columns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, column))
+	}
+	return strings.Join(quotedColumns, ", ")
 }
 
 func disjoint(a []string, b map[string]bool) bool {
@@ -224,14 +244,14 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetProto().GetColumns() {
+	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
 				return
 			}
 		}
-		if _, err := fmt.Fprintf(&buf, "\"%s\"", column.Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, "\"%s\"", column); err != nil {
 			g.err = err
 			return
 		}
@@ -240,14 +260,14 @@ func (g *generator) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 		g.err = err
 		return
 	}
-	for i, column := range g.table.GetProto().GetColumns() {
+	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				g.err = err
 				return
 			}
 		}
-		if _, err := fmt.Fprintf(&buf, "b.\"%s\"", column.Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, "b.\"%s\"", column); err != nil {
 			g.err = err
 			return
 		}

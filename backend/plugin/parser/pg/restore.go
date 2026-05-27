@@ -119,11 +119,12 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	backupTable := backupItem.TargetTable.Table
 	originalSchema := schema
 	originalTable := backupItem.SourceTable.Table
+	quotedColumnList := quotePGColumns(restorableColumns(tableMetadata))
 
 	var result string
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
-		result = fmt.Sprintf(`INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s";`, originalSchema, originalTable, backupSchema, backupTable)
+		result = fmt.Sprintf(`INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s";`, originalSchema, originalTable, quotedColumnList, quotedColumnList, backupSchema, backupTable)
 	case *ast.UpdateStmt:
 		fields := extractSetFieldNames(n)
 		uk, err := findDisjointUniqueKey(tableMetadata, fields)
@@ -132,7 +133,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		}
 
 		var buf strings.Builder
-		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" SELECT * FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, originalSchema, originalTable, backupSchema, backupTable, uk); err != nil {
+		if _, err := fmt.Fprintf(&buf, `INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s" ON CONFLICT ON CONSTRAINT "%s" DO UPDATE SET `, originalSchema, originalTable, quotedColumnList, quotedColumnList, backupSchema, backupTable, uk); err != nil {
 			return "", errors.Wrapf(err, "failed to generate update statement")
 		}
 		for i, field := range fields {
@@ -161,6 +162,25 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return fmt.Sprintf("%s\n/*\nOriginal SQL:\n%s\n*/\n%s", prependStatements, sqlForComment, result), nil
 	}
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, result), nil
+}
+
+func restorableColumns(table *model.TableMetadata) []string {
+	var columns []string
+	for _, column := range table.GetProto().GetColumns() {
+		if column.GetGeneration() != nil {
+			continue
+		}
+		columns = append(columns, column.Name)
+	}
+	return columns
+}
+
+func quotePGColumns(columns []string) string {
+	var quotedColumns []string
+	for _, column := range columns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf(`"%s"`, column))
+	}
+	return strings.Join(quotedColumns, ", ")
 }
 
 // extractSetFieldNames extracts the target column names from an UPDATE SET clause.

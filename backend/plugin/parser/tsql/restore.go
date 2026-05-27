@@ -145,6 +145,25 @@ func (g *generator) hasIdentityColumn() bool {
 	return false
 }
 
+func (g *generator) restorableColumns() []string {
+	var columns []string
+	for _, column := range g.table.GetProto().GetColumns() {
+		if column.GetGeneration() != nil {
+			continue
+		}
+		columns = append(columns, column.Name)
+	}
+	return columns
+}
+
+func quoteTSQLColumns(columns []string) string {
+	var quotedColumns []string
+	for _, column := range columns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf("[%s]", column))
+	}
+	return strings.Join(quotedColumns, ", ")
+}
+
 func (g *generator) generate(node ast.Node) (string, error) {
 	switch n := node.(type) {
 	case *ast.DeleteStmt:
@@ -159,27 +178,19 @@ func (g *generator) generate(node ast.Node) (string, error) {
 func (g *generator) generateDelete() (string, error) {
 	// Check if the table has IDENTITY columns
 	hasIdentity := g.hasIdentityColumn()
+	columnList := quoteTSQLColumns(g.restorableColumns())
 
 	if hasIdentity {
 		// For tables with IDENTITY columns, we need to enable IDENTITY_INSERT
 		// and use explicit column lists
 		var buf strings.Builder
 
-		// Build column list
-		var columnList strings.Builder
-		for i, column := range g.table.GetProto().GetColumns() {
-			if i > 0 {
-				columnList.WriteString(", ")
-			}
-			fmt.Fprintf(&columnList, "[%s]", column.Name)
-		}
-
 		fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] ON;\n",
 			g.originalDatabase, g.originalSchema, g.originalTable)
 		fmt.Fprintf(&buf, "INSERT INTO [%s].[%s].[%s] (%s) SELECT %s FROM [%s].[dbo].[%s];\n",
 			g.originalDatabase, g.originalSchema, g.originalTable,
-			columnList.String(),
-			columnList.String(),
+			columnList,
+			columnList,
 			g.backupDatabase, g.backupTable)
 		fmt.Fprintf(&buf, "SET IDENTITY_INSERT [%s].[%s].[%s] OFF;\n",
 			g.originalDatabase, g.originalSchema, g.originalTable)
@@ -190,8 +201,10 @@ func (g *generator) generateDelete() (string, error) {
 	}
 
 	// Simple INSERT for tables without IDENTITY columns
-	return fmt.Sprintf(`INSERT INTO [%s].[%s].[%s] SELECT * FROM [%s].[dbo].[%s];`,
+	return fmt.Sprintf(`INSERT INTO [%s].[%s].[%s] (%s) SELECT %s FROM [%s].[dbo].[%s];`,
 		g.originalDatabase, g.originalSchema, g.originalTable,
+		columnList,
+		columnList,
 		g.backupDatabase, g.backupTable), nil
 }
 
@@ -277,26 +290,26 @@ func (g *generator) generateUpdate(stmt *ast.UpdateStmt) (string, error) {
 	if _, err := fmt.Fprint(&buf, "\nWHEN NOT MATCHED THEN\n INSERT ("); err != nil {
 		return "", err
 	}
-	for i, column := range g.table.GetProto().GetColumns() {
+	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				return "", err
 			}
 		}
-		if _, err := fmt.Fprintf(&buf, "[%s]", column.Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, "[%s]", column); err != nil {
 			return "", err
 		}
 	}
 	if _, err := fmt.Fprint(&buf, ") VALUES ("); err != nil {
 		return "", err
 	}
-	for i, column := range g.table.GetProto().GetColumns() {
+	for i, column := range g.restorableColumns() {
 		if i > 0 {
 			if _, err := fmt.Fprint(&buf, ", "); err != nil {
 				return "", err
 			}
 		}
-		if _, err := fmt.Fprintf(&buf, "b.[%s]", column.Name); err != nil {
+		if _, err := fmt.Fprintf(&buf, "b.[%s]", column); err != nil {
 			return "", err
 		}
 	}
