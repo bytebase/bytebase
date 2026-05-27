@@ -104,8 +104,14 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	a.Len(queryResp.Msg.Results[0].Rows, 1)
 	a.Equal("Bytebase", queryResp.Msg.Results[0].Rows[0].Values[0].GetStringValue())
 
+	instanceID, err := common.GetInstanceID(instance.Name)
+	a.NoError(err)
+	stores := getStore(t, ctl.server)
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	a.NoError(err)
+	a.NotEmpty(workspaceID)
 	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
-		Parent: common.FormatWorkspace(common.GetWorkspaceIDFromContext(ctx)),
+		Parent: common.FormatWorkspace(workspaceID),
 		Policy: &v1pb.Policy{
 			Type: v1pb.PolicyType_DATA_QUERY,
 			Policy: &v1pb.Policy_QueryDataPolicy{
@@ -125,10 +131,7 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	a.Len(queryResp.Msg.Results, 1)
 	a.Empty(queryResp.Msg.Results[0].Error)
 
-	instanceID, err := common.GetInstanceID(instance.Name)
-	a.NoError(err)
-	stores := getStore(t, ctl.server)
-	instanceMessage, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &instanceID})
+	instanceMessage, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
 	a.NoError(err)
 	metadata := proto.CloneOf(instanceMessage.Metadata)
 	var readOnly *storepb.DataSource
@@ -145,7 +148,7 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	metadata.DataSources = append(metadata.DataSources, readOnly)
 	_, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instanceID,
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  workspaceID,
 		Metadata:   metadata,
 	})
 	a.NoError(err)

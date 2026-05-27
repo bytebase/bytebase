@@ -257,7 +257,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		0,
 		database.ProjectID,
 	)
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
 	if err != nil {
 		return nil, err
 	}
@@ -885,7 +885,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		}
 	}
 
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId, statement, false)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1792,7 +1792,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string, statement string, allowAdminDataSource bool) (string, error) {
+func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, dataSourceID string, statement string, allowAdminDataSource bool) (string, error) {
 	if dataSourceID != "" {
 		return dataSourceID, nil
 	}
@@ -1811,7 +1811,7 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string, s
 		}
 	}
 
-	if allowAdminDataSource && adminDataSourceID != "" && requiresAdminDataSource(instance.Metadata.GetEngine(), statement) {
+	if allowAdminDataSource && adminDataSourceID != "" && requiresAdminDataSource(ctx, instance.Metadata.GetEngine(), statement) {
 		return adminDataSourceID, nil
 	}
 
@@ -1827,9 +1827,44 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string, s
 	}
 }
 
-func requiresAdminDataSource(engine storepb.Engine, statement string) bool {
+func requiresAdminDataSource(ctx context.Context, engine storepb.Engine, statement string) bool {
 	readOnly, _, err := parserbase.ValidateSQLForEditor(engine, statement)
-	return err == nil && !readOnly
+	if err != nil {
+		return false
+	}
+	if !readOnly {
+		return true
+	}
+
+	if !shouldResolveDataSourceByQuerySpan(engine) {
+		return false
+	}
+	statements, err := parserbase.SplitMultiSQL(engine, statement)
+	if err != nil {
+		statements = []parserbase.Statement{{Text: statement}}
+	}
+	spans, err := parserbase.GetQuerySpan(ctx, parserbase.GetQuerySpanContext{}, engine, statements, "", "", false)
+	if err != nil {
+		return false
+	}
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		if span.Type == parserbase.DDL || span.Type == parserbase.DML {
+			return true
+		}
+	}
+	return false
+}
+
+func shouldResolveDataSourceByQuerySpan(engine storepb.Engine) bool {
+	switch engine {
+	case storepb.Engine_MONGODB, storepb.Engine_ELASTICSEARCH:
+		return true
+	default:
+		return false
+	}
 }
 
 func checkAndGetDataSourceQueriable(
