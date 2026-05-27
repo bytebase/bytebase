@@ -1022,6 +1022,7 @@ function ValueInput({
   };
 
   const hasOption = optionConfig.options.length > 0 || !!optionConfig.search;
+  const hasMultiOption = hasOption && optionConfig.supportMultiple !== false;
 
   type InputType = "INPUT" | "SINGLE-SELECT" | "MULTI-SELECT" | "MULTI-INPUT";
 
@@ -1029,7 +1030,7 @@ function ValueInput({
 
   let inputType: InputType;
   if (isArrayValue) {
-    inputType = hasOption ? "MULTI-SELECT" : "MULTI-INPUT";
+    inputType = hasMultiOption ? "MULTI-SELECT" : "MULTI-INPUT";
   } else if (isStringOperator(operator)) {
     inputType = "INPUT";
   } else if (hasOption) {

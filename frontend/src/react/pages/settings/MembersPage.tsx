@@ -1029,7 +1029,10 @@ function ProjectRoleBindingForm({
     () =>
       factorList.reduce((map, factor) => {
         if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
-          map.set(factor, getDatabaseNameOptionConfig(projectName));
+          map.set(factor, {
+            ...getDatabaseNameOptionConfig(projectName),
+            supportMultiple: false,
+          });
         } else {
           map.set(factor, { options: [] });
         }

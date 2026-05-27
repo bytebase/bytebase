@@ -431,6 +431,54 @@ describe("ExprEditor", () => {
     unmount();
   });
 
+  test("collection operator uses tag input when option config disables multi-select", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, []],
+        },
+      ],
+    };
+    const optionConfig = searchableOptionConfigMap.get(
+      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME
+    ) as OptionConfig;
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_TABLE_NAME]}
+        optionConfigMap={
+          new Map([
+            [
+              CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+              {
+                ...optionConfig,
+                supportMultiple: false,
+              },
+            ],
+          ])
+        }
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    expect(
+      container.querySelector(
+        'input[placeholder="cel.condition.input-value-press-enter"]'
+      )
+    ).toBeInstanceOf(HTMLInputElement);
+    expect(container.textContent?.includes("cel.condition.select-value")).toBe(
+      false
+    );
+
+    unmount();
+  });
+
   test("searchable value trigger aligns with select trigger sizing", async () => {
     const initialExpr: ConditionGroupExpr = {
       type: ExprType.ConditionGroup,
