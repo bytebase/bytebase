@@ -165,7 +165,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 // preCheckAccess finds and returns the best matching active access grant for the query.
 // It lists access grants filtered by project, creator, status, statement, target database,
 // and expiry, then prefers the grant with unmask=true if available.
-func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
+func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -217,6 +217,15 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	if len(grants) == 0 {
 		return nil
 	}
+	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), request.Statement)
+	if err != nil {
+		slog.Warn("failed to validate access grant query", log.BBError(err))
+		return nil
+	}
+	if !readOnly {
+		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		return nil
+	}
 	// Pick the best grant (prefer unmask=true).
 	for _, grant := range grants {
 		if grant.Payload != nil && grant.Payload.Unmask {
@@ -234,7 +243,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request, database)
+	accessGrant := s.preCheckAccess(ctx, request, instance, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -250,7 +259,14 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
+	queryDataPolicy := getEffectiveQueryDataPolicy(
+		ctx,
+		s.store,
+		s.licenseService,
+		0,
+		database.ProjectID,
+	)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
 	if err != nil {
 		return nil, err
 	}
@@ -878,7 +894,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 		}
 	}
 
-	resolvedDataSourceID, err := resolveDataSourceID(instance, request.DataSourceId)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, false)
 	if err != nil {
 		return nil, err
 	}
@@ -1785,7 +1801,7 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	}), nil
 }
 
-func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (string, error) {
+func resolveDataSourceID(ctx context.Context, instance *store.InstanceMessage, dataSourceID string, statement string, allowAdminDataSource bool) (string, error) {
 	if dataSourceID != "" {
 		return dataSourceID, nil
 	}
@@ -1804,6 +1820,10 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (
 		}
 	}
 
+	if allowAdminDataSource && adminDataSourceID != "" && requiresAdminDataSource(ctx, instance.Metadata.GetEngine(), statement) {
+		return adminDataSourceID, nil
+	}
+
 	switch {
 	case readOnlyCount == 1:
 		return readOnlyDataSourceID, nil
@@ -1814,6 +1834,33 @@ func resolveDataSourceID(instance *store.InstanceMessage, dataSourceID string) (
 	default:
 		return "", connect.NewError(connect.CodeFailedPrecondition, errors.New("instance has no admin data source"))
 	}
+}
+
+func requiresAdminDataSource(ctx context.Context, engine storepb.Engine, statement string) bool {
+	readOnly, _, err := parserbase.ValidateSQLForEditor(engine, statement)
+	if err != nil {
+		return false
+	}
+	if !readOnly {
+		return true
+	}
+
+	if !shouldClassifyStatementByQuerySpan(engine) {
+		return false
+	}
+	spans, err := getQuerySpansForStatement(ctx, engine, statement)
+	if err != nil {
+		return false
+	}
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		if span.Type == parserbase.DDL || span.Type == parserbase.DML {
+			return true
+		}
+	}
+	return false
 }
 
 func checkAndGetDataSourceQueriable(
