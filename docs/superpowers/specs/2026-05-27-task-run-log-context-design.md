@@ -16,7 +16,7 @@ Task-run execution flows through `backend/runner/taskrun/running_scheduler.go`:
 - `executeTaskRun` loads the task, validates freshness, updates `started_at`, and starts asynchronous execution.
 - `runTaskRunOnce` runs the executor and updates the final task-run status.
 
-Executors receive `task`, `taskRunUID`, and have access to profile state such as `replica_id`, so they can attach the same log context without changing persisted state.
+Executors receive `taskRunUID` and have access to profile state such as `replica_id`, so they can attach the same log context without changing persisted state.
 
 ## Approach
 
@@ -26,18 +26,15 @@ Add a small helper in `backend/runner/taskrun` that builds task-run log attribut
 
 - `project`
 - `task_run_id`
-- `task_id`
-- `plan_id`
-- `task_type`
 - `replica_id`
 
 At scheduler boundaries, create a scoped logger with:
 
 ```go
-logger := slog.With(taskRunLogAttrs(task, taskRunUID, replicaID)...)
+logger := slog.With(taskRunLogAttrs(projectID, taskRunUID, replicaID)...)
 ```
 
-Then use `logger.Warn`, `logger.Error`, and related methods for task-run scoped events. Logs that occur before the full task is loaded should use a smaller claimed-task-run context with `project`, `task_run_id`, `task_id`, and `replica_id`.
+Then use `logger.Warn`, `logger.Error`, and related methods for task-run scoped events.
 
 This avoids putting the logger into `context.Context`. Context remains reserved for cancellation, deadlines, and future cross-cutting values such as `request_id` or `trace_id`. Task-run IDs are domain fields already available at the call site, so explicit scoped loggers are clearer and easier to audit.
 
@@ -53,7 +50,7 @@ Update task-run scheduling and execution logs in `backend/runner/taskrun`, espec
 - task-run status update failures
 - webhook follow-up failures after task-run failure
 
-Where existing logs use ambiguous `id`, replace it with explicit `task_id` or `task_run_id`.
+Where existing logs use ambiguous `id` for the task run, replace it with explicit `task_run_id`. Avoid adding extra task metadata unless a specific log event needs it.
 
 Executor-internal logs may use the same helper where the relevant data is already available. The first implementation should keep this opportunistic and focused, without changing the executor interface.
 
