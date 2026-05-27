@@ -58,15 +58,37 @@ function SelectTrigger({
 const SelectValue = BaseSelect.Value;
 
 // ---- Portal + Positioner + Popup  ----
+type SelectContentProps = ComponentProps<typeof BaseSelect.Popup> & {
+  positionerProps?: Omit<
+    ComponentProps<typeof BaseSelect.Positioner>,
+    "children"
+  >;
+};
+
 function SelectContent({
   className,
   children,
+  positionerProps,
   ref,
   ...props
-}: ComponentProps<typeof BaseSelect.Popup>) {
+}: SelectContentProps) {
+  const {
+    align = "start",
+    alignItemWithTrigger = false,
+    className: positionerClassName,
+    sideOffset = 4,
+    ...restPositionerProps
+  } = positionerProps ?? {};
+
   return (
     <BaseSelect.Portal container={getLayerRoot("overlay")}>
-      <BaseSelect.Positioner sideOffset={4} className={LAYER_SURFACE_CLASS}>
+      <BaseSelect.Positioner
+        align={align}
+        alignItemWithTrigger={alignItemWithTrigger}
+        sideOffset={sideOffset}
+        className={cn(LAYER_SURFACE_CLASS, positionerClassName)}
+        {...restPositionerProps}
+      >
         <BaseSelect.Popup
           ref={ref}
           className={cn(

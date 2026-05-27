@@ -1187,6 +1187,7 @@
   "instance.connection-options": "Connection Options",
   "instance.create-gcp-credentials": "To create credentials, see",
   "instance.database-region": "Database Region",
+  "instance.default-role": "Default role",
   "instance.endpoint": "Endpoint",
   "instance.external-id": "External ID",
   "instance.external-id-description": "External ID for additional security when assuming role (optional)",

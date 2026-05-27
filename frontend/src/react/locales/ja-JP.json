@@ -1181,6 +1181,7 @@
   "instance.connection-options": "接続オプション",
   "instance.create-gcp-credentials": "認証情報の作成方法については、を参照してください",
   "instance.database-region": "データベース領域",
+  "instance.default-role": "デフォルトロール",
   "instance.endpoint": "エンドポイント",
   "instance.external-id": "外部 ID",
   "instance.external-id-description": "ロールを引き受ける際の追加セキュリティ用の外部 ID（オプション）",
