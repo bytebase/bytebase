@@ -204,6 +204,9 @@ export function PlanDetailChangesBranch({
   const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
     Record<string, CheckReleaseResponse_CheckResult[] | undefined>
   >({});
+  const [statementVersionBySpecId, setStatementVersionBySpecId] = useState<
+    Record<string, number>
+  >({});
   const specs = page.plan.specs ?? [];
   // Specs visible in the tab strip — real specs plus any pending draft.
   const visibleSpecs = useMemo(
@@ -463,6 +466,12 @@ export function PlanDetailChangesBranch({
     },
     [selectedSpecIdForDraftChecks]
   );
+  const handleStatementPersisted = useCallback((specId: string) => {
+    setStatementVersionBySpecId((prev) => ({
+      ...prev,
+      [specId]: (prev[specId] ?? 0) + 1,
+    }));
+  }, []);
 
   if (!selectedSpec) {
     return (
@@ -582,6 +591,7 @@ export function PlanDetailChangesBranch({
                 : planCheckRunListForSpec(page.planCheckRuns, selectedSpec)
             }
             spec={selectedSpec}
+            statementVersion={statementVersionBySpecId[selectedSpec.id] ?? 0}
           />
           {!specHasRelease &&
             page.isCreating &&
@@ -593,7 +603,14 @@ export function PlanDetailChangesBranch({
                 selectedSpec={selectedSpec}
               />
             )}
-          {!specHasRelease && <OptionsSection selectedSpec={selectedSpec} />}
+          {!specHasRelease && (
+            <OptionsSection
+              onStatementPersisted={() =>
+                handleStatementPersisted(selectedSpec.id)
+              }
+              selectedSpec={selectedSpec}
+            />
+          )}
         </div>
       </div>
 
@@ -649,7 +666,13 @@ export function PlanDetailChangesBranch({
   );
 }
 
-function OptionsSection({ selectedSpec }: { selectedSpec: Plan_Spec }) {
+function OptionsSection({
+  onStatementPersisted,
+  selectedSpec,
+}: {
+  onStatementPersisted: () => void;
+  selectedSpec: Plan_Spec;
+}) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, refreshState } = page;
@@ -824,18 +847,30 @@ function OptionsSection({ selectedSpec }: { selectedSpec: Plan_Spec }) {
         const sheet = getLocalSheetByName(sheetName);
         setLocalSheetStatement(sheet, nextStatement);
         setSheetStatementState(nextStatement);
+        onStatementPersisted();
         return;
       }
 
-      await updateSpecSheetWithStatement(
+      const updatedPlan = await updateSpecSheetWithStatement(
         page.plan,
         selectedSpec,
         nextStatement
       );
+      if (updatedPlan) {
+        patchState({ plan: updatedPlan });
+      }
       setSheetStatementState(nextStatement);
+      onStatementPersisted();
       await refreshState();
     },
-    [page.isCreating, page.plan, refreshState, selectedSpec]
+    [
+      onStatementPersisted,
+      page.isCreating,
+      page.plan,
+      patchState,
+      refreshState,
+      selectedSpec,
+    ]
   );
 
   const setSheetStatementState = (statement: string) => {
