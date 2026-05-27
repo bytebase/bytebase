@@ -14,7 +14,6 @@ import type { PlanDetailPageSnapshot } from "./types";
 export interface UseInitialFetchParams {
   projectId: string;
   planId: string;
-  specId?: string;
   routeQueryRef: MutableRefObject<Record<string, unknown>>;
   storeApi: PlanDetailStoreApi;
   patchState: (patch: Partial<PlanDetailPageSnapshot>) => void;
@@ -23,7 +22,6 @@ export interface UseInitialFetchParams {
 export function useInitialFetch({
   projectId,
   planId,
-  specId,
   routeQueryRef,
   storeApi,
   patchState,
@@ -33,8 +31,7 @@ export function useInitialFetch({
     patchState({
       projectId,
       planId,
-      specId,
-      pageKey: `${projectId}/${planId}/${specId ?? ""}`,
+      pageKey: `${projectId}/${planId}`,
       projectTitle: "",
       isCreating: planId.toLowerCase() === "create",
       isInitializing: true,
@@ -60,7 +57,6 @@ export function useInitialFetch({
         patchState({
           ...patch,
           isInitializing: false,
-          specId,
         });
       } catch (error) {
         if (canceled) {
@@ -86,5 +82,5 @@ export function useInitialFetch({
     return () => {
       canceled = true;
     };
-  }, [patchState, planId, projectId, routeQueryRef, specId, storeApi]);
+  }, [patchState, planId, projectId, routeQueryRef, storeApi]);
 }
