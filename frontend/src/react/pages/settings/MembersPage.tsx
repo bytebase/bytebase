@@ -1427,9 +1427,21 @@ function EditMemberRoleDrawer({
               form.databaseMode === "EXPRESSION" &&
               validateSimpleExpr(form.exprGroup)
             ) {
-              const parsedExpr = await buildCELExpr(form.exprGroup);
+              let parsedExpr;
+              try {
+                parsedExpr = await buildCELExpr(form.exprGroup);
+              } catch {
+                parsedExpr = undefined;
+              }
               if (!parsedExpr) {
-                throw new Error("failed to build CEL expression");
+                pushNotification({
+                  module: "bytebase",
+                  style: "CRITICAL",
+                  title: t(
+                    "project.members.request-role.failed-to-build-expression"
+                  ),
+                });
+                return;
               }
               const [exprString] = await batchConvertParsedExprToCELString([
                 parsedExpr,

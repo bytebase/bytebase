@@ -11,6 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { mockPushNotification, mockUpdateProjectIamPolicy } = vi.hoisted(() => ({
+  mockPushNotification: vi.fn(),
+  mockUpdateProjectIamPolicy: vi.fn(),
+}));
+
 vi.mock("@/react/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     onChange,
@@ -269,7 +274,7 @@ vi.mock("react-i18next", () => ({
 const projectIamPolicy = { bindings: [] };
 
 vi.mock("@/store", () => ({
-  pushNotification: vi.fn(),
+  pushNotification: mockPushNotification,
   useActuatorV1Store: () => ({
     isSaaSMode: false,
     userCountInIam: 1,
@@ -280,7 +285,7 @@ vi.mock("@/store", () => ({
   useProjectIamPolicyStore: () => ({
     getOrFetchProjectIamPolicy: vi.fn(),
     getProjectIamPolicy: () => projectIamPolicy,
-    updateProjectIamPolicy: vi.fn(),
+    updateProjectIamPolicy: mockUpdateProjectIamPolicy,
   }),
   useProjectV1Store: () => ({
     getProjectByName: (name: string) => ({
@@ -321,6 +326,7 @@ vi.mock("./RequestRoleSheet", () => ({
   RequestRoleSheet: () => null,
 }));
 
+import { buildCELExpr } from "@/plugins/cel";
 import { nativeChange } from "@/react/test-utils/nativeChange";
 import { MembersPage } from "./MembersPage";
 
@@ -328,6 +334,8 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -400,5 +408,60 @@ describe("MembersPage project role grant drawer", () => {
         "textarea[placeholder='e.g. resource.database_name.startsWith(\"employee_\")']"
       )
     ).toBeNull();
+  });
+
+  it("shows an error when CEL expression parsing fails", async () => {
+    vi.mocked(buildCELExpr).mockRejectedValueOnce(new Error("parse failed"));
+
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    const accountButton = container.querySelector(
+      "[data-testid='account-select']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      accountButton.click();
+    });
+
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+
+    const expressionRadio = [...container.querySelectorAll("input")].find(
+      (input) =>
+        input instanceof HTMLInputElement &&
+        input.type === "radio" &&
+        input.parentElement?.textContent === "CEL Expression"
+    ) as HTMLInputElement;
+    await act(async () => {
+      expressionRadio.click();
+    });
+    await flush();
+
+    const createButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      createButton.click();
+    });
+    await flush();
+
+    expect(mockPushNotification).toHaveBeenCalledWith({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "project.members.request-role.failed-to-build-expression",
+    });
+    expect(mockUpdateProjectIamPolicy).not.toHaveBeenCalled();
   });
 });
