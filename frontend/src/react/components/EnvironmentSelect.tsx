@@ -6,29 +6,32 @@ import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 
-export interface EnvironmentSelectProps {
+interface SingleProps {
+  multiple?: false;
   value: string;
   onChange: (value: string) => void;
+  /** Extra content rendered next to the selected env in the trigger and rows. */
+  renderSuffix?: (environment: Environment) => React.ReactNode;
+}
+
+interface MultiProps {
+  multiple: true;
+  value: string[];
+  onChange: (values: string[]) => void;
+}
+
+export type EnvironmentSelectProps = (SingleProps | MultiProps) & {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
   portal?: boolean;
   clearable?: boolean;
-  renderSuffix?: (environment: Environment) => React.ReactNode;
-}
+};
 
-export function EnvironmentSelect({
-  value,
-  onChange,
-  placeholder,
-  disabled,
-  className,
-  portal,
-  clearable = true,
-  renderSuffix,
-}: EnvironmentSelectProps) {
+export function EnvironmentSelect(props: EnvironmentSelectProps) {
   const { t } = useTranslation();
   const environments = useEnvironmentList();
+  const renderSuffix = !props.multiple ? props.renderSuffix : undefined;
 
   const options = useMemo(
     () =>
@@ -50,15 +53,35 @@ export function EnvironmentSelect({
     [environments, renderSuffix]
   );
 
+  const placeholder = props.placeholder ?? t("environment.select");
+  const clearable = props.clearable ?? true;
+
+  if (props.multiple) {
+    return (
+      <Combobox
+        multiple
+        value={props.value}
+        onChange={props.onChange}
+        placeholder={placeholder}
+        noResultsText={t("common.no-data")}
+        disabled={props.disabled}
+        className={props.className}
+        portal={props.portal}
+        clearable={clearable}
+        options={options}
+      />
+    );
+  }
+
   return (
     <Combobox
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder ?? t("environment.select")}
+      value={props.value}
+      onChange={props.onChange}
+      placeholder={placeholder}
       noResultsText={t("common.no-data")}
-      disabled={disabled}
-      className={className}
-      portal={portal}
+      disabled={props.disabled}
+      className={props.className}
+      portal={props.portal}
       clearable={clearable}
       renderValue={(opt) => {
         const env = environments.find(

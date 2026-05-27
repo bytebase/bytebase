@@ -21,7 +21,7 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
-import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
+import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -1120,7 +1120,8 @@ function ProjectRoleBindingForm({
             {t("common.environments")}
           </label>
           <DDLWarningCallout type="drawer" kind={envKind} />
-          <EnvironmentMultiSelect
+          <EnvironmentSelect
+            multiple
             value={form.environments}
             onChange={(envs) => onChange({ ...form, environments: envs })}
           />
