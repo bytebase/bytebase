@@ -16,26 +16,39 @@ Task-run execution flows through `backend/runner/taskrun/running_scheduler.go`:
 - `executeTaskRun` loads the task, validates freshness, updates `started_at`, and starts asynchronous execution.
 - `runTaskRunOnce` runs the executor and updates the final task-run status.
 
-Executors receive `taskRunUID`, so they can attach the same log context without changing persisted state.
+Executors receive `context.Context` and `taskRunUID`, so they can attach the same log context without changing persisted state.
 
 ## Approach
 
-Use scoped `slog.Logger` values at task-run execution boundaries.
+Store task-run log attributes in `context.Context`, and wrap the configured `slog.Handler` so context-aware slog calls append those attributes.
 
-Add a small helper in `backend/runner/taskrun` that builds task-run log attributes from the available execution data. The standard field set is:
+Add a small helper in `backend/common/log` for context-carried slog attributes:
+
+- `WithAttrs(ctx, attrs...)`
+- `NewContextHandler(handler)`
+
+`NewContextHandler` wraps the text or JSON handler configured at startup. Logs must use `slog.InfoContext`, `slog.WarnContext`, `slog.ErrorContext`, and related context methods to receive the context attributes.
+
+Add a small helper in `backend/runner/taskrun` that stores task-run log attributes from the available execution data. The standard field set is:
 
 - `project`
 - `task_run_id`
 
-At scheduler boundaries, create a scoped logger with:
+At scheduler boundaries, derive a task-run context:
 
 ```go
-logger := slog.With(taskRunLogAttrs(projectID, taskRunUID)...)
+ctx := taskRunLogContext(ctx, projectID, taskRunUID)
 ```
 
-Then use `logger.Warn`, `logger.Error`, and related methods for task-run scoped events.
+Then use context-aware slog calls for task-run scoped events:
 
-This avoids putting the logger into `context.Context`. Context remains reserved for cancellation, deadlines, and future cross-cutting values such as `request_id` or `trace_id`. Task-run IDs are domain fields already available at the call site, so explicit scoped loggers are clearer and easier to audit.
+```go
+slog.WarnContext(ctx, "task run blocked by drift validation", log.BBError(err))
+```
+
+Do not put a logger in `context.Context`. The context stores metadata only. This keeps task-run fields compatible with future request or trace IDs and avoids passing `*slog.Logger` through every executor boundary.
+
+For gh-ost, keep its logger adapter but make it hold the task-run context and call `slog.InfoContext`, `slog.WarnContext`, and `slog.ErrorContext`. `ghost.NewMigrationContext` already receives `ctx`, so gh-ost logs can inherit task-run fields without changing gh-ost itself.
 
 ## Scope
 
@@ -51,7 +64,7 @@ Update task-run scheduling and execution logs in `backend/runner/taskrun`, espec
 
 Where existing logs use ambiguous `id` for the task run, replace it with explicit `task_run_id`. Avoid adding extra task metadata unless a specific log event needs it.
 
-Executor-internal logs may use the same helper where the relevant data is already available. The first implementation should keep this opportunistic and focused, without changing the executor interface.
+Executor-internal logs should use context-aware slog calls when the task-run context is available. The executor interface remains unchanged.
 
 ## Non-Goals
 
@@ -67,7 +80,7 @@ Executor-internal logs may use the same helper where the relevant data is alread
 
 Later request-level tracing can add a request or trace ID through HTTP/gRPC middleware and context propagation. That work should coexist with the task-run fields rather than replace them. A future log line may include both `request_id` and `task_run_id` when the relationship is available.
 
-If many executors need richer shared execution state, introduce a small execution context struct, for example a struct containing `TaskRunUID` and `Logger`. Do not add that interface churn until repeated executor changes justify it.
+If many executors need richer shared execution state, introduce a small execution context struct. Do not add that interface churn until repeated executor changes justify it.
 
 ## Testing
 

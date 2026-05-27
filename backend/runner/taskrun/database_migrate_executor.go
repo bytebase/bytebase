@@ -184,7 +184,7 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 }
 
 func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
 
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
@@ -247,7 +247,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}
 	defer driver.Close(ctx)
 
-	logger.Debug("Start migration...",
+	slog.DebugContext(ctx, "Start migration...",
 		slog.String("instance", database.InstanceID),
 		slog.String("database", database.DatabaseName),
 		slog.String("type", task.Type.String()),
@@ -290,7 +290,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 		if err != nil {
 			opts.LogDatabaseSyncEnd(err.Error())
-			logger.Error("failed to sync database schema", log.BBError(err))
+			slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
 		} else {
 			opts.LogDatabaseSyncEnd("")
 			update.SyncHistory = &syncHistory
@@ -302,7 +302,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
-		logger.Error("failed to update changelog", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
@@ -314,7 +314,7 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 	}, nil
 }
 
-func executeGhostMigration(ctx context.Context, driverCtx context.Context, logger *slog.Logger, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver, opts *db.ExecuteOptions) error {
+func executeGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, driver db.Driver, opts *db.ExecuteOptions) error {
 	flags, err := ghost.ParseGhostDirective(sheet.Statement)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse ghost directive")
@@ -323,7 +323,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, logge
 		flags = make(map[string]string)
 	}
 
-	logger.Debug("Start migration...",
+	slog.DebugContext(ctx, "Start migration...",
 		slog.String("instance", database.InstanceID),
 		slog.String("database", database.DatabaseName),
 		slog.String("type", task.Type.String()),
@@ -345,7 +345,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, logge
 		return common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	migrationContext, cleanup, err := ghost.NewMigrationContext(ctx, logger, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
+	migrationContext, cleanup, err := ghost.NewMigrationContext(ctx, task.ID, database, adminDataSource, tableName, fmt.Sprintf("_%d", time.Now().Unix()), cleanedStatement, false, flags, 10000000)
 	if err != nil {
 		return errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
@@ -375,13 +375,13 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, logge
 		)
 
 		if _, err := driver.GetDB().ExecContext(cleanupCtx, sql); err != nil {
-			logger.Warn("failed to cleanup gh-ost temp tables", log.BBError(err))
+			slog.WarnContext(ctx, "failed to cleanup gh-ost temp tables", log.BBError(err))
 		}
 	}()
 
 	go func() {
 		if err := migrator.Migrate(); err != nil {
-			logger.Error("failed to run gh-ost migration", log.BBError(err))
+			slog.ErrorContext(ctx, "failed to run gh-ost migration", log.BBError(err))
 			migrationError <- err
 			return
 		}
@@ -402,14 +402,14 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, logge
 		abortCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		if sendErr := ghostbase.SendWithContext(abortCtx, migrationContext.PanicAbort, err); sendErr != nil {
-			logger.Warn("failed to abort gh-ost migration", log.BBError(sendErr))
+			slog.WarnContext(ctx, "failed to abort gh-ost migration", log.BBError(sendErr))
 		}
 		return err
 	}
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -445,7 +445,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		return nil, errors.Wrapf(err, "failed to create changelog")
 	}
 
-	migrationErr := executeGhostMigration(ctx, driverCtx, logger, task, sheet, instance, database, driver, &opts)
+	migrationErr := executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
 
 	// Dump after migration and update changelog
 	update := &store.UpdateChangelogMessage{
@@ -455,7 +455,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 	if err != nil {
 		opts.LogDatabaseSyncEnd(err.Error())
-		logger.Error("failed to sync database schema", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
 		update.SyncHistory = &syncHistory
@@ -466,7 +466,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
-		logger.Error("failed to update changelog", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
@@ -477,7 +477,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 }
 
 func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
 
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
@@ -538,7 +538,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	for _, file := range release.Payload.Files {
 		// Skip if already applied
 		if appliedVersions[file.Version] {
-			logger.Info("skipping already applied version",
+			slog.InfoContext(ctx, "skipping already applied version",
 				slog.String("version", file.Version),
 				slog.String("database", *task.DatabaseName))
 			continue
@@ -552,7 +552,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 			return nil, errors.Errorf("sheet not found: %s", file.SheetSha256)
 		}
 
-		logger.Info("executing release file",
+		slog.InfoContext(ctx, "executing release file",
 			slog.String("version", file.Version),
 			slog.String("database", *task.DatabaseName),
 			slog.String("file", file.Path))
@@ -568,9 +568,9 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 
 		// Execute the SQL.
 		if ghost.IsGhostEnabled(sheet.Statement) {
-			err = executeGhostMigration(ctx, driverCtx, logger, task, sheet, instance, database, driver, &opts)
+			err = executeGhostMigration(ctx, driverCtx, task, sheet, instance, database, driver, &opts)
 		} else {
-			logger.Debug("Start migration...",
+			slog.DebugContext(ctx, "Start migration...",
 				slog.String("instance", database.InstanceID),
 				slog.String("database", database.DatabaseName),
 				slog.String("type", task.Type.String()),
@@ -611,7 +611,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 	if err != nil {
 		opts.LogDatabaseSyncEnd(err.Error())
-		logger.Error("failed to sync database schema", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
 		update.SyncHistory = &syncHistory
@@ -622,7 +622,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
-		logger.Error("failed to update changelog", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {
@@ -644,7 +644,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 }
 
 func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
 
 	// Declarative releases should have exactly one file
 	if len(release.Payload.Files) == 0 {
@@ -665,7 +665,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		return nil, errors.Errorf("sheet not found: %s", file.SheetSha256)
 	}
 
-	logger.Info("executing declarative release",
+	slog.InfoContext(ctx, "executing declarative release",
 		slog.String("version", file.Version),
 		slog.String("database", *task.DatabaseName),
 		slog.String("file", file.Path))
@@ -689,7 +689,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	}
 	defer driver.Close(ctx)
 
-	logger.Debug("Start migration...",
+	slog.DebugContext(ctx, "Start migration...",
 		slog.String("instance", database.InstanceID),
 		slog.String("database", database.DatabaseName),
 		slog.String("type", task.Type.String()),
@@ -742,7 +742,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 	syncHistory, err := exec.schemaSyncer.SyncDatabaseSchemaToHistory(ctx, database)
 	if err != nil {
 		opts.LogDatabaseSyncEnd(err.Error())
-		logger.Error("failed to sync database schema", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to sync database schema", log.BBError(err))
 	} else {
 		opts.LogDatabaseSyncEnd("")
 		update.SyncHistory = &syncHistory
@@ -753,7 +753,7 @@ func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, 
 		update.Status = new(store.ChangelogStatusFailed)
 	}
 	if err := exec.store.UpdateChangelog(ctx, update); err != nil {
-		logger.Error("failed to update changelog", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to update changelog", log.BBError(err))
 	}
 
 	if migrationErr != nil {

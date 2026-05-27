@@ -2,7 +2,6 @@ package taskrun
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -13,18 +12,18 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestExecuteGhostMigrationAcceptsLogger(t *testing.T) {
-	requireExecuteGhostMigrationLoggerSignature(t, executeGhostMigration)
+func TestExecuteGhostMigrationUsesContextLogger(t *testing.T) {
+	requireExecuteGhostMigrationContextSignature(t, executeGhostMigration)
 }
 
-func TestRunExecutorOnceAcceptsLogger(t *testing.T) {
-	requireRunExecutorOnceLoggerSignature(t, RunExecutorOnce)
+func TestRunExecutorOnceUsesContextLogger(t *testing.T) {
+	requireRunExecutorOnceContextSignature(t, RunExecutorOnce)
 }
 
-func requireExecuteGhostMigrationLoggerSignature(_ *testing.T, _ func(context.Context, context.Context, *slog.Logger, *store.TaskMessage, *store.SheetMessage, *store.InstanceMessage, *store.DatabaseMessage, db.Driver, *db.ExecuteOptions) error) {
+func requireExecuteGhostMigrationContextSignature(_ *testing.T, _ func(context.Context, context.Context, *store.TaskMessage, *store.SheetMessage, *store.InstanceMessage, *store.DatabaseMessage, db.Driver, *db.ExecuteOptions) error) {
 }
 
-func requireRunExecutorOnceLoggerSignature(_ *testing.T, _ func(context.Context, context.Context, *slog.Logger, Executor, *store.TaskMessage, int64) (*storepb.TaskRunResult, error)) {
+func requireRunExecutorOnceContextSignature(_ *testing.T, _ func(context.Context, context.Context, Executor, *store.TaskMessage, int64) (*storepb.TaskRunResult, error)) {
 }
 
 func TestWrappedContextCanceledMatchesErrorsIs(t *testing.T) {

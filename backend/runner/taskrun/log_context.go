@@ -1,6 +1,11 @@
 package taskrun
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+
+	"github.com/bytebase/bytebase/backend/common/log"
+)
 
 func taskRunLogAttrs(projectID string, taskRunUID int64) []slog.Attr {
 	return []slog.Attr{
@@ -9,11 +14,6 @@ func taskRunLogAttrs(projectID string, taskRunUID int64) []slog.Attr {
 	}
 }
 
-func taskRunLogger(projectID string, taskRunUID int64) *slog.Logger {
-	attrs := taskRunLogAttrs(projectID, taskRunUID)
-	args := make([]any, 0, len(attrs))
-	for _, attr := range attrs {
-		args = append(args, attr)
-	}
-	return slog.With(args...)
+func taskRunLogContext(ctx context.Context, projectID string, taskRunUID int64) context.Context {
+	return log.WithAttrs(ctx, taskRunLogAttrs(projectID, taskRunUID)...)
 }

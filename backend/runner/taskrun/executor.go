@@ -21,14 +21,14 @@ type Executor interface {
 }
 
 // RunExecutorOnce wraps a TaskExecutor.RunOnce call with panic recovery.
-func RunExecutorOnce(ctx context.Context, driverCtx context.Context, logger *slog.Logger, exec Executor, task *store.TaskMessage, taskRunUID int64) (result *storepb.TaskRunResult, err error) {
+func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Executor, task *store.TaskMessage, taskRunUID int64) (result *storepb.TaskRunResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			logger.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
+			slog.ErrorContext(ctx, "TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 			result = nil
 			err = errors.Errorf("TaskExecutor PANIC RECOVER, err: %v", panicErr)
 		}

@@ -58,9 +58,9 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	}
 
 	for _, c := range claimed {
-		logger := taskRunLogger(c.ProjectID, c.TaskRunUID)
-		if err := s.executeTaskRun(ctx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
-			logger.Error("failed to execute task run", log.BBError(err))
+		taskRunCtx := taskRunLogContext(ctx, c.ProjectID, c.TaskRunUID)
+		if err := s.executeTaskRun(taskRunCtx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
+			slog.ErrorContext(taskRunCtx, "failed to execute task run", log.BBError(err))
 		}
 	}
 
@@ -69,7 +69,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 
 // executeTaskRun executes a task run that is already in RUNNING status.
 func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int64) error {
-	logger := taskRunLogger(projectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, projectID, taskRunUID)
 
 	task, err := s.store.GetTaskByID(ctx, projectID, taskUID)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 
 	// Validate task freshness before execution.
 	if err := s.validateTaskFreshness(ctx, task); err != nil {
-		logger.Warn("task run blocked by drift validation", log.BBError(err))
+		slog.WarnContext(ctx, "task run blocked by drift validation", log.BBError(err))
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRunUID,
 			ProjectID: task.ProjectID,
@@ -118,7 +118,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 }
 
 func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *store.TaskMessage, executor Executor) {
-	logger := taskRunLogger(task.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, task.ProjectID, taskRunUID)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -126,7 +126,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			logger.Error("Task scheduler V2 runTaskRunOnce PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+			slog.ErrorContext(ctx, "Task scheduler V2 runTaskRunOnce PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
 	taskRunRef := bus.TaskRunRef{ProjectID: task.ProjectID, ID: taskRunUID}
@@ -138,10 +138,10 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 	defer cancel()
 	s.bus.RunningTaskRunsCancelFunc.Store(taskRunRef, cancel)
 
-	result, err := RunExecutorOnce(ctx, driverCtx, logger, executor, task, taskRunUID)
+	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
 
 	if err != nil && errors.Is(err, context.Canceled) {
-		logger.Warn("task run is canceled", log.BBError(err))
+		slog.WarnContext(ctx, "task run is canceled", log.BBError(err))
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRunUID,
 			ProjectID: task.ProjectID,
@@ -156,14 +156,14 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			if common.ErrorCode(err) == common.Conflict {
 				return
 			}
-			logger.Error("Failed to mark task as CANCELED", log.BBError(err))
+			slog.ErrorContext(ctx, "Failed to mark task as CANCELED", log.BBError(err))
 			return
 		}
 		return
 	}
 
 	if err != nil {
-		logger.Warn("task run failed", log.BBError(err))
+		slog.WarnContext(ctx, "task run failed", log.BBError(err))
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
 			ID:        taskRunUID,
 			ProjectID: task.ProjectID,
@@ -180,26 +180,26 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 			if common.ErrorCode(err) == common.Conflict {
 				return
 			}
-			logger.Error("Failed to mark task as FAILED", log.BBError(err))
+			slog.ErrorContext(ctx, "Failed to mark task as FAILED", log.BBError(err))
 			return
 		}
 
 		// Immediately try to send PIPELINE_FAILED webhook (HA-safe atomic claim)
 		claimed, err := s.store.ClaimPipelineFailureNotification(ctx, task.ProjectID, task.PlanID)
 		if err != nil {
-			logger.Error("failed to claim pipeline failure notification", log.BBError(err))
+			slog.ErrorContext(ctx, "failed to claim pipeline failure notification", log.BBError(err))
 		} else if claimed {
 			// Get plan and project for webhook
 			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: task.ProjectID, UID: &task.PlanID})
 			if err != nil {
-				logger.Error("failed to get plan for failure webhook", log.BBError(err))
+				slog.ErrorContext(ctx, "failed to get plan for failure webhook", log.BBError(err))
 			} else if plan == nil {
-				logger.Error("failed to get plan for failure webhook", log.BBError(errors.New("plan not found")))
+				slog.ErrorContext(ctx, "failed to get plan for failure webhook", log.BBError(errors.New("plan not found")))
 			} else {
 				if project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID); err != nil {
-					logger.Error("failed to get project for failure webhook", log.BBError(err))
+					slog.ErrorContext(ctx, "failed to get project for failure webhook", log.BBError(err))
 				} else if project == nil {
-					logger.Error("failed to get project for failure webhook", log.BBError(errors.New("project not found")))
+					slog.ErrorContext(ctx, "failed to get project for failure webhook", log.BBError(errors.New("project not found")))
 				} else {
 					// Send PIPELINE_FAILED webhook
 					s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -231,7 +231,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 		if common.ErrorCode(err) == common.Conflict {
 			return
 		}
-		logger.Error("Failed to mark task as DONE", log.BBError(err))
+		slog.ErrorContext(ctx, "Failed to mark task as DONE", log.BBError(err))
 		return
 	}
 

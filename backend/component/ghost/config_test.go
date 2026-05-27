@@ -21,18 +21,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestNewMigrationContextUsesScopedLogger(t *testing.T) {
+func TestNewMigrationContextUsesContextAttrs(t *testing.T) {
 	var buf bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&buf, nil)).With(
+	prev := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	slog.SetDefault(slog.New(log.NewContextHandler(slog.NewTextHandler(&buf, nil))))
+	ctx := log.WithAttrs(context.Background(),
 		slog.String("project", "db333"),
 		slog.Int64("task_run_id", 9213),
 	)
 
-	ctx := context.Background()
 	database := &store.DatabaseMessage{DatabaseName: "ghostdb"}
 	dataSource := &storepb.DataSource{
 		Host:               "127.0.0.1",
@@ -41,7 +44,7 @@ func TestNewMigrationContextUsesScopedLogger(t *testing.T) {
 		AuthenticationType: storepb.DataSource_PASSWORD,
 	}
 
-	_, cleanup, err := NewMigrationContext(ctx, logger, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	_, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 
@@ -69,7 +72,7 @@ func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 		AuthenticationType:   storepb.DataSource_PASSWORD,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 	require.True(t, migrationContext.UseTLS)
@@ -101,7 +104,7 @@ func TestNewMigrationContextRespectsVerifyTlsCertificate(t *testing.T) {
 		SslKey:               keyPEM,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
 	require.False(t, migrationContext.TLSAllowInsecure)
@@ -130,7 +133,7 @@ func TestNewMigrationContextUsesSSHNetworkDialersAndCleanup(t *testing.T) {
 		AuthenticationType: storepb.DataSource_PASSWORD,
 	}
 
-	migrationContext, cleanup, err := NewMigrationContext(ctx, slog.Default(), 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
+	migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, nil, 0)
 	require.NoError(t, err)
 	cleanedUp := false
 	t.Cleanup(func() {

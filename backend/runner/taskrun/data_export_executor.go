@@ -46,7 +46,7 @@ type DataExportExecutor struct {
 
 // RunOnce will run the data export task executor once.
 func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(task.ProjectID, taskRunUID)
+	ctx = taskRunLogContext(ctx, task.ProjectID, taskRunUID)
 
 	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{task.ProjectID}, PlanUID: &task.PlanID})
 	if err != nil {
@@ -112,9 +112,9 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Type:          creatorAccount.Type,
 		MemberDeleted: creatorAccount.MemberDeleted,
 	}
-	bytes, exportErr := exec.executeExport(ctx, logger, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
+	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
 	if exportErr != nil {
-		logger.Error("failed to export",
+		slog.ErrorContext(ctx, "failed to export",
 			log.BBError(exportErr),
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
@@ -143,7 +143,6 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 // authorizes access to the data.
 func (exec *DataExportExecutor) executeExport(
 	ctx context.Context,
-	logger *slog.Logger,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	dataSource *storepb.DataSource,
@@ -177,8 +176,8 @@ func (exec *DataExportExecutor) executeExport(
 	}
 
 	// 2. Get query restrictions from workspace policy
-	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx, logger, instance.Workspace)
-	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx, logger, instance.Workspace)
+	maximumSQLResultSize := exec.getSQLResultSizeLimit(ctx, instance.Workspace)
+	timoutInSeconds := exec.getQueryTimeoutInSeconds(ctx, instance.Workspace)
 
 	// 3. Build query context with limits
 	queryContext := db.QueryContext{
@@ -191,7 +190,7 @@ func (exec *DataExportExecutor) executeExport(
 	queryCtx := ctx
 	if queryContext.Timeout != nil {
 		timeout := queryContext.Timeout.AsDuration()
-		logger.Debug("create query context with timeout", slog.Duration("timeout", timeout))
+		slog.DebugContext(ctx, "create query context with timeout", slog.Duration("timeout", timeout))
 		newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
 		defer cancelCtx()
 		queryCtx = newCtx
@@ -209,7 +208,7 @@ func (exec *DataExportExecutor) executeExport(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute query")
 	}
-	logger.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", time.Since(start)))
+	slog.DebugContext(ctx, "execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", time.Since(start)))
 
 	// 5. Format and zip results (NO MASKING)
 	return exec.formatAndZipResults(ctx, results, instance, database, format, statement)
@@ -218,12 +217,11 @@ func (exec *DataExportExecutor) executeExport(
 // getSQLResultSizeLimit gets the sql result size limit.
 func (exec *DataExportExecutor) getSQLResultSizeLimit(
 	ctx context.Context,
-	logger *slog.Logger,
 	workspace string,
 ) int64 {
 	maximumResultSize, err := exec.store.GetSQLResultSize(ctx, workspace)
 	if err != nil {
-		logger.Error("failed to get the sql result size limit", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to get the sql result size limit", log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	return maximumResultSize
@@ -232,12 +230,11 @@ func (exec *DataExportExecutor) getSQLResultSizeLimit(
 // getQueryTimeoutInSeconds gets the query timeout limit.
 func (exec *DataExportExecutor) getQueryTimeoutInSeconds(
 	ctx context.Context,
-	logger *slog.Logger,
 	workspace string,
 ) int64 {
 	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx, workspace)
 	if err != nil {
-		logger.Error("failed to get the sql timeout limit", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to get the sql timeout limit", log.BBError(err))
 		return math.MaxInt64
 	}
 	return timeout
