@@ -12,7 +12,7 @@ import {
   wrapAsGroup,
 } from "@/plugins/cel";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
-import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
+import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import type { OptionConfig } from "@/react/components/ExprEditor";
 import { ExprEditor } from "@/react/components/ExprEditor";
 import { IssueLabelSelect } from "@/react/components/IssueLabelSelect";
@@ -561,7 +561,9 @@ function RequestRoleForm({
                 {t("common.environments")}
               </label>
               <DDLWarningCallout type="drawer" kind={envKind} />
-              <EnvironmentMultiSelect
+              <EnvironmentSelect
+                multiple
+                portal
                 value={environments}
                 onChange={setEnvironments}
               />

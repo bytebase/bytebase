@@ -32,8 +32,8 @@ vi.mock("@/react/components/DatabaseResourceSelector", () => ({
     createElement("div", { "data-testid": "database-resource-selector" }),
 }));
 
-vi.mock("@/react/components/EnvironmentMultiSelect", () => ({
-  EnvironmentMultiSelect: () =>
+vi.mock("@/react/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: () =>
     createElement("div", { "data-testid": "environment-multi-select" }),
 }));
 

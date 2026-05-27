@@ -13,12 +13,12 @@ import type { Permission } from "@/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 // ---------------------------------------------------------------------------
-// Stub EnvironmentMultiSelect — the real component mounts Pinia-backed
+// Stub EnvironmentSelect — the real component mounts Pinia-backed
 // environment state that's not worth wiring up for these tests.
 // ---------------------------------------------------------------------------
 
-vi.mock("@/react/components/EnvironmentMultiSelect", () => ({
-  EnvironmentMultiSelect: () =>
+vi.mock("@/react/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: () =>
     createElement("div", { "data-testid": "env-multi-select" }),
 }));
 

@@ -28,7 +28,7 @@ import {
 } from "@/plugins/cel";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
-import { EnvironmentMultiSelect } from "@/react/components/EnvironmentMultiSelect";
+import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
 import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
@@ -1173,7 +1173,9 @@ function ProjectRoleBindingForm({
             {t("common.environments")}
           </label>
           <DDLWarningCallout type="drawer" kind={envKind} />
-          <EnvironmentMultiSelect
+          <EnvironmentSelect
+            multiple
+            portal
             value={form.environments}
             onChange={(envs) => onChange({ ...form, environments: envs })}
           />
