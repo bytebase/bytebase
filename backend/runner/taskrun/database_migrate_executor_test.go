@@ -8,16 +8,36 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestTaskRunExecutorsCarryProfile(t *testing.T) {
+	profile := &config.Profile{ReplicaID: "replica-1"}
+
+	createExec, ok := NewDatabaseCreateExecutor(nil, nil, nil, profile).(*DatabaseCreateExecutor)
+	require.True(t, ok)
+	require.Same(t, profile, createExec.profile)
+
+	exportExec, ok := NewDataExportExecutor(nil, nil, nil, profile).(*DataExportExecutor)
+	require.True(t, ok)
+	require.Same(t, profile, exportExec.profile)
+}
+
 func TestExecuteGhostMigrationAcceptsLogger(t *testing.T) {
 	requireExecuteGhostMigrationLoggerSignature(t, executeGhostMigration)
 }
 
+func TestRunExecutorOnceAcceptsLogger(t *testing.T) {
+	requireRunExecutorOnceLoggerSignature(t, RunExecutorOnce)
+}
+
 func requireExecuteGhostMigrationLoggerSignature(_ *testing.T, _ func(context.Context, context.Context, *slog.Logger, *store.TaskMessage, *store.SheetMessage, *store.InstanceMessage, *store.DatabaseMessage, db.Driver, *db.ExecuteOptions) error) {
+}
+
+func requireRunExecutorOnceLoggerSignature(_ *testing.T, _ func(context.Context, context.Context, *slog.Logger, Executor, *store.TaskMessage, int64) (*storepb.TaskRunResult, error)) {
 }
 
 func TestWrappedContextCanceledMatchesErrorsIs(t *testing.T) {

@@ -138,7 +138,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 	defer cancel()
 	s.bus.RunningTaskRunsCancelFunc.Store(taskRunRef, cancel)
 
-	result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
+	result, err := RunExecutorOnce(ctx, driverCtx, logger, executor, task, taskRunUID)
 
 	if err != nil && errors.Is(err, context.Canceled) {
 		logger.Warn("task run is canceled", log.BBError(err))
