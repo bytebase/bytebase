@@ -2,55 +2,65 @@ package doris
 
 import (
 	"context"
+	"strings"
+	"unicode/utf8"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/doris"
+	"github.com/bytebase/omni/doris/parser"
 
-	"github.com/bytebase/bytebase/backend/generated-go/store"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(store.Engine_DORIS, Diagnose)
-	base.RegisterDiagnoseFunc(store.Engine_STARROCKS, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_DORIS, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_STARROCKS, Diagnose)
 }
 
+// Diagnose returns syntax diagnostics for the given Doris statement.
+// Surfaces genuine lex/parse errors from the omni parser, filtering out
+// the "not yet supported" stub messages from statement-dispatch fallthroughs.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
-	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parseDorisStatement(statement)
-	if syntaxError != nil {
-		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
+	diags := parser.Diagnose(statement)
+	out := make([]base.Diagnostic, 0, len(diags))
+	for _, d := range diags {
+		if strings.HasSuffix(d.Msg, "statement parsing is not yet supported") {
+			continue
+		}
+		// Convert byte offset to line/col position.
+		line, col := byteOffsetToLineCol(statement, d.Loc.Start)
+		syntaxErr := &base.SyntaxError{
+			Position: &storepb.Position{
+				Line:   int32(line),
+				Column: int32(col),
+			},
+			Message: d.Msg,
+		}
+		out = append(out, base.ConvertSyntaxErrorToDiagnostic(syntaxErr, statement))
 	}
-
-	return diagnostics, nil
+	return out, nil
 }
 
-func parseDorisStatement(statement string) *base.SyntaxError {
-	lexer := parser.NewDorisLexer(antlr.NewInputStream(statement))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewDorisParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+// byteOffsetToLineCol returns the 1-based line and 1-based column for a byte
+// offset within the statement. Counts \n as line breaks. The 1-based column
+// matches the storepb.Position convention that ConvertSyntaxErrorToDiagnostic
+// expects (it subtracts 1 internally to land on the 0-based LSP offset).
+func byteOffsetToLineCol(s string, offset int) (int, int) {
+	if offset < 0 {
+		return 1, 1
 	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement: statement,
+	if offset > len(s) {
+		offset = len(s)
 	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = false
-
-	_ = p.MultiStatements()
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
+	line, col := 1, 1
+	for i := 0; i < offset; {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+		i += size
 	}
-
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
-	}
-
-	return nil
+	return line, col
 }

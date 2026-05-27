@@ -102,6 +102,11 @@ func TestValidateQuery(t *testing.T) {
 			valid:       true,
 			description: "EXPLAIN DELETE should be valid (read-only)",
 		},
+		{
+			statement:   "WITH c AS (SELECT 1) SELECT * FROM c",
+			valid:       true,
+			description: "CTE-prefixed SELECT is read-only",
+		},
 	}
 
 	for _, tc := range tests {
@@ -110,6 +115,58 @@ func TestValidateQuery(t *testing.T) {
 			valid, _, err := validateQuery(tc.statement)
 			a.NoError(err)
 			a.Equal(tc.valid, valid, "statement: %s", tc.statement)
+		})
+	}
+
+	// Cases that must fail validation — either because they're not read-only
+	// or because they don't parse. Both shapes flow through the same code
+	// path and must be rejected (either via valid=false or err!=nil).
+	rejectCases := []struct {
+		statement   string
+		description string
+	}{
+		{
+			// CTE-prefixed DML must NOT be accepted as read-only — the
+			// keyword-based Classify would have tagged it as SELECT because
+			// `WITH` is the leading keyword. AST-based validation catches it
+			// (or, currently, the omni parser rejects it as a syntax error;
+			// either rejection is acceptable).
+			statement:   "WITH c AS (SELECT 1) UPDATE t SET x = 1",
+			description: "CTE-prefixed UPDATE must be rejected",
+		},
+		{
+			statement:   "WITH c AS (SELECT 1) DELETE FROM t",
+			description: "CTE-prefixed DELETE must be rejected",
+		},
+		{
+			statement:   "SELECT a > (select max(a) from t1) FROM",
+			description: "Truncated SELECT must be rejected as syntax error",
+		},
+		{
+			// omni's stub parser accepts bare SHOW as *ast.ShowStmt with
+			// Type="". AST-content validation rejects it.
+			statement:   "SHOW",
+			description: "Bare SHOW must be rejected",
+		},
+		{
+			statement:   "DESCRIBE",
+			description: "Bare DESCRIBE must be rejected",
+		},
+		{
+			statement:   "EXPLAIN",
+			description: "Bare EXPLAIN must be rejected",
+		},
+		{
+			// EXPLAIN over DDL is not a real read-only operation.
+			statement:   "EXPLAIN DROP TABLE t",
+			description: "EXPLAIN over DDL must be rejected",
+		},
+	}
+	for _, tc := range rejectCases {
+		t.Run(tc.description, func(t *testing.T) {
+			a := require.New(t)
+			valid, _, err := validateQuery(tc.statement)
+			a.False(valid && err == nil, "expected rejection, statement: %s", tc.statement)
 		})
 	}
 }

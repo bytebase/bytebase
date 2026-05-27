@@ -4,18 +4,32 @@ import (
 	"context"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/parser/doris"
+	"github.com/bytebase/omni/doris/analysis"
+	"github.com/bytebase/omni/doris/ast"
+	"github.com/bytebase/omni/doris/parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// querySpanExtractor analyses a single Doris statement and produces a
+// base.QuerySpan: the set of physical tables it reads and its classification
+// as a Select / SelectInfoSchema / DML / DDL statement.
+//
+// The extractor delegates the heavy lifting to omni's analysis.GetQuerySpan,
+// then applies bytebase-specific post-processing:
+//   - default-database fill-in for bare table references,
+//   - system-vs-user mixed-query rejection (MixUserSystemTablesError),
+//   - QueryType promotion to SelectInfoSchema when every accessed table is a
+//     system table (matching the legacy ANTLR listener behaviour).
 type querySpanExtractor struct {
 	ctx             context.Context
 	defaultDatabase string
 	gCtx            base.GetQuerySpanContext
-	// ctes tracks Common Table Expressions in the current scope
+	// ctes tracks Common Table Expressions in the current scope. omni's
+	// GetQuerySpan already filters CTE references from AccessTables, but we
+	// keep the field to preserve the construction signature used by callers
+	// (and any future logic that needs it).
 	ctes                map[string]bool
 	ignoreCaseSensitive bool
 }
@@ -31,147 +45,107 @@ func newQuerySpanExtractor(database string, gCtx base.GetQuerySpanContext, ignor
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	antlrASTs, err := ParseDorisSQL(statement)
+
+	// Split into top-level statements so we can reject inputs that contain
+	// multiple statements (matching the legacy behaviour) before doing any
+	// per-statement analysis.
+	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-
-	if len(antlrASTs) == 0 {
+	nonEmpty := 0
+	var single string
+	for _, s := range stmts {
+		if s.Empty {
+			continue
+		}
+		nonEmpty++
+		single = s.Text
+	}
+	if nonEmpty == 0 {
 		return &base.QuerySpan{
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
-	if len(antlrASTs) != 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(antlrASTs))
+	if nonEmpty > 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", nonEmpty)
 	}
 
-	antlrAST := antlrASTs[0]
-	accessTables := getAccessTables(q.defaultDatabase, antlrAST, q.ctes, q.gCtx, q.ignoreCaseSensitive)
+	// omni's span walker only descends into SELECT/SetOp at the top level,
+	// so EXPLAIN <query> would return zero AccessTables. Unwrap an EXPLAIN
+	// to the inner statement's text before delegating; that way table-level
+	// ACL checks still see what the underlying query reads.
+	spanInput := unwrapExplainForSpan(single)
 
-	// We do not support simultaneous access to the system table and the user table
-	// because we do not synchronize the schema of the system table.
-	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
-	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	// Delegate to omni for table-access extraction + classification.
+	omniSpan, err := analysis.GetQuerySpan(spanInput)
+	if err != nil {
+		return nil, err
+	}
+
+	sources := q.toSourceColumnSet(omniSpan)
+
+	// Track CTE names omni discovered for callers that want to inspect them.
+	for _, name := range omniSpan.CTEs {
+		q.ctes[strings.ToLower(name)] = true
+	}
+
+	allSystems, mixed := isMixedQuery(sources, q.ignoreCaseSensitive)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryTypeListener := &queryTypeListener{
-		allSystems: allSystems,
-		result:     base.QueryTypeUnknown,
-	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, antlrAST.Tree)
+	queryType := getQueryType(single, allSystems)
 
 	return &base.QuerySpan{
-		Type:          queryTypeListener.result,
-		SourceColumns: accessTables,
+		Type:          queryType,
+		SourceColumns: sources,
 		Results:       []base.QuerySpanResult{},
 	}, nil
 }
 
-func getAccessTables(database string, antlrAST *base.ANTLRAST, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
-	// First, extract CTEs from the query
-	cteListener := newCTEListener()
-	antlr.ParseTreeWalkerDefault.Walk(cteListener, antlrAST.Tree)
-
-	// Merge extracted CTEs with any existing ones
-	for cte := range cteListener.ctes {
-		ctes[cte] = true
+// unwrapExplainForSpan returns the inner statement's text when `statement`
+// parses to a top-level EXPLAIN; otherwise it returns the original string.
+//
+// omni's span walker only descends into SELECT/SetOp at the top level, so
+// without this unwrap an `EXPLAIN SELECT ... FROM t` would yield zero
+// AccessTables — table-level ACL checks need to see `t`.
+func unwrapExplainForSpan(statement string) string {
+	file, errs := parser.Parse(statement)
+	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		return statement
 	}
-
-	accessTableListener := newAccessTableListener(database, ctes, gCtx, ignoreCaseSensitive)
-	antlr.ParseTreeWalkerDefault.Walk(accessTableListener, antlrAST.Tree)
-
-	return accessTableListener.sourceColumnSet
+	explain, ok := file.Stmts[0].(*ast.ExplainStmt)
+	if !ok || explain.Query == nil {
+		return statement
+	}
+	inner := ast.NodeLoc(explain.Query)
+	if inner.Start < 0 || inner.End > len(statement) || inner.Start >= inner.End {
+		return statement
+	}
+	return statement[inner.Start:inner.End]
 }
 
-type accessTableListener struct {
-	*parser.BaseDorisParserListener
-
-	defaultDatabase     string
-	sourceColumnSet     base.SourceColumnSet
-	ctes                map[string]bool
-	gCtx                base.GetQuerySpanContext
-	ignoreCaseSensitive bool
-}
-
-func newAccessTableListener(database string, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *accessTableListener {
-	return &accessTableListener{
-		defaultDatabase:     database,
-		sourceColumnSet:     base.SourceColumnSet{},
-		ctes:                ctes,
-		gCtx:                gCtx,
-		ignoreCaseSensitive: ignoreCaseSensitive,
+// toSourceColumnSet converts an omni QuerySpan's AccessTables into the
+// base.SourceColumnSet shape bytebase expects. Tables with no database
+// qualifier fall back to the extractor's default database.
+func (q *querySpanExtractor) toSourceColumnSet(span *analysis.QuerySpan) base.SourceColumnSet {
+	out := base.SourceColumnSet{}
+	if span == nil {
+		return out
 	}
-}
-
-// EnterTableName is called when entering a tableName production.
-func (l *accessTableListener) EnterTableName(ctx *parser.TableNameContext) {
-	if ctx == nil {
-		return
-	}
-
-	multipart := ctx.MultipartIdentifier()
-	if multipart == nil {
-		return
-	}
-
-	list := NormalizeMultipartIdentifier(multipart)
-	switch len(list) {
-	case 1:
-		// Check if this is a CTE reference
-		if l.ctes[list[0]] {
-			// Skip CTE references - they don't need permission checks
-			return
+	for _, t := range span.AccessTables {
+		db := t.Database
+		if db == "" {
+			db = q.defaultDatabase
 		}
-		l.sourceColumnSet[base.ColumnResource{
-			Database: l.defaultDatabase,
-			Table:    list[0],
+		out[base.ColumnResource{
+			Database: db,
+			Table:    t.Table,
 		}] = true
-	case 2:
-		// For qualified names (db.table), CTEs cannot have schema qualifiers
-		l.sourceColumnSet[base.ColumnResource{
-			Database: list[0],
-			Table:    list[1],
-		}] = true
-	default:
-		// Ignore qualified names with more than 2 parts
 	}
-}
-
-// cteListener extracts CTE names from WITH clauses
-type cteListener struct {
-	*parser.BaseDorisParserListener
-
-	ctes map[string]bool
-}
-
-func newCTEListener() *cteListener {
-	return &cteListener{
-		ctes: make(map[string]bool),
-	}
-}
-
-// EnterCte is called when entering a CTE production.
-func (l *cteListener) EnterCte(ctx *parser.CteContext) {
-	if ctx == nil {
-		return
-	}
-
-	// Extract all CTEs from the WITH clause
-	for _, aliasQuery := range ctx.AllAliasQuery() {
-		if aliasQuery == nil {
-			continue
-		}
-		id := aliasQuery.Identifier()
-		if id == nil {
-			continue
-		}
-		cteName := NormalizeIdentifier(id)
-		l.ctes[cteName] = true
-	}
+	return out
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
