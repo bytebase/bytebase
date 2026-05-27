@@ -165,7 +165,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 // preCheckAccess finds and returns the best matching active access grant for the query.
 // It lists access grants filtered by project, creator, status, statement, target database,
 // and expiry, then prefers the grant with unmask=true if available.
-func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, database *store.DatabaseMessage) *store.AccessGrantMessage {
+func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) *store.AccessGrantMessage {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &database.ProjectID,
@@ -217,6 +217,15 @@ func (s *SQLService) preCheckAccess(ctx context.Context, request *v1pb.QueryRequ
 	if len(grants) == 0 {
 		return nil
 	}
+	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), request.Statement)
+	if err != nil {
+		slog.Warn("failed to validate access grant query", log.BBError(err))
+		return nil
+	}
+	if !readOnly {
+		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		return nil
+	}
 	// Pick the best grant (prefer unmask=true).
 	for _, grant := range grants {
 		if grant.Payload != nil && grant.Payload.Unmask {
@@ -234,7 +243,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		return nil, err
 	}
 
-	accessGrant := s.preCheckAccess(ctx, request, database)
+	accessGrant := s.preCheckAccess(ctx, request, instance, database)
 
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
@@ -1836,14 +1845,10 @@ func requiresAdminDataSource(ctx context.Context, engine storepb.Engine, stateme
 		return true
 	}
 
-	if !shouldResolveDataSourceByQuerySpan(engine) {
+	if !shouldClassifyStatementByQuerySpan(engine) {
 		return false
 	}
-	statements, err := parserbase.SplitMultiSQL(engine, statement)
-	if err != nil {
-		statements = []parserbase.Statement{{Text: statement}}
-	}
-	spans, err := parserbase.GetQuerySpan(ctx, parserbase.GetQuerySpanContext{}, engine, statements, "", "", false)
+	spans, err := getQuerySpansForStatement(ctx, engine, statement)
 	if err != nil {
 		return false
 	}
@@ -1856,15 +1861,6 @@ func requiresAdminDataSource(ctx context.Context, engine storepb.Engine, stateme
 		}
 	}
 	return false
-}
-
-func shouldResolveDataSourceByQuerySpan(engine storepb.Engine) bool {
-	switch engine {
-	case storepb.Engine_MONGODB, storepb.Engine_ELASTICSEARCH:
-		return true
-	default:
-		return false
-	}
 }
 
 func checkAndGetDataSourceQueriable(
