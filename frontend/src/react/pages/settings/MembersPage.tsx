@@ -1122,6 +1122,7 @@ function ProjectRoleBindingForm({
           <DDLWarningCallout type="drawer" kind={envKind} />
           <EnvironmentSelect
             multiple
+            portal
             value={form.environments}
             onChange={(envs) => onChange({ ...form, environments: envs })}
           />

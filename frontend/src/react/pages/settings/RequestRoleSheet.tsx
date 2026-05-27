@@ -563,6 +563,7 @@ function RequestRoleForm({
               <DDLWarningCallout type="drawer" kind={envKind} />
               <EnvironmentSelect
                 multiple
+                portal
                 value={environments}
                 onChange={setEnvironments}
               />
