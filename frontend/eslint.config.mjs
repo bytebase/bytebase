@@ -21,6 +21,14 @@ export default [
       "no-console": ["error", { allow: ["warn", "error", "debug", "assert"] }],
       "no-debugger": "error",
       "no-empty-pattern": "error",
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "crypto",
+          property: "randomUUID",
+          message: "Use v4 from 'uuid' package instead of crypto.randomUUID() for compatibility.",
+        },
+      ],
       "vue/no-ref-as-operand": "error",
       "no-useless-escape": "error",
       "@typescript-eslint/no-empty-interface": "error",
@@ -33,21 +41,6 @@ export default [
         {
           src: "./src",
           extensions: [".js", ".vue", ".ts", ".tsx"],
-          ignores: [
-            // Used in React .tsx — vue-i18n linter can't detect these
-            "project.batch.selected",
-            "project.batch.archive.title",
-            "project.batch.archive.success",
-            "project.batch.delete.title",
-            "project.batch.delete.success",
-            "sql-review.select-review-rules",
-            "sql-review.select-all",
-            "sql-review.attach-resource.label-environment",
-            "sql-review.attach-resource.label-project",
-            "sql-review.attach-resource.override-warning",
-            "sql-review.create.basic-info.display-name-placeholder",
-            "sql-review.create.basic-info.choose-template",
-          ],
           enableFix: true,
         },
       ],
@@ -81,10 +74,17 @@ export default [
       },
     },
   },
-  // React .tsx files use their own locale files (src/react/locales/),
-  // so disable vue-i18n missing-keys checks for them.
+  // React code uses its own locale files (src/react/locales/) loaded through
+  // react-i18next, so the vue-i18n linter has no visibility into those keys.
+  // Disable missing-keys checks for every React surface — .ts and .tsx under
+  // both src/react/ and src/plugins/ai/react/ (the AI plugin's React tree).
   {
-    files: ["src/react/**/*.tsx"],
+    files: [
+      "src/react/**/*.ts",
+      "src/react/**/*.tsx",
+      "src/plugins/ai/react/**/*.ts",
+      "src/plugins/ai/react/**/*.tsx",
+    ],
     rules: {
       "@intlify/vue-i18n/no-missing-keys": "off",
     },

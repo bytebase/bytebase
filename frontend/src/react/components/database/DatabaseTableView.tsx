@@ -1,8 +1,8 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { useMemo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
+import { EnvironmentBadge } from "@/react/components/EnvironmentLabel";
 import { LabelsDisplay } from "@/react/components/LabelsDisplay";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
@@ -14,14 +14,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useEnvironmentList, usePlanFeature } from "@/react/hooks/useAppState";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { cn } from "@/react/lib/utils";
+import type { Environment } from "@/types";
+import {
+  isValidEnvironmentName,
+  nullEnvironment,
+  unknownEnvironment,
+} from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { SyncStatus } from "@/types/proto-es/v1/database_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   extractDatabaseResourceName,
   extractProjectResourceName,
-  getDatabaseEnvironment,
   getDatabaseProject,
   getInstanceResource,
   hostPortOfInstanceV1,
@@ -91,6 +98,34 @@ export function DatabaseTableView({
 }: DatabaseTableViewProps) {
   const { t } = useTranslation();
 
+  // Lift environment + feature lookups to the table level so the per-row
+  // env cell doesn't subscribe to Zustand or run a `.find()` per render.
+  // Without this, a 500-row table registers 500 redundant subscriptions
+  // to `environmentList` + `hasFeature` and re-runs `loadSubscription`
+  // 500 times. The Map below collapses lookups to O(1) per row.
+  const environmentList = useEnvironmentList();
+  const environmentByName = useMemo(() => {
+    const map = new Map<string, Environment>();
+    for (const env of environmentList) {
+      map.set(env.name, env);
+    }
+    return map;
+  }, [environmentList]);
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+  const resolveEnvironment = useCallback(
+    (name: string | undefined): Environment => {
+      if (!name) return nullEnvironment();
+      const env = environmentByName.get(name);
+      if (env) return env;
+      if (!isValidEnvironmentName(name)) return unknownEnvironment();
+      const id = name.replace(/^environments\//, "");
+      return { ...unknownEnvironment(), id, name, title: id };
+    },
+    [environmentByName]
+  );
+
   const showSelection = !!selectedNames && !!onSelectedNamesChange;
   const showProjectColumn = mode === "ALL";
   const sortable = !!onSortChange;
@@ -108,58 +143,52 @@ export function DatabaseTableView({
     }
   };
 
-  const toggleSelection = (name: string) => {
-    if (!selectedNames || !onSelectedNamesChange) return;
-    const next = new Set(selectedNames);
+  // Refs so per-row handlers stay referentially stable across selection
+  // changes — without this, every selection toggle re-creates the closure
+  // and `React.memo` on `DatabaseRowView` is defeated for every row.
+  const selectedNamesRef = useRef(selectedNames);
+  selectedNamesRef.current = selectedNames;
+  const onSelectedNamesChangeRef = useRef(onSelectedNamesChange);
+  onSelectedNamesChangeRef.current = onSelectedNamesChange;
+  const databasesRef = useRef(databases);
+  databasesRef.current = databases;
+
+  const toggleSelection = useCallback((name: string) => {
+    const current = selectedNamesRef.current;
+    const cb = onSelectedNamesChangeRef.current;
+    if (!current || !cb) return;
+    const next = new Set(current);
     if (next.has(name)) next.delete(name);
     else next.add(name);
-    onSelectedNamesChange(next);
-  };
+    cb(next);
+  }, []);
 
-  const toggleSelectAll = () => {
-    if (!selectedNames || !onSelectedNamesChange) return;
-    if (selectedNames.size === databases.length) {
-      onSelectedNamesChange(new Set());
+  const toggleSelectAll = useCallback(() => {
+    const current = selectedNamesRef.current;
+    const cb = onSelectedNamesChangeRef.current;
+    const dbs = databasesRef.current;
+    if (!current || !cb) return;
+    if (current.size === dbs.length) {
+      cb(new Set());
     } else {
-      onSelectedNamesChange(new Set(databases.map((db) => db.name)));
+      cb(new Set(dbs.map((db) => db.name)));
     }
-  };
+  }, []);
 
   const allSelected =
     databases.length > 0 && (selectedNames?.size ?? 0) === databases.length;
   const someSelected =
     (selectedNames?.size ?? 0) > 0 &&
     (selectedNames?.size ?? 0) < databases.length;
+
+  // `columns` is intentionally NOT a function of `selectedNames` /
+  // `databases` so it stays referentially stable across selection toggles
+  // and pagination. The select column used to live here and dragged
+  // `selectedNames` into the deps, which invalidated `columns` on every
+  // toggle and forced every row to re-render. The leading checkbox is now
+  // rendered separately in the row + header so columns can stay stable.
   const columns = useMemo<DatabaseColumn[]>(() => {
     const cols: DatabaseColumn[] = [];
-    if (showSelection) {
-      cols.push({
-        key: "select",
-        title: (
-          <Checkbox
-            checked={someSelected ? "indeterminate" : allSelected}
-            onCheckedChange={toggleSelectAll}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-        defaultWidth: 48,
-        onCellClick: (db, e) => {
-          e.stopPropagation();
-          toggleSelection(db.name);
-        },
-        onHeaderClick: (e) => {
-          e.stopPropagation();
-          toggleSelectAll();
-        },
-        render: (db) => (
-          <Checkbox
-            checked={selectedNames?.has(db.name) ?? false}
-            onCheckedChange={() => toggleSelection(db.name)}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-      });
-    }
     cols.push({
       key: "name",
       title: t("common.name"),
@@ -186,7 +215,10 @@ export function DatabaseTableView({
       minWidth: 120,
       resizable: true,
       render: (db) => (
-        <EnvironmentLabel environmentName={getDatabaseEnvironment(db).name} />
+        <EnvironmentBadge
+          environment={resolveEnvironment(db.effectiveEnvironment)}
+          hasEnvTierFeature={hasEnvTierFeature}
+        />
       ),
     });
     if (showProjectColumn) {
@@ -265,33 +297,38 @@ export function DatabaseTableView({
         ),
     });
     return cols;
-    // `databases` and `onSelectedNamesChange` belong here because the
-    // header checkbox's `toggleSelectAll` closes over both. Pagination /
-    // filtering can replace `databases` while `allSelected` stays false —
-    // without listing it the memoized handler keeps the previous page's
-    // names and "select all" selects the wrong rows.
-  }, [
-    showSelection,
-    showProjectColumn,
-    allSelected,
-    selectedNames,
-    onSelectedNamesChange,
-    databases,
-    t,
-  ]);
+  }, [showProjectColumn, t, resolveEnvironment, hasEnvTierFeature]);
 
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
+
+  const totalColumnCount = columns.length + (showSelection ? 1 : 0);
 
   return (
     <div className="overflow-x-auto border rounded-sm">
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
+          {showSelection && <col style={{ width: "48px" }} />}
           {widths.map((w, i) => (
             <col key={columns[i].key} style={{ width: `${w}px` }} />
           ))}
         </colgroup>
         <TableHeader>
           <TableRow className="bg-control-bg">
+            {showSelection && (
+              <TableHead
+                className="cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSelectAll();
+                }}
+              >
+                <Checkbox
+                  checked={someSelected ? "indeterminate" : allSelected}
+                  onCheckedChange={toggleSelectAll}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableHead>
+            )}
             {columns.map((col, colIdx) => {
               const colSortKey = col.sortKey;
               const sortActive = Boolean(
@@ -325,7 +362,7 @@ export function DatabaseTableView({
           {loading && databases.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={columns.length}
+                colSpan={totalColumnCount}
                 className="py-8 text-center text-control-placeholder"
               >
                 <div className="flex items-center justify-center gap-x-2">
@@ -337,7 +374,7 @@ export function DatabaseTableView({
           ) : databases.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={columns.length}
+                colSpan={totalColumnCount}
                 className="py-8 text-center text-control-placeholder"
               >
                 {t("common.no-data")}
@@ -345,29 +382,15 @@ export function DatabaseTableView({
             </TableRow>
           ) : (
             databases.map((db) => (
-              <TableRow
+              <DatabaseRowView
                 key={db.name}
-                className={onRowClick ? "cursor-pointer" : undefined}
-                onClick={onRowClick ? (e) => onRowClick(db, e) : undefined}
-              >
-                {columns.map((col) => (
-                  <TableCell
-                    key={col.key}
-                    className={cn(
-                      "overflow-hidden",
-                      col.cellClassName,
-                      col.onCellClick && "cursor-pointer"
-                    )}
-                    onClick={
-                      col.onCellClick
-                        ? (e) => col.onCellClick!(db, e)
-                        : undefined
-                    }
-                  >
-                    {col.render(db)}
-                  </TableCell>
-                ))}
-              </TableRow>
+                database={db}
+                columns={columns}
+                showSelection={showSelection}
+                selected={selectedNames?.has(db.name) ?? false}
+                onToggleSelection={toggleSelection}
+                onRowClick={onRowClick}
+              />
             ))
           )}
         </TableBody>
@@ -375,3 +398,71 @@ export function DatabaseTableView({
     </div>
   );
 }
+
+interface DatabaseRowViewProps {
+  database: Database;
+  columns: DatabaseColumn[];
+  showSelection: boolean;
+  /** Primitive boolean — keeps memo equality cheap. Only flips for the
+   *  row whose selection changed, so other rows skip re-rendering even
+   *  when the parent re-runs (e.g. selection toggles, pagination loads). */
+  selected: boolean;
+  /** Stable per-render thanks to `useCallback` upstream. Wrapped via
+   *  closure inside the row so the Checkbox can call it with the row's
+   *  `database.name` without forcing the row to depend on `selectedNames`. */
+  onToggleSelection: (name: string) => void;
+  onRowClick?: (db: Database, e: React.MouseEvent) => void;
+}
+
+/**
+ * Memoized per-row renderer. Keeps large database tables (hundreds of
+ * rows) from re-running every cell's per-row helpers (`getInstanceResource`,
+ * `getDatabaseEnvironment`, `getDatabaseProject`, etc.) on every parent
+ * re-render. Only props on this list trigger a re-render of a given row.
+ */
+const DatabaseRowView = memo(function DatabaseRowView({
+  database,
+  columns,
+  showSelection,
+  selected,
+  onToggleSelection,
+  onRowClick,
+}: DatabaseRowViewProps) {
+  return (
+    <TableRow
+      className={onRowClick ? "cursor-pointer" : undefined}
+      onClick={onRowClick ? (e) => onRowClick(database, e) : undefined}
+    >
+      {showSelection && (
+        <TableCell
+          className="overflow-hidden cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelection(database.name);
+          }}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelection(database.name)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </TableCell>
+      )}
+      {columns.map((col) => (
+        <TableCell
+          key={col.key}
+          className={cn(
+            "overflow-hidden",
+            col.cellClassName,
+            col.onCellClick && "cursor-pointer"
+          )}
+          onClick={
+            col.onCellClick ? (e) => col.onCellClick!(database, e) : undefined
+          }
+        >
+          {col.render(database)}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+});

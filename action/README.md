@@ -35,8 +35,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
     -   For `rollout` command: outputs created resource names (release, plan, rollout)
 
--   **`--url`**: The Bytebase instance URL.
-    -   Default: `https://demo.bytebase.com`
+-   **`--url`**: The Bytebase instance URL. Required.
 
 -   **`--service-account`**: The service account email.
     -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT` environment variable.

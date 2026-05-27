@@ -23,7 +23,7 @@ import {
 } from "../core/spec";
 import type { EditTarget } from "../types";
 
-// Tree node types — framework-agnostic (no naive-ui TreeOption dependency).
+// Tree node types — framework-agnostic.
 // react-arborist uses `id` + `name` + `children` by default,
 // but we keep `key` + `label` + `children` and map in the component.
 

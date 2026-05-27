@@ -1,0 +1,377 @@
+import { create } from "@bufbuild/protobuf";
+import { Code } from "@connectrpc/connect";
+import { cloneDeep, isEmpty } from "lodash-es";
+import { useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
+import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
+import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  hasFeature,
+  pushNotification,
+  useDatabaseV1Store,
+  useDBGroupStore,
+  useSQLStore,
+} from "@/store";
+import type {
+  BBNotificationStyle,
+  QueryContextStatus,
+  SQLEditorDatabaseQueryContext,
+  SQLEditorQueryParams,
+  SQLResultSetV1,
+} from "@/types";
+import { isValidDatabaseName } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type QueryOption,
+  QueryOptionSchema,
+  QueryRequestSchema,
+  QueryResult_CommandError_Type,
+} from "@/types/proto-es/v1/sql_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  getDatabaseProject,
+  getInstanceResource,
+  getValidDataSourceByPolicy,
+  hasPermissionToCreateChangeDatabaseIssueInProject,
+} from "@/utils";
+import { flattenNoSQLResult } from "@/utils/sqlResult";
+import { sqlEditorEvents } from "@/views/sql-editor/events";
+
+// QUERY_INTERVAL_LIMIT is the minimal gap between two queries
+const QUERY_INTERVAL_LIMIT = 1000;
+
+export const useExecuteSQL = () => {
+  const { t } = useTranslation();
+  const lastQueryTimeRef = useRef<number | undefined>(undefined);
+  const dbGroupStore = useDBGroupStore();
+  const dbStore = useDatabaseV1Store();
+  const tabStore = useSQLEditorTabStore();
+  const sqlEditorStore = useSQLEditorVueState();
+
+  const notify = (
+    type: BBNotificationStyle,
+    title: string,
+    description?: string
+  ) => {
+    pushNotification({
+      module: "bytebase",
+      style: type,
+      title,
+      description,
+    });
+  };
+
+  const preflight = useCallback(
+    async (params: SQLEditorQueryParams) => {
+      lastQueryTimeRef.current = Date.now();
+
+      const tab = tabStore.currentTab;
+      if (!tab) {
+        return false;
+      }
+
+      if (tabStore.isDisconnected) {
+        notify("CRITICAL", t("sql-editor.select-connection"));
+        return false;
+      }
+
+      if (isEmpty(params.statement)) {
+        notify("CRITICAL", t("sql-editor.notify-empty-statement"));
+        return false;
+      }
+
+      if (!tab.databaseQueryContexts) {
+        tab.databaseQueryContexts = new Map();
+      }
+      return true;
+    },
+    [tabStore, t]
+  );
+
+  const changeContextStatus = (
+    ctx: SQLEditorDatabaseQueryContext,
+    status: QueryContextStatus
+  ) => {
+    switch (status) {
+      case "EXECUTING":
+        ctx.abortController = new AbortController();
+        ctx.beginTimestampMS = Date.now();
+        break;
+      case "CANCELLED":
+        ctx.abortController?.abort();
+        break;
+      case "DONE":
+        break;
+    }
+    ctx.status = status;
+  };
+
+  const preExecute = useCallback(
+    async (params: SQLEditorQueryParams) => {
+      const now = Date.now();
+      if (
+        lastQueryTimeRef.current &&
+        now - lastQueryTimeRef.current < QUERY_INTERVAL_LIMIT
+      ) {
+        return;
+      }
+
+      const tab = tabStore.currentTab;
+      if (!tab) {
+        return;
+      }
+      const { mode } = tab;
+      if (mode === "ADMIN") {
+        return;
+      }
+
+      if (!preflight(params)) {
+        return;
+      }
+
+      if (!isValidDatabaseName(params.connection.database)) {
+        return;
+      }
+
+      const databaseQueryContexts = tab.databaseQueryContexts ?? new Map();
+      const batchQueryDatabaseSet = new Set<string /* database name */>([
+        params.connection.database,
+      ]);
+
+      // Check if the user selects multiple databases to query.
+      if (
+        tab.batchQueryContext &&
+        hasFeature(PlanFeature.FEATURE_BATCH_QUERY)
+      ) {
+        const { databases = [], databaseGroups = [] } = tab.batchQueryContext;
+        for (const databaseResourceName of databases) {
+          if (!isValidDatabaseName(databaseResourceName)) {
+            continue;
+          }
+          if (batchQueryDatabaseSet.has(databaseResourceName)) {
+            continue;
+          }
+          batchQueryDatabaseSet.add(databaseResourceName);
+        }
+
+        if (hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
+          for (const databaseGroupName of databaseGroups) {
+            try {
+              const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+                databaseGroupName,
+                {
+                  skipCache: false,
+                  silent: true,
+                  view: DatabaseGroupView.FULL,
+                }
+              );
+              for (const matchedDatabase of databaseGroup.matchedDatabases) {
+                if (!isValidDatabaseName(matchedDatabase.name)) {
+                  continue;
+                }
+                if (batchQueryDatabaseSet.has(matchedDatabase.name)) {
+                  continue;
+                }
+                batchQueryDatabaseSet.add(matchedDatabase.name);
+              }
+            } catch {
+              // skip
+            }
+          }
+        }
+      }
+
+      for (const [database, contexts] of databaseQueryContexts.entries()) {
+        if (!batchQueryDatabaseSet.has(database)) {
+          for (const context of contexts) {
+            changeContextStatus(context, "CANCELLED");
+          }
+          databaseQueryContexts.delete(database);
+        }
+      }
+
+      const isBatch = batchQueryDatabaseSet.size > 1;
+      await dbStore.batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
+
+      for (const databaseName of batchQueryDatabaseSet.values()) {
+        if (!databaseQueryContexts.has(databaseName)) {
+          databaseQueryContexts.set(databaseName, []);
+        }
+
+        if ((databaseQueryContexts.get(databaseName)?.length ?? 0) >= 50) {
+          const ctx = databaseQueryContexts.get(databaseName)?.pop();
+          if (ctx) {
+            changeContextStatus(ctx, "CANCELLED");
+          }
+        }
+
+        const database = dbStore.getDatabaseByName(databaseName);
+        const resolvedDataSourceId =
+          isBatch && tab.batchQueryContext.dataSourceType
+            ? ((await getValidDataSourceByPolicy(
+                database,
+                tab.batchQueryContext.dataSourceType
+              )) ?? "")
+            : params.connection.dataSourceId;
+        const context: SQLEditorDatabaseQueryContext = {
+          id: uuidv4(),
+          params: Object.assign(cloneDeep(params), {
+            connection: {
+              ...params.connection,
+              ...(resolvedDataSourceId
+                ? { dataSourceId: resolvedDataSourceId }
+                : {}),
+            },
+          }),
+          status: "PENDING",
+        };
+        databaseQueryContexts.get(databaseName)?.unshift(context);
+      }
+    },
+    [tabStore, dbStore, dbGroupStore, preflight]
+  );
+
+  const runQuery = useCallback(
+    async (database: Database, context: SQLEditorDatabaseQueryContext) => {
+      if (context.status === "EXECUTING") {
+        notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
+        return;
+      }
+
+      if (!isValidDatabaseName(database.name)) {
+        notify(
+          "CRITICAL",
+          t("common.error"),
+          t("sql-editor.invalid-database", { database: database.name })
+        );
+        return;
+      }
+
+      changeContextStatus(context, "EXECUTING");
+
+      const finish = (resultSet: SQLResultSetV1) => {
+        context.resultSet = resultSet;
+        changeContextStatus(context, "DONE");
+      };
+
+      const { abortController } = context;
+      if (!abortController) {
+        return;
+      }
+      const sqlStore = useSQLStore();
+
+      const dataSourceId = context.params.connection.dataSourceId;
+
+      if (abortController.signal.aborted) {
+        // Once any one of the batch queries is aborted, don't go further
+        // and mock an "Aborted" result for the rest queries.
+        return finish({
+          error: t("sql-editor.request-aborted"),
+          results: [],
+          status: Code.Aborted,
+        });
+      }
+
+      const queryOption = create(QueryOptionSchema, {
+        ...(context.params.queryOption ?? ({} as QueryOption)),
+        redisRunCommandsOn: sqlEditorStore.redisCommandOption,
+      });
+      const resultSet = await sqlStore.query(
+        create(QueryRequestSchema, {
+          name: database.name,
+          ...(dataSourceId ? { dataSourceId } : {}),
+          statement: context.params.statement,
+          limit: context.params.limit ?? sqlEditorStore.resultRowsLimit,
+          explain: context.params.explain,
+          schema: context.params.connection.schema,
+          container: context.params.connection.table,
+          queryOption: queryOption,
+        }),
+        abortController.signal
+      );
+
+      // Merge the freshly-executed statement into the history cache
+      // WITHOUT resetting pagination — the user keeps whatever pages
+      // they had already loaded ("Load more"d), and the new entry just
+      // gets prepended. After the cache update lands, emit the event so
+      // the HistoryPane re-renders from it (store reactivity alone
+      // doesn't reliably propagate into the React `useVueState`
+      // subscriber, so we trigger the re-render explicitly).
+      useSQLEditorReactStore
+        .getState()
+        .mergeLatest({
+          project: sqlEditorStore.project,
+          database: database.name,
+        })
+        .catch(() => {
+          /* nothing */
+        })
+        .finally(() => {
+          void sqlEditorEvents.emit("query-executed");
+        });
+
+      const instanceResource = getInstanceResource(database);
+      if (instanceResource.engine === Engine.COSMOSDB) {
+        flattenNoSQLResult(resultSet);
+      }
+
+      if (isDisallowChangeDatabaseError(resultSet)) {
+        // Show a tips to navigate to issue creation
+        // if the user is allowed to create issue in the project.
+        if (
+          hasPermissionToCreateChangeDatabaseIssueInProject(
+            getDatabaseProject(database)
+          )
+        ) {
+          sqlEditorStore.isShowExecutingHint = true;
+          sqlEditorStore.executingHintDatabase = database;
+        }
+        return finish(resultSet);
+      }
+
+      return finish(resultSet);
+    },
+    [sqlEditorStore, t]
+  );
+
+  const execute = useCallback(
+    async (params: SQLEditorQueryParams) => {
+      return preExecute(params);
+    },
+    [preExecute]
+  );
+
+  return {
+    execute,
+    runQuery,
+  };
+};
+
+export const isDisallowChangeDatabaseError = (resultSet: SQLResultSetV1) => {
+  const isCommandError = resultSet.results.some((result) => {
+    return (
+      result.detailedError.case === "commandError" &&
+      [
+        QueryResult_CommandError_Type.DDL,
+        QueryResult_CommandError_Type.DML,
+        QueryResult_CommandError_Type.NON_READ_ONLY,
+      ].includes(result.detailedError.value.commandType)
+    );
+  });
+  if (isCommandError) {
+    return true;
+  }
+
+  return resultSet.results.some((result) => {
+    if (result.detailedError.case === "permissionDenied") {
+      return result.detailedError.value.requiredPermissions.some((p) => {
+        return p === "bb.sql.ddl" || p === "bb.sql.dml";
+      });
+    }
+    return false;
+  });
+};

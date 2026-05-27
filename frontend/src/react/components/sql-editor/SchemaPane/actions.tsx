@@ -15,8 +15,9 @@ import {
 import type { ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { formatSQL } from "@/react/components/monaco/sqlFormatter";
+import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
+import { keyWithPosition } from "@/react/lib/keyWithPosition";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { router } from "@/router";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
@@ -56,7 +57,6 @@ import {
   sortByDictionary,
   supportGetStringSchema,
 } from "@/utils";
-import { keyWithPosition } from "@/views/sql-editor/EditorCommon/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import {
   type NodeTarget,

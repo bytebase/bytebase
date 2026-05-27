@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import { InfoIcon, LoaderCircle } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isDisallowChangeDatabaseError } from "@/composables/useExecuteSQL";
 import {
   DataExportButton,
   type DataExportRequest,
@@ -18,6 +17,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { isDisallowChangeDatabaseError } from "@/react/hooks/useExecuteSQL";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
@@ -38,9 +38,14 @@ import {
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
+import { buildDownloadBlob } from "@/utils/sql-download";
+import { SQL_ENGINE_QUOTES } from "@/utils/sql-download/engines";
+import { downloadErrorMessage } from "@/utils/sql-download/error-messages";
+import { isDev } from "@/utils/util";
 import {
   extractDatabaseResourceName,
   getDatabaseProject,
+  getInstanceResource,
 } from "@/utils/v1/database";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
@@ -72,9 +77,15 @@ export function ResultView({
 }: ResultViewProps) {
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
-  const queryDataPolicy = useVueState(
-    () => useSQLEditorVueState().queryDataPolicy
-  );
+  // Hoist the editor state singleton so the useVueState getters below don't
+  // appear to call a React Hook inside a callback (Sonar S6440).
+  const editorState = useSQLEditorVueState();
+  const queryDataPolicy = useVueState(() => editorState.queryDataPolicy);
+  // The editor's per-execution row limit. A result whose .rows.length
+  // exactly equals this is probably truncated; fewer rows is probably
+  // complete. Used by the dev-path export to WARN only when the user's
+  // requested limit can't be satisfied from the cached result.
+  const resultRowsLimit = useVueState(() => editorState.resultRowsLimit);
   const tabStore = useSQLEditorTabStore();
 
   const permissionDeniedError = useMemo<
@@ -128,10 +139,141 @@ export function ResultView({
 
   const tabName = (index: number) => `${t("common.query")} #${index + 1}`;
 
+  // Format list for the export drawer. Under the isDev() gate, drop SQL when
+  // the database's engine can't be serialized as INSERTs — otherwise
+  // selecting SQL would reach serializeSQL and throw UnsupportedFormat at
+  // runtime. Production (backend Export RPC) handles all engines.
+  const supportFormats = useMemo(() => {
+    const all = [
+      ExportFormat.CSV,
+      ExportFormat.JSON,
+      ExportFormat.SQL,
+      ExportFormat.XLSX,
+    ];
+    if (!isDev()) return all;
+    const engine = getInstanceResource(database).engine;
+    return SQL_ENGINE_QUOTES.has(engine)
+      ? all
+      : [ExportFormat.CSV, ExportFormat.JSON, ExportFormat.XLSX];
+  }, [database]);
+
   const handleExport = async (
     req: DataExportRequest & { statement: string }
   ) => {
     const { options, resolve, reject, statement } = req;
+
+    // === Dev path: client-side ZIP via buildDownloadBlob ===
+    // Production builds keep using the backend Export RPC below until the
+    // client-side download module ships GA.
+    if (isDev()) {
+      try {
+        // Guard against stale format selection: DataExportButton keeps its
+        // `format` state across engine changes, so a user who picked SQL
+        // before an engine switch would still submit SQL here.
+        if (!supportFormats.includes(options.format)) {
+          reject(
+            "The selected format is not supported for the current database engine. Pick a different format."
+          );
+          return;
+        }
+        const { databaseName, instanceName } = extractDatabaseResourceName(
+          database.name
+        );
+        const engine = getInstanceResource(database).engine;
+        // Abort the whole export if ANY sub-result errored — including
+        // SET statements (which we drop from `candidates` below for
+        // serialization purposes). Backend's doExport (sql_service.go:1109)
+        // iterates every result and aborts on the first error regardless of
+        // whether the statement would have produced rows, so scanning the
+        // unfiltered resultSet here keeps us in lockstep. Skipping the SET
+        // filter for the error check covers cases like
+        // `SELECT ...; SET unknown_var = 1;` where the failing statement
+        // is non-row-producing.
+        const erroredResult = resultSet?.results?.find((r) => r.error);
+        if (erroredResult) {
+          reject(erroredResult.error);
+          return;
+        }
+        const candidates =
+          viewMode === "MULTI-RESULT"
+            ? filteredResults
+            : (resultSet?.results?.slice(0, 1) ?? []);
+        if (candidates.length === 0) {
+          reject(t("sql-editor.batch-export.no-results"));
+          return;
+        }
+        const sourceResults = candidates;
+        const baseFilename = `${databaseName}.${dayjs().format(
+          "YYYY-MM-DDTHH-mm-ss"
+        )}`;
+        // Apply the export drawer's row limit per-result, mirroring the
+        // server-side LIMIT clause semantics. The dev path operates on
+        // already-fetched rows; when the user-requested limit exceeds the
+        // cached count we can only serve what we have.
+        const limit = options.limit > 0 ? options.limit : Infinity;
+        // Probable-truncation inference: compare cached row count against
+        // the limit IN EFFECT AT EXECUTION TIME, captured in
+        // `executeParams.limit`. The current editor `resultRowsLimit` is a
+        // snapshot of when the user clicked Export (they may have changed
+        // it between Run and Export), so it can't be the ground truth.
+        const executedLimit = executeParams.limit ?? resultRowsLimit;
+        if (
+          options.limit > 0 &&
+          sourceResults.some(
+            (r) =>
+              r.rows.length === executedLimit && options.limit > r.rows.length
+          )
+        ) {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("sql-editor.batch-export.failed-for-db", {
+              db: databaseName,
+            }),
+            description: t(
+              "sql-editor.batch-export.export-limit-exceeds-executed",
+              {
+                exportLimit: options.limit,
+                executedLimit,
+              }
+            ),
+          });
+        }
+        const out = await buildDownloadBlob({
+          groups: [
+            {
+              instanceId: instanceName,
+              databaseName,
+              engine,
+              statements: sourceResults.map((r) => ({
+                result:
+                  r.rows.length > limit
+                    ? { ...r, rows: r.rows.slice(0, limit) }
+                    : r,
+                // For multi-result, `r.statement` is the substatement the
+                // backend split out — that's what the user should see. For
+                // single-result, prefer the caller's verbatim `statement`
+                // (the per-result form may have an auto-appended LIMIT).
+                statement:
+                  viewMode === "MULTI-RESULT"
+                    ? r.statement || statement
+                    : statement || r.statement,
+              })),
+            },
+          ],
+          format: options.format,
+          baseFilename,
+          password: options.password,
+        });
+        const content = new Uint8Array(await out.blob.arrayBuffer());
+        resolve([{ content, filename: out.filename }]);
+      } catch (e) {
+        reject(downloadErrorMessage(e, t));
+      }
+      return;
+    }
+
+    // === Prod path: backend Export RPC ===
     const admin = tabStore.currentTab?.mode === "ADMIN";
     try {
       const content = await useSQLStore().exportData(
@@ -234,12 +376,7 @@ export function ResultView({
                     <DataExportButton
                       size="sm"
                       disabled={false}
-                      supportFormats={[
-                        ExportFormat.CSV,
-                        ExportFormat.JSON,
-                        ExportFormat.SQL,
-                        ExportFormat.XLSX,
-                      ]}
+                      supportFormats={supportFormats}
                       viewMode="DRAWER"
                       supportPassword
                       maximumExportCount={queryDataPolicy?.maximumResultRows}

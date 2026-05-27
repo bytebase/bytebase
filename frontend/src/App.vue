@@ -1,19 +1,12 @@
 <template>
-  <NConfigProvider
-    :locale="generalLang"
-    :date-locale="dateLang"
-    :theme-overrides="themeOverrides"
-  >
-    <AuthContext>
-      <router-view />
-    </AuthContext>
-  </NConfigProvider>
+  <AuthContext>
+    <router-view />
+  </AuthContext>
 </template>
 
 <script lang="ts" setup>
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual } from "lodash-es";
-import { NConfigProvider } from "naive-ui";
 import {
   onErrorCaptured,
   onMounted,
@@ -22,7 +15,6 @@ import {
   watchEffect,
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
 import AuthContext from "./AuthContext.vue";
 import { overrideAppProfile } from "./customAppProfile";
 import { locale, t } from "./plugins/i18n";

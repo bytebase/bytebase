@@ -116,6 +116,12 @@ func (x *CancelPurchaseRequest) Equal(y *CancelPurchaseRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Feedback != y.Feedback {
+		return false
+	}
+	if x.Comment != y.Comment {
+		return false
+	}
 	return true
 }
 

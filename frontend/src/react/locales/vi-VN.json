@@ -135,7 +135,6 @@
     },
     "sign-in": {
       "code-sent-hint": "Mã xác minh đã được gửi đến {{email}}.",
-      "demo-account": "Demo Account",
       "email-code-tab": "Mã qua email",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
@@ -157,12 +156,9 @@
   },
   "auth.token-expired-title": "Mã thông báo đã hết hạn",
   "banner": {
-    "cloud": "Đám mây",
-    "deploy": "Tự lưu trữ",
     "external-url": "Bytebase chưa được cấu hình --external-url",
     "license-expired": "Giấy phép {{plan}} của bạn đã hết hạn vào {{expireAt}}.",
     "license-expires": "Giấy phép {{plan}} của bạn sẽ hết hạn sau {{days}} ngày vào {{expireAt}}.",
-    "request-demo": "Đặt lịch giới thiệu sản phẩm 30 phút.",
     "trial-expires": "Bản dùng thử miễn phí {{plan}} của bạn sẽ hết hạn trong {{days}} ngày nữa vào {{expireAt}}."
   },
   "bbkit": {
@@ -406,6 +402,7 @@
     "system": "Hệ thống",
     "table": "Bảng",
     "text-wrap": "Ngắt dòng văn bản",
+    "tips": "Mẹo",
     "title": "Tiêu đề",
     "to": "Đến",
     "total": "Total",
@@ -464,7 +461,6 @@
   "common.delete": "Xóa",
   "common.delete-resource": "Delete {{type}}",
   "common.deleted": "Đã xóa",
-  "common.demo-mode": "Demo",
   "common.detail": "Detail",
   "common.detailed-guide": "Hướng dẫn chi tiết",
   "common.edit": "Chỉnh sửa",
@@ -946,15 +942,15 @@
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
-      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {branch}.",
+      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {{branch}}.",
       "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
       "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
       "title": "Thử nghiệm migration GitOps đầu tiên"
     },
     "workflow": {
       "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {filePath} trong kho lưu trữ của bạn",
-      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {provider}.",
+      "file-hint": "Lưu dưới dạng {{filePath}} trong kho lưu trữ của bạn",
+      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {{provider}}.",
       "self-hosted-runner": "Runner tự lưu trữ",
       "title": "Tạo tệp workflow"
     },
@@ -1499,7 +1495,7 @@
   "issue.task-run.logs": "Nhật ký",
   "issue.task-run.session": "Phiên",
   "issue.transaction-mode.label": "Chế độ giao dịch",
-  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({size}).",
+  "issue.upload-sql-file-max-size-exceeded": "Vượt quá kích thước tệp tối đa ({{size}}).",
   "label": {
     "add-label": "Thêm nhãn",
     "empty-label-value": "Trống",
@@ -1662,7 +1658,7 @@
         "new-conversation": "Bắt đầu cuộc trò chuyện mới",
         "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
         "rename": "Đổi tên cuộc trò chuyện",
-        "select-or-create": "Chọn hoặc {create} một cuộc trò chuyện để bắt đầu.",
+        "select-or-create": "Chọn hoặc {{create}} một cuộc trò chuyện để bắt đầu.",
         "tips": {
           "no-more": "không còn nữa",
           "suggest-prompt": "Gợi ý nhắc nhở..."
@@ -2690,7 +2686,10 @@
     "allow-admin-mode-only": "Phiên bản <instance></instance> chỉ có thể truy cập ở chế độ quản trị.",
     "and-n-more-databases": "and {{n}} more databases",
     "batch-export": {
+      "database-no-longer-available": "Cơ sở dữ liệu không còn khả dụng trong tab hiện tại.",
+      "export-limit-exceeds-executed": "Giới hạn xuất {{exportLimit}} vượt quá giới hạn số dòng của truy vấn đã thực thi ({{executedLimit}}); chỉ xuất các dòng đã được lưu trong bộ nhớ đệm.",
       "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
+      "no-results": "Không có kết quả để tải xuống.",
       "self": "Xuất hàng loạt",
       "tooltip": "Chọn tối đa {{max}} cơ sở dữ liệu để xuất hàng loạt kết quả truy vấn mới nhất"
     },
@@ -2708,6 +2707,7 @@
     },
     "binary-format": "Định dạng nhị phân",
     "boolean-format": "Định dạng boolean",
+    "can-not-execute-query": "Không thể thực hiện truy vấn khi đang tải dữ liệu.",
     "cancel-selection": "Hủy chọn",
     "choose-folder": "Chọn hoặc tạo thư mục",
     "choose-folder-tips": "Bạn có thể tạo một thư mục mới bằng cách nhập một đường dẫn không tồn tại. Các thư mục phải được nối bằng dấu \"/\".",
@@ -2723,6 +2723,13 @@
     "copy-url": "Sao chép URL",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {{file}}",
+    "download-encryption-failed": "Không thể mã hóa bản tải xuống.",
+    "download-failed": "Tải xuống thất bại.",
+    "download-too-large": "Kết quả quá lớn để tải xuống. Hãy giảm số dòng hoặc sử dụng Xuất.",
+    "download-too-large-bytes": "Tải xuống ~{{megabytes}} MB qua {{statements}} câu lệnh; giới hạn là {{capMb}} MB. Hãy giảm kích thước kết quả hoặc sử dụng Xuất.",
+    "download-too-large-cells": "Tải xuống có {{cells}} ô qua {{statements}} câu lệnh; giới hạn là {{limit}}. Hãy giảm số dòng hoặc sử dụng Xuất.",
+    "download-too-large-xlsx-columns": "XLSX không thể vượt quá {{limit}} cột; nhận được {{count}}. Hãy sử dụng Xuất hoặc định dạng khác.",
+    "download-too-large-xlsx-rows": "XLSX không thể vượt quá {{limit}} dòng dữ liệu; nhận được {{count}}. Hãy sử dụng Xuất hoặc định dạng khác.",
     "duration-day": "{{days}} day",
     "duration-days": "{{days}} days",
     "duration-hour": "{{hours}} giờ",
@@ -2744,6 +2751,7 @@
         "title": "Đóng trang tính chưa lưu?"
       }
     },
+    "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
     "jit": "Just-In-Time Access",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "link-access": "Truy cập liên kết",
@@ -2761,6 +2769,7 @@
       "not-member-of-any-projects": "Bạn không phải là thành viên của bất kỳ dự án nào."
     },
     "no-queriable-database": "Không có cơ sở dữ liệu có thể truy vấn",
+    "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình soạn thảo",
     "only-select-allowed": "Chỉ cho phép thực thi câu lệnh chỉ đọc.",
     "open-in-new-tab": "Mở trong tab mới",
     "pending-query": "Đang chờ truy vấn",
@@ -2783,6 +2792,7 @@
       "self": "Chạy lệnh redis trên",
       "single-node": "Nút đơn"
     },
+    "request-aborted": "Người dùng đã hủy yêu cầu",
     "request-access": "Request Access",
     "request-data-access": "Request Data Access",
     "request-jit": "Request just-in-time access",
@@ -2805,10 +2815,13 @@
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
     "search-scope-row-number-title": "Số dòng",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
+    "select-connection": "Vui lòng chọn kết nối",
     "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "show-in-editor": "Hiển thị trong editor",
+    "sql-download-engine-unsupported": "Tải xuống SQL không được hỗ trợ cho engine {{engine}}.",
+    "sql-download-unavailable": "Tải xuống SQL không khả dụng cho kết nối này.",
     "sync-in-progress": "Đang đồng bộ",
     "tab": {
       "context-menu": {
@@ -3662,7 +3675,25 @@
       "and": "và",
       "billing-period": "Kỳ thanh toán",
       "cancel": "Hủy đăng ký",
-      "cancel-confirm": "Bạn có chắc chắn muốn hủy đăng ký không?",
+      "cancel-dialog": {
+        "comment-label": "Anything else you'd like to share? (optional)",
+        "comment-placeholder": "Tell us more so we can improve...",
+        "confirm": "Confirm cancellation",
+        "description": "We're sorry to see you go. Your feedback helps us improve.",
+        "keep": "Keep subscription",
+        "reason": {
+          "customer-service": "Customer service issues",
+          "low-quality": "Quality didn't meet expectations",
+          "missing-features": "Missing features I need",
+          "other": "Other reason",
+          "switched-service": "Switched to a different product",
+          "too-complex": "Too complex to use",
+          "too-expensive": "Too expensive",
+          "unused": "Not using it enough"
+        },
+        "reason-label": "Why are you canceling? (required)",
+        "title": "Cancel your subscription"
+      },
       "cancel-pending": "Đăng ký đã bị hủy và sẽ kết thúc vào {{date}}.",
       "canceled": "Đã hủy đăng ký",
       "custom": "Tùy chỉnh",

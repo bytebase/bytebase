@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -124,8 +124,29 @@ export function DatabasesPage() {
   );
 
   const projectStore = useProjectV1Store();
-  const defaultProjectId = extractProjectResourceName(
-    actuatorStore.serverInfo?.defaultProject ?? ""
+  // `serverInfo.defaultProject` is fetched asynchronously by the actuator
+  // store; wrap with `useVueState` so the filter value updates the moment
+  // it arrives instead of being captured as an empty string on first
+  // render (which sends a broken `projects/` filter to the backend).
+  const defaultProjectId = useVueState(() =>
+    extractProjectResourceName(actuatorStore.serverInfo?.defaultProject ?? "")
+  );
+  // Shared "Unassigned" option used both by the dropdown (via onSearch) and
+  // by the selected-tag display (via the scope's static `options`). `custom`
+  // hides the raw "default-<random>" id from the dropdown so users only see
+  // the friendly label.
+  const unassignedProjectOption = useMemo<ValueOption>(
+    () => ({
+      value: defaultProjectId,
+      keywords: ["unassigned", "default"],
+      custom: true,
+      render: () => (
+        <span className="italic text-control-light">
+          {t("common.unassigned")}
+        </span>
+      ),
+    }),
+    [defaultProjectId, t]
   );
   const searchProjects = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
@@ -133,13 +154,6 @@ export function DatabasesPage() {
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
-      const unassigned: ValueOption = {
-        value: defaultProjectId,
-        keywords: ["unassigned", "default"],
-        render: () => (
-          <span className="italic text-control-light">Unassigned</span>
-        ),
-      };
       const matchesUnassigned =
         !keyword.trim() || "unassigned".includes(keyword.trim().toLowerCase());
       const remote = projects
@@ -148,9 +162,9 @@ export function DatabasesPage() {
           const id = extractProjectResourceName(p.name);
           return { value: id, keywords: [id, p.title] };
         });
-      return matchesUnassigned ? [unassigned, ...remote] : remote;
+      return matchesUnassigned ? [unassignedProjectOption, ...remote] : remote;
     },
-    [projectStore, defaultProjectId]
+    [projectStore, defaultProjectId, unassignedProjectOption]
   );
 
   const instanceStore = useInstanceV1Store();
@@ -178,6 +192,10 @@ export function DatabasesPage() {
         id: "project",
         title: t("common.project"),
         description: t("issue.advanced-search.scope.project.description"),
+        // Static option lets the selected-tag display resolve the default
+        // project id to "Unassigned" — the tag renderer only looks at
+        // `options`, not async results.
+        options: [unassignedProjectOption],
         onSearch: searchProjects,
       },
       {
@@ -226,7 +244,13 @@ export function DatabasesPage() {
         allowMultiple: true,
       },
     ];
-  }, [t, environments, searchInstances, searchProjects]);
+  }, [
+    t,
+    environments,
+    searchInstances,
+    searchProjects,
+    unassignedProjectOption,
+  ]);
 
   // Derived filter values
   const projectVal = getValueFromScopes(searchParams, "project");
@@ -289,6 +313,26 @@ export function DatabasesPage() {
     }
   }, [uiStateStore]);
 
+  // Backfill the project scope once the actuator's default project ID
+  // arrives. The initial `useState` initializer reads the actuator
+  // synchronously — if it hasn't finished fetching yet, the project value
+  // is captured as "" and the API filter becomes broken (`projects/`).
+  useEffect(() => {
+    if (!defaultProjectId) return;
+    setSearchParams((prev) => {
+      const projectScope = prev.scopes.find((s) => s.id === "project");
+      if (!projectScope || projectScope.value !== "") return prev;
+      return {
+        ...prev,
+        scopes: prev.scopes.map((s) =>
+          s.id === "project" && s.value === ""
+            ? { ...s, value: defaultProjectId }
+            : s
+        ),
+      };
+    });
+  }, [defaultProjectId]);
+
   // Sync search state to URL
   useEffect(() => {
     const parts: string[] = [];
@@ -313,6 +357,14 @@ export function DatabasesPage() {
       .filter((name) => isValidDatabaseName(name))
       .map((name) => databaseStore.getDatabaseByName(name));
   }, [selectedNames, databaseStore]);
+
+  // Mirror `selectedDatabases` into a ref so the batch-operation handlers
+  // below can read the latest value without listing it as a dep. Otherwise
+  // every selection toggle re-creates the handler closures, which cascades
+  // down as fresh prop refs into `DatabaseBatchOperationsBar` and forces
+  // it to re-render (with N selected items, this compounds quickly).
+  const selectedDatabasesRef = useRef(selectedDatabases);
+  selectedDatabasesRef.current = selectedDatabases;
 
   const refresh = useCallback(() => {
     setRefreshToken((prev) => prev + 1);
@@ -356,7 +408,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database, i) =>
+            requests: selectedDatabasesRef.current.map((database, i) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   ...database,
@@ -381,7 +433,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleEnvironmentUpdate = useCallback(
@@ -390,7 +442,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -415,7 +467,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   const handleTransferProject = useCallback(
@@ -424,7 +476,7 @@ export function DatabasesPage() {
         await databaseStore.batchUpdateDatabases(
           create(BatchUpdateDatabasesRequestSchema, {
             parent: "-",
-            requests: selectedDatabases.map((database) =>
+            requests: selectedDatabasesRef.current.map((database) =>
               create(UpdateDatabaseRequestSchema, {
                 database: create(DatabaseSchema$, {
                   name: database.name,
@@ -449,7 +501,7 @@ export function DatabasesPage() {
         });
       }
     },
-    [selectedDatabases, databaseStore, refresh, t]
+    [databaseStore, refresh, t]
   );
 
   return (

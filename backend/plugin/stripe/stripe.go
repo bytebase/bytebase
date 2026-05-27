@@ -132,12 +132,18 @@ func GetCheckoutSessionInfo(sessionID string) (*CheckoutSessionInfo, error) {
 // CancelSubscription cancels a Stripe subscription.
 // If prorate is true, cancels immediately with proration and processes refund.
 // If prorate is false, schedules cancellation at the end of the current billing period.
-func CancelSubscription(stripeSubID string, workspace string, prorate bool) (*stripego.Subscription, error) {
+// feedback and comment are optional — when feedback is non-empty they are attached
+// as Stripe cancellation_details and surface in Stripe's churn analytics.
+func CancelSubscription(stripeSubID string, workspace string, prorate bool, feedback string, comment string) (*stripego.Subscription, error) {
 	if !prorate {
 		// Schedule cancellation at period end — subscription remains active until then.
-		sub, err := stripesubscription.Update(stripeSubID, &stripego.SubscriptionParams{
+		params := &stripego.SubscriptionParams{
 			CancelAtPeriodEnd: stripego.Bool(true),
-		})
+		}
+		if feedback != "" {
+			params.CancellationDetails = buildCancellationDetailsUpdate(feedback, comment)
+		}
+		sub, err := stripesubscription.Update(stripeSubID, params)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to schedule cancellation for stripe subscription %s", stripeSubID)
 		}
@@ -145,11 +151,15 @@ func CancelSubscription(stripeSubID string, workspace string, prorate bool) (*st
 	}
 
 	// Immediate cancellation with proration.
-	sub, err := stripesubscription.Cancel(stripeSubID, &stripego.SubscriptionCancelParams{
+	cancelParams := &stripego.SubscriptionCancelParams{
 		InvoiceNow: stripego.Bool(true),
 		Prorate:    stripego.Bool(true),
 		Expand:     []*string{stripego.String("customer")},
-	})
+	}
+	if feedback != "" {
+		cancelParams.CancellationDetails = buildCancellationDetailsCancel(feedback, comment)
+	}
+	sub, err := stripesubscription.Cancel(stripeSubID, cancelParams)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to cancel stripe subscription %s", stripeSubID)
 	}
@@ -164,6 +174,26 @@ func CancelSubscription(stripeSubID string, workspace string, prorate bool) (*st
 	}
 
 	return sub, nil
+}
+
+func buildCancellationDetailsUpdate(feedback, comment string) *stripego.SubscriptionCancellationDetailsParams {
+	d := &stripego.SubscriptionCancellationDetailsParams{
+		Feedback: stripego.String(feedback),
+	}
+	if comment != "" {
+		d.Comment = stripego.String(comment)
+	}
+	return d
+}
+
+func buildCancellationDetailsCancel(feedback, comment string) *stripego.SubscriptionCancelCancellationDetailsParams {
+	d := &stripego.SubscriptionCancelCancellationDetailsParams{
+		Feedback: stripego.String(feedback),
+	}
+	if comment != "" {
+		d.Comment = stripego.String(comment)
+	}
+	return d
 }
 
 // DirectSubscriptionParams contains the parameters for creating a Stripe subscription directly.

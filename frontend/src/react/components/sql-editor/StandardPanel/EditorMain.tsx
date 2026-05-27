@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { ReadonlyModeNotSupported } from "@/react/components/sql-editor/ReadonlyModeNotSupported";
+import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -33,10 +33,6 @@ interface EditorMainProps {
  *
  * AI side pane has been hoisted to `StandardPanel.vue` (Vue host) so
  * the cross-framework boundary stays clean — see Stage 17 design.
- *
- * Calls the existing Vue `useExecuteSQL` composable directly: its body
- * is Pinia-store-driven and the only Vue-specific bits (`reactive`,
- * `markRaw`) behave as no-ops outside Vue's reactivity system.
  */
 export function EditorMain({ onChangeConnection }: EditorMainProps) {
   const tabStore = useSQLEditorTabStore();

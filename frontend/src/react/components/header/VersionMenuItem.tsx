@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/react/components/ui/badge";
 import {
   useServerInfo,
   useSubscription,
@@ -46,9 +45,7 @@ export function VersionMenuItem({ onCloseMenu }: { onCloseMenu: () => void }) {
     <>
       <div className="px-3 py-2">
         <div className="mb-2 flex items-center gap-x-2">
-          {serverInfo?.demo ? (
-            <Badge variant="secondary">{t("common.demo-mode")}</Badge>
-          ) : canManageSettings ? (
+          {canManageSettings ? (
             <button
               type="button"
               className="cursor-pointer text-sm text-accent hover:underline"

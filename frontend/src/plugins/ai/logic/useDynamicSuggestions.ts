@@ -2,7 +2,6 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { head, uniq, values } from "lodash-es";
 import { computed, type MaybeRefOrGetter, reactive, ref, toValue } from "vue";
-import { hashCode } from "@/bbkit/BBUtil";
 import { sqlServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
@@ -13,6 +12,7 @@ import {
   AICompletionRequestSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { storageKeyAiSuggestions } from "@/utils";
+import { hashCode } from "@/utils/string";
 import * as promptUtils from "./prompt";
 
 export type SuggestionContext = {

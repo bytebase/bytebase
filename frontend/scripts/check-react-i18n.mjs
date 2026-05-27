@@ -1,9 +1,11 @@
 // frontend/scripts/check-react-i18n.mjs
 //
 // Enforces strict 1:1 mapping between React code and React locale files:
-//   1. Missing keys  — t("key") in code but key not in locale files
-//   2. Unused keys   — key in locale files but not referenced in code
-//   3. Consistency   — all locale files must have the exact same key set
+//   1. Missing keys      — t("key") in code but key not in locale files
+//   2. Unused keys       — key in locale files but not referenced in code
+//   3. Consistency       — all locale files must have the exact same key set
+//   4. Placeholder syntax — react-i18next uses {{name}}; flag stray Vue-style
+//                           {name} placeholders left over from migration
 //
 // Usage: node frontend/scripts/check-react-i18n.mjs
 
@@ -26,9 +28,18 @@ const DYNAMIC_PREFIXES = [
   "sql-review.rule.",
   "sql-review.template.",
   "subscription.plan.",
+  "subscription.purchase.cancel-dialog.reason.",
   "settings.sensitive-data.algorithms.",
   "instance.selected-n-instances",
   "settings.sidebar.",
+  // Referenced via error.i18n.key on a thrown DownloadError, not as a literal
+  // `t("…")` call in source. See sql-download/error-messages.ts and the
+  // throw sites in sql-download/index.ts / formats/{sql,xlsx}.ts.
+  "sql-editor.download-too-large-bytes",
+  "sql-editor.download-too-large-cells",
+  "sql-editor.download-too-large-xlsx-columns",
+  "sql-editor.download-too-large-xlsx-rows",
+  "sql-editor.sql-download-engine-unsupported",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/react/pages/project/utils/reviewBadge.ts.
   "common.bypassed",
@@ -47,7 +58,13 @@ const LOCALES_DIR = resolve(REACT_DIR, "locales");
 // keeps its React tree co-located with its framework-agnostic logic at
 // `src/plugins/ai/react/`; include those files when scanning for `t(...)`
 // usage so its i18n keys don't read as "unused".
-const EXTRA_REACT_DIRS = [resolve(ROOT, "src/plugins/ai/react")];
+const EXTRA_REACT_DIRS = [
+  resolve(ROOT, "src/plugins/ai/react"),
+  // sql-download lives outside src/react/ as a framework-neutral module
+  // but its `t(...)` calls (e.g. in error-messages.ts) consume keys from
+  // src/react/locales — include it so those keys don't read as "unused".
+  resolve(ROOT, "src/utils/sql-download"),
+];
 const LOCALES = ["en-US", "zh-CN", "es-ES", "ja-JP", "vi-VN"];
 
 let errors = 0;
@@ -216,10 +233,56 @@ for (const locale of LOCALES) {
 }
 
 // ---------------------------------------------------------------------------
+// Check 4: Vue-style {name} placeholders (must be {{name}} for react-i18next)
+// ---------------------------------------------------------------------------
+// react-i18next interpolates {{name}}. A bare {name} (not part of {{name}})
+// is a left-over from Vue's vue-i18n syntax and renders literally — see
+// the bug fixed alongside this check.
+const SINGLE_BRACE_RE = /(?<!\{)\{([a-zA-Z_][a-zA-Z0-9_]*)\}(?!\})/g;
+
+function findSingleBracePlaceholders(obj, path = "") {
+  const issues = [];
+  if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+    for (const [k, v] of Object.entries(obj)) {
+      issues.push(...findSingleBracePlaceholders(v, path ? `${path}.${k}` : k));
+    }
+  } else if (typeof obj === "string") {
+    SINGLE_BRACE_RE.lastIndex = 0;
+    const names = [];
+    let m;
+    while ((m = SINGLE_BRACE_RE.exec(obj))) names.push(m[1]);
+    if (names.length > 0) issues.push({ key: path, value: obj, names });
+  }
+  return issues;
+}
+
+for (const locale of LOCALES) {
+  const main = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `${locale}.json`), "utf-8")
+  );
+  const dynamic = JSON.parse(
+    readFileSync(resolve(LOCALES_DIR, `dynamic/${locale}.json`), "utf-8")
+  );
+  const issues = [
+    ...findSingleBracePlaceholders(main),
+    ...findSingleBracePlaceholders(dynamic, "dynamic"),
+  ];
+  if (issues.length > 0) {
+    console.error(
+      `${locale}: ${issues.length} string(s) with Vue-style {name} placeholders — react-i18next needs {{name}}:\n`
+    );
+    for (const { key, value, names } of issues) {
+      error(`  - ${key} → ${JSON.stringify(value)} (placeholders: ${names.join(", ")})`);
+    }
+    console.error();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Result
 // ---------------------------------------------------------------------------
 if (errors > 0) {
   process.exit(1);
 } else {
-  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency).");
+  console.log("React i18n: all checks passed (missing keys, unused keys, cross-locale consistency, placeholder syntax).");
 }

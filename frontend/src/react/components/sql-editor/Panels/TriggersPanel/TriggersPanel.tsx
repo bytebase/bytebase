@@ -2,12 +2,12 @@ import { ChevronLeft, Zap } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
-import { useDBSchemaV1Store } from "@/store";
 import {
   extractKeyWithPosition,
   keyWithPosition,
-} from "@/views/sql-editor/EditorCommon/utils";
+} from "@/react/lib/keyWithPosition";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useDBSchemaV1Store } from "@/store";
 import { CodeViewer } from "../common/CodeViewer";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";

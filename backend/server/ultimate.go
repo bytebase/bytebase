@@ -1,5 +1,3 @@
-//go:build !minidemo
-
 package server
 
 import (
@@ -17,6 +15,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"

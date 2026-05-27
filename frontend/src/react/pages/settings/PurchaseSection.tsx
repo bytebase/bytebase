@@ -16,6 +16,7 @@ import {
   PurchasePlanAdditional_Type,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { CancelSubscriptionDialog } from "./CancelSubscriptionDialog";
 
 interface PurchaseSectionProps {
   readonly onRequireEnterprise: () => void;
@@ -97,6 +98,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const [seats, setSeats] = useState(1);
   const [loading, setLoading] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [checkPolicy, setCheckPolicy] = useState(false);
   const [pendingPayment, setPendingPayment] = useState(false);
 
@@ -318,11 +320,10 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirm(t("subscription.purchase.cancel-confirm"))) return;
+  const handleCancel = async (feedback: string, comment: string) => {
     setCanceling(true);
     try {
-      await subscriptionStore.cancelPurchase();
+      await subscriptionStore.cancelPurchase(feedback, comment);
       // Wait for the Stripe webhook to reconcile before releasing the UI,
       // so the cached subscription/license reflects the new state.
       await subscriptionStore.pollSubscriptionUntil(
@@ -336,6 +337,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       });
     } catch (e) {
       console.error(e);
+      throw e;
     } finally {
       setCanceling(false);
     }
@@ -413,7 +415,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                 <Button
                   variant="destructive"
                   disabled={canceling}
-                  onClick={handleCancel}
+                  onClick={() => setCancelDialogOpen(true)}
                 >
                   {canceling && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -578,6 +580,12 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
           </div>
         </>
       )}
+
+      <CancelSubscriptionDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        onConfirm={handleCancel}
+      />
     </div>
   );
 }

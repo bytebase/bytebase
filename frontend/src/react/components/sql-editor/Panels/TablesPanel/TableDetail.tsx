@@ -16,16 +16,16 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import {
+  extractKeyWithPosition,
+  keyWithPosition,
+} from "@/react/lib/keyWithPosition";
 import type {
   Database,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import {
-  extractKeyWithPosition,
-  keyWithPosition,
-} from "@/views/sql-editor/EditorCommon/utils";
 import { CodeViewer } from "../common/CodeViewer";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { ColumnsTable } from "../common/tables/ColumnsTable";

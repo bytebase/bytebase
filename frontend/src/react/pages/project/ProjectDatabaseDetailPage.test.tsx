@@ -174,9 +174,6 @@ const mocks = vi.hoisted(() => {
     i18nPlugin: {
       install: vi.fn(),
     },
-    naivePlugin: {
-      install: vi.fn(),
-    },
     routeNames: {
       databaseDetail: "workspace.project.database.detail",
     },
@@ -296,10 +293,6 @@ vi.mock("@/plugins/highlight", () => ({
 
 vi.mock("@/plugins/i18n", () => ({
   default: mocks.i18nPlugin,
-}));
-
-vi.mock("@/plugins/naive-ui", () => ({
-  default: mocks.naivePlugin,
 }));
 
 vi.mock("@/store/modules/v1/actuator", () => ({
@@ -520,7 +513,6 @@ beforeEach(() => {
   mocks.pinia.install.mockReset();
   mocks.highlightPlugin.install.mockReset();
   mocks.i18nPlugin.install.mockReset();
-  mocks.naivePlugin.install.mockReset();
   mocks.useActuatorV1Store.mockReset();
   mocks.useActuatorV1Store.mockReturnValue({
     serverInfo: {

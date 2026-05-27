@@ -2,6 +2,9 @@ name: Deploy Bytebase Cloud
 
 on:
   workflow_dispatch:
+  schedule:
+    # Monday-Thursday at 00:00 UTC
+    - cron: "0 0 * * 1-4"
 
 permissions:
   contents: read
@@ -50,7 +53,6 @@ jobs:
           build-args: |
             VERSION=cloud
             GIT_COMMIT=${{ env.GIT_COMMIT }}
-            RELEASE=release
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v3

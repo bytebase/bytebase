@@ -239,9 +239,11 @@ export function PlanDetailRollbackSheet({
                       </div>
                     ) : preview.statement ? (
                       <ReadonlyMonaco
-                        className="relative h-auto max-h-[320px] min-h-[120px] overflow-hidden rounded-md border border-control-border"
+                        className="relative rounded-md border border-control-border"
                         content={preview.statement}
                         language="sql"
+                        min={128}
+                        max={256}
                       />
                     ) : (
                       <div className="flex items-center justify-center rounded-md border bg-gray-50 p-8">

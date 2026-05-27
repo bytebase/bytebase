@@ -26,7 +26,7 @@ func NewRootCommand(w *world.World) *cobra.Command {
 	}
 	// bytebase-action flags
 	cmd.PersistentFlags().StringVar(&w.Output, "output", "", "Output file location. The output file is a JSON file with the created resource names")
-	cmd.PersistentFlags().StringVar(&w.URL, "url", "https://demo.bytebase.com", "Bytebase URL")
+	cmd.PersistentFlags().StringVar(&w.URL, "url", "", "Bytebase URL (required)")
 	cmd.PersistentFlags().DurationVar(&w.Timeout, "timeout", 120*time.Second, "HTTP timeout for API requests (e.g. 120s, 5m)")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccount, "service-account", "", "Bytebase Service account")
 	cmd.PersistentFlags().StringVar(&w.ServiceAccountSecret, "service-account-secret", "", "Bytebase Service account secret")

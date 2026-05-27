@@ -120,7 +120,16 @@ message UpdatePurchaseRequest {
   string etag = 4;
 }
 
-message CancelPurchaseRequest {}
+message CancelPurchaseRequest {
+  // Reason the customer is canceling. Maps to Stripe's cancellation_details.feedback.
+  // Valid Stripe values: "customer_service", "low_quality", "missing_features",
+  // "switched_service", "too_complex", "too_expensive", "unused", "other".
+  // Required.
+  string feedback = 1;
+
+  // Optional free-form comment. Max 500 chars (Stripe limit).
+  string comment = 2;
+}
 
 message GetPaymentInfoRequest {}
 

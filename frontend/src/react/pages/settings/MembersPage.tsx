@@ -18,6 +18,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
 import {
   buildCELExpr,
@@ -1273,7 +1274,7 @@ function EditMemberRoleDrawer({
   const [showNestedGrant, setShowNestedGrant] = useState(false);
 
   const [form, setForm] = useState<RoleBindingFormState>(() => ({
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     role: "",
     reason: "",
     expirationDays: 7,

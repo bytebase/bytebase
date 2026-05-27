@@ -6820,7 +6820,6 @@ Actuator concept is similar to the Spring Boot Actuator.
 | git_commit | [string](#string) |  | The git commit hash of the build. |
 | readonly | [bool](#bool) |  | Whether the Bytebase instance is running in read-only mode. |
 | saas | [bool](#bool) |  | Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users. |
-| demo | [bool](#bool) |  | Whether the Bytebase instance is running in demo mode. |
 | host | [string](#string) |  | The host address of the Bytebase instance. |
 | port | [string](#string) |  | The port number of the Bytebase instance. |
 | external_url | [string](#string) |  | The external URL where users or webhook callbacks access Bytebase. |
@@ -11091,6 +11090,12 @@ SheetService manages SQL scripts and saved queries.
 
 ### CancelPurchaseRequest
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| feedback | [string](#string) |  | Reason the customer is canceling. Maps to Stripe&#39;s cancellation_details.feedback. Valid Stripe values: &#34;customer_service&#34;, &#34;low_quality&#34;, &#34;missing_features&#34;, &#34;switched_service&#34;, &#34;too_complex&#34;, &#34;too_expensive&#34;, &#34;unused&#34;, &#34;other&#34;. Required. |
+| comment | [string](#string) |  | Optional free-form comment. Max 500 chars (Stripe limit). |
 
 
 
