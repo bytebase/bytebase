@@ -4,7 +4,7 @@
 
 **Goal:** Add consistent structured task-run log context for backend task-run execution logs.
 
-**Architecture:** Add one small helper in `backend/runner/taskrun` that returns the standard `slog` attributes: `project`, `task_run_id`, and `replica_id`. Use scoped `slog.Logger` values at task-run scheduler and execution boundaries, without storing loggers in `context.Context` and without changing the executor interface.
+**Architecture:** Add one small helper in `backend/runner/taskrun` that returns the standard `slog` attributes: `project` and `task_run_id`. Use scoped `slog.Logger` values at task-run scheduler and execution boundaries, without storing loggers in `context.Context` and without changing the executor interface.
 
 **Tech Stack:** Go, `log/slog`, existing Bytebase task-run scheduler, `stretchr/testify` for focused unit tests.
 
@@ -17,7 +17,7 @@
 - Create `backend/runner/taskrun/log_context_test.go`
   - Verifies helper output and field names.
 - Modify `backend/runner/taskrun/running_scheduler.go`
-  - Replaces ambiguous task-run `id` log attributes with scoped loggers carrying `project`, `task_run_id`, and `replica_id`.
+  - Replaces ambiguous task-run `id` log attributes with scoped loggers carrying `project` and `task_run_id`.
   - Keeps event-specific fields out unless needed for that event.
 
 No database, proto, frontend, or executor interface files should change.
@@ -43,12 +43,11 @@ import (
 )
 
 func TestTaskRunLogAttrs(t *testing.T) {
-	attrs := taskRunLogAttrs("project-a", 123, "replica-1")
+	attrs := taskRunLogAttrs("project-a", 123)
 
 	require.Equal(t, []slog.Attr{
 		slog.String("project", "project-a"),
 		slog.Int64("task_run_id", 123),
-		slog.String("replica_id", "replica-1"),
 	}, attrs)
 }
 ```
@@ -72,11 +71,10 @@ package taskrun
 
 import "log/slog"
 
-func taskRunLogAttrs(projectID string, taskRunUID int64, replicaID string) []slog.Attr {
+func taskRunLogAttrs(projectID string, taskRunUID int64) []slog.Attr {
 	return []slog.Attr{
 		slog.String("project", projectID),
 		slog.Int64("task_run_id", taskRunUID),
-		slog.String("replica_id", replicaID),
 	}
 }
 ```
@@ -122,7 +120,7 @@ with:
 
 ```go
 for _, c := range claimed {
-	logger := slog.With(taskRunLogAttrs(c.ProjectID, c.TaskRunUID, s.profile.ReplicaID)...)
+	logger := slog.With(taskRunLogAttrs(c.ProjectID, c.TaskRunUID)...)
 	if err := s.executeTaskRun(ctx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
 		logger.Error("failed to execute task run", log.BBError(err))
 	}
@@ -134,7 +132,7 @@ for _, c := range claimed {
 In `executeTaskRun`, add this as the first statement in the function body:
 
 ```go
-logger := slog.With(taskRunLogAttrs(projectID, taskRunUID, s.profile.ReplicaID)...)
+logger := slog.With(taskRunLogAttrs(projectID, taskRunUID)...)
 ```
 
 Then replace the drift validation warning:
@@ -158,7 +156,7 @@ logger.Warn("task run blocked by drift validation", log.BBError(err))
 In `runTaskRunOnce`, add this as the first statement in the function body:
 
 ```go
-logger := slog.With(taskRunLogAttrs(task.ProjectID, taskRunUID, s.profile.ReplicaID)...)
+logger := slog.With(taskRunLogAttrs(task.ProjectID, taskRunUID)...)
 ```
 
 Then replace the panic recovery log:

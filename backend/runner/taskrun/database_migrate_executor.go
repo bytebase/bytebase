@@ -184,7 +184,7 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 }
 
 func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID, exec.profile.ReplicaID)
+	logger := taskRunLogger(database.ProjectID, taskRunUID)
 
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
@@ -409,7 +409,7 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, logge
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID, exec.profile.ReplicaID)
+	logger := taskRunLogger(database.ProjectID, taskRunUID)
 
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
@@ -477,7 +477,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 }
 
 func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID, exec.profile.ReplicaID)
+	logger := taskRunLogger(database.ProjectID, taskRunUID)
 
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
@@ -644,7 +644,7 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 }
 
 func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(database.ProjectID, taskRunUID, exec.profile.ReplicaID)
+	logger := taskRunLogger(database.ProjectID, taskRunUID)
 
 	// Declarative releases should have exactly one file
 	if len(release.Payload.Files) == 0 {

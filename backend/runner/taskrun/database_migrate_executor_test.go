@@ -8,23 +8,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-func TestTaskRunExecutorsCarryProfile(t *testing.T) {
-	profile := &config.Profile{ReplicaID: "replica-1"}
-
-	createExec, ok := NewDatabaseCreateExecutor(nil, nil, nil, profile).(*DatabaseCreateExecutor)
-	require.True(t, ok)
-	require.Same(t, profile, createExec.profile)
-
-	exportExec, ok := NewDataExportExecutor(nil, nil, nil, profile).(*DataExportExecutor)
-	require.True(t, ok)
-	require.Same(t, profile, exportExec.profile)
-}
 
 func TestExecuteGhostMigrationAcceptsLogger(t *testing.T) {
 	requireExecuteGhostMigrationLoggerSignature(t, executeGhostMigration)

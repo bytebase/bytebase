@@ -18,7 +18,6 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -30,12 +29,11 @@ import (
 )
 
 // NewDataExportExecutor creates a data export task executor.
-func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, profile *config.Profile) Executor {
+func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService) Executor {
 	return &DataExportExecutor{
 		store:     store,
 		dbFactory: dbFactory,
 		license:   license,
-		profile:   profile,
 	}
 }
 
@@ -44,12 +42,11 @@ type DataExportExecutor struct {
 	store     *store.Store
 	dbFactory *dbfactory.DBFactory
 	license   *enterprise.LicenseService
-	profile   *config.Profile
 }
 
 // RunOnce will run the data export task executor once.
 func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
-	logger := taskRunLogger(task.ProjectID, taskRunUID, exec.profile.ReplicaID)
+	logger := taskRunLogger(task.ProjectID, taskRunUID)
 
 	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{task.ProjectID}, PlanUID: &task.PlanID})
 	if err != nil {

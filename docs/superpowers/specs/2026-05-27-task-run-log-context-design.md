@@ -16,7 +16,7 @@ Task-run execution flows through `backend/runner/taskrun/running_scheduler.go`:
 - `executeTaskRun` loads the task, validates freshness, updates `started_at`, and starts asynchronous execution.
 - `runTaskRunOnce` runs the executor and updates the final task-run status.
 
-Executors receive `taskRunUID` and have access to profile state such as `replica_id`, so they can attach the same log context without changing persisted state.
+Executors receive `taskRunUID`, so they can attach the same log context without changing persisted state.
 
 ## Approach
 
@@ -26,12 +26,11 @@ Add a small helper in `backend/runner/taskrun` that builds task-run log attribut
 
 - `project`
 - `task_run_id`
-- `replica_id`
 
 At scheduler boundaries, create a scoped logger with:
 
 ```go
-logger := slog.With(taskRunLogAttrs(projectID, taskRunUID, replicaID)...)
+logger := slog.With(taskRunLogAttrs(projectID, taskRunUID)...)
 ```
 
 Then use `logger.Warn`, `logger.Error`, and related methods for task-run scoped events.

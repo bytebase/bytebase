@@ -58,7 +58,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	}
 
 	for _, c := range claimed {
-		logger := taskRunLogger(c.ProjectID, c.TaskRunUID, s.profile.ReplicaID)
+		logger := taskRunLogger(c.ProjectID, c.TaskRunUID)
 		if err := s.executeTaskRun(ctx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
 			logger.Error("failed to execute task run", log.BBError(err))
 		}
@@ -69,7 +69,7 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 
 // executeTaskRun executes a task run that is already in RUNNING status.
 func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int64) error {
-	logger := taskRunLogger(projectID, taskRunUID, s.profile.ReplicaID)
+	logger := taskRunLogger(projectID, taskRunUID)
 
 	task, err := s.store.GetTaskByID(ctx, projectID, taskUID)
 	if err != nil {
@@ -118,7 +118,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 }
 
 func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *store.TaskMessage, executor Executor) {
-	logger := taskRunLogger(task.ProjectID, taskRunUID, s.profile.ReplicaID)
+	logger := taskRunLogger(task.ProjectID, taskRunUID)
 
 	defer func() {
 		if r := recover(); r != nil {

@@ -13,7 +13,6 @@ func TestGhostLoggerUsesScopedLogger(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&buf, nil)).With(
 		slog.String("project", "db333"),
 		slog.Int64("task_run_id", 9213),
-		slog.String("replica_id", "replica-1"),
 	)
 
 	newGhostLogger(logger).Infof("Migrating %s.%s", "db_1", "tpri")
@@ -21,7 +20,7 @@ func TestGhostLoggerUsesScopedLogger(t *testing.T) {
 	output := buf.String()
 	require.Contains(t, output, `project=db333`)
 	require.Contains(t, output, `task_run_id=9213`)
-	require.Contains(t, output, `replica_id=replica-1`)
+	require.NotContains(t, output, `replica_id=`)
 	require.Contains(t, output, `msg="Migrating db_1.tpri"`)
 	require.NotContains(t, output, `!BADKEY`)
 }

@@ -30,7 +30,6 @@ func TestNewMigrationContextUsesScopedLogger(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&buf, nil)).With(
 		slog.String("project", "db333"),
 		slog.Int64("task_run_id", 9213),
-		slog.String("replica_id", "replica-1"),
 	)
 
 	ctx := context.Background()
@@ -50,7 +49,7 @@ func TestNewMigrationContextUsesScopedLogger(t *testing.T) {
 	require.Contains(t, output, `msg="gh-ost auth retry limit set"`)
 	require.Contains(t, output, `project=db333`)
 	require.Contains(t, output, `task_run_id=9213`)
-	require.Contains(t, output, `replica_id=replica-1`)
+	require.NotContains(t, output, `replica_id=`)
 }
 
 func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
