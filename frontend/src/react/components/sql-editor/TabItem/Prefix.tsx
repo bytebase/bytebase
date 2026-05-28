@@ -1,6 +1,5 @@
 import { PencilLine, Users, Wrench } from "lucide-react";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
-import { useWorkSheetStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { useSheetContext } from "@/views/sql-editor/Sheet";
 import { SheetConnectionIcon } from "../SheetConnectionIcon";
@@ -18,13 +17,12 @@ type Props = {
  *  - Engine icon / unlink glyph via SheetConnectionIcon.
  */
 export function Prefix({ tab }: Props) {
-  const sheetStore = useWorkSheetStore();
   const { isWorksheetCreator } = useSheetContext();
 
   const isDraft = !tab.worksheet && tab.viewState.view === "CODE";
 
-  const sheet = usePiniaBridge(() =>
-    tab.worksheet ? sheetStore.getWorksheetByName(tab.worksheet) : null
+  const sheet = useAppStore((s) =>
+    tab.worksheet ? s.getWorksheetByName(tab.worksheet) : null
   );
 
   return (

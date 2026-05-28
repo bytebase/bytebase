@@ -10,7 +10,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
-import { useCurrentUserV1, useWorkSheetStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useCurrentUserV1 } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
   SheetViewMode,
@@ -52,7 +53,6 @@ export function useDropdown(
   const { t } = useTranslation();
 
   // Call Pinia store factories at hook top level (React Hooks rule).
-  const sheetStore = useWorkSheetStore();
   const meRef = useCurrentUserV1();
 
   // ------------------------------------------------------------------
@@ -68,12 +68,11 @@ export function useDropdown(
   // ------------------------------------------------------------------
   const me = usePiniaBridge(() => meRef.value);
 
-  const worksheetEntity = usePiniaBridge(() => {
-    if (viewMode === "draft" || !currentNode?.worksheet) {
-      return undefined;
-    }
-    return sheetStore.getWorksheetByName(currentNode.worksheet.name);
-  });
+  const worksheetEntity = useAppStore((s) =>
+    viewMode === "draft" || !currentNode?.worksheet
+      ? undefined
+      : s.getWorksheetByName(currentNode.worksheet.name)
+  );
 
   // ------------------------------------------------------------------
   // Derived: allowed-to-create-new

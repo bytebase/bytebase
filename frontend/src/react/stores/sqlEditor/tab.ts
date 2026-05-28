@@ -3,7 +3,8 @@ import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
-import { hasFeature, useCurrentUserV1, useWorkSheetStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { hasFeature, useCurrentUserV1 } from "@/store";
 import {
   migrateDraftsFromCache,
   migrateTabViewState,
@@ -401,7 +402,6 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
   }
 
   const storedTabs = readOpenTabs(project, email);
-  const worksheetStore = useWorkSheetStore();
 
   const hydratedTabs: SQLEditorTab[] = [];
   const validPersistent: PersistentTab[] = [];
@@ -411,10 +411,9 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
     if (seen.has(persisted.id)) continue;
     if (!persisted.worksheet) continue;
 
-    const worksheet = await worksheetStore.getOrFetchWorksheetByName(
-      persisted.worksheet,
-      true
-    );
+    const worksheet = await useAppStore
+      .getState()
+      .getOrFetchWorksheetByName(persisted.worksheet, true);
     if (!worksheet) continue;
 
     const statement = getSheetStatement(worksheet);

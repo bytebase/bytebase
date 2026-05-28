@@ -13,7 +13,7 @@ const eventHandlers: Record<string, (payload: unknown) => void> = {};
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  worksheetStore: {
+  appStore: {
     getWorksheetByName: vi.fn(),
   },
   editorWorksheetStore: {
@@ -39,8 +39,8 @@ vi.mock("@/react/hooks/useSQLEditorEvent", () => ({
   ),
 }));
 
-vi.mock("@/store", () => ({
-  useWorkSheetStore: vi.fn(() => mocks.worksheetStore),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: { getState: () => mocks.appStore },
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -202,7 +202,7 @@ beforeEach(async () => {
   mocks.editorWorksheetStore.createWorksheet.mockResolvedValue(undefined);
   mocks.sheetContext.getPwdForWorksheet.mockReturnValue("");
   mocks.sheetContext.getFoldersForWorksheet.mockReturnValue([]);
-  mocks.worksheetStore.getWorksheetByName.mockReturnValue(undefined);
+  mocks.appStore.getWorksheetByName.mockReturnValue(undefined);
 
   ({ SaveSheetModal } = await import("./SaveSheetModal"));
 });

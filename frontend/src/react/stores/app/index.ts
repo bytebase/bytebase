@@ -19,6 +19,7 @@ import { createRoleSlice } from "./role";
 import { createServiceAccountSlice } from "./serviceAccount";
 import { createSheetSlice } from "./sheet";
 import { createUserSlice } from "./user";
+import { createWorksheetSlice } from "./worksheet";
 import { createWorkspaceSlice } from "./workspace";
 import { createWorkloadIdentitySlice } from "./workloadIdentity";
 
@@ -41,6 +42,7 @@ export const createAppStore = () =>
     ...createDatabaseSlice(...args),
     ...createDBGroupSlice(...args),
     ...createSheetSlice(...args),
+    ...createWorksheetSlice(...args),
     ...createInstanceRoleSlice(...args),
     ...createGroupSlice(...args),
     ...createServiceAccountSlice(...args),

@@ -19,7 +19,17 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useWorkSheetStore: vi.fn(),
+  appStore: {
+    getWorksheetByName: vi.fn(),
+    deleteWorksheetByName: vi.fn(),
+    patchWorksheet: vi.fn(),
+    upsertWorksheetOrganizer: vi.fn(),
+  } as {
+    getWorksheetByName: ReturnType<typeof vi.fn>;
+    deleteWorksheetByName: ReturnType<typeof vi.fn>;
+    patchWorksheet: ReturnType<typeof vi.fn>;
+    upsertWorksheetOrganizer: ReturnType<typeof vi.fn>;
+  },
   getSQLEditorTabsState: vi.fn(),
   project: "projects/proj1",
   // The new zustand store mock — only `createWorksheet` is used by SheetTree.
@@ -36,8 +46,11 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useWorkSheetStore: mocks.useWorkSheetStore,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: { getState: () => mocks.appStore },
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
@@ -416,19 +429,17 @@ const setupDefaultMocks = () => {
 
   mocks.useSheetContext.mockReturnValue(sheetContext);
   mocks.useSheetContextByView.mockReturnValue(viewContext);
-  mocks.useWorkSheetStore.mockReturnValue({
-    getWorksheetByName: vi.fn((name: string) => ({
-      name,
-      title: "My Query",
-      folders: [],
-      database: "",
-      starred: false,
-      creator: "users/test@example.com",
-    })),
-    deleteWorksheetByName: vi.fn().mockResolvedValue(undefined),
-    patchWorksheet: vi.fn().mockResolvedValue({}),
-    upsertWorksheetOrganizer: vi.fn().mockResolvedValue(undefined),
-  });
+  mocks.appStore.getWorksheetByName.mockImplementation((name: string) => ({
+    name,
+    title: "My Query",
+    folders: [],
+    database: "",
+    starred: false,
+    creator: "users/test@example.com",
+  }));
+  mocks.appStore.deleteWorksheetByName.mockResolvedValue(undefined);
+  mocks.appStore.patchWorksheet.mockResolvedValue({});
+  mocks.appStore.upsertWorksheetOrganizer.mockResolvedValue(undefined);
   mocks.getSQLEditorTabsState.mockReturnValue({
     tabsById: new Map(),
     closeTab: vi.fn(),
@@ -705,19 +716,7 @@ describe("SheetTree", () => {
     defaultMocks.viewContext._sheetTree.value = rootNode;
 
     const deleteWorksheetByName = vi.fn().mockResolvedValue(undefined);
-    mocks.useWorkSheetStore.mockReturnValue({
-      getWorksheetByName: vi.fn((name: string) => ({
-        name,
-        title: "My Query",
-        folders: [],
-        database: "",
-        starred: false,
-        creator: "users/test@example.com",
-      })),
-      deleteWorksheetByName,
-      patchWorksheet: vi.fn().mockResolvedValue({}),
-      upsertWorksheetOrganizer: vi.fn().mockResolvedValue(undefined),
-    });
+    mocks.appStore.deleteWorksheetByName = deleteWorksheetByName;
 
     mocks.useDropdown.mockReturnValue({
       currentNode: wsNode,

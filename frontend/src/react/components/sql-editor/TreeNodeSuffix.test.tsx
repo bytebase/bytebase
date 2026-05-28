@@ -19,8 +19,8 @@ globalThis.ResizeObserver = class ResizeObserver {
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
-  useWorkSheetStore: vi.fn(),
   getSQLEditorTabsState: vi.fn(),
+  getWorksheetByName: vi.fn<(name: string) => unknown>(),
   getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
     title: "Test User",
   })),
@@ -36,13 +36,10 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
   usePiniaBridge: mocks.usePiniaBridge,
 }));
 
-vi.mock("@/store", () => ({
-  useWorkSheetStore: mocks.useWorkSheetStore,
-}));
-
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
+      getWorksheetByName: mocks.getWorksheetByName,
       getUserByIdentifier: mocks.getUserByIdentifier,
       getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
     }),
@@ -131,14 +128,12 @@ let TreeNodeSuffix: typeof import("./TreeNodeSuffix").TreeNodeSuffix;
 
 beforeEach(async () => {
   mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
-  mocks.useWorkSheetStore.mockReturnValue({
-    getWorksheetByName: (name: string) => ({
-      name,
-      starred: false,
-      visibility: 0, // PRIVATE
-      creator: "users/test@example.com",
-    }),
-  });
+  mocks.getWorksheetByName.mockImplementation((name: string) => ({
+    name,
+    starred: false,
+    visibility: 0, // PRIVATE
+    creator: "users/test@example.com",
+  }));
   mocks.getSQLEditorTabsState.mockReturnValue({
     tabsById: new Map(),
     closeTab: vi.fn(),

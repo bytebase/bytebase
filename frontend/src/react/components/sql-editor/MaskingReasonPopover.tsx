@@ -65,6 +65,9 @@ export function MaskingReasonPopover({
         <PopoverTrigger
           openOnHover
           delay={100}
+          // The trigger renders a <div>, not a native <button>; tell Base
+          // UI so it doesn't warn about missing native button semantics.
+          nativeButton={false}
           render={
             <div className="inline-flex items-center gap-0.5 cursor-pointer">
               {reason.semanticTypeIcon && (

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { useWorkSheetStore } from "@/store";
 import { WorksheetSchema } from "@/types/proto-es/v1/worksheet_service_pb";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { tabListEvents } from "@/views/sql-editor/TabList/events";
@@ -23,7 +23,6 @@ type Props = {
  */
 export function Label({ tab }: Props) {
   const { t } = useTranslation();
-  const worksheetStore = useWorkSheetStore();
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(tab.title);
@@ -55,7 +54,7 @@ export function Label({ tab }: Props) {
     const title = draft.trim();
     getSQLEditorTabsState().updateTab(tab.id, { title });
     if (tab.worksheet) {
-      void worksheetStore.patchWorksheet(
+      void useAppStore.getState().patchWorksheet(
         create(WorksheetSchema, {
           name: tab.worksheet,
           title,

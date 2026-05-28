@@ -13,14 +13,15 @@ const mocks = vi.hoisted(() => ({
   setCurrentTabId: vi.fn(),
   patchWorksheet: vi.fn().mockResolvedValue(undefined),
   getSQLEditorTabsState: vi.fn(),
-  useWorkSheetStore: vi.fn(),
   tabListEvents: {
     on: vi.fn<(event: string, h: (p: unknown) => void) => () => void>(),
   },
 }));
 
-vi.mock("@/store", () => ({
-  useWorkSheetStore: mocks.useWorkSheetStore,
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({ patchWorksheet: mocks.patchWorksheet }),
+  },
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab", () => ({
@@ -89,9 +90,6 @@ beforeEach(async () => {
     currentTabId: "t1",
     updateTab: mocks.updateTab,
     setCurrentTabId: mocks.setCurrentTabId,
-  });
-  mocks.useWorkSheetStore.mockReturnValue({
-    patchWorksheet: mocks.patchWorksheet,
   });
   mocks.tabListEvents.on.mockReturnValue(() => {});
   ({ Label } = await import("./Label"));

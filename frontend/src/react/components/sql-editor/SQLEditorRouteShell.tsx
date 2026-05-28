@@ -9,6 +9,7 @@ import {
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { useCurrentRoute, useNavigate } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
@@ -32,7 +33,6 @@ import {
   useActuatorV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
-  useWorkSheetStore,
 } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import {
@@ -111,7 +111,6 @@ export function SQLEditorRouteShell() {
   const databaseStore = useDatabaseV1Store();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
-  const worksheetStore = useWorkSheetStore();
 
   const projectContextReady = useSQLEditorEditorState(
     (s) => s.projectContextReady
@@ -193,7 +192,9 @@ export function SQLEditorRouteShell() {
     const openedSheetTab = Array.from(tabsState.tabsById.values()).find(
       (t) => t.worksheet === sheetName
     );
-    const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
+    const sheet = await useAppStore
+      .getState()
+      .getOrFetchWorksheetByName(sheetName);
     if (!sheet) {
       if (openedSheetTab) {
         tabsState.updateTab(openedSheetTab.id, {
@@ -325,7 +326,7 @@ export function SQLEditorRouteShell() {
     );
 
     if (vals.sheetName) {
-      const sheet = worksheetStore.getWorksheetByName(vals.sheetName);
+      const sheet = useAppStore.getState().getWorksheetByName(vals.sheetName);
       if (sheet) {
         await navigate.replace({
           name: SQL_EDITOR_WORKSHEET_MODULE,

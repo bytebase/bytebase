@@ -38,6 +38,10 @@ import type {
   User,
 } from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
+import type {
+  Worksheet,
+  WorksheetOrganizer,
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import type { AccessGrantFilterStatus } from "@/utils";
@@ -240,6 +244,41 @@ export type SheetSlice = {
   sheetErrorsByName: Record<string, Error | undefined>;
   fetchSheet: (name: string, raw?: boolean) => Promise<Sheet | undefined>;
   createSheet: (parent: string, sheet: Sheet) => Promise<Sheet>;
+};
+
+export type WorksheetView = "FULL" | "BASIC";
+
+export type WorksheetSlice = {
+  // Keyed by `${uid}:${view}` (mirrors the legacy Pinia cache, which kept
+  // FULL and BASIC views separately — BASIC list entries omit the
+  // statement, FULL entries carry it).
+  worksheetsByKey: Record<string, Worksheet>;
+  worksheetRequests: Record<string, Promise<Worksheet | undefined>>;
+  getWorksheetByName: (
+    name: string,
+    view?: WorksheetView
+  ) => Worksheet | undefined;
+  getOrFetchWorksheetByName: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Worksheet | undefined>;
+  fetchWorksheetList: (parent: string, filter: string) => Promise<Worksheet[]>;
+  createWorksheet: (worksheet: Worksheet) => Promise<Worksheet>;
+  patchWorksheet: (
+    worksheet: Worksheet,
+    updateMask: string[],
+    signal?: AbortSignal
+  ) => Promise<Worksheet | undefined>;
+  deleteWorksheetByName: (name: string) => Promise<void>;
+  upsertWorksheetOrganizer: (
+    organizer: Partial<WorksheetOrganizer>,
+    updateMask: string[]
+  ) => Promise<void>;
+  batchUpsertWorksheetOrganizers: (
+    requests: { organizer: Partial<WorksheetOrganizer>; updateMask: string[] }[]
+  ) => Promise<void>;
+  myWorksheetList: () => Worksheet[];
+  sharedWorksheetList: () => Worksheet[];
 };
 
 export type InstanceRoleSlice = {
@@ -490,6 +529,7 @@ export type AppStoreState = AuthSlice &
   DatabaseSlice &
   DBGroupSlice &
   SheetSlice &
+  WorksheetSlice &
   InstanceRoleSlice &
   GroupSlice &
   ServiceAccountSlice &

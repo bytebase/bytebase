@@ -2,11 +2,9 @@ import { MoreHorizontal, Star, Users, X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   type SheetViewMode,
@@ -40,14 +38,13 @@ export function TreeNodeSuffix({
 }: Props) {
   const { t } = useTranslation();
 
-  const worksheetStore = useWorkSheetStore();
   const { isWorksheetCreator } = useSheetContext();
 
-  const worksheetLite = usePiniaBridge(() => {
+  const worksheetLite = useAppStore((state) => {
     if (!node.worksheet) {
       return undefined;
     }
-    const sheet = worksheetStore.getWorksheetByName(node.worksheet.name);
+    const sheet = state.getWorksheetByName(node.worksheet.name);
     if (!sheet) {
       return undefined;
     }

@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
+import { useAppStore } from "@/react/stores/app";
 import { isValidProjectName } from "@/types";
 import {
   type Worksheet,
@@ -73,9 +74,8 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     folders,
     signal,
   }) => {
-    const { useWorkSheetStore } = await importStores();
     const tabStore = getSQLEditorTabsState();
-    const worksheetStore = useWorkSheetStore();
+    const worksheetStore = useAppStore.getState();
 
     const connection = await extractWorksheetConnection({ database });
 
@@ -131,10 +131,9 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     folders = [],
     database = "",
   }) => {
-    const { useWorkSheetStore } = await importStores();
     const editorStore = getSQLEditorEditorState();
     const tabStore = getSQLEditorTabsState();
-    const worksheetStore = useWorkSheetStore();
+    const worksheetStore = useAppStore.getState();
 
     const worksheetTitle = title ?? "";
     const connection = await extractWorksheetConnection({ database });
