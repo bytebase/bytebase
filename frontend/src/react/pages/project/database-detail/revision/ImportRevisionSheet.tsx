@@ -23,12 +23,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useReleaseStore,
-  useRevisionStore,
-  useSheetV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useRevisionStore, useSheetV1Store } from "@/store";
 import type {
   Release,
   Release_File,
@@ -73,7 +69,9 @@ export function ImportRevisionSheet({
   onCreated: (revisions: Revision[]) => void;
 }) {
   const { t } = useTranslation();
-  const releaseStore = useReleaseStore();
+  const listReleasesByProject = useAppStore(
+    (state) => state.listReleasesByProject
+  );
   const revisionStore = useRevisionStore();
   const sheetStore = useSheetV1Store();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,10 +107,9 @@ export function ImportRevisionSheet({
   const loadReleases = useCallback(async () => {
     setLoadingReleases(true);
     try {
-      const { releases } = await releaseStore.fetchReleasesByProject(
-        projectName,
-        { pageSize: 100 }
-      );
+      const { releases } = await listReleasesByProject(projectName, {
+        pageSize: 100,
+      });
       setReleaseList(releases);
     } catch (error) {
       pushNotification({
@@ -124,7 +121,7 @@ export function ImportRevisionSheet({
     } finally {
       setLoadingReleases(false);
     }
-  }, [projectName, releaseStore, t]);
+  }, [listReleasesByProject, projectName, t]);
 
   useEffect(() => {
     if (!open) {

@@ -7,15 +7,16 @@ import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
 import { ReleaseInfoCard } from "@/react/components/release/ReleaseInfoCard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
+import { useReleaseByName } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import {
   projectNamePrefix,
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
-  useReleaseStore,
   useSheetV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
@@ -61,7 +62,7 @@ export function IssueDetailStatementSection({
   const page = useIssueDetailContext();
   const { setEditing } = page;
   const sheetStore = useSheetV1Store();
-  const releaseStore = useReleaseStore();
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
@@ -73,10 +74,8 @@ export function IssueDetailStatementSection({
       ? spec.config.value.release
       : "";
   const sheetName = useMemo(() => sheetNameOfSpec(spec), [spec]);
-  const release = useVueState(() =>
-    isValidReleaseName(releaseName)
-      ? releaseStore.getReleaseByName(releaseName)
-      : undefined
+  const release = useReleaseByName(
+    isValidReleaseName(releaseName) ? releaseName : undefined
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isSheetOversize, setIsSheetOversize] = useState(false);
@@ -142,13 +141,13 @@ export function IssueDetailStatementSection({
 
     const load = async () => {
       if (isValidReleaseName(releaseName)) {
-        const cached = releaseStore.getReleaseByName(releaseName);
+        const cached = useAppStore.getState().getReleaseByName(releaseName);
         if (isValidReleaseName(cached.name)) {
           return;
         }
         try {
           setIsLoading(true);
-          await releaseStore.fetchReleaseByName(releaseName, true);
+          await fetchRelease(releaseName, true);
         } finally {
           if (!canceled) {
             setIsLoading(false);
@@ -187,7 +186,7 @@ export function IssueDetailStatementSection({
     return () => {
       canceled = true;
     };
-  }, [releaseName, releaseStore, sheetName, sheetStore]);
+  }, [fetchRelease, releaseName, sheetName, sheetStore]);
 
   if (isValidReleaseName(releaseName)) {
     return (
