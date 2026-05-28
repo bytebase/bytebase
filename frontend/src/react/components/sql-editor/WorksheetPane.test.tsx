@@ -19,17 +19,12 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useSheetContext: vi.fn(),
   useSheetContextByView: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
 }));
 
 vi.mock("@/views/sql-editor/Sheet", () => ({
@@ -265,20 +260,28 @@ const setupDefaultMocks = (overrides: Partial<Filter> = {}) => {
     ...overrides,
   };
 
+  // `filterRef.value` mirrors the migrated context's plain `filter` object;
+  // the component reads `filter` (a plain value) and writes via `setFilter`,
+  // which we wire to mutate the same holder so per-test assertions on
+  // `filterRef.value.*` observe the writes.
   const filterRef = { value: filter };
-  const filterChanged = { value: false };
+  const filterChanged = false;
 
   const batchUpdateWorksheetFolders = vi.fn().mockResolvedValue(undefined);
   const getFoldersForWorksheet = vi.fn((path: string): string[] =>
     path ? [path] : []
   );
 
-  mocks.useVueState.mockImplementation((getter) => getter());
-
   mocks.useSheetContext.mockReturnValue({
-    filter: filterRef,
+    get filter() {
+      return filterRef.value;
+    },
     filterChanged,
     batchUpdateWorksheetFolders,
+    setFilter: vi.fn((next: Filter | ((prev: Filter) => Filter)) => {
+      filterRef.value =
+        typeof next === "function" ? next(filterRef.value) : next;
+    }),
   });
 
   mocks.useSheetContextByView.mockReturnValue({

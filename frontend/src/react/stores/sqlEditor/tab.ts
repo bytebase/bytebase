@@ -324,80 +324,49 @@ export const useSQLEditorTabsStore: UseBoundStore<
     },
 
     updateDatabaseQueryContext({ database, contextId, context }) {
-      const id = get().currentTabId;
-      const tab = get().tabsById.get(id);
-      if (!tab?.databaseQueryContexts?.has(database)) return undefined;
-      const index = tab.databaseQueryContexts
-        .get(database)
-        ?.findIndex((c) => c.id === contextId);
-      if (index === undefined || index < 0) return undefined;
+      // Resolve the tab that OWNS this context by its globally-unique id
+      // rather than assuming `currentTabId`. A query that completes after
+      // the user switches tabs must still update its own tab's context —
+      // the Vue original mutated the reactive context object directly,
+      // which had the same cross-tab effect; immer freezes store objects
+      // so React must route through this action, hence the lookup.
+      const owner = locateDatabaseQueryContext(
+        get().tabsById,
+        database,
+        contextId
+      );
+      if (!owner) return undefined;
       set((s) => {
-        const draftTab = s.tabsById.get(id);
-        const arr = draftTab?.databaseQueryContexts?.get(database);
-        const target = arr?.[index];
+        const target = s.tabsById
+          .get(owner.tabId)
+          ?.databaseQueryContexts?.get(database)?.[owner.index];
         if (!target) return;
         Object.assign(target, context);
       });
-      return get().tabsById.get(id)?.databaseQueryContexts?.get(database)?.[
-        index
-      ];
+      return get()
+        .tabsById.get(owner.tabId)
+        ?.databaseQueryContexts?.get(database)?.[owner.index];
     },
 
     async initProject(project) {
-      await migrateDraftsFromCache(project);
-      migrateTabViewState(project);
-
-      let email = "";
+      // Dedupe concurrent inits for the same project. During bootstrap
+      // the editor-state subscriber fires a fire-and-forget initProject
+      // while SQLEditorRouteShell separately awaits initProject and then
+      // opens the URL route tab. Sharing one in-flight hydration prevents
+      // the unawaited copy from resolving afterwards and replacing
+      // `tabsById` — which would drop the just-opened route tab.
+      if (_initProjectInFlight?.project === project) {
+        return _initProjectInFlight.promise;
+      }
+      const promise = hydrateProjectTabs(project);
+      _initProjectInFlight = { project, promise };
       try {
-        email = useCurrentUserV1()?.value?.email ?? "";
-      } catch {
-        email = "";
+        await promise;
+      } finally {
+        if (_initProjectInFlight?.project === project) {
+          _initProjectInFlight = undefined;
+        }
       }
-
-      const storedTabs = readOpenTabs(project, email);
-      const worksheetStore = useWorkSheetStore();
-
-      const hydratedTabs: SQLEditorTab[] = [];
-      const validPersistent: PersistentTab[] = [];
-      const seen = new Set<string>();
-
-      for (const persisted of storedTabs) {
-        if (seen.has(persisted.id)) continue;
-        if (!persisted.worksheet) continue;
-
-        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
-          persisted.worksheet,
-          true
-        );
-        if (!worksheet) continue;
-
-        const statement = getSheetStatement(worksheet);
-        const connection = await extractWorksheetConnection(worksheet);
-
-        const fullTab: SQLEditorTab = {
-          ...defaultSQLEditorTab(),
-          ...omitBy(persisted, isUndefined),
-          connection,
-          worksheet: worksheet.name,
-          title: worksheet.title,
-          statement,
-          status: "CLEAN",
-          databaseQueryContexts: undefined,
-        };
-
-        seen.add(persisted.id);
-        validPersistent.push(persisted);
-        hydratedTabs.push(fullTab);
-      }
-
-      set((s) => {
-        s.tabsById = new Map(hydratedTabs.map((t) => [t.id, t]));
-        s.openTmpTabList = validPersistent;
-        s.currentTabId = head(validPersistent)?.id ?? "";
-      });
-
-      persistOpenTabs(validPersistent);
-      persistCurrentTabId(get().currentTabId);
     },
 
     reset() {
@@ -409,6 +378,91 @@ export const useSQLEditorTabsStore: UseBoundStore<
     },
   }))
 );
+
+// Tracks an in-flight `initProject` so concurrent callers share one
+// hydration (see the dedupe note in the action above).
+let _initProjectInFlight:
+  | { project: string; promise: Promise<void> }
+  | undefined;
+
+// Hydrates the persisted tabs for a project and commits them to the
+// store. Extracted from the `initProject` action so the action can wrap
+// it with in-flight dedup; uses the store's external setState/getState
+// (immer-enabled) rather than the action closure's set/get.
+const hydrateProjectTabs = async (project: string): Promise<void> => {
+  await migrateDraftsFromCache(project);
+  migrateTabViewState(project);
+
+  let email = "";
+  try {
+    email = useCurrentUserV1()?.value?.email ?? "";
+  } catch {
+    email = "";
+  }
+
+  const storedTabs = readOpenTabs(project, email);
+  const worksheetStore = useWorkSheetStore();
+
+  const hydratedTabs: SQLEditorTab[] = [];
+  const validPersistent: PersistentTab[] = [];
+  const seen = new Set<string>();
+
+  for (const persisted of storedTabs) {
+    if (seen.has(persisted.id)) continue;
+    if (!persisted.worksheet) continue;
+
+    const worksheet = await worksheetStore.getOrFetchWorksheetByName(
+      persisted.worksheet,
+      true
+    );
+    if (!worksheet) continue;
+
+    const statement = getSheetStatement(worksheet);
+    const connection = await extractWorksheetConnection(worksheet);
+
+    const fullTab: SQLEditorTab = {
+      ...defaultSQLEditorTab(),
+      ...omitBy(persisted, isUndefined),
+      connection,
+      worksheet: worksheet.name,
+      title: worksheet.title,
+      statement,
+      status: "CLEAN",
+      databaseQueryContexts: undefined,
+    };
+
+    seen.add(persisted.id);
+    validPersistent.push(persisted);
+    hydratedTabs.push(fullTab);
+  }
+
+  useSQLEditorTabsStore.setState({
+    tabsById: new Map(hydratedTabs.map((t) => [t.id, t])),
+    openTmpTabList: validPersistent,
+    currentTabId: head(validPersistent)?.id ?? "",
+  });
+
+  persistOpenTabs(validPersistent);
+  persistCurrentTabId(useSQLEditorTabsStore.getState().currentTabId);
+};
+
+// Locates the tab + index owning a query context. Context ids are
+// globally unique (uuid), so a context is found regardless of which tab
+// is currently active — this is what lets an async query that completes
+// after the user switched tabs still resolve to its own tab.
+const locateDatabaseQueryContext = (
+  tabsById: Map<string, SQLEditorTab>,
+  database: string,
+  contextId: string
+): { tabId: string; index: number } | undefined => {
+  for (const [tabId, tab] of tabsById) {
+    const arr = tab.databaseQueryContexts?.get(database);
+    if (!arr) continue;
+    const index = arr.findIndex((c) => c.id === contextId);
+    if (index >= 0) return { tabId, index };
+  }
+  return undefined;
+};
 
 const upsertOpenTabDraft = (
   state: { openTmpTabList: PersistentTab[]; currentTabId: string },
@@ -444,6 +498,26 @@ export const getSQLEditorTabsState = (): SQLEditorTabsState =>
 export const getCurrentSQLEditorTab = (): SQLEditorTab | undefined => {
   const s = getSQLEditorTabsState();
   return s.tabsById.get(s.currentTabId);
+};
+
+/**
+ * Live read of a query context by (database, contextId) across all tabs.
+ * The execute flow uses this to re-read a context after an async step
+ * without assuming it still lives in the active tab.
+ */
+export const getDatabaseQueryContext = (
+  database: string,
+  contextId: string
+): SQLEditorDatabaseQueryContext | undefined => {
+  const owner = locateDatabaseQueryContext(
+    getSQLEditorTabsState().tabsById,
+    database,
+    contextId
+  );
+  if (!owner) return undefined;
+  return getSQLEditorTabsState()
+    .tabsById.get(owner.tabId)
+    ?.databaseQueryContexts?.get(database)?.[owner.index];
 };
 
 export const subscribeSQLEditorTabsState = (
@@ -484,6 +558,7 @@ subscribeSQLEditorEditorState((state) => {
 // `setProject(...)` re-triggers `initProject` in tests.
 export const __resetTabStoreProjectCursor = () => {
   _lastInitializedProject = undefined;
+  _initProjectInFlight = undefined;
 };
 
 // ---------- Derived hooks ----------

@@ -10,7 +10,6 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   Trans: vi.fn(),
 }));
@@ -30,25 +29,11 @@ vi.mock("react-i18next", () => ({
   ),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
-vi.mock("@/store", () => ({
-  // Transitive imports from AdminModeButton — provide stubs.
-}));
-
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+// `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook
+// (the deleted tab-vue-state shim re-exported it). It returns PLAIN values
+// `{ connection, database, instance, environment }` — no Vue refs.
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: vi.fn(() => ({
-    currentTab: undefined,
-    isDisconnected: true,
-    updateCurrentTab: vi.fn(),
-  })),
-}));
-
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: vi.fn(() => ({ allowAdmin: false })),
 }));
 
 vi.mock("@/react/components/instance/constants", () => ({
@@ -88,14 +73,11 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-  mocks.useVueState.mockImplementation((getter) => getter());
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
     instance: {
-      value: {
-        name: "instances/pg1",
-        title: "Production PG",
-        engine: Engine.POSTGRES,
-      },
+      name: "instances/pg1",
+      title: "Production PG",
+      engine: Engine.POSTGRES,
     },
   });
   ({ ReadonlyModeNotSupported } = await import("./ReadonlyModeNotSupported"));

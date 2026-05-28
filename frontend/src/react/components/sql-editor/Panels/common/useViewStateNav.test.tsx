@@ -38,19 +38,20 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
+// Build the Zustand-shaped state slice the hook's selectors read from.
+const tabsState = () => ({
+  currentTabId: "t1",
+  tabsById: new Map([["t1", mocks.currentTab]]),
+  updateTab: mocks.updateTab,
+});
+
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: () => ({
-    updateTab: mocks.updateTab,
-    get currentTab() {
-      return mocks.currentTab;
-    },
-  }),
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  // Selector hook — run against the stubbed tabs state.
+  useSQLEditorTabState: (selector: (s: unknown) => unknown) =>
+    selector(tabsState()),
+  getSQLEditorTabsState: () => tabsState(),
 }));
 
 vi.mock("@/types", () => ({

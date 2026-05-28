@@ -170,10 +170,13 @@ const setupDefaultMocks = () => {
     makeFolderNode("/my/bar"),
   ]);
 
+  // The migrated `useSheetContextByView` returns plain values:
+  // `folderTree` is a WorksheetFolderNode (not a Vue ref) and
+  // `folderContext.rootPath` is a plain string.
   const viewContext = {
-    folderTree: { value: rootNode },
+    folderTree: rootNode,
     folderContext: {
-      rootPath: { value: "/my" },
+      rootPath: "/my",
     },
   };
 

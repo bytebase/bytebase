@@ -9,8 +9,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
+  // Selector hook over the Zustand tabs store; returns the current tab's
+  // `connection.schema` (and `currentTabId` for the seed effect).
+  tabSchema: undefined as string | undefined,
+  currentTabId: "tab1",
+  getSQLEditorTabsState: vi.fn(),
   useDBSchemaV1Store: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   instanceAllowsSchemaScopedQuery: vi.fn(),
@@ -23,17 +27,32 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { connection: { schema?: string } }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: mocks.currentTabId,
+      tabsById: new Map([
+        [mocks.currentTabId, { connection: { schema: mocks.tabSchema } }],
+      ]),
+    }),
+  getSQLEditorTabsState: mocks.getSQLEditorTabsState,
 }));
 
 vi.mock("@/utils", () => ({
@@ -92,22 +111,26 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 const mockConnection = {
-  instance: { value: { engine: "MYSQL" } },
-  database: { value: { name: "instances/inst1/databases/db1" } },
+  instance: { engine: "MYSQL" },
+  database: { name: "instances/inst1/databases/db1" },
 };
 
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue(mockConnection);
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { connection: { schema: undefined } },
+  mocks.tabSchema = undefined;
+  mocks.currentTabId = "tab1";
+  mocks.getSQLEditorTabsState.mockReturnValue({
+    currentTabId: "tab1",
+    tabsById: new Map([["tab1", { connection: {} }]]),
+    updateCurrentTab: vi.fn(),
   });
   mocks.useDBSchemaV1Store.mockReturnValue({
     getDatabaseMetadata: vi.fn(() => ({
       schemas: [{ name: "public" }, { name: "private" }],
     })),
   });
-  mocks.useVueState.mockImplementation((getter) => getter());
+  mocks.usePiniaBridge.mockImplementation((getter) => getter());
   mocks.instanceAllowsSchemaScopedQuery.mockReturnValue(true);
   ({ SchemaChooser } = await import("./SchemaChooser"));
 });
@@ -154,18 +177,8 @@ describe("SchemaChooser", () => {
     unmount();
   });
 
-  test("selecting unspecified sets tab.connection.schema to undefined", () => {
-    const tab = { connection: { schema: "public" } };
-    mocks.useSQLEditorTabStore.mockReturnValue({ currentTab: tab });
-
-    // Import fresh copy with updated mock
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation((getter) => {
-      callIdx++;
-      // 1: engine, 2: databaseName, 3: tabSchema, 4: schemas, 5: queryParam
-      if (callIdx === 3) return "public";
-      return getter();
-    });
+  test("is chosen when a schema is selected on the tab", () => {
+    mocks.tabSchema = "public";
 
     const { container, render, unmount } = renderIntoContainer(
       <SchemaChooser />

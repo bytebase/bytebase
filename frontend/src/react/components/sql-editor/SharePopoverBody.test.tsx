@@ -9,11 +9,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   useActuatorV1Store: vi.fn(),
   useCurrentUserV1: vi.fn(),
   useWorkSheetStore: vi.fn(),
-  useSQLEditorTabStore: vi.fn(),
+  // `useSQLEditorTabState(selector)` runs `selector` against this stub
+  // state; the component selects `tabsById.get(currentTabId)?.status`.
+  tabStatus: "CLEAN" as string,
   pushNotification: vi.fn(),
   extractProjectResourceName: vi.fn(
     (name: string) => name.split("/")[1] ?? name
@@ -26,8 +28,8 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
@@ -37,8 +39,17 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { status: string }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "t1",
+      tabsById: new Map([["t1", { status: mocks.tabStatus }]]),
+    }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -125,11 +136,9 @@ beforeEach(async () => {
   mocks.useWorkSheetStore.mockReturnValue({
     patchWorksheet: vi.fn().mockResolvedValue({}),
   });
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { status: "CLEAN" },
-  });
+  mocks.tabStatus = "CLEAN";
 
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+  mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
 
   // Mock clipboard
   Object.defineProperty(navigator, "clipboard", {
@@ -178,7 +187,9 @@ describe("SharePopoverBody", () => {
     mocks.useCurrentUserV1.mockReturnValue({
       value: { email: "other@example.com", name: "users/other@example.com" },
     });
-    mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+    mocks.usePiniaBridge.mockImplementation((getter: () => unknown) =>
+      getter()
+    );
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />
@@ -239,10 +250,10 @@ describe("SharePopoverBody", () => {
   });
 
   test("copy button disabled when currentTab status is not CLEAN", () => {
-    mocks.useSQLEditorTabStore.mockReturnValue({
-      currentTab: { status: "DIRTY" },
-    });
-    mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+    mocks.tabStatus = "DIRTY";
+    mocks.usePiniaBridge.mockImplementation((getter: () => unknown) =>
+      getter()
+    );
 
     const { container, render, unmount } = renderIntoContainer(
       <SharePopoverBody worksheet={mockWorksheet as never} />

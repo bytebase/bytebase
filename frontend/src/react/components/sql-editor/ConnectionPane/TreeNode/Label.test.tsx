@@ -17,11 +17,8 @@ vi.mock("./DatabaseNode", () => ({
 vi.mock("./LabelNode", () => ({
   LabelNode: () => <div data-testid="LabelNode" />,
 }));
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: () => false,
-}));
-vi.mock("@/store", () => ({
-  featureToRef: () => ({ value: false }),
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useSQLEditorFeature: () => false,
 }));
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
   PlanFeature: { FEATURE_ENVIRONMENT_TIERS: "FEATURE_ENVIRONMENT_TIERS" },

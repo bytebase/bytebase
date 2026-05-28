@@ -8,7 +8,6 @@ import type { SQLEditorTreeNode } from "@/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   allowAdmin: false,
   sqlEditorEventsEmit: vi.fn().mockResolvedValue(undefined),
   setShowConnectionPanel: vi.fn(),
@@ -19,18 +18,20 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: () => ({ currentTab: null }),
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useSQLEditorAllowAdmin: () => mocks.allowAdmin,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: () => ({ allowAdmin: mocks.allowAdmin }),
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: "projects/p" }),
+  // `tab.ts` (pulled in via `getSQLEditorTabsState`) subscribes to the
+  // editor store at import time; provide a no-op subscriber + getter so
+  // the real tabs store module initializes cleanly.
+  getSQLEditorEditorState: () => ({ project: "projects/p" }),
+  subscribeSQLEditorEditorState: () => () => {},
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -140,7 +141,6 @@ const makeDatabaseNode = (
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useVueState.mockImplementation((getter) => getter());
   mocks.allowAdmin = false;
   ({ useConnectionMenu } = await import("./actions"));
 });

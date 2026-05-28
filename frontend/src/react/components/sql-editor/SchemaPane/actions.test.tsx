@@ -56,10 +56,15 @@ vi.mock("@/store", () => ({
   useDBSchemaV1Store: () => ({ getTableMetadata: mocks.getTableMetadata }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: () => ({
-    currentTab: { id: "t1", viewState: { schema: "" } },
-    openTabList: [],
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  // actions.tsx only reaches the store imperatively via getSQLEditorTabsState
+  // when a menu handler runs; building the menu items (what these tests
+  // capture) never touches it. Provide the full surface anyway so any
+  // invoked handler stays a no-op.
+  getSQLEditorTabsState: () => ({
+    currentTabId: "t1",
+    tabsById: new Map([["t1", { id: "t1", viewState: { schema: "" } }]]),
+    openTmpTabList: [],
     addTab: vi.fn(),
     setCurrentTabId: vi.fn(),
     updateCurrentTab: vi.fn(),

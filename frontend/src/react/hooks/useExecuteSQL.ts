@@ -6,7 +6,10 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
 import { getSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
-import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
+import {
+  getDatabaseQueryContext,
+  getSQLEditorTabsState,
+} from "@/react/stores/sqlEditor/tab";
 import {
   hasFeature,
   pushNotification,
@@ -321,13 +324,12 @@ export const useExecuteSQL = () => {
 
       // After the EXECUTING transition, re-read the live context from
       // the store so the abortController set during the transition is
-      // visible. For ad-hoc contexts the store action bails and the
-      // `changeContextStatus` fallback wrote directly into `context`.
+      // visible. Resolve by (database, contextId) across tabs — not the
+      // current tab — so a query whose tab was switched away still finds
+      // its own context. For ad-hoc contexts the store action bails and
+      // the `changeContextStatus` fallback wrote directly into `context`.
       const liveContext =
-        getSQLEditorTabsState()
-          .tabsById.get(getSQLEditorTabsState().currentTabId)
-          ?.databaseQueryContexts?.get(database.name)
-          ?.find((c) => c.id === context.id) ?? context;
+        getDatabaseQueryContext(database.name, context.id) ?? context;
       const { abortController } = liveContext;
       if (!abortController) {
         return;
