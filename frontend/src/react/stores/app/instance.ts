@@ -9,11 +9,7 @@ import {
   UNKNOWN_INSTANCE_NAME,
 } from "@/types/v1/instance";
 import type { AppSliceCreator, InstanceSlice } from "./types";
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  return new Error(String(error));
-}
+import { toError } from "./utils";
 
 export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
   set,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import {
   getProjectResourceId,
   isConnectAlreadyExists,
@@ -262,6 +263,39 @@ export function useInstance(name: string | undefined) {
     }
   }, [fetchInstance, name]);
   return instance;
+}
+
+export function useGroups() {
+  const groupsByName = useAppStore((state) => state.groupsByName);
+  return useMemo(
+    () =>
+      Object.values(groupsByName).sort((a, b) => a.name.localeCompare(b.name)),
+    [groupsByName]
+  );
+}
+
+export function useGroupByIdentifier(id: string) {
+  return useAppStore((state) => state.getGroupByIdentifier(id));
+}
+
+export function useServiceAccount(name: string) {
+  return useAppStore(useShallow((state) => state.getServiceAccount(name)));
+}
+
+export function useWorkloadIdentity(name: string) {
+  return useAppStore(useShallow((state) => state.getWorkloadIdentity(name)));
+}
+
+export function useIdentityProviderList() {
+  return useAppStore(useShallow((state) => state.identityProviderList()));
+}
+
+export function useIdentityProvider(name: string) {
+  return useAppStore((state) => state.identityProvidersByName[name]);
+}
+
+export function useAccessGrant(name: string) {
+  return useAppStore((state) => state.accessGrantsByName[name]);
 }
 
 export function useProjectList(query: string) {

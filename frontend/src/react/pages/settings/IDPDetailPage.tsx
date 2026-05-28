@@ -23,10 +23,10 @@ import {
 } from "@/react/components/ui/dialog";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDERS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification } from "@/store";
-import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
   getIdentityProviderResourceId,
   idpNamePrefix,
@@ -1106,7 +1106,15 @@ function extractConfigState(idp: IdentityProvider) {
 
 export function IDPDetailPage() {
   const { t } = useTranslation();
-  const identityProviderStore = useIdentityProviderStore();
+  const fetchIdentityProvider = useAppStore(
+    (state) => state.fetchIdentityProvider
+  );
+  const updateIdentityProvider = useAppStore(
+    (state) => state.updateIdentityProvider
+  );
+  const deleteIdentityProvider = useAppStore(
+    (state) => state.deleteIdentityProvider
+  );
 
   // Reactively read idpId from Vue Router's current route params
   const idpId = useVueState(
@@ -1179,8 +1187,7 @@ export function IDPDetailPage() {
     setLocalIdp(null);
     initializedRef.current = false;
 
-    identityProviderStore
-      .getOrFetchIdentityProviderByName(idpName)
+    fetchIdentityProvider(idpName)
       .then((idp) => {
         if (cancelled) return;
         if (idp) {
@@ -1200,7 +1207,7 @@ export function IDPDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [idpName, identityProviderStore, initializeFromIdp]);
+  }, [idpName, fetchIdentityProvider, initializeFromIdp]);
 
   const resourceId = useMemo(() => {
     if (!localIdp) return "";
@@ -1328,8 +1335,7 @@ export function IDPDetailPage() {
 
     setIsUpdating(true);
     try {
-      const updatedProvider =
-        await identityProviderStore.patchIdentityProvider(updated);
+      const updatedProvider = await updateIdentityProvider(updated);
 
       pushNotification({
         module: "bytebase",
@@ -1369,7 +1375,7 @@ export function IDPDetailPage() {
     if (!originalIdp) return;
 
     try {
-      await identityProviderStore.deleteIdentityProvider(originalIdp.name);
+      await deleteIdentityProvider(originalIdp.name);
 
       pushNotification({
         module: "bytebase",

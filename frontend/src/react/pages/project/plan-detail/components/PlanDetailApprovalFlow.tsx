@@ -7,7 +7,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/connect";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
@@ -16,12 +16,13 @@ import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
+import { ensureGroupIdentifier } from "@/react/stores/app/group";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useCurrentUserV1,
-  useGroupStore,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useUserStore,
@@ -663,10 +664,20 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUserV1().value;
-  const groupStore = useGroupStore();
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const userStore = useUserStore();
+  const batchGetOrFetchGroups = useAppStore(
+    (state) => state.batchGetOrFetchGroups
+  );
+  const groupsByName = useAppStore((state) => state.groupsByName);
+  // Resolve groups from the app store cache the prefetch above populates.
+  // Depending on `groupsByName` makes candidate computation recompute once
+  // the prefetched groups arrive.
+  const getGroupByIdentifier = useCallback(
+    (identifier: string) => groupsByName[ensureGroupIdentifier(identifier)],
+    [groupsByName]
+  );
   const [potentialApprovers, setPotentialApprovers] = useState<UserMessage[]>(
     []
   );
@@ -734,12 +745,16 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   );
 
   useEffect(() => {
-    void groupStore.batchGetOrFetchGroups(groupNames).catch(() => undefined);
-  }, [groupNames, groupStore]);
+    void batchGetOrFetchGroups(groupNames).catch(() => undefined);
+  }, [groupNames, batchGetOrFetchGroups]);
 
   const candidateEmailsKey = useMemo(() => {
     if (!projectIamPolicy) return "";
-    const memberMap = memberMapToRolesInProjectIAM(projectIamPolicy, step);
+    const memberMap = memberMapToRolesInProjectIAM(
+      projectIamPolicy,
+      step,
+      getGroupByIdentifier
+    );
     const candidates: string[] = [];
     for (const fullname of memberMap.keys()) {
       if (fullname.startsWith(userNamePrefix)) {
@@ -747,7 +762,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
       }
     }
     return [...new Set(candidates)].sort().join("\u0000");
-  }, [projectIamPolicy, step]);
+  }, [projectIamPolicy, step, getGroupByIdentifier]);
   const candidateEmails = useMemo(
     () => (candidateEmailsKey ? candidateEmailsKey.split("\u0000") : []),
     [candidateEmailsKey]

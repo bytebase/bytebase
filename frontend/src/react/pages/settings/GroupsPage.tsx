@@ -47,13 +47,13 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  useGroupStore,
   useSettingV1Store,
   useSubscriptionV1Store,
   useUserStore,
@@ -118,8 +118,8 @@ function GroupTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const groupStore = useGroupStore();
   const userStore = useUserStore();
+  const deleteGroup = useAppStore((state) => state.deleteGroup);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [memberCache, setMemberCache] = useState<Map<string, User[]>>(
@@ -217,7 +217,7 @@ function GroupTable({
       if (!confirmed) return;
 
       try {
-        await groupStore.deleteGroup(group.name);
+        await deleteGroup(group.name);
         onGroupDeleted(group);
         pushNotification({
           module: "bytebase",
@@ -228,7 +228,7 @@ function GroupTable({
         // error shown by store
       }
     },
-    [groupStore, onGroupDeleted, t]
+    [deleteGroup, onGroupDeleted, t]
   );
 
   if (groups.length === 0) {
@@ -482,12 +482,14 @@ function GroupForm({
   onRemoved,
 }: Omit<CreateGroupSheetProps, "open">) {
   const { t } = useTranslation();
-  const groupStore = useGroupStore();
   const settingV1Store = useSettingV1Store();
   const actuatorStore = useActuatorV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const userStore = useUserStore();
+  const createGroup = useAppStore((state) => state.createGroup);
+  const updateGroup = useAppStore((state) => state.updateGroup);
+  const deleteGroup = useAppStore((state) => state.deleteGroup);
 
   const isEditMode = !!group;
   const workspaceDomains = useVueState(
@@ -655,7 +657,7 @@ function GroupForm({
           description,
           members: dedupedMembers,
         });
-        const updated = await groupStore.updateGroup(validGroup);
+        const updated = await updateGroup(validGroup);
         onUpdated(updated);
         pushNotification({
           module: "bytebase",
@@ -669,7 +671,7 @@ function GroupForm({
           description,
           members: dedupedMembers,
         });
-        const created = await groupStore.createGroup(validGroup);
+        const created = await createGroup(validGroup);
         onUpdated(created);
         pushNotification({
           module: "bytebase",
@@ -689,7 +691,7 @@ function GroupForm({
     if (!group) return;
     setIsRequesting(true);
     try {
-      await groupStore.deleteGroup(group.name);
+      await deleteGroup(group.name);
       onRemoved(group);
       pushNotification({
         module: "bytebase",
@@ -930,7 +932,8 @@ export function GroupsPage() {
   const { t } = useTranslation();
   const subscriptionStore = useSubscriptionV1Store();
   const settingV1Store = useSettingV1Store();
-  const groupStore = useGroupStore();
+  const listGroups = useAppStore((state) => state.listGroups);
+  const fetchGroup = useAppStore((state) => state.fetchGroup);
 
   const hasUserGroupFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_USER_GROUPS)
@@ -953,14 +956,14 @@ export function GroupsPage() {
   // Groups paged data
   const fetchGroups = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const { groups, nextPageToken } = await groupStore.fetchGroupList({
+      const { groups, nextPageToken } = await listGroups({
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         filter: { query: groupSearchText },
       });
       return { list: groups, nextPageToken };
     },
-    [groupStore, groupSearchText]
+    [listGroups, groupSearchText]
   );
 
   const hasGroupListPermission = hasWorkspacePermissionV2("bb.groups.list");
@@ -981,8 +984,7 @@ export function GroupsPage() {
           ...router.currentRoute.value,
           query: {},
         });
-        groupStore
-          .getOrFetchGroupByIdentifier(name)
+        fetchGroup(name)
           .then((group) => {
             if (group) {
               setEditingGroup(group);

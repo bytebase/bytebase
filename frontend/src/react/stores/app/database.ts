@@ -8,11 +8,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  return new Error(String(error));
-}
+import { toError } from "./utils";
 
 export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
   set,

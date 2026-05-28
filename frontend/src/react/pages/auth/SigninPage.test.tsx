@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   openWindowForSSO: vi.fn(),
   actuatorStore: null as unknown,
-  identityProviderStore: null as unknown,
+  identityProviderList: [] as unknown[],
+  listIdentityProviders: vi.fn(),
   authStore: null as unknown,
 }));
 
@@ -40,7 +41,22 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useActuatorV1Store: () => mocks.actuatorStore,
   useAuthStore: () => mocks.authStore,
-  useIdentityProviderStore: () => mocks.identityProviderStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        identityProviderList: () => mocks.identityProviderList,
+        listIdentityProviders: mocks.listIdentityProviders,
+      }),
+    {
+      getState: () => ({
+        identityProviderList: () => mocks.identityProviderList,
+        listIdentityProviders: mocks.listIdentityProviders,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/utils", () => ({
@@ -103,22 +119,20 @@ beforeEach(async () => {
     activeUserCount: 1,
     fetchServerInfo: vi.fn(async () => ({})),
   };
-  mocks.identityProviderStore = {
-    identityProviderList: [
-      {
-        name: "idps/corp-ldap",
-        title: "Corp LDAP",
-        type: IdentityProviderType.LDAP,
-      },
-    ],
-    fetchIdentityProviderList: vi.fn(async () => [
-      {
-        name: "idps/corp-ldap",
-        title: "Corp LDAP",
-        type: IdentityProviderType.LDAP,
-      },
-    ]),
-  };
+  mocks.identityProviderList = [
+    {
+      name: "idps/corp-ldap",
+      title: "Corp LDAP",
+      type: IdentityProviderType.LDAP,
+    },
+  ];
+  mocks.listIdentityProviders.mockResolvedValue([
+    {
+      name: "idps/corp-ldap",
+      title: "Corp LDAP",
+      type: IdentityProviderType.LDAP,
+    },
+  ]);
   mocks.authStore = {
     login: vi.fn(async () => {}),
   };

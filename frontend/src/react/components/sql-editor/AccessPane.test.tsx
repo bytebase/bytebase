@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     highlightAccessGrantName: undefined as string | undefined,
   },
   setHighlightAccessGrantName: vi.fn(),
-  useAccessGrantStore: vi.fn(),
+  searchMyAccessGrants: vi.fn(),
   useIssueV1Store: vi.fn(),
   useDatabaseV1Store: vi.fn(),
   hasFeature: vi.fn(() => true),
@@ -37,10 +37,16 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
-  useAccessGrantStore: mocks.useAccessGrantStore,
   useIssueV1Store: mocks.useIssueV1Store,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      searchMyAccessGrants: mocks.searchMyAccessGrants,
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
@@ -71,8 +77,6 @@ vi.mock("@/react/stores/sqlEditor", () => ({
     }
   ),
 }));
-
-vi.mock("@/store/modules/accessGrant", () => ({}));
 
 vi.mock("@/utils", () => ({
   getDefaultPagination: mocks.getDefaultPagination,
@@ -244,11 +248,9 @@ const setupDefaultMocks = () => {
 
   mocks.state.highlightAccessGrantName = undefined;
 
-  mocks.useAccessGrantStore.mockReturnValue({
-    searchMyAccessGrants: vi.fn().mockResolvedValue({
-      accessGrants: [],
-      nextPageToken: "",
-    }),
+  mocks.searchMyAccessGrants.mockResolvedValue({
+    accessGrants: [],
+    nextPageToken: "",
   });
 
   mocks.useIssueV1Store.mockReturnValue({
@@ -293,14 +295,12 @@ describe("AccessPane", () => {
 
   test("loading state — shows spinner while loading", async () => {
     let resolveSearch: (val: unknown) => void = () => {};
-    mocks.useAccessGrantStore.mockReturnValue({
-      searchMyAccessGrants: vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveSearch = resolve;
-          })
-      ),
-    });
+    mocks.searchMyAccessGrants.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSearch = resolve;
+        })
+    );
 
     const { container, render, unmount } = renderIntoContainer(<AccessPane />);
     render();
@@ -321,11 +321,9 @@ describe("AccessPane", () => {
 
   test("renders grants list when populated", async () => {
     const grants = [makeGrant("grant1"), makeGrant("grant2")];
-    mocks.useAccessGrantStore.mockReturnValue({
-      searchMyAccessGrants: vi.fn().mockResolvedValue({
-        accessGrants: grants,
-        nextPageToken: "",
-      }),
+    mocks.searchMyAccessGrants.mockResolvedValue({
+      accessGrants: grants,
+      nextPageToken: "",
     });
     mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
@@ -380,11 +378,9 @@ describe("AccessPane", () => {
 
   test("click Run on a grant → emits execute-sql event", async () => {
     const grant = makeGrant("grant1");
-    mocks.useAccessGrantStore.mockReturnValue({
-      searchMyAccessGrants: vi.fn().mockResolvedValue({
-        accessGrants: [grant],
-        nextPageToken: "",
-      }),
+    mocks.searchMyAccessGrants.mockResolvedValue({
+      accessGrants: [grant],
+      nextPageToken: "",
     });
     mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 

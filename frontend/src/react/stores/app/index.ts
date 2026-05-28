@@ -1,15 +1,20 @@
 import { create } from "zustand";
+import { createAccessGrantSlice } from "./accessGrant";
 import { createAuthSlice } from "./auth";
 import { createDatabaseSlice } from "./database";
 import { createDBGroupSlice } from "./dbGroup";
+import { createGroupSlice } from "./group";
 import { createIamSlice } from "./iam";
+import { createIdentityProviderSlice } from "./identityProvider";
 import { createInstanceSlice } from "./instance";
 import { createInstanceRoleSlice } from "./instanceRole";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
+import { createServiceAccountSlice } from "./serviceAccount";
 import { createSheetSlice } from "./sheet";
 import { createWorkspaceSlice } from "./workspace";
+import { createWorkloadIdentitySlice } from "./workloadIdentity";
 
 export type { AppStoreState } from "./types";
 export {
@@ -31,6 +36,11 @@ export const createAppStore = () =>
     ...createDBGroupSlice(...args),
     ...createSheetSlice(...args),
     ...createInstanceRoleSlice(...args),
+    ...createGroupSlice(...args),
+    ...createServiceAccountSlice(...args),
+    ...createWorkloadIdentitySlice(...args),
+    ...createIdentityProviderSlice(...args),
+    ...createAccessGrantSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));

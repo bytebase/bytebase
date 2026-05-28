@@ -7,11 +7,7 @@ import {
   ListDatabaseGroupsRequestSchema,
 } from "@/types/proto-es/v1/database_group_service_pb";
 import type { AppSliceCreator, DBGroupSlice } from "./types";
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  return new Error(String(error));
-}
+import { toError } from "./utils";
 
 export const createDBGroupSlice: AppSliceCreator<DBGroupSlice> = (
   set,
