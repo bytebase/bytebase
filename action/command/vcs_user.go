@@ -24,7 +24,8 @@ func getVCSUser(platform world.JobPlatform) *v1pb.VCSUser {
 }
 
 func getGitHubVCSUser() *v1pb.VCSUser {
-	if os.Getenv("GITHUB_EVENT_NAME") != "pull_request" {
+	eventName := os.Getenv("GITHUB_EVENT_NAME")
+	if eventName != "pull_request" && eventName != "pull_request_target" {
 		return nil
 	}
 	eventPath := os.Getenv("GITHUB_EVENT_PATH")
@@ -63,45 +64,11 @@ func getGitHubVCSUser() *v1pb.VCSUser {
 }
 
 func getGitLabVCSUser() *v1pb.VCSUser {
-	if os.Getenv("CI_PIPELINE_SOURCE") != "merge_request_event" {
-		return nil
-	}
-	userID := os.Getenv("GITLAB_USER_ID")
-	if userID == "" {
-		return nil
-	}
-	userName := os.Getenv("GITLAB_USER_LOGIN")
-	if userName == "" {
-		userName = os.Getenv("GITLAB_USER_NAME")
-	}
-	if isBotUser("", userName) {
-		return nil
-	}
-	return &v1pb.VCSUser{
-		VcsType:     v1pb.VCSType_GITLAB,
-		UserId:      userID,
-		UserName:    userName,
-		DisplayName: os.Getenv("GITLAB_USER_NAME"),
-	}
+	return nil
 }
 
 func getBitbucketVCSUser() *v1pb.VCSUser {
-	if os.Getenv("BITBUCKET_PR_ID") == "" {
-		return nil
-	}
-	userID := strings.Trim(os.Getenv("BITBUCKET_STEP_TRIGGERER_UUID"), "{}")
-	if userID == "" {
-		return nil
-	}
-	userName := os.Getenv("BITBUCKET_STEP_TRIGGERER_USERNAME")
-	if isBotUser("", userName) {
-		return nil
-	}
-	return &v1pb.VCSUser{
-		VcsType:  v1pb.VCSType_BITBUCKET,
-		UserId:   userID,
-		UserName: userName,
-	}
+	return nil
 }
 
 func isBotUser(userType, userName string) bool {

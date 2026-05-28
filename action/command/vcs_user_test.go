@@ -34,38 +34,33 @@ func TestGetVCSUserSkipsGitHubBot(t *testing.T) {
 	require.Nil(t, getVCSUser(world.GitHub))
 }
 
-func TestGetVCSUserFromGitLabMergeRequest(t *testing.T) {
+func TestGetVCSUserFromGitHubPullRequestTarget(t *testing.T) {
+	eventPath := filepath.Join(t.TempDir(), "event.json")
+	require.NoError(t, os.WriteFile(eventPath, []byte(`{"pull_request":{"user":{"id":1001,"login":"alice","name":"Alice","type":"User"}}}`), 0600))
+	t.Setenv("GITHUB_EVENT_NAME", "pull_request_target")
+	t.Setenv("GITHUB_EVENT_PATH", eventPath)
+
+	user := getVCSUser(world.GitHub)
+	require.NotNil(t, user)
+	require.Equal(t, v1pb.VCSType_GITHUB, user.VcsType)
+	require.Equal(t, "1001", user.UserId)
+}
+
+func TestGetVCSUserSkipsGitLabWhenAuthorUnavailable(t *testing.T) {
 	t.Setenv("CI_PIPELINE_SOURCE", "merge_request_event")
 	t.Setenv("GITLAB_USER_ID", "2002")
 	t.Setenv("GITLAB_USER_LOGIN", "bob")
 	t.Setenv("GITLAB_USER_NAME", "Bob")
 
-	user := getVCSUser(world.GitLab)
-	require.NotNil(t, user)
-	require.Equal(t, v1pb.VCSType_GITLAB, user.VcsType)
-	require.Equal(t, "2002", user.UserId)
-	require.Equal(t, "bob", user.UserName)
-	require.Equal(t, "Bob", user.DisplayName)
-}
-
-func TestGetVCSUserSkipsGitLabBot(t *testing.T) {
-	t.Setenv("CI_PIPELINE_SOURCE", "merge_request_event")
-	t.Setenv("GITLAB_USER_ID", "2003")
-	t.Setenv("GITLAB_USER_LOGIN", "reviewer[bot]")
-
 	require.Nil(t, getVCSUser(world.GitLab))
 }
 
-func TestGetVCSUserFromBitbucketPullRequest(t *testing.T) {
+func TestGetVCSUserSkipsBitbucketWhenAuthorUnavailable(t *testing.T) {
 	t.Setenv("BITBUCKET_PR_ID", "10")
 	t.Setenv("BITBUCKET_STEP_TRIGGERER_UUID", "{3003}")
 	t.Setenv("BITBUCKET_STEP_TRIGGERER_USERNAME", "carol")
 
-	user := getVCSUser(world.Bitbucket)
-	require.NotNil(t, user)
-	require.Equal(t, v1pb.VCSType_BITBUCKET, user.VcsType)
-	require.Equal(t, "3003", user.UserId)
-	require.Equal(t, "carol", user.UserName)
+	require.Nil(t, getVCSUser(world.Bitbucket))
 }
 
 func TestGetVCSUserSkipsUnsupportedPlatform(t *testing.T) {
