@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ResultView } from "@/react/components/sql-editor/ResultView";
 import { Button } from "@/react/components/ui/button";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -31,7 +31,6 @@ export function DatabaseQueryContext({
   context,
 }: DatabaseQueryContextProps) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
   const { runQuery } = useExecuteSQL();
   const isExecuting = context.status === "EXECUTING";
 
@@ -52,7 +51,7 @@ export function DatabaseQueryContext({
 
   const cancelQuery = () => {
     context.abortController?.abort();
-    tabStore.updateDatabaseQueryContext({
+    getSQLEditorTabsState().updateDatabaseQueryContext({
       database: database.name,
       contextId: context.id,
       context: { status: "CANCELLED" },
@@ -60,7 +59,7 @@ export function DatabaseQueryContext({
   };
 
   const execQuery = (params: SQLEditorQueryParams) => {
-    const next = tabStore.updateDatabaseQueryContext({
+    const next = getSQLEditorTabsState().updateDatabaseQueryContext({
       database: database.name,
       contextId: context.id,
       context: { params },

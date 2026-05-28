@@ -18,9 +18,9 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   useWorkSheetStore: vi.fn(),
-  useSQLEditorTabStore: vi.fn(),
+  getSQLEditorTabsState: vi.fn(),
   getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
     title: "Test User",
   })),
@@ -32,8 +32,8 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
@@ -48,8 +48,8 @@ vi.mock("@/react/stores/app", () => ({
     }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  getSQLEditorTabsState: mocks.getSQLEditorTabsState,
 }));
 
 vi.mock("@/views/sql-editor/Sheet", () => ({
@@ -130,7 +130,7 @@ const renderIntoContainer = (element: React.ReactElement) => {
 let TreeNodeSuffix: typeof import("./TreeNodeSuffix").TreeNodeSuffix;
 
 beforeEach(async () => {
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+  mocks.usePiniaBridge.mockImplementation((getter: () => unknown) => getter());
   mocks.useWorkSheetStore.mockReturnValue({
     getWorksheetByName: (name: string) => ({
       name,
@@ -139,7 +139,8 @@ beforeEach(async () => {
       creator: "users/test@example.com",
     }),
   });
-  mocks.useSQLEditorTabStore.mockReturnValue({
+  mocks.getSQLEditorTabsState.mockReturnValue({
+    tabsById: new Map(),
     closeTab: vi.fn(),
   });
   mocks.getUserByIdentifier.mockReturnValue({ title: "Test User" });

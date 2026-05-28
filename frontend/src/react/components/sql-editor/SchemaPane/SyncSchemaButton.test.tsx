@@ -64,10 +64,6 @@ vi.mock("@/react/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: (getter: () => unknown) => getter(),
-}));
-
 vi.mock("@/store", () => ({
   useDatabaseV1Store: () => ({ syncDatabase: mocks.syncDatabase }),
   useDBSchemaV1Store: () => ({
@@ -75,9 +71,10 @@ vi.mock("@/store", () => ({
   }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  // Returns plain values now — `database` is the unwrapped object.
   useConnectionOfCurrentSQLEditorTab: () => ({
-    database: { value: mocks.databaseRefValue },
+    database: mocks.databaseRefValue,
   }),
 }));
 

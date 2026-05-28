@@ -9,11 +9,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  // Pinia legacy useSQLEditorVueState (editor.ts) — still imported by GutterBar
-  // until that store is migrated.
-  useSQLEditorVueState: vi.fn(),
+  // Pinia bridge — runs the getter against the (mocked) Pinia stores.
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   useProjectV1Store: vi.fn(),
+  // Zustand editor store project read.
+  project: "projects/test" as string,
   // New zustand store.
   state: {
     asidePanelTab: "WORKSHEET" as string,
@@ -26,16 +26,17 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -98,7 +99,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/test" });
+  mocks.project = "projects/test";
   mocks.useProjectV1Store.mockReturnValue({
     getProjectByName: () => ({ allowJustInTimeAccess: false }),
   });
@@ -109,7 +110,7 @@ beforeEach(async () => {
 
 describe("GutterBar", () => {
   test("renders 3 tabs when project does not allow JIT access", () => {
-    mocks.useVueState.mockImplementation((getter) => getter());
+    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.useProjectV1Store.mockReturnValue({
       getProjectByName: () => ({ allowJustInTimeAccess: false }),
     });
@@ -121,7 +122,7 @@ describe("GutterBar", () => {
   });
 
   test("renders 4 tabs when project allows JIT access", () => {
-    mocks.useVueState.mockImplementation((getter) => getter());
+    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.useProjectV1Store.mockReturnValue({
       getProjectByName: () => ({ allowJustInTimeAccess: true }),
     });
@@ -133,7 +134,7 @@ describe("GutterBar", () => {
   });
 
   test("click writes asidePanelTab via setAsidePanelTab", () => {
-    mocks.useVueState.mockImplementation((getter) => getter());
+    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.useProjectV1Store.mockReturnValue({
       getProjectByName: () => ({ allowJustInTimeAccess: false }),
     });
@@ -148,7 +149,7 @@ describe("GutterBar", () => {
   });
 
   test("logo link has target=_blank and rel=noopener noreferrer", () => {
-    mocks.useVueState.mockImplementation((getter) => getter());
+    mocks.usePiniaBridge.mockImplementation((getter) => getter());
     mocks.useProjectV1Store.mockReturnValue({
       getProjectByName: () => ({ allowJustInTimeAccess: false }),
     });

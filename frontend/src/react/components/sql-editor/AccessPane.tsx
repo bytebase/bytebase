@@ -16,11 +16,10 @@ import { AdvancedSearch } from "@/react/components/AdvancedSearch";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   hasFeature,
   useDatabaseV1Store,
@@ -48,7 +47,6 @@ export function AccessPane() {
   const { t } = useTranslation();
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorVueState();
   const searchMyAccessGrants = useAppStore(
     (state) => state.searchMyAccessGrants
   );
@@ -82,7 +80,7 @@ export function AccessPane() {
     scopes: DEFAULT_SCOPES,
   });
 
-  const projectName = useVueState(() => editorStore.project);
+  const projectName = useSQLEditorEditorState((s) => s.project);
 
   const project = useMemo(() => {
     if (!projectName) return undefined;

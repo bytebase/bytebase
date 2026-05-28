@@ -10,13 +10,19 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
-import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  useSQLEditorQueryDataPolicy,
+} from "@/react/hooks/useSQLEditorBridge";
+import { cn } from "@/react/lib/utils";
+import {
+  getSQLEditorEditorState,
+  useSQLEditorEditorState,
+} from "@/react/stores/sqlEditor/editor";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
@@ -36,16 +42,18 @@ type Props = {
  */
 export function QueryContextSettingPopover({ disabled = false }: Props) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
-  const connection = useConnectionOfCurrentSQLEditorTab();
+  const { database, connection: connectionRef } =
+    useConnectionOfCurrentSQLEditorTab();
+  const project = useSQLEditorEditorState((s) => s.project);
 
-  const currentTabMode = useVueState(() => tabStore.currentTab?.mode);
-  const database = useVueState(() => connection.database.value);
-  const connectionRef = useVueState(() => connection.connection.value);
-  const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
-  const redisCommandOption = useVueState(() => editorStore.redisCommandOption);
-  const queryDataPolicy = useVueState(() => editorStore.queryDataPolicy);
+  const currentTabMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
+  );
+  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
+  const redisCommandOption = useSQLEditorEditorState(
+    (s) => s.redisCommandOption
+  );
+  const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
 
   const show = currentTabMode !== "ADMIN";
 
@@ -99,7 +107,7 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
     } else {
       delete nextConnection.dataSourceId;
     }
-    tabStore.updateCurrentTab({ connection: nextConnection });
+    getSQLEditorTabsState().updateCurrentTab({ connection: nextConnection });
   };
 
   if (!show) return null;
@@ -197,8 +205,9 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
                         QueryOption_RedisRunCommandsOn.SINGLE_NODE
                       }
                       onChange={() => {
-                        editorStore.redisCommandOption =
-                          QueryOption_RedisRunCommandsOn.SINGLE_NODE;
+                        getSQLEditorEditorState().setRedisCommandOption(
+                          QueryOption_RedisRunCommandsOn.SINGLE_NODE
+                        );
                       }}
                     />
                     <span>{t("sql-editor.redis-command.single-node")}</span>
@@ -216,8 +225,9 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
                         QueryOption_RedisRunCommandsOn.ALL_NODES
                       }
                       onChange={() => {
-                        editorStore.redisCommandOption =
-                          QueryOption_RedisRunCommandsOn.ALL_NODES;
+                        getSQLEditorEditorState().setRedisCommandOption(
+                          QueryOption_RedisRunCommandsOn.ALL_NODES
+                        );
                       }}
                     />
                     <span>{t("sql-editor.redis-command.all-nodes")}</span>
@@ -232,7 +242,7 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
             <MaxRowCountSelect
               value={resultRowsLimit ?? 1000}
               onChange={(n) => {
-                editorStore.resultRowsLimit = n;
+                getSQLEditorEditorState().setResultRowsLimit(n);
               }}
               maximum={queryDataPolicy?.maximumResultRows ?? Number.MAX_VALUE}
               quaternary

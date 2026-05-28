@@ -4,9 +4,8 @@ import { Trans, useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/react/components/HumanizeTs";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
@@ -23,8 +22,7 @@ import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
  */
 export function SyncSchemaButton({ className }: { className?: string }) {
   const { t } = useTranslation();
-  const { database: databaseRef } = useConnectionOfCurrentSQLEditorTab();
-  const database = useVueState(() => databaseRef.value);
+  const { database } = useConnectionOfCurrentSQLEditorTab();
   const databaseStore = useDatabaseV1Store();
   const dbSchemaStore = useDBSchemaV1Store();
 

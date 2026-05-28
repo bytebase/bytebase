@@ -7,8 +7,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { hasFeature, useProjectV1Store } from "@/store";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -31,10 +31,11 @@ export function MaskingReasonPopover({
   const [showDrawer, setShowDrawer] = useState(false);
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorVueState();
 
-  const projectName = useVueState(() => editorStore.project);
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
+  const projectName = useSQLEditorEditorState((s) => s.project);
+  const project = usePiniaBridge(() =>
+    projectStore.getProjectByName(projectName)
+  );
 
   const hasJITFeature = useMemo(
     () =>

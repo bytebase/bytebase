@@ -11,14 +11,16 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { SearchInput } from "@/react/components/ui/search-input";
-import { useVueState } from "@/react/hooks/useVueState";
 import type { QueryHistoryFilter } from "@/react/stores/sqlEditor";
 import {
   selectQueryHistoryEntry,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { pushNotification } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/sql_service_pb";
@@ -32,8 +34,6 @@ import { sqlEditorEvents } from "@/views/sql-editor/events";
 export function HistoryPane() {
   const { t } = useTranslation();
 
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const fetchQueryHistoryList = useSQLEditorStore(
     (s) => s.fetchQueryHistoryList
   );
@@ -47,10 +47,10 @@ export function HistoryPane() {
   const [, bumpRefresh] = useReducer((c: number) => c + 1, 0);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const currentTabDatabase = useVueState(
-    () => tabStore.currentTab?.connection.database
+  const currentTabDatabase = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.database
   );
-  const project = useVueState(() => editorStore.project);
+  const project = useSQLEditorEditorState((s) => s.project);
 
   const historyQuery = useMemo<QueryHistoryFilter>(
     () => ({
@@ -87,7 +87,7 @@ export function HistoryPane() {
   // already up-to-date by the time the event fires (`useExecuteSQL` /
   // `webTerminal` chain the emit in `.finally` after `mergeLatest`
   // resolves). The bumped reducer state triggers a render, which
-  // re-runs the `useVueState` getter and reads the merged list —
+  // re-runs the Vue-bridge getter and reads the merged list —
   // preserving any pages the user had already loaded.
   useEffect(() => {
     sqlEditorEvents.on("query-executed", bumpRefresh);
@@ -111,13 +111,14 @@ export function HistoryPane() {
 
   const handleHistoryClick = async (history: QueryHistory) => {
     const { statement } = history;
-    if (tabStore.currentTab) {
+    const tabsState = getSQLEditorTabsState();
+    if (tabsState.tabsById.get(tabsState.currentTabId)) {
       await sqlEditorEvents.emit("append-editor-content", {
         content: statement,
         select: true,
       });
     } else {
-      tabStore.addTab(
+      tabsState.addTab(
         {
           title: `Query history at ${titleOfQueryHistory(history)}`,
           statement,

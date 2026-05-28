@@ -19,10 +19,10 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -111,23 +111,23 @@ function AccessGrantRequestDrawerInner({
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUserV1();
-  const editorStore = useSQLEditorVueState();
-  const tabStore = useSQLEditorTabStore();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setHighlightAccessGrantName = useSQLEditorStore(
     (s) => s.setHighlightAccessGrantName
   );
 
-  const currentUserEmail = useVueState(() => currentUser.value.email);
-  const project = useVueState(() => editorStore.project);
+  const currentUserEmail = usePiniaBridge(() => currentUser.value.email);
+  const project = useSQLEditorEditorState((s) => s.project);
 
   const defaultTargets = useMemo(() => {
     if (stableProps.targets && stableProps.targets.length > 0) {
       return stableProps.targets;
     }
-    const database = tabStore.currentTab?.connection?.database;
+    const tabsState = getSQLEditorTabsState();
+    const database = tabsState.tabsById.get(tabsState.currentTabId)?.connection
+      ?.database;
     return database ? [database] : [];
-  }, [stableProps.targets, tabStore]);
+  }, [stableProps.targets]);
 
   const [targets, setTargets] = useState<string[]>(defaultTargets);
   const [query, setQuery] = useState(stableProps.query ?? "");

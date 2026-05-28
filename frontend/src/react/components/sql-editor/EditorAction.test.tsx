@@ -12,12 +12,18 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({
     t: (key: string, fallback?: string) => fallback ?? key,
   })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
-  useSQLEditorVueState: vi.fn(),
+  // Stubbed state read by the migrated Zustand selector hooks.
+  tabState: {
+    currentTabId: "t1",
+    tabsById: new Map<string, unknown>(),
+  },
+  currentTab: null as unknown,
+  isDisconnected: false,
+  resultRowsLimit: 500,
+  updateCurrentTab: vi.fn(),
   useUIStateStore: vi.fn(),
   useWorkSheetStore: vi.fn(),
-  useWorkSheetAndTabStore: vi.fn(),
+  useWorksheetAndTab: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   isWorksheetWritableV1: vi.fn(() => true),
   keyboardShortcutStr: vi.fn((s: string) => s),
@@ -28,23 +34,30 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   useUIStateStore: mocks.useUIStateStore,
   useWorkSheetStore: mocks.useWorkSheetStore,
-  useWorkSheetAndTabStore: mocks.useWorkSheetAndTabStore,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+vi.mock("@/react/hooks/useWorksheetAndTab", () => ({
+  useWorksheetAndTab: mocks.useWorksheetAndTab,
+}));
+
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (selector: (s: unknown) => unknown) =>
+    selector(mocks.tabState),
+  useCurrentSQLEditorTab: () => mocks.currentTab,
+  useIsDisconnected: () => mocks.isDisconnected,
+  getSQLEditorTabsState: () => ({ updateCurrentTab: mocks.updateCurrentTab }),
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: unknown) => unknown) =>
+    selector({ resultRowsLimit: mocks.resultRowsLimit }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -172,15 +185,18 @@ const setup = (options: SetupOptions = {}) => {
     connection: { database: "databases/db1", table },
     editorState: { selection: null },
   };
-  const updateCurrentTab = vi.fn();
   const saveIntroStateByKey = vi.fn();
 
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab,
-    isDisconnected,
-    updateCurrentTab,
-  });
-  mocks.useSQLEditorVueState.mockReturnValue({ resultRowsLimit: 500 });
+  // Drive the migrated Zustand selector hooks off this single tab.
+  mocks.currentTab = currentTab;
+  mocks.isDisconnected = isDisconnected;
+  mocks.resultRowsLimit = 500;
+  mocks.tabState = {
+    currentTabId: "t1",
+    tabsById: new Map<string, unknown>([["t1", currentTab]]),
+  };
+  const updateCurrentTab = mocks.updateCurrentTab;
+
   mocks.useUIStateStore.mockReturnValue({ saveIntroStateByKey });
   mocks.useWorkSheetStore.mockReturnValue({
     getWorksheetByName: vi.fn(() => ({
@@ -188,14 +204,15 @@ const setup = (options: SetupOptions = {}) => {
       database: "databases/db1",
     })),
   });
-  mocks.useWorkSheetAndTabStore.mockReturnValue({
+  mocks.useWorksheetAndTab.mockReturnValue({
     currentSheet: worksheet ? { name: worksheet, title: "sheet" } : undefined,
+    isCreator: false,
+    isReadOnly: false,
   });
+  // useConnectionOfCurrentSQLEditorTab returns plain values now.
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
-    instance: { value: { engine } },
+    instance: { engine },
   });
-
-  mocks.useVueState.mockImplementation((getter) => getter());
 
   return { currentTab, updateCurrentTab, saveIntroStateByKey };
 };

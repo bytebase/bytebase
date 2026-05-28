@@ -12,9 +12,8 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab";
 import { useConversationStore } from "../../store";
 import type { Conversation } from "../../types";
 import { useAIContext } from "../context";
@@ -40,7 +39,7 @@ import { ConversationRenameDialog } from "./ConversationRenameDialog";
  */
 export function ConversationList() {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
+  const currentTab = useCurrentSQLEditorTab();
   const store = useConversationStore();
   const { events, chat } = useAIContext();
   const { list, ready, selected, setSelected } = chat;
@@ -53,11 +52,9 @@ export function ConversationList() {
   // Dismiss the rename dialog whenever the active tab's connection
   // changes — a stale dialog tied to a different tab's conversation
   // would mutate the wrong record on Save.
-  const connectionKey = useVueState(() => {
-    const tab = tabStore.currentTab;
-    if (!tab) return "";
-    return `${tab.connection.instance}|${tab.connection.database}`;
-  });
+  const connectionKey = currentTab
+    ? `${currentTab.connection.instance}|${currentTab.connection.database}`
+    : "";
   useEffect(() => {
     setRename(undefined);
     setDeleteCandidate(undefined);

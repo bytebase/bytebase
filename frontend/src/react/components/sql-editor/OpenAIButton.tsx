@@ -15,13 +15,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  useIsDisconnected,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useSettingV1Store } from "@/store";
@@ -49,11 +50,10 @@ type Props = {
  */
 export function OpenAIButton({ actions, statement, size = "default" }: Props) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const settingV1Store = useSettingV1Store();
-  const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   // Make sure the AI setting is resolved before we gate the enabled state.
   useEffect(() => {
@@ -63,10 +63,11 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
     );
   }, [settingV1Store]);
 
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
-  const currentMode = useVueState(() => tabStore.currentTab?.mode);
-  const instance = useVueState(() => instanceRef.value);
-  const openAIEnabled = useVueState(() => {
+  const isDisconnected = useIsDisconnected();
+  const currentMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
+  );
+  const openAIEnabled = usePiniaBridge(() => {
     const setting = settingV1Store.getSettingByName(Setting_SettingName.AI);
     return setting?.value?.value?.case === "ai"
       ? setting.value.value.value.enabled

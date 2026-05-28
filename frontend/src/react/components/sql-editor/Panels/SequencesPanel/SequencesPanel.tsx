@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { keyWithPosition } from "@/react/lib/keyWithPosition";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store } from "@/store";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";
@@ -15,8 +15,8 @@ import { SequencesTable } from "./SequencesTable";
 export function SequencesPanel() {
   const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
-  const databaseName = useVueState(() => database.value.name);
-  const databaseMetadata = useVueState(
+  const databaseName = database.name;
+  const databaseMetadata = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
     { deep: true }
   );

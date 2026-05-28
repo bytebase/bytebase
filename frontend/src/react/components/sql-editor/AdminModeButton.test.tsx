@@ -9,27 +9,50 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorVueState: vi.fn(),
-  useSQLEditorTabStore: vi.fn(),
+  // Per-test controllable state read by the migrated Zustand/bridge hooks.
+  state: {
+    project: "projects/test" as string,
+    allowAdmin: true,
+    currentTabMode: "WORKSHEET" as string | undefined,
+    isDisconnected: false,
+  },
+  updateCurrentTab: vi.fn(),
+  useSQLEditorAllowAdmin: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+// Zustand editor store — selector hook returns the active project.
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.state.project }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+// Zustand tab store — selector hook, derived hooks, and imperative getter.
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { mode: string | undefined }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "tab1",
+      tabsById: new Map([["tab1", { mode: mocks.state.currentTabMode }]]),
+    }),
+  useIsDisconnected: () => mocks.state.isDisconnected,
+  getSQLEditorTabsState: () => ({
+    updateCurrentTab: mocks.updateCurrentTab,
+  }),
+}));
+
+// Pinia bridge hook that resolves the admin permission for the project.
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useSQLEditorAllowAdmin: mocks.useSQLEditorAllowAdmin,
 }));
 
 vi.mock("@/react/components/ui/tooltip", () => ({
@@ -60,26 +83,20 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  // Default: allow admin, WORKSHEET mode, connected
-  mocks.useSQLEditorVueState.mockReturnValue({ allowAdmin: true });
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    updateCurrentTab: vi.fn(),
-  });
-  mocks.useVueState.mockImplementation((getter) => getter());
+  // Default: allow admin, WORKSHEET mode, connected.
+  mocks.state.project = "projects/test";
+  mocks.state.allowAdmin = true;
+  mocks.state.currentTabMode = "WORKSHEET";
+  mocks.state.isDisconnected = false;
+  mocks.useSQLEditorAllowAdmin.mockImplementation(() => mocks.state.allowAdmin);
   ({ AdminModeButton } = await import("./AdminModeButton"));
 });
 
 describe("AdminModeButton", () => {
   test("renders nothing when allowAdmin is false", () => {
-    mocks.useSQLEditorVueState.mockReturnValue({ allowAdmin: false });
-    mocks.useVueState.mockImplementation((getter) => getter());
-    // Need to also mock the tab state reads. Configure useVueState to return
-    // appropriate values per call: allowAdmin=false, mode="WORKSHEET", isDisconnected=false
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation(() => {
-      const values = [false, "WORKSHEET", false];
-      return values[callIdx++];
-    });
+    mocks.state.allowAdmin = false;
+    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.isDisconnected = false;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
     );
@@ -89,11 +106,9 @@ describe("AdminModeButton", () => {
   });
 
   test("renders nothing when current tab mode is not WORKSHEET", () => {
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation(() => {
-      const values = [true, "ADMIN", false];
-      return values[callIdx++];
-    });
+    mocks.state.allowAdmin = true;
+    mocks.state.currentTabMode = "ADMIN";
+    mocks.state.isDisconnected = false;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
     );
@@ -103,11 +118,9 @@ describe("AdminModeButton", () => {
   });
 
   test("renders disabled button when isDisconnected is true", () => {
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation(() => {
-      const values = [true, "WORKSHEET", true];
-      return values[callIdx++];
-    });
+    mocks.state.allowAdmin = true;
+    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.isDisconnected = true;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
     );
@@ -119,13 +132,9 @@ describe("AdminModeButton", () => {
   });
 
   test("click sets currentTab.mode to ADMIN", () => {
-    const updateCurrentTab = vi.fn();
-    mocks.useSQLEditorTabStore.mockReturnValue({ updateCurrentTab });
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation(() => {
-      const values = [true, "WORKSHEET", false];
-      return values[callIdx++];
-    });
+    mocks.state.allowAdmin = true;
+    mocks.state.currentTabMode = "WORKSHEET";
+    mocks.state.isDisconnected = false;
     const { container, render, unmount } = renderIntoContainer(
       <AdminModeButton />
     );
@@ -133,7 +142,7 @@ describe("AdminModeButton", () => {
     act(() => {
       container.querySelector("button")?.click();
     });
-    expect(updateCurrentTab).toHaveBeenCalledWith({ mode: "ADMIN" });
+    expect(mocks.updateCurrentTab).toHaveBeenCalledWith({ mode: "ADMIN" });
     unmount();
   });
 });

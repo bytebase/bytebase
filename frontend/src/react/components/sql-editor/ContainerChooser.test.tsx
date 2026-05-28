@@ -9,8 +9,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
+  tabTable: undefined as string | undefined,
+  currentTabId: "tab1",
+  getSQLEditorTabsState: vi.fn(),
   useDBSchemaV1Store: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   router: {
@@ -22,17 +24,32 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
   useDBSchemaV1Store: mocks.useDBSchemaV1Store,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+}));
+
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { connection: { table?: string } }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: mocks.currentTabId,
+      tabsById: new Map([
+        [mocks.currentTabId, { connection: { table: mocks.tabTable } }],
+      ]),
+    }),
+  getSQLEditorTabsState: mocks.getSQLEditorTabsState,
 }));
 
 vi.mock("@/router", () => ({
@@ -92,13 +109,13 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 const mockCosmosConnection = {
-  instance: { value: { engine: "COSMOSDB" } },
-  database: { value: { name: "instances/inst1/databases/cosmosdb" } },
+  instance: { engine: "COSMOSDB" },
+  database: { name: "instances/inst1/databases/cosmosdb" },
 };
 
 const mockMySQLConnection = {
-  instance: { value: { engine: "MYSQL" } },
-  database: { value: { name: "instances/inst1/databases/db1" } },
+  instance: { engine: "MYSQL" },
+  database: { name: "instances/inst1/databases/db1" },
 };
 
 beforeEach(async () => {
@@ -106,8 +123,12 @@ beforeEach(async () => {
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue(
     mockCosmosConnection
   );
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { connection: { table: undefined } },
+  mocks.tabTable = undefined;
+  mocks.currentTabId = "tab1";
+  mocks.getSQLEditorTabsState.mockReturnValue({
+    currentTabId: "tab1",
+    tabsById: new Map([["tab1", { connection: {} }]]),
+    updateCurrentTab: vi.fn(),
   });
   mocks.useDBSchemaV1Store.mockReturnValue({
     getDatabaseMetadata: vi.fn(() => ({
@@ -119,7 +140,7 @@ beforeEach(async () => {
       ],
     })),
   });
-  mocks.useVueState.mockImplementation((getter) => getter());
+  mocks.usePiniaBridge.mockImplementation((getter) => getter());
   ({ ContainerChooser } = await import("./ContainerChooser"));
 });
 
@@ -178,15 +199,7 @@ describe("ContainerChooser", () => {
   });
 
   test("is chosen when a table is selected", () => {
-    const tab = { connection: { table: "container1" } };
-    mocks.useSQLEditorTabStore.mockReturnValue({ currentTab: tab });
-    let callIdx = 0;
-    mocks.useVueState.mockImplementation((getter) => {
-      callIdx++;
-      // 1: engine, 2: databaseName, 3: tabTable, 4: schemas, 5: queryParam
-      if (callIdx === 3) return "container1";
-      return getter();
-    });
+    mocks.tabTable = "container1";
     const { container, render, unmount } = renderIntoContainer(
       <ContainerChooser />
     );

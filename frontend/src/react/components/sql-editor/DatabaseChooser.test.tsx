@@ -9,10 +9,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
-  // Legacy Pinia useSQLEditorVueState (editor.ts).
-  useSQLEditorVueState: vi.fn(),
+  useCurrentSQLEditorTab: vi.fn(),
+  useIsInBatchMode: vi.fn(() => false),
+  // editor zustand store selector value.
+  projectContextReady: true,
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   // New zustand store setter.
   setShowConnectionPanel: vi.fn(),
@@ -28,19 +28,21 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useCurrentSQLEditorTab: mocks.useCurrentSQLEditorTab,
+  useIsInBatchMode: mocks.useIsInBatchMode,
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (
+    selector: (s: { projectContextReady: boolean }) => unknown
+  ) => selector({ projectContextReady: mocks.projectContextReady }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -110,20 +112,17 @@ const mockEnvironment = { name: "environments/prod" };
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
-    database: { value: mockDatabase },
-    instance: { value: mockInstance },
+    database: mockDatabase,
+    instance: mockInstance,
   });
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { id: "tab1" },
-    isInBatchMode: false,
-  });
-  mocks.useSQLEditorVueState.mockReturnValue({ projectContextReady: true });
+  mocks.useCurrentSQLEditorTab.mockReturnValue({ id: "tab1" });
+  mocks.useIsInBatchMode.mockReturnValue(false);
+  mocks.projectContextReady = true;
   mocks.isValidInstanceName.mockReturnValue(true);
   mocks.isValidDatabaseName.mockReturnValue(true);
   mocks.getInstanceResource.mockReturnValue(mockInstance);
   mocks.getDatabaseEnvironment.mockReturnValue(mockEnvironment);
   mocks.extractDatabaseResourceName.mockReturnValue({ databaseName: "mydb" });
-  mocks.useVueState.mockImplementation((getter) => getter());
   ({ DatabaseChooser } = await import("./DatabaseChooser"));
 });
 
@@ -163,9 +162,7 @@ describe("DatabaseChooser", () => {
   });
 
   test("button is disabled when projectContextReady is false", () => {
-    mocks.useSQLEditorVueState.mockReturnValue({
-      projectContextReady: false,
-    });
+    mocks.projectContextReady = false;
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChooser />
     );

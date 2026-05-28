@@ -15,13 +15,14 @@ import {
   extensionNameOfLanguage,
   formatEditorContent,
 } from "@/react/components/monaco/utils";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useWorksheetAndTab } from "@/react/hooks/useWorksheetAndTab";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
-import { useUIStateStore, useWorkSheetAndTabStore } from "@/store";
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
+import { useUIStateStore } from "@/store";
 import {
   dialectOfEngineV1,
   isValidDatabaseName,
@@ -64,24 +65,24 @@ interface SQLEditorProps {
  * is run from the toolbar.
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
-  const tabStore = useSQLEditorTabStore();
-  const sheetAndTabStore = useWorkSheetAndTabStore();
   const uiStateStore = useUIStateStore();
+  const { isReadOnly: readonly } = useWorksheetAndTab();
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const setPendingInsertAtCaret = useSQLEditorStore(
     (s) => s.setPendingInsertAtCaret
   );
   const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
-  const tabId = useVueState(() => tabStore.currentTab?.id);
-  const content = useVueState(() => tabStore.currentTab?.statement ?? "");
-  const readonly = useVueState(() => sheetAndTabStore.isReadOnly);
-  const engine = useVueState(() => instance.value.engine);
-  const instanceName = useVueState(() => instance.value.name);
-  const databaseName = useVueState(() => database.value.name);
-  const schema = useVueState(() => tabStore.currentTab?.connection.schema, {
-    deep: true,
-  });
+  const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
+  const content = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.statement ?? ""
+  );
+  const engine = instance.engine;
+  const instanceName = instance.name;
+  const databaseName = database.name;
+  const schema = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.schema
+  );
 
   const language = useMemo(
     () => languageOfEngineV1(engine ?? Engine.MYSQL),
@@ -130,25 +131,25 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   }, []);
 
   const getActiveStatement = useCallback(() => {
-    return activeStatementRef.value || tabStore.currentTab?.statement || "";
-  }, [tabStore]);
+    const tabsState = getSQLEditorTabsState();
+    return (
+      activeStatementRef.value ||
+      tabsState.tabsById.get(tabsState.currentTabId)?.statement ||
+      ""
+    );
+  }, []);
 
   // ----- statement sync -----
-  const handleChange = useCallback(
-    (value: string) => {
-      const tab = tabStore.currentTab;
-      if (!tab || value === tab.statement) return;
-      tabStore.updateCurrentTab({ statement: value, status: "DIRTY" });
-    },
-    [tabStore]
-  );
+  const handleChange = useCallback((value: string) => {
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
+    if (!tab || value === tab.statement) return;
+    tabsState.updateCurrentTab({ statement: value, status: "DIRTY" });
+  }, []);
 
-  const handleSelectContent = useCallback(
-    (value: string) => {
-      tabStore.updateCurrentTab({ selectedStatement: value });
-    },
-    [tabStore]
-  );
+  const handleSelectContent = useCallback((value: string) => {
+    getSQLEditorTabsState().updateCurrentTab({ selectedStatement: value });
+  }, []);
 
   // Guard flag so the Vue→Monaco selection watcher below doesn't fire
   // when the change came from the editor itself (would interrupt
@@ -157,41 +158,45 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
 
   const handleSelectionChange = useCallback(
     (selection: MonacoSelection | null) => {
-      const tab = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) return;
       selectionFromEditorRef.current = true;
-      tabStore.updateCurrentTab({ editorState: { selection } });
+      tabsState.updateCurrentTab({ editorState: { selection } });
     },
-    [tabStore]
+    []
   );
 
   // Watch tab.editorState.selection — if it changes and the change
   // wasn't driven by the editor itself, push it back into Monaco.
-  const tabSelectionString = useVueState(
-    () => tabStore.currentTab?.editorState.selection?.toString(),
-    { deep: true }
+  const tabSelectionString = useSQLEditorTabState((s) =>
+    s.tabsById.get(s.currentTabId)?.editorState.selection?.toString()
   );
   useEffect(() => {
     if (selectionFromEditorRef.current) {
       selectionFromEditorRef.current = false;
       return;
     }
-    const selection = tabStore.currentTab?.editorState.selection;
+    const tabsState = getSQLEditorTabsState();
+    const selection = tabsState.tabsById.get(tabsState.currentTabId)
+      ?.editorState.selection;
     if (!selection) return;
     activeSQLEditorRef.value?.setSelection(selection);
-  }, [tabSelectionString, tabStore]);
+  }, [tabSelectionString]);
 
   // ----- save handler (just emits the event so SaveSheetModal opens) -----
   const handleSaveSheet = useCallback(() => {
-    const tab = tabStore.currentTab;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
     if (!tab) return;
     void sqlEditorEvents.emit("save-sheet", { tab });
-  }, [tabStore]);
+  }, []);
 
   // ----- run query -----
   const runQueryAction = useCallback(
     ({ explain, newTab }: { explain: boolean; newTab: boolean }) => {
-      const tab = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) return;
       const statement = getActiveStatement();
       const params: SQLEditorQueryParams = {
@@ -207,7 +212,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         newState: true,
       });
     },
-    [tabStore, getActiveStatement, uiStateStore]
+    [getActiveStatement, uiStateStore]
   );
 
   // ----- onReady: register Monaco actions + commands -----
@@ -248,7 +253,8 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       setShowAIPanel(true);
       const statement = getActiveStatement();
       if (!statement) return;
-      const tab = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const tab = tabsState.tabsById.get(tabsState.currentTabId);
       const eng = engineRef.current ?? Engine.MYSQL;
       void nextAnimationFrame().then(() => {
         if (action === "explain-code") {
@@ -270,7 +276,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         }
       });
     },
-    [setShowAIPanel, getActiveStatement, tabStore]
+    [setShowAIPanel, getActiveStatement]
   );
 
   useAIActions({
@@ -327,34 +333,32 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   }, [pendingInsertAtCaret, setPendingInsertAtCaret]);
 
   // ----- file upload (triggered by UploadFileButton in cornerPrefix) -----
-  const handleUploadFile = useCallback(
-    (uploaded: string) => {
-      const editor = activeSQLEditorRef.value;
-      if (!editor) return;
-      const tab = tabStore.currentTab;
-      if (!tab) return;
-      let text = uploaded;
-      if (tab.statement.trim() !== "") {
-        text = "\n" + text;
-      }
-      const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
-      editor.executeEdits("bb.event.upload-file", [
-        {
-          forceMoveMarkers: true,
-          text,
-          range: {
-            startLineNumber: maxLineNumber + 1,
-            startColumn: 1,
-            endLineNumber: maxLineNumber + 1,
-            endColumn: 1,
-          },
+  const handleUploadFile = useCallback((uploaded: string) => {
+    const editor = activeSQLEditorRef.value;
+    if (!editor) return;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
+    if (!tab) return;
+    let text = uploaded;
+    if (tab.statement.trim() !== "") {
+      text = "\n" + text;
+    }
+    const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+    editor.executeEdits("bb.event.upload-file", [
+      {
+        forceMoveMarkers: true,
+        text,
+        range: {
+          startLineNumber: maxLineNumber + 1,
+          startColumn: 1,
+          endLineNumber: maxLineNumber + 1,
+          endColumn: 1,
         },
-      ]);
-      const newMaxLineNumber = editor.getModel()?.getLineCount() ?? 0;
-      editor.revealLine(newMaxLineNumber);
-    },
-    [tabStore]
-  );
+      },
+    ]);
+    const newMaxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+    editor.revealLine(newMaxLineNumber);
+  }, []);
 
   // ----- event listeners (sqlEditorEvents) -----
   useEffect(() => {
@@ -378,7 +382,9 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       ({ content: appended, select }) => {
         const editor = activeSQLEditorRef.value;
         if (!editor) return;
-        const oldStatement = tabStore.currentTab?.statement ?? "";
+        const tabsState = getSQLEditorTabsState();
+        const oldStatement =
+          tabsState.tabsById.get(tabsState.currentTabId)?.statement ?? "";
         const newStatement = [oldStatement, appended]
           .filter((s) => s)
           .join("\n\n");
@@ -401,7 +407,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
       offSetSelection();
       offAppend();
     };
-  }, [tabStore]);
+  }, []);
 
   // Clear the global refs on unmount.
   useEffect(() => {

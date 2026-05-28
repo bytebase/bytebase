@@ -10,8 +10,13 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
+  // Pinia bridge — runs the getter (resolves openAIEnabled from settings).
+  usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
+  // Per-test controllable tab-derived state.
+  tabState: {
+    isDisconnected: false,
+    currentMode: "WORKSHEET" as string | undefined,
+  },
   // New zustand state mirror.
   state: { showAIPanel: false },
   setShowAIPanel: vi.fn((v: boolean) => {
@@ -31,17 +36,32 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
 }));
 
 vi.mock("@/store", () => ({
   useSettingV1Store: mocks.useSettingV1Store,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
+// `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook.
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
   useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+}));
+
+// Zustand tab store — derived hook + selector hook for connection/mode.
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useIsDisconnected: () => mocks.tabState.isDisconnected,
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { mode: string | undefined }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "tab1",
+      tabsById: new Map([["tab1", { mode: mocks.tabState.currentMode }]]),
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -197,33 +217,25 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
   };
 
   mocks.state.showAIPanel = values.showAIPanel;
-  const tabStore = {
-    isDisconnected: values.isDisconnected,
-    currentTab: { mode: values.currentMode },
-  };
+  mocks.tabState.isDisconnected = values.isDisconnected;
+  mocks.tabState.currentMode = values.currentMode;
+
   const settingStore = {
     getOrFetchSettingByName: vi.fn().mockResolvedValue(undefined),
     getSettingByName: vi.fn(),
   };
 
-  mocks.useSQLEditorTabStore.mockReturnValue(tabStore);
   mocks.useSettingV1Store.mockReturnValue(settingStore);
+  // Migrated hook returns PLAIN values — no Vue `.value` wrapper.
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
-    instance: { value: values.instance },
+    instance: values.instance,
   });
 
-  // useVueState order after migration: isDisconnected, currentMode,
-  // instance, openAIEnabled (showAIPanel now read via zustand selector).
-  const ordered = [
-    values.isDisconnected,
-    values.currentMode,
-    values.instance,
-    values.openAIEnabled,
-  ];
-  let idx = 0;
-  mocks.useVueState.mockImplementation(() => ordered[idx++]);
+  // `openAIEnabled` is resolved via the Pinia bridge getter; surface the
+  // configured value directly (it's the only bridge read in OpenAIButton).
+  mocks.usePiniaBridge.mockImplementation(() => values.openAIEnabled);
 
-  return { tabStore, settingStore };
+  return { settingStore };
 };
 
 beforeEach(async () => {

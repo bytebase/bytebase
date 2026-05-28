@@ -5,7 +5,6 @@ import { defineStore } from "pinia";
 import { computed } from "vue";
 import { worksheetServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import type {
@@ -23,15 +22,9 @@ import {
   WorksheetOrganizerSchema,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  extractWorksheetID,
-  getSheetStatement,
-  getStatementSize,
-  isWorksheetWritableV1,
-} from "@/utils";
+import { extractWorksheetID } from "@/utils";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
-import { extractUserEmail } from "./common";
 import { useDatabaseV1Store } from "./database";
 import { useProjectV1Store } from "./project";
 
@@ -298,47 +291,4 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     upsertWorksheetOrganizer,
     batchUpsertWorksheetOrganizers,
   };
-});
-
-export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
-  const tabStore = useSQLEditorTabStore();
-  const worksheetStore = useWorkSheetStore();
-  const me = useCurrentUserV1();
-
-  const currentWorksheet = computed(() => {
-    const tab = tabStore.currentTab;
-    if (!tab) {
-      return undefined;
-    }
-    const { worksheet } = tab;
-    if (!worksheet) {
-      return undefined;
-    }
-    return worksheetStore.getWorksheetByName(worksheet);
-  });
-
-  const isCreator = computed(() => {
-    const worksheet = currentWorksheet.value;
-    if (!worksheet) return false;
-    return extractUserEmail(worksheet.creator) === me.value.email;
-  });
-
-  const isReadOnly = computed(() => {
-    const worksheet = currentWorksheet.value;
-
-    // We don't have a selected sheet, we've got nothing to edit.
-    if (!worksheet) {
-      return false;
-    }
-
-    // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
-    const statement = getSheetStatement(worksheet);
-    if (getStatementSize(statement) !== worksheet.contentSize) {
-      return true;
-    }
-
-    return !isWorksheetWritableV1(worksheet);
-  });
-
-  return { currentSheet: currentWorksheet, isCreator, isReadOnly };
 });

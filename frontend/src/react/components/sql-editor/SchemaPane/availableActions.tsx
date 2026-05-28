@@ -1,8 +1,7 @@
 import { Box, Info } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
@@ -31,8 +30,7 @@ import {
  */
 export function useAvailableActions(): AvailableAction[] {
   const { t } = useTranslation();
-  const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
-  const instance = useVueState(() => instanceRef.value);
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   return useMemo(() => {
     const actions: AvailableAction[] = [

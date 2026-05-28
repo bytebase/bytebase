@@ -9,22 +9,26 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorVueState: vi.fn(),
+  editorState: {
+    isShowExecutingHint: false,
+    executingHintDatabase: undefined as { name: string } | undefined,
+  },
+  setShowExecutingHint: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  // Selector hook — run the selector against the stubbed state.
+  useSQLEditorEditorState: (selector: (s: unknown) => unknown) =>
+    selector(mocks.editorState),
+  getSQLEditorEditorState: () => ({
+    setShowExecutingHint: mocks.setShowExecutingHint,
+  }),
 }));
 
 vi.mock("@/react/components/ui/dialog", () => ({
@@ -97,13 +101,11 @@ const renderIntoContainer = (element: ReactElement) => {
 const setup = (
   options: { show?: boolean; database?: { name: string } } = {}
 ) => {
-  const store = {
+  mocks.editorState = {
     isShowExecutingHint: options.show ?? false,
     executingHintDatabase: options.database,
   };
-  mocks.useSQLEditorVueState.mockReturnValue(store);
-  mocks.useVueState.mockImplementation((getter) => getter());
-  return store;
+  return mocks.editorState;
 };
 
 beforeEach(async () => {
@@ -145,7 +147,7 @@ describe("ExecutingHintModal", () => {
   });
 
   test("closing the dialog flips isShowExecutingHint to false", () => {
-    const store = setup({ show: true });
+    setup({ show: true });
     const { container, render, unmount } = renderIntoContainer(
       <ExecutingHintModal />
     );
@@ -158,7 +160,7 @@ describe("ExecutingHintModal", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(store.isShowExecutingHint).toBe(false);
+    expect(mocks.setShowExecutingHint).toHaveBeenCalledWith(false);
 
     unmount();
   });

@@ -6,10 +6,10 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorAllowAdmin } from "@/react/hooks/useSQLEditorBridge";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import type {
@@ -68,24 +68,25 @@ export function setConnection(options: {
     database: database?.name ?? "",
   };
 
-  const tabStore = useSQLEditorTabStore();
+  const tabsState = getSQLEditorTabsState();
+  const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
   const { maybeUpdateWorksheet, createWorksheet } =
     useSQLEditorStore.getState();
 
   const batchQueryContext: BatchQueryContext = Object.assign(
     { databases: [] } as BatchQueryContext,
-    tabStore.currentTab?.batchQueryContext,
+    currentTab?.batchQueryContext,
     options.batchQueryContext
   );
 
   const createOrUpdate = () => {
-    if (!newTab && tabStore.currentTab) {
+    if (!newTab && currentTab) {
       return maybeUpdateWorksheet({
-        tabId: tabStore.currentTab.id,
-        worksheet: tabStore.currentTab.worksheet,
-        title: tabStore.currentTab.title,
+        tabId: currentTab.id,
+        worksheet: currentTab.worksheet,
+        title: currentTab.title,
         database: connection.database,
-        statement: tabStore.currentTab.statement,
+        statement: currentTab.statement,
       });
     }
     return createWorksheet({
@@ -95,7 +96,7 @@ export function setConnection(options: {
 
   void createOrUpdate().then((tab) => {
     if (tab) {
-      tabStore.updateTab(tab.id, { mode, batchQueryContext });
+      getSQLEditorTabsState().updateTab(tab.id, { mode, batchQueryContext });
       useSQLEditorStore.getState().setAsidePanelTab("SCHEMA");
     }
   });
@@ -108,11 +109,11 @@ export function setConnection(options: {
  */
 export function useConnectionMenu(node: SQLEditorTreeNode | null) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorVueState();
+  const project = useSQLEditorEditorState((s) => s.project);
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );
-  const allowAdmin = useVueState(() => editorStore.allowAdmin);
+  const allowAdmin = useSQLEditorAllowAdmin(project);
 
   const items = useMemo<ConnectionMenuItem[]>(() => {
     if (!node || node.disabled) return [];

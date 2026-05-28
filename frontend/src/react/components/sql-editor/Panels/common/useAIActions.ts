@@ -2,7 +2,7 @@ import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
 import type { ChatAction } from "@/plugins/ai/types";
 import type { MonacoModule } from "@/react/components/monaco/types";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useSettingV1Store } from "@/store";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 
@@ -34,7 +34,7 @@ export function useAIActions({
   // re-register or unregister live when an admin toggles AI access
   // while the editor is mounted (matches the Vue `watchEffect` behavior
   // in `editor-actions.ts`).
-  const aiEnabled = useVueState(() => readEnabled(settingStore));
+  const aiEnabled = usePiniaBridge(() => readEnabled(settingStore));
   // Defensive fetch — the global `ProvideAIContext.vue` triggers this
   // on app mount, but a deep-link to a code panel can race that.
   useEffect(() => {

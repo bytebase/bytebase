@@ -64,7 +64,7 @@ export function useProvideHoverState(): HoverStateContextValue {
   );
 
   // Memoize the context value so an unrelated parent re-render (e.g.
-  // a Pinia tick triggering a `useVueState` update somewhere up the
+  // a Pinia tick triggering a Vue-bridge update somewhere up the
   // tree) doesn't churn the `<HoverStateProvider value={…}>` reference.
   // Without this, every consumer of `useHoverState()` (every tree row
   // in `ConnectionPane`) re-renders, which can show up as the hover

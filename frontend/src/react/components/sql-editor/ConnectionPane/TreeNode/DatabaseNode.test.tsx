@@ -9,8 +9,7 @@ import type { SQLEditorTreeNode } from "@/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useSQLEditorTabStore: vi.fn(() => ({ supportBatchMode: true })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
+  useSupportBatchMode: vi.fn(() => true),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -19,12 +18,8 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-}));
-
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSupportBatchMode: mocks.useSupportBatchMode,
 }));
 
 vi.mock("@/react/components/instance/constants", () => ({
@@ -101,8 +96,7 @@ const makeNode = (
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useSQLEditorTabStore.mockReturnValue({ supportBatchMode: true });
-  mocks.useVueState.mockImplementation((getter) => getter());
+  mocks.useSupportBatchMode.mockReturnValue(true);
   ({ DatabaseNode } = await import("./DatabaseNode"));
 });
 
@@ -133,8 +127,8 @@ describe("DatabaseNode", () => {
     unmount();
   });
 
-  test("renders checkbox only when tabStore.supportBatchMode is true", () => {
-    mocks.useVueState.mockImplementation(() => false);
+  test("renders checkbox only when supportBatchMode is true", () => {
+    mocks.useSupportBatchMode.mockReturnValue(false);
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseNode node={makeNode()} keyword="" />
     );
@@ -144,7 +138,7 @@ describe("DatabaseNode", () => {
   });
 
   test("checkbox click propagation is stopped", () => {
-    mocks.useVueState.mockImplementation(() => true);
+    mocks.useSupportBatchMode.mockReturnValue(true);
     const onClick = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
       <div onClick={onClick}>

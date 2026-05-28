@@ -5,9 +5,8 @@ import { HighlightLabelText } from "@/react/components/HighlightLabelText";
 import { RequestQueryButton } from "@/react/components/sql-editor/RequestQueryButton";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSupportBatchMode } from "@/react/stores/sqlEditor/tab";
 import type { SQLEditorTreeNode } from "@/types";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import {
@@ -45,8 +44,7 @@ export function DatabaseNode({
   checkTooltip,
   onCheckedChange,
 }: Props) {
-  const tabStore = useSQLEditorTabStore();
-  const supportBatchMode = useVueState(() => tabStore.supportBatchMode);
+  const supportBatchMode = useSupportBatchMode();
 
   const database = (node as SQLEditorTreeNode<"database">).meta.target;
   const instance = getInstanceResource(database);

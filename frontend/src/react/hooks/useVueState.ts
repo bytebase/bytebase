@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { type DependencyList, useEffect, useRef, useState } from "react";
 import { watch } from "vue";
+
+const EMPTY_DEPS: DependencyList = [];
 
 export interface UseVueStateOptions {
   /**
@@ -20,6 +22,24 @@ export interface UseVueStateOptions {
    * getter doesn't read directly.
    */
   readonly deep?: boolean;
+  /**
+   * Re-subscribe the underlying `watch` whenever these values change.
+   * Default `[]` (subscribe once on mount).
+   *
+   * The watch normally tracks only the Vue deps the getter touched on
+   * its first run. When the getter's *target* changes identity through
+   * a NON-Vue signal — e.g. the getter reads `chatInfo.list.value`
+   * where `chatInfo` is selected from a Zustand store — Vue never sees
+   * that swap, so the watch keeps tracking the previous target's refs
+   * and misses in-place mutations of the new one. Pass the swapping
+   * value(s) here so the watch tears down and re-tracks the current
+   * target. The render-time `getter()` read is always fresh regardless;
+   * `deps` is only about keeping the *subscription* pointed at the
+   * right reactive source between renders.
+   *
+   * Length must stay constant across renders (React's rules of hooks).
+   */
+  readonly deps?: DependencyList;
 }
 
 /**
@@ -87,7 +107,9 @@ export function useVueState<T>(
     return () => {
       stop();
     };
-  }, []);
+    // `deps` (default []) lets callers force re-subscription when the
+    // getter's reactive target is swapped via a non-Vue signal.
+  }, options?.deps ?? EMPTY_DEPS);
 
   // Read the live value at render time. The watch above guarantees a
   // re-render fires after every Vue mutation, so this read sees the

@@ -3,9 +3,8 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import type { Position, SQLEditorTreeNode } from "@/types";
 import {
   getDatabaseProject,
@@ -36,10 +35,10 @@ export function DatabaseHoverPanel({
   onClickOutside,
 }: Props) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorVueState();
+  const project = useSQLEditorEditorState((s) => s.project);
   const { state, position, update } = useHoverState();
 
-  const hasProjectContext = useVueState(() => !!editorStore.project);
+  const hasProjectContext = !!project;
 
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const [popoverHeight, setPopoverHeight] = useState(0);

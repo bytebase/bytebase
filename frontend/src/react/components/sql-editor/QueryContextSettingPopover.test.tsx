@@ -9,10 +9,21 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
-  useSQLEditorVueState: vi.fn(),
-  useConnectionOfCurrentSQLEditorTab: vi.fn(),
+  // Stubbed Zustand state slices read by selector hooks.
+  tabState: { currentTabId: "t1", tabsById: new Map<string, unknown>() },
+  editorState: {
+    project: "projects/p1",
+    resultRowsLimit: 1000,
+    redisCommandOption: 0,
+  },
+  updateCurrentTab: vi.fn(),
+  setRedisCommandOption: vi.fn(),
+  setResultRowsLimit: vi.fn(),
+  queryDataPolicy: {
+    allowAdminDataSource: true,
+    maximumResultRows: Number.MAX_VALUE,
+  } as unknown,
+  connectionResult: {} as unknown,
   getInstanceResource: vi.fn(),
   readableDataSourceType: vi.fn((type: number) => `type-${type}`),
   orderBy: vi.fn((arr: unknown[]) => arr),
@@ -22,19 +33,26 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  useConnectionOfCurrentSQLEditorTab: () => mocks.connectionResult,
+  useSQLEditorQueryDataPolicy: () => mocks.queryDataPolicy,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (selector: (s: unknown) => unknown) =>
+    selector(mocks.tabState),
+  getSQLEditorTabsState: () => ({ updateCurrentTab: mocks.updateCurrentTab }),
+}));
+
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: unknown) => unknown) =>
+    selector(mocks.editorState),
+  getSQLEditorEditorState: () => ({
+    setRedisCommandOption: mocks.setRedisCommandOption,
+    setResultRowsLimit: mocks.setResultRowsLimit,
+  }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -128,6 +146,14 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
+// Set the current tab's mode for the tab-state selector.
+const setTabMode = (mode: string) => {
+  mocks.tabState = {
+    currentTabId: "t1",
+    tabsById: new Map<string, unknown>([["t1", { mode }]]),
+  };
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
 
@@ -135,24 +161,22 @@ beforeEach(async () => {
   mocks.getInstanceResource.mockReturnValue(mockInstance);
   mocks.orderBy.mockImplementation((arr: unknown[]) => arr);
 
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { mode: "WORKSHEET" },
-    updateCurrentTab: vi.fn(),
-  });
-  mocks.useSQLEditorVueState.mockReturnValue({
+  setTabMode("WORKSHEET");
+  mocks.editorState = {
+    project: "projects/p1",
     resultRowsLimit: 1000,
     redisCommandOption: 0,
-    queryDataPolicy: {
-      allowAdminDataSource: true,
-      maximumResultRows: Number.MAX_VALUE,
-    },
-  });
-  mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
-    database: { value: { name: "instances/inst1/databases/mydb" } },
-    connection: { value: mockConnection },
-  });
-
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
+  };
+  mocks.queryDataPolicy = {
+    allowAdminDataSource: true,
+    maximumResultRows: Number.MAX_VALUE,
+  };
+  // useConnectionOfCurrentSQLEditorTab now returns plain values:
+  // { connection, database, instance, environment }.
+  mocks.connectionResult = {
+    database: { name: "instances/inst1/databases/mydb" },
+    connection: mockConnection,
+  };
 
   ({ QueryContextSettingPopover } = await import(
     "./QueryContextSettingPopover"
@@ -165,10 +189,7 @@ afterEach(() => {
 
 describe("QueryContextSettingPopover", () => {
   test("returns null when current tab mode is ADMIN", () => {
-    mocks.useSQLEditorTabStore.mockReturnValue({
-      currentTab: { mode: "ADMIN" },
-      updateCurrentTab: vi.fn(),
-    });
+    setTabMode("ADMIN");
     const { container, render, unmount } = renderIntoContainer(
       <QueryContextSettingPopover />
     );
@@ -202,11 +223,6 @@ describe("QueryContextSettingPopover", () => {
   });
 
   test("clicking a data source label calls tabStore.updateCurrentTab with updated connection", () => {
-    const updateCurrentTab = vi.fn();
-    mocks.useSQLEditorTabStore.mockReturnValue({
-      currentTab: { mode: "WORKSHEET" },
-      updateCurrentTab,
-    });
     const { container, render, unmount } = renderIntoContainer(
       <QueryContextSettingPopover />
     );
@@ -220,7 +236,7 @@ describe("QueryContextSettingPopover", () => {
       // which causes the radio's onChange to fire via React's synthetic event delegation.
       dsLabel.click();
     });
-    expect(updateCurrentTab).toHaveBeenCalled();
+    expect(mocks.updateCurrentTab).toHaveBeenCalled();
     unmount();
   });
 

@@ -1,5 +1,5 @@
 import { PencilLine, Users, Wrench } from "lucide-react";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { useSheetContext } from "@/views/sql-editor/Sheet";
@@ -23,7 +23,7 @@ export function Prefix({ tab }: Props) {
 
   const isDraft = !tab.worksheet && tab.viewState.view === "CODE";
 
-  const sheet = useVueState(() =>
+  const sheet = usePiniaBridge(() =>
     tab.worksheet ? sheetStore.getWorksheetByName(tab.worksheet) : null
   );
 

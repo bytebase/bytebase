@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useDBSchemaV1Store } from "@/store";
 import { InfoItem } from "./InfoItem";
 
@@ -13,9 +12,11 @@ type Props = {
 export function ExternalTableInfo({ database, schema, externalTable }: Props) {
   const { t } = useTranslation();
   const dbSchema = useDBSchemaV1Store();
-  const externalTableMetadata = useVueState(() =>
-    dbSchema.getExternalTableMetadata({ database, schema, externalTable })
-  );
+  const externalTableMetadata = dbSchema.getExternalTableMetadata({
+    database,
+    schema,
+    externalTable,
+  });
 
   return (
     <div className="min-w-56 max-w-[18rem] gap-y-1">

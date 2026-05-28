@@ -3,8 +3,10 @@ import { head } from "lodash-es";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sqlServiceClientConnect } from "@/connect";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getCurrentSQLEditorTab,
+  useCurrentSQLEditorTab,
+} from "@/react/stores/sqlEditor/tab";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,
@@ -45,12 +47,9 @@ import { PromptInput } from "./PromptInput";
  *     provider stashes a `pendingSendChat` payload.
  */
 export function ChatPanel() {
-  const tabStore = useSQLEditorTabStore();
+  const currentTab = useCurrentSQLEditorTab();
   const store = useConversationStore();
-  // Reactive bridge for `tabStore.currentTab` — Pinia mutates the tab
-  // proxy in place when the connection changes, so a plain
-  // `tabStore.currentTab` read at render time would miss updates.
-  const hasCurrentTab = useVueState(() => tabStore.currentTab != null);
+  const hasCurrentTab = currentTab != null;
 
   const context = useAIContext();
   const {
@@ -65,14 +64,11 @@ export function ChatPanel() {
 
   const [loading, setLoading] = useState(false);
 
-  // Reactive tab/connection signal so we can hide history on
-  // (instance, database) change. Reading the connection fields via
-  // `useVueState` gives us a stable string key the effect can depend on.
-  const connectionKey = useVueState(() => {
-    const tab = tabStore.currentTab;
-    if (!tab) return "";
-    return `${tab.connection.instance}|${tab.connection.database}`;
-  });
+  // Tab/connection signal so we can hide history on (instance,
+  // database) change — a stable string key the effect can depend on.
+  const connectionKey = currentTab
+    ? `${currentTab.connection.instance}|${currentTab.connection.database}`
+    : "";
   useEffect(() => {
     setShowHistoryDialog(false);
   }, [connectionKey, setShowHistoryDialog]);
@@ -87,7 +83,7 @@ export function ChatPanel() {
     async (query: string) => {
       const conversation = selected;
       if (!conversation) return;
-      const tab = tabStore.currentTab;
+      const tab = getCurrentSQLEditorTab();
       if (!tab) return;
 
       const { messageList } = conversation;
@@ -161,7 +157,6 @@ export function ChatPanel() {
     },
     [
       selected,
-      tabStore,
       store,
       context.engine,
       context.databaseMetadata,
@@ -179,16 +174,17 @@ export function ChatPanel() {
   useEffect(() => {
     if (!ready) return;
     if (conversationList.length > 0) return;
+    const tab = getCurrentSQLEditorTab();
     void store.createConversation({
       name: "",
-      instance: tabStore.currentTab?.connection.instance ?? "",
-      database: tabStore.currentTab?.connection.database ?? "",
+      instance: tab?.connection.instance ?? "",
+      database: tab?.connection.database ?? "",
     });
     // We intentionally watch only the boolean transition + the empty
     // condition, not the full `conversationList` reference — Vue's
     // version reacts on identity; the React version reacts on the
     // length so we don't fire each time a new message arrives.
-  }, [ready, conversationList.length, store, tabStore]);
+  }, [ready, conversationList.length, store]);
 
   // Fire `requestAI` when a pending send-chat lands. The Vue version
   // used `watch(..., { flush: "post" })` — we approximate by waiting

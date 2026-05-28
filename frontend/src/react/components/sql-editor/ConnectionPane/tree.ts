@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   buildTreeImpl,
   mapTreeNodeByType,
@@ -91,7 +91,7 @@ export function useSQLEditorTreeByEnvironment(
   { email }: Options
 ): TreeByEnvironment {
   const databaseStore = useDatabaseV1Store();
-  const editorStore = useSQLEditorVueState();
+  const project = useSQLEditorEditorState((s) => s.project);
   const environmentStore = useEnvironmentV1Store();
 
   const storageKey = useMemo(
@@ -145,7 +145,7 @@ export function useSQLEditorTreeByEnvironment(
       try {
         const { databases, nextPageToken } = await databaseStore.fetchDatabases(
           {
-            parent: editorStore.project,
+            parent: project,
             pageToken,
             pageSize: getDefaultPagination(),
             filter: {
@@ -163,7 +163,7 @@ export function useSQLEditorTreeByEnvironment(
         setFetchDataState({ loading: false });
       }
     },
-    [databaseStore, editorStore, environment]
+    [databaseStore, project, environment]
   );
 
   // Keep a ref to the latest fetchDataState so the debounced fn can read it

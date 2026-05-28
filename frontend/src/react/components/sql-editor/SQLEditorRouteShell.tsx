@@ -6,12 +6,19 @@ import {
   useComponentPermissionState,
   usePermissionDataReady,
 } from "@/react/components/ComponentPermissionGuard";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useClampResultRowsLimitToPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { useCurrentRoute, useNavigate } from "@/react/router";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorEditorState,
+  useSQLEditorEditorState,
+} from "@/react/stores/sqlEditor/editor";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
@@ -102,20 +109,23 @@ export function SQLEditorRouteShell() {
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const editorStore = useSQLEditorVueState();
-  const tabStore = useSQLEditorTabStore();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
   const worksheetStore = useWorkSheetStore();
 
-  const projectContextReady = useVueState(
-    () => editorStore.projectContextReady
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
   );
-  const project = useVueState(() => {
-    const proj = projectStore.getProjectByName(editorStore.project);
+  const projectNameState = useSQLEditorEditorState((s) => s.project);
+  const project = usePiniaBridge(() => {
+    const proj = projectStore.getProjectByName(projectNameState);
     if (!isValidProjectName(proj.name)) return undefined;
     return proj;
   });
+
+  // Keep the persisted result-row limit within the project's
+  // query-data policy maximum (re-clamps if the policy lowers the cap).
+  useClampResultRowsLimitToPolicy(projectNameState);
 
   // ---- one-shot bootstrap on mount -------------------------------------
 
@@ -134,10 +144,10 @@ export function SQLEditorRouteShell() {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
     void (async () => {
-      editorStore.projectContextReady = false;
+      getSQLEditorEditorState().setProjectContextReady(false);
       const project = await initializeProject();
       await migrateLegacyCache();
-      await tabStore.initProject(project);
+      await getSQLEditorTabsState().initProject(project);
       await initializeConnectionFromQuery();
       setBootstrapDone(true);
     })();
@@ -163,7 +173,8 @@ export function SQLEditorRouteShell() {
     } else if (typeof projectInParams === "string" && projectInParams) {
       project = `projects/${projectInParams}`;
     } else {
-      project = editorStore.storedLastViewedProject;
+      // storedLastViewedProject is an alias for project.
+      project = getSQLEditorEditorState().project;
     }
 
     let initializeSuccess = !!(await maybeSwitchProject(project));
@@ -172,17 +183,20 @@ export function SQLEditorRouteShell() {
       initializeSuccess = !!(await maybeSwitchProject(project));
     }
     if (!initializeSuccess) {
-      editorStore.setProject("");
+      getSQLEditorEditorState().setProject("");
     }
-    return editorStore.project;
+    return getSQLEditorEditorState().project;
   };
 
   const switchWorksheet = async (sheetName: string) => {
-    const openedSheetTab = tabStore.getTabByWorksheet(sheetName);
+    const tabsState = getSQLEditorTabsState();
+    const openedSheetTab = Array.from(tabsState.tabsById.values()).find(
+      (t) => t.worksheet === sheetName
+    );
     const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
     if (!sheet) {
       if (openedSheetTab) {
-        tabStore.updateTab(openedSheetTab.id, {
+        tabsState.updateTab(openedSheetTab.id, {
           worksheet: "",
           status: "DIRTY",
         });
@@ -198,7 +212,7 @@ export function SQLEditorRouteShell() {
       return false;
     }
     const connection = await extractWorksheetConnection(sheet);
-    tabStore.addTab({
+    tabsState.addTab({
       id: openedSheetTab?.id,
       connection,
       worksheet: sheet.name,
@@ -232,7 +246,7 @@ export function SQLEditorRouteShell() {
     await maybeSwitchProject(database.project);
     const { instance } = extractDatabaseResourceName(database.name);
     const connection = { instance, database: database.name };
-    tabStore.addTab({
+    getSQLEditorTabsState().addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     });
@@ -246,17 +260,25 @@ export function SQLEditorRouteShell() {
 
   // ---- URL ⇄ connection sync (reactive) --------------------------------
 
-  // Subscribe to each Pinia field; the effect below fires whenever any
+  // Subscribe to each Zustand field; the effect below fires whenever any
   // changes (mirrors Vue's `watch([...], ..., { immediate: true })`).
   // The dependency array does the multi-source coalescing.
-  const projName = useVueState(() => editorStore.project);
-  const sheetName = useVueState(() => tabStore.currentTab?.worksheet);
-  const instanceName = useVueState(
-    () => tabStore.currentTab?.connection.instance
+  const projName = useSQLEditorEditorState((s) => s.project);
+  const sheetName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.worksheet
   );
-  const dbName = useVueState(() => tabStore.currentTab?.connection.database);
-  const schema = useVueState(() => tabStore.currentTab?.connection.schema);
-  const table = useVueState(() => tabStore.currentTab?.connection.table);
+  const instanceName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.instance
+  );
+  const dbName = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.database
+  );
+  const schema = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.schema
+  );
+  const table = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.table
+  );
 
   useEffect(() => {
     // Skip until bootstrap is done — see `bootstrapDone` declaration
@@ -294,9 +316,13 @@ export function SQLEditorRouteShell() {
       "panel"
     ) as Record<string, string>;
 
-    // Touch the connection ref so the omit() above sees the live tab —
+    // Touch the connection so the omit() above sees the live tab —
     // identical to the Vue version's `connection.value` read at the top.
-    void (tabStore.currentTab?.connection ?? emptySQLEditorConnection());
+    const tabsState = getSQLEditorTabsState();
+    void (
+      tabsState.tabsById.get(tabsState.currentTabId)?.connection ??
+      emptySQLEditorConnection()
+    );
 
     if (vals.sheetName) {
       const sheet = worksheetStore.getWorksheetByName(vals.sheetName);
@@ -311,11 +337,10 @@ export function SQLEditorRouteShell() {
         });
         return;
       } else {
-        const tab = tabStore.currentTab;
-        if (tab) {
-          tab.worksheet = "";
-          tab.status = "DIRTY";
-        }
+        tabsState.updateCurrentTab({
+          worksheet: "",
+          status: "DIRTY",
+        });
       }
     }
     if (vals.dbName && isValidDatabaseName(vals.dbName)) {
@@ -347,7 +372,9 @@ export function SQLEditorRouteShell() {
       await navigate.replace({
         name: SQL_EDITOR_INSTANCE_MODULE,
         params: {
-          project: extractProjectResourceName(editorStore.project),
+          project: extractProjectResourceName(
+            getSQLEditorEditorState().project
+          ),
           instance: extractInstanceResourceName(vals.instanceName),
         },
         query,
@@ -433,8 +460,16 @@ export function SQLEditorRouteShell() {
   useEffect(() => {
     const dirtyMsg = () =>
       `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`;
+    const findDirtyTab = () => {
+      const tabsState = getSQLEditorTabsState();
+      for (const persisted of tabsState.openTmpTabList) {
+        const tab = tabsState.tabsById.get(persisted.id);
+        if (tab && tab.status !== "CLEAN") return tab;
+      }
+      return undefined;
+    };
     const handler = (e: BeforeUnloadEvent) => {
-      const dirty = tabStore.openTabList.find((tab) => tab.status !== "CLEAN");
+      const dirty = findDirtyTab();
       if (!dirty) return;
       e.returnValue = dirtyMsg();
       return e.returnValue;
@@ -454,7 +489,7 @@ export function SQLEditorRouteShell() {
         next();
         return;
       }
-      const dirty = tabStore.openTabList.find((tab) => tab.status !== "CLEAN");
+      const dirty = findDirtyTab();
       if (dirty && !window.confirm(dirtyMsg())) {
         next(false);
         return;
@@ -465,7 +500,7 @@ export function SQLEditorRouteShell() {
       window.removeEventListener("beforeunload", handler);
       removeGuard();
     };
-  }, [tabStore, t]);
+  }, [t]);
 
   // ---- permission gate (children-style) --------------------------------
 

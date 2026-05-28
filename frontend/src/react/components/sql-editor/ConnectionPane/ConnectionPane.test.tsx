@@ -25,6 +25,12 @@ const mocks = vi.hoisted(() => {
         databases: [] as string[],
         databaseGroups: [] as string[],
       },
+    } as {
+      id: string;
+      mode: string;
+      title: string;
+      connection: { database: string; instance: string };
+      batchQueryContext: { databases: string[]; databaseGroups: string[] };
     },
     updateBatchQueryContext: vi.fn(),
     setCurrentTabId: vi.fn(),
@@ -35,6 +41,9 @@ const mocks = vi.hoisted(() => {
     projectContextReady: true,
     allowAdmin: false,
   };
+  // Plan-feature flags consumed via `useSQLEditorFeature`. Default ON for
+  // render-path tests; individual tests flip to false to exercise gating.
+  const features = { batchQuery: true, databaseGroups: true };
   const uiStore = { showConnectionPanel: true, asidePanelTab: "SCHEMA" };
   const databaseStore = {
     batchGetOrFetchDatabases: vi.fn().mockResolvedValue([]),
@@ -87,6 +96,7 @@ const mocks = vi.hoisted(() => {
   return {
     tabStore,
     editorStore,
+    features,
     uiStore,
     databaseStore,
     dbGroupStore,
@@ -95,8 +105,7 @@ const mocks = vi.hoisted(() => {
     treeStore,
     instanceStore,
     currentUser,
-    useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-    featureToRef: vi.fn(() => ({ value: true })),
+    usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
     pushNotification: vi.fn(),
   };
 });
@@ -105,12 +114,18 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
+vi.mock("@/react/hooks/usePiniaBridge", () => ({
+  usePiniaBridge: mocks.usePiniaBridge,
+}));
+
+vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
+  // FEATURE_BATCH_QUERY === 1, FEATURE_DATABASE_GROUPS === 2 (see the
+  // subscription_service_pb mock below).
+  useSQLEditorFeature: (feature: number) =>
+    feature === 1 ? mocks.features.batchQuery : mocks.features.databaseGroups,
 }));
 
 vi.mock("@/store", () => ({
-  featureToRef: mocks.featureToRef,
   pushNotification: mocks.pushNotification,
   useCurrentUserV1: () => mocks.currentUser,
   useDatabaseV1Store: () => mocks.databaseStore,
@@ -120,12 +135,31 @@ vi.mock("@/store", () => ({
   useProjectV1Store: () => mocks.projectStore,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: () => mocks.tabStore,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSupportBatchMode: () => mocks.tabStore.supportBatchMode,
+  useIsInBatchMode: () => mocks.tabStore.isInBatchMode,
+  useCurrentSQLEditorTab: () => mocks.tabStore.currentTab,
+  getSQLEditorTabsState: () => ({
+    updateBatchQueryContext: mocks.tabStore.updateBatchQueryContext,
+    setCurrentTabId: mocks.tabStore.setCurrentTabId,
+    updateTab: mocks.tabStore.updateTab,
+    currentTabId: mocks.tabStore.currentTab?.id ?? "",
+    tabsById: new Map(
+      mocks.tabStore.currentTab
+        ? [[mocks.tabStore.currentTab.id, mocks.tabStore.currentTab]]
+        : []
+    ),
+  }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: () => mocks.editorStore,
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (
+    selector: (s: { project: string; projectContextReady: boolean }) => unknown
+  ) =>
+    selector({
+      project: mocks.editorStore.project,
+      projectContextReady: mocks.editorStore.projectContextReady,
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -381,9 +415,11 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.useVueState.mockImplementation((getter) => getter());
+  mocks.usePiniaBridge.mockImplementation((getter) => getter());
   // Reset feature flags default to true for render-path tests.
-  mocks.featureToRef.mockReturnValue({ value: true });
+  mocks.features.batchQuery = true;
+  mocks.features.databaseGroups = true;
+  mocks.tabStore.supportBatchMode = true;
   mocks.tabStore.isInBatchMode = false;
   mocks.tabStore.currentTab = {
     id: "t-1",
@@ -458,7 +494,8 @@ describe("ConnectionPane", () => {
   });
 
   test("disables DATABASE-GROUP tab when batch-query or database-group features missing", () => {
-    mocks.featureToRef.mockImplementation(() => ({ value: false }));
+    mocks.features.batchQuery = false;
+    mocks.features.databaseGroups = false;
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPane show={true} onMissingFeature={() => {}} />
     );

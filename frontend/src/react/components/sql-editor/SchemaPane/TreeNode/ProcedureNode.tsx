@@ -1,4 +1,3 @@
-import { useVueState } from "@/react/hooks/useVueState";
 import { useDBSchemaV1Store } from "@/store";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
@@ -18,13 +17,10 @@ export function ProcedureNode({ node, keyword }: Props) {
   const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"procedure">).meta.target;
 
-  const procedureMetadata = useVueState(
-    () =>
-      dbSchema.getSchemaMetadata({
-        database: target.database,
-        schema: target.schema,
-      })?.procedures[target.position]
-  );
+  const procedureMetadata = dbSchema.getSchemaMetadata({
+    database: target.database,
+    schema: target.schema,
+  })?.procedures[target.position];
 
   return (
     <CommonNode

@@ -19,12 +19,13 @@ import {
 import { Input } from "@/react/components/ui/input";
 import { Tree, type TreeDataNode } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { useDBSchemaV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import type {
@@ -61,6 +62,10 @@ const ROW_HEIGHT = 21;
 const TREE_FALLBACK_HEIGHT = 360;
 const FLAT_TABLE_THRESHOLD = 1000;
 const SEARCH_DEBOUNCE_MS = 200;
+// Stable empty array reference used by the expandedKeys selector — a
+// fresh `[]` per call would re-trigger Zustand subscribers on every
+// store mutation.
+const EMPTY_KEYS: readonly string[] = Object.freeze([]);
 
 /**
  * React port of `frontend/src/views/sql-editor/AsidePanel/SchemaPane/SchemaPane.vue`.
@@ -92,25 +97,19 @@ export function SchemaPane() {
 
 function SchemaPaneInner() {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
   const dbSchemaStore = useDBSchemaV1Store();
-  const connection = useConnectionOfCurrentSQLEditorTab();
+  const { database } = useConnectionOfCurrentSQLEditorTab();
   const hoverState = useHoverState();
 
-  const database = useVueState(() => connection.database.value);
-  const currentTabId = useVueState(() => tabStore.currentTab?.id);
-  // `connection` is mutated in place via `Object.assign`-style updates,
-  // so depth is required to catch nested-field changes (schema, database,
-  // instance) without a fresh reference.
-  const tabConnection = useVueState(() => tabStore.currentTab?.connection, {
-    deep: true,
-  });
+  const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
+  const currentTab = useSQLEditorTabState((s) =>
+    s.tabsById.get(s.currentTabId)
+  );
+  const tabConnection = currentTab?.connection;
   const tabConnectionSchema = tabConnection?.schema;
   // tab.viewState shapes the selectedKeys highlight when the editor
   // panel is on a non-CODE view (e.g. TABLES drill-down).
-  const panelViewState = useVueState(() => tabStore.currentTab?.viewState, {
-    deep: true,
-  });
+  const panelViewState = currentTab?.viewState;
 
   const [searchPattern, setSearchPattern] = useState("");
   const debouncedSearch = useDebouncedValue(searchPattern, SEARCH_DEBOUNCE_MS);
@@ -121,14 +120,28 @@ function SchemaPaneInner() {
     setSearchPattern("");
   }, [currentTabId]);
 
-  const [metadata, setMetadata] = useState<DatabaseMetadata | null>(null);
+  // Reactive read of the cached metadata. Returns the live dbSchema
+  // cache entry (or null when uncached) so the tree rebuilds whenever
+  // the metadata for this database changes — including a manual sync via
+  // SyncSchemaButton, which refetches with `skipCache` and replaces the
+  // entry. `getDatabaseMetadataWithoutDefault` returns a stable
+  // `undefined` when uncached (vs `getDatabaseMetadata`'s fresh empty
+  // object), keeping the snapshot reference stable across renders.
+  const metadata = useVueState<DatabaseMetadata | null>(
+    () =>
+      isValidDatabaseName(database.name)
+        ? (dbSchemaStore.getDatabaseMetadataWithoutDefault(database.name) ??
+          null)
+        : null,
+    { deps: [database.name] }
+  );
   const [isFetching, setIsFetching] = useState(false);
 
-  // Fetch metadata on database change. The store de-duplicates so this
-  // is safe to fire on every render where the name flips.
+  // Trigger the fetch on database change (the store de-duplicates). The
+  // metadata is read reactively above rather than from this promise, so
+  // a later cache replacement (e.g. sync) also flows through to the tree.
   useEffect(() => {
     if (!isValidDatabaseName(database.name)) {
-      setMetadata(null);
       setIsFetching(false);
       return;
     }
@@ -136,13 +149,8 @@ function SchemaPaneInner() {
     let cancelled = false;
     void dbSchemaStore
       .getOrFetchDatabaseMetadata({ database: database.name })
-      .then((md) => {
-        if (cancelled) return;
-        setMetadata(md);
-      })
       .finally(() => {
-        if (cancelled) return;
-        setIsFetching(false);
+        if (!cancelled) setIsFetching(false);
       });
     return () => {
       cancelled = true;
@@ -177,37 +185,46 @@ function SchemaPaneInner() {
       // First-mount default expand: seed treeState.keys so the user
       // sees database/schema/Tables/Views opened by default. The Vue
       // version seeds when `treeStateDb !== connectionDb && connectionDb`.
-      const tab = tabStore.currentTab;
+      const tab = getSQLEditorTabsState().tabsById.get(
+        getSQLEditorTabsState().currentTabId
+      );
       const connectionDb = tab?.connection.database;
       if (tab && connectionDb && tab.treeState.database !== connectionDb) {
-        tab.treeState.database = connectionDb;
-        tab.treeState.keys = defaultExpandedKeys(built);
+        getSQLEditorTabsState().updateTab(tab.id, {
+          treeState: {
+            ...tab.treeState,
+            database: connectionDb,
+            keys: defaultExpandedKeys(built),
+          },
+        });
       }
     });
     return () => cancelAnimationFrame(raf);
-  }, [isFetching, metadata, totalTableCount, database, tabStore]);
+  }, [isFetching, metadata, totalTableCount, database]);
 
   // Reactive proxy for `tab.treeState.keys`. Writes via `setExpandedKeys`
-  // always REPLACE the whole array (`tab.treeState.keys = keys`), so a
-  // shallow watch on the getter is enough — the getter's read of
-  // `tab.treeState.keys` registers as a dep, and array replacement
-  // triggers the watch. Deep traversal over an array of plain strings
-  // would just add per-element overhead with no extra reactivity.
-  const expandedKeys = useVueState<string[]>(() => {
-    const tab = tabStore.currentTab;
-    if (!tab) return [];
-    if (tab.treeState.database !== database.name) return [];
-    return tab.treeState.keys ?? [];
+  // always REPLACE the whole array. The Zustand selector subscribes on
+  // the keys array reference, which `updateTab` swaps via immer on every
+  // mutation.
+  const expandedKeys = useSQLEditorTabState<readonly string[]>((s) => {
+    const tab = s.tabsById.get(s.currentTabId);
+    if (!tab) return EMPTY_KEYS;
+    if (tab.treeState.database !== database.name) return EMPTY_KEYS;
+    return tab.treeState.keys ?? EMPTY_KEYS;
   });
 
   const setExpandedKeys = useCallback(
     (keys: string[]) => {
-      const tab = tabStore.currentTab;
+      const tab = getSQLEditorTabsState().tabsById.get(
+        getSQLEditorTabsState().currentTabId
+      );
       if (!tab) return;
       if (tab.treeState.database !== database.name) return;
-      tab.treeState.keys = keys;
+      getSQLEditorTabsState().updateTab(tab.id, {
+        treeState: { ...tab.treeState, keys },
+      });
     },
-    [tabStore, database.name]
+    [database.name]
   );
 
   const upsertExpandedKeys = useCallback(
@@ -295,11 +312,16 @@ function SchemaPaneInner() {
   const { handleClick } = useClickEvents({
     onSingleClick: (node) => {
       if (node.meta.type === "schema") {
-        const tab = tabStore.currentTab;
+        const tab = getSQLEditorTabsState().tabsById.get(
+          getSQLEditorTabsState().currentTabId
+        );
         if (tab) {
-          tab.connection.schema = (
-            node.meta.target as NodeTarget<"schema">
-          ).schema;
+          getSQLEditorTabsState().updateTab(tab.id, {
+            connection: {
+              ...tab.connection,
+              schema: (node.meta.target as NodeTarget<"schema">).schema,
+            },
+          });
         }
       }
       toggleNode(node);
@@ -347,15 +369,16 @@ function SchemaPaneInner() {
   const availableActions = useAvailableActions();
 
   // ---- Flat list handlers (when totalTableCount > 1000) -------------------
-  const onFlatSelect = useCallback(
-    (item: { schema?: string }) => {
-      const tab = tabStore.currentTab;
-      if (tab && item.schema) {
-        tab.connection.schema = item.schema;
-      }
-    },
-    [tabStore]
-  );
+  const onFlatSelect = useCallback((item: { schema?: string }) => {
+    const tab = getSQLEditorTabsState().tabsById.get(
+      getSQLEditorTabsState().currentTabId
+    );
+    if (tab && item.schema) {
+      getSQLEditorTabsState().updateTab(tab.id, {
+        connection: { ...tab.connection, schema: item.schema },
+      });
+    }
+  }, []);
   const onFlatSelectAll = useCallback(
     (item: { key: string; schema: string; metadata: TableMetadata }) => {
       const synthetic: SchemaTreeNode = {
@@ -410,7 +433,7 @@ function SchemaPaneInner() {
           <Input
             value={searchPattern}
             placeholder={t("common.search")}
-            disabled={!tabStore.currentTab}
+            disabled={!currentTab}
             onChange={(e) => setSearchPattern(e.target.value)}
             className="h-8 text-sm w-full"
           />

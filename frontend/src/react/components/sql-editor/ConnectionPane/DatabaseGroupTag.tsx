@@ -2,7 +2,7 @@ import { Boxes, X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
 import { useDBGroupStore } from "@/store";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
@@ -32,7 +32,7 @@ export function DatabaseGroupTag({
     });
   }, [store, databaseGroupName]);
 
-  const databaseGroup = useVueState(() =>
+  const databaseGroup = usePiniaBridge(() =>
     store.getDBGroupByName(databaseGroupName)
   );
 

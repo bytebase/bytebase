@@ -9,10 +9,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
-  // Legacy Pinia editor store.
-  useSQLEditorVueState: vi.fn(),
+  // Per-test controllable state read by the migrated Zustand hooks.
+  currentTabDatabase: "db/test" as string | undefined,
+  project: "projects/proj1" as string,
+  addTab: vi.fn(),
   // Mutable per-test state for the zustand mock.
   historyEntry: {
     queryHistories: [] as Array<{
@@ -32,20 +32,35 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+// Zustand tab store — selector hook + imperative getter.
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  useSQLEditorTabState: (
+    selector: (s: {
+      currentTabId: string;
+      tabsById: Map<string, { connection: { database: string | undefined } }>;
+    }) => unknown
+  ) =>
+    selector({
+      currentTabId: "tab1",
+      tabsById: new Map([
+        ["tab1", { connection: { database: mocks.currentTabDatabase } }],
+      ]),
+    }),
+  getSQLEditorTabsState: () => ({
+    currentTabId: "tab1",
+    tabsById: new Map([["tab1", { connection: {} }]]),
+    addTab: mocks.addTab,
+  }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+// Zustand editor store — active project read.
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -149,19 +164,11 @@ beforeEach(async () => {
 
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
 
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { connection: { database: "db/test" } },
-    addTab: vi.fn(),
-  });
-
-  mocks.useSQLEditorVueState.mockReturnValue({
-    project: "projects/proj1",
-  });
+  mocks.currentTabDatabase = "db/test";
+  mocks.project = "projects/proj1";
 
   mocks.historyEntry = { queryHistories: [], nextPageToken: "" };
   mocks.fetchQueryHistoryList.mockResolvedValue({ queryHistories: [] });
-
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
   Object.defineProperty(navigator, "clipboard", {
     value: { writeText: vi.fn().mockResolvedValue(undefined) },

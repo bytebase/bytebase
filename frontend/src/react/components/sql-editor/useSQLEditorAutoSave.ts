@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { pushNotification, useWorkSheetStore } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 
@@ -21,7 +23,6 @@ const AUTO_SAVE_DEBOUNCE_MS = 2000;
  * component but should only be active while the SQL Editor route is.
  */
 export function useSQLEditorAutoSave() {
-  const tabStore = useSQLEditorTabStore();
   const worksheetStore = useWorkSheetStore();
   const abortAutoSave = useSQLEditorStore((s) => s.abortAutoSave);
   const setAutoSaveController = useSQLEditorStore(
@@ -29,7 +30,9 @@ export function useSQLEditorAutoSave() {
   );
   const maybeUpdateWorksheet = useSQLEditorStore((s) => s.maybeUpdateWorksheet);
 
-  const statement = useVueState(() => tabStore.currentTab?.statement);
+  const statement = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.statement
+  );
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -51,7 +54,8 @@ export function useSQLEditorAutoSave() {
   }, [statement]);
 
   const runAutoSave = async () => {
-    const tab = tabStore.currentTab;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
     if (!tab || !tab.worksheet || tab.status === "CLEAN") return;
 
     const worksheet = worksheetStore.getWorksheetByName(tab.worksheet);
@@ -64,7 +68,7 @@ export function useSQLEditorAutoSave() {
 
     const controller = new AbortController();
     setAutoSaveController(controller);
-    tabStore.updateTab(tabId, { status: "SAVING" });
+    tabsState.updateTab(tabId, { status: "SAVING" });
 
     let wasAborted = false;
     try {
@@ -80,8 +84,8 @@ export function useSQLEditorAutoSave() {
         wasAborted = true;
         return;
       }
-      if (tabStore.getTabById(tabId)?.status === "SAVING") {
-        tabStore.updateTab(tabId, { status: "DIRTY" });
+      if (getSQLEditorTabsState().tabsById.get(tabId)?.status === "SAVING") {
+        getSQLEditorTabsState().updateTab(tabId, { status: "DIRTY" });
       }
       pushNotification({
         module: "bytebase",
@@ -92,9 +96,10 @@ export function useSQLEditorAutoSave() {
     } finally {
       setAutoSaveController(null);
       if (!wasAborted) {
-        const currentStatement = tabStore.getTabById(tabId)?.statement;
+        const currentStatement =
+          getSQLEditorTabsState().tabsById.get(tabId)?.statement;
         if (currentStatement !== statementToSave) {
-          tabStore.updateTab(tabId, { status: "DIRTY" });
+          getSQLEditorTabsState().updateTab(tabId, { status: "DIRTY" });
         }
       }
     }

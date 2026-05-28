@@ -23,13 +23,18 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { Tree, type TreeDataNode } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useCommonSearchScopeOptions } from "@/react/components/useCommonSearchScopeOptions";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
-  featureToRef,
+  getSQLEditorTabsState,
+  useCurrentSQLEditorTab,
+  useIsInBatchMode,
+  useSupportBatchMode,
+} from "@/react/stores/sqlEditor/tab";
+import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -138,8 +143,6 @@ function ConnectionPaneWithHoverState(props: Props) {
 
 function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );
@@ -152,22 +155,24 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const treeNodeKeysByTarget = useSQLEditorStore((s) => s.treeNodeKeysByTarget);
   const currentUser = useCurrentUserV1();
 
-  const supportBatchMode = useVueState(() => tabStore.supportBatchMode);
-  const isInBatchMode = useVueState(() => tabStore.isInBatchMode);
+  const supportBatchMode = useSupportBatchMode();
+  const isInBatchMode = useIsInBatchMode();
   const treeStoreState = useSQLEditorStore((s) => s.treeState);
-  const currentTab = useVueState(() => tabStore.currentTab);
-  const currentUserEmail = useVueState(() => currentUser.value.email);
-  const projectName = useVueState(() => editorStore.project);
-  const projectContextReady = useVueState(
-    () => editorStore.projectContextReady
+  const currentTab = useCurrentSQLEditorTab();
+  const currentUserEmail = usePiniaBridge(() => currentUser.value.email);
+  const projectName = useSQLEditorEditorState((s) => s.project);
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
   );
-  const environmentList = useVueState(() => environmentStore.environmentList);
+  const environmentList = usePiniaBridge(
+    () => environmentStore.environmentList
+  );
 
-  const hasBatchQueryFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_BATCH_QUERY).value
+  const hasBatchQueryFeature = useSQLEditorFeature(
+    PlanFeature.FEATURE_BATCH_QUERY
   );
-  const hasDatabaseGroupFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_DATABASE_GROUPS).value
+  const hasDatabaseGroupFeature = useSQLEditorFeature(
+    PlanFeature.FEATURE_DATABASE_GROUPS
   );
 
   // Paywall triggers go to the parent (lifted out of this subtree so the
@@ -219,10 +224,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   // `flattenSelectedDatabasesFromGroup` and drives the tree-row checkbox
   // so users can see which databases are already implicitly included via
   // group selection (rendered as checked + disabled + tooltip in batch
-  // mode). useVueState — the underlying group cache mutates without the
+  // mode). usePiniaBridge — the underlying group cache mutates without the
   // store reference changing, so a deep subscription catches new
   // matchedDatabases as they arrive from the FULL-view fetch.
-  const groupCoveredDatabaseTitles = useVueState(
+  const groupCoveredDatabaseTitles = usePiniaBridge(
     () => {
       const map = new Map<string, string>();
       for (const groupName of selectedDatabaseGroupNames) {
@@ -253,10 +258,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     selectedDatabaseGroupNames.length,
   ]);
 
-  const projectTitle = useVueState(() => {
-    const p = editorStore.project;
-    if (!p) return "";
-    return projectStore.getProjectByName(p).title;
+  const projectTitle = usePiniaBridge(() => {
+    if (!projectName) return "";
+    return projectStore.getProjectByName(projectName).title;
   });
 
   const scopeOptions = useCommonSearchScopeOptions([
@@ -320,8 +324,8 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
 
   // Keep the `dataSourceType` in the tab store aligned with the UI.
   useEffect(() => {
-    tabStore.updateBatchQueryContext({ dataSourceType });
-  }, [tabStore, dataSourceType]);
+    getSQLEditorTabsState().updateBatchQueryContext({ dataSourceType });
+  }, [dataSourceType]);
 
   // Pre-fetch display data for currently-selected databases (so tags render
   // with the right title immediately).
@@ -355,7 +359,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   useEffect(() => {
     let cancelled = false;
     const compute = async () => {
-      const connection = tabStore.currentTab?.connection;
+      const tabsState = getSQLEditorTabsState();
+      const connection = tabsState.tabsById.get(
+        tabsState.currentTabId
+      )?.connection;
       if (!connection) {
         if (!cancelled) setSelectedKeys([]);
         return;
@@ -386,7 +393,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
       cancelled = true;
       unsubscribe();
     };
-  }, [tabStore, databaseStore, instanceStore, treeNodeKeysByTarget]);
+  }, [databaseStore, instanceStore, treeNodeKeysByTarget]);
 
   // Context-menu imperative handle.
   const contextMenuRef = useRef<ConnectionContextMenuHandle>(null);
@@ -426,8 +433,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           databaseStore,
           dbGroupStore
         );
+        const tabsState = getSQLEditorTabsState();
         const currentConnection = getConnectionForSQLEditorTab(
-          tabStore.currentTab
+          tabsState.tabsById.get(tabsState.currentTabId)
         );
         if (
           !currentConnection.database?.name ||
@@ -440,14 +448,14 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
             batchQueryContext: ctx,
           });
         } else {
-          tabStore.updateBatchQueryContext(ctx);
+          getSQLEditorTabsState().updateBatchQueryContext(ctx);
         }
         return !!queryable;
       } finally {
         setSwitchingConnection(false);
       }
     },
-    [tabStore, databaseStore, dbGroupStore]
+    [databaseStore, dbGroupStore]
   );
 
   const handleToggleDatabase = useCallback(
@@ -789,7 +797,7 @@ function SelectedDatabaseTag({
   >;
 }) {
   const { t } = useTranslation();
-  const database = useVueState(resolveDatabase);
+  const database = usePiniaBridge(resolveDatabase);
   const instance = useMemo(() => {
     if (!database) return null;
     return getInstanceResource(database);

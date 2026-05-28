@@ -1,11 +1,8 @@
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { extractDatabaseResourceName } from "@/utils";
 import type { AvailableAction } from "../SchemaPane/actions";
 import { useSchemaPaneActions } from "../SchemaPane/actions";
@@ -27,14 +24,12 @@ type Props = {
  * `<NTooltip placement="right">`.
  */
 export function ActionBarTabItem({ action, disabled }: Props) {
-  const tabStore = useSQLEditorTabStore();
-  const { database: databaseRef } = useConnectionOfCurrentSQLEditorTab();
+  const { database } = useConnectionOfCurrentSQLEditorTab();
   const { openNewTab } = useSchemaPaneActions();
 
-  const active = useVueState(
-    () => tabStore.currentTab?.viewState?.view === action.view
+  const active = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.viewState?.view === action.view
   );
-  const database = useVueState(() => databaseRef.value);
 
   const handleClick = () => {
     openNewTab({

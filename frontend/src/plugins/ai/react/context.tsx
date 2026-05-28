@@ -6,13 +6,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  getCurrentSQLEditorTab,
+  useCurrentSQLEditorTab,
+} from "@/react/stores/sqlEditor/tab";
 import { useDBSchemaV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
@@ -22,7 +24,7 @@ import {
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { wrapRefAsPromise } from "@/utils";
-import { aiContextEvents, useChatByTab } from "../logic";
+import { aiContextEvents, getChatByTab } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContextEvents, Conversation } from "../types";
 
@@ -111,55 +113,61 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     return EMPTY_AI_SETTING;
   });
 
-  const { instance: instanceRef, database: databaseRef } =
-    useConnectionOfCurrentSQLEditorTab();
+  const currentTab = useCurrentSQLEditorTab();
 
-  const engine = useVueState<Engine | undefined>(
-    () => instanceRef.value.engine
-  );
+  const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+  const engine: Engine | undefined = instance.engine;
 
   // Fetch database metadata on database change (mirrors Vue
   // `useMetadata`'s `watchEffect` + cache read). `useDBSchemaV1Store`
   // dedupes concurrent fetches, so firing this from the React effect
   // doesn't race with another caller. We read the cache via
-  // `useVueState` so cache hydration triggers a re-render.
-  const databaseName = useVueState(() => databaseRef.value.name);
+  // `useVueState` (re-subscribed per database) so cache hydration
+  // triggers a re-render.
+  const databaseName = database.name;
   const dbSchemaStore = useDBSchemaV1Store();
   useEffect(() => {
     if (!databaseName) return;
     void dbSchemaStore.getOrFetchDatabaseMetadata({ database: databaseName });
   }, [databaseName, dbSchemaStore]);
-  const databaseMetadata = useVueState<DatabaseMetadata | undefined>(() =>
-    databaseName ? dbSchemaStore.getDatabaseMetadata(databaseName) : undefined
+  const databaseMetadata = useVueState<DatabaseMetadata | undefined>(
+    () =>
+      databaseName
+        ? dbSchemaStore.getDatabaseMetadata(databaseName)
+        : undefined,
+    { deps: [databaseName] }
   );
 
-  const tabStore = useSQLEditorTabStore();
-  const schema = useVueState<string | undefined>(
-    () => tabStore.currentTab?.connection.schema
-  );
+  const schema: string | undefined = currentTab?.connection.schema;
 
   // ---- Per-tab chat info -------------------------------------------------
   //
-  // `useChatByTab()` returns a Vue `ComputedRef<AIChatInfo>` where the
-  // inner `AIChatInfo` itself holds Vue refs (`list`, `ready`, `selected`).
-  // We hold the ComputedRef across renders and read each inner ref via
-  // its own `useVueState` getter — that way React subscribes to the right
-  // dep granularity (chat list mutations don't churn `ready`, and so on).
-  const chatByTabRef = useChatByTab();
+  // `getChatByTab(tab)` returns an `AIChatInfo` whose inner `list`,
+  // `ready`, and `selected` are Vue refs (the conversation list is
+  // backed by a Pinia store). We select the tab from Zustand, memoize
+  // the per-tab chat, and bridge each inner ref via its own
+  // `useVueState` getter — subscribing at the right dep granularity
+  // (chat list mutations don't churn `ready`, and so on). `deps:
+  // [chatInfo]` re-subscribes each watch when the tab's chat is
+  // swapped, since the swap arrives through Zustand rather than Vue.
+  const chatInfo = useMemo(() => getChatByTab(currentTab), [currentTab]);
 
-  const chatList = useVueState<Conversation[]>(
-    () => chatByTabRef.value.list.value,
-    { deep: true }
-  );
-  const chatReady = useVueState<boolean>(() => chatByTabRef.value.ready.value);
+  const chatList = useVueState<Conversation[]>(() => chatInfo.list.value, {
+    deep: true,
+    deps: [chatInfo],
+  });
+  const chatReady = useVueState<boolean>(() => chatInfo.ready.value, {
+    deps: [chatInfo],
+  });
   const chatSelected = useVueState<Conversation | undefined>(
-    () => chatByTabRef.value.selected.value
+    () => chatInfo.selected.value,
+    { deps: [chatInfo] }
   );
   const setChatSelected = useCallback(
     (next: Conversation | undefined) => {
-      chatByTabRef.value.selected.value = next;
+      chatInfo.selected.value = next;
     },
-    [chatByTabRef]
+    [chatInfo]
   );
   const chat = useMemo<ReactAIChatInfo>(
     () => ({
@@ -170,6 +178,12 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     }),
     [chatList, chatReady, chatSelected, setChatSelected]
   );
+
+  // Live handle to the current tab's chat for the event listeners
+  // below — they fire outside React's render and must read the latest
+  // refs without re-subscribing on every tab switch.
+  const chatInfoRef = useRef(chatInfo);
+  chatInfoRef.current = chatInfo;
 
   // ---- React-side state --------------------------------------------------
 
@@ -188,31 +202,30 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
 
   const conversationStore = useConversationStore();
 
-  // We need access to the latest chat refs from inside the listeners.
-  // `chatByTabRef` is stable across renders (it's a ComputedRef captured
-  // by useMemo([]) inside `useChatByTab`), but `tab` is a live Pinia
-  // value we read via `tabStore.currentTab` at fire time.
+  // We need the latest chat refs + tab from inside the listeners.
+  // `chatInfoRef` always points at the current tab's chat, and
+  // `getCurrentSQLEditorTab()` reads the live Zustand tab at fire time.
   useEffect(() => {
     const offNewConversation = events.on(
       "new-conversation",
       async ({ input }) => {
-        const tab = tabStore.currentTab;
+        const tab = getCurrentSQLEditorTab();
         if (!tab) return;
         // Wait until the per-tab chat fetch has resolved before deciding
         // whether to reuse or create. Without this guard a brand-new tab
         // sees `selected === undefined` and creates a duplicate empty
         // conversation when one would have hydrated a beat later.
-        await wrapRefAsPromise(chatByTabRef.value.ready, /* expected */ true);
+        await wrapRefAsPromise(chatInfoRef.current.ready, /* expected */ true);
         setShowHistoryDialog(false);
 
-        const sel = chatByTabRef.value.selected.value;
+        const sel = chatInfoRef.current.selected.value;
         if (!sel || sel.messageList.length !== 0) {
           // Reuse if the current chat is empty, otherwise create a fresh one.
           const c = await conversationStore.createConversation({
             name: "",
             ...tab.connection,
           });
-          chatByTabRef.value.selected.value = c;
+          chatInfoRef.current.selected.value = c;
         }
         if (input) {
           // rAF mirrors the Vue version — gives `PromptInput`'s
@@ -227,16 +240,16 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
     );
 
     const offSendChat = events.on("send-chat", async ({ content, newChat }) => {
-      const tab = tabStore.currentTab;
+      const tab = getCurrentSQLEditorTab();
       if (!tab) return;
-      await wrapRefAsPromise(chatByTabRef.value.ready, /* expected */ true);
+      await wrapRefAsPromise(chatInfoRef.current.ready, /* expected */ true);
       if (newChat) {
         setShowHistoryDialog(false);
         const c = await conversationStore.createConversation({
           name: "",
           ...tab.connection,
         });
-        chatByTabRef.value.selected.value = c;
+        chatInfoRef.current.selected.value = c;
       }
       requestAnimationFrame(() => {
         setPendingSendChat({ content });
@@ -247,9 +260,10 @@ export function AIContextProvider({ children }: { children: ReactNode }) {
       offNewConversation();
       offSendChat();
     };
-    // `events`, `tabStore`, `chatByTabRef`, `conversationStore` are stable
-    // singletons / Pinia store references — fine to depend on them.
-  }, [events, tabStore, chatByTabRef, conversationStore]);
+    // `events` and `conversationStore` are stable singletons;
+    // `chatInfoRef` / `getCurrentSQLEditorTab` read the latest values
+    // at fire time — no need to re-subscribe on tab change.
+  }, [events, conversationStore]);
 
   // ---- Memoized value bundle --------------------------------------------
 

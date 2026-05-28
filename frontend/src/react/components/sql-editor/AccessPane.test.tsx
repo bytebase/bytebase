@@ -9,11 +9,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useProjectV1Store: vi.fn(),
-  // Legacy Pinia editor store.
-  useSQLEditorVueState: vi.fn(),
-  useSQLEditorTabStore: vi.fn(),
+  // Zustand editor store project read.
+  project: "projects/proj1" as string,
   // New zustand store state + setter.
   state: {
     highlightAccessGrantName: undefined as string | undefined,
@@ -31,10 +29,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
   useIssueV1Store: mocks.useIssueV1Store,
@@ -49,12 +43,10 @@ vi.mock("@/react/stores/app", () => ({
     }),
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
-}));
-
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+// Zustand editor store — active project read.
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -241,10 +233,7 @@ const setupDefaultMocks = () => {
     })),
   });
 
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    currentTab: { connection: { database: "instances/inst1/databases/db1" } },
-  });
+  mocks.project = "projects/proj1";
 
   mocks.state.highlightAccessGrantName = undefined;
 
@@ -264,8 +253,6 @@ const setupDefaultMocks = () => {
 
   mocks.hasFeature.mockReturnValue(true);
   mocks.getDefaultPagination.mockReturnValue(20);
-
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 };
 
 beforeEach(async () => {
@@ -325,7 +312,6 @@ describe("AccessPane", () => {
       accessGrants: grants,
       nextPageToken: "",
     });
-    mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
     const { container, render, unmount } = renderIntoContainer(<AccessPane />);
     render();
@@ -382,7 +368,6 @@ describe("AccessPane", () => {
       accessGrants: [grant],
       nextPageToken: "",
     });
-    mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
 
     const { container, render, unmount } = renderIntoContainer(<AccessPane />);
     render();

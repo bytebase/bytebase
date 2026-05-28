@@ -27,10 +27,10 @@ import { EllipsisText } from "@/react/components/ui/ellipsis-text";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -229,13 +229,13 @@ function SingleResultViewInner({
   setNoSQLTableView,
 }: SingleResultViewInnerProps) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
-  const currentTabMode = useVueState(() => tabStore.currentTab?.mode);
-  const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
-  const policyMaxRows = useVueState(
-    () => editorStore.queryDataPolicy.maximumResultRows
+  const project = useSQLEditorEditorState((s) => s.project);
+  const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
+  const currentTabMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
   );
+  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
+  const policyMaxRows = queryDataPolicy.maximumResultRows;
   const { runQuery } = useExecuteSQL();
   const { copyAll } = useSelectionContext();
 

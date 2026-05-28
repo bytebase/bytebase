@@ -2,8 +2,7 @@ import { Upload } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { SQLUploadButton } from "./SQLUploadButton";
 
 interface UploadFileButtonProps {
@@ -17,8 +16,7 @@ interface UploadFileButtonProps {
  */
 export function UploadFileButton({ onUpload }: UploadFileButtonProps) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const tabId = useVueState(() => tabStore.currentTab?.id);
+  const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
 
   const handleUpdateSql = useCallback(
     (content: string) => {

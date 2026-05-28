@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useDBSchemaV1Store } from "@/store";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { useViewStateNav } from "../common/useViewStateNav";
@@ -10,9 +10,9 @@ import { TablesTable } from "./TablesTable";
 export function TablesPanel() {
   const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
-  const databaseName = useVueState(() => database.value.name);
-  const db = useVueState(() => database.value);
-  const databaseMetadata = useVueState(
+  const databaseName = database.name;
+  const db = database;
+  const databaseMetadata = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
     { deep: true }
   );

@@ -20,6 +20,29 @@ const ENTITY_CACHE = new Map<
   Map<string, EntityCacheEntry<KeyType[], unknown>>
 >();
 
+type NamespaceSubscription = {
+  version: number;
+  listeners: Set<() => void>;
+};
+const SUBSCRIPTIONS = new Map<string, NamespaceSubscription>();
+
+const getSubscription = (namespace: string): NamespaceSubscription => {
+  let sub = SUBSCRIPTIONS.get(namespace);
+  if (!sub) {
+    sub = { version: 0, listeners: new Set() };
+    SUBSCRIPTIONS.set(namespace, sub);
+  }
+  return sub;
+};
+
+const notify = (namespace: string) => {
+  const sub = getSubscription(namespace);
+  sub.version++;
+  for (const listener of sub.listeners) {
+    listener();
+  }
+};
+
 export const useCache = <K extends KeyType[], T>(namespace: string) => {
   const requestCacheMap = getRequestCacheMap<K, T>(namespace);
   const entityCacheMap = getEntityCacheMap<K, T>(namespace);
@@ -72,12 +95,10 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
       promise,
       abortController,
     });
-    // trace("setRequest", keys);
   };
 
   const getEntity = (keys: K) => {
     const key = getKey(keys);
-    // trace("getEntity", keys, entityCacheMap.has(key));
     return entityCacheMap.get(key)?.entity;
   };
 
@@ -87,26 +108,41 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
       keys,
       entity,
     });
-    // trace("setEntity", keys);
+    notify(namespace);
   };
 
   const invalidateEntity = (keys: K) => {
     invalidateRequest(keys);
     const key = getKey(keys);
-    entityCacheMap.delete(key);
+    const existed = entityCacheMap.delete(key);
+    if (existed) {
+      notify(namespace);
+    }
   };
 
   const clear = () => {
-    // abort and invalidate all flying requests
     for (const request of requestCacheMap.values()) {
       if (!request.abortController.signal.aborted) {
         request.abortController.abort();
       }
     }
-    // clear all cache entries
+    const hadEntities = entityCacheMap.size > 0;
     requestCacheMap.clear();
     entityCacheMap.clear();
+    if (hadEntities) {
+      notify(namespace);
+    }
   };
+
+  const subscribe = (listener: () => void) => {
+    const sub = getSubscription(namespace);
+    sub.listeners.add(listener);
+    return () => {
+      sub.listeners.delete(listener);
+    };
+  };
+
+  const getVersion = () => getSubscription(namespace).version;
 
   return {
     requestCacheMap,
@@ -118,6 +154,8 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
     invalidateRequest,
     invalidateEntity,
     clear,
+    subscribe,
+    getVersion,
   };
 };
 

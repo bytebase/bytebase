@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types/const";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
@@ -33,7 +33,9 @@ export function AdminLabel({ tab }: Props) {
     void databaseStore.getOrFetchDatabaseByName(dbName);
   }, [databaseStore, dbName]);
 
-  const database = useVueState(() => databaseStore.getDatabaseByName(dbName));
+  const database = usePiniaBridge(() =>
+    databaseStore.getDatabaseByName(dbName)
+  );
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);
   const { databaseName } = extractDatabaseResourceName(database.name);

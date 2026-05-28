@@ -16,8 +16,16 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
-  useSQLEditorTabStore: vi.fn(),
+  // The migrated TabList reads tabs via the Zustand selector hooks
+  // (`useOpenTabList` / `useSQLEditorTabState`) and imperative actions via
+  // `getSQLEditorTabsState()`. `tabState` is the stub the selectors run
+  // against; `getSQLEditorTabsState` returns the same object.
+  tabState: { currentTabId: "", openTabList: [] } as {
+    currentTabId: string;
+    openTabList: SQLEditorTab[];
+    setCurrentTabId?: (id: string) => void;
+    closeTab?: (id: string) => void;
+  },
   closeTab: vi.fn(),
   setCurrentTabId: vi.fn(),
   createWorksheet: vi.fn().mockResolvedValue(undefined),
@@ -29,14 +37,13 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({}));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  getSQLEditorTabsState: () => mocks.tabState,
+  useOpenTabList: () => mocks.tabState.openTabList,
+  useSQLEditorTabState: (selector: (s: typeof mocks.tabState) => unknown) =>
+    selector(mocks.tabState),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -208,16 +215,14 @@ const makeTab = (
   }) as unknown as SQLEditorTab;
 
 const setup = (tabs: SQLEditorTab[], currentTabId = tabs[0]?.id ?? "") => {
-  const tabStore = {
+  Object.assign(mocks.tabState, {
     openTabList: tabs,
     currentTabId,
     setCurrentTabId: mocks.setCurrentTabId,
     closeTab: mocks.closeTab,
-  };
-  mocks.useSQLEditorTabStore.mockReturnValue(tabStore);
-  mocks.useVueState.mockImplementation((getter) => getter());
+  });
   mocks.tabListEventsOn.mockReturnValue(() => {});
-  return { tabStore };
+  return { tabStore: mocks.tabState };
 };
 
 beforeEach(async () => {

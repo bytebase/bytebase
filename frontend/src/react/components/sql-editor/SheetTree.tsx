@@ -54,11 +54,10 @@ import {
 import type { TreeDataNode } from "@/react/components/ui/tree";
 import { Tree } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore as useSQLEditorReactStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { pushNotification, useWorkSheetStore } from "@/store";
 import {
   openWorksheetByName,
@@ -176,45 +175,35 @@ export function SheetTree({
 }: Props) {
   const { t } = useTranslation();
 
-  // ---- Pinia stores (called at top level, not inside useVueState) ----------
+  // ---- Pinia stores (called at top level, not inside the Vue-bridge call) ----------
   const worksheetV1Store = useWorkSheetStore();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const createWorksheet = useSQLEditorReactStore((s) => s.createWorksheet);
 
   // ---- Sheet contexts -------------------------------------------------------
-  const sheetContext = useSheetContext();
+  const {
+    filter: worksheetFilter,
+    selectedKeys,
+    expandedKeys,
+    editingNode,
+    batchUpdateWorksheetFolders,
+    setExpandedKeys,
+    setEditingNode,
+  } = useSheetContext();
   const {
     isInitialized,
     isLoading,
-    sheetTree: sheetTreeRef,
+    sheetTree,
     fetchSheetList,
     folderContext,
     getFoldersForWorksheet,
     events,
   } = useSheetContextByView(view);
 
-  const {
-    filter: worksheetFilterRef,
-    selectedKeys: selectedKeysRef,
-    expandedKeys: expandedKeysRef,
-    editingNode: editingNodeRef,
-    batchUpdateWorksheetFolders,
-  } = sheetContext;
-
-  // ---- Reactive reads from Vue/Pinia via useVueState -----------------------
-  const isLoadingVal = useVueState(() => isLoading.value);
-  const isInitializedVal = useVueState(() => isInitialized.value);
-  const project = useVueState(() => editorStore.project);
-  const sheetTree = useVueState(() => sheetTreeRef.value);
-  const worksheetFilter = useVueState(() => worksheetFilterRef.value);
-  const selectedKeys = useVueState(() =>
-    Array.from(selectedKeysRef.value ?? [])
+  const project = useSQLEditorEditorState((s) => s.project);
+  const expandedKeysArray = useMemo(
+    () => Array.from(expandedKeys ?? []),
+    [expandedKeys]
   );
-  const expandedKeysArray = useVueState(() =>
-    Array.from(expandedKeysRef.value ?? [])
-  );
-  const editingNode = useVueState(() => editingNodeRef.value);
 
   // ---- Dropdown hook -------------------------------------------------------
   const {
@@ -298,22 +287,13 @@ export function SheetTree({
 
   // ---- Auto-fetch on mount + project change --------------------------------
   useEffect(() => {
-    if (!isInitializedVal && project) {
+    if (!isInitialized && project) {
       void fetchSheetList();
     }
-  }, [isInitializedVal, project, fetchSheetList]);
-
-  // When project changes, mark as uninitialized so fetch runs again.
-  const prevProjectRef = useRef(project);
-  useEffect(() => {
-    if (prevProjectRef.current !== project) {
-      prevProjectRef.current = project;
-      isInitialized.value = false;
-    }
-  }, [project, isInitialized]);
+  }, [isInitialized, project, fetchSheetList]);
 
   // Focus + select-all ONCE when a new node enters editing. `editingNode` is
-  // a fresh object on every keystroke (onChange rewrites editingNodeRef.value),
+  // a fresh object on every keystroke (onChange calls setEditingNode),
   // so depending on its identity would re-select on every keypress. Key the
   // effect on the node's stable `.key` instead.
   const editingKey = editingNode?.node.key;
@@ -358,8 +338,8 @@ export function SheetTree({
   // non-matching rows, so the viewport should shrink accordingly.
   const nodeMatches = useCallback(
     (node: WorksheetFolderNode, term: string): boolean =>
-      filterNode(folderContext.rootPath.value)(term, node),
-    [folderContext.rootPath.value]
+      filterNode(folderContext.rootPath)(term, node),
+    [folderContext.rootPath]
   );
   const treeHeight = useMemo(
     () =>
@@ -375,13 +355,17 @@ export function SheetTree({
   // ---- Expand/collapse toggle -----------------------------------------------
   const handleToggleExpand = useCallback(
     (node: WorksheetFolderNode) => {
-      if (expandedKeysRef.value.has(node.key)) {
-        expandedKeysRef.value.delete(node.key);
-      } else {
-        expandedKeysRef.value.add(node.key);
-      }
+      setExpandedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(node.key)) {
+          next.delete(node.key);
+        } else {
+          next.add(node.key);
+        }
+        return next;
+      });
     },
-    [expandedKeysRef]
+    [setExpandedKeys]
   );
 
   // ---- Helpers: folder/tree operations ------------------------------------
@@ -404,22 +388,24 @@ export function SheetTree({
 
   const replaceExpandedKeys = useCallback(
     ({ oldKey, newKey }: { oldKey: string; newKey?: string }) => {
-      const newSet = new Set<string>();
-      for (const path of expandedKeysRef.value) {
-        if (
-          path === oldKey ||
-          folderContext.isSubFolder({ parent: oldKey, path, dig: true })
-        ) {
-          if (newKey) {
-            newSet.add(path.replace(oldKey, newKey));
+      setExpandedKeys((prev) => {
+        const newSet = new Set<string>();
+        for (const path of prev) {
+          if (
+            path === oldKey ||
+            folderContext.isSubFolder({ parent: oldKey, path, dig: true })
+          ) {
+            if (newKey) {
+              newSet.add(path.replace(oldKey, newKey));
+            }
+          } else {
+            newSet.add(path);
           }
-        } else {
-          newSet.add(path);
         }
-      }
-      expandedKeysRef.value = newSet;
+        return newSet;
+      });
     },
-    [expandedKeysRef, folderContext]
+    [setExpandedKeys, folderContext]
   );
 
   const updateWorksheetFolders = useCallback(
@@ -452,14 +438,17 @@ export function SheetTree({
           worksheetV1Store.deleteWorksheetByName(worksheet)
         )
       );
+      const tabsState = getSQLEditorTabsState();
       for (const worksheet of worksheets) {
-        const tab = tabStore.getTabByWorksheet(worksheet);
+        const tab = Array.from(tabsState.tabsById.values()).find(
+          (t) => t.worksheet === worksheet
+        );
         if (tab) {
-          tabStore.closeTab(tab.id);
+          tabsState.closeTab(tab.id);
         }
       }
     },
-    [worksheetV1Store, tabStore]
+    [worksheetV1Store]
   );
 
   // ---- handleRenameNode (debounced via ref) ---------------------------------
@@ -468,22 +457,24 @@ export function SheetTree({
   const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const execRenameNode = useCallback(async () => {
-    const editing = editingNodeRef.value;
+    const editing = editingNode;
     if (!editing) return;
 
     const cleanup = () => {
       // Use setTimeout to mimic nextTick
       setTimeout(() => {
-        editingNodeRef.value = undefined;
+        setEditingNode(undefined);
       }, 0);
     };
 
-    const newTitle = editing.node.label.trim();
+    // `rawLabel` holds the in-progress edit value. `node.label` is the
+    // original (the immer-frozen tree node is never mutated in place).
+    const newTitle = editing.rawLabel.trim();
     // Folders can't be renamed to empty (the label IS the folder name and the
     // key segment). Worksheets can — they fall back to the "Untitled"
     // placeholder in the UI.
     if (!newTitle && !editing.node.worksheet) {
-      editing.node.label = editing.rawLabel;
+      // Empty folder name — abort the rename, leave the node untouched.
       cleanup();
       return;
     }
@@ -506,14 +497,17 @@ export function SheetTree({
       await worksheetV1Store.patchWorksheet({ ...worksheet, title: newTitle }, [
         "title",
       ]);
-      const tab = tabStore.getTabByWorksheet(worksheet.name);
+      const tabsState = getSQLEditorTabsState();
+      const tab = Array.from(tabsState.tabsById.values()).find(
+        (t) => t.worksheet === worksheet.name
+      );
       if (tab) {
-        tabStore.updateTab(tab.id, { title: newTitle });
+        tabsState.updateTab(tab.id, { title: newTitle });
       }
       cleanup();
     } else {
       // Folder rename — check for duplicate name
-      const parentNode = findParentNode(sheetTreeRef.value, editing.node.key);
+      const parentNode = findParentNode(sheetTree, editing.node.key);
       const sameNode = parentNode?.children.find(
         (child) => child.key === newKey
       );
@@ -537,7 +531,7 @@ export function SheetTree({
                   cleanup();
                 })();
               } else {
-                editing.node.label = editing.rawLabel;
+                // User declined the merge — abort, leave the node as-is.
                 cleanup();
               }
               setDeleteDialogState({ type: "none" });
@@ -553,11 +547,11 @@ export function SheetTree({
       }
     }
   }, [
-    editingNodeRef,
+    editingNode,
+    setEditingNode,
     worksheetV1Store,
-    tabStore,
     findParentNode,
-    sheetTreeRef,
+    sheetTree,
     updateWorksheetFolders,
     replaceExpandedKeys,
     folderContext,
@@ -584,13 +578,13 @@ export function SheetTree({
           });
         } else {
           // draft tab
-          tabStore.setCurrentTabId(node.worksheet.name);
+          getSQLEditorTabsState().setCurrentTabId(node.worksheet.name);
         }
       } else {
         handleToggleExpand(node);
       }
     },
-    [editingNode, tabStore, handleToggleExpand]
+    [editingNode, handleToggleExpand]
   );
 
   // ---- Duplicate sheet -------------------------------------------------------
@@ -647,7 +641,7 @@ export function SheetTree({
           worksheets.push(node.worksheet.name);
           continue;
         }
-        if (node.key === folderContext.rootPath.value) {
+        if (node.key === folderContext.rootPath) {
           continue;
         }
         if (
@@ -690,10 +684,10 @@ export function SheetTree({
           );
           break;
         case "rename":
-          editingNodeRef.value = {
+          setEditingNode({
             node: contextMenuNode,
             rawLabel: contextMenuNode.label,
-          };
+          });
           // Focus happens via useEffect above
           break;
         case "delete":
@@ -716,12 +710,16 @@ export function SheetTree({
           }
           break;
         case "add-folder": {
-          expandedKeysRef.value.add(contextMenuNode.key);
+          setExpandedKeys((prev) => {
+            const next = new Set(prev);
+            next.add(contextMenuNode.key);
+            return next;
+          });
           const label = generateNewFolderName(contextMenuNode.children ?? []);
           const newPath = folderContext.addFolder(
             `${contextMenuNode.key}/${label}`
           );
-          editingNodeRef.value = {
+          setEditingNode({
             node: {
               key: newPath,
               editable: true,
@@ -729,7 +727,7 @@ export function SheetTree({
               children: [],
             },
             rawLabel: label,
-          };
+          });
           break;
         }
         case "add-worksheet":
@@ -754,8 +752,8 @@ export function SheetTree({
     },
     [
       contextMenuNode,
-      editingNodeRef,
-      expandedKeysRef,
+      setEditingNode,
+      setExpandedKeys,
       folderContext,
       getFoldersForWorksheet,
       createWorksheet,
@@ -815,15 +813,12 @@ export function SheetTree({
         let parentFolderNode: WorksheetFolderNode | undefined;
         if (arboristParent === null) {
           // Dropped at root level — use the root of sheetTree
-          parentFolderNode = sheetTreeRef.value;
+          parentFolderNode = sheetTree;
         } else {
           const candidate = arboristParent.data.data;
           if (candidate.worksheet) {
             // Should not happen given disableDrop predicate, but guard anyway.
-            parentFolderNode = findParentNode(
-              sheetTreeRef.value,
-              candidate.key
-            );
+            parentFolderNode = findParentNode(sheetTree, candidate.key);
           } else {
             parentFolderNode = candidate;
           }
@@ -837,10 +832,7 @@ export function SheetTree({
         if (!draggedTreeNode) return;
 
         const draggedNode = draggedTreeNode.data.data;
-        const oldParentNode = findParentNode(
-          sheetTreeRef.value,
-          draggedNode.key
-        );
+        const oldParentNode = findParentNode(sheetTree, draggedNode.key);
         if (!oldParentNode) return;
 
         // No-op if parent folder didn't change
@@ -874,30 +866,34 @@ export function SheetTree({
         // Update expanded keys (nextTick equivalent: defer to next microtask)
         setTimeout(() => {
           replaceExpandedKeys({ oldKey: draggedNode.key, newKey });
-          expandedKeysRef.value.add(parentFolderNode!.key);
+          setExpandedKeys((prev) => {
+            const next = new Set(prev);
+            next.add(parentFolderNode!.key);
+            return next;
+          });
           if (shouldCloseOldParent) {
             replaceExpandedKeys({ oldKey: oldParentNode.key });
           }
         }, 0);
       },
       [
-        sheetTreeRef,
+        sheetTree,
         findParentNode,
         folderContext,
         handleDuplicateFolderNameDrop,
         updateWorksheetFolders,
         replaceExpandedKeys,
-        expandedKeysRef,
+        setExpandedKeys,
       ]
     );
 
   // ---- Search match for Tree primitive ------------------------------------
   const searchMatch = useCallback(
     (node: TreeDataNode<WorksheetFolderNode>, term: string): boolean => {
-      const pred = filterNode(folderContext.rootPath.value);
+      const pred = filterNode(folderContext.rootPath);
       return pred(term, node.data);
     },
-    [folderContext.rootPath.value]
+    [folderContext.rootPath]
   );
 
   // ---- renderNode ----------------------------------------------------------
@@ -993,7 +989,7 @@ export function SheetTree({
             <TreeNodePrefix
               node={folderNode}
               isOpen={isOpen}
-              rootPath={folderContext.rootPath.value}
+              rootPath={folderContext.rootPath}
               view={view}
             />
           </span>
@@ -1005,7 +1001,11 @@ export function SheetTree({
                 ref={inputRef}
                 id={`sheet-input-${folderNode.key}`}
                 size="sm"
-                value={editingNode.node.label}
+                // Bind to the editable `rawLabel`, NOT `node.label`. The
+                // editingNode lives in the immer-backed sheet-context
+                // store and is frozen — mutating `node.label` silently
+                // no-ops, which froze the input (could not type).
+                value={editingNode.rawLabel}
                 className="h-5 py-0 text-xs px-1!"
                 autoFocus
                 onBlur={() => handleRenameNode()}
@@ -1026,9 +1026,7 @@ export function SheetTree({
                     // folder names cannot contain "/" or "."
                     if (val.includes("/") || val.includes(".")) return;
                   }
-                  editingNode.node.label = val;
-                  // Force a re-render by triggering a Pinia write
-                  editingNodeRef.value = { ...editingNode };
+                  setEditingNode({ ...editingNode, rawLabel: val });
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
@@ -1067,7 +1065,7 @@ export function SheetTree({
       selectedKeys,
       expandedKeysArray,
       editingNode,
-      editingNodeRef,
+      setEditingNode,
       checkedNodes,
       multiSelectMode,
       worksheetFilter,
@@ -1079,12 +1077,13 @@ export function SheetTree({
       openMenuAtPoint,
       openMenuAtElement,
       openSharePanelAtElement,
+      t,
       onCheckedNodesChange,
     ]
   );
 
   // ---- Loading spinner -----------------------------------------------------
-  if (isLoadingVal) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="size-4 animate-spin text-control-light" />
@@ -1245,7 +1244,7 @@ export function SheetTree({
                   deleteFoldersResolveRef.current = null;
                 } else {
                   await doDeleteWorksheets(worksheets);
-                  for (const folder of folderContext.rootPath.value ? [] : []) {
+                  for (const folder of folderContext.rootPath ? [] : []) {
                     folderContext.removeFolder(folder);
                   }
                 }

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(pnpm store prune:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm update:*)",
+      "Bash(pnpm why:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

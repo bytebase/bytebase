@@ -2,10 +2,10 @@ import { Trans, useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorAllowAdmin } from "@/react/hooks/useSQLEditorBridge";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -34,18 +34,18 @@ type Props = {
  */
 export function ExecuteHint({ database, onClose }: Props) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const storageStore = useStorageStore();
-
-  const allowAdmin = useVueState(() => editorStore.allowAdmin);
+  const project = useSQLEditorEditorState((s) => s.project);
+  const allowAdmin = useSQLEditorAllowAdmin(project);
 
   const environment = database ? getDatabaseEnvironment(database) : undefined;
 
   const gotoCreateIssue = async () => {
-    const connectedDatabase = tabStore.currentTab?.connection.database ?? "";
+    const tabsState = getSQLEditorTabsState();
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+    const connectedDatabase = currentTab?.connection.database ?? "";
     if (!connectedDatabase) {
       pushNotification({
         module: "bytebase",
@@ -60,11 +60,11 @@ export function ExecuteHint({ database, onClose }: Props) {
     const db = await databaseStore.getOrFetchDatabaseByName(connectedDatabase);
     // Fall back to `unknownProject()` (enforceIssueTitle=true) if the project
     // fetch rejects so the plan page opens with a blank title.
-    const project = await projectStore
+    const projectInfo = await projectStore
       .getOrFetchProjectByName(db.project)
       .catch(() => unknownProject());
 
-    const tab = tabStore.currentTab;
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
     const statement = tab?.selectedStatement || tab?.statement || "";
     const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
     storageStore.put(sqlStorageKey, statement);
@@ -77,7 +77,7 @@ export function ExecuteHint({ database, onClose }: Props) {
     };
     applyPlanTitleToQuery(
       query,
-      project,
+      projectInfo,
       () => `[${databaseName}] ${t("issue.title.change-from-sql-editor")}`
     );
 

@@ -19,10 +19,9 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useWorkSheetStore: vi.fn(),
-  useSQLEditorTabStore: vi.fn(),
-  useSQLEditorVueState: vi.fn(),
+  getSQLEditorTabsState: vi.fn(),
+  project: "projects/proj1",
   // The new zustand store mock — only `createWorksheet` is used by SheetTree.
   createWorksheet: vi.fn().mockResolvedValue({}),
   useSheetContext: vi.fn(),
@@ -36,21 +35,18 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/react/hooks/useVueState", () => ({
-  useVueState: mocks.useVueState,
-}));
-
 vi.mock("@/store", () => ({
   useWorkSheetStore: mocks.useWorkSheetStore,
   pushNotification: mocks.pushNotification,
 }));
 
-vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
-  useSQLEditorTabStore: mocks.useSQLEditorTabStore,
+vi.mock("@/react/stores/sqlEditor/tab", () => ({
+  getSQLEditorTabsState: mocks.getSQLEditorTabsState,
 }));
 
-vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
+vi.mock("@/react/stores/sqlEditor/editor", () => ({
+  useSQLEditorEditorState: (selector: (s: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
 }));
 
 vi.mock("@/react/stores/sqlEditor", () => ({
@@ -342,6 +338,11 @@ const makeWorksheetNode = (
   },
 });
 
+// The migrated `useSheetContext()` exposes `expandedKeys` / `selectedKeys`
+// as plain values plus setters. We model the live state behind a `value`
+// holder (so the existing per-test assertions like
+// `expandedKeys.value.has(...)` keep working) and wire the component's
+// `setExpandedKeys` setter to mutate that same holder.
 const makeExpandedKeysRef = (keys: string[] = []) => ({
   value: new Set(keys),
 });
@@ -362,10 +363,8 @@ const setupDefaultMocks = () => {
   const selectedKeys = makeSelectedKeysRef();
   const editingNode = makeEditingNodeRef();
 
-  mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
-
   const folderContext = {
-    rootPath: { value: "/my" },
+    rootPath: "/my",
     isSubFolder: vi.fn(() => false),
     moveFolder: vi.fn(),
     removeFolder: vi.fn(),
@@ -374,17 +373,38 @@ const setupDefaultMocks = () => {
   };
 
   const sheetContext = {
-    filter: { value: { keyword: "", onlyShowStarred: false } },
-    selectedKeys: selectedKeys,
-    expandedKeys: expandedKeys,
-    editingNode: editingNode,
+    filter: { keyword: "", onlyShowStarred: false },
+    get selectedKeys() {
+      return Array.from(selectedKeys.value);
+    },
+    get expandedKeys() {
+      return expandedKeys.value;
+    },
+    get editingNode() {
+      return editingNode.value;
+    },
     batchUpdateWorksheetFolders: vi.fn(),
+    setExpandedKeys: vi.fn(
+      (next: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+        expandedKeys.value =
+          typeof next === "function" ? next(expandedKeys.value) : next;
+      }
+    ),
+    setSelectedKeys: vi.fn((next: string[]) => {
+      selectedKeys.value = new Set(next);
+    }),
+    setEditingNode: vi.fn((next: unknown) => {
+      editingNode.value = next;
+    }),
   };
 
   const viewContext = {
-    isInitialized: { value: true },
-    isLoading: { value: false },
-    sheetTree: { value: rootNode },
+    isInitialized: true,
+    isLoading: false,
+    get sheetTree() {
+      return viewContext._sheetTree.value;
+    },
+    _sheetTree: { value: rootNode } as { value: WorksheetFolderNode },
     fetchSheetList: vi.fn(),
     folderContext,
     getFoldersForWorksheet: vi.fn((path: string) => [path]),
@@ -396,9 +416,6 @@ const setupDefaultMocks = () => {
 
   mocks.useSheetContext.mockReturnValue(sheetContext);
   mocks.useSheetContextByView.mockReturnValue(viewContext);
-  mocks.useSQLEditorVueState.mockReturnValue({
-    project: "projects/proj1",
-  });
   mocks.useWorkSheetStore.mockReturnValue({
     getWorksheetByName: vi.fn((name: string) => ({
       name,
@@ -412,8 +429,8 @@ const setupDefaultMocks = () => {
     patchWorksheet: vi.fn().mockResolvedValue({}),
     upsertWorksheetOrganizer: vi.fn().mockResolvedValue(undefined),
   });
-  mocks.useSQLEditorTabStore.mockReturnValue({
-    getTabByWorksheet: vi.fn(() => null),
+  mocks.getSQLEditorTabsState.mockReturnValue({
+    tabsById: new Map(),
     closeTab: vi.fn(),
     updateTab: vi.fn(),
     setCurrentTabId: vi.fn(),
@@ -510,7 +527,7 @@ describe("SheetTree", () => {
     // Root node is a folder with a worksheet child
     const wsNode = makeWorksheetNode("/my/ws2");
     const rootNode = makeFolderNode("/my", [wsNode]);
-    defaultMocks.viewContext.sheetTree.value = rootNode;
+    defaultMocks.viewContext._sheetTree.value = rootNode;
 
     // Make useDropdown return the worksheet node as current
     mocks.useDropdown.mockReturnValue({
@@ -558,7 +575,7 @@ describe("SheetTree", () => {
     const defaultMocks = setupDefaultMocks();
     const folder = makeFolderNode("/my/folder1", []);
     const rootNode = makeFolderNode("/my", [folder]);
-    defaultMocks.viewContext.sheetTree.value = rootNode;
+    defaultMocks.viewContext._sheetTree.value = rootNode;
     // expandedKeys starts without /my/folder1
     defaultMocks.expandedKeys.value = new Set(["/my"]);
 
@@ -591,7 +608,7 @@ describe("SheetTree", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/ws2");
     const rootNode = makeFolderNode("/my", [wsNode]);
-    defaultMocks.viewContext.sheetTree.value = rootNode;
+    defaultMocks.viewContext._sheetTree.value = rootNode;
 
     const onCheckedNodesChange = vi.fn();
 
@@ -633,7 +650,7 @@ describe("SheetTree", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/ws2");
     const rootNode = makeFolderNode("/my", [wsNode]);
-    defaultMocks.viewContext.sheetTree.value = rootNode;
+    defaultMocks.viewContext._sheetTree.value = rootNode;
 
     const handleContextMenu = vi.fn();
     mocks.useDropdown.mockReturnValue({
@@ -685,7 +702,7 @@ describe("SheetTree", () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeWorksheetNode("/my/ws2", "worksheets/ws2");
     const rootNode = makeFolderNode("/my", [wsNode]);
-    defaultMocks.viewContext.sheetTree.value = rootNode;
+    defaultMocks.viewContext._sheetTree.value = rootNode;
 
     const deleteWorksheetByName = vi.fn().mockResolvedValue(undefined);
     mocks.useWorkSheetStore.mockReturnValue({
