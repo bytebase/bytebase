@@ -39,18 +39,12 @@ func TestClassifyOmniParseError(t *testing.T) {
 			wantOK:   false,
 			expected: "sequence",
 		},
-		{
-			name:     "BATCH keyword in error msg AND input",
-			sql:      "BATCH ON id LIMIT 100 DELETE FROM t WHERE 1=1;",
-			wantOK:   false,
-			expected: "batch_dml",
-		},
-		{
-			name:     "lowercase batch in input is matched (case-insensitive)",
-			sql:      "batch on id limit 100 delete from t where 1=1;",
-			wantOK:   false,
-			expected: "batch_dml",
-		},
+		// NOTE: BATCH non-transactional DML is now SUPPORTED by omni (grammar
+		// merged in omni #157, consumed via the go.mod bump). It therefore
+		// parses successfully and no longer reaches the fallback classifier, so
+		// the previous "omni rejects BATCH" cases were removed. The classifier's
+		// stale BATCH→batch_dml pattern in metrics.go is dead post-support and is
+		// tracked for removal as part of the BATCH-support (B1.2) cleanup.
 		{
 			name:     "genuine syntax error → unknown (no Tier-4 keyword present)",
 			sql:      "SELECT FROM WHERE;",
