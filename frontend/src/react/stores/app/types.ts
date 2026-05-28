@@ -25,7 +25,10 @@ import type {
   PlanType,
   Subscription,
 } from "@/types/proto-es/v1/subscription_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type {
+  UpdateUserRequest,
+  User,
+} from "@/types/proto-es/v1/user_service_pb";
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
@@ -45,6 +48,19 @@ export type GroupFilter = {
 export type AccountFilter = {
   query?: string;
   state?: State;
+};
+
+export type UserFilter = {
+  query?: string;
+  project?: string;
+  state?: State;
+};
+
+export type ListUsersParams = {
+  pageSize: number;
+  pageToken?: string;
+  filter?: UserFilter;
+  showDeleted?: boolean;
 };
 
 export type ListServiceAccountsParams = {
@@ -334,6 +350,35 @@ export type AccessGrantSlice = {
   revokeAccessGrant: (name: string) => Promise<AccessGrant>;
 };
 
+export type UserSlice = {
+  usersByName: Record<string, User>;
+  userRequests: Record<string, Promise<User | undefined>>;
+  listUsers: (
+    params: ListUsersParams
+  ) => Promise<{ users: User[]; nextPageToken: string }>;
+  fetchUser: (name: string, silent?: boolean) => Promise<User | undefined>;
+  batchGetOrFetchUsers: (names: string[]) => Promise<User[]>;
+  getOrFetchUserByIdentifier: (params: {
+    identifier: string;
+    silent?: boolean;
+    fallback?: boolean;
+  }) => Promise<User>;
+  getUserByIdentifier: (identifier: string) => User | undefined;
+  createUser: (user: User) => Promise<User>;
+  updateUser: (request: UpdateUserRequest) => Promise<User>;
+  updateEmail: (oldEmail: string, newEmail: string) => Promise<User>;
+  archiveUser: (name: string) => Promise<void>;
+  restoreUser: (name: string) => Promise<User>;
+};
+
+export type RoleSlice = {
+  roleList: Role[];
+  listRoles: () => Promise<Role[]>;
+  getRoleByName: (name: string) => Role | undefined;
+  upsertRole: (role: Role) => Promise<Role>;
+  deleteRole: (role: Role) => Promise<void>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -359,6 +404,8 @@ export type AppStoreState = AuthSlice &
   WorkloadIdentitySlice &
   IdentityProviderSlice &
   AccessGrantSlice &
+  UserSlice &
+  RoleSlice &
   NotificationSlice &
   PreferencesSlice;
 

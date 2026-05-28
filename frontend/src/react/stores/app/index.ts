@@ -11,8 +11,10 @@ import { createInstanceRoleSlice } from "./instanceRole";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
+import { createRoleSlice } from "./role";
 import { createServiceAccountSlice } from "./serviceAccount";
 import { createSheetSlice } from "./sheet";
+import { createUserSlice } from "./user";
 import { createWorkspaceSlice } from "./workspace";
 import { createWorkloadIdentitySlice } from "./workloadIdentity";
 
@@ -41,6 +43,8 @@ export const createAppStore = () =>
     ...createWorkloadIdentitySlice(...args),
     ...createIdentityProviderSlice(...args),
     ...createAccessGrantSlice(...args),
+    ...createUserSlice(...args),
+    ...createRoleSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));
