@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -27,6 +28,8 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
+const vcsProviderUserActiveWindow = 90 * 24 * time.Hour
+
 func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
 	request := req.Msg
 	if len(request.Targets) == 0 {
@@ -48,6 +51,10 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+	}
+
+	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
+		return nil, err
 	}
 
 	var targetDatabases []*store.DatabaseMessage
@@ -143,6 +150,34 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID string, vcsUser *v1pb.VCSUser) error {
+	if vcsUser == nil {
+		return nil
+	}
+	if vcsUser.GetVcsType() == v1pb.VCSType_VCS_TYPE_UNSPECIFIED {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.vcs_type is required"))
+	}
+	if vcsUser.GetUserId() == "" {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.user_id is required"))
+	}
+
+	ok, err := s.store.TouchVCSProviderUser(ctx, workspaceID, &store.VCSProviderUserMessage{
+		VCSType: vcsUser.GetVcsType(),
+		UserID:  vcsUser.GetUserId(),
+		Payload: &storepb.VCSProviderUserPayload{
+			UserName:    vcsUser.GetUserName(),
+			DisplayName: vcsUser.GetDisplayName(),
+		},
+	}, vcsProviderUserActiveWindow, s.license.GetUserLimit(ctx, workspaceID))
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to touch VCS provider user"))
+	}
+	if !ok {
+		return connect.NewError(connect.CodeResourceExhausted, errors.New("new VCS user would exceed the license user limit; increase the license user limit or wait for inactive VCS users to age out of the 90-day window"))
+	}
+	return nil
 }
 
 func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *store.ProjectMessage, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
