@@ -47,11 +47,11 @@ import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useChangelogStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
@@ -137,7 +137,12 @@ enum Step {
 
 export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const changelogStore = useChangelogStore();
+  const getOrFetchChangelogByName = useAppStore(
+    (state) => state.getOrFetchChangelogByName
+  );
+  const fetchPreviousChangelog = useAppStore(
+    (state) => state.fetchPreviousChangelog
+  );
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
 
@@ -225,7 +230,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       try {
         if (sourceSchemaType === SourceSchemaType.SCHEMA_HISTORY_VERSION) {
           if (isValidChangelogName(changelogSource.changelogName)) {
-            const changelog = await changelogStore.getOrFetchChangelogByName(
+            const changelog = await getOrFetchChangelogByName(
               changelogSource.changelogName || "",
               ChangelogView.FULL
             );
@@ -255,6 +260,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     changelogSource.changelogName,
     changelogSource.databaseName,
     rawSQLState.statement,
+    getOrFetchChangelogByName,
   ]);
 
   const sourceEngine = useMemo(() => {
@@ -279,7 +285,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
 
       if (isValidChangelogName(changelogName)) {
         // Validate the changelog exists before proceeding.
-        const existing = await changelogStore.getOrFetchChangelogByName(
+        const existing = await getOrFetchChangelogByName(
           changelogName,
           ChangelogView.BASIC
         );
@@ -289,8 +295,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         let targetChangelogName: string | undefined = undefined;
 
         if (isRollback) {
-          const previousChangelog =
-            await changelogStore.fetchPreviousChangelog(changelogName);
+          const previousChangelog = await fetchPreviousChangelog(changelogName);
           if (cancelled) return;
           if (previousChangelog) {
             targetChangelogName = previousChangelog.name;
@@ -318,7 +323,12 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+  }, [
+    databaseStore,
+    fetchPreviousChangelog,
+    getOrFetchChangelogByName,
+    projectId,
+  ]);
 
   const stepList = useMemo(
     () => [
@@ -747,7 +757,7 @@ function ChangelogSelector({
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
-  const changelogStore = useChangelogStore();
+  const listChangelogs = useAppStore((state) => state.listChangelogs);
   const databaseStore = useDatabaseV1Store();
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [nextPageToken, setNextPageToken] = useState("");
@@ -790,7 +800,7 @@ function ChangelogSelector({
 
     (async () => {
       const { changelogs: fetchedChangelogs, nextPageToken: token } =
-        await changelogStore.fetchChangelogList({
+        await listChangelogs({
           parent: database,
           pageSize: getDefaultPagination(),
           filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
@@ -818,22 +828,21 @@ function ChangelogSelector({
     return () => {
       cancelled = true;
     };
-  }, [database]);
+  }, [database, databaseStore, listChangelogs, toEntry]);
 
   const loadMore = useCallback(async () => {
     if (!nextPageToken || !isValidDatabaseName(database) || loadingMore) return;
     setLoadingMore(true);
-    const { changelogs: more, nextPageToken: token } =
-      await changelogStore.fetchChangelogList({
-        parent: database,
-        pageToken: nextPageToken,
-        pageSize: getDefaultPagination(),
-        filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
-      });
+    const { changelogs: more, nextPageToken: token } = await listChangelogs({
+      parent: database,
+      pageToken: nextPageToken,
+      pageSize: getDefaultPagination(),
+      filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+    });
     setEntries((prev) => [...prev, ...more.map(toEntry)]);
     setNextPageToken(token);
     setLoadingMore(false);
-  }, [nextPageToken, database, loadingMore, toEntry]);
+  }, [database, listChangelogs, loadingMore, nextPageToken, toEntry]);
 
   const selectedEntry = entries.find((e) => e.name === value);
 
@@ -1168,7 +1177,9 @@ function SelectTargetDatabasesView({
   onSelectedDatabaseNameChange: (name: string | undefined) => void;
 }) {
   const { t } = useTranslation();
-  const changelogStore = useChangelogStore();
+  const getOrFetchChangelogByName = useAppStore(
+    (state) => state.getOrFetchChangelogByName
+  );
   const environmentStore = useEnvironmentV1Store();
   const databaseStore = useDatabaseV1Store();
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
@@ -1282,11 +1293,10 @@ function SelectTargetDatabasesView({
               clsRef?.targetChangelogName
             );
             if (isRollback) {
-              const previousChangelog =
-                await changelogStore.getOrFetchChangelogByName(
-                  clsRef?.targetChangelogName ?? "",
-                  ChangelogView.FULL
-                );
+              const previousChangelog = await getOrFetchChangelogByName(
+                clsRef?.targetChangelogName ?? "",
+                ChangelogView.FULL
+              );
               newSchemaCache[name] = previousChangelog?.schema ?? "";
             } else {
               const schema = await databaseStore.fetchDatabaseSchema(db.name);
