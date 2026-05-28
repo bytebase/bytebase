@@ -54,12 +54,15 @@ func configureGrpcRouters(
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	mux := grpcruntime.NewServeMux(
-		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, newSuggestingMarshaler(&grpcruntime.JSONPb{
+	gatewayMarshaler := &grpcruntime.HTTPBodyMarshaler{
+		Marshaler: newSuggestingMarshaler(&grpcruntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{},
 			//nolint:forbidigo
 			UnmarshalOptions: protojson.UnmarshalOptions{},
-		})),
+		}),
+	}
+	mux := grpcruntime.NewServeMux(
+		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, gatewayMarshaler),
 		// pass through request headers that need to be used by connect rpc handlers.
 		grpcruntime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
 			switch strings.ToLower(key) {

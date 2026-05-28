@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message VCSProviderUserPayload {
+  string user_name = 1;
+  string display_name = 2;
+}

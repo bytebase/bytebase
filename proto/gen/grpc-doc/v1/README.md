@@ -606,6 +606,7 @@
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
     - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
+    - [VCSUser](#bytebase-v1-VCSUser)
   
     - [Release.Type](#bytebase-v1-Release-Type)
   
@@ -683,6 +684,7 @@
 - [v1/subscription_service.proto](#v1_subscription_service-proto)
     - [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest)
     - [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest)
+    - [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest)
     - [GetPaymentInfoRequest](#bytebase-v1-GetPaymentInfoRequest)
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [ListPurchasePlansRequest](#bytebase-v1-ListPurchasePlansRequest)
@@ -6836,6 +6838,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | restriction | [Restriction](#bytebase-v1-Restriction) |  |  |
 | default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 | user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
+| active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
 
 
 
@@ -9789,6 +9792,7 @@ ProjectService manages projects that group databases and changes.
 | release | [Release](#bytebase-v1-Release) |  | The release to check. |
 | targets | [string](#string) | repeated | The targets to dry-run the release. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
 | custom_rules | [string](#string) |  | Custom linting rules in natural language for AI-powered validation. Each rule should be a clear statement describing the desired schema constraint. Example: &#34;All tables must have a primary key&#34; Example: &#34;VARCHAR columns should specify a maximum length&#34; |
+| vcs_user | [VCSUser](#bytebase-v1-VCSUser) |  | The non-bot VCS pull request or merge request creator observed by bytebase-release. If absent, Bytebase skips VCS user tracking and VCS user limit enforcement. |
 
 
 
@@ -10034,6 +10038,24 @@ Version control system source information.
 | ----- | ---- | ----- | ----------- |
 | release | [Release](#bytebase-v1-Release) |  | The release to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+
+<a name="bytebase-v1-VCSUser"></a>
+
+### VCSUser
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
+| user_id | [string](#string) |  |  |
+| user_name | [string](#string) |  |  |
+| display_name | [string](#string) |  |  |
 
 
 
@@ -11119,6 +11141,16 @@ SheetService manages SQL scripts and saved queries.
 
 
 
+<a name="bytebase-v1-ExportVCSProviderUsersRequest"></a>
+
+### ExportVCSProviderUsersRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-GetPaymentInfoRequest"></a>
 
 ### GetPaymentInfoRequest
@@ -11539,6 +11571,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
+| ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [.google.api.HttpBody](#google-api-HttpBody) | Exports active VCS users as CSV. |
 | UploadLicense | [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest) | [Subscription](#bytebase-v1-Subscription) | Uploads an enterprise license (self-hosted only). |
 | CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
 | UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |

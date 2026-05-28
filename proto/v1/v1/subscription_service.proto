@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/httpbody.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
@@ -18,6 +19,13 @@ service SubscriptionService {
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
+  }
+
+  // Exports active VCS users as CSV.
+  rpc ExportVCSProviderUsers(ExportVCSProviderUsersRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {get: "/v1/subscription:vcsProviderUsersExport"};
+    option (bytebase.v1.permission) = "bb.subscription.get";
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Uploads an enterprise license (self-hosted only).
@@ -83,6 +91,8 @@ service SubscriptionService {
 }
 
 message GetSubscriptionRequest {}
+
+message ExportVCSProviderUsersRequest {}
 
 message UploadLicenseRequest {
   string license = 1;

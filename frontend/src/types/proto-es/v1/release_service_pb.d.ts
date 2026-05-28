@@ -261,6 +261,14 @@ export declare type CheckReleaseRequest = Message<"bytebase.v1.CheckReleaseReque
    * @generated from field: string custom_rules = 4;
    */
   customRules: string;
+
+  /**
+   * The non-bot VCS pull request or merge request creator observed by bytebase-release.
+   * If absent, Bytebase skips VCS user tracking and VCS user limit enforcement.
+   *
+   * @generated from field: bytebase.v1.VCSUser vcs_user = 5;
+   */
+  vcsUser?: VCSUser | undefined;
 };
 
 /**
@@ -268,6 +276,37 @@ export declare type CheckReleaseRequest = Message<"bytebase.v1.CheckReleaseReque
  * Use `create(CheckReleaseRequestSchema)` to create a new message.
  */
 export declare const CheckReleaseRequestSchema: GenMessage<CheckReleaseRequest>;
+
+/**
+ * @generated from message bytebase.v1.VCSUser
+ */
+export declare type VCSUser = Message<"bytebase.v1.VCSUser"> & {
+  /**
+   * @generated from field: bytebase.v1.VCSType vcs_type = 1;
+   */
+  vcsType: VCSType;
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId: string;
+
+  /**
+   * @generated from field: string user_name = 3;
+   */
+  userName: string;
+
+  /**
+   * @generated from field: string display_name = 4;
+   */
+  displayName: string;
+};
+
+/**
+ * Describes the message bytebase.v1.VCSUser.
+ * Use `create(VCSUserSchema)` to create a new message.
+ */
+export declare const VCSUserSchema: GenMessage<VCSUser>;
 
 /**
  * @generated from message bytebase.v1.CheckReleaseResponse

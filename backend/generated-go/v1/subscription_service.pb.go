@@ -8,6 +8,7 @@ package v1
 
 import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -433,7 +434,7 @@ func (x PurchasePlanAdditional_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PurchasePlanAdditional_Type.Descriptor instead.
 func (PurchasePlanAdditional_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{11, 0}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{12, 0}
 }
 
 type PurchaseDiscount_Type int32
@@ -485,7 +486,7 @@ func (x PurchaseDiscount_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PurchaseDiscount_Type.Descriptor instead.
 func (PurchaseDiscount_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{13, 0}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{14, 0}
 }
 
 type GetSubscriptionRequest struct {
@@ -524,6 +525,42 @@ func (*GetSubscriptionRequest) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{0}
 }
 
+type ExportVCSProviderUsersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExportVCSProviderUsersRequest) Reset() {
+	*x = ExportVCSProviderUsersRequest{}
+	mi := &file_v1_subscription_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExportVCSProviderUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportVCSProviderUsersRequest) ProtoMessage() {}
+
+func (x *ExportVCSProviderUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_subscription_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportVCSProviderUsersRequest.ProtoReflect.Descriptor instead.
+func (*ExportVCSProviderUsersRequest) Descriptor() ([]byte, []int) {
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{1}
+}
+
 type UploadLicenseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	License       string                 `protobuf:"bytes,1,opt,name=license,proto3" json:"license,omitempty"`
@@ -533,7 +570,7 @@ type UploadLicenseRequest struct {
 
 func (x *UploadLicenseRequest) Reset() {
 	*x = UploadLicenseRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[1]
+	mi := &file_v1_subscription_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -545,7 +582,7 @@ func (x *UploadLicenseRequest) String() string {
 func (*UploadLicenseRequest) ProtoMessage() {}
 
 func (x *UploadLicenseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[1]
+	mi := &file_v1_subscription_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -558,7 +595,7 @@ func (x *UploadLicenseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadLicenseRequest.ProtoReflect.Descriptor instead.
 func (*UploadLicenseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UploadLicenseRequest) GetLicense() string {
@@ -579,7 +616,7 @@ type CreatePurchaseRequest struct {
 
 func (x *CreatePurchaseRequest) Reset() {
 	*x = CreatePurchaseRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[2]
+	mi := &file_v1_subscription_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -591,7 +628,7 @@ func (x *CreatePurchaseRequest) String() string {
 func (*CreatePurchaseRequest) ProtoMessage() {}
 
 func (x *CreatePurchaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[2]
+	mi := &file_v1_subscription_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -604,7 +641,7 @@ func (x *CreatePurchaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePurchaseRequest.ProtoReflect.Descriptor instead.
 func (*CreatePurchaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreatePurchaseRequest) GetPlan() PlanType {
@@ -641,7 +678,7 @@ type PurchaseResponse struct {
 
 func (x *PurchaseResponse) Reset() {
 	*x = PurchaseResponse{}
-	mi := &file_v1_subscription_service_proto_msgTypes[3]
+	mi := &file_v1_subscription_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -653,7 +690,7 @@ func (x *PurchaseResponse) String() string {
 func (*PurchaseResponse) ProtoMessage() {}
 
 func (x *PurchaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[3]
+	mi := &file_v1_subscription_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -666,7 +703,7 @@ func (x *PurchaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseResponse.ProtoReflect.Descriptor instead.
 func (*PurchaseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PurchaseResponse) GetPaymentUrl() string {
@@ -692,7 +729,7 @@ type VerifyCheckoutSessionRequest struct {
 
 func (x *VerifyCheckoutSessionRequest) Reset() {
 	*x = VerifyCheckoutSessionRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[4]
+	mi := &file_v1_subscription_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -704,7 +741,7 @@ func (x *VerifyCheckoutSessionRequest) String() string {
 func (*VerifyCheckoutSessionRequest) ProtoMessage() {}
 
 func (x *VerifyCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[4]
+	mi := &file_v1_subscription_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -717,7 +754,7 @@ func (x *VerifyCheckoutSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyCheckoutSessionRequest.ProtoReflect.Descriptor instead.
 func (*VerifyCheckoutSessionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *VerifyCheckoutSessionRequest) GetSessionId() string {
@@ -737,7 +774,7 @@ type VerifyCheckoutSessionResponse struct {
 
 func (x *VerifyCheckoutSessionResponse) Reset() {
 	*x = VerifyCheckoutSessionResponse{}
-	mi := &file_v1_subscription_service_proto_msgTypes[5]
+	mi := &file_v1_subscription_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -749,7 +786,7 @@ func (x *VerifyCheckoutSessionResponse) String() string {
 func (*VerifyCheckoutSessionResponse) ProtoMessage() {}
 
 func (x *VerifyCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[5]
+	mi := &file_v1_subscription_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -762,7 +799,7 @@ func (x *VerifyCheckoutSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyCheckoutSessionResponse.ProtoReflect.Descriptor instead.
 func (*VerifyCheckoutSessionResponse) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *VerifyCheckoutSessionResponse) GetStatus() string {
@@ -784,7 +821,7 @@ type UpdatePurchaseRequest struct {
 
 func (x *UpdatePurchaseRequest) Reset() {
 	*x = UpdatePurchaseRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[6]
+	mi := &file_v1_subscription_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -796,7 +833,7 @@ func (x *UpdatePurchaseRequest) String() string {
 func (*UpdatePurchaseRequest) ProtoMessage() {}
 
 func (x *UpdatePurchaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[6]
+	mi := &file_v1_subscription_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -809,7 +846,7 @@ func (x *UpdatePurchaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePurchaseRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePurchaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdatePurchaseRequest) GetPlan() PlanType {
@@ -855,7 +892,7 @@ type CancelPurchaseRequest struct {
 
 func (x *CancelPurchaseRequest) Reset() {
 	*x = CancelPurchaseRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[7]
+	mi := &file_v1_subscription_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -867,7 +904,7 @@ func (x *CancelPurchaseRequest) String() string {
 func (*CancelPurchaseRequest) ProtoMessage() {}
 
 func (x *CancelPurchaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[7]
+	mi := &file_v1_subscription_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -880,7 +917,7 @@ func (x *CancelPurchaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelPurchaseRequest.ProtoReflect.Descriptor instead.
 func (*CancelPurchaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CancelPurchaseRequest) GetFeedback() string {
@@ -905,7 +942,7 @@ type GetPaymentInfoRequest struct {
 
 func (x *GetPaymentInfoRequest) Reset() {
 	*x = GetPaymentInfoRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[8]
+	mi := &file_v1_subscription_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -917,7 +954,7 @@ func (x *GetPaymentInfoRequest) String() string {
 func (*GetPaymentInfoRequest) ProtoMessage() {}
 
 func (x *GetPaymentInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[8]
+	mi := &file_v1_subscription_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -930,7 +967,7 @@ func (x *GetPaymentInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPaymentInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetPaymentInfoRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{9}
 }
 
 type PaymentInfo struct {
@@ -953,7 +990,7 @@ type PaymentInfo struct {
 
 func (x *PaymentInfo) Reset() {
 	*x = PaymentInfo{}
-	mi := &file_v1_subscription_service_proto_msgTypes[9]
+	mi := &file_v1_subscription_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -965,7 +1002,7 @@ func (x *PaymentInfo) String() string {
 func (*PaymentInfo) ProtoMessage() {}
 
 func (x *PaymentInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[9]
+	mi := &file_v1_subscription_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -978,7 +1015,7 @@ func (x *PaymentInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaymentInfo.ProtoReflect.Descriptor instead.
 func (*PaymentInfo) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PaymentInfo) GetTotalPrice() string {
@@ -1042,7 +1079,7 @@ type PurchasePlan struct {
 
 func (x *PurchasePlan) Reset() {
 	*x = PurchasePlan{}
-	mi := &file_v1_subscription_service_proto_msgTypes[10]
+	mi := &file_v1_subscription_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1054,7 +1091,7 @@ func (x *PurchasePlan) String() string {
 func (*PurchasePlan) ProtoMessage() {}
 
 func (x *PurchasePlan) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[10]
+	mi := &file_v1_subscription_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1067,7 +1104,7 @@ func (x *PurchasePlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchasePlan.ProtoReflect.Descriptor instead.
 func (*PurchasePlan) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PurchasePlan) GetType() PlanType {
@@ -1113,7 +1150,7 @@ type PurchasePlanAdditional struct {
 
 func (x *PurchasePlanAdditional) Reset() {
 	*x = PurchasePlanAdditional{}
-	mi := &file_v1_subscription_service_proto_msgTypes[11]
+	mi := &file_v1_subscription_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1125,7 +1162,7 @@ func (x *PurchasePlanAdditional) String() string {
 func (*PurchasePlanAdditional) ProtoMessage() {}
 
 func (x *PurchasePlanAdditional) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[11]
+	mi := &file_v1_subscription_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1138,7 +1175,7 @@ func (x *PurchasePlanAdditional) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchasePlanAdditional.ProtoReflect.Descriptor instead.
 func (*PurchasePlanAdditional) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PurchasePlanAdditional) GetType() PurchasePlanAdditional_Type {
@@ -1186,7 +1223,7 @@ type PurchaseBillingMethod struct {
 
 func (x *PurchaseBillingMethod) Reset() {
 	*x = PurchaseBillingMethod{}
-	mi := &file_v1_subscription_service_proto_msgTypes[12]
+	mi := &file_v1_subscription_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1198,7 +1235,7 @@ func (x *PurchaseBillingMethod) String() string {
 func (*PurchaseBillingMethod) ProtoMessage() {}
 
 func (x *PurchaseBillingMethod) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[12]
+	mi := &file_v1_subscription_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1211,7 +1248,7 @@ func (x *PurchaseBillingMethod) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseBillingMethod.ProtoReflect.Descriptor instead.
 func (*PurchaseBillingMethod) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PurchaseBillingMethod) GetInterval() BillingInterval {
@@ -1238,7 +1275,7 @@ type PurchaseDiscount struct {
 
 func (x *PurchaseDiscount) Reset() {
 	*x = PurchaseDiscount{}
-	mi := &file_v1_subscription_service_proto_msgTypes[13]
+	mi := &file_v1_subscription_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1250,7 +1287,7 @@ func (x *PurchaseDiscount) String() string {
 func (*PurchaseDiscount) ProtoMessage() {}
 
 func (x *PurchaseDiscount) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[13]
+	mi := &file_v1_subscription_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1263,7 +1300,7 @@ func (x *PurchaseDiscount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurchaseDiscount.ProtoReflect.Descriptor instead.
 func (*PurchaseDiscount) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PurchaseDiscount) GetType() PurchaseDiscount_Type {
@@ -1288,7 +1325,7 @@ type ListPurchasePlansRequest struct {
 
 func (x *ListPurchasePlansRequest) Reset() {
 	*x = ListPurchasePlansRequest{}
-	mi := &file_v1_subscription_service_proto_msgTypes[14]
+	mi := &file_v1_subscription_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1300,7 +1337,7 @@ func (x *ListPurchasePlansRequest) String() string {
 func (*ListPurchasePlansRequest) ProtoMessage() {}
 
 func (x *ListPurchasePlansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[14]
+	mi := &file_v1_subscription_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1313,7 +1350,7 @@ func (x *ListPurchasePlansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPurchasePlansRequest.ProtoReflect.Descriptor instead.
 func (*ListPurchasePlansRequest) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{15}
 }
 
 type ListPurchasePlansResponse struct {
@@ -1325,7 +1362,7 @@ type ListPurchasePlansResponse struct {
 
 func (x *ListPurchasePlansResponse) Reset() {
 	*x = ListPurchasePlansResponse{}
-	mi := &file_v1_subscription_service_proto_msgTypes[15]
+	mi := &file_v1_subscription_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1337,7 +1374,7 @@ func (x *ListPurchasePlansResponse) String() string {
 func (*ListPurchasePlansResponse) ProtoMessage() {}
 
 func (x *ListPurchasePlansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[15]
+	mi := &file_v1_subscription_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1350,7 +1387,7 @@ func (x *ListPurchasePlansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPurchasePlansResponse.ProtoReflect.Descriptor instead.
 func (*ListPurchasePlansResponse) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListPurchasePlansResponse) GetPlans() []*PurchasePlan {
@@ -1379,7 +1416,7 @@ type Subscription struct {
 
 func (x *Subscription) Reset() {
 	*x = Subscription{}
-	mi := &file_v1_subscription_service_proto_msgTypes[16]
+	mi := &file_v1_subscription_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1391,7 +1428,7 @@ func (x *Subscription) String() string {
 func (*Subscription) ProtoMessage() {}
 
 func (x *Subscription) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[16]
+	mi := &file_v1_subscription_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1404,7 +1441,7 @@ func (x *Subscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Subscription.ProtoReflect.Descriptor instead.
 func (*Subscription) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *Subscription) GetPlan() PlanType {
@@ -1481,7 +1518,7 @@ type PlanConfig struct {
 
 func (x *PlanConfig) Reset() {
 	*x = PlanConfig{}
-	mi := &file_v1_subscription_service_proto_msgTypes[17]
+	mi := &file_v1_subscription_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1493,7 +1530,7 @@ func (x *PlanConfig) String() string {
 func (*PlanConfig) ProtoMessage() {}
 
 func (x *PlanConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[17]
+	mi := &file_v1_subscription_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1506,7 +1543,7 @@ func (x *PlanConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanConfig.ProtoReflect.Descriptor instead.
 func (*PlanConfig) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *PlanConfig) GetPlans() []*PlanLimitConfig {
@@ -1536,7 +1573,7 @@ type PlanLimitConfig struct {
 
 func (x *PlanLimitConfig) Reset() {
 	*x = PlanLimitConfig{}
-	mi := &file_v1_subscription_service_proto_msgTypes[18]
+	mi := &file_v1_subscription_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1585,7 @@ func (x *PlanLimitConfig) String() string {
 func (*PlanLimitConfig) ProtoMessage() {}
 
 func (x *PlanLimitConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_subscription_service_proto_msgTypes[18]
+	mi := &file_v1_subscription_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1561,7 +1598,7 @@ func (x *PlanLimitConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanLimitConfig.ProtoReflect.Descriptor instead.
 func (*PlanLimitConfig) Descriptor() ([]byte, []int) {
-	return file_v1_subscription_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_subscription_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PlanLimitConfig) GetType() PlanType {
@@ -1596,8 +1633,9 @@ var File_v1_subscription_service_proto protoreflect.FileDescriptor
 
 const file_v1_subscription_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
-	"\x16GetSubscriptionRequest\"0\n" +
+	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/httpbody.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
+	"\x16GetSubscriptionRequest\"\x1f\n" +
+	"\x1dExportVCSProviderUsersRequest\"0\n" +
 	"\x14UploadLicenseRequest\x12\x18\n" +
 	"\alicense\x18\x01 \x01(\tR\alicense\"\x92\x01\n" +
 	"\x15CreatePurchaseRequest\x12)\n" +
@@ -1766,9 +1804,11 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x12FEATURE_CUSTOM_MSA\x10D\x12\x1d\n" +
 	"\x19FEATURE_COMMUNITY_SUPPORT\x10E\x12\x19\n" +
 	"\x15FEATURE_EMAIL_SUPPORT\x10F\x12&\n" +
-	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xd2\t\n" +
+	"\"FEATURE_DEDICATED_SUPPORT_WITH_SLA\x10G2\xfb\n" +
+	"\n" +
 	"\x13SubscriptionService\x12n\n" +
-	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1b\xdaA\x00\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\x90\x01\n" +
+	"\x0fGetSubscription\x12#.bytebase.v1.GetSubscriptionRequest\x1a\x19.bytebase.v1.Subscription\"\x1b\xdaA\x00\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/subscription\x12\xa6\x01\n" +
+	"\x16ExportVCSProviderUsers\x12*.bytebase.v1.ExportVCSProviderUsersRequest\x1a\x14.google.api.HttpBody\"J\x8a\xea0\x13bb.subscription.get\x90\xea0\x01\x82\xd3\xe4\x93\x02)\x12'/v1/subscription:vcsProviderUsersExport\x12\x90\x01\n" +
 	"\rUploadLicense\x12!.bytebase.v1.UploadLicenseRequest\x1a\x19.bytebase.v1.Subscription\"A\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*2\x18/v1/subscription/license\x12\x97\x01\n" +
 	"\x0eCreatePurchase\x12\".bytebase.v1.CreatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"B\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/v1/subscription:purchase\x12\x9d\x01\n" +
 	"\x0eUpdatePurchase\x12\".bytebase.v1.UpdatePurchaseRequest\x1a\x1d.bytebase.v1.PurchaseResponse\"H\x8a\xea0\x16bb.subscription.manage\x90\xea0\x01\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/v1/subscription:updatePurchase\x12\x9d\x01\n" +
@@ -1791,7 +1831,7 @@ func file_v1_subscription_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_subscription_service_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_v1_subscription_service_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_v1_subscription_service_proto_goTypes = []any{
 	(BillingInterval)(0),                  // 0: bytebase.v1.BillingInterval
 	(PlanType)(0),                         // 1: bytebase.v1.PlanType
@@ -1799,25 +1839,27 @@ var file_v1_subscription_service_proto_goTypes = []any{
 	(PurchasePlanAdditional_Type)(0),      // 3: bytebase.v1.PurchasePlanAdditional.Type
 	(PurchaseDiscount_Type)(0),            // 4: bytebase.v1.PurchaseDiscount.Type
 	(*GetSubscriptionRequest)(nil),        // 5: bytebase.v1.GetSubscriptionRequest
-	(*UploadLicenseRequest)(nil),          // 6: bytebase.v1.UploadLicenseRequest
-	(*CreatePurchaseRequest)(nil),         // 7: bytebase.v1.CreatePurchaseRequest
-	(*PurchaseResponse)(nil),              // 8: bytebase.v1.PurchaseResponse
-	(*VerifyCheckoutSessionRequest)(nil),  // 9: bytebase.v1.VerifyCheckoutSessionRequest
-	(*VerifyCheckoutSessionResponse)(nil), // 10: bytebase.v1.VerifyCheckoutSessionResponse
-	(*UpdatePurchaseRequest)(nil),         // 11: bytebase.v1.UpdatePurchaseRequest
-	(*CancelPurchaseRequest)(nil),         // 12: bytebase.v1.CancelPurchaseRequest
-	(*GetPaymentInfoRequest)(nil),         // 13: bytebase.v1.GetPaymentInfoRequest
-	(*PaymentInfo)(nil),                   // 14: bytebase.v1.PaymentInfo
-	(*PurchasePlan)(nil),                  // 15: bytebase.v1.PurchasePlan
-	(*PurchasePlanAdditional)(nil),        // 16: bytebase.v1.PurchasePlanAdditional
-	(*PurchaseBillingMethod)(nil),         // 17: bytebase.v1.PurchaseBillingMethod
-	(*PurchaseDiscount)(nil),              // 18: bytebase.v1.PurchaseDiscount
-	(*ListPurchasePlansRequest)(nil),      // 19: bytebase.v1.ListPurchasePlansRequest
-	(*ListPurchasePlansResponse)(nil),     // 20: bytebase.v1.ListPurchasePlansResponse
-	(*Subscription)(nil),                  // 21: bytebase.v1.Subscription
-	(*PlanConfig)(nil),                    // 22: bytebase.v1.PlanConfig
-	(*PlanLimitConfig)(nil),               // 23: bytebase.v1.PlanLimitConfig
-	(*timestamppb.Timestamp)(nil),         // 24: google.protobuf.Timestamp
+	(*ExportVCSProviderUsersRequest)(nil), // 6: bytebase.v1.ExportVCSProviderUsersRequest
+	(*UploadLicenseRequest)(nil),          // 7: bytebase.v1.UploadLicenseRequest
+	(*CreatePurchaseRequest)(nil),         // 8: bytebase.v1.CreatePurchaseRequest
+	(*PurchaseResponse)(nil),              // 9: bytebase.v1.PurchaseResponse
+	(*VerifyCheckoutSessionRequest)(nil),  // 10: bytebase.v1.VerifyCheckoutSessionRequest
+	(*VerifyCheckoutSessionResponse)(nil), // 11: bytebase.v1.VerifyCheckoutSessionResponse
+	(*UpdatePurchaseRequest)(nil),         // 12: bytebase.v1.UpdatePurchaseRequest
+	(*CancelPurchaseRequest)(nil),         // 13: bytebase.v1.CancelPurchaseRequest
+	(*GetPaymentInfoRequest)(nil),         // 14: bytebase.v1.GetPaymentInfoRequest
+	(*PaymentInfo)(nil),                   // 15: bytebase.v1.PaymentInfo
+	(*PurchasePlan)(nil),                  // 16: bytebase.v1.PurchasePlan
+	(*PurchasePlanAdditional)(nil),        // 17: bytebase.v1.PurchasePlanAdditional
+	(*PurchaseBillingMethod)(nil),         // 18: bytebase.v1.PurchaseBillingMethod
+	(*PurchaseDiscount)(nil),              // 19: bytebase.v1.PurchaseDiscount
+	(*ListPurchasePlansRequest)(nil),      // 20: bytebase.v1.ListPurchasePlansRequest
+	(*ListPurchasePlansResponse)(nil),     // 21: bytebase.v1.ListPurchasePlansResponse
+	(*Subscription)(nil),                  // 22: bytebase.v1.Subscription
+	(*PlanConfig)(nil),                    // 23: bytebase.v1.PlanConfig
+	(*PlanLimitConfig)(nil),               // 24: bytebase.v1.PlanLimitConfig
+	(*timestamppb.Timestamp)(nil),         // 25: google.protobuf.Timestamp
+	(*httpbody.HttpBody)(nil),             // 26: google.api.HttpBody
 }
 var file_v1_subscription_service_proto_depIdxs = []int32{
 	1,  // 0: bytebase.v1.CreatePurchaseRequest.plan:type_name -> bytebase.v1.PlanType
@@ -1825,37 +1867,39 @@ var file_v1_subscription_service_proto_depIdxs = []int32{
 	1,  // 2: bytebase.v1.UpdatePurchaseRequest.plan:type_name -> bytebase.v1.PlanType
 	0,  // 3: bytebase.v1.UpdatePurchaseRequest.interval:type_name -> bytebase.v1.BillingInterval
 	1,  // 4: bytebase.v1.PurchasePlan.type:type_name -> bytebase.v1.PlanType
-	16, // 5: bytebase.v1.PurchasePlan.additionals:type_name -> bytebase.v1.PurchasePlanAdditional
-	17, // 6: bytebase.v1.PurchasePlan.billing_methods:type_name -> bytebase.v1.PurchaseBillingMethod
+	17, // 5: bytebase.v1.PurchasePlan.additionals:type_name -> bytebase.v1.PurchasePlanAdditional
+	18, // 6: bytebase.v1.PurchasePlan.billing_methods:type_name -> bytebase.v1.PurchaseBillingMethod
 	3,  // 7: bytebase.v1.PurchasePlanAdditional.type:type_name -> bytebase.v1.PurchasePlanAdditional.Type
 	0,  // 8: bytebase.v1.PurchaseBillingMethod.interval:type_name -> bytebase.v1.BillingInterval
-	18, // 9: bytebase.v1.PurchaseBillingMethod.discount:type_name -> bytebase.v1.PurchaseDiscount
+	19, // 9: bytebase.v1.PurchaseBillingMethod.discount:type_name -> bytebase.v1.PurchaseDiscount
 	4,  // 10: bytebase.v1.PurchaseDiscount.type:type_name -> bytebase.v1.PurchaseDiscount.Type
-	15, // 11: bytebase.v1.ListPurchasePlansResponse.plans:type_name -> bytebase.v1.PurchasePlan
+	16, // 11: bytebase.v1.ListPurchasePlansResponse.plans:type_name -> bytebase.v1.PurchasePlan
 	1,  // 12: bytebase.v1.Subscription.plan:type_name -> bytebase.v1.PlanType
-	24, // 13: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
-	23, // 14: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
+	25, // 13: bytebase.v1.Subscription.expires_time:type_name -> google.protobuf.Timestamp
+	24, // 14: bytebase.v1.PlanConfig.plans:type_name -> bytebase.v1.PlanLimitConfig
 	2,  // 15: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
 	1,  // 16: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
 	2,  // 17: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
 	5,  // 18: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	6,  // 19: bytebase.v1.SubscriptionService.UploadLicense:input_type -> bytebase.v1.UploadLicenseRequest
-	7,  // 20: bytebase.v1.SubscriptionService.CreatePurchase:input_type -> bytebase.v1.CreatePurchaseRequest
-	11, // 21: bytebase.v1.SubscriptionService.UpdatePurchase:input_type -> bytebase.v1.UpdatePurchaseRequest
-	12, // 22: bytebase.v1.SubscriptionService.CancelPurchase:input_type -> bytebase.v1.CancelPurchaseRequest
-	13, // 23: bytebase.v1.SubscriptionService.GetPaymentInfo:input_type -> bytebase.v1.GetPaymentInfoRequest
-	9,  // 24: bytebase.v1.SubscriptionService.VerifyCheckoutSession:input_type -> bytebase.v1.VerifyCheckoutSessionRequest
-	19, // 25: bytebase.v1.SubscriptionService.ListPurchasePlans:input_type -> bytebase.v1.ListPurchasePlansRequest
-	21, // 26: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	21, // 27: bytebase.v1.SubscriptionService.UploadLicense:output_type -> bytebase.v1.Subscription
-	8,  // 28: bytebase.v1.SubscriptionService.CreatePurchase:output_type -> bytebase.v1.PurchaseResponse
-	8,  // 29: bytebase.v1.SubscriptionService.UpdatePurchase:output_type -> bytebase.v1.PurchaseResponse
-	8,  // 30: bytebase.v1.SubscriptionService.CancelPurchase:output_type -> bytebase.v1.PurchaseResponse
-	14, // 31: bytebase.v1.SubscriptionService.GetPaymentInfo:output_type -> bytebase.v1.PaymentInfo
-	10, // 32: bytebase.v1.SubscriptionService.VerifyCheckoutSession:output_type -> bytebase.v1.VerifyCheckoutSessionResponse
-	20, // 33: bytebase.v1.SubscriptionService.ListPurchasePlans:output_type -> bytebase.v1.ListPurchasePlansResponse
-	26, // [26:34] is the sub-list for method output_type
-	18, // [18:26] is the sub-list for method input_type
+	6,  // 19: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:input_type -> bytebase.v1.ExportVCSProviderUsersRequest
+	7,  // 20: bytebase.v1.SubscriptionService.UploadLicense:input_type -> bytebase.v1.UploadLicenseRequest
+	8,  // 21: bytebase.v1.SubscriptionService.CreatePurchase:input_type -> bytebase.v1.CreatePurchaseRequest
+	12, // 22: bytebase.v1.SubscriptionService.UpdatePurchase:input_type -> bytebase.v1.UpdatePurchaseRequest
+	13, // 23: bytebase.v1.SubscriptionService.CancelPurchase:input_type -> bytebase.v1.CancelPurchaseRequest
+	14, // 24: bytebase.v1.SubscriptionService.GetPaymentInfo:input_type -> bytebase.v1.GetPaymentInfoRequest
+	10, // 25: bytebase.v1.SubscriptionService.VerifyCheckoutSession:input_type -> bytebase.v1.VerifyCheckoutSessionRequest
+	20, // 26: bytebase.v1.SubscriptionService.ListPurchasePlans:input_type -> bytebase.v1.ListPurchasePlansRequest
+	22, // 27: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	26, // 28: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:output_type -> google.api.HttpBody
+	22, // 29: bytebase.v1.SubscriptionService.UploadLicense:output_type -> bytebase.v1.Subscription
+	9,  // 30: bytebase.v1.SubscriptionService.CreatePurchase:output_type -> bytebase.v1.PurchaseResponse
+	9,  // 31: bytebase.v1.SubscriptionService.UpdatePurchase:output_type -> bytebase.v1.PurchaseResponse
+	9,  // 32: bytebase.v1.SubscriptionService.CancelPurchase:output_type -> bytebase.v1.PurchaseResponse
+	15, // 33: bytebase.v1.SubscriptionService.GetPaymentInfo:output_type -> bytebase.v1.PaymentInfo
+	11, // 34: bytebase.v1.SubscriptionService.VerifyCheckoutSession:output_type -> bytebase.v1.VerifyCheckoutSessionResponse
+	21, // 35: bytebase.v1.SubscriptionService.ListPurchasePlans:output_type -> bytebase.v1.ListPurchasePlansResponse
+	27, // [27:36] is the sub-list for method output_type
+	18, // [18:27] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
 	18, // [18:18] is the sub-list for extension extendee
 	0,  // [0:18] is the sub-list for field type_name
@@ -1873,7 +1917,7 @@ func file_v1_subscription_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_subscription_service_proto_rawDesc), len(file_v1_subscription_service_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

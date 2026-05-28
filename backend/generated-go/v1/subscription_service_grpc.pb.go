@@ -8,6 +8,7 @@ package v1
 
 import (
 	context "context"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,14 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SubscriptionService_GetSubscription_FullMethodName       = "/bytebase.v1.SubscriptionService/GetSubscription"
-	SubscriptionService_UploadLicense_FullMethodName         = "/bytebase.v1.SubscriptionService/UploadLicense"
-	SubscriptionService_CreatePurchase_FullMethodName        = "/bytebase.v1.SubscriptionService/CreatePurchase"
-	SubscriptionService_UpdatePurchase_FullMethodName        = "/bytebase.v1.SubscriptionService/UpdatePurchase"
-	SubscriptionService_CancelPurchase_FullMethodName        = "/bytebase.v1.SubscriptionService/CancelPurchase"
-	SubscriptionService_GetPaymentInfo_FullMethodName        = "/bytebase.v1.SubscriptionService/GetPaymentInfo"
-	SubscriptionService_VerifyCheckoutSession_FullMethodName = "/bytebase.v1.SubscriptionService/VerifyCheckoutSession"
-	SubscriptionService_ListPurchasePlans_FullMethodName     = "/bytebase.v1.SubscriptionService/ListPurchasePlans"
+	SubscriptionService_GetSubscription_FullMethodName        = "/bytebase.v1.SubscriptionService/GetSubscription"
+	SubscriptionService_ExportVCSProviderUsers_FullMethodName = "/bytebase.v1.SubscriptionService/ExportVCSProviderUsers"
+	SubscriptionService_UploadLicense_FullMethodName          = "/bytebase.v1.SubscriptionService/UploadLicense"
+	SubscriptionService_CreatePurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/CreatePurchase"
+	SubscriptionService_UpdatePurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/UpdatePurchase"
+	SubscriptionService_CancelPurchase_FullMethodName         = "/bytebase.v1.SubscriptionService/CancelPurchase"
+	SubscriptionService_GetPaymentInfo_FullMethodName         = "/bytebase.v1.SubscriptionService/GetPaymentInfo"
+	SubscriptionService_VerifyCheckoutSession_FullMethodName  = "/bytebase.v1.SubscriptionService/VerifyCheckoutSession"
+	SubscriptionService_ListPurchasePlans_FullMethodName      = "/bytebase.v1.SubscriptionService/ListPurchasePlans"
 )
 
 // SubscriptionServiceClient is the client API for SubscriptionService service.
@@ -39,6 +41,8 @@ type SubscriptionServiceClient interface {
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
+	// Exports active VCS users as CSV.
+	ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(ctx context.Context, in *UploadLicenseRequest, opts ...grpc.CallOption) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -69,6 +73,16 @@ func (c *subscriptionServiceClient) GetSubscription(ctx context.Context, in *Get
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Subscription)
 	err := c.cc.Invoke(ctx, SubscriptionService_GetSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *subscriptionServiceClient) ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(httpbody.HttpBody)
+	err := c.cc.Invoke(ctx, SubscriptionService_ExportVCSProviderUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +169,8 @@ type SubscriptionServiceServer interface {
 	// If there is no license, we will return a free plan subscription without expiration time.
 	// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
+	// Exports active VCS users as CSV.
+	ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*httpbody.HttpBody, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
@@ -183,6 +199,9 @@ type UnimplementedSubscriptionServiceServer struct{}
 
 func (UnimplementedSubscriptionServiceServer) GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSubscription not implemented")
+}
+func (UnimplementedSubscriptionServiceServer) ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*httpbody.HttpBody, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExportVCSProviderUsers not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadLicense not implemented")
@@ -240,6 +259,24 @@ func _SubscriptionService_GetSubscription_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SubscriptionServiceServer).GetSubscription(ctx, req.(*GetSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SubscriptionService_ExportVCSProviderUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportVCSProviderUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubscriptionServiceServer).ExportVCSProviderUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubscriptionService_ExportVCSProviderUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubscriptionServiceServer).ExportVCSProviderUsers(ctx, req.(*ExportVCSProviderUsersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,6 +417,10 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubscription",
 			Handler:    _SubscriptionService_GetSubscription_Handler,
+		},
+		{
+			MethodName: "ExportVCSProviderUsers",
+			Handler:    _SubscriptionService_ExportVCSProviderUsers_Handler,
 		},
 		{
 			MethodName: "UploadLicense",
