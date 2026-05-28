@@ -40,7 +40,7 @@ const mocks = vi.hoisted(() => {
     getOrFetchChangelogByName: vi.fn(),
     fetchPreviousChangelog: vi.fn(),
     getChangelogByName: vi.fn(),
-    useChangelogStore: vi.fn(),
+    useAppStore: vi.fn(),
     getTaskRunLog: vi.fn(),
     useVueState: vi.fn((getter: () => unknown) => getter()),
     clipboardWriteText,
@@ -165,9 +165,12 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: mocks.useAppStore,
+}));
+
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useChangelogStore: mocks.useChangelogStore,
 }));
 
 vi.mock("@/connect", () => ({
@@ -244,7 +247,7 @@ beforeEach(() => {
   mocks.getOrFetchChangelogByName.mockReset();
   mocks.fetchPreviousChangelog.mockReset();
   mocks.getChangelogByName.mockReset();
-  mocks.useChangelogStore.mockReset();
+  mocks.useAppStore.mockReset();
   mocks.getTaskRunLog.mockReset();
   mocks.pushNotification.mockReset();
   mocks.useVueState.mockImplementation((getter: () => unknown) => getter());
@@ -293,11 +296,13 @@ beforeEach(() => {
     }
     return undefined;
   });
-  mocks.useChangelogStore.mockReturnValue({
-    getOrFetchChangelogByName: mocks.getOrFetchChangelogByName,
-    fetchPreviousChangelog: mocks.fetchPreviousChangelog,
-    getChangelogByName: mocks.getChangelogByName,
-  });
+  mocks.useAppStore.mockImplementation((selector) =>
+    selector({
+      getOrFetchChangelogByName: mocks.getOrFetchChangelogByName,
+      fetchPreviousChangelog: mocks.fetchPreviousChangelog,
+      getChangelogByName: mocks.getChangelogByName,
+    })
+  );
   mocks.getTaskRunLog.mockResolvedValue({
     entries: [
       {

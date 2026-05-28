@@ -38,7 +38,8 @@ import {
   useSessionPageSize,
 } from "@/react/hooks/useSessionPageSize";
 import { cn } from "@/react/lib/utils";
-import { pushNotification, useUserStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import {
   extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
@@ -663,11 +664,10 @@ export function AuditLogTable({
       return t("audit-log.export-tooltip");
     return "";
   }, [filter, t]);
-
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
   const searchUsers = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { users } = await userStore.fetchUserList({
+      const { users } = await listUsers({
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
       });
@@ -676,7 +676,7 @@ export function AuditLogTable({
         keywords: [u.email, u.title],
       }));
     },
-    [userStore]
+    [listUsers]
   );
 
   const scopeOptions = useMemo((): ScopeOption[] => {

@@ -1,7 +1,5 @@
-import { create } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { revisionServiceClientConnect } from "@/connect";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -11,16 +9,18 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useRevisionStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
-import { ListRevisionsRequestSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { DatabaseRevisionTable } from "../revision/DatabaseRevisionTable";
 import { ImportRevisionSheet } from "../revision/ImportRevisionSheet";
 
 export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const revisionStore = useRevisionStore();
+  const listRevisionsByDatabase = useAppStore(
+    (state) => state.listRevisionsByDatabase
+  );
+  const deleteRevision = useAppStore((state) => state.deleteRevision);
   const [showCreateRevisionDrawer, setShowCreateRevisionDrawer] =
     useState(false);
   const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
@@ -32,19 +32,19 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
       pageToken: string;
       pageSize: number;
     }) => {
-      const request = create(ListRevisionsRequestSchema, {
-        parent: database.name,
-        pageSize,
-        pageToken,
-      });
-      const { nextPageToken, revisions } =
-        await revisionServiceClientConnect.listRevisions(request);
+      const { nextPageToken, revisions } = await listRevisionsByDatabase(
+        database.name,
+        {
+          pageToken,
+          pageSize,
+        }
+      );
       return {
         nextPageToken,
         list: revisions,
       };
     },
-    [database.name]
+    [database.name, listRevisionsByDatabase]
   );
   const paged = usePagedData<Revision>({
     sessionKey: `bb.paged-revision-table.${database.name}`,
@@ -68,14 +68,14 @@ export function DatabaseRevisionPanel({ database }: { database: Database }) {
   const handleDeleteSelected = useCallback(async () => {
     try {
       await Promise.allSettled(
-        [...selectedNames].map((name) => revisionStore.deleteRevision(name))
+        [...selectedNames].map((name) => deleteRevision(name))
       );
     } finally {
       setSelectedNames(new Set());
       setShowDeleteConfirm(false);
       handleRevisionDeleted();
     }
-  }, [selectedNames, handleRevisionDeleted, revisionStore]);
+  }, [selectedNames, deleteRevision, handleRevisionDeleted]);
 
   // Clear selection on page size change or database switch, but not on loadMore.
   useEffect(() => {

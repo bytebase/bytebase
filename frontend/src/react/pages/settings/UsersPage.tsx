@@ -54,7 +54,6 @@ import {
   useCurrentUserV1,
   useSettingV1Store,
   useSubscriptionV1Store,
-  useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { getUserFullNameByType } from "@/store/modules/v1/common";
@@ -92,7 +91,8 @@ function UserTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const userStore = useUserStore();
+  const archiveUser = useAppStore((state) => state.archiveUser);
+  const restoreUser = useAppStore((state) => state.restoreUser);
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups
   );
@@ -132,7 +132,7 @@ function UserTable({
       } else if (accountType === AccountType.WORKLOAD_IDENTITY) {
         await deleteWorkloadIdentity(fullName);
       } else {
-        await userStore.archiveUser(fullName);
+        await archiveUser(fullName);
       }
 
       const updated = create(UserSchema, { ...user, state: State.DELETED });
@@ -158,7 +158,7 @@ function UserTable({
       } else if (accountType === AccountType.WORKLOAD_IDENTITY) {
         await undeleteWorkloadIdentity(fullName);
       } else {
-        await userStore.restoreUser(fullName);
+        await restoreUser(fullName);
       }
 
       const updated = create(UserSchema, { ...user, state: State.ACTIVE });
@@ -506,7 +506,8 @@ function UserForm({
   onUpdated,
 }: Omit<CreateUserSheetProps, "open">) {
   const { t } = useTranslation();
-  const userStore = useUserStore();
+  const createUser = useAppStore((state) => state.createUser);
+  const updateUser = useAppStore((state) => state.updateUser);
   const workspaceStore = useWorkspaceV1Store();
   const settingV1Store = useSettingV1Store();
 
@@ -666,7 +667,7 @@ function UserForm({
   };
 
   const handleCreate = async () => {
-    const createdUser = await userStore.createUser({
+    const createdUser = await createUser({
       ...create(UserSchema, {}),
       title: title || extractUserTitle(email),
       email,
@@ -711,7 +712,7 @@ function UserForm({
     let updatedUser: User = user;
 
     if (updateMask.length > 0) {
-      updatedUser = await userStore.updateUser(
+      updatedUser = await updateUser(
         create(UpdateUserRequestSchema, {
           user: payload,
           updateMask: create(FieldMaskSchema, { paths: updateMask }),
@@ -918,7 +919,7 @@ export function UsersPage() {
   const { t } = useTranslation();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
 
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
 
@@ -939,14 +940,14 @@ export function UsersPage() {
   // Active users paged data
   const fetchActiveUsers = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const result = await userStore.fetchUserList({
+      const result = await listUsers({
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         filter: { query: userSearchText },
       });
       return { list: result.users, nextPageToken: result.nextPageToken };
     },
-    [userStore, userSearchText]
+    [listUsers, userSearchText]
   );
 
   const hasUserListPermission = hasWorkspacePermissionV2("bb.users.list");
@@ -959,7 +960,7 @@ export function UsersPage() {
   // Inactive users paged data
   const fetchInactiveUsers = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const result = await userStore.fetchUserList({
+      const result = await listUsers({
         pageSize: params.pageSize,
         pageToken: params.pageToken,
         filter: { query: inactiveUserSearchText, state: State.DELETED },
@@ -967,7 +968,7 @@ export function UsersPage() {
       });
       return { list: result.users, nextPageToken: result.nextPageToken };
     },
-    [userStore, inactiveUserSearchText]
+    [listUsers, inactiveUserSearchText]
   );
 
   const inactiveUsers = usePagedData<User>({

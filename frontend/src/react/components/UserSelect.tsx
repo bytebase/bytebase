@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Combobox, type ComboboxOption } from "@/react/components/ui/combobox";
-import { useUserStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { ALL_USERS_USER_EMAIL } from "@/types";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -34,7 +34,10 @@ export function UserSelect({
   className,
   includeAllUsers,
 }: UserSelectProps) {
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [search, setSearch] = useState("");
@@ -50,28 +53,26 @@ export function UserSelect({
       return;
     }
     let cancelled = false;
-    userStore.getOrFetchUserByIdentifier({ identifier: value }).then((user) => {
+    getOrFetchUserByIdentifier({ identifier: value }).then((user) => {
       if (!cancelled) setSelectedUser(user);
     });
     return () => {
       cancelled = true;
     };
-  }, [value, userStore]);
+  }, [value, getOrFetchUserByIdentifier]);
 
   const handleSearch = useCallback(
     (query: string) => {
       setSearch(query);
       const seq = ++searchSeqRef.current;
-      userStore
-        .fetchUserList({
-          pageSize: getDefaultPagination(),
-          filter: { query: query.trim() },
-        })
-        .then(({ users: fetched }) => {
-          if (seq === searchSeqRef.current) setUsers(fetched);
-        });
+      listUsers({
+        pageSize: getDefaultPagination(),
+        filter: { query: query.trim() },
+      }).then(({ users: fetched }) => {
+        if (seq === searchSeqRef.current) setUsers(fetched);
+      });
     },
-    [userStore]
+    [listUsers]
   );
 
   const options: ComboboxOption[] = useMemo(() => {

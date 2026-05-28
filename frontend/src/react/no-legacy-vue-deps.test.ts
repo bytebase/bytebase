@@ -138,4 +138,30 @@ describe("React Project and Settings legacy Vue dependencies", () => {
     }
     expect(violations).toEqual([]);
   });
+
+  test("Phase 2 protobuf resource consumers use the React app store", () => {
+    const bannedImports = [
+      "useUserStore",
+      "useRoleStore",
+      "useReleaseStore",
+      "useRevisionStore",
+      "useChangelogStore",
+      "useProjectWebhookV1Store",
+      "@/store/modules/user",
+      "@/store/modules/role",
+      "@/store/modules/release",
+      "@/store/modules/revision",
+      "@/store/modules/v1/changelog",
+      "@/store/modules/v1/projectWebhook",
+    ];
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(sources)) {
+      for (const bannedImport of bannedImports) {
+        if (source.includes(bannedImport)) {
+          violations.push(`${file}: ${bannedImport}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });

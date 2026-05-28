@@ -35,14 +35,11 @@ import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/react/lib/project-member/utils";
+import { displayRoleTitleFromList } from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useRoleStore,
-  useSettingV1Store,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useSettingV1Store } from "@/store";
 import type { Permission } from "@/types";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -56,7 +53,6 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import {
   batchConvertParsedExprToCELString,
-  displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
   formatIssueTitle,
@@ -169,9 +165,9 @@ function RequestRoleForm({
   const [submitting, setSubmitting] = useState(false);
 
   const settingStore = useSettingV1Store();
-  const roleStore = useRoleStore();
-  const selectedRole = useVueState(() =>
-    role ? roleStore.getRoleByName(role) : undefined
+  const roleList = useAppStore((state) => state.roleList);
+  const selectedRole = useAppStore((state) =>
+    role ? state.getRoleByName(role) : undefined
   );
   const requiredPermissionList = useMemo(
     () => [...new Set(requiredPermissions)],
@@ -402,7 +398,7 @@ function RequestRoleForm({
         ? `[${t("issue.title.request-role")}] ${trimmedReason}`
         : formatIssueTitle(
             t("issue.title.request-specific-role", {
-              role: displayRoleTitle(role),
+              role: displayRoleTitleFromList(role, roleList),
             }),
             titleDatabaseNames
           );

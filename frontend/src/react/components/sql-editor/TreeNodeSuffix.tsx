@@ -1,10 +1,12 @@
 import { MoreHorizontal, Star, Users, X } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
-import { useUserStore, useWorkSheetStore } from "@/store";
+import { useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   type SheetViewMode,
@@ -39,7 +41,6 @@ export function TreeNodeSuffix({
   const { t } = useTranslation();
 
   const worksheetStore = useWorkSheetStore();
-  const userStore = useUserStore();
   const { isWorksheetCreator } = useSheetContext();
 
   const worksheetLite = usePiniaBridge(() => {
@@ -57,6 +58,25 @@ export function TreeNodeSuffix({
       creator: sheet.creator,
     };
   });
+  const worksheetCreatorTitle = useAppStore((state) =>
+    worksheetLite?.creator
+      ? state.getUserByIdentifier(worksheetLite.creator)?.title
+      : undefined
+  );
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
+
+  useEffect(() => {
+    if (!worksheetLite?.creator || worksheetCreatorTitle) {
+      return;
+    }
+    void getOrFetchUserByIdentifier({ identifier: worksheetLite.creator });
+  }, [
+    getOrFetchUserByIdentifier,
+    worksheetCreatorTitle,
+    worksheetLite?.creator,
+  ]);
 
   const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
     switch (visibility) {
@@ -72,7 +92,7 @@ export function TreeNodeSuffix({
   };
 
   const creatorForSheet = (creator: string) => {
-    return userStore.getUserByIdentifier(creator)?.title ?? creator;
+    return worksheetCreatorTitle ?? creator;
   };
 
   // Draft view: show X button to close the draft tab

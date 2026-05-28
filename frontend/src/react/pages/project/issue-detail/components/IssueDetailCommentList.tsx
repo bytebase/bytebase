@@ -30,6 +30,7 @@ import {
 } from "@/react/components/ui/dialog";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { buildPlanDeployRouteFromPlanName } from "@/router/dashboard/projectV1RouteHelpers";
 import {
@@ -41,7 +42,6 @@ import {
   useIssueCommentStore,
   useProjectV1Store,
   useSheetV1Store,
-  useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
@@ -104,7 +104,9 @@ export function IssueDetailCommentList() {
   const page = useIssueDetailContext();
   const { setEditing } = page;
   const projectStore = useProjectV1Store();
-  const userStore = useUserStore();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const issueCommentStore = useIssueCommentStore();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const routeHash = useVueState(() => router.currentRoute.value.hash);
@@ -187,8 +189,8 @@ export function IssueDetailCommentList() {
     if (identifiers.size === 0) {
       return;
     }
-    void userStore.batchGetOrFetchUsers([...identifiers]);
-  }, [issueComments, page.issue?.creator, userStore]);
+    void batchGetOrFetchUsers([...identifiers]);
+  }, [batchGetOrFetchUsers, issueComments, page.issue?.creator]);
 
   const refreshIssueComments = async () => {
     if (!issueName) {
@@ -360,14 +362,12 @@ function IssueDescriptionCommentRow({
   const page = useIssueDetailContext();
   const { setEditing } = page;
   const projectStore = useProjectV1Store();
-  const userStore = useUserStore();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const creator = useVueState(
-    () =>
-      userStore.getUserByIdentifier(page.issue?.creator || "") ??
-      unknownUser(page.issue?.creator || "")
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(page.issue?.creator || "")
   );
+  const creator = creatorUser ?? unknownUser(page.issue?.creator || "");
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(page.issue?.description || "");
   const [isSaving, setIsSaving] = useState(false);
@@ -558,12 +558,10 @@ function IssueCommentRow({
 function CommentActionHeader({ issueComment }: { issueComment: IssueComment }) {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const userStore = useUserStore();
-  const creator = useVueState(
-    () =>
-      userStore.getUserByIdentifier(issueComment.creator) ??
-      unknownUser(issueComment.creator)
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(issueComment.creator)
   );
+  const creator = creatorUser ?? unknownUser(issueComment.creator);
   const createdTs = getTimeForPbTimestampProtoEs(issueComment.createTime, 0);
   const updatedTs = getTimeForPbTimestampProtoEs(issueComment.updateTime, 0);
   const isEdited =
@@ -937,12 +935,10 @@ function joinFragments(fragments: ReactNode[], separator: string): ReactNode {
 
 function CommentActionIcon({ issueComment }: { issueComment: IssueComment }) {
   const page = useIssueDetailContext();
-  const userStore = useUserStore();
-  const user = useVueState(
-    () =>
-      userStore.getUserByIdentifier(issueComment.creator) ??
-      unknownUser(issueComment.creator)
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(issueComment.creator)
   );
+  const user = creatorUser ?? unknownUser(issueComment.creator);
   const commentType = getIssueCommentType(issueComment);
 
   if (

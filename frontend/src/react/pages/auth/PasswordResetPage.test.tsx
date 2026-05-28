@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
     login: vi.fn(async () => {}),
   })),
   useCurrentUserV1: vi.fn(() => ({ value: { name: "users/1", email: "u@e" } })),
-  useUserStore: vi.fn(() => ({ updateUser: vi.fn() })),
+  updateUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   routerPush: vi.fn(),
@@ -43,8 +43,21 @@ vi.mock("@/store", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
   useCurrentUserV1: mocks.useCurrentUserV1,
-  useUserStore: mocks.useUserStore,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        updateUser: mocks.updateUser,
+      }),
+    {
+      getState: () => ({
+        updateUser: mocks.updateUser,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/router", () => ({

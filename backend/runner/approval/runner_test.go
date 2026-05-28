@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -175,6 +176,25 @@ func TestCalculateRiskLevelFromCELVars(t *testing.T) {
 			a.Equal(tt.want, got)
 		})
 	}
+}
+
+func TestApprovalTemplateMatchesUnspecifiedStatementSQLType(t *testing.T) {
+	a := require.New(t)
+
+	approvalTemplate, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+		Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+			{
+				Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+				Condition: &expr.Expr{Expression: `statement.sql_type == "STATEMENT_TYPE_UNSPECIFIED"`},
+				Template:  &storepb.ApprovalTemplate{Title: "Unspecified SQL type rule"},
+			},
+		},
+	}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, expandCELVars(map[string]any{
+		common.CELAttributeResourceProjectID: "project",
+	}, []storepb.StatementType{storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED}, nil))
+	a.NoError(err)
+	a.NotNil(approvalTemplate)
+	a.Equal("Unspecified SQL type rule", approvalTemplate.Title)
 }
 
 func TestBuildStatementSummaryResultMapUsesSheetSHA256(t *testing.T) {

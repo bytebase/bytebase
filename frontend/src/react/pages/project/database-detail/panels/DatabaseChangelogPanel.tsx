@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useChangelogStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import type {
   Changelog,
   Database,
@@ -8,7 +8,7 @@ import type {
 import { DatabaseChangelogTable } from "../changelog/DatabaseChangelogTable";
 
 export function DatabaseChangelogPanel({ database }: { database: Database }) {
-  const changelogStore = useChangelogStore();
+  const listChangelogs = useAppStore((state) => state.listChangelogs);
   const fetchChangelogList = useCallback(
     async ({
       pageToken,
@@ -17,18 +17,17 @@ export function DatabaseChangelogPanel({ database }: { database: Database }) {
       pageToken: string;
       pageSize: number;
     }) => {
-      const { nextPageToken, changelogs } =
-        await changelogStore.fetchChangelogList({
-          parent: database.name,
-          pageSize,
-          pageToken,
-        });
+      const { nextPageToken, changelogs } = await listChangelogs({
+        parent: database.name,
+        pageSize,
+        pageToken,
+      });
       return {
         nextPageToken,
         list: changelogs,
       };
     },
-    [changelogStore, database.name]
+    [database.name, listChangelogs]
   );
   const paged = usePagedData<Changelog>({
     sessionKey: `bb.paged-changelog-table.${database.name}`,

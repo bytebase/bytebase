@@ -17,8 +17,8 @@ import {
 } from "@/react/components/ui/table";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { useReleaseStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -34,7 +34,9 @@ export function ProjectReleaseDashboardPage({
   projectId: string;
 }) {
   const { t } = useTranslation();
-  const releaseStore = useReleaseStore();
+  const listReleasesByProject = useAppStore(
+    (state) => state.listReleasesByProject
+  );
   const projectName = `${projectNamePrefix}${projectId}`;
 
   // Category filter from URL
@@ -76,16 +78,15 @@ export function ProjectReleaseDashboardPage({
   const fetchReleaseList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const filter = buildCategoryFilter(selectedCategory);
-      const { nextPageToken, releases } =
-        await releaseStore.fetchReleasesByProject(
-          projectName,
-          { pageSize: params.pageSize, pageToken: params.pageToken },
-          false,
-          filter
-        );
+      const { nextPageToken, releases } = await listReleasesByProject(
+        projectName,
+        { pageSize: params.pageSize, pageToken: params.pageToken },
+        false,
+        filter
+      );
       return { list: releases, nextPageToken };
     },
-    [releaseStore, projectName, selectedCategory]
+    [listReleasesByProject, projectName, selectedCategory]
   );
 
   const paged = usePagedData<Release>({

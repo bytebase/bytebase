@@ -13,6 +13,8 @@ import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { displayRoleTitleFromList } from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -20,7 +22,6 @@ import {
   useInstanceV1Store,
   useIssueV1Store,
   useProjectV1Store,
-  useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
@@ -29,7 +30,6 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   buildIssueFilterBySearchParams,
-  displayRoleTitle,
   extractDatabaseResourceName,
   extractInstanceResourceName,
   extractIssueUID,
@@ -49,6 +49,9 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
   const projectStore = useProjectV1Store();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -204,6 +207,13 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     sessionKey: "export-center",
     fetchList: fetchIssueList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((issue) => issue.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   return (
     <div className="py-4 w-full flex flex-col">
@@ -364,6 +374,7 @@ function RiskLevelIcon({ riskLevel }: { riskLevel: RiskLevel }) {
 
 function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
+  const roleList = useAppStore((state) => state.roleList);
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
 
   if (issue.approvalStatus === ApprovalStatus.CHECKING) {
@@ -408,7 +419,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.PENDING) {
       const currentRoleIndex = issue.approvers.length;
       const role = approvalSteps[currentRoleIndex];
-      const roleName = role ? displayRoleTitle(role) : "";
+      const roleName = role ? displayRoleTitleFromList(role, roleList) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">
@@ -444,11 +455,12 @@ function IssueListItem({
   highlightText?: string;
 }) {
   const { t } = useTranslation();
-  const userStore = useUserStore();
   const projectStore = useProjectV1Store();
 
-  const creator =
-    userStore.getUserByIdentifier(issue.creator) || unknownUser(issue.creator);
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(issue.creator)
+  );
+  const creator = creatorUser || unknownUser(issue.creator);
 
   const issueProject = useVueState(() =>
     projectStore.getProjectByName(

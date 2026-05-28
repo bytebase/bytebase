@@ -58,6 +58,7 @@ import {
 import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
+import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
@@ -71,7 +72,6 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useRoleStore,
   useSQLReviewStore,
   useSubscriptionV1Store,
   useUIStateStore,
@@ -101,7 +101,6 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import {
-  displayRoleTitle,
   hasWorkspacePermissionV2,
   hexToRgb,
   sqlReviewPolicySlug,
@@ -208,9 +207,8 @@ function RolloutPolicyConfig({
   onChange: (policy: Policy) => void;
 }) {
   const { t } = useTranslation();
-  const roleStore = useRoleStore();
   const subscriptionStore = useSubscriptionV1Store();
-  const roleList = useVueState(() => [...roleStore.roleList]);
+  const roleList = useAppStore((state) => state.roleList);
   const hasCustomRoleFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
@@ -220,6 +218,14 @@ function RolloutPolicyConfig({
     policy.policy?.case === "rolloutPolicy"
       ? policy.policy.value
       : create(RolloutPolicySchema);
+  const roleByName = useMemo(
+    () => new Map(roleList.map((role) => [role.name, role])),
+    [roleList]
+  );
+  const displayPolicyRoleTitle = useCallback(
+    (name: string) => displayRoleTitleFromList(name, roleList),
+    [roleList]
+  );
 
   const update = (rp: RolloutPolicy) => {
     onChange({
@@ -267,20 +273,16 @@ function RolloutPolicyConfig({
       roles: { name: string; title: string }[];
     }[] = [];
 
-    const wsRoles = PRESET_WORKSPACE_ROLES.map((name) =>
-      roleStore.getRoleByName(name)
-    )
+    const wsRoles = PRESET_WORKSPACE_ROLES.map((name) => roleByName.get(name))
       .filter((r) => r && !selected.has(r.name))
-      .map((r) => ({ name: r!.name, title: displayRoleTitle(r!.name) }));
+      .map((r) => ({ name: r!.name, title: displayPolicyRoleTitle(r!.name) }));
     if (wsRoles.length > 0) {
       groups.push({ label: t("role.workspace-roles.self"), roles: wsRoles });
     }
 
-    const projRoles = PRESET_PROJECT_ROLES.map((name) =>
-      roleStore.getRoleByName(name)
-    )
+    const projRoles = PRESET_PROJECT_ROLES.map((name) => roleByName.get(name))
       .filter((r) => r && !selected.has(r.name))
-      .map((r) => ({ name: r!.name, title: displayRoleTitle(r!.name) }));
+      .map((r) => ({ name: r!.name, title: displayPolicyRoleTitle(r!.name) }));
     if (projRoles.length > 0) {
       groups.push({ label: t("role.project-roles.self"), roles: projRoles });
     }
@@ -288,7 +290,7 @@ function RolloutPolicyConfig({
     if (hasCustomRoleFeature) {
       const customRoles = roleList
         .filter((r) => !PRESET_ROLES.includes(r.name) && !selected.has(r.name))
-        .map((r) => ({ name: r.name, title: displayRoleTitle(r.name) }));
+        .map((r) => ({ name: r.name, title: displayPolicyRoleTitle(r.name) }));
       if (customRoles.length > 0) {
         groups.push({
           label: t("role.custom-roles.self"),
@@ -298,7 +300,14 @@ function RolloutPolicyConfig({
     }
 
     return groups;
-  }, [roleList, rolloutPolicy.roles, roleStore, t]);
+  }, [
+    displayPolicyRoleTitle,
+    hasCustomRoleFeature,
+    roleByName,
+    roleList,
+    rolloutPolicy.roles,
+    t,
+  ]);
 
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -328,7 +337,7 @@ function RolloutPolicyConfig({
                 key={role}
                 className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
               >
-                {displayRoleTitle(role)}
+                {displayPolicyRoleTitle(role)}
                 {canUpdatePolicy && (
                   <button
                     type="button"

@@ -45,20 +45,14 @@ const mocks = vi.hoisted(() => ({
     getOrFetchProjectByName: vi.fn(async () => ({})),
     getProjectByName: vi.fn(() => ({ allowSelfApproval: false })),
   },
-  roleStore: {
-    roleList: [
-      {
-        name: "roles/PROJECT_OWNER",
-        title: "Project Owner",
-      },
-    ],
-  },
+  roleList: [
+    {
+      name: "roles/PROJECT_OWNER",
+      title: "Project Owner",
+    },
+  ],
   workspaceStore: {
     roleMapToUsers: new Map(),
-  },
-  userStore: {
-    batchGetOrFetchUsers: vi.fn(async () => []),
-    getOrFetchUserByIdentifier: vi.fn(async () => undefined),
   },
   issueCommentStore: {
     getIssueComments: vi.fn(() => mocks.comments),
@@ -91,15 +85,16 @@ vi.mock("@/store", () => ({
   useCurrentUserV1: () => mocks.currentUserStore,
   useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
-  useRoleStore: () => mocks.roleStore,
   useWorkspaceV1Store: () => mocks.workspaceStore,
-  useUserStore: () => mocks.userStore,
 }));
 
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       batchGetOrFetchGroups: mocks.batchGetOrFetchGroups,
+      batchGetOrFetchUsers: mocks.batchGetOrFetchUsers,
+      getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+      roleList: mocks.roleList,
     }),
 }));
 
@@ -223,8 +218,8 @@ beforeEach(() => {
   mocks.projectIamPolicyStore.getProjectIamPolicy.mockClear();
   mocks.projectStore.getOrFetchProjectByName.mockClear();
   mocks.projectStore.getProjectByName.mockClear();
-  mocks.userStore.batchGetOrFetchUsers.mockClear();
-  mocks.userStore.getOrFetchUserByIdentifier.mockClear();
+  mocks.batchGetOrFetchUsers.mockClear();
+  mocks.getOrFetchUserByIdentifier.mockClear();
 });
 
 describe("PlanDetailApprovalFlow", () => {

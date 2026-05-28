@@ -7,7 +7,7 @@ import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
 import { Button } from "@/react/components/ui/button";
 import { Switch } from "@/react/components/ui/switch";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_DATABASE_CHANGELOG_DETAIL,
@@ -15,7 +15,7 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/router/dashboard/projectV1";
-import { pushNotification, useChangelogStore } from "@/store";
+import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -200,7 +200,12 @@ export function DatabaseChangelogDetailPage({
   changelogId,
 }: DatabaseChangelogDetailPageProps) {
   const { t } = useTranslation();
-  const changelogStore = useChangelogStore();
+  const getOrFetchChangelogByName = useAppStore(
+    (state) => state.getOrFetchChangelogByName
+  );
+  const fetchPreviousChangelog = useAppStore(
+    (state) => state.fetchPreviousChangelog
+  );
   const [loading, setLoading] = useState(true);
   const [showDiff, setShowDiff] = useState(true);
   const [resolvedChangelog, setResolvedChangelog] = useState<Changelog>();
@@ -222,8 +227,8 @@ export function DatabaseChangelogDetailPage({
   });
   const changelogName = `${detail.databaseName}/changelogs/${changelogId}`;
 
-  const changelog = useVueState(() =>
-    changelogStore.getChangelogByName(changelogName, ChangelogView.FULL)
+  const changelog = useAppStore((state) =>
+    state.getChangelogByName(changelogName, ChangelogView.FULL)
   );
 
   useEffect(() => {
@@ -247,11 +252,8 @@ export function DatabaseChangelogDetailPage({
     setHasTaskRunDatabaseSync(undefined);
 
     void Promise.all([
-      changelogStore.getOrFetchChangelogByName(
-        changelogName,
-        ChangelogView.FULL
-      ),
-      changelogStore.fetchPreviousChangelog(changelogName),
+      getOrFetchChangelogByName(changelogName, ChangelogView.FULL),
+      fetchPreviousChangelog(changelogName),
     ])
       .then(([current, previous]) => {
         if (cancelled) {
@@ -278,7 +280,12 @@ export function DatabaseChangelogDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [changelogName, changelogStore, detail.ready]);
+  }, [
+    changelogName,
+    detail.ready,
+    fetchPreviousChangelog,
+    getOrFetchChangelogByName,
+  ]);
 
   useEffect(() => {
     let cancelled = false;

@@ -26,7 +26,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
-import { pushNotification, useProjectV1Store, useReleaseStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
@@ -41,13 +42,15 @@ export function ProjectReleaseDetailPage({
   releaseId: string;
 }) {
   const { t } = useTranslation();
-  const releaseStore = useReleaseStore();
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
+  const deleteRelease = useAppStore((state) => state.deleteRelease);
+  const undeleteRelease = useAppStore((state) => state.undeleteRelease);
   const projectV1Store = useProjectV1Store();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const releaseName = `${projectName}/releases/${releaseId}`;
 
-  const release = useVueState(() => releaseStore.getReleaseByName(releaseName));
+  const release = useAppStore((state) => state.getReleaseByName(releaseName));
   const project = useVueState(() =>
     projectV1Store.getProjectByName(projectName)
   );
@@ -57,13 +60,13 @@ export function ProjectReleaseDetailPage({
     void projectV1Store.getOrFetchProjectByName(projectName).catch((error) => {
       if (!cancelled) console.error("Failed to fetch project", error);
     });
-    void releaseStore.fetchReleaseByName(releaseName).catch((error) => {
+    void fetchRelease(releaseName).catch((error) => {
       if (!cancelled) console.error("Failed to fetch release", error);
     });
     return () => {
       cancelled = true;
     };
-  }, [projectV1Store, releaseStore, projectName, releaseName]);
+  }, [projectV1Store, fetchRelease, projectName, releaseName]);
 
   useEffect(() => {
     if (project?.title) {
@@ -86,7 +89,7 @@ export function ProjectReleaseDetailPage({
 
   const handleArchive = async () => {
     try {
-      await releaseStore.deleteRelease(release.name);
+      await deleteRelease(release.name);
     } catch (error) {
       pushNotification({
         module: "bytebase",
@@ -101,7 +104,7 @@ export function ProjectReleaseDetailPage({
 
   const handleRestore = async () => {
     try {
-      await releaseStore.undeleteRelease(release.name);
+      await undeleteRelease(release.name);
     } catch (error) {
       pushNotification({
         module: "bytebase",

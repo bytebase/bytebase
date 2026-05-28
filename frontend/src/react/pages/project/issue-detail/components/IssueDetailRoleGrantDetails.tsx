@@ -13,14 +13,14 @@ import {
 import { useEnvironmentList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { getRoleEnvironmentLimitationKind } from "@/react/lib/project-member/utils";
+import { displayRoleTitleFromList } from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
 import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
-  useRoleStore,
 } from "@/store";
 import type { DatabaseResource } from "@/types";
-import { displayRoleTitle } from "@/utils";
 import {
   type ConditionExpression,
   convertFromCELString,
@@ -31,12 +31,12 @@ import { useIssueDetailContext } from "../context/IssueDetailContext";
 export function IssueDetailRoleGrantDetails() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
-  const roleStore = useRoleStore();
   const databaseStore = useDatabaseV1Store();
   const issue = page.issue;
   const requestRoleName = issue?.roleGrant?.role ?? "";
-  const requestRole = useVueState(() =>
-    roleStore.getRoleByName(requestRoleName)
+  const roleList = useAppStore((state) => state.roleList);
+  const requestRole = useAppStore((state) =>
+    state.getRoleByName(requestRoleName)
   );
   const [condition, setCondition] = useState<ConditionExpression | undefined>();
 
@@ -99,7 +99,9 @@ export function IssueDetailRoleGrantDetails() {
         {requestRoleName && (
           <div className="flex flex-col gap-y-2">
             <span className="text-sm text-control-light">{t("role.self")}</span>
-            <div className="text-base">{displayRoleTitle(requestRoleName)}</div>
+            <div className="text-base">
+              {displayRoleTitleFromList(requestRoleName, roleList)}
+            </div>
           </div>
         )}
 

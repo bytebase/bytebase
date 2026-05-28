@@ -278,6 +278,34 @@ export function useGroupByIdentifier(id: string) {
   return useAppStore((state) => state.getGroupByIdentifier(id));
 }
 
+export function useUserByIdentifier(identifier: string | undefined) {
+  return useAppStore((state) =>
+    identifier ? state.getUserByIdentifier(identifier) : undefined
+  );
+}
+
+export function useRoleByName(name: string | undefined) {
+  return useAppStore((state) => (name ? state.getRoleByName(name) : undefined));
+}
+
+export function useReleaseByName(name: string | undefined) {
+  return useAppStore((state) =>
+    name ? state.getReleaseByName(name) : undefined
+  );
+}
+
+export function useRevisionByName(name: string | undefined) {
+  return useAppStore((state) =>
+    name ? state.getRevisionByName(name) : undefined
+  );
+}
+
+export function useChangelogByName(name: string | undefined) {
+  return useAppStore((state) =>
+    name ? state.getChangelogByName(name) : undefined
+  );
+}
+
 export function useServiceAccount(name: string) {
   return useAppStore(useShallow((state) => state.getServiceAccount(name)));
 }

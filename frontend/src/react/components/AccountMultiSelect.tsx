@@ -7,7 +7,7 @@ import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import {
   extractUserEmail,
   groupNamePrefix,
@@ -192,7 +192,7 @@ export function AccountMultiSelect({
   includeAllUsers?: boolean;
 }) {
   const { t } = useTranslation();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
   const listGroups = useAppStore((state) => state.listGroups);
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
@@ -212,9 +212,9 @@ export function AccountMultiSelect({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       const query = search.trim();
-      userStore
-        .fetchUserList({ pageSize: getDefaultPagination(), filter: { query } })
-        .then(({ users: fetched }) => setUsers(fetched));
+      listUsers({ pageSize: getDefaultPagination(), filter: { query } }).then(
+        ({ users: fetched }) => setUsers(fetched)
+      );
       listGroups({ pageSize: getDefaultPagination(), filter: { query } }).then(
         ({ groups: fetched }) => setGroups(fetched)
       );
@@ -222,7 +222,7 @@ export function AccountMultiSelect({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, userStore, listGroups]);
+  }, [search, listUsers, listGroups]);
 
   const handleClickOutside = useCallback(() => {
     setOpen(false);

@@ -21,7 +21,10 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useWorkSheetStore: vi.fn(),
   useSQLEditorTabStore: vi.fn(),
-  useUserStore: vi.fn(),
+  getUserByIdentifier: vi.fn<() => { title: string } | undefined>(() => ({
+    title: "Test User",
+  })),
+  getOrFetchUserByIdentifier: vi.fn(async () => ({ title: "Test User" })),
   useSheetContext: vi.fn(),
 }));
 
@@ -35,7 +38,14 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useWorkSheetStore: mocks.useWorkSheetStore,
-  useUserStore: mocks.useUserStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      getUserByIdentifier: mocks.getUserByIdentifier,
+      getOrFetchUserByIdentifier: mocks.getOrFetchUserByIdentifier,
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
@@ -132,9 +142,8 @@ beforeEach(async () => {
   mocks.useSQLEditorTabStore.mockReturnValue({
     closeTab: vi.fn(),
   });
-  mocks.useUserStore.mockReturnValue({
-    getUserByIdentifier: vi.fn(() => ({ title: "Test User" })),
-  });
+  mocks.getUserByIdentifier.mockReturnValue({ title: "Test User" });
+  mocks.getOrFetchUserByIdentifier.mockResolvedValue({ title: "Test User" });
   mocks.useSheetContext.mockReturnValue({
     isWorksheetCreator: vi.fn(() => true),
   });
@@ -201,6 +210,31 @@ describe("TreeNodeSuffix", () => {
 
     const starSvg = container.querySelector("svg.lucide-star");
     expect(starSvg).toBeNull();
+
+    unmount();
+  });
+
+  test("fetches worksheet creator before rendering the raw identifier", () => {
+    mocks.getUserByIdentifier.mockReturnValue(undefined);
+    const node = makeWorksheetNode();
+    const onToggleStar = vi.fn();
+    const onSharePanelShow = vi.fn();
+    const onContextMenuShow = vi.fn();
+
+    const { render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="my"
+        onToggleStar={onToggleStar}
+        onSharePanelShow={onSharePanelShow}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    expect(mocks.getOrFetchUserByIdentifier).toHaveBeenCalledWith({
+      identifier: "users/test@example.com",
+    });
 
     unmount();
   });
