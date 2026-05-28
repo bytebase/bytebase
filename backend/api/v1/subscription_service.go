@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -9,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -54,6 +57,41 @@ func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Re
 		}
 	}
 	return connect.NewResponse(subscription), nil
+}
+
+// ExportVCSProviderUsers exports active VCS provider users as CSV.
+func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *connect.Request[v1pb.ExportVCSProviderUsersRequest]) (*connect.Response[httpbody.HttpBody], error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	users, err := s.store.ListActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list active VCS provider users"))
+	}
+
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
+	if err := writer.Write([]string{"vcs_type", "user_id", "user_name", "display_name", "last_seen_at"}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	for _, user := range users {
+		if err := writer.Write([]string{
+			user.VCSType.String(),
+			user.UserID,
+			user.Payload.GetUserName(),
+			user.Payload.GetDisplayName(),
+			user.LastSeenAt.UTC().Format(time.RFC3339),
+		}); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&httpbody.HttpBody{
+		ContentType: "text/csv; charset=utf-8",
+		Data:        buf.Bytes(),
+	}), nil
 }
 
 // UploadLicense uploads an enterprise license (self-hosted only).

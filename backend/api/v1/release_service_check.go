@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -28,14 +27,8 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-const vcsProviderUserActiveWindow = 90 * 24 * time.Hour
-
 func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
 	request := req.Msg
-	if len(request.Targets) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets cannot be empty"))
-	}
-
 	projectID, err := common.GetProjectID(request.GetParent())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -53,8 +46,16 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
+	if request.GetRelease() == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release is required"))
+	}
+
 	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
 		return nil, err
+	}
+
+	if len(request.Targets) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets cannot be empty"))
 	}
 
 	var targetDatabases []*store.DatabaseMessage
@@ -158,6 +159,9 @@ func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID s
 	}
 	if vcsUser.GetVcsType() == v1pb.VCSType_VCS_TYPE_UNSPECIFIED {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.vcs_type is required"))
+	}
+	if _, ok := v1pb.VCSType_name[int32(vcsUser.GetVcsType())]; !ok {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.vcs_type %d is invalid", vcsUser.GetVcsType()))
 	}
 	if vcsUser.GetUserId() == "" {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.user_id is required"))

@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestGitOpsCheck(t *testing.T) {
@@ -199,6 +200,22 @@ func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 	a.Equal("1001", users[0].UserID)
 	a.Equal("alice", users[0].Payload.GetUserName())
 	a.Equal("Alice", users[0].Payload.GetDisplayName())
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		VcsUser: &v1pb.VCSUser{
+			VcsType:  v1pb.VCSType_GITLAB,
+			UserId:   "1002",
+			UserName: "bob",
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	count, err = stores.CountActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
+	a.NoError(err)
+	a.Equal(2, count)
 }
 
 func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
@@ -239,6 +256,29 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType: v1pb.VCSType_GITHUB,
+			UserId:  "1001",
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType: v1pb.VCSType(999),
+			UserId:  "1001",
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
 	count, err := stores.CountActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
 	a.NoError(err)
 	a.Zero(count)
@@ -268,6 +308,49 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	count, err = stores.CountActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
 	a.NoError(err)
 	a.Equal(freeUserLimit, count)
+}
+
+func TestVCSProviderUserActuatorAndExport(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	stores := getStore(t, ctl.server)
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	a.NoError(err)
+
+	ok, err := stores.TouchVCSProviderUser(ctx, workspaceID, &store.VCSProviderUserMessage{
+		VCSType: v1pb.VCSType_GITHUB,
+		UserID:  "1001",
+		Payload: &storepb.VCSProviderUserPayload{
+			UserName:    "alice",
+			DisplayName: "Alice",
+		},
+	}, 90*24*time.Hour, 20)
+	a.NoError(err)
+	a.True(ok)
+
+	_, err = stores.GetDB().ExecContext(ctx, `
+		INSERT INTO vcs_provider_user (workspace, vcs_type, user_id, last_seen_at, payload)
+		VALUES ($1, $2, 'inactive-1', now() - interval '91 days', '{"userName":"inactive"}'::jsonb)
+	`, workspaceID, v1pb.VCSType_GITHUB.String())
+	a.NoError(err)
+
+	info, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	a.Equal(int32(1), info.Msg.ActiveVcsUserCount)
+
+	body, err := ctl.subscriptionServiceClient.ExportVCSProviderUsers(ctx, connect.NewRequest(&v1pb.ExportVCSProviderUsersRequest{}))
+	a.NoError(err)
+	a.Equal("text/csv; charset=utf-8", body.Msg.ContentType)
+	csv := string(body.Msg.Data)
+	a.Contains(csv, "vcs_type,user_id,user_name,display_name,last_seen_at")
+	a.Contains(csv, "GITHUB,1001,alice,Alice,")
+	a.NotContains(csv, "inactive-1")
 }
 
 func createGitOpsVCSUserTestProject(ctx context.Context, t *testing.T, ctl *controller) *v1pb.Project {

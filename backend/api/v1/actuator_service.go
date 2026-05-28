@@ -179,6 +179,12 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.UserCountInIam = int32(userCountInIam)
 
+		activeVCSUserCount, err := s.store.CountActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count active VCS users"))
+		}
+		serverInfo.ActiveVcsUserCount = int32(activeVCSUserCount)
+
 		// Check if sample instances are available
 		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
 		serverInfo.EnableSample = hasSampleInstances
