@@ -1585,6 +1585,7 @@
   },
   "plan.add-spec": "変更を追加",
   "plan.add-spec-pending-draft": "新しい変更を追加する前に、保留中の変更を保存または破棄してください",
+  "plan.checks.completed": "プランチェックが完了しました",
   "plan.checks.failed-to-run": "プランチェックの実行に失敗しました",
   "plan.checks.no-check-results": "チェック結果はありません",
   "plan.checks.no-results-match-filters": "フィルターに一致する結果はありません",
