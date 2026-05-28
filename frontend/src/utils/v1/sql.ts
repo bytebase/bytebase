@@ -120,15 +120,17 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
     hourOffset > 0
       ? `+${timezoneOffsetPrefix}${hourOffset}`
       : `-${timezoneOffsetPrefix}${Math.abs(hourOffset)}`;
-  timestampTzValue.accuracy =
+  // Use a local rather than writing back to `timestampTzValue.accuracy`:
+  // the RowValue comes from the immer-frozen Zustand result set, so an
+  // in-place assignment throws "Cannot assign to read only property".
+  const accuracy =
     timestampTzValue.accuracy === 0 ? 6 : timestampTzValue.accuracy;
   const microseconds = Math.floor(
-    (timestampTzValue.googleTimestamp?.nanos ?? 0) /
-      Math.pow(10, 9 - timestampTzValue.accuracy)
+    (timestampTzValue.googleTimestamp?.nanos ?? 0) / Math.pow(10, 9 - accuracy)
   );
   const formattedTimestamp =
     microseconds > 0
-      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(timestampTzValue.accuracy, "0")}${timezoneOffset}`
+      ? `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(accuracy, "0")}${timezoneOffset}`
       : `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}${timezoneOffset}`;
   return formattedTimestamp;
 };
