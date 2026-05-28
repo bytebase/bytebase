@@ -68,14 +68,25 @@ vi.mock("@/store", () => ({
     getEnvironmentByName: () => ({ title: "" }),
   }),
   useInstanceV1Store: () => ({ getInstanceByName: () => ({ title: "" }) }),
-  useRoleStore: () => ({
-    getRoleByName: (role: string) =>
-      role === "roles/sqlEditorUser"
-        ? { name: role, permissions: ["bb.sql.ddl", "bb.sql.dml"] }
-        : role === "roles/queryOnly"
-          ? { name: role, permissions: ["bb.sql.select"] }
-          : undefined,
-  }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      roleList: [
+        {
+          name: "roles/sqlEditorUser",
+          permissions: ["bb.sql.ddl", "bb.sql.dml"],
+        },
+        { name: "roles/queryOnly", permissions: ["bb.sql.select"] },
+      ],
+      getRoleByName: (role: string) =>
+        role === "roles/sqlEditorUser"
+          ? { name: role, permissions: ["bb.sql.ddl", "bb.sql.dml"] }
+          : role === "roles/queryOnly"
+            ? { name: role, permissions: ["bb.sql.select"] }
+            : undefined,
+    }),
 }));
 
 vi.mock("@/utils", () => ({

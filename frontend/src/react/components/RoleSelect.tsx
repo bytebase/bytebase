@@ -3,7 +3,12 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { Combobox, type ComboboxGroup } from "@/react/components/ui/combobox";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useRoleStore, useSubscriptionV1Store } from "@/store";
+import {
+  displayRoleDescriptionFromList,
+  displayRoleTitleFromList,
+} from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
+import { useSubscriptionV1Store } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
   PRESET_ROLES,
@@ -33,9 +38,8 @@ export function RoleSelect({
   filterRole,
 }: RoleSelectProps) {
   const { t } = useTranslation();
-  const roleStore = useRoleStore();
   const subscriptionStore = useSubscriptionV1Store();
-  const roleList = useVueState(() => [...roleStore.roleList]);
+  const roleList = useAppStore((state) => state.roleList);
   const hasCustomRoleFeature = useVueState(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
@@ -46,7 +50,7 @@ export function RoleSelect({
       if (!filterRole) {
         return true;
       }
-      const role = roleStore.getRoleByName(name);
+      const role = roleList.find((role) => role.name === name);
       return role ? filterRole(role) : false;
     };
 
@@ -69,12 +73,12 @@ export function RoleSelect({
       .filter((r) => !filterRole || filterRole(r))
       .map((r) => ({
         value: r.name,
-        label: displayRoleTitle(r.name),
-        description: displayRoleDescription(r.name),
+        label: displayRoleTitleFromList(r.name, roleList),
+        description: displayRoleDescriptionFromList(r.name, roleList),
         disabled: !hasCustomRoleFeature,
         render: () => (
           <div className="flex items-center gap-x-1">
-            <span>{displayRoleTitle(r.name)}</span>
+            <span>{displayRoleTitleFromList(r.name, roleList)}</span>
             {isCustomRole(r.name) && !hasCustomRoleFeature && (
               <FeatureBadge
                 feature={PlanFeature.FEATURE_CUSTOM_ROLES}
@@ -96,7 +100,7 @@ export function RoleSelect({
     if (custom.length > 0)
       result.push({ label: t("role.custom-roles.self"), options: custom });
     return result;
-  }, [filterRole, roleList, roleStore, hasCustomRoleFeature, scope, t]);
+  }, [filterRole, roleList, hasCustomRoleFeature, scope, t]);
 
   const defaultPlaceholder = multiple
     ? t("settings.members.select-role", { count: 2 })

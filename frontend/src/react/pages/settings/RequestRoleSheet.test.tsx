@@ -222,17 +222,21 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   useCurrentUserV1: () => ({ value: mocks.currentUser }),
-  useRoleStore: () => ({
-    getRoleByName: (name: string) => ({
-      name,
-      permissions:
-        name === "roles/projectOwner"
-          ? ["bb.projects.get", "bb.databases.get"]
-          : [],
-    }),
-  }),
   useSettingV1Store: () => stableSettingStore,
   pushNotification: (...args: unknown[]) => mocks.pushNotification(...args),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      getRoleByName: (name: string) => ({
+        name,
+        permissions:
+          name === "roles/projectOwner"
+            ? ["bb.projects.get", "bb.databases.get"]
+            : [],
+      }),
+    }),
 }));
 
 // ---------------------------------------------------------------------------

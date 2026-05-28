@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useProjectV1Store: vi.fn(),
-  useRoleStore: vi.fn(),
+  roleList: [] as Array<{ name: string; permissions: string[] }>,
   useSQLEditorVueState: vi.fn(),
   useSubscriptionV1Store: vi.fn(),
   hasFeature: vi.fn(() => true),
@@ -31,9 +31,15 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useProjectV1Store: mocks.useProjectV1Store,
-  useRoleStore: mocks.useRoleStore,
   useSubscriptionV1Store: mocks.useSubscriptionV1Store,
   hasFeature: mocks.hasFeature,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      roleList: mocks.roleList,
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor/editor-vue-state", () => ({
@@ -167,22 +173,20 @@ const setupDefaultMocks = (allowJIT = false, allowRequestRole = true) => {
       allowRequestRole,
     })),
   });
-  mocks.useRoleStore.mockReturnValue({
-    roleList: [
-      {
-        name: "roles/sqlEditorUser",
-        permissions: ["bb.sql.select", "bb.sql.dml", "bb.sql.explain"],
-      },
-      {
-        name: "roles/queryOnly",
-        permissions: ["bb.sql.select"],
-      },
-      {
-        name: "roles/sqlEditorReadUser",
-        permissions: ["bb.sql.select", "bb.sql.explain"],
-      },
-    ],
-  });
+  mocks.roleList = [
+    {
+      name: "roles/sqlEditorUser",
+      permissions: ["bb.sql.select", "bb.sql.dml", "bb.sql.explain"],
+    },
+    {
+      name: "roles/queryOnly",
+      permissions: ["bb.sql.select"],
+    },
+    {
+      name: "roles/sqlEditorReadUser",
+      permissions: ["bb.sql.select", "bb.sql.explain"],
+    },
+  ];
   mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.useSubscriptionV1Store.mockReturnValue({
     hasInstanceFeature: vi.fn(() => false),

@@ -56,7 +56,6 @@ import {
   useCurrentUserV1,
   useSettingV1Store,
   useSubscriptionV1Store,
-  useUserStore,
 } from "@/store";
 import { extractUserEmail, groupNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_USER_NAME } from "@/types";
@@ -118,7 +117,9 @@ function GroupTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const userStore = useUserStore();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const deleteGroup = useAppStore((state) => state.deleteGroup);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -134,8 +135,7 @@ function GroupTable({
       if (loadingRef.current.has(group.name)) return;
       loadingRef.current.add(group.name);
       const memberNames = group.members.map((m) => m.member);
-      userStore
-        .batchGetOrFetchUsers(memberNames)
+      batchGetOrFetchUsers(memberNames)
         .then((users) => {
           setMemberCache((prev) => {
             const next = new Map(prev);
@@ -153,7 +153,7 @@ function GroupTable({
           loadingRef.current.delete(group.name);
         });
     },
-    [userStore]
+    [batchGetOrFetchUsers]
   );
 
   // Invalidate member cache when groups data changes (e.g. after editing membership)
@@ -486,7 +486,9 @@ function GroupForm({
   const actuatorStore = useActuatorV1Store();
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const userStore = useUserStore();
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
   const createGroup = useAppStore((state) => state.createGroup);
   const updateGroup = useAppStore((state) => state.updateGroup);
   const deleteGroup = useAppStore((state) => state.deleteGroup);
@@ -629,7 +631,7 @@ function GroupForm({
       if (!isSaaSMode) {
         const notFound: string[] = [];
         for (const m of normalizedMembers) {
-          const user = await userStore.getOrFetchUserByIdentifier({
+          const user = await getOrFetchUserByIdentifier({
             identifier: m.member,
             silent: true,
             fallback: false,

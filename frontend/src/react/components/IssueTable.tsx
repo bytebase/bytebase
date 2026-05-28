@@ -29,16 +29,13 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
+import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
+import { pushNotification, useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,
   isValidProjectName,
@@ -53,7 +50,6 @@ import {
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Label } from "@/types/proto-es/v1/project_service_pb";
 import {
-  displayRoleTitle,
   extractIssueUID,
   extractProjectResourceName,
   getDefaultPagination,
@@ -326,7 +322,7 @@ export function useIssueSearchScopeOptions(
   projectName?: string
 ): ScopeOption[] {
   const { t } = useTranslation();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
   const projectStore = useProjectV1Store();
   const currentUser = useCurrentUserV1();
   const me = useVueState(() => currentUser.value);
@@ -346,7 +342,7 @@ export function useIssueSearchScopeOptions(
 
   const searchPrincipal = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const resp = await userStore.fetchUserList({
+      const resp = await listUsers({
         pageSize: getDefaultPagination(),
         filter: { query: keyword },
       });
@@ -365,7 +361,7 @@ export function useIssueSearchScopeOptions(
         ),
       }));
     },
-    [userStore, me, t]
+    [listUsers, me, t]
   );
 
   return useMemo(
@@ -573,10 +569,10 @@ export const IssueListItem = memo(function IssueListItem({
   showProject?: boolean;
 }) {
   const { t } = useTranslation();
-  const userStore = useUserStore();
-
-  const creator =
-    userStore.getUserByIdentifier(issue.creator) || unknownUser(issue.creator);
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(issue.creator)
+  );
+  const creator = creatorUser || unknownUser(issue.creator);
 
   const issueProject = useMemo(() => projectOfIssue(issue), [issue]);
 
@@ -831,6 +827,7 @@ function RiskLevelIcon({ riskLevel }: { riskLevel: RiskLevel }) {
 
 function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
   const { t } = useTranslation();
+  const roleList = useAppStore((state) => state.roleList);
   const approvalSteps = issue.approvalTemplate?.flow?.roles ?? [];
 
   if (issue.approvalStatus === ApprovalStatus.CHECKING) {
@@ -875,7 +872,7 @@ function IssueApprovalStatusTag({ issue }: { issue: Issue }) {
     if (status === ApprovalStatus.PENDING) {
       const currentRoleIndex = issue.approvers.length;
       const role = approvalSteps[currentRoleIndex];
-      const roleName = role ? displayRoleTitle(role) : "";
+      const roleName = role ? displayRoleTitleFromList(role, roleList) : "";
       return (
         <div className="shrink-0 flex flex-row sm:flex-col items-center sm:items-end gap-x-1.5 sm:gap-x-0 mt-1">
           <span className="inline-flex items-center rounded-full bg-control-bg px-2 py-0.5 text-xs text-control-light">

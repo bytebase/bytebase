@@ -71,22 +71,22 @@ import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/react/lib/project-member/utils";
+import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import {
   useNavigate,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "@/react/router";
+import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
   useProjectIamPolicyStore,
   useProjectV1Store,
-  useRoleStore,
   useSettingV1Store,
   useSubscriptionV1Store,
-  useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -106,7 +106,6 @@ import type { GroupBinding, MemberBinding } from "@/types/v1/member";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   batchConvertParsedExprToCELString,
-  displayRoleTitle,
   formatAbsoluteDateTime,
   getDatabaseNameOptionConfig,
   hasProjectPermissionV2,
@@ -167,7 +166,10 @@ function MemberTable({
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
-  const userStore = useUserStore();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
+  const roleList = useAppStore((state) => state.roleList);
   const navigate = useNavigate();
   const canGetGroups = hasWorkspacePermissionV2("bb.groups.get");
   const canGetUsers = hasWorkspacePermissionV2("bb.users.get");
@@ -194,8 +196,7 @@ function MemberTable({
       if (loadingRef.current.has(group.name)) return;
       loadingRef.current.add(group.name);
       const memberNames = group.members.map((m) => m.member);
-      userStore
-        .batchGetOrFetchUsers(memberNames)
+      batchGetOrFetchUsers(memberNames)
         .then((users: (User | undefined)[]) => {
           setMemberCache((prev) => {
             const next = new Map(prev);
@@ -211,7 +212,7 @@ function MemberTable({
         })
         .finally(() => loadingRef.current.delete(group.name));
     },
-    [userStore]
+    [batchGetOrFetchUsers]
   );
 
   // Signature of just the group bindings — that's all the cache cares
@@ -331,7 +332,7 @@ function MemberTable({
     return [
       ...groupProjectRoleBindings(active).map((group) => (
         <Badge key={`active-${group.role}`} className="text-xs gap-x-1">
-          {displayRoleTitle(group.role)}
+          {displayRoleTitleFromList(group.role, roleList)}
           {group.bindings.length > 1 && (
             <span className="text-control-light">
               ({group.bindings.length})
@@ -344,7 +345,7 @@ function MemberTable({
           key={`expired-${group.role}`}
           className="text-xs gap-x-1 line-through opacity-60"
         >
-          {displayRoleTitle(group.role)}
+          {displayRoleTitleFromList(group.role, roleList)}
           {group.bindings.length > 1 && (
             <span className="text-control-light">
               ({group.bindings.length})
@@ -496,7 +497,7 @@ function MemberTable({
                         : sortRoles([...mb.workspaceLevelRoles]).map((role) => (
                             <Badge key={role} className="text-xs gap-x-1">
                               <Building2 className="h-3 w-3" />
-                              {displayRoleTitle(role)}
+                              {displayRoleTitleFromList(role, roleList)}
                             </Badge>
                           ))}
                     </div>
@@ -624,6 +625,7 @@ function MemberTableByRole({
   const currentUser = useVueState(() => useCurrentUserV1().value);
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
+  const roleList = useAppStore((state) => state.roleList);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
@@ -713,7 +715,7 @@ function MemberTableByRole({
                         <Building2 className="h-4 w-4 text-control-light" />
                       )}
                       <span className="font-medium">
-                        {displayRoleTitle(role)}
+                        {displayRoleTitleFromList(role, roleList)}
                       </span>
                       <span className="text-control-light text-xs">
                         ({members.length})
@@ -1004,8 +1006,8 @@ function ProjectRoleBindingForm({
   projectName: string;
 }) {
   const { t } = useTranslation();
-  const roleStore = useRoleStore();
-  const roleList = useVueState(() => [...roleStore.roleList]);
+
+  const roleList = useAppStore((state) => state.roleList);
 
   const expirationPresets = useMemo(() => getExpirationPresets(t), [t]);
   const factorList = useMemo<Factor[]>(
@@ -1241,6 +1243,7 @@ function EditMemberRoleDrawer({
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const isSaaSMode = useVueState(() => useActuatorV1Store().isSaaSMode);
   const settingV1Store = useSettingV1Store();
+  const roleList = useAppStore((state) => state.roleList);
   const hasEmailSetting = useVueState(
     () => !!settingV1Store.getSettingByName(Setting_SettingName.EMAIL)
   );
@@ -1321,7 +1324,7 @@ function EditMemberRoleDrawer({
 
   const handleDeleteRole = async (roleBinding: Binding) => {
     if (!member || !projectName) return;
-    const roleName = displayRoleTitle(roleBinding.role);
+    const roleName = displayRoleTitleFromList(roleBinding.role, roleList);
     if (
       !window.confirm(
         t("project.members.revoke-role-from-member", {
@@ -1680,7 +1683,7 @@ function EditMemberRoleDrawer({
                               isExpired && "line-through"
                             )}
                           >
-                            {displayRoleTitle(binding.role)}
+                            {displayRoleTitleFromList(binding.role, roleList)}
                           </span>
                           {isExpired && (
                             <Badge variant="destructive" className="text-xs">

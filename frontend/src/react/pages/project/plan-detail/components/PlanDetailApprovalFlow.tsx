@@ -15,6 +15,7 @@ import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
+import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { ensureGroupIdentifier } from "@/react/stores/app/group";
@@ -25,7 +26,6 @@ import {
   useCurrentUserV1,
   useProjectIamPolicyStore,
   useProjectV1Store,
-  useUserStore,
 } from "@/store";
 import { projectNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -52,7 +52,6 @@ import {
   groupBindingPrefix,
 } from "@/types/v1/user";
 import {
-  displayRoleTitle,
   ensureUserFullName,
   isBindingPolicyExpired,
   memberMapToRolesInProjectIAM,
@@ -467,14 +466,16 @@ function ApprovalStepItem({
 }
 
 function ApprovalUserText({ candidate }: { candidate: string }) {
-  const userStore = useUserStore();
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
   const [user, setUser] = useState<UserMessage>();
 
   useEffect(() => {
     let canceled = false;
 
     const load = async () => {
-      const next = await userStore.getOrFetchUserByIdentifier({
+      const next = await getOrFetchUserByIdentifier({
         identifier: candidate,
       });
       if (canceled || !next) return;
@@ -492,7 +493,7 @@ function ApprovalUserText({ candidate }: { candidate: string }) {
     return () => {
       canceled = true;
     };
-  }, [candidate, userStore]);
+  }, [candidate, getOrFetchUserByIdentifier]);
 
   if (!user) return null;
 
@@ -661,12 +662,15 @@ function getStatusTag(
 
 function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const { t } = useTranslation();
+  const roleList = useAppStore((state) => state.roleList);
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUserV1().value;
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
-  const userStore = useUserStore();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups
   );
@@ -715,9 +719,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
 
   const roleName = useMemo(() => {
     return step
-      ? displayRoleTitle(step)
+      ? displayRoleTitleFromList(step, roleList)
       : t("custom-approval.approval-flow.node.approver");
-  }, [step, t]);
+  }, [roleList, step, t]);
 
   const canReRequest = useMemo(() => {
     return (
@@ -814,7 +818,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
         return;
       }
 
-      const users = await userStore.batchGetOrFetchUsers(
+      const users = await batchGetOrFetchUsers(
         filteredCandidateEmails.map(ensureUserFullName)
       );
       if (canceled) return;
@@ -838,7 +842,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     return () => {
       canceled = true;
     };
-  }, [currentUserEmail, filteredCandidateEmails, status, userStore]);
+  }, [batchGetOrFetchUsers, currentUserEmail, filteredCandidateEmails, status]);
 
   const handleReRequestReview = async () => {
     if (reRequesting) return;

@@ -9,10 +9,11 @@ import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 import { TwoFactorSecretModal } from "./TwoFactorSecretModal";
@@ -31,7 +32,7 @@ interface TwoFactorSetupPageProps {
 
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
-  const userStore = useUserStore();
+  const updateUser = useAppStore((state) => state.updateUser);
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);
@@ -86,7 +87,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, [updateCountdown, stopCountdown]);
 
   const regenerateTempMfaSecret = useCallback(async () => {
-    await userStore.updateUser(
+    await updateUser(
       create(UpdateUserRequestSchema, {
         user: {
           name: currentUser.name,
@@ -97,7 +98,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
         regenerateTempMfaSecret: true,
       })
     );
-  }, [currentUser.name, userStore]);
+  }, [currentUser.name, updateUser]);
 
   // On mount: regenerate secret and start countdown
   useEffect(() => {
@@ -112,7 +113,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const verifyOTPCode = useCallback(
     async (codes: string[]) => {
       try {
-        await userStore.updateUser(
+        await updateUser(
           create(UpdateUserRequestSchema, {
             user: {
               name: currentUser.name,
@@ -133,7 +134,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       }
       return true;
     },
-    [currentUser.name, userStore]
+    [currentUser.name, updateUser]
   );
 
   const handleOtpFinish = useCallback(
@@ -176,7 +177,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, [cancelAction]);
 
   const tryFinishSetup = useCallback(async () => {
-    await userStore.updateUser(
+    await updateUser(
       create(UpdateUserRequestSchema, {
         user: {
           name: currentUser.name,
@@ -198,7 +199,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     } else {
       router.replace({ name: SETTING_ROUTE_PROFILE });
     }
-  }, [currentUser.name, t, userStore]);
+  }, [currentUser.name, t, updateUser]);
 
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP

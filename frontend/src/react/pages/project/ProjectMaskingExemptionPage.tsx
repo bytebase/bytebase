@@ -56,7 +56,6 @@ import {
   usePolicyV1Store,
   useProjectV1Store,
   useSettingV1Store,
-  useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
@@ -99,7 +98,7 @@ export function ProjectMaskingExemptionPage({
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const projectName = `${projectNamePrefix}${projectId}`;
@@ -303,7 +302,7 @@ export function ProjectMaskingExemptionPage({
 
   const searchUsers = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const result = await userStore.fetchUserList({
+      const result = await listUsers({
         pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
@@ -332,7 +331,7 @@ export function ProjectMaskingExemptionPage({
         ),
       }));
     },
-    [userStore, currentUser, t]
+    [listUsers, currentUser, t]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(

@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>(),
   useWorkSheetStore: vi.fn(),
   useSQLEditorTabStore: vi.fn(),
-  useUserStore: vi.fn(),
+  getUserByIdentifier: vi.fn(() => ({ title: "Test User" })),
   useSheetContext: vi.fn(),
 }));
 
@@ -35,7 +35,13 @@ vi.mock("@/react/hooks/useVueState", () => ({
 
 vi.mock("@/store", () => ({
   useWorkSheetStore: mocks.useWorkSheetStore,
-  useUserStore: mocks.useUserStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      getUserByIdentifier: mocks.getUserByIdentifier,
+    }),
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
@@ -132,9 +138,7 @@ beforeEach(async () => {
   mocks.useSQLEditorTabStore.mockReturnValue({
     closeTab: vi.fn(),
   });
-  mocks.useUserStore.mockReturnValue({
-    getUserByIdentifier: vi.fn(() => ({ title: "Test User" })),
-  });
+  mocks.getUserByIdentifier.mockReturnValue({ title: "Test User" });
   mocks.useSheetContext.mockReturnValue({
     isWorksheetCreator: vi.fn(() => true),
   });

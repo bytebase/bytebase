@@ -6,11 +6,11 @@ import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   pushNotification,
   useCurrentUserV1,
-  useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
@@ -20,7 +20,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 export function ProfileSetupPage() {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const userStore = useUserStore();
+  const updateUser = useAppStore((state) => state.updateUser);
   const workspaceStore = useWorkspaceV1Store();
   const workspace = useVueState(() => workspaceStore.currentWorkspace);
   const workspacePolicy = useVueState(() => workspaceStore.workspaceIamPolicy);
@@ -47,7 +47,7 @@ export function ProfileSetupPage() {
     if (!currentUser?.name || !name.trim()) return;
     setSaving(true);
     try {
-      await userStore.updateUser(
+      await updateUser(
         create(UpdateUserRequestSchema, {
           user: { name: currentUser.name, title: name.trim() },
           updateMask: create(FieldMaskSchema, { paths: ["title"] }),

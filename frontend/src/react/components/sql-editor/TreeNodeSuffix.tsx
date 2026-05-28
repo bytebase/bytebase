@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
-import { useUserStore, useWorkSheetStore } from "@/store";
+import { useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
   SheetViewMode,
@@ -40,7 +41,6 @@ export function TreeNodeSuffix({
 
   const worksheetStore = useWorkSheetStore();
   const tabStore = useSQLEditorTabStore();
-  const userStore = useUserStore();
   const { isWorksheetCreator } = useSheetContext();
 
   const worksheetLite = useVueState(() => {
@@ -58,6 +58,11 @@ export function TreeNodeSuffix({
       creator: sheet.creator,
     };
   });
+  const worksheetCreatorTitle = useAppStore((state) =>
+    worksheetLite?.creator
+      ? state.getUserByIdentifier(worksheetLite.creator)?.title
+      : undefined
+  );
 
   const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
     switch (visibility) {
@@ -73,7 +78,7 @@ export function TreeNodeSuffix({
   };
 
   const creatorForSheet = (creator: string) => {
-    return userStore.getUserByIdentifier(creator)?.title ?? creator;
+    return worksheetCreatorTitle ?? creator;
   };
 
   // Draft view: show X button to close the draft tab

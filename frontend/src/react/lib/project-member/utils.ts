@@ -1,9 +1,12 @@
-import { useRoleStore } from "@/store";
+import { displayRoleTitleFromList } from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { checkRoleContainsAnyPermission, displayRoleTitle } from "@/utils";
+import { checkRoleContainsAnyPermission } from "@/utils";
 
 export const getBindingIdentifier = (binding: Binding): string => {
-  const identifier = [displayRoleTitle(binding.role)];
+  const identifier = [
+    displayRoleTitleFromList(binding.role, useAppStore.getState().roleList),
+  ];
   if (binding.condition && binding.condition.expression) {
     identifier.push(binding.condition.expression);
   }
@@ -30,7 +33,7 @@ export type EnvLimitationKind = "DDL" | "DML" | "DDL/DML";
 export const getRoleEnvironmentLimitationKind = (
   role: string
 ): EnvLimitationKind | undefined => {
-  const r = useRoleStore().getRoleByName(role);
+  const r = useAppStore.getState().getRoleByName(role);
   if (!r) return undefined;
   const perms = new Set(r.permissions);
   const hasDDL = perms.has("bb.sql.ddl");

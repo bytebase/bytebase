@@ -25,7 +25,9 @@ import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
+import { displayRoleTitleFromList } from "@/react/lib/role";
 import { RegenerateRecoveryCodesView } from "@/react/pages/settings/two-factor/RegenerateRecoveryCodesView";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_404,
@@ -42,7 +44,6 @@ import {
   useAuthStore,
   useCurrentUserV1,
   useSettingV1Store,
-  useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
 import {
@@ -56,12 +57,7 @@ import { State } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
-import {
-  displayRoleTitle,
-  hasWorkspacePermissionV2,
-  setDocumentTitle,
-  sortRoles,
-} from "@/utils";
+import { hasWorkspacePermissionV2, setDocumentTitle, sortRoles } from "@/utils";
 import { migrateUserStorage } from "@/utils/storage-migrate";
 import { EmailInput } from "./EmailInput";
 import { getPasswordErrors, UserPasswordSection } from "./UserPasswordSection";
@@ -75,19 +71,22 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
   const authStore = useAuthStore();
   const settingV1Store = useSettingV1Store();
-  const userStore = useUserStore();
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
+  const updateUser = useAppStore((state) => state.updateUser);
+  const updateEmail = useAppStore((state) => state.updateEmail);
+  const roleList = useAppStore((state) => state.roleList);
   const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
 
   // --- Reactive Vue state ---
   const currentUser = useVueState(() => useCurrentUserV1().value);
+  const principalUser = useAppStore((state) =>
+    principalEmail ? state.getUserByIdentifier(principalEmail) : undefined
+  );
 
-  const user = useVueState(() => {
-    if (principalEmail) {
-      return userStore.getUserByIdentifier(principalEmail) ?? unknownUser();
-    }
-    return useCurrentUserV1().value;
-  });
+  const user = principalEmail ? (principalUser ?? unknownUser()) : currentUser;
 
   const userRoles = useVueState(() => [
     ...workspaceStore.getWorkspaceRolesByName(user.name),
@@ -177,7 +176,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         return;
       }
       (async () => {
-        const fetched = await userStore.getOrFetchUserByIdentifier({
+        const fetched = await getOrFetchUserByIdentifier({
           identifier: principalEmail,
           fallback: false,
         });
@@ -243,10 +242,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
     try {
       if (emailChanged) {
         const oldEmail = user.email;
-        const updatedUser = await userStore.updateEmail(
-          oldEmail,
-          editingUser.email
-        );
+        const updatedUser = await updateEmail(oldEmail, editingUser.email);
         migrateUserStorage(oldEmail, editingUser.email);
         if (isSelf) {
           authStore.updateCurrentUserNameForEmailChange(updatedUser.name);
@@ -254,7 +250,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
       }
 
       if (updateMaskPaths.length > 0) {
-        await userStore.updateUser(
+        await updateUser(
           create(UpdateUserRequestSchema, {
             user: editingUser,
             updateMask: create(FieldMaskSchema, {
@@ -337,7 +333,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   }, [requireMfa, t]);
 
   const handleDisable2FA = useCallback(async () => {
-    await userStore.updateUser(
+    await updateUser(
       create(UpdateUserRequestSchema, {
         user: {
           name: user.name,
@@ -463,7 +459,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
                       key={role}
                       className="inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium bg-control-bg text-control"
                     >
-                      {displayRoleTitle(role)}
+                      {displayRoleTitleFromList(role, roleList)}
                     </span>
                   ))}
                 </div>
