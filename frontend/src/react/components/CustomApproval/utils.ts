@@ -205,7 +205,7 @@ const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
   };
   switch (source) {
     case WorkspaceApprovalSetting_Rule_Source.CHANGE_DATABASE:
-      return mapOptions([...SQLTypeList.DDL, ...SQLTypeList.DML]);
+      return mapOptions(SQLTypeList.ALL);
   }
   // unsupported source
   return [];

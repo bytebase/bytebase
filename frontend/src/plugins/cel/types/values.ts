@@ -1,5 +1,9 @@
 import { StatementType } from "@/types/proto-es/v1/common_pb";
 
+const OTHER_STATEMENT_TYPES = [
+  StatementType.STATEMENT_TYPE_UNSPECIFIED,
+] as const;
+
 // DDL statement types
 const DDL_STATEMENT_TYPES = [
   StatementType.CREATE_DATABASE,
@@ -55,6 +59,12 @@ const getStatementTypeName = (type: StatementType): string => {
 
 // Export lists with string names for backward compatibility with existing code
 export const SQLTypeList = {
+  OTHER: OTHER_STATEMENT_TYPES.map(getStatementTypeName),
   DDL: DDL_STATEMENT_TYPES.map(getStatementTypeName),
   DML: DML_STATEMENT_TYPES.map(getStatementTypeName),
+  ALL: [
+    ...DDL_STATEMENT_TYPES,
+    ...DML_STATEMENT_TYPES,
+    ...OTHER_STATEMENT_TYPES,
+  ].map(getStatementTypeName),
 } as const;
