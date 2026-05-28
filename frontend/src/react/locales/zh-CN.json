@@ -1585,6 +1585,7 @@
   },
   "plan.add-spec": "添加变更",
   "plan.add-spec-pending-draft": "请先保存或放弃当前的待处理变更，然后再添加新变更",
+  "plan.checks.completed": "已完成计划检查",
   "plan.checks.failed-to-run": "运行计划检查失败",
   "plan.checks.no-check-results": "暂无检查结果",
   "plan.checks.no-results-match-filters": "没有符合筛选条件的结果",

@@ -89,7 +89,6 @@ import {
   Plan_ChangeDatabaseConfigSchema,
   type Plan_Spec,
   Plan_SpecSchema,
-  type PlanCheckRun,
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -118,7 +117,12 @@ import {
   updateRoleSetter,
   updateTransactionMode,
 } from "../utils/directiveUtils";
-import { getLocalSheetByName, getNextLocalSheetUID } from "../utils/localSheet";
+import {
+  getLocalSheetByName,
+  getNextLocalSheetUID,
+  getSpecStatementContent,
+  isSameStatementContent,
+} from "../utils/localSheet";
 import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
@@ -164,6 +168,11 @@ type IsolationLevel =
   | "REPEATABLE_READ"
   | "SERIALIZABLE";
 
+type DraftCheckResultState = {
+  results: CheckReleaseResponse_CheckResult[];
+  content: Uint8Array | undefined;
+};
+
 const BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
   Engine.MARIADB,
@@ -203,11 +212,8 @@ export function PlanDetailChangesBranch({
   // selectedSpecId (which mirrors the URL) so a draft can be selected even
   // when the URL still points at a real spec.
   const [isPendingSelected, setIsPendingSelected] = useState(false);
-  const [draftCheckRunsBySpecId, setDraftCheckRunsBySpecId] = useState<
-    Record<string, PlanCheckRun[]>
-  >({});
   const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
-    Record<string, CheckReleaseResponse_CheckResult[] | undefined>
+    Record<string, DraftCheckResultState | undefined>
   >({});
   const [statementVersionBySpecId, setStatementVersionBySpecId] = useState<
     Record<string, number>
@@ -454,20 +460,25 @@ export function PlanDetailChangesBranch({
 
   const selectedSpecIdForDraftChecks = selectedSpec?.id;
   const handleDraftCheckResultsChange = useCallback(
-    (results: CheckReleaseResponse_CheckResult[] | undefined) => {
+    (
+      content: Uint8Array | undefined,
+      results: CheckReleaseResponse_CheckResult[] | undefined
+    ) => {
       if (!selectedSpecIdForDraftChecks) return;
       setDraftCheckResultsBySpecId((prev) => {
-        if (prev[selectedSpecIdForDraftChecks] === results) return prev;
+        const nextState = results ? { results, content } : undefined;
+        const previousState = prev[selectedSpecIdForDraftChecks];
+        if (
+          previousState?.content === nextState?.content &&
+          previousState?.results === nextState?.results
+        ) {
+          return prev;
+        }
         return {
           ...prev,
-          [selectedSpecIdForDraftChecks]: results,
+          [selectedSpecIdForDraftChecks]: nextState,
         };
       });
-      setDraftCheckRunsBySpecId((prev) => ({
-        ...prev,
-        [selectedSpecIdForDraftChecks]:
-          transformReleaseCheckResultsToPlanCheckRuns(results ?? []),
-      }));
     },
     [selectedSpecIdForDraftChecks]
   );
@@ -477,6 +488,26 @@ export function PlanDetailChangesBranch({
       [specId]: (prev[specId] ?? 0) + 1,
     }));
   }, []);
+  const draftContent =
+    selectedSpec && page.isCreating
+      ? getSpecStatementContent(selectedSpec)
+      : undefined;
+  const draftCheckState = selectedSpec
+    ? draftCheckResultsBySpecId[selectedSpec.id]
+    : undefined;
+  // Memoized on the two content references so the byte fallback only runs when
+  // one of them actually changes (an edit), not on every render.
+  const draftCheckResults = useMemo(
+    () =>
+      isSameStatementContent(draftCheckState?.content, draftContent)
+        ? draftCheckState?.results
+        : undefined,
+    [draftCheckState, draftContent]
+  );
+  const draftCheckRuns = useMemo(
+    () => transformReleaseCheckResultsToPlanCheckRuns(draftCheckResults ?? []),
+    [draftCheckResults]
+  );
 
   if (!selectedSpec) {
     return (
@@ -592,7 +623,7 @@ export function PlanDetailChangesBranch({
           <PlanDetailStatementSection
             planCheckRuns={
               page.isCreating
-                ? (draftCheckRunsBySpecId[selectedSpec.id] ?? [])
+                ? draftCheckRuns
                 : planCheckRunListForSpec(page.planCheckRuns, selectedSpec)
             }
             spec={selectedSpec}
@@ -603,7 +634,7 @@ export function PlanDetailChangesBranch({
             selectedSpec.config.case === "changeDatabaseConfig" && (
               <PlanDetailDraftChecks
                 key={selectedSpec.id}
-                checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
+                checkResults={draftCheckResults}
                 onCheckResultsChange={handleDraftCheckResultsChange}
                 selectedSpec={selectedSpec}
               />

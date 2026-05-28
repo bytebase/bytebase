@@ -281,6 +281,19 @@ vi.mock("../utils/localSheet", () => ({
     return sheet;
   },
   getNextLocalSheetUID: () => "-1",
+  getSpecStatementContent: (spec: {
+    config?: { case?: string; value?: { sheet?: string } };
+  }) => {
+    if (spec.config?.case !== "changeDatabaseConfig") return undefined;
+    const sheetName = spec.config.value?.sheet;
+    const sheet = sheetName ? mocks.localSheets.get(sheetName) : undefined;
+    return sheet?.content;
+  },
+  isSameStatementContent: (a?: Uint8Array, b?: Uint8Array) => {
+    if (a === b) return true;
+    if (!a || !b || a.length !== b.length) return false;
+    return a.every((byte, index) => byte === b[index]);
+  },
   removeLocalSheet: vi.fn(),
 }));
 
@@ -318,20 +331,32 @@ vi.mock("./PlanDetailDraftChecks", () => ({
   }: {
     checkResults?: CheckReleaseResponse_CheckResult[];
     onCheckResultsChange: (
+      content: Uint8Array | undefined,
       results: CheckReleaseResponse_CheckResult[] | undefined
     ) => void;
-    selectedSpec: { id: string };
+    selectedSpec: {
+      config?: { case?: string; value?: { sheet?: string } };
+      id: string;
+    };
   }) => {
     return (
       <button
-        onClick={() =>
-          onCheckResultsChange([
+        onClick={() => {
+          const sheetName =
+            selectedSpec.config?.case === "changeDatabaseConfig"
+              ? selectedSpec.config.value?.sheet
+              : undefined;
+          const sheet = sheetName
+            ? mocks.localSheets.get(sheetName)
+            : undefined;
+          const results = [
             {
               advices: [],
               target: `check-run-for-${selectedSpec.id}`,
             } as unknown as CheckReleaseResponse_CheckResult,
-          ])
-        }
+          ];
+          onCheckResultsChange(sheet?.content, results);
+        }}
       >
         run draft checks
       </button>
@@ -707,6 +732,173 @@ describe("PlanDetailChangesBranch", () => {
 
     expect(container.textContent).toContain("spec-2:");
     expect(container.textContent).not.toContain("spec-2:check-run-for-spec-1");
+  });
+
+  it("keeps hook order stable when the selected spec appears after an empty render", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const emptyPage = buildPageState();
+    emptyPage.plan.specs =
+      [] as unknown as PlanDetailPageState["plan"]["specs"];
+    const page = buildPageState();
+
+    try {
+      act(() => {
+        root.render(
+          <PlanDetailProvider value={emptyPage}>
+            <PlanDetailChangesBranch
+              selectedSpecId="spec-1"
+              onSelectedSpecIdChange={vi.fn()}
+            />
+          </PlanDetailProvider>
+        );
+      });
+      await flush();
+
+      expect(container.textContent).toContain("common.no-data");
+
+      act(() => {
+        root.render(
+          <PlanDetailProvider value={page}>
+            <PlanDetailChangesBranch
+              selectedSpecId="spec-1"
+              onSelectedSpecIdChange={vi.fn()}
+            />
+          </PlanDetailProvider>
+        );
+      });
+      await flush();
+    } finally {
+      consoleError.mockRestore();
+    }
+
+    expect(
+      consoleError.mock.calls.some((call) =>
+        String(call[0]).includes(
+          "React has detected a change in the order of Hooks"
+        )
+      )
+    ).toBe(false);
+  });
+
+  it("hides stale draft check runs after the create-plan statement changes", async () => {
+    const sheetName = "projects/foo/sheets/-1";
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("select 1;"),
+      contentSize: 0n,
+    });
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            sheet: sheetName,
+            targets: [],
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    const render = () => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    };
+
+    act(render);
+    await flush();
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "run draft checks"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1:check-run-for-spec-1");
+
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("create table t(id int);"),
+      contentSize: 0n,
+    });
+
+    act(render);
+    await flush();
+
+    expect(container.textContent).toContain("spec-1::0");
+    expect(container.textContent).not.toContain("check-run-for-spec-1");
+  });
+
+  it("keeps draft check runs when the statement is reverted to the checked text", async () => {
+    const sheetName = "projects/foo/sheets/-1";
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("select 1;"),
+      contentSize: 0n,
+    });
+    const page = buildPageState();
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            sheet: sheetName,
+            targets: [],
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    const render = () => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    };
+
+    act(render);
+    await flush();
+
+    await act(async () => {
+      (
+        [...container.querySelectorAll("button")].find(
+          (button) => button.textContent === "run draft checks"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+
+    expect(container.textContent).toContain("spec-1:check-run-for-spec-1");
+
+    // Reverting to the same text mints a fresh Uint8Array (new reference) with
+    // identical bytes; the prior checks are still valid, so they must stay.
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("select 1;"),
+      contentSize: 0n,
+    });
+
+    act(render);
+    await flush();
+
+    expect(container.textContent).toContain("spec-1:check-run-for-spec-1");
   });
 
   it("refreshes the statement section after changing create-plan options", async () => {
