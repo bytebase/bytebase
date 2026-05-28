@@ -118,7 +118,13 @@ export const useSQLEditorQueryDataPolicy = (
   project: string
 ): FormattedQueryDataPolicy => {
   const { policy } = getCachedQueryDataPolicy(project);
-  return useVueState(() => unref(policy)) as FormattedQueryDataPolicy;
+  // `getCachedQueryDataPolicy` returns a per-project cached ref; the
+  // project changes via Zustand (invisible to Vue's watch), so without
+  // `deps` the subscription stays on the previous project's policy and
+  // misses the new project's async fetch. Re-subscribe on `project`.
+  return useVueState(() => unref(policy), {
+    deps: [project],
+  }) as FormattedQueryDataPolicy;
 };
 
 /**
@@ -131,7 +137,9 @@ export const useSQLEditorQueryDataPolicy = (
  */
 export const useClampResultRowsLimitToPolicy = (project: string): void => {
   const { policy } = getCachedQueryDataPolicy(project);
-  const maximumResultRows = useVueState(() => unref(policy).maximumResultRows);
+  const maximumResultRows = useVueState(() => unref(policy).maximumResultRows, {
+    deps: [project],
+  });
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   useEffect(() => {
     if (
@@ -179,19 +187,33 @@ export const useSQLEditorConnection = (
   connection: SQLEditorConnection
 ): SQLEditorConnectionDetail => {
   const { database } = getCachedDatabaseV1ByName(connection.database);
-  const databaseValue = useVueState(() => unref(database));
-
-  const instance = useVueState(() => getInstanceResource(unref(database)));
-
-  const environment = useVueState(() => {
-    const db = unref(database);
-    if (isValidDatabaseName(db.name)) {
-      return getDatabaseEnvironment(db);
-    }
-    return useEnvironmentV1Store().getEnvironmentByName(
-      instance.environment ?? ""
-    );
+  // `getCachedDatabaseV1ByName` returns a DIFFERENT cached Vue ref when
+  // `connection.database` changes (e.g. a tab switch to an uncached
+  // database). The database name arrives via Zustand, which Vue's watch
+  // can't observe, so without `deps` each watch stays attached to the
+  // first render's ref — leaving stale/placeholder values and missing
+  // the async cache hydration of the new database. Re-subscribe on the
+  // database name so the watches track the current ref.
+  const databaseValue = useVueState(() => unref(database), {
+    deps: [connection.database],
   });
+
+  const instance = useVueState(() => getInstanceResource(unref(database)), {
+    deps: [connection.database],
+  });
+
+  const environment = useVueState(
+    () => {
+      const db = unref(database);
+      if (isValidDatabaseName(db.name)) {
+        return getDatabaseEnvironment(db);
+      }
+      return useEnvironmentV1Store().getEnvironmentByName(
+        instance.environment ?? ""
+      );
+    },
+    { deps: [connection.database] }
+  );
 
   return { connection, database: databaseValue, instance, environment };
 };
