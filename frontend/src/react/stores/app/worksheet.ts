@@ -61,9 +61,6 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
     }
   };
 
-  const worksheetList = (): Worksheet[] =>
-    uniqBy(Object.values(get().worksheetsByKey), (w) => w.name);
-
   const updateCacheWithOrganizer = (organizer: WorksheetOrganizer) => {
     for (const view of ["FULL", "BASIC"] as const) {
       const existing = get().getWorksheetByName(organizer.worksheet, view);
@@ -213,14 +210,12 @@ export const createWorksheetSlice: AppSliceCreator<WorksheetSlice> = (
       response.worksheetOrganizers.map(updateCacheWithOrganizer);
     },
 
-    myWorksheetList: () => {
-      const email = get().currentUser?.email ?? "";
-      return worksheetList().filter((w) => w.creator === `users/${email}`);
-    },
-
-    sharedWorksheetList: () => {
-      const email = get().currentUser?.email ?? "";
-      return worksheetList().filter((w) => w.creator !== `users/${email}`);
-    },
+    // The deduped full list. Callers split into "my" / "shared" using
+    // their own current-user source — the SQL editor uses the Pinia
+    // current user (reliably loaded before worksheets are fetched),
+    // whereas the app store's `currentUser` can lag on routes that don't
+    // load it eagerly.
+    worksheetList: () =>
+      uniqBy(Object.values(get().worksheetsByKey), (w) => w.name),
   };
 };

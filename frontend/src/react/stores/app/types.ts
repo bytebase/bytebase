@@ -277,8 +277,7 @@ export type WorksheetSlice = {
   batchUpsertWorksheetOrganizers: (
     requests: { organizer: Partial<WorksheetOrganizer>; updateMask: string[] }[]
   ) => Promise<void>;
-  myWorksheetList: () => Worksheet[];
-  sharedWorksheetList: () => Worksheet[];
+  worksheetList: () => Worksheet[];
 };
 
 export type InstanceRoleSlice = {

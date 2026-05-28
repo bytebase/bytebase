@@ -604,23 +604,30 @@ const buildTree = (
 };
 
 const worksheetsForView = (view: SheetViewMode): Worksheet[] => {
-  const sheetStore = useAppStore.getState();
+  if (view !== "my" && view !== "shared") return [];
   const filter = useSheetContextStore.getState().filter;
   const project = getSQLEditorEditorState().project;
-  let list: Worksheet[] = [];
-  switch (view) {
-    case "my":
-      list = sheetStore.myWorksheetList();
-      break;
-    case "shared":
-      list = sheetStore.sharedWorksheetList();
-      break;
-    default:
-      break;
+  // Use the Pinia current user — the same source the worksheet FETCH
+  // filter uses (`fetchSheetListFor`), so it's reliably populated by the
+  // time worksheets land. The app store's `currentUser` can still be
+  // empty here, which would misclassify every worksheet as "shared".
+  let email = "";
+  try {
+    email = useCurrentUserV1()?.value?.email ?? "";
+  } catch {
+    email = "";
   }
-  list = list.filter((sheet) => sheet.project === project);
+  const creator = `users/${email}`;
+  let list = useAppStore
+    .getState()
+    .worksheetList()
+    .filter((sheet) => {
+      if (sheet.project !== project) return false;
+      const mine = sheet.creator === creator;
+      return view === "my" ? mine : !mine;
+    });
   if (filter.onlyShowStarred) {
-    return list.filter((sheet) => sheet.starred);
+    list = list.filter((sheet) => sheet.starred);
   }
   return list;
 };

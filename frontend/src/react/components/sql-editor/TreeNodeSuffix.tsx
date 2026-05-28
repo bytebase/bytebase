@@ -1,6 +1,7 @@
 import { MoreHorizontal, Star, Users, X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -40,21 +41,27 @@ export function TreeNodeSuffix({
 
   const { isWorksheetCreator } = useSheetContext();
 
-  const worksheetLite = useAppStore((state) => {
-    if (!node.worksheet) {
-      return undefined;
-    }
-    const sheet = state.getWorksheetByName(node.worksheet.name);
-    if (!sheet) {
-      return undefined;
-    }
-    return {
-      name: sheet.name,
-      starred: sheet.starred,
-      visibility: sheet.visibility,
-      creator: sheet.creator,
-    };
-  });
+  // `useShallow` is required: this selector builds a fresh object each
+  // call, which would fail `useSyncExternalStore`'s `Object.is` snapshot
+  // check and spin an infinite render loop. Shallow-comparing the fields
+  // keeps the snapshot stable when the worksheet's values are unchanged.
+  const worksheetLite = useAppStore(
+    useShallow((state) => {
+      if (!node.worksheet) {
+        return undefined;
+      }
+      const sheet = state.getWorksheetByName(node.worksheet.name);
+      if (!sheet) {
+        return undefined;
+      }
+      return {
+        name: sheet.name,
+        starred: sheet.starred,
+        visibility: sheet.visibility,
+        creator: sheet.creator,
+      };
+    })
+  );
   const worksheetCreatorTitle = useAppStore((state) =>
     worksheetLite?.creator
       ? state.getUserByIdentifier(worksheetLite.creator)?.title
