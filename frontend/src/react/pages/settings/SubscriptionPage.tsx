@@ -1,8 +1,10 @@
+import { createContextValues } from "@connectrpc/connect";
 import dayjs from "dayjs";
 import { Copy, Download, Pencil } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { subscriptionServiceClientConnect } from "@/connect";
+import { silentContextKey } from "@/connect/context-key";
 import { InstanceAssignmentSheet } from "@/react/components/InstanceAssignmentSheet";
 import { Badge } from "@/react/components/ui/badge";
 import { Button } from "@/react/components/ui/button";
@@ -132,7 +134,12 @@ export function SubscriptionPage({
   const handleDownloadVCSUsers = async () => {
     try {
       const body =
-        await subscriptionServiceClientConnect.exportVCSProviderUsers({});
+        await subscriptionServiceClientConnect.exportVCSProviderUsers(
+          {},
+          {
+            contextValues: createContextValues().set(silentContextKey, true),
+          }
+        );
       const blob = new Blob([new TextDecoder().decode(body.data)], {
         type: body.contentType || "text/csv; charset=utf-8",
       });

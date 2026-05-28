@@ -56,7 +56,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         meta: {
           title: () => t("settings.sidebar.subscription"),
-          requiredPermissionList: () => ["bb.settings.get"],
+          requiredPermissionList: () => ["bb.subscription.get"],
         },
         component: () => import("@/react/ReactPageMount.vue"),
         props: () => ({ page: "SubscriptionPage" }),
