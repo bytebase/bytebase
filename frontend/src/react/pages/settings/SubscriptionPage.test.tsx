@@ -115,7 +115,7 @@ describe("SubscriptionPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-28T09:10:11Z"));
+    vi.setSystemTime(new Date(2026, 4, 28, 17, 10, 11));
     mocks.hasWorkspacePermissionV2.mockReturnValue(true);
     mocks.exportVCSProviderUsers.mockResolvedValue({
       contentType: "text/csv; charset=utf-8",
