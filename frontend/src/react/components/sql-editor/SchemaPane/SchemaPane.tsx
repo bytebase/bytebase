@@ -20,6 +20,7 @@ import { Input } from "@/react/components/ui/input";
 import { Tree, type TreeDataNode } from "@/react/components/ui/tree";
 import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import {
   getSQLEditorTabsState,
@@ -119,14 +120,28 @@ function SchemaPaneInner() {
     setSearchPattern("");
   }, [currentTabId]);
 
-  const [metadata, setMetadata] = useState<DatabaseMetadata | null>(null);
+  // Reactive read of the cached metadata. Returns the live dbSchema
+  // cache entry (or null when uncached) so the tree rebuilds whenever
+  // the metadata for this database changes — including a manual sync via
+  // SyncSchemaButton, which refetches with `skipCache` and replaces the
+  // entry. `getDatabaseMetadataWithoutDefault` returns a stable
+  // `undefined` when uncached (vs `getDatabaseMetadata`'s fresh empty
+  // object), keeping the snapshot reference stable across renders.
+  const metadata = useVueState<DatabaseMetadata | null>(
+    () =>
+      isValidDatabaseName(database.name)
+        ? (dbSchemaStore.getDatabaseMetadataWithoutDefault(database.name) ??
+          null)
+        : null,
+    { deps: [database.name] }
+  );
   const [isFetching, setIsFetching] = useState(false);
 
-  // Fetch metadata on database change. The store de-duplicates so this
-  // is safe to fire on every render where the name flips.
+  // Trigger the fetch on database change (the store de-duplicates). The
+  // metadata is read reactively above rather than from this promise, so
+  // a later cache replacement (e.g. sync) also flows through to the tree.
   useEffect(() => {
     if (!isValidDatabaseName(database.name)) {
-      setMetadata(null);
       setIsFetching(false);
       return;
     }
@@ -134,13 +149,8 @@ function SchemaPaneInner() {
     let cancelled = false;
     void dbSchemaStore
       .getOrFetchDatabaseMetadata({ database: database.name })
-      .then((md) => {
-        if (cancelled) return;
-        setMetadata(md);
-      })
       .finally(() => {
-        if (cancelled) return;
-        setIsFetching(false);
+        if (!cancelled) setIsFetching(false);
       });
     return () => {
       cancelled = true;

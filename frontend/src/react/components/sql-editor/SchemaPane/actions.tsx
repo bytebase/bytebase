@@ -166,6 +166,7 @@ const updateCurrentTabViewState = (patch: Partial<EditorPanelViewState>) => {
 };
 
 const runQuery = async (
+  execute: ReturnType<typeof useExecuteSQL>["execute"],
   database: Database,
   schema: string | undefined,
   tableOrViewName: string,
@@ -177,7 +178,6 @@ const runQuery = async (
   if (tab.mode === "ADMIN") {
     tabsState.updateCurrentTab({ mode: DEFAULT_SQL_EDITOR_TAB_MODE });
   }
-  const { execute } = useExecuteSQL();
   const connection: SQLEditorConnection = {
     instance: extractDatabaseResourceName(database.name).instance,
     database: database.name,
@@ -198,6 +198,7 @@ const runQuery = async (
 
 export function useSchemaPaneActions() {
   const databaseStore = useDatabaseV1Store();
+  const { execute } = useExecuteSQL();
 
   const openNewTab = useCallback(
     (params: {
@@ -272,9 +273,9 @@ export function useSchemaPaneActions() {
         engine
       );
       updateCurrentTabViewState({ view: "CODE" });
-      await runQuery(db, schema, tableOrViewName, query);
+      await runQuery(execute, db, schema, tableOrViewName, query);
     },
-    [databaseStore]
+    [databaseStore, execute]
   );
 
   const viewDetail = useCallback(
