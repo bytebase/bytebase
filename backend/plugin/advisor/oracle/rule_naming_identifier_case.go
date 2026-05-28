@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -37,22 +37,8 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	namingCasePayload := checkCtx.Rule.GetNamingCasePayload()
 
 	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingIdentifierCaseRule is the rule implementation for identifier case.
@@ -75,6 +61,29 @@ func NewNamingIdentifierCaseRule(level storepb.Advice_Status, title string, curr
 // Name returns the rule name.
 func (*NamingIdentifierCaseRule) Name() string {
 	return "naming.identifier-case"
+}
+
+// OnStatement checks identifier case from the omni AST.
+func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
+	for _, ident := range omniIdentifiers(node) {
+		if r.upper {
+			if ident.name != strings.ToUpper(ident.name) {
+				r.AddAdvice(
+					r.level,
+					code.NamingCaseMismatch.Int32(),
+					fmt.Sprintf("Identifier %q should be upper case", ident.name),
+					common.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
+				)
+			}
+		} else if ident.name != strings.ToLower(ident.name) {
+			r.AddAdvice(
+				r.level,
+				code.NamingCaseMismatch.Int32(),
+				fmt.Sprintf("Identifier %q should be lower case", ident.name),
+				common.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
+			)
+		}
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

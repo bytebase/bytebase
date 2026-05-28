@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,22 +35,8 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	rule := NewWhereNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // WhereNoLeadingWildcardLikeRule is the rule implementation for no leading wildcard LIKE.
@@ -71,6 +57,26 @@ func NewWhereNoLeadingWildcardLikeRule(level storepb.Advice_Status, title string
 // Name returns the rule name.
 func (*WhereNoLeadingWildcardLikeRule) Name() string {
 	return "where.no-leading-wildcard-like"
+}
+
+// OnStatement checks LIKE predicates in the omni AST.
+func (r *WhereNoLeadingWildcardLikeRule) OnStatement(node ast.Node) {
+	omniWalk(node, func(n ast.Node) {
+		like, ok := n.(*ast.LikeExpr)
+		if !ok {
+			return
+		}
+		pattern, ok := like.Pattern.(*ast.StringLiteral)
+		if !ok || !strings.HasPrefix(pattern.Val, "%") {
+			return
+		}
+		r.AddAdvice(
+			r.level,
+			code.StatementLeadingWildcardLike.Int32(),
+			"Avoid using leading wildcard LIKE.",
+			common.ConvertANTLRLineToPosition(r.locLine(like.Loc)),
+		)
+	})
 }
 
 // OnEnter is called when the parser enters a rule context.

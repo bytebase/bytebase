@@ -9,13 +9,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -46,22 +46,8 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnMaximumVarcharLengthRule is the rule implementation for maximum varchar length.
@@ -82,6 +68,30 @@ func NewColumnMaximumVarcharLengthRule(level storepb.Advice_Status, title string
 // Name returns the rule name.
 func (*ColumnMaximumVarcharLengthRule) Name() string {
 	return "column.maximum-varchar-length"
+}
+
+// OnStatement checks VARCHAR/VARCHAR2 type modifiers in the omni AST.
+func (r *ColumnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
+	omniWalk(node, func(n ast.Node) {
+		col, ok := n.(*ast.ColumnDef)
+		if !ok || col.TypeName == nil {
+			return
+		}
+		typeName := omniTypeName(col.TypeName)
+		if typeName != "VARCHAR" && typeName != "VARCHAR2" {
+			return
+		}
+		length, ok := omniFirstTypeModInt(col.TypeName)
+		if !ok || length <= r.maximum {
+			return
+		}
+		r.AddAdvice(
+			r.level,
+			code.VarcharLengthExceedsLimit.Int32(),
+			fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
+			common.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
+		)
+	})
 }
 
 // OnEnter is called when the parser enters a rule context.

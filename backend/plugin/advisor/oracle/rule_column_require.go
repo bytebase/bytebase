@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -43,22 +43,8 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 type columnSet map[string]bool
@@ -88,6 +74,57 @@ func NewColumnRequireRule(level storepb.Advice_Status, title string, currentData
 // Name returns the rule name.
 func (*ColumnRequireRule) Name() string {
 	return "column.require"
+}
+
+// OnStatement checks required columns in CREATE TABLE and ALTER TABLE.
+func (r *ColumnRequireRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		missing := make(columnSet)
+		for column := range r.requiredColumns {
+			missing[column] = true
+		}
+		for _, col := range omniColumnDefs(n.Columns) {
+			delete(missing, col.Name)
+		}
+		r.addMissingColumnsAdvice(omniLastObjectName(n.Name), missing, r.locLine(n.Loc))
+	case *ast.AlterTableStmt:
+		missing := make(columnSet)
+		for _, cmd := range omniAlterTableCmds(n) {
+			switch cmd.Action {
+			case ast.AT_DROP_COLUMN:
+				if _, ok := r.requiredColumns[cmd.ColumnName]; ok {
+					missing[cmd.ColumnName] = true
+				}
+			case ast.AT_RENAME_COLUMN:
+				if cmd.ColumnName != cmd.NewName {
+					if _, ok := r.requiredColumns[cmd.ColumnName]; ok {
+						missing[cmd.ColumnName] = true
+					}
+				}
+			default:
+			}
+		}
+		r.addMissingColumnsAdvice(omniLastObjectName(n.Name), missing, r.locLine(n.Loc))
+	default:
+	}
+}
+
+func (r *ColumnRequireRule) addMissingColumnsAdvice(tableName string, missing columnSet, line int) {
+	if len(missing) == 0 {
+		return
+	}
+	missingColumns := []string{}
+	for column := range missing {
+		missingColumns = append(missingColumns, fmt.Sprintf("%q", column))
+	}
+	slices.Sort(missingColumns)
+	r.AddAdvice(
+		r.level,
+		code.NoRequiredColumn.Int32(),
+		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
+		common.ConvertANTLRLineToPosition(line),
+	)
 }
 
 // OnEnter is called when the parser enters a rule context.

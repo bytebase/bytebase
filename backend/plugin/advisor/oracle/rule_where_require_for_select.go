@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -35,22 +35,8 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // WhereRequireForSelectRule is the rule implementation for WHERE clause requirement in SELECT.
@@ -71,6 +57,32 @@ func NewWhereRequireForSelectRule(level storepb.Advice_Status, title string, cur
 // Name returns the rule name.
 func (*WhereRequireForSelectRule) Name() string {
 	return "where.require-for-select"
+}
+
+// OnStatement checks SELECT statements with FROM clauses in the omni AST.
+func (r *WhereRequireForSelectRule) OnStatement(node ast.Node) {
+	omniWalk(node, func(n ast.Node) {
+		selectStmt, ok := n.(*ast.SelectStmt)
+		if !ok {
+			return
+		}
+		if selectStmt.FromClause == nil || len(selectStmt.FromClause.Items) == 0 {
+			return
+		}
+		if len(selectStmt.FromClause.Items) == 1 {
+			if table, ok := selectStmt.FromClause.Items[0].(*ast.TableRef); ok && table.Name != nil && strings.EqualFold(table.Name.Name, "DUAL") {
+				return
+			}
+		}
+		if selectStmt.WhereClause == nil {
+			r.AddAdvice(
+				r.level,
+				code.StatementNoWhere.Int32(),
+				"WHERE clause is required for SELECT statement.",
+				common.ConvertANTLRLineToPosition(r.locLine(selectStmt.Loc)),
+			)
+		}
+	})
 }
 
 // OnEnter is called when the parser enters a rule context.

@@ -7,13 +7,13 @@ import (
 	"slices"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -38,22 +38,8 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnNoNullRule is the rule implementation for column no NULL value.
@@ -78,6 +64,49 @@ func NewColumnNoNullRule(level storepb.Advice_Status, title string, currentDatab
 // Name returns the rule name.
 func (*ColumnNoNullRule) Name() string {
 	return "column.no-null"
+}
+
+// OnStatement records nullable columns from omni CREATE/ALTER TABLE nodes.
+func (r *ColumnNoNullRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, col := range omniColumnDefs(n.Columns) {
+			r.recordNullableColumn(tableName, col)
+		}
+		for _, c := range omniTableConstraints(n.Constraints) {
+			if c.Type == ast.CONSTRAINT_PRIMARY {
+				for _, columnName := range omniListStrings(c.Columns) {
+					delete(r.nullableColumns, fmt.Sprintf("%s.%s", tableName, columnName))
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		tableName := omniObjectName(n.Name, r.currentDatabase)
+		for _, cmd := range omniAlterTableCmds(n) {
+			if cmd.Action != ast.AT_MODIFY_COLUMN && cmd.Action != ast.AT_ADD_COLUMN {
+				continue
+			}
+			for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+				if col != nil {
+					r.recordNullableColumn(tableName, col)
+				}
+			}
+		}
+	default:
+	}
+}
+
+func (r *ColumnNoNullRule) recordNullableColumn(tableName string, col *ast.ColumnDef) {
+	if col == nil {
+		return
+	}
+	columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
+	if col.NotNull || omniColumnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) || omniColumnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
+		delete(r.nullableColumns, columnID)
+		return
+	}
+	r.nullableColumns[columnID] = r.locLine(col.Loc)
 }
 
 // OnEnter is called when the parser enters a rule context.
