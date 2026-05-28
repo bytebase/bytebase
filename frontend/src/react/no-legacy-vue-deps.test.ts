@@ -4,6 +4,8 @@ const sources = import.meta.glob(
   [
     "./pages/project/**/*.{ts,tsx}",
     "./pages/settings/**/*.{ts,tsx}",
+    "./pages/auth/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
     "../router/dashboard/projectV1.ts",
     "../router/dashboard/workspace.ts",
     "../router/dashboard/workspaceSetting.ts",
@@ -106,6 +108,29 @@ describe("React Project and Settings legacy Vue dependencies", () => {
         "useProjectIamPolicyStore",
         "loadSubscription",
       ]) {
+        if (source.includes(bannedImport)) {
+          violations.push(`${file}: ${bannedImport}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("Phase 1 protobuf resource consumers use the React app store", () => {
+    const bannedImports = [
+      "useGroupStore",
+      "useServiceAccountStore",
+      "useWorkloadIdentityStore",
+      "useIdentityProviderStore",
+      "useAccessGrantStore",
+      "@/store/modules/serviceAccount",
+      "@/store/modules/workloadIdentity",
+      "@/store/modules/idp",
+      "@/store/modules/accessGrant",
+    ];
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(sources)) {
+      for (const bannedImport of bannedImports) {
         if (source.includes(bannedImport)) {
           violations.push(`${file}: ${bannedImport}`);
         }

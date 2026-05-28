@@ -11,7 +11,7 @@ import {
   SearchProjectsRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import type { AppSliceCreator, ProjectSlice } from "./types";
-import { buildProjectFilter, defaultProjectName } from "./utils";
+import { buildProjectFilter, defaultProjectName, toError } from "./utils";
 
 const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 
@@ -26,11 +26,6 @@ function createDefaultProject(name: string) {
     requirePlanCheckNoError: true,
     allowRequestRole: true,
   });
-}
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  return new Error(String(error));
 }
 
 export const createProjectSlice: AppSliceCreator<ProjectSlice> = (

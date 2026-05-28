@@ -47,7 +47,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/react/components/ui/table";
+import { useIdentityProviderList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import {
@@ -55,7 +57,6 @@ import {
   useActuatorV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
   getIdentityProviderResourceId,
   idpNamePrefix,
@@ -1299,7 +1300,10 @@ function CreateWizardDrawer({
   onCreated: (provider: IdentityProvider) => void;
 }) {
   const { t } = useTranslation();
-  const identityProviderStore = useIdentityProviderStore();
+  const createIdentityProvider = useAppStore(
+    (state) => state.createIdentityProvider
+  );
+  const identityProviderList = useIdentityProviderList();
   const subscriptionStore = useSubscriptionV1Store();
   useEscapeKey(onClose);
 
@@ -1553,8 +1557,7 @@ function CreateWizardDrawer({
     if (!canCreate) return;
     setIsCreating(true);
     try {
-      const createdProvider =
-        await identityProviderStore.createIdentityProvider(idpToCreate);
+      const createdProvider = await createIdentityProvider(idpToCreate);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -1580,11 +1583,12 @@ function CreateWizardDrawer({
 
   const validateResourceId = useCallback(
     async (val: string) => {
-      try {
-        await identityProviderStore.getOrFetchIdentityProviderByName(
-          `${idpNamePrefix}${val}`,
-          true
-        );
+      if (
+        val &&
+        identityProviderList.some(
+          (idp) => idp.name === `${idpNamePrefix}${val}`
+        )
+      ) {
         return [
           {
             type: "error" as const,
@@ -1593,11 +1597,10 @@ function CreateWizardDrawer({
             }),
           },
         ];
-      } catch {
-        return [];
       }
+      return [];
     },
-    [identityProviderStore, t]
+    [identityProviderList, t]
   );
 
   // Step labels
@@ -1968,7 +1971,10 @@ function CreateWizardDrawer({
 
 export function IDPsPage() {
   const { t } = useTranslation();
-  const identityProviderStore = useIdentityProviderStore();
+  const identityProviderList = useIdentityProviderList();
+  const listIdentityProviders = useAppStore(
+    (state) => state.listIdentityProviders
+  );
 
   const subscriptionStore = useSubscriptionV1Store();
 
@@ -1980,15 +1986,11 @@ export function IDPsPage() {
   );
   const canCreate = hasWorkspacePermissionV2("bb.identityProviders.create");
 
-  const identityProviderList = useVueState(() => [
-    ...identityProviderStore.identityProviderList,
-  ]);
-
   useEffect(() => {
-    identityProviderStore
-      .fetchIdentityProviderList(useActuatorV1Store().workspaceResourceName)
-      .finally(() => setReady(true));
-  }, []);
+    listIdentityProviders(useActuatorV1Store().workspaceResourceName).finally(
+      () => setReady(true)
+    );
+  }, [listIdentityProviders]);
 
   const handleCreateSSO = () => {
     if (!hasSSOFeature) return;

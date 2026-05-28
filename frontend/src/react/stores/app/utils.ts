@@ -106,6 +106,10 @@ export function isConnectAlreadyExists(error: unknown): error is ConnectError {
   return error instanceof ConnectError && error.code === Code.AlreadyExists;
 }
 
+export function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 export function projectResourceNameFromId(projectId: string | undefined) {
   return projectId ? `${projectNamePrefix}${projectId}` : "";
 }

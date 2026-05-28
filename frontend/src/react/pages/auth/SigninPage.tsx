@@ -12,15 +12,12 @@ import {
   TabsPanel,
   TabsTrigger,
 } from "@/react/components/ui/tabs";
+import { useIdentityProviderList } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useAuthStore,
-  useIdentityProviderStore,
-} from "@/store";
+import { pushNotification, useActuatorV1Store, useAuthStore } from "@/store";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
@@ -52,9 +49,7 @@ export function SigninPage(props: SigninPageProps) {
   const activeUserCount = useVueState(
     () => useActuatorV1Store().activeUserCount
   );
-  const identityProviders = useVueState(
-    () => useIdentityProviderStore().identityProviderList
-  );
+  const identityProviders = useIdentityProviderList();
 
   const query = router.currentRoute.value.query;
   const invitedEmail = (query.email as string | undefined) ?? "";
@@ -125,15 +120,16 @@ export function SigninPage(props: SigninPageProps) {
     initRef.current = true;
     (async () => {
       const workspaceName = resolveWorkspaceName();
-      const idpStore = useIdentityProviderStore();
+      const listIdentityProviders =
+        useAppStore.getState().listIdentityProviders;
       const actuatorStore = useActuatorV1Store();
       try {
         const [idpList] = await Promise.all([
-          idpStore.fetchIdentityProviderList(workspaceName),
+          listIdentityProviders(workspaceName),
           actuatorStore.fetchServerInfo(workspaceName),
         ]);
         if (idpList.length === 0 && workspaceName) {
-          await idpStore.fetchIdentityProviderList();
+          await listIdentityProviders();
         }
       } catch (error) {
         pushNotification({
@@ -146,9 +142,10 @@ export function SigninPage(props: SigninPageProps) {
       const idpQuery = query.idp;
       if (idpQuery) {
         const name = `${idpNamePrefix}${idpQuery}`;
-        const idp = idpStore.identityProviderList.find(
-          (i: IdentityProvider) => i.name === name
-        );
+        const idp = useAppStore
+          .getState()
+          .identityProviderList()
+          .find((i: IdentityProvider) => i.name === name);
         if (idp) {
           // On success this navigates away; on failure `trySigninWithIdp`
           // pushes a notification and we still need to show the form so the

@@ -2,18 +2,25 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ReactShellBridgeEvent } from "@/react/shell-bridge";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
+import {
+  AccessGrant_Status,
+  AccessGrantSchema,
+} from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
+import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import {
   BindingSchema,
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
+import { IdentityProviderSchema } from "@/types/proto-es/v1/idp_service_pb";
 import { InstanceRoleSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
+import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
 import {
   DatabaseChangeMode,
   EnvironmentSetting_EnvironmentSchema,
@@ -29,6 +36,7 @@ import {
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   storageKeyIntroState,
   storageKeyRecentProjects,
@@ -73,6 +81,35 @@ const mocks = vi.hoisted(() => ({
   getSheet: vi.fn(),
   createSheet: vi.fn(),
   listInstanceRoles: vi.fn(),
+  listGroups: vi.fn(),
+  batchGetGroups: vi.fn(),
+  getGroup: vi.fn(),
+  createGroup: vi.fn(),
+  updateGroup: vi.fn(),
+  deleteGroup: vi.fn(),
+  listServiceAccounts: vi.fn(),
+  getServiceAccount: vi.fn(),
+  createServiceAccount: vi.fn(),
+  updateServiceAccount: vi.fn(),
+  deleteServiceAccount: vi.fn(),
+  undeleteServiceAccount: vi.fn(),
+  listWorkloadIdentities: vi.fn(),
+  getWorkloadIdentity: vi.fn(),
+  createWorkloadIdentity: vi.fn(),
+  updateWorkloadIdentity: vi.fn(),
+  deleteWorkloadIdentity: vi.fn(),
+  undeleteWorkloadIdentity: vi.fn(),
+  listIdentityProviders: vi.fn(),
+  getIdentityProvider: vi.fn(),
+  createIdentityProvider: vi.fn(),
+  updateIdentityProvider: vi.fn(),
+  deleteIdentityProvider: vi.fn(),
+  getAccessGrant: vi.fn(),
+  searchMyAccessGrants: vi.fn(),
+  createAccessGrant: vi.fn(),
+  listAccessGrants: vi.fn(),
+  activateAccessGrant: vi.fn(),
+  revokeAccessGrant: vi.fn(),
 }));
 
 vi.mock("@/connect", () => ({
@@ -107,6 +144,45 @@ vi.mock("@/connect", () => ({
   },
   instanceRoleServiceClientConnect: {
     listInstanceRoles: mocks.listInstanceRoles,
+  },
+  groupServiceClientConnect: {
+    listGroups: mocks.listGroups,
+    batchGetGroups: mocks.batchGetGroups,
+    getGroup: mocks.getGroup,
+    createGroup: mocks.createGroup,
+    updateGroup: mocks.updateGroup,
+    deleteGroup: mocks.deleteGroup,
+  },
+  serviceAccountServiceClientConnect: {
+    listServiceAccounts: mocks.listServiceAccounts,
+    getServiceAccount: mocks.getServiceAccount,
+    createServiceAccount: mocks.createServiceAccount,
+    updateServiceAccount: mocks.updateServiceAccount,
+    deleteServiceAccount: mocks.deleteServiceAccount,
+    undeleteServiceAccount: mocks.undeleteServiceAccount,
+  },
+  workloadIdentityServiceClientConnect: {
+    listWorkloadIdentities: mocks.listWorkloadIdentities,
+    getWorkloadIdentity: mocks.getWorkloadIdentity,
+    createWorkloadIdentity: mocks.createWorkloadIdentity,
+    updateWorkloadIdentity: mocks.updateWorkloadIdentity,
+    deleteWorkloadIdentity: mocks.deleteWorkloadIdentity,
+    undeleteWorkloadIdentity: mocks.undeleteWorkloadIdentity,
+  },
+  identityProviderServiceClientConnect: {
+    listIdentityProviders: mocks.listIdentityProviders,
+    getIdentityProvider: mocks.getIdentityProvider,
+    createIdentityProvider: mocks.createIdentityProvider,
+    updateIdentityProvider: mocks.updateIdentityProvider,
+    deleteIdentityProvider: mocks.deleteIdentityProvider,
+  },
+  accessGrantServiceClientConnect: {
+    getAccessGrant: mocks.getAccessGrant,
+    searchMyAccessGrants: mocks.searchMyAccessGrants,
+    createAccessGrant: mocks.createAccessGrant,
+    listAccessGrants: mocks.listAccessGrants,
+    activateAccessGrant: mocks.activateAccessGrant,
+    revokeAccessGrant: mocks.revokeAccessGrant,
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
@@ -146,6 +222,43 @@ const projectB = createProto(ProjectSchema, {
   state: State.ACTIVE,
 });
 
+const groupA = createProto(GroupSchema, {
+  name: "groups/dba@example.com",
+  email: "dba@example.com",
+  title: "DBA",
+});
+
+const groupB = createProto(GroupSchema, {
+  name: "groups/dev@example.com",
+  email: "dev@example.com",
+  title: "Dev",
+});
+
+const serviceAccountA = createProto(ServiceAccountSchema, {
+  name: "serviceAccounts/robot@example.com",
+  email: "robot@example.com",
+  title: "Robot",
+  state: State.ACTIVE,
+});
+
+const workloadIdentityA = createProto(WorkloadIdentitySchema, {
+  name: "workloadIdentities/deploy@example.com",
+  email: "deploy@example.com",
+  title: "Deploy",
+  state: State.ACTIVE,
+});
+
+const identityProviderA = createProto(IdentityProviderSchema, {
+  name: "idps/google",
+  title: "Google",
+  domain: "example.com",
+});
+
+const accessGrantA = createProto(AccessGrantSchema, {
+  name: "projects/a/accessGrants/ag1",
+  status: AccessGrant_Status.ACTIVE,
+});
+
 const timestampSeconds = (seconds: number) => ({
   seconds: BigInt(seconds),
   nanos: 0,
@@ -169,6 +282,187 @@ describe("useAppStore", () => {
     expect(state.notify).toBeTypeOf("function");
     expect(state.recordRecentVisit).toBeTypeOf("function");
     expect(state.removeRecentVisit).toBeTypeOf("function");
+  });
+
+  test("lists groups and populates the group cache", async () => {
+    mocks.listGroups.mockResolvedValue({
+      groups: [groupA, groupB],
+      nextPageToken: "next",
+    });
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      roles: [
+        createProto(RoleSchema, {
+          name: "roles/group-viewer",
+          permissions: ["bb.groups.list"],
+        }),
+      ],
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/group-viewer",
+            members: [`user:${user.email}`],
+          }),
+        ],
+      }),
+    });
+
+    const result = await store.getState().listGroups({ pageSize: 50 });
+
+    expect(result.groups).toEqual([groupA, groupB]);
+    expect(result.nextPageToken).toBe("next");
+    expect(store.getState().groupsByName[groupA.name]).toBe(groupA);
+    expect(store.getState().groupsByName[groupB.name]).toBe(groupB);
+  });
+
+  test("batchGetOrFetchGroups skips cached groups and preserves order", async () => {
+    mocks.batchGetGroups.mockResolvedValue({ groups: [groupB] });
+    const store = createAppStore();
+    store.setState({ groupsByName: { [groupA.name]: groupA } });
+
+    const result = await store
+      .getState()
+      .batchGetOrFetchGroups([groupA.name, groupB.name, groupA.name]);
+
+    expect(mocks.batchGetGroups).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([groupA, groupB]);
+    expect(store.getState().groupsByName[groupB.name]).toBe(groupB);
+  });
+
+  test("lists service accounts and writes them into cache", async () => {
+    mocks.listServiceAccounts.mockResolvedValue({
+      serviceAccounts: [serviceAccountA],
+      nextPageToken: "next-sa",
+    });
+    const store = createAppStore();
+
+    const result = await store.getState().listServiceAccounts({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+    });
+
+    expect(result.serviceAccounts).toEqual([serviceAccountA]);
+    expect(result.nextPageToken).toBe("next-sa");
+    expect(store.getState().serviceAccountsByName[serviceAccountA.name]).toBe(
+      serviceAccountA
+    );
+  });
+
+  test("marks cached service account deleted after delete", async () => {
+    mocks.deleteServiceAccount.mockResolvedValue({});
+    const store = createAppStore();
+    store.setState({
+      serviceAccountsByName: { [serviceAccountA.name]: serviceAccountA },
+    });
+
+    await store.getState().deleteServiceAccount(serviceAccountA.name);
+
+    expect(
+      store.getState().serviceAccountsByName[serviceAccountA.name].state
+    ).toBe(State.DELETED);
+  });
+
+  test("lists workload identities and writes them into cache", async () => {
+    mocks.listWorkloadIdentities.mockResolvedValue({
+      workloadIdentities: [workloadIdentityA],
+      nextPageToken: "next-wi",
+    });
+    const store = createAppStore();
+
+    const result = await store.getState().listWorkloadIdentities({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+    });
+
+    expect(result.workloadIdentities).toEqual([workloadIdentityA]);
+    expect(result.nextPageToken).toBe("next-wi");
+    expect(
+      store.getState().workloadIdentitiesByName[workloadIdentityA.name]
+    ).toBe(workloadIdentityA);
+  });
+
+  test("lists identity providers and replaces the identity provider cache", async () => {
+    mocks.listIdentityProviders.mockResolvedValue({
+      identityProviders: [identityProviderA],
+    });
+    const store = createAppStore();
+    store.setState({
+      identityProvidersByName: {
+        "idps/stale": createProto(IdentityProviderSchema, {
+          name: "idps/stale",
+        }),
+      },
+    });
+
+    const providers = await store.getState().listIdentityProviders();
+
+    expect(providers).toEqual([identityProviderA]);
+    expect(store.getState().identityProviderList()).toEqual([
+      identityProviderA,
+    ]);
+    expect(store.getState().identityProvidersByName).toEqual({
+      [identityProviderA.name]: identityProviderA,
+    });
+  });
+
+  test("updates identity provider with a field mask based on changed fields", async () => {
+    mocks.getIdentityProvider.mockResolvedValue(identityProviderA);
+    mocks.updateIdentityProvider.mockResolvedValue({
+      ...identityProviderA,
+      title: "Google Workspace",
+    });
+    const store = createAppStore();
+
+    const updated = await store.getState().updateIdentityProvider({
+      name: identityProviderA.name,
+      title: "Google Workspace",
+    });
+
+    expect(updated.title).toBe("Google Workspace");
+    expect(mocks.updateIdentityProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updateMask: expect.objectContaining({ paths: ["title"] }),
+      })
+    );
+  });
+
+  test("lists access grants and writes them into cache", async () => {
+    mocks.listAccessGrants.mockResolvedValue({
+      accessGrants: [accessGrantA],
+      nextPageToken: "next-ag",
+    });
+    const store = createAppStore();
+
+    const result = await store.getState().listAccessGrants({
+      parent: "projects/a",
+      pageSize: 20,
+      filter: { status: ["ACTIVE"] },
+    });
+
+    expect(result.accessGrants).toEqual([accessGrantA]);
+    expect(result.nextPageToken).toBe("next-ag");
+    expect(store.getState().accessGrantsByName[accessGrantA.name]).toBe(
+      accessGrantA
+    );
+  });
+
+  test("revokeAccessGrant writes returned grant into cache", async () => {
+    const revoked = {
+      ...accessGrantA,
+      status: AccessGrant_Status.REVOKED,
+    };
+    mocks.revokeAccessGrant.mockResolvedValue(revoked);
+    const store = createAppStore();
+
+    const result = await store.getState().revokeAccessGrant(accessGrantA.name);
+
+    expect(result).toBe(revoked);
+    expect(store.getState().accessGrantsByName[accessGrantA.name]).toBe(
+      revoked
+    );
   });
 
   test("deduplicates project fetches and caches the result", async () => {

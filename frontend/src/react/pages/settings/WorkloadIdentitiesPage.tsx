@@ -17,17 +17,17 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
   ensureWorkloadIdentityFullName,
+  workloadIdentityToUser,
+} from "@/react/stores/app/workloadIdentity";
+import {
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  useWorkloadIdentityStore,
-  workloadIdentityToUser,
-} from "@/store/modules/workloadIdentity";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
@@ -50,7 +50,12 @@ function WorkloadIdentityTable({
   onUserSelected?: (user: User) => void;
 }) {
   const { t } = useTranslation();
-  const workloadIdentityStore = useWorkloadIdentityStore();
+  const deleteWorkloadIdentity = useAppStore(
+    (state) => state.deleteWorkloadIdentity
+  );
+  const undeleteWorkloadIdentity = useAppStore(
+    (state) => state.undeleteWorkloadIdentity
+  );
 
   const handleDeactivate = async (user: User) => {
     const confirmed = window.confirm(
@@ -60,7 +65,7 @@ function WorkloadIdentityTable({
 
     try {
       const fullName = ensureWorkloadIdentityFullName(user.email);
-      await workloadIdentityStore.deleteWorkloadIdentity(fullName);
+      await deleteWorkloadIdentity(fullName);
       const updated = { ...user, state: State.DELETED };
       onUserUpdated(updated as User);
       pushNotification({
@@ -76,7 +81,7 @@ function WorkloadIdentityTable({
   const handleRestore = async (user: User) => {
     try {
       const fullName = ensureWorkloadIdentityFullName(user.email);
-      await workloadIdentityStore.undeleteWorkloadIdentity(fullName);
+      await undeleteWorkloadIdentity(fullName);
       const updated = { ...user, state: State.ACTIVE };
       onUserUpdated(updated as User);
       pushNotification({
@@ -232,9 +237,14 @@ function WorkloadIdentityTable({
 
 export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   const { t } = useTranslation();
-  const workloadIdentityStore = useWorkloadIdentityStore();
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
+  const listWorkloadIdentities = useAppStore(
+    (state) => state.listWorkloadIdentities
+  );
+  const fetchWorkloadIdentity = useAppStore(
+    (state) => state.fetchWorkloadIdentity
+  );
 
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
@@ -255,7 +265,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
 
   const fetchActive = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const response = await workloadIdentityStore.listWorkloadIdentities({
+      const response = await listWorkloadIdentities({
         parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
@@ -266,12 +276,12 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         nextPageToken: response.nextPageToken,
       };
     },
-    [workloadIdentityStore, parent]
+    [listWorkloadIdentities, parent]
   );
 
   const fetchInactive = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
-      const response = await workloadIdentityStore.listWorkloadIdentities({
+      const response = await listWorkloadIdentities({
         parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
@@ -283,7 +293,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         nextPageToken: response.nextPageToken,
       };
     },
-    [workloadIdentityStore, parent]
+    [listWorkloadIdentities, parent]
   );
 
   const activeData = usePagedData<User>({
@@ -321,18 +331,14 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
   // resolve out of order and open the sheet with the wrong identity.
   const selectSeqRef = useRef(0);
   const handleUserSelected = async (user: User) => {
-    // Use getOrFetch so the full WorkloadIdentity (including
-    // workloadIdentityConfig with subjectPattern) is loaded before we open
-    // the edit Sheet. `getWorkloadIdentity` returns a stub with only
-    // name/email/title if the cache is empty — which it is on first click
-    // of a row, since listWorkloadIdentities doesn't populate the cache.
-    // Without this, the edit Sheet would see no config and leave
-    // Organization/Repository/Branch fields blank.
+    // Load the full WorkloadIdentity (including workloadIdentityConfig with
+    // subjectPattern) before opening the edit Sheet. The list response carries
+    // the full record, so this is usually a cache hit; fetchWorkloadIdentity
+    // only issues a GET when the entity isn't cached. `getWorkloadIdentity`
+    // would instead return a name/email/title-only stub on a cache miss,
+    // leaving Organization/Repository/Branch blank.
     const seq = ++selectSeqRef.current;
-    const wi = await workloadIdentityStore.getOrFetchWorkloadIdentity(
-      user.email,
-      true
-    );
+    const wi = await fetchWorkloadIdentity(user.email, true);
     // Drop stale response — a later click superseded this request.
     if (seq !== selectSeqRef.current) return;
     setEditingWI(wi);

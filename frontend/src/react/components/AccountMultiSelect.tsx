@@ -6,7 +6,8 @@ import { SearchInput } from "@/react/components/ui/search-input";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import { useCurrentUserV1, useGroupStore, useUserStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useCurrentUserV1, useUserStore } from "@/store";
 import {
   extractUserEmail,
   groupNamePrefix,
@@ -192,7 +193,7 @@ export function AccountMultiSelect({
 }) {
   const { t } = useTranslation();
   const userStore = useUserStore();
-  const groupStore = useGroupStore();
+  const listGroups = useAppStore((state) => state.listGroups);
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const [open, setOpen] = useState(false);
@@ -214,14 +215,14 @@ export function AccountMultiSelect({
       userStore
         .fetchUserList({ pageSize: getDefaultPagination(), filter: { query } })
         .then(({ users: fetched }) => setUsers(fetched));
-      groupStore
-        .fetchGroupList({ pageSize: getDefaultPagination(), filter: { query } })
-        .then(({ groups: fetched }) => setGroups(fetched));
+      listGroups({ pageSize: getDefaultPagination(), filter: { query } }).then(
+        ({ groups: fetched }) => setGroups(fetched)
+      );
     }, 300);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, userStore, groupStore]);
+  }, [search, userStore, listGroups]);
 
   const handleClickOutside = useCallback(() => {
     setOpen(false);
