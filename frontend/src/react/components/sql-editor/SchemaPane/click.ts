@@ -30,11 +30,13 @@ export type UseClickEventsResult = {
  * was what gave the browser a chance to flush). Plain callbacks invoked
  * synchronously from `handleClick` keep all the work in the same tick.
  *
- * For most node types both single- and double-click do the same thing
- * (`toggleNode`), so we skip the discriminator and fire the single-click
- * handler immediately. Only `table` and `view` rows have a distinct
- * double-click action (`selectAllFromTableOrView`) — those keep the
- * 250ms timer.
+ * The single-click handler ALWAYS fires immediately (instant expand),
+ * for every node type. Only `table` and `view` rows have a distinct
+ * double-click action (`selectAllFromTableOrView`); for those, a second
+ * click within `DOUBLE_CLICK_WINDOW_MS` runs that action. Because the
+ * first click already expanded the node, we do not defer or re-toggle —
+ * this avoids the 250ms per-click lag the previous timer-based approach
+ * imposed on every table/view click.
  */
 export function useClickEvents(handlers: ClickHandlers): UseClickEventsResult {
   // Refresh-on-render ref so the discriminator always invokes the latest
@@ -52,11 +54,14 @@ export function useClickEvents(handlers: ClickHandlers): UseClickEventsResult {
       pending = undefined;
     };
 
-    const queueSingle = (node: TreeNode) => {
+    // Arms a short window during which a second click on the same node
+    // counts as a double-click. The single-click action already ran on
+    // the first click, so this only schedules window expiry — it does
+    // not defer any work.
+    const armDoubleClickWindow = (node: TreeNode) => {
       pending = {
         timeout: setTimeout(() => {
           pending = undefined;
-          handlersRef.current.onSingleClick(node);
         }, DOUBLE_CLICK_WINDOW_MS),
         node,
       };
@@ -72,13 +77,21 @@ export function useClickEvents(handlers: ClickHandlers): UseClickEventsResult {
         return;
       }
 
+      // Second click within the window → run the distinct double-click
+      // action (e.g. SELECT *). The first click already expanded the
+      // node, so we don't re-toggle it here.
       if (pending && pending.node.key === node.key) {
         clear();
         handlersRef.current.onDoubleClick(node);
         return;
       }
+
+      // First click: act IMMEDIATELY so expanding a table/view feels
+      // instant. The previous implementation deferred this by 250ms to
+      // disambiguate a double-click, which made every table click laggy.
       clear();
-      queueSingle(node);
+      handlersRef.current.onSingleClick(node);
+      armDoubleClickWindow(node);
     };
 
     return { handleClick };
