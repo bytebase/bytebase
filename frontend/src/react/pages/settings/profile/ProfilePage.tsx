@@ -81,7 +81,8 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const actuatorStore = useActuatorV1Store();
 
   // --- Reactive Vue state ---
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const legacyCurrentUser = useVueState(() => useCurrentUserV1().value);
+  const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
   const principalUser = useAppStore((state) =>
     principalEmail ? state.getUserByIdentifier(principalEmail) : undefined
   );
@@ -167,6 +168,10 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
 
   // --- Effects ---
 
+  useEffect(() => {
+    setCurrentUser(legacyCurrentUser);
+  }, [legacyCurrentUser]);
+
   // On mount: validate account type and fetch user
   useEffect(() => {
     if (principalEmail) {
@@ -246,11 +251,12 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         migrateUserStorage(oldEmail, editingUser.email);
         if (isSelf) {
           authStore.updateCurrentUserNameForEmailChange(updatedUser.name);
+          setCurrentUser(updatedUser);
         }
       }
 
       if (updateMaskPaths.length > 0) {
-        await updateUser(
+        const updatedUser = await updateUser(
           create(UpdateUserRequestSchema, {
             user: editingUser,
             updateMask: create(FieldMaskSchema, {
@@ -260,6 +266,9 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
             regenerateTempMfaSecret: false,
           })
         );
+        if (isSelf) {
+          setCurrentUser(updatedUser);
+        }
       }
 
       if (emailChanged || updateMaskPaths.length > 0) {
@@ -333,7 +342,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   }, [requireMfa, t]);
 
   const handleDisable2FA = useCallback(async () => {
-    await updateUser(
+    const updatedUser = await updateUser(
       create(UpdateUserRequestSchema, {
         user: {
           name: user.name,
@@ -344,6 +353,9 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
         }),
       })
     );
+    if (isSelf) {
+      setCurrentUser(updatedUser);
+    }
     setShowDisable2FAConfirm(false);
     pushNotification({
       module: "bytebase",
