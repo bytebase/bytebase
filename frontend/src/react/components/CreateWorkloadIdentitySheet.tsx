@@ -15,15 +15,15 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
+import { ensureWorkloadIdentityFullName } from "@/react/stores/app/workloadIdentity";
 import {
-  ensureWorkloadIdentityFullName,
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
   useWorkspaceV1Store,
 } from "@/store";
 import { useProjectIamPolicyStore } from "@/store/modules/v1/projectIamPolicy";
-import { useWorkloadIdentityStore } from "@/store/modules/workloadIdentity";
 import {
   getWorkloadIdentityNameInBinding,
   getWorkloadIdentitySuffix,
@@ -134,11 +134,16 @@ function WorkloadIdentityForm({
   onUpdated,
 }: Omit<CreateWorkloadIdentitySheetProps, "open">) {
   const { t } = useTranslation();
-  const workloadIdentityStore = useWorkloadIdentityStore();
   const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
+  const createWorkloadIdentity = useAppStore(
+    (state) => state.createWorkloadIdentity
+  );
+  const updateWorkloadIdentity = useAppStore(
+    (state) => state.updateWorkloadIdentity
+  );
 
   const projectEntity = useVueState(() =>
     project ? projectStore.getProjectByName(project) : undefined
@@ -347,7 +352,7 @@ function WorkloadIdentityForm({
   };
 
   const handleCreate = async () => {
-    const wi = await workloadIdentityStore.createWorkloadIdentity(
+    const wi = await createWorkloadIdentity(
       emailPrefix,
       {
         title: title || emailPrefix,
@@ -391,7 +396,7 @@ function WorkloadIdentityForm({
       updateMask.push("title");
     }
 
-    const updated = await workloadIdentityStore.updateWorkloadIdentity(
+    const updated = await updateWorkloadIdentity(
       create(WorkloadIdentitySchema, {
         name: ensureWorkloadIdentityFullName(workloadIdentity.email),
         title,

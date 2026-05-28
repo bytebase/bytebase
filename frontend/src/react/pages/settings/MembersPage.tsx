@@ -19,9 +19,17 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
+import type { ConditionGroupExpr, Factor, Operator } from "@/plugins/cel";
+import {
+  buildCELExpr,
+  emptySimpleExpr,
+  validateSimpleExpr,
+  wrapAsGroup,
+} from "@/plugins/cel";
 import { AccountMultiSelect } from "@/react/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/react/components/DatabaseResourceSelector";
 import { EnvironmentSelect } from "@/react/components/EnvironmentSelect";
+import { ExprEditor, type OptionConfig } from "@/react/components/ExprEditor";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
@@ -97,13 +105,20 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { GroupBinding, MemberBinding } from "@/types/v1/member";
 import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
+  batchConvertParsedExprToCELString,
   displayRoleTitle,
   formatAbsoluteDateTime,
+  getDatabaseNameOptionConfig,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   isBindingPolicyExpired,
   sortRoles,
 } from "@/utils";
+import {
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+} from "@/utils/cel-attributes";
 import {
   buildConditionExpr,
   convertFromExpr,
@@ -890,7 +905,7 @@ interface RoleBindingFormState {
   expirationTimestampInMS: number | undefined;
   databaseMode: DatabaseMode;
   databaseResources: DatabaseResource[];
-  celExpression: string;
+  exprGroup: ConditionGroupExpr;
   environments: string[];
 }
 
@@ -904,8 +919,11 @@ function DatabaseResourceSection({
   onModeChange,
   databaseResources,
   onDatabaseResourcesChange,
-  celExpression,
-  onCelExpressionChange,
+  exprGroup,
+  onExprGroupChange,
+  factorList,
+  factorOptionConfigMap,
+  factorOperatorOverrideMap,
   formId,
 }: {
   projectName: string;
@@ -913,8 +931,11 @@ function DatabaseResourceSection({
   onModeChange: (mode: DatabaseMode) => void;
   databaseResources: DatabaseResource[];
   onDatabaseResourcesChange: (resources: DatabaseResource[]) => void;
-  celExpression: string;
-  onCelExpressionChange: (expr: string) => void;
+  exprGroup: ConditionGroupExpr;
+  onExprGroupChange: (expr: ConditionGroupExpr) => void;
+  factorList: Factor[];
+  factorOptionConfigMap: Map<Factor, OptionConfig>;
+  factorOperatorOverrideMap: Map<Factor, Operator[]>;
   formId: string;
 }) {
   const { t } = useTranslation();
@@ -949,12 +970,12 @@ function DatabaseResourceSection({
       </div>
 
       {mode === "EXPRESSION" && (
-        <textarea
-          className="w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm font-mono resize-none"
-          rows={3}
-          placeholder='e.g. resource.database_name.startsWith("employee_")'
-          value={celExpression}
-          onChange={(e) => onCelExpressionChange(e.target.value)}
+        <ExprEditor
+          expr={exprGroup}
+          factorList={factorList}
+          optionConfigMap={factorOptionConfigMap}
+          factorOperatorOverrideMap={factorOperatorOverrideMap}
+          onUpdate={onExprGroupChange}
         />
       )}
 
@@ -987,6 +1008,38 @@ function ProjectRoleBindingForm({
   const roleList = useVueState(() => [...roleStore.roleList]);
 
   const expirationPresets = useMemo(() => getExpirationPresets(t), [t]);
+  const factorList = useMemo<Factor[]>(
+    () => [
+      CEL_ATTRIBUTE_RESOURCE_DATABASE,
+      CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+      CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+    ],
+    []
+  );
+  const factorOperatorOverrideMap = useMemo(
+    () =>
+      new Map<Factor, Operator[]>([
+        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
+        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
+        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
+      ]),
+    []
+  );
+  const factorOptionConfigMap = useMemo(
+    () =>
+      factorList.reduce((map, factor) => {
+        if (factor === CEL_ATTRIBUTE_RESOURCE_DATABASE) {
+          map.set(factor, {
+            ...getDatabaseNameOptionConfig(projectName),
+            supportMultiple: false,
+          });
+        } else {
+          map.set(factor, { options: [] });
+        }
+        return map;
+      }, new Map<Factor, OptionConfig>()),
+    [factorList, projectName]
+  );
 
   const permissions = useMemo(() => {
     if (!form.role) return [];
@@ -1009,7 +1062,7 @@ function ProjectRoleBindingForm({
       role,
       databaseMode: "ALL",
       databaseResources: [],
-      celExpression: "",
+      exprGroup: wrapAsGroup(emptySimpleExpr()),
       environments: [],
     });
   };
@@ -1098,17 +1151,20 @@ function ProjectRoleBindingForm({
               ...form,
               databaseMode: mode,
               databaseResources: [],
-              celExpression: "",
+              exprGroup: wrapAsGroup(emptySimpleExpr()),
             })
           }
           databaseResources={form.databaseResources}
           onDatabaseResourcesChange={(resources: DatabaseResource[]) =>
             onChange({ ...form, databaseResources: resources })
           }
-          celExpression={form.celExpression}
-          onCelExpressionChange={(expr: string) =>
-            onChange({ ...form, celExpression: expr })
+          exprGroup={form.exprGroup}
+          onExprGroupChange={(expr: ConditionGroupExpr) =>
+            onChange({ ...form, exprGroup: expr })
           }
+          factorList={factorList}
+          factorOptionConfigMap={factorOptionConfigMap}
+          factorOperatorOverrideMap={factorOperatorOverrideMap}
           formId={form.id}
         />
       )}
@@ -1230,7 +1286,7 @@ function EditMemberRoleDrawer({
     expirationTimestampInMS: computeExpirationTimestamp(7),
     databaseMode: "ALL",
     databaseResources: [],
-    celExpression: "",
+    exprGroup: wrapAsGroup(emptySimpleExpr()),
     environments: [],
   }));
 
@@ -1365,15 +1421,48 @@ function EditMemberRoleDrawer({
               form.reason !== "" ||
               databaseResources !== undefined ||
               environments !== undefined ||
-              (form.databaseMode === "EXPRESSION" && form.celExpression !== "");
-            if (form.databaseMode === "EXPRESSION" && form.celExpression) {
+              (form.databaseMode === "EXPRESSION" &&
+                validateSimpleExpr(form.exprGroup));
+            if (
+              form.databaseMode === "EXPRESSION" &&
+              validateSimpleExpr(form.exprGroup)
+            ) {
+              let parsedExpr;
+              try {
+                parsedExpr = await buildCELExpr(form.exprGroup);
+              } catch {
+                parsedExpr = undefined;
+              }
+              if (!parsedExpr) {
+                pushNotification({
+                  module: "bytebase",
+                  style: "CRITICAL",
+                  title: t(
+                    "project.members.request-role.failed-to-build-expression"
+                  ),
+                });
+                return;
+              }
+              const [exprString] = await batchConvertParsedExprToCELString([
+                parsedExpr,
+              ]);
+              if (!exprString?.trim()) {
+                pushNotification({
+                  module: "bytebase",
+                  style: "CRITICAL",
+                  title: t(
+                    "project.members.request-role.failed-to-build-expression"
+                  ),
+                });
+                return;
+              }
               const extraParts = stringifyConditionExpression({
                 expirationTimestampInMS: form.expirationTimestampInMS,
                 environments,
               });
               const fullExpression = extraParts
-                ? `(${form.celExpression}) && ${extraParts}`
-                : form.celExpression;
+                ? `(${exprString}) && ${extraParts}`
+                : exprString;
               const condition = create(ConditionExprSchema, {
                 expression: fullExpression,
                 description: form.reason,
@@ -1524,6 +1613,11 @@ function EditMemberRoleDrawer({
         roleHasDatabaseLimitation(form.role) &&
         form.databaseMode === "SELECT" &&
         form.databaseResources.length === 0
+      ) &&
+      !(
+        roleHasDatabaseLimitation(form.role) &&
+        form.databaseMode === "EXPRESSION" &&
+        !validateSimpleExpr(form.exprGroup)
       )
     : isEditMode
       ? selectedRoles.length > 0

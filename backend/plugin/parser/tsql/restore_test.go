@@ -179,7 +179,7 @@ func TestRestoreOmniBoundaryCases(t *testing.T) {
 				"Original SQL:",
 				"DELETE FROM test WHERE a = 1;",
 				"*/",
-				"INSERT INTO [db].[dbo].[test] SELECT * FROM [bbarchive].[dbo].[prefix_1_test];",
+				"INSERT INTO [db].[dbo].[test] ([a], [b], [c]) SELECT [a], [b], [c] FROM [bbarchive].[dbo].[prefix_1_test];",
 			}, "\n"),
 		},
 	}

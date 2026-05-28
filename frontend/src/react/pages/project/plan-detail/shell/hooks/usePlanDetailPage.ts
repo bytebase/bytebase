@@ -33,13 +33,11 @@ import { useRouteSelection } from "./useRouteSelection";
 
 const buildDefaultSnapshot = (
   projectId: string,
-  planId: string,
-  specId?: string
+  planId: string
 ): PlanDetailPageSnapshot => ({
   projectId,
   planId,
-  specId,
-  pageKey: `${projectId}/${planId}/${specId ?? ""}`,
+  pageKey: `${projectId}/${planId}`,
   projectTitle: "",
   projectRequireIssueApproval: true,
   projectRequirePlanCheckNoError: true,
@@ -87,7 +85,7 @@ export const usePlanDetailPage = ({
 }): PlanDetailPageState => {
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PlanDetailPageSnapshot>(() =>
-    buildDefaultSnapshot(projectId, planId, specId)
+    buildDefaultSnapshot(projectId, planId)
   );
   const phase = usePhaseState();
   const editing = useEditingScopes();
@@ -110,7 +108,7 @@ export const usePlanDetailPage = ({
   const routeStageId = route.stageId;
   const routeTaskId = route.taskId;
   const focusPhase = phase.focusPhase;
-  const routePageKey = `${projectId}/${planId}/${specId ?? ""}`;
+  const pageIdentityKey = `${projectId}/${planId}`;
   const currentPhase = useMemo<PlanDetailPhase>(() => {
     if (
       routePhase === PLAN_DETAIL_PHASE_CHANGES ||
@@ -179,7 +177,6 @@ export const usePlanDetailPage = ({
   useInitialFetch({
     projectId,
     planId,
-    specId,
     routeQueryRef,
     storeApi,
     patchState,
@@ -209,7 +206,7 @@ export const usePlanDetailPage = ({
 
   useEffect(() => {
     focusPhase(currentPhase);
-  }, [currentPhase, focusPhase, routePageKey]);
+  }, [currentPhase, focusPhase, pageIdentityKey]);
 
   const isPlanDone = useMemo(() => {
     if (!snapshot.rollout) {

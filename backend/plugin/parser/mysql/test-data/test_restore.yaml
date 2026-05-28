@@ -116,7 +116,7 @@
     Original SQL:
     DELETE test FROM test, test2 as t2 where test.id = t2.id;
     */
-    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test`;
+    INSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_1_test`;
 - input: UPDATE test x SET x.c = 1 WHERE x.c = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
@@ -127,7 +127,7 @@
     Original SQL:
     UPDATE test x SET x.c = 1 WHERE x.c = 1;
     */
-    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c` = VALUES(`c`);
+    INSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `c` = VALUES(`c`);
 - input: UPDATE test SET a = 1 WHERE c = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
@@ -138,4 +138,4 @@
     Original SQL:
     UPDATE test SET a = 1 WHERE c = 1;
     */
-    INSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+    INSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_1_test` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);

@@ -107,7 +107,31 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	instanceID, err := common.GetInstanceID(instance.Name)
 	a.NoError(err)
 	stores := getStore(t, ctl.server)
-	instanceMessage, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &instanceID})
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	a.NoError(err)
+	a.NotEmpty(workspaceID)
+	_, err = ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
+		Parent: common.FormatWorkspace(workspaceID),
+		Policy: &v1pb.Policy{
+			Type: v1pb.PolicyType_DATA_QUERY,
+			Policy: &v1pb.Policy_QueryDataPolicy{
+				QueryDataPolicy: &v1pb.QueryDataPolicy{
+					AllowAdminDataSource: true,
+				},
+			},
+		},
+	}))
+	a.NoError(err)
+
+	queryResp, err = ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      database.Name,
+		Statement: "INSERT INTO books VALUES (2, 'Bytebase Admin');",
+	}))
+	a.NoError(err)
+	a.Len(queryResp.Msg.Results, 1)
+	a.Empty(queryResp.Msg.Results[0].Error)
+
+	instanceMessage, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &instanceID})
 	a.NoError(err)
 	metadata := proto.CloneOf(instanceMessage.Metadata)
 	var readOnly *storepb.DataSource
@@ -124,7 +148,7 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	metadata.DataSources = append(metadata.DataSources, readOnly)
 	_, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instanceID,
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		Workspace:  workspaceID,
 		Metadata:   metadata,
 	})
 	a.NoError(err)

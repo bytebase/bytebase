@@ -44,16 +44,15 @@ import type {
   ExemptionMember,
 } from "@/react/lib/sensitive-data/types";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import {
-  composePolicyBindings,
   extractUserEmail,
   hasFeature,
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useGroupStore,
   usePolicyV1Store,
   useProjectV1Store,
   useSettingV1Store,
@@ -598,9 +597,9 @@ function useExemptionDataReact(projectName: string) {
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
   const settingStore = useSettingV1Store();
-
-  // Ensure group store is initialized for composePolicyBindings
-  useGroupStore();
+  const batchGetOrFetchGroups = useAppStore(
+    (state) => state.batchGetOrFetchGroups
+  );
 
   // Ensure classification config is loaded
   useEffect(() => {
@@ -646,7 +645,11 @@ function useExemptionDataReact(projectName: string) {
 
       if (generation !== fetchGenRef.current) return;
 
-      await composePolicyBindings(exemptions, true);
+      await batchGetOrFetchGroups(
+        exemptions
+          .flatMap((exemption) => exemption.members)
+          .filter((member) => member.startsWith(groupBindingPrefix))
+      );
 
       const memberMap = new Map<string, AccessUser>();
       for (let i = 0; i < exemptions.length; i++) {
@@ -668,7 +671,7 @@ function useExemptionDataReact(projectName: string) {
         setLoading(false);
       }
     }
-  }, [projectName, policyStore]);
+  }, [projectName, policyStore, batchGetOrFetchGroups]);
 
   useEffect(() => {
     fetchData();
@@ -993,17 +996,17 @@ function ExemptionDetailPanel({
   onRevoke: (grant: ExemptionGrant) => void;
 }) {
   const { t } = useTranslation();
-  const groupStore = useGroupStore();
 
   const userEmail = useMemo(
     () => extractUserEmail(member.member),
     [member.member]
   );
 
-  const group = useVueState(() => {
-    if (!member.member.startsWith(groupBindingPrefix)) return undefined;
-    return groupStore.getGroupByIdentifier(member.member);
-  });
+  const group = useAppStore((state) =>
+    member.member.startsWith(groupBindingPrefix)
+      ? state.getGroupByIdentifier(member.member)
+      : undefined
+  );
 
   const grantMatchesFilter = (grant: ExemptionGrant): boolean => {
     if (!databaseFilter) return false;

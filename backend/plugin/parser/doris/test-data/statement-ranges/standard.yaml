@@ -212,3 +212,19 @@
         character: 36
 - statement: ;
 - statement: ;;
+- statement: -- just a comment
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 17
+- statement: /* block comment */
+  ranges:
+    - start:
+        line: 0
+        character: 0
+      end:
+        line: 0
+        character: 19

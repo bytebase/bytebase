@@ -2,10 +2,14 @@ import type { StateCreator } from "zustand";
 import type { AppFeatures } from "@/types/appProfile";
 import type { Permission } from "@/types/iam/permission";
 import type { NotificationCreate } from "@/types/notification";
+import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
+import type { State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
+import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import type {
   Instance,
@@ -13,6 +17,7 @@ import type {
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
+import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type {
@@ -21,13 +26,60 @@ import type {
   Subscription,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
+import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 import type { Environment } from "@/types/v1/environment";
+import type { AccessGrantFilterStatus } from "@/utils";
 
 export type ProjectListParams = {
   pageSize: number;
   pageToken: string;
   query?: string;
+};
+
+export type GroupFilter = {
+  query?: string;
+  project?: string;
+};
+
+export type AccountFilter = {
+  query?: string;
+  state?: State;
+};
+
+export type ListServiceAccountsParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  showDeleted: boolean;
+  filter?: AccountFilter;
+};
+
+export type ListWorkloadIdentitiesParams = {
+  parent: string;
+  pageSize: number;
+  pageToken?: string;
+  showDeleted: boolean;
+  filter?: AccountFilter;
+};
+
+export type AccessGrantFilter = {
+  name?: string;
+  statement?: string;
+  creator?: string;
+  status?: AccessGrantFilterStatus[];
+  issue?: string;
+  target?: string;
+  createdTsAfter?: number;
+  createdTsBefore?: number;
+};
+
+export type ListAccessGrantsParams = {
+  parent: string;
+  filter?: AccessGrantFilter;
+  pageSize?: number;
+  pageToken?: string;
+  orderBy?: string;
 };
 
 export type AuthSlice = {
@@ -172,6 +224,116 @@ export type InstanceRoleSlice = {
   fetchInstanceRoles: (instance: string) => Promise<InstanceRole[]>;
 };
 
+export type GroupSlice = {
+  groupsByName: Record<string, Group>;
+  groupRequests: Record<string, Promise<Group | undefined>>;
+  groupErrorsByName: Record<string, Error | undefined>;
+  listGroups: (params: {
+    pageSize: number;
+    pageToken?: string;
+    filter?: GroupFilter;
+  }) => Promise<{ groups: Group[]; nextPageToken: string }>;
+  batchFetchGroups: (names: string[]) => Promise<Group[]>;
+  batchGetOrFetchGroups: (names: string[]) => Promise<(Group | undefined)[]>;
+  fetchGroup: (id: string) => Promise<Group | undefined>;
+  getGroupByIdentifier: (id: string) => Group | undefined;
+  createGroup: (group: Group) => Promise<Group>;
+  updateGroup: (group: Group) => Promise<Group>;
+  deleteGroup: (name: string) => Promise<void>;
+};
+
+export type ServiceAccountSlice = {
+  serviceAccountsByName: Record<string, ServiceAccount>;
+  serviceAccountRequests: Record<string, Promise<ServiceAccount | undefined>>;
+  listServiceAccounts: (
+    params: ListServiceAccountsParams
+  ) => Promise<{ serviceAccounts: ServiceAccount[]; nextPageToken: string }>;
+  fetchServiceAccount: (
+    name: string,
+    silent?: boolean
+  ) => Promise<ServiceAccount | undefined>;
+  getServiceAccount: (name: string) => ServiceAccount;
+  createServiceAccount: (
+    serviceAccountId: string,
+    serviceAccount: Partial<ServiceAccount>,
+    parent: string
+  ) => Promise<ServiceAccount>;
+  updateServiceAccount: (
+    serviceAccount: Partial<ServiceAccount>,
+    updateMask: { paths: string[] }
+  ) => Promise<ServiceAccount>;
+  deleteServiceAccount: (name: string) => Promise<void>;
+  undeleteServiceAccount: (name: string) => Promise<ServiceAccount>;
+};
+
+export type WorkloadIdentitySlice = {
+  workloadIdentitiesByName: Record<string, WorkloadIdentity>;
+  workloadIdentityRequests: Record<
+    string,
+    Promise<WorkloadIdentity | undefined>
+  >;
+  listWorkloadIdentities: (params: ListWorkloadIdentitiesParams) => Promise<{
+    workloadIdentities: WorkloadIdentity[];
+    nextPageToken: string;
+  }>;
+  fetchWorkloadIdentity: (
+    name: string,
+    silent?: boolean
+  ) => Promise<WorkloadIdentity | undefined>;
+  getWorkloadIdentity: (name: string) => WorkloadIdentity;
+  createWorkloadIdentity: (
+    workloadIdentityId: string,
+    workloadIdentity: Partial<WorkloadIdentity>,
+    parent: string
+  ) => Promise<WorkloadIdentity>;
+  updateWorkloadIdentity: (
+    workloadIdentity: Partial<WorkloadIdentity>,
+    updateMask: { paths: string[] }
+  ) => Promise<WorkloadIdentity>;
+  deleteWorkloadIdentity: (name: string) => Promise<void>;
+  undeleteWorkloadIdentity: (name: string) => Promise<WorkloadIdentity>;
+};
+
+export type IdentityProviderSlice = {
+  identityProvidersByName: Record<string, IdentityProvider>;
+  identityProviderRequests: Record<
+    string,
+    Promise<IdentityProvider | undefined>
+  >;
+  identityProviderList: () => IdentityProvider[];
+  listIdentityProviders: (parent?: string) => Promise<IdentityProvider[]>;
+  fetchIdentityProvider: (
+    name: string,
+    silent?: boolean
+  ) => Promise<IdentityProvider | undefined>;
+  getIdentityProvider: (name: string) => IdentityProvider | undefined;
+  createIdentityProvider: (
+    identityProvider: IdentityProvider
+  ) => Promise<IdentityProvider>;
+  updateIdentityProvider: (
+    update: Partial<IdentityProvider>
+  ) => Promise<IdentityProvider>;
+  deleteIdentityProvider: (name: string) => Promise<void>;
+};
+
+export type AccessGrantSlice = {
+  accessGrantsByName: Record<string, AccessGrant>;
+  accessGrantRequests: Record<string, Promise<AccessGrant | undefined>>;
+  fetchAccessGrant: (name: string) => Promise<AccessGrant | undefined>;
+  searchMyAccessGrants: (
+    params: ListAccessGrantsParams
+  ) => Promise<{ accessGrants: AccessGrant[]; nextPageToken: string }>;
+  listAccessGrants: (
+    params: ListAccessGrantsParams
+  ) => Promise<{ accessGrants: AccessGrant[]; nextPageToken: string }>;
+  createAccessGrant: (
+    parent: string,
+    accessGrant: AccessGrant
+  ) => Promise<AccessGrant>;
+  activateAccessGrant: (name: string) => Promise<AccessGrant>;
+  revokeAccessGrant: (name: string) => Promise<AccessGrant>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -192,6 +354,11 @@ export type AppStoreState = AuthSlice &
   DBGroupSlice &
   SheetSlice &
   InstanceRoleSlice &
+  GroupSlice &
+  ServiceAccountSlice &
+  WorkloadIdentitySlice &
+  IdentityProviderSlice &
+  AccessGrantSlice &
   NotificationSlice &
   PreferencesSlice;
 

@@ -3,6 +3,7 @@ import { PlanCheckSection } from "@/react/components/plan-check/PlanCheckSection
 import { usePlanCheckActions } from "../hooks/usePlanCheckActions";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { getPlanCheckSummaryWithFallback } from "../utils/planCheck";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 // Plan-wide checks rendered as a verdict-line footer at the bottom of the
 // CHANGES phase card, so reviewers can scan aggregate check status across
@@ -36,6 +37,9 @@ export function PlanDetailAggregateChecks() {
         onRefreshOnOpen={refreshChecks}
         onRun={runChecks}
         planCheckRuns={page.planCheckRuns}
+        renderTarget={(target) => (
+          <PlanTargetDisplay showEnvironment target={target} />
+        )}
         summaryOverride={summary}
       />
     </div>

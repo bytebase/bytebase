@@ -1,7 +1,6 @@
 import { clone, create } from "@bufbuild/protobuf";
 import {
   CheckCircle,
-  ChevronRight,
   DatabaseIcon,
   EllipsisVertical,
   ExternalLink,
@@ -35,6 +34,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/react/components/ui/popover";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Select,
@@ -67,7 +71,6 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
-  useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
@@ -86,7 +89,6 @@ import {
   Plan_ChangeDatabaseConfigSchema,
   type Plan_Spec,
   Plan_SpecSchema,
-  type PlanCheckRun,
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -115,7 +117,12 @@ import {
   updateRoleSetter,
   updateTransactionMode,
 } from "../utils/directiveUtils";
-import { getLocalSheetByName, getNextLocalSheetUID } from "../utils/localSheet";
+import {
+  getLocalSheetByName,
+  getNextLocalSheetUID,
+  getSpecStatementContent,
+  isSameStatementContent,
+} from "../utils/localSheet";
 import {
   allowGhostForDatabase,
   getPlanOptionVisibility,
@@ -139,8 +146,10 @@ import { PlanDetailAggregateChecks } from "./PlanDetailAggregateChecks";
 import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 const DEFAULT_VISIBLE_TARGETS = 20;
+const DATABASE_GROUP_VISIBLE_DATABASES = 3;
 const EMPTY_SELECT_VALUE = "__empty__";
 
 const pushSpecDetailRoute = (
@@ -158,6 +167,11 @@ type IsolationLevel =
   | "READ_COMMITTED"
   | "REPEATABLE_READ"
   | "SERIALIZABLE";
+
+type DraftCheckResultState = {
+  results: CheckReleaseResponse_CheckResult[];
+  content: Uint8Array | undefined;
+};
 
 const BACKUP_AVAILABLE_ENGINES = [
   Engine.MYSQL,
@@ -198,11 +212,8 @@ export function PlanDetailChangesBranch({
   // selectedSpecId (which mirrors the URL) so a draft can be selected even
   // when the URL still points at a real spec.
   const [isPendingSelected, setIsPendingSelected] = useState(false);
-  const [draftCheckRunsBySpecId, setDraftCheckRunsBySpecId] = useState<
-    Record<string, PlanCheckRun[]>
-  >({});
   const [draftCheckResultsBySpecId, setDraftCheckResultsBySpecId] = useState<
-    Record<string, CheckReleaseResponse_CheckResult[] | undefined>
+    Record<string, DraftCheckResultState | undefined>
   >({});
   const [statementVersionBySpecId, setStatementVersionBySpecId] = useState<
     Record<string, number>
@@ -449,20 +460,25 @@ export function PlanDetailChangesBranch({
 
   const selectedSpecIdForDraftChecks = selectedSpec?.id;
   const handleDraftCheckResultsChange = useCallback(
-    (results: CheckReleaseResponse_CheckResult[] | undefined) => {
+    (
+      content: Uint8Array | undefined,
+      results: CheckReleaseResponse_CheckResult[] | undefined
+    ) => {
       if (!selectedSpecIdForDraftChecks) return;
       setDraftCheckResultsBySpecId((prev) => {
-        if (prev[selectedSpecIdForDraftChecks] === results) return prev;
+        const nextState = results ? { results, content } : undefined;
+        const previousState = prev[selectedSpecIdForDraftChecks];
+        if (
+          previousState?.content === nextState?.content &&
+          previousState?.results === nextState?.results
+        ) {
+          return prev;
+        }
         return {
           ...prev,
-          [selectedSpecIdForDraftChecks]: results,
+          [selectedSpecIdForDraftChecks]: nextState,
         };
       });
-      setDraftCheckRunsBySpecId((prev) => ({
-        ...prev,
-        [selectedSpecIdForDraftChecks]:
-          transformReleaseCheckResultsToPlanCheckRuns(results ?? []),
-      }));
     },
     [selectedSpecIdForDraftChecks]
   );
@@ -472,6 +488,26 @@ export function PlanDetailChangesBranch({
       [specId]: (prev[specId] ?? 0) + 1,
     }));
   }, []);
+  const draftContent =
+    selectedSpec && page.isCreating
+      ? getSpecStatementContent(selectedSpec)
+      : undefined;
+  const draftCheckState = selectedSpec
+    ? draftCheckResultsBySpecId[selectedSpec.id]
+    : undefined;
+  // Memoized on the two content references so the byte fallback only runs when
+  // one of them actually changes (an edit), not on every render.
+  const draftCheckResults = useMemo(
+    () =>
+      isSameStatementContent(draftCheckState?.content, draftContent)
+        ? draftCheckState?.results
+        : undefined,
+    [draftCheckState, draftContent]
+  );
+  const draftCheckRuns = useMemo(
+    () => transformReleaseCheckResultsToPlanCheckRuns(draftCheckResults ?? []),
+    [draftCheckResults]
+  );
 
   if (!selectedSpec) {
     return (
@@ -587,7 +623,7 @@ export function PlanDetailChangesBranch({
           <PlanDetailStatementSection
             planCheckRuns={
               page.isCreating
-                ? (draftCheckRunsBySpecId[selectedSpec.id] ?? [])
+                ? draftCheckRuns
                 : planCheckRunListForSpec(page.planCheckRuns, selectedSpec)
             }
             spec={selectedSpec}
@@ -598,7 +634,7 @@ export function PlanDetailChangesBranch({
             selectedSpec.config.case === "changeDatabaseConfig" && (
               <PlanDetailDraftChecks
                 key={selectedSpec.id}
-                checkResults={draftCheckResultsBySpecId[selectedSpec.id]}
+                checkResults={draftCheckResults}
                 onCheckResultsChange={handleDraftCheckResultsChange}
                 selectedSpec={selectedSpec}
               />
@@ -963,10 +999,15 @@ function OptionsSection({
                   disabled={!allowChange || isSheetOversize}
                   onValueChange={(value) => {
                     void persistStatement(
-                      updateRoleSetter(sheetStatement, value || undefined)
+                      updateRoleSetter(
+                        sheetStatement,
+                        value && value !== EMPTY_SELECT_VALUE
+                          ? value
+                          : undefined
+                      )
                     );
                   }}
-                  value={selectedRole}
+                  value={selectedRole || EMPTY_SELECT_VALUE}
                 >
                   <SelectTrigger className="w-44" size="sm">
                     <SelectValue>
@@ -976,6 +1017,9 @@ function OptionsSection({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={EMPTY_SELECT_VALUE}>
+                      {t("instance.default-role")}
+                    </SelectItem>
                     {instanceRoleOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -1287,7 +1331,7 @@ function TargetsSection({
                   {nonEnvDatabaseNames.map((name) => (
                     <div key={name} className="flex items-center gap-2">
                       <span className="h-1 w-1 shrink-0 rounded-full bg-current" />
-                      <DatabaseTarget target={name} />
+                      <PlanTargetDisplay target={name} />
                     </div>
                   ))}
                 </div>
@@ -1307,7 +1351,7 @@ function TargetsSection({
                   key={target}
                   className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
                 >
-                  <DatabaseTarget showEnvironment target={target} />
+                  <PlanTargetDisplay showEnvironment target={target} />
                 </div>
               ) : isValidDatabaseGroupName(target) ? (
                 <div key={target} className="rounded-lg border px-2 py-1">
@@ -1369,7 +1413,7 @@ function TargetsSection({
                           key={target}
                           className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1 transition-all"
                         >
-                          <DatabaseTarget showEnvironment target={target} />
+                          <PlanTargetDisplay showEnvironment target={target} />
                         </div>
                       ) : isValidDatabaseGroupName(target) ? (
                         <div
@@ -1823,38 +1867,6 @@ function DatabaseGroupSelector({
   );
 }
 
-export function DatabaseTarget({
-  showEnvironment = false,
-  target,
-}: {
-  showEnvironment?: boolean;
-  target: string;
-}) {
-  const environmentStore = useEnvironmentV1Store();
-  const databaseStore = useDatabaseV1Store();
-  const database = databaseStore.getDatabaseByName(target);
-  const environment = database.effectiveEnvironment
-    ? environmentStore.getEnvironmentByName(database.effectiveEnvironment)
-    : undefined;
-  const instance = getInstanceResource(database);
-  const databaseName = extractDatabaseResourceName(database.name).databaseName;
-  const instanceName = instance.title;
-
-  return (
-    <div className="flex min-w-0 items-center truncate text-sm">
-      <EngineIcon engine={instance.engine} className="mr-1 h-4 w-4" />
-      {showEnvironment && environment?.title && (
-        <span className="mr-1 truncate text-control-placeholder">
-          {environment.title}
-        </span>
-      )}
-      <span className="truncate text-control-light">{instanceName}</span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-control-light/80" />
-      <span className="truncate text-control">{databaseName}</span>
-    </div>
-  );
-}
-
 export function DatabaseGroupTarget({
   className,
   target,
@@ -1865,11 +1877,29 @@ export function DatabaseGroupTarget({
   const { t } = useTranslation();
   const databaseStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
+  const [searchText, setSearchText] = useState("");
   const dbGroup = dbGroupStore.getDBGroupByName(target, DatabaseGroupView.FULL);
   const matchedDatabases = dbGroup.matchedDatabases ?? [];
-  const { extraDatabases, inlineDatabases } =
-    splitInlineDatabases(matchedDatabases);
+  const { extraDatabases, inlineDatabases } = splitInlineDatabases(
+    matchedDatabases,
+    DATABASE_GROUP_VISIBLE_DATABASES
+  );
   const groupName = extractDatabaseGroupName(target);
+  const filteredExtraDatabases = useMemo(() => {
+    const normalized = searchText.trim().toLowerCase();
+    if (!normalized) {
+      return extraDatabases;
+    }
+    return extraDatabases.filter((database) => {
+      const databaseName = extractDatabaseResourceName(
+        database.name
+      ).databaseName.toLowerCase();
+      return (
+        databaseName.includes(normalized) ||
+        database.name.toLowerCase().includes(normalized)
+      );
+    });
+  }, [extraDatabases, searchText]);
 
   useEffect(() => {
     const load = async () => {
@@ -1923,25 +1953,65 @@ export function DatabaseGroupTarget({
               key={database.name}
               className="inline-flex cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
             >
-              <DatabaseTarget showEnvironment target={database.name} />
+              <PlanTargetDisplay showEnvironment target={database.name} />
             </div>
           ))}
           {extraDatabases.length > 0 && (
-            <Tooltip
-              content={
-                <div className="flex max-h-64 flex-col gap-y-1 overflow-y-auto py-1">
-                  {extraDatabases.map((database) => (
-                    <div key={database.name} className="py-1">
-                      <DatabaseTarget showEnvironment target={database.name} />
-                    </div>
-                  ))}
-                </div>
-              }
-            >
-              <span className="cursor-pointer text-xs text-accent">
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    className="h-6 px-1.5 text-xs text-accent hover:bg-accent/10 hover:text-accent"
+                    size="xs"
+                    type="button"
+                    variant="ghost"
+                  />
+                }
+              >
                 {t("common.n-more", { n: extraDatabases.length })}
-              </span>
-            </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-[min(520px,calc(100vw-2rem))] p-0"
+                side="bottom"
+              >
+                <div className="border-b border-control-border px-3 py-2">
+                  <div className="text-sm font-medium text-control">
+                    {t("common.databases")} ({extraDatabases.length})
+                  </div>
+                </div>
+                {extraDatabases.length > 20 && (
+                  <div className="border-b border-control-border px-3 py-2">
+                    <SearchInput
+                      placeholder={t("common.search")}
+                      value={searchText}
+                      onChange={(event) => setSearchText(event.target.value)}
+                    />
+                  </div>
+                )}
+                <div className="max-h-80 overflow-y-auto p-2">
+                  {filteredExtraDatabases.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {filteredExtraDatabases.map((database) => (
+                        <div
+                          key={database.name}
+                          className="min-w-0 rounded-xs px-2 py-1.5 hover:bg-control-bg"
+                        >
+                          <PlanTargetDisplay
+                            showEnvironment
+                            target={database.name}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-2 py-4 text-center text-sm text-control-light">
+                      {t("common.no-data")}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       )}

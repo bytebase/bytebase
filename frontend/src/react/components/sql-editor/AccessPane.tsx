@@ -16,16 +16,16 @@ import { AdvancedSearch } from "@/react/components/AdvancedSearch";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
+import { useAppStore } from "@/react/stores/app";
+import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   hasFeature,
-  useAccessGrantStore,
   useDatabaseV1Store,
   useIssueV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { AccessFilter } from "@/store/modules/accessGrant";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { AccessGrant_Status } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -47,7 +47,9 @@ export function AccessPane() {
   const { t } = useTranslation();
 
   const projectStore = useProjectV1Store();
-  const accessGrantStore = useAccessGrantStore();
+  const searchMyAccessGrants = useAppStore(
+    (state) => state.searchMyAccessGrants
+  );
   const issueStore = useIssueV1Store();
   const databaseStore = useDatabaseV1Store();
   const highlightAccessGrantName = useSQLEditorStore(
@@ -196,7 +198,7 @@ export function AccessPane() {
 
       setLoading(true);
       try {
-        const response = await accessGrantStore.searchMyAccessGrants({
+        const response = await searchMyAccessGrants({
           parent,
           filter,
           pageSize: PAGE_SIZE,
@@ -214,7 +216,7 @@ export function AccessPane() {
         setLoading(false);
       }
     },
-    [projectName, filter, accessGrantStore, fetchIssuesForPendingGrants]
+    [projectName, filter, searchMyAccessGrants, fetchIssuesForPendingGrants]
   );
 
   // Re-fetch when project or filter changes

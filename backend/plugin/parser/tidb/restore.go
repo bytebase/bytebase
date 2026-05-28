@@ -153,7 +153,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, &TableReference{
+	_, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, &TableReference{
 		Database: sourceDatabase,
 		Table:    backupItem.SourceTable.Table,
 	})
@@ -181,31 +181,24 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 
 	var result string
 	if len(updateStmts) > 0 {
-		r, err := generateUpdateRestore(ctx, rCtx, updateStmts, sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
+		r, err := generateUpdateRestore(ctx, rCtx, updateStmts, sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, normalColumns)
 		if err != nil {
 			return "", err
 		}
 		result = r
 	} else {
-		result = generateDeleteRestore(sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, generatedColumns, normalColumns)
+		result = generateDeleteRestore(sourceDatabase, backupItem.SourceTable.Table, targetDatabase, backupItem.TargetTable.Table, normalColumns)
 	}
 
 	return fmt.Sprintf("/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, result), nil
 }
 
-func generateDeleteRestore(originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) string {
-	if len(generatedColumns) == 0 {
-		return fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s`;", originalDatabase, originalTable, backupDatabase, backupTable)
-	}
-	var quotedColumns []string
-	for _, column := range normalColumns {
-		quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
-	}
-	quotedColumnList := strings.Join(quotedColumns, ", ")
+func generateDeleteRestore(originalDatabase, originalTable, backupDatabase, backupTable string, normalColumns []string) string {
+	quotedColumnList := quoteTiDBColumns(normalColumns)
 	return fmt.Sprintf("INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s`;", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable)
 }
 
-func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts []*ast.UpdateStmt, originalDatabase, originalTable, backupDatabase, backupTable string, generatedColumns, normalColumns []string) (string, error) {
+func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts []*ast.UpdateStmt, originalDatabase, originalTable, backupDatabase, backupTable string, normalColumns []string) (string, error) {
 	// Union update columns across ALL stmts in the bundle. backup.go's
 	// single-table path bundles >maxMixedDMLCount same-table DMLs into one
 	// backup_item; restore must rollback every column touched across the
@@ -237,19 +230,9 @@ func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts 
 	}
 
 	var buf strings.Builder
-	if len(generatedColumns) == 0 {
-		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", originalDatabase, originalTable, backupDatabase, backupTable); err != nil {
-			return "", err
-		}
-	} else {
-		var quotedColumns []string
-		for _, column := range normalColumns {
-			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
-		}
-		quotedColumnList := strings.Join(quotedColumns, ", ")
-		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable); err != nil {
-			return "", err
-		}
+	quotedColumnList := quoteTiDBColumns(normalColumns)
+	if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", originalDatabase, originalTable, quotedColumnList, quotedColumnList, backupDatabase, backupTable); err != nil {
+		return "", err
 	}
 
 	for i, field := range updateColumns {
@@ -266,6 +249,14 @@ func generateUpdateRestore(ctx context.Context, rCtx base.RestoreContext, stmts 
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func quoteTiDBColumns(columns []string) string {
+	var quotedColumns []string
+	for _, column := range columns {
+		quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
+	}
+	return strings.Join(quotedColumns, ", ")
 }
 
 // extractSingleTablesFromTableExprs walks omni TableExpr nodes and returns

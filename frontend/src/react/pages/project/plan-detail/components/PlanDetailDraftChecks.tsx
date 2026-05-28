@@ -13,10 +13,10 @@ import {
   Release_Type,
 } from "@/types/proto-es/v1/release_service_pb";
 import { extractProjectResourceName } from "@/utils";
-import { getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
-import { getLocalSheetByName } from "../utils/localSheet";
+import { getSpecStatementContent } from "../utils/localSheet";
 import { transformReleaseCheckResultsToPlanCheckRuns } from "../utils/planCheck";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 export function PlanDetailDraftChecks({
   checkResults,
@@ -25,6 +25,7 @@ export function PlanDetailDraftChecks({
 }: {
   checkResults?: CheckReleaseResponse_CheckResult[];
   onCheckResultsChange: (
+    content: Uint8Array | undefined,
     results: CheckReleaseResponse_CheckResult[] | undefined
   ) => void;
   selectedSpec: Plan_Spec;
@@ -33,11 +34,12 @@ export function PlanDetailDraftChecks({
   const page = usePlanDetailContext();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
 
-  const statement = useMemo(() => {
-    if (selectedSpec.config.case !== "changeDatabaseConfig") return "";
-    const sheet = getLocalSheetByName(selectedSpec.config.value.sheet);
-    return getSheetStatement(sheet);
-  }, [selectedSpec]);
+  // content is already the UTF-8 statement bytes, so we send it as-is and use
+  // its reference as the staleness signature — no decode/re-encode roundtrip.
+  const content = useMemo(
+    () => getSpecStatementContent(selectedSpec),
+    [selectedSpec]
+  );
 
   const formattedCheckRuns = useMemo(
     () => transformReleaseCheckResultsToPlanCheckRuns(checkResults ?? []),
@@ -62,18 +64,18 @@ export function PlanDetailDraftChecks({
             files: [
               {
                 version: "0",
-                statement: new TextEncoder().encode(statement),
+                statement: content ?? new Uint8Array(),
               },
             ],
           },
           targets: selectedSpec.config.value.targets ?? [],
         })
       );
-      onCheckResultsChange(response.results || []);
+      onCheckResultsChange(content, response.results || []);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
-        title: t("plan.checks.started"),
+        title: t("plan.checks.completed"),
       });
     } catch (error) {
       pushNotification({
@@ -104,7 +106,10 @@ export function PlanDetailDraftChecks({
       isRunning={isRunningChecks}
       onRun={runChecks}
       planCheckRuns={formattedCheckRuns}
-      runDisabled={statement.length === 0}
+      renderTarget={(target) => (
+        <PlanTargetDisplay showEnvironment target={target} />
+      )}
+      runDisabled={(content?.length ?? 0) === 0}
       trailingSummary={trailingSummary}
     />
   );

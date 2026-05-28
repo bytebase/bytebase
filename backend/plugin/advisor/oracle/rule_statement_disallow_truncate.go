@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 	parser "github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // Oracle grammar snapshot (PlSqlParser.g4 v0.0.0-20260417075056-…):
@@ -46,25 +46,72 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	rule := &StatementDisallowTruncateRule{BaseRule: NewBaseRule(level, checkCtx.Rule.Type.String(), 0)}
-	checker := NewGenericChecker([]Rule{rule})
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetBaseLine(stmt.BaseLine())
-		checker.SetBaseLine(stmt.BaseLine())
-		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-	}
-	return checker.GetAdviceList()
+	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 type StatementDisallowTruncateRule struct{ BaseRule }
 
 func (*StatementDisallowTruncateRule) Name() string { return "statement.disallow-truncate" }
+
+// OnStatement checks TRUNCATE statements and ALTER TABLE truncate actions in the omni AST.
+func (r *StatementDisallowTruncateRule) OnStatement(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.TruncateStmt:
+		if n.Cluster {
+			return
+		}
+		name := omniLastObjectName(n.Table)
+		if n.Table != nil {
+			if raw := r.rawText(n.Table.Loc); raw != "" {
+				name = raw
+			}
+		}
+		r.AddAdvice(
+			r.level,
+			code.StatementDisallowTruncate.Int32(),
+			fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: it issues an implicit COMMIT and cannot be rolled back. Any prior uncommitted work in the same transaction is also committed. Prior-backup treats this as DDL and does not produce row-level snapshots.`, name),
+			common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+		)
+	case *ast.AlterTableStmt:
+		table := omniLastObjectName(n.Name)
+		if n.Name != nil {
+			if raw := r.rawText(n.Name.Loc); raw != "" {
+				table = raw
+			}
+		}
+		for _, cmd := range omniAlterTableCmds(n) {
+			if cmd.Action != ast.AT_TRUNCATE_PARTITION {
+				continue
+			}
+			keyword := "PARTITION"
+			if strings.EqualFold(cmd.Subtype, "SUBPARTITION") {
+				keyword = "SUBPARTITION"
+			}
+			target := cmd.ColumnName
+			if target == "" {
+				target = cmd.NewName
+			}
+			if rawAction := r.rawText(cmd.Loc); rawAction != "" {
+				upperAction := strings.ToUpper(rawAction)
+				if idx := strings.Index(upperAction, keyword); idx >= 0 {
+					if rawTarget := strings.TrimSpace(rawAction[idx+len(keyword):]); rawTarget != "" {
+						if strings.HasPrefix(strings.ToUpper(rawTarget), "FOR ") {
+							rawTarget = "FOR" + strings.TrimSpace(rawTarget[len("FOR "):])
+						}
+						target = rawTarget
+					}
+				}
+			}
+			r.AddAdvice(
+				r.level,
+				code.StatementDisallowTruncate.Int32(),
+				fmt.Sprintf(`ALTER TABLE %q TRUNCATE %s %q is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.`, table, keyword, target),
+				common.ConvertANTLRLineToPosition(r.locLine(cmd.Loc)),
+			)
+		}
+	default:
+	}
+}
 
 func (r *StatementDisallowTruncateRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {
 	switch nodeType {

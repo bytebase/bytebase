@@ -107,7 +107,7 @@ func TestTiDBGenerateRestoreSQLRegistration(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` SELECT * FROM `bbarchive`.`prefix_test`;", result)
+	require.Equal(t, "/*\nOriginal SQL:\nDELETE FROM test WHERE b1 = 1;\n*/\nINSERT INTO `db`.`test` (`a`, `b`, `c`) SELECT `a`, `b`, `c` FROM `bbarchive`.`prefix_test`;", result)
 }
 
 // TestGenerateRestoreSQLCaseInsensitiveDatabaseQualifier pins the

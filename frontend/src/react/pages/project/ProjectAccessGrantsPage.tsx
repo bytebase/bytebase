@@ -32,17 +32,17 @@ import {
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
+import type { AccessGrantFilter as AccessFilter } from "@/react/stores/app/types";
 import { router } from "@/router";
 import {
   featureToRef,
   pushNotification,
-  useAccessGrantStore,
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
   useUserStore,
 } from "@/store";
-import type { AccessFilter } from "@/store/modules/accessGrant";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
@@ -112,10 +112,12 @@ function mapDatabase(db: Database) {
 
 export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const accessGrantStore = useAccessGrantStore();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
   const userStore = useUserStore();
+  const listAccessGrants = useAppStore((state) => state.listAccessGrants);
+  const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
+  const revokeAccessGrant = useAppStore((state) => state.revokeAccessGrant);
   const currentUser = useVueState(() => useCurrentUserV1().value);
 
   const projectName = `${projectNamePrefix}${projectId}`;
@@ -332,7 +334,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
           filter.createdTsBefore = parseInt(parts[1], 10);
         }
       }
-      const response = await accessGrantStore.listAccessGrants({
+      const response = await listAccessGrants({
         parent: projectName,
         filter,
         pageSize: params.pageSize,
@@ -344,7 +346,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         nextPageToken: response.nextPageToken,
       };
     },
-    [projectName, accessGrantStore, searchParams, orderBy]
+    [projectName, listAccessGrants, searchParams, orderBy]
   );
 
   const paged = usePagedData<AccessGrant>({
@@ -357,14 +359,14 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     if (!confirmAction) return;
     const { type, grant } = confirmAction;
     if (type === "activate") {
-      await accessGrantStore.activateAccessGrant(grant.name);
+      await activateAccessGrant(grant.name);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("common.activated"),
       });
     } else {
-      await accessGrantStore.revokeAccessGrant(grant.name);
+      await revokeAccessGrant(grant.name);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -373,7 +375,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     }
     setConfirmAction(null);
     paged.refresh();
-  }, [confirmAction, accessGrantStore, t, paged]);
+  }, [confirmAction, activateAccessGrant, revokeAccessGrant, t, paged]);
 
   return (
     <div className="py-4 w-full flex flex-col">

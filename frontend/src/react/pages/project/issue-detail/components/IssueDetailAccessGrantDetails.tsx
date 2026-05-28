@@ -5,8 +5,8 @@ import { EngineIcon } from "@/react/components/EngineIcon";
 import { Alert } from "@/react/components/ui/alert";
 import { Checkbox } from "@/react/components/ui/checkbox";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import {
-  useAccessGrantStore,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useProjectV1Store,
@@ -24,7 +24,10 @@ export function IssueDetailAccessGrantDetails() {
   const page = useIssueDetailContext();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const accessGrantStore = useAccessGrantStore();
+  const fetchAccessGrant = useAppStore((state) => state.fetchAccessGrant);
+  const searchMyAccessGrants = useAppStore(
+    (state) => state.searchMyAccessGrants
+  );
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
   const [isLoading, setIsLoading] = useState(true);
@@ -45,10 +48,10 @@ export function IssueDetailAccessGrantDetails() {
       try {
         let grant: AccessGrant | undefined;
         if (hasProjectPermissionV2(project, "bb.accessGrants.get")) {
-          grant = await accessGrantStore.getAccessGrant(name);
+          grant = await fetchAccessGrant(name);
         } else {
           const parent = `projects/${extractProjectResourceName(page.issue.name)}`;
-          const response = await accessGrantStore.searchMyAccessGrants({
+          const response = await searchMyAccessGrants({
             parent,
             filter: { name },
           });
@@ -78,7 +81,13 @@ export function IssueDetailAccessGrantDetails() {
     return () => {
       canceled = true;
     };
-  }, [accessGrantStore, databaseStore, page.issue, project]);
+  }, [
+    fetchAccessGrant,
+    searchMyAccessGrants,
+    databaseStore,
+    page.issue,
+    project,
+  ]);
 
   const expirationInfo = accessGrant
     ? getAccessGrantExpirationText(accessGrant)

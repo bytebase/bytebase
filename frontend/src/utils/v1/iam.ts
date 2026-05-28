@@ -18,6 +18,7 @@ import {
   serviceAccountBindingPrefix,
   workloadIdentityBindingPrefix,
 } from "@/types";
+import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { Binding, IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import { ensureUserFullName } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -59,15 +60,22 @@ export const convertMemberToFullname = (member: string) => {
 export const getUserListInBinding = ({
   binding,
   ignoreGroup,
+  getGroupByIdentifier,
 }: {
   binding: Binding;
   ignoreGroup: boolean;
+  // Resolves a group from its binding member string. Defaults to the Pinia
+  // group store; React callers pass a resolver backed by the app store so
+  // group expansion reads from the same cache they populate.
+  getGroupByIdentifier?: (identifier: string) => Group | undefined;
 }): string[] => {
   if (isBindingPolicyExpired(binding)) {
     return [];
   }
 
-  const groupStore = useGroupStore();
+  const resolveGroup =
+    getGroupByIdentifier ??
+    ((identifier: string) => useGroupStore().getGroupByIdentifier(identifier));
   const fullnameList = [];
 
   for (const member of binding.members) {
@@ -76,7 +84,7 @@ export const getUserListInBinding = ({
       if (ignoreGroup) {
         continue;
       }
-      const group = groupStore.getGroupByIdentifier(member);
+      const group = resolveGroup(member);
       if (!group) {
         continue;
       }
@@ -95,7 +103,8 @@ export const getUserListInBinding = ({
 // the user could includes users/ALL_USERS_USER_EMAIL
 export const memberMapToRolesInProjectIAM = (
   iamPolicy: IamPolicy,
-  targetRole?: string
+  targetRole?: string,
+  getGroupByIdentifier?: (identifier: string) => Group | undefined
 ): Map<string, Set<string>> => {
   const workspaceStore = useWorkspaceV1Store();
   // Map<userfullname, Set<roles/{role}>>
@@ -110,7 +119,11 @@ export const memberMapToRolesInProjectIAM = (
       continue;
     }
 
-    const fullnames = getUserListInBinding({ binding, ignoreGroup: false });
+    const fullnames = getUserListInBinding({
+      binding,
+      ignoreGroup: false,
+      getGroupByIdentifier,
+    });
     for (const fullname of fullnames) {
       if (!rolesMapByName.has(fullname)) {
         rolesMapByName.set(fullname, new Set());

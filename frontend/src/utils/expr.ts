@@ -29,6 +29,7 @@ export type OptionConfig = {
   }>;
   fetch?: (names: string[]) => Promise<LabeledOption[]>;
   fallback?: (value: string) => LabeledOption;
+  supportMultiple?: boolean;
   options: LabeledOption[];
 };
 

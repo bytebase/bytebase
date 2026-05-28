@@ -37,9 +37,6 @@ const mocks = vi.hoisted(() => ({
   currentUserStore: {
     value: { email: "me@example.com", name: "users/me" },
   },
-  groupStore: {
-    batchGetOrFetchGroups: vi.fn(async () => []),
-  },
   projectIamPolicyStore: {
     getOrFetchProjectIamPolicy: vi.fn(async () => ({})),
     getProjectIamPolicy: vi.fn(() => ({ bindings: [] })),
@@ -92,12 +89,18 @@ vi.mock("@/connect", () => ({
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useCurrentUserV1: () => mocks.currentUserStore,
-  useGroupStore: () => mocks.groupStore,
   useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
   useRoleStore: () => mocks.roleStore,
   useWorkspaceV1Store: () => mocks.workspaceStore,
   useUserStore: () => mocks.userStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      batchGetOrFetchGroups: mocks.batchGetOrFetchGroups,
+    }),
 }));
 
 vi.mock("@/store/modules/v1/common", () => ({
@@ -215,7 +218,7 @@ beforeEach(() => {
   mocks.requestIssue.mockClear();
   mocks.routerPush.mockClear();
   mocks.pushNotification.mockClear();
-  mocks.groupStore.batchGetOrFetchGroups.mockClear();
+  mocks.batchGetOrFetchGroups.mockClear();
   mocks.projectIamPolicyStore.getOrFetchProjectIamPolicy.mockClear();
   mocks.projectIamPolicyStore.getProjectIamPolicy.mockClear();
   mocks.projectStore.getOrFetchProjectByName.mockClear();

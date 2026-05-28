@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/bytebase/omni/oracle/ast"
 
 	parser "github.com/bytebase/parser/plsql"
 
@@ -13,7 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -41,24 +41,12 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
-	checker := NewGenericChecker([]Rule{rule})
 
 	if checkCtx.Driver != nil {
-		for _, stmt := range checkCtx.ParsedStatements {
-			if stmt.AST == nil {
-				continue
-			}
-			antlrAST, ok := base.GetANTLRAST(stmt.AST)
-			if !ok {
-				continue
-			}
-			rule.SetBaseLine(stmt.BaseLine())
-			checker.SetBaseLine(stmt.BaseLine())
-			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
-		}
+		return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	}
 
-	return checker.GetAdviceList()
+	return rule.GetAdviceList()
 }
 
 // StatementDmlDryRunRule is the rule implementation for DML dry run checks.
@@ -82,6 +70,15 @@ func NewStatementDmlDryRunRule(ctx context.Context, level storepb.Advice_Status,
 // Name returns the rule name.
 func (*StatementDmlDryRunRule) Name() string {
 	return "statement.dml-dry-run"
+}
+
+// OnStatement dry-runs top-level DML statements from the omni AST.
+func (r *StatementDmlDryRunRule) OnStatement(node ast.Node) {
+	switch node.(type) {
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
+		r.handleStmt(r.stmtText, r.baseLine+1)
+	default:
+	}
 }
 
 // OnEnter is called when the parser enters a rule context.

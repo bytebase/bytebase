@@ -67,7 +67,7 @@ const buildSnapshotPatch = ({
   ({
     projectId: "foo",
     planId,
-    pageKey: `foo/${planId}/`,
+    pageKey: `foo/${planId}`,
     projectTitle: "Foo",
     projectRequireIssueApproval: false,
     projectRequirePlanCheckNoError: false,
@@ -82,7 +82,7 @@ const buildSnapshotPatch = ({
       creator: "users/me@example.com",
       hasRollout: false,
       state: State.ACTIVE,
-      specs: [{ id: "spec-1" }],
+      specs: [{ id: "spec-1" }, { id: "spec-2" }],
     },
     issue,
     rollout,
@@ -199,5 +199,62 @@ describe("usePlanDetailPage", () => {
     expect(result.current.activePhases.has("changes")).toBe(false);
     expect(result.current.activePhases.has("review")).toBe(true);
     expect(result.current.activePhases.has("deploy")).toBe(false);
+  });
+
+  test("does not refetch the page snapshot when only the route spec changes", async () => {
+    const { result, rerender } = renderHook(
+      ({ specId }: { specId: string }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId: "plan-1",
+          routeName: "project.plan.detail.spec.detail",
+          specId,
+          pageHost: null,
+        }),
+      {
+        initialProps: { specId: "spec-1" },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.pageKey).toBe("foo/plan-1");
+    expect(result.current.activePhases.has("changes")).toBe(true);
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ specId: "spec-2" });
+
+    await waitFor(() =>
+      expect(result.current.activePhases.has("changes")).toBe(true)
+    );
+    expect(result.current.pageKey).toBe("foo/plan-1");
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  test("refetches the page snapshot when the plan changes", async () => {
+    const { result, rerender } = renderHook(
+      ({ planId }: { planId: string }) =>
+        usePlanDetailPage({
+          projectId: "foo",
+          planId,
+          routeName: "project.plan.detail.spec.detail",
+          specId: "spec-1",
+          pageHost: null,
+        }),
+      {
+        initialProps: { planId: "plan-1" },
+        wrapper,
+      }
+    );
+
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.pageKey).toBe("foo/plan-1");
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(1);
+
+    rerender({ planId: "plan-2" });
+
+    await waitFor(() => expect(result.current.planId).toBe("plan-2"));
+    expect(result.current.pageKey).toBe("foo/plan-2");
+    expect(mocks.fetchPlanSnapshot).toHaveBeenCalledTimes(2);
   });
 });

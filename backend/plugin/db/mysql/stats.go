@@ -76,6 +76,7 @@ func countAffectedRowsForOceanBase(ctx context.Context, sqlDB *sql.DB, dml strin
 		return 0, err
 	}
 	defer rows.Close()
+	var planString strings.Builder
 	for rows.Next() {
 		var planColumn sql.NullString
 		if err := rows.Scan(&planColumn); err != nil {
@@ -84,39 +85,47 @@ func countAffectedRowsForOceanBase(ctx context.Context, sqlDB *sql.DB, dml strin
 		if !planColumn.Valid {
 			continue
 		}
-		var planValue map[string]json.RawMessage
-		if err := json.Unmarshal([]byte(planColumn.String), &planValue); err != nil {
-			return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planColumn.String)
-		}
-		if len(planValue) == 0 {
-			continue
-		}
-		queryPlan := oceanBaseQueryPlan{}
-		if err := queryPlan.Unmarshal(planValue); err != nil {
-			return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
-		}
-		if queryPlan.Operator != "" {
-			return queryPlan.EstRows, nil
-		}
-		count := int64(-1)
-		for k, v := range planValue {
-			if !strings.HasPrefix(k, "CHILD_") {
-				continue
-			}
-			child := oceanBaseQueryPlan{}
-			if err := child.Unmarshal(v); err != nil {
-				return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
-			}
-			if child.Operator != "" && child.EstRows > count {
-				count = child.EstRows
-			}
-		}
-		if count >= 0 {
-			return count, nil
-		}
+		planString.WriteString(planColumn.String)
 	}
 	if err := rows.Err(); err != nil {
 		return 0, err
+	}
+	if planString.Len() == 0 {
+		return 0, nil
+	}
+	return getAffectedRowsFromOceanBaseQueryPlan(planString.String())
+}
+
+func getAffectedRowsFromOceanBaseQueryPlan(planString string) (int64, error) {
+	var planValue map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(planString), &planValue); err != nil {
+		return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planString)
+	}
+	if len(planValue) == 0 {
+		return 0, nil
+	}
+	queryPlan := oceanBaseQueryPlan{}
+	if err := queryPlan.Unmarshal(planValue); err != nil {
+		return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
+	}
+	if queryPlan.Operator != "" {
+		return queryPlan.EstRows, nil
+	}
+	count := int64(-1)
+	for k, v := range planValue {
+		if !strings.HasPrefix(k, "CHILD_") {
+			continue
+		}
+		child := oceanBaseQueryPlan{}
+		if err := child.Unmarshal(v); err != nil {
+			return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
+		}
+		if child.Operator != "" && child.EstRows > count {
+			count = child.EstRows
+		}
+	}
+	if count >= 0 {
+		return count, nil
 	}
 	return 0, nil
 }

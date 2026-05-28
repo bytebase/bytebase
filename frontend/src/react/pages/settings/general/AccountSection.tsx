@@ -22,7 +22,7 @@ import { Input } from "@/react/components/ui/input";
 import { NumberInput } from "@/react/components/ui/number-input";
 import { usePlanFeature, useServerState } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useIdentityProviderStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   defaultAccessTokenDurationInHours,
@@ -97,7 +97,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const { t } = useTranslation();
 
     const settingV1Store = useSettingV1Store();
-    const idpStore = useIdentityProviderStore();
+    const listIdentityProviders = useAppStore(
+      (state) => state.listIdentityProviders
+    );
 
     const { isSaaSMode, workspaceResourceName } = useServerState();
     const hasDisallowSignupFeature = usePlanFeature(
@@ -116,8 +118,8 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
 
     const [allowEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
-    const existActiveIdentityProvider = useVueState(
-      () => idpStore.identityProviderList.length > 0
+    const existActiveIdentityProvider = useAppStore(
+      (state) => state.identityProviderList().length > 0
     );
 
     // Track whether the EMAIL setting is configured (required to enable email-code signin).
@@ -129,9 +131,9 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     // Fetch identity providers after the workspace resource name is ready.
     useEffect(() => {
       if (workspaceResourceName) {
-        idpStore.fetchIdentityProviderList(workspaceResourceName);
+        listIdentityProviders(workspaceResourceName);
       }
-    }, [idpStore, workspaceResourceName]);
+    }, [listIdentityProviders, workspaceResourceName]);
 
     // Fetch EMAIL setting on mount.
     useEffect(() => {

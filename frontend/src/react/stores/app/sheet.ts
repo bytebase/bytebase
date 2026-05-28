@@ -7,11 +7,7 @@ import {
 } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetUID } from "@/utils/v1/sheet";
 import type { AppSliceCreator, SheetSlice } from "./types";
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) return error;
-  return new Error(String(error));
-}
+import { toError } from "./utils";
 
 function isValidSheetName(name: string): boolean {
   if (typeof name !== "string") return false;

@@ -42,6 +42,7 @@ import { Tooltip } from "@/react/components/ui/tooltip";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   WORKSPACE_ROUTE_GROUPS,
@@ -51,12 +52,9 @@ import {
   pushNotification,
   useActuatorV1Store,
   useCurrentUserV1,
-  useGroupStore,
-  useServiceAccountStore,
   useSettingV1Store,
   useSubscriptionV1Store,
   useUserStore,
-  useWorkloadIdentityStore,
   useWorkspaceV1Store,
 } from "@/store";
 import { getUserFullNameByType } from "@/store/modules/v1/common";
@@ -94,18 +92,30 @@ function UserTable({
 }) {
   const { t } = useTranslation();
   const currentUser = useVueState(() => useCurrentUserV1().value);
-  const groupStore = useGroupStore();
   const userStore = useUserStore();
-  const serviceAccountStore = useServiceAccountStore();
-  const workloadIdentityStore = useWorkloadIdentityStore();
+  const batchGetOrFetchGroups = useAppStore(
+    (state) => state.batchGetOrFetchGroups
+  );
+  const deleteServiceAccount = useAppStore(
+    (state) => state.deleteServiceAccount
+  );
+  const undeleteServiceAccount = useAppStore(
+    (state) => state.undeleteServiceAccount
+  );
+  const deleteWorkloadIdentity = useAppStore(
+    (state) => state.deleteWorkloadIdentity
+  );
+  const undeleteWorkloadIdentity = useAppStore(
+    (state) => state.undeleteWorkloadIdentity
+  );
 
   // Batch fetch groups when user list changes
   useEffect(() => {
     const allGroupNames = users.flatMap((u) => u.groups);
     if (allGroupNames.length > 0) {
-      groupStore.batchGetOrFetchGroups(allGroupNames);
+      batchGetOrFetchGroups(allGroupNames);
     }
-  }, [users, groupStore]);
+  }, [users, batchGetOrFetchGroups]);
 
   const handleDeactivate = async (user: User) => {
     const accountType = getAccountTypeByEmail(user.email);
@@ -118,9 +128,9 @@ function UserTable({
 
     try {
       if (accountType === AccountType.SERVICE_ACCOUNT) {
-        await serviceAccountStore.deleteServiceAccount(fullName);
+        await deleteServiceAccount(fullName);
       } else if (accountType === AccountType.WORKLOAD_IDENTITY) {
-        await workloadIdentityStore.deleteWorkloadIdentity(fullName);
+        await deleteWorkloadIdentity(fullName);
       } else {
         await userStore.archiveUser(fullName);
       }
@@ -144,9 +154,9 @@ function UserTable({
 
     try {
       if (accountType === AccountType.SERVICE_ACCOUNT) {
-        await serviceAccountStore.undeleteServiceAccount(fullName);
+        await undeleteServiceAccount(fullName);
       } else if (accountType === AccountType.WORKLOAD_IDENTITY) {
-        await workloadIdentityStore.undeleteWorkloadIdentity(fullName);
+        await undeleteWorkloadIdentity(fullName);
       } else {
         await userStore.restoreUser(fullName);
       }
@@ -407,7 +417,9 @@ function UserGroupsCell({
   user: User;
   onGroupSelected?: (group: Group) => void;
 }) {
-  const groupStore = useGroupStore();
+  const getGroupByIdentifier = useAppStore(
+    (state) => state.getGroupByIdentifier
+  );
 
   if (!user.groups || user.groups.length === 0) {
     return <span className="text-control-light">-</span>;
@@ -416,7 +428,7 @@ function UserGroupsCell({
   return (
     <div className="flex flex-wrap gap-1">
       {user.groups.map((groupName) => {
-        const group = groupStore.getGroupByIdentifier(groupName);
+        const group = getGroupByIdentifier(groupName);
         return (
           <Badge
             key={groupName}

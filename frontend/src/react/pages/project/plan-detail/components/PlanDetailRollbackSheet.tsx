@@ -44,7 +44,7 @@ import {
   extractProjectResourceName,
   hasProjectPermissionV2,
 } from "@/utils";
-import { DatabaseTarget } from "./PlanDetailChangesBranch";
+import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 export function PlanDetailRollbackSheet({
   open,
@@ -198,7 +198,7 @@ export function PlanDetailRollbackSheet({
                       />
                       <div className="min-w-0 space-y-1">
                         <div className="min-w-0 text-sm font-medium text-main">
-                          <DatabaseTarget
+                          <PlanTargetDisplay
                             showEnvironment
                             target={item.task.target}
                           />
@@ -228,7 +228,7 @@ export function PlanDetailRollbackSheet({
                 previews.map((preview) => (
                   <div key={preview.taskRun.name} className="space-y-2">
                     <div className="text-sm font-medium text-main">
-                      <DatabaseTarget
+                      <PlanTargetDisplay
                         showEnvironment
                         target={preview.task.target}
                       />
