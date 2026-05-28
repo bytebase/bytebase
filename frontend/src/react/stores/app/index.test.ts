@@ -648,6 +648,22 @@ describe("useAppStore", () => {
     );
   });
 
+  test("loads workspace permission roles into the role display cache", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({ roles: [roleA, roleB] });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    const store = createAppStore();
+
+    await store.getState().loadWorkspacePermissionState();
+
+    expect(store.getState().roles).toEqual([roleA, roleB]);
+    expect(store.getState().roleList).toEqual([roleA, roleB]);
+  });
+
   test("lists releases and marks cached release deleted", async () => {
     mocks.listReleases.mockResolvedValue({
       releases: [releaseA, releaseB],

@@ -12,6 +12,7 @@ import {
 } from "@/react/components/IssueTable";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { refreshIssueList, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
@@ -28,6 +29,9 @@ export function MyIssuesPage() {
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
   const currentUser = useCurrentUserV1();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const me = useVueState(() => currentUser.value);
 
   const defaultSearchParams = useCallback((): SearchParams => {
@@ -122,6 +126,13 @@ export function MyIssuesPage() {
     sessionKey: "bb.issue-table.my-issues",
     fetchList: fetchIssueList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((issue) => issue.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   // Scope options (no project scope — cross-project)
   const scopeOptions = useIssueSearchScopeOptions();

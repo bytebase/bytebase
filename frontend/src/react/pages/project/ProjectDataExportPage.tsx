@@ -49,6 +49,9 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
   const projectStore = useProjectV1Store();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -204,6 +207,13 @@ export function ProjectDataExportPage({ projectId }: { projectId: string }) {
     sessionKey: "export-center",
     fetchList: fetchIssueList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((issue) => issue.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   return (
     <div className="py-4 w-full flex flex-col">

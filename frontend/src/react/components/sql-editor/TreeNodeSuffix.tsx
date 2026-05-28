@@ -1,4 +1,5 @@
 import { MoreHorizontal, Star, Users, X } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -63,6 +64,20 @@ export function TreeNodeSuffix({
       ? state.getUserByIdentifier(worksheetLite.creator)?.title
       : undefined
   );
+  const getOrFetchUserByIdentifier = useAppStore(
+    (state) => state.getOrFetchUserByIdentifier
+  );
+
+  useEffect(() => {
+    if (!worksheetLite?.creator || worksheetCreatorTitle) {
+      return;
+    }
+    void getOrFetchUserByIdentifier({ identifier: worksheetLite.creator });
+  }, [
+    getOrFetchUserByIdentifier,
+    worksheetCreatorTitle,
+    worksheetLite?.creator,
+  ]);
 
   const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
     switch (visibility) {
