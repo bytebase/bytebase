@@ -6,7 +6,13 @@ import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { ActuatorInfo } from "@/types/proto-es/v1/actuator_service_pb";
 import type { State } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  Changelog,
+  ChangelogView,
+  Database,
+  GetChangelogRequest,
+  ListChangelogsRequest,
+} from "@/types/proto-es/v1/database_service_pb";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
@@ -15,7 +21,9 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Project, Webhook } from "@/types/proto-es/v1/project_service_pb";
+import type { Release } from "@/types/proto-es/v1/release_service_pb";
+import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
 import type { WorkspaceProfileSetting } from "@/types/proto-es/v1/setting_service_pb";
@@ -379,6 +387,90 @@ export type RoleSlice = {
   deleteRole: (role: Role) => Promise<void>;
 };
 
+export type ReleaseSlice = {
+  releasesByName: Record<string, Release>;
+  releaseRequests: Record<string, Promise<Release | undefined>>;
+  listReleasesByProject: (
+    project: string,
+    pagination?: { pageSize?: number; pageToken?: string },
+    showDeleted?: boolean,
+    filter?: string
+  ) => Promise<{ releases: Release[]; nextPageToken: string }>;
+  fetchRelease: (
+    name: string,
+    silent?: boolean
+  ) => Promise<Release | undefined>;
+  getReleasesByProject: (project: string) => Release[];
+  getReleaseByName: (name: string) => Release;
+  updateRelease: (
+    release: Partial<Release>,
+    updateMask: string[]
+  ) => Promise<Release>;
+  deleteRelease: (name: string) => Promise<void>;
+  undeleteRelease: (name: string) => Promise<Release>;
+};
+
+export type RevisionSlice = {
+  revisionsByName: Record<string, Revision>;
+  listRevisionsByDatabase: (
+    database: string,
+    pagination?: { pageSize?: number; pageToken?: string }
+  ) => Promise<{ revisions: Revision[]; nextPageToken: string }>;
+  listAllRevisionsByDatabase: (
+    database: string,
+    pagination?: { pageSize?: number }
+  ) => Promise<Revision[]>;
+  fetchRevision: (name: string) => Promise<Revision>;
+  getRevisionsByDatabase: (database: string) => Revision[];
+  getRevisionByName: (name: string) => Revision | undefined;
+  deleteRevision: (name: string) => Promise<void>;
+};
+
+export type ChangelogSlice = {
+  changelogsByCacheKey: Record<string, Changelog>;
+  changelogsByDatabase: Record<string, Changelog[]>;
+  changelogRequests: Record<string, Promise<Changelog | undefined>>;
+  clearChangelogCache: (parent: string) => void;
+  listChangelogs: (
+    params: Partial<ListChangelogsRequest>
+  ) => Promise<{ changelogs: Changelog[]; nextPageToken: string }>;
+  getOrFetchChangelogListOfDatabase: (
+    database: string,
+    pageSize: number,
+    view?: ChangelogView
+  ) => Promise<Changelog[]>;
+  changelogListByDatabase: (database: string) => Changelog[];
+  fetchChangelog: (
+    params: Partial<GetChangelogRequest>
+  ) => Promise<Changelog | undefined>;
+  getOrFetchChangelogByName: (
+    name: string,
+    view?: ChangelogView
+  ) => Promise<Changelog | undefined>;
+  getChangelogByName: (
+    name: string,
+    view?: ChangelogView
+  ) => Changelog | undefined;
+  fetchPreviousChangelog: (name: string) => Promise<Changelog | undefined>;
+};
+
+export type ProjectWebhookSlice = {
+  getProjectWebhookFromProjectById: (
+    project: Project,
+    webhookId: string
+  ) => Webhook | undefined;
+  createProjectWebhook: (project: string, webhook: Webhook) => Promise<Project>;
+  updateProjectWebhook: (
+    webhook: Webhook,
+    updateMask: string[]
+  ) => Promise<Project>;
+  deleteProjectWebhook: (webhook: Webhook) => Promise<Project>;
+  testProjectWebhook: (
+    project: Project,
+    webhook: Webhook
+  ) => Promise<{ error: string }>;
+};
+
 export type NotificationSlice = {
   notify: (notification: NotificationCreate) => void;
 };
@@ -406,6 +498,10 @@ export type AppStoreState = AuthSlice &
   AccessGrantSlice &
   UserSlice &
   RoleSlice &
+  ReleaseSlice &
+  RevisionSlice &
+  ChangelogSlice &
+  ProjectWebhookSlice &
   NotificationSlice &
   PreferencesSlice;
 

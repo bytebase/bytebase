@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createAccessGrantSlice } from "./accessGrant";
 import { createAuthSlice } from "./auth";
+import { createChangelogSlice } from "./changelog";
 import { createDatabaseSlice } from "./database";
 import { createDBGroupSlice } from "./dbGroup";
 import { createGroupSlice } from "./group";
@@ -11,6 +12,9 @@ import { createInstanceRoleSlice } from "./instanceRole";
 import { createNotificationSlice } from "./notification";
 import { createPreferencesSlice } from "./preferences";
 import { createProjectSlice } from "./project";
+import { createProjectWebhookSlice } from "./projectWebhook";
+import { createReleaseSlice } from "./release";
+import { createRevisionSlice } from "./revision";
 import { createRoleSlice } from "./role";
 import { createServiceAccountSlice } from "./serviceAccount";
 import { createSheetSlice } from "./sheet";
@@ -45,6 +49,10 @@ export const createAppStore = () =>
     ...createAccessGrantSlice(...args),
     ...createUserSlice(...args),
     ...createRoleSlice(...args),
+    ...createReleaseSlice(...args),
+    ...createRevisionSlice(...args),
+    ...createChangelogSlice(...args),
+    ...createProjectWebhookSlice(...args),
     ...createNotificationSlice(...args),
     ...createPreferencesSlice(...args),
   }));
