@@ -53,6 +53,8 @@ type DatabaseMigrateExecutor struct {
 
 // RunOnce will run the database migration task executor once.
 func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
+	ctx = taskRunLogContext(ctx, task.ProjectID, taskRunUID)
+
 	// Fetch instance, database, and project (common to all migration types)
 	instance, err := exec.store.GetInstanceByResourceID(ctx, task.InstanceID)
 	if err != nil {
@@ -184,8 +186,6 @@ func (exec *DatabaseMigrateExecutor) ensureBaselineChangelog(ctx context.Context
 }
 
 func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
-
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
 	// so this works correctly for mixed DDL+DML statements.
@@ -409,8 +409,6 @@ func executeGhostMigration(ctx context.Context, driverCtx context.Context, task 
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, sheet *store.SheetMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
-
 	// Get database driver
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
@@ -477,8 +475,6 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 }
 
 func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
-
 	// Get existing revisions for this database
 	revisions, err := exec.store.ListRevisions(ctx, &store.FindRevisionMessage{
 		InstanceID:   task.InstanceID,
@@ -644,8 +640,6 @@ func (exec *DatabaseMigrateExecutor) runVersionedRelease(ctx context.Context, dr
 }
 
 func (exec *DatabaseMigrateExecutor) runDeclarativeRelease(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64, release *store.ReleaseMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, project *store.ProjectMessage) (*storepb.TaskRunResult, error) {
-	ctx = taskRunLogContext(ctx, database.ProjectID, taskRunUID)
-
 	// Declarative releases should have exactly one file
 	if len(release.Payload.Files) == 0 {
 		return nil, errors.Errorf("no files found in declarative release")

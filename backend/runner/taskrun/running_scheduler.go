@@ -69,8 +69,6 @@ func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 
 // executeTaskRun executes a task run that is already in RUNNING status.
 func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRunUID, taskUID int64) error {
-	ctx = taskRunLogContext(ctx, projectID, taskRunUID)
-
 	task, err := s.store.GetTaskByID(ctx, projectID, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
