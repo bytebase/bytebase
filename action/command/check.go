@@ -70,15 +70,8 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if w.Declarative {
 			releaseType = v1pb.Release_DECLARATIVE
 		}
-		checkReleaseResponse, err := client.checkRelease(cmd.Context(), &v1pb.CheckReleaseRequest{
-			Parent: w.Project,
-			Release: &v1pb.Release{
-				Files: releaseFiles,
-				Type:  releaseType,
-			},
-			Targets:     w.Targets,
-			CustomRules: w.CustomRules,
-		})
+		checkReleaseRequest := buildCheckReleaseRequest(w, platform, releaseFiles, releaseType)
+		checkReleaseResponse, err := client.checkRelease(cmd.Context(), checkReleaseRequest)
 		if err != nil {
 			return err
 		}
@@ -137,5 +130,18 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		}
 
 		return nil
+	}
+}
+
+func buildCheckReleaseRequest(w *world.World, platform world.JobPlatform, releaseFiles []*v1pb.Release_File, releaseType v1pb.Release_Type) *v1pb.CheckReleaseRequest {
+	return &v1pb.CheckReleaseRequest{
+		Parent: w.Project,
+		Release: &v1pb.Release{
+			Files: releaseFiles,
+			Type:  releaseType,
+		},
+		Targets:     w.Targets,
+		CustomRules: w.CustomRules,
+		VcsUser:     getVCSUser(platform),
 	}
 }
