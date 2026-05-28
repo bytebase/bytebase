@@ -180,6 +180,7 @@ export type WorkspaceSlice = {
   activatedInstanceCount: () => number;
   totalInstanceCount: () => number;
   userCountInIam: () => number;
+  activeVcsUserCount: () => number;
 };
 
 export type IamSlice = {

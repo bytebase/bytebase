@@ -3751,6 +3751,14 @@
         "title": "ユーザー制限",
         "upgrade": "アップグレード でユーザークォータをさらに取得します。"
       }
+    },
+    "vcs-users": {
+      "active": "アクティブな VCS ユーザー",
+      "download": "アクティブな VCS ユーザーをダウンロード",
+      "download-failure": {
+        "description": "後でもう一度お試しください。",
+        "title": "アクティブな VCS ユーザーのダウンロードに失敗しました"
+      }
     }
   },
   "subscription.instance-assignment.assign-license": "ライセンスの割り当て",

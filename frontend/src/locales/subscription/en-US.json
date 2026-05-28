@@ -17,5 +17,13 @@
     },
     "title": "Community",
     "try": "Start free trial"
+  },
+  "vcs-users": {
+    "active": "Active VCS users",
+    "download": "Download active VCS users",
+    "download-failure": {
+      "description": "Please try again later.",
+      "title": "Failed to download active VCS users"
+    }
   }
 }

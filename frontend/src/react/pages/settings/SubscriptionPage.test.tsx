@@ -7,6 +7,16 @@ import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const mocks = vi.hoisted(() => ({
+  exportVCSProviderUsers: vi.fn(),
+}));
+
+vi.mock("@/connect", () => ({
+  subscriptionServiceClientConnect: {
+    exportVCSProviderUsers: mocks.exportVCSProviderUsers,
+  },
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -49,6 +59,7 @@ vi.mock("@/react/components/ui/textarea", () => ({
 vi.mock("@/react/hooks/useAppState", () => ({
   useNotify: () => vi.fn(),
   useServerState: () => ({
+    activeVcsUserCount: 2,
     activatedInstanceCount: 2,
     isSaaSMode: false,
     totalInstanceCount: 3,
@@ -92,6 +103,14 @@ describe("SubscriptionPage", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mocks.exportVCSProviderUsers.mockResolvedValue({
+      contentType: "text/csv; charset=utf-8",
+      data: new TextEncoder().encode(
+        "vcs_type,user_id,user_name,display_name,last_seen_at\n"
+      ),
+    });
+    URL.createObjectURL = vi.fn(() => "blob:vcs-users");
+    URL.revokeObjectURL = vi.fn();
     ({ SubscriptionPage } = await import("./SubscriptionPage"));
     container = document.createElement("div");
     document.body.append(container);
@@ -109,6 +128,41 @@ describe("SubscriptionPage", () => {
       )
     ).toBe(true);
     expect(container.textContent?.includes("3/10")).toBe(true);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  test("displays active VCS user usage separately from IAM user usage", () => {
+    act(() => {
+      root.render(<SubscriptionPage />);
+    });
+
+    expect(
+      container.textContent?.includes("subscription.vcs-users.active")
+    ).toBe(true);
+    expect(container.textContent?.includes("2/20")).toBe(true);
+    expect(container.textContent?.includes("4/20")).toBe(true);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  test("downloads active VCS users csv", async () => {
+    await act(async () => {
+      root.render(<SubscriptionPage />);
+    });
+
+    const button = container.querySelector(
+      'button[aria-label="subscription.vcs-users.download"]'
+    );
+    expect(button).not.toBeNull();
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mocks.exportVCSProviderUsers).toHaveBeenCalledWith({});
 
     act(() => root.unmount());
     container.remove();
