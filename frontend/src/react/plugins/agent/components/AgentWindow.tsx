@@ -1182,7 +1182,7 @@ export function AgentWindow() {
               aria-hidden="true"
               data-agent-window-resize-zone={direction}
               className={cn(
-                "absolute z-[1] [touch-action:none]",
+                "absolute z-1 [touch-action:none]",
                 resizeZoneClasses[direction]
               )}
               onPointerDown={(event) => startResize(direction, event)}

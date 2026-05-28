@@ -1442,8 +1442,8 @@ function SelectTargetDatabasesView({
         {/* Left panel: target database list */}
         <div className="w-1/4 min-w-[256px] max-w-xs h-full border-r">
           <div className="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2">
-            <div className="w-full h-auto flex flex-col justify-start items-start sticky top-0 z-[1]">
-              <div className="w-full bg-background border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-[1]">
+            <div className="w-full h-auto flex flex-col justify-start items-start sticky top-0 z-1">
+              <div className="w-full bg-background border-b p-2 px-3 flex flex-row justify-between items-center sticky top-0 z-1">
                 <span className="text-sm">
                   {t("database.sync-schema.target-databases")}
                 </span>
