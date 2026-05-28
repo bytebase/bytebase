@@ -24,7 +24,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useRevisionStore, useSheetV1Store } from "@/store";
+import { pushNotification, useSheetV1Store } from "@/store";
 import type {
   Release,
   Release_File,
@@ -72,7 +72,9 @@ export function ImportRevisionSheet({
   const listReleasesByProject = useAppStore(
     (state) => state.listReleasesByProject
   );
-  const revisionStore = useRevisionStore();
+  const listAllRevisionsByDatabase = useAppStore(
+    (state) => state.listAllRevisionsByDatabase
+  );
   const sheetStore = useSheetV1Store();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,17 +94,16 @@ export function ImportRevisionSheet({
 
   const loadExistingRevisions = useCallback(async () => {
     try {
-      const revisions = await revisionStore.fetchAllRevisionsByDatabase(
-        databaseName,
-        { pageSize: 1000 }
-      );
+      const revisions = await listAllRevisionsByDatabase(databaseName, {
+        pageSize: 1000,
+      });
       setExistingVersions(
         new Set(revisions.map((revision) => revision.version).filter(Boolean))
       );
     } catch (error) {
       console.error("Failed to load existing revisions:", error);
     }
-  }, [databaseName, revisionStore]);
+  }, [databaseName, listAllRevisionsByDatabase]);
 
   const loadReleases = useCallback(async () => {
     setLoadingReleases(true);

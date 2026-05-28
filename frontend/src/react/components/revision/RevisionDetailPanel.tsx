@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/connect";
 import { ReadonlyMonaco } from "@/react/components/monaco";
 import { TaskRunLogViewer } from "@/react/components/task-run-log";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useRevisionByName } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { pushNotification, useRevisionStore } from "@/store";
+import { pushNotification } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { bytesToString, formatAbsoluteDateTime } from "@/utils";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
@@ -82,10 +83,8 @@ export function RevisionDetailPanel({
   revisionName,
 }: RevisionDetailPanelProps) {
   const { t } = useTranslation();
-  const revisionStore = useRevisionStore();
-  const revision = useVueState(() =>
-    revisionStore.getRevisionByName(revisionName)
-  );
+  const fetchRevision = useAppStore((state) => state.fetchRevision);
+  const revision = useRevisionByName(revisionName);
   const [loading, setLoading] = useState(false);
   const [statement, setStatement] = useState("");
 
@@ -101,8 +100,7 @@ export function RevisionDetailPanel({
     setLoading(true);
     setStatement("");
 
-    void revisionStore
-      .getOrFetchRevisionByName(revisionName)
+    void fetchRevision(revisionName)
       .then(async (rev) => {
         if (!rev?.sheet) {
           return;
@@ -132,7 +130,7 @@ export function RevisionDetailPanel({
     return () => {
       cancelled = true;
     };
-  }, [revisionName, revisionStore]);
+  }, [fetchRevision, revisionName]);
 
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
