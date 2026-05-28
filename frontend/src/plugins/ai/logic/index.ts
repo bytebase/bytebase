@@ -1,4 +1,4 @@
 export * from "./events";
-export * from "./useChatByTab";
+export * from "./getChatByTab";
 export * from "./useDynamicSuggestions";
 export * from "./prompt";

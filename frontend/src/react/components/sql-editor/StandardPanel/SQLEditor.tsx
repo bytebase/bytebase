@@ -15,14 +15,14 @@ import {
   extensionNameOfLanguage,
   formatEditorContent,
 } from "@/react/components/monaco/utils";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useWorksheetAndTab } from "@/react/hooks/useWorksheetAndTab";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import { useUIStateStore, useWorkSheetAndTabStore } from "@/store";
+import { useUIStateStore } from "@/store";
 import {
   dialectOfEngineV1,
   isValidDatabaseName,
@@ -66,7 +66,7 @@ interface SQLEditorProps {
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
   const uiStateStore = useUIStateStore();
-  const sheetAndTabStore = useWorkSheetAndTabStore();
+  const { isReadOnly: readonly } = useWorksheetAndTab();
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const setPendingInsertAtCaret = useSQLEditorStore(
     (s) => s.setPendingInsertAtCaret
@@ -77,7 +77,6 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
   const content = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.statement ?? ""
   );
-  const readonly = usePiniaBridge(() => sheetAndTabStore.isReadOnly);
   const engine = instance.engine;
   const instanceName = instance.name;
   const databaseName = database.name;

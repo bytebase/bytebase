@@ -437,6 +437,15 @@ const upsertOpenTabDraft = (
 export const getSQLEditorTabsState = (): SQLEditorTabsState =>
   useSQLEditorTabsStore.getState();
 
+/**
+ * Imperative read of the current tab. Use inside event handlers /
+ * callbacks that need the tab at fire time rather than at render time.
+ */
+export const getCurrentSQLEditorTab = (): SQLEditorTab | undefined => {
+  const s = getSQLEditorTabsState();
+  return s.tabsById.get(s.currentTabId);
+};
+
 export const subscribeSQLEditorTabsState = (
   listener: (state: SQLEditorTabsState) => void
 ): (() => void) => useSQLEditorTabsStore.subscribe(listener);
@@ -454,8 +463,8 @@ export function useSQLEditorTabState<T>(
 }
 
 // Re-hydrate tabs whenever the active project changes. Mirrors the
-// historical `watch(() => project.value, initProject)` side effect
-// inside `tab-vue-state.ts`. Errors are intentionally swallowed —
+// historical `watch(() => project.value, initProject)` side effect of
+// the legacy Vue SQL editor tab store. Errors are intentionally swallowed —
 // explicit callers (e.g. SQLEditorRouteShell) own user-facing failure
 // reporting and may invoke `initProject` directly with full error
 // handling.

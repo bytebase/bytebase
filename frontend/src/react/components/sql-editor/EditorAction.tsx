@@ -8,8 +8,8 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useWorksheetAndTab } from "@/react/hooks/useWorksheetAndTab";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
@@ -18,11 +18,7 @@ import {
   useIsDisconnected,
   useSQLEditorTabState,
 } from "@/react/stores/sqlEditor/tab";
-import {
-  useUIStateStore,
-  useWorkSheetAndTabStore,
-  useWorkSheetStore,
-} from "@/store";
+import { useUIStateStore, useWorkSheetStore } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { isWorksheetWritableV1, keyboardShortcutStr } from "@/utils";
@@ -49,7 +45,7 @@ export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
   const uiStateStore = useUIStateStore();
   const worksheetStore = useWorkSheetStore();
-  const sheetAndTabStore = useWorkSheetAndTabStore();
+  const { currentSheet: currentWorksheet } = useWorksheetAndTab();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const [shareOpen, setShareOpen] = useState(false);
@@ -76,7 +72,6 @@ export function EditorAction({ onExecute }: Props) {
   );
   const isDisconnected = useIsDisconnected();
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
-  const currentWorksheet = usePiniaBridge(() => sheetAndTabStore.currentSheet);
 
   const isAdminMode = tabMode === "ADMIN";
   const showSheetsFeature = tabMode === "WORKSHEET";

@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   useSQLEditorVueState: vi.fn(),
   useUIStateStore: vi.fn(),
   useWorkSheetStore: vi.fn(),
-  useWorkSheetAndTabStore: vi.fn(),
+  useWorksheetAndTab: vi.fn(),
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   isWorksheetWritableV1: vi.fn(() => true),
   keyboardShortcutStr: vi.fn((s: string) => s),
@@ -35,7 +35,10 @@ vi.mock("@/react/hooks/useVueState", () => ({
 vi.mock("@/store", () => ({
   useUIStateStore: mocks.useUIStateStore,
   useWorkSheetStore: mocks.useWorkSheetStore,
-  useWorkSheetAndTabStore: mocks.useWorkSheetAndTabStore,
+}));
+
+vi.mock("@/react/hooks/useWorksheetAndTab", () => ({
+  useWorksheetAndTab: mocks.useWorksheetAndTab,
 }));
 
 vi.mock("@/react/stores/sqlEditor/tab-vue-state", () => ({
@@ -188,8 +191,10 @@ const setup = (options: SetupOptions = {}) => {
       database: "databases/db1",
     })),
   });
-  mocks.useWorkSheetAndTabStore.mockReturnValue({
+  mocks.useWorksheetAndTab.mockReturnValue({
     currentSheet: worksheet ? { name: worksheet, title: "sheet" } : undefined,
+    isCreator: false,
+    isReadOnly: false,
   });
   mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
     instance: { value: { engine } },
