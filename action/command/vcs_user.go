@@ -1,14 +1,24 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
+
+var gitLabBotUserNameRE = regexp.MustCompile(`^(project|group)_\d+_bot_[a-z0-9]+$`)
+
+const defaultBitbucketAPIBaseURL = "https://api.bitbucket.org/2.0"
 
 func getVCSUser(platform world.JobPlatform) *v1pb.VCSUser {
 	switch platform {
@@ -64,11 +74,198 @@ func getGitHubVCSUser() *v1pb.VCSUser {
 }
 
 func getGitLabVCSUser() *v1pb.VCSUser {
-	return nil
+	projectID := os.Getenv("CI_MERGE_REQUEST_PROJECT_ID")
+	mergeRequestIID := os.Getenv("CI_MERGE_REQUEST_IID")
+	apiURL := os.Getenv("CI_API_V4_URL")
+	jobToken := os.Getenv("CI_JOB_TOKEN")
+	if projectID == "" || mergeRequestIID == "" || apiURL == "" || jobToken == "" {
+		return nil
+	}
+
+	requestURL, err := buildGitLabMergeRequestURL(apiURL, projectID, mergeRequestIID)
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("JOB-TOKEN", jobToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil
+	}
+	var mergeRequest struct {
+		Author struct {
+			ID       int64  `json:"id"`
+			Username string `json:"username"`
+			Name     string `json:"name"`
+		} `json:"author"`
+	}
+	if err := json.Unmarshal(data, &mergeRequest); err != nil {
+		return nil
+	}
+
+	author := mergeRequest.Author
+	if author.ID == 0 || isGitLabBotUser(author.Username) {
+		return nil
+	}
+	return &v1pb.VCSUser{
+		VcsType:     v1pb.VCSType_GITLAB,
+		UserId:      strconv.FormatInt(author.ID, 10),
+		UserName:    author.Username,
+		DisplayName: author.Name,
+	}
 }
 
 func getBitbucketVCSUser() *v1pb.VCSUser {
-	return nil
+	pullRequestID := os.Getenv("BITBUCKET_PR_ID")
+	if pullRequestID == "" {
+		return nil
+	}
+	workspace, repoSlug := getBitbucketRepository()
+	if workspace == "" || repoSlug == "" {
+		return nil
+	}
+
+	apiURL := getBitbucketAPIBaseURL()
+	requestURL, err := buildBitbucketPullRequestURL(apiURL, workspace, repoSlug, pullRequestID)
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := newBitbucketHTTPClient(apiURL).Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil
+	}
+	var pullRequest struct {
+		Author struct {
+			AccountID   string `json:"account_id"`
+			UUID        string `json:"uuid"`
+			Nickname    string `json:"nickname"`
+			DisplayName string `json:"display_name"`
+			Type        string `json:"type"`
+		} `json:"author"`
+	}
+	if err := json.Unmarshal(data, &pullRequest); err != nil {
+		return nil
+	}
+
+	author := pullRequest.Author
+	userID := author.AccountID
+	if userID == "" {
+		userID = strings.Trim(author.UUID, "{}")
+	}
+	if userID == "" || isBitbucketBotUser(author.Type, author.Nickname) {
+		return nil
+	}
+	return &v1pb.VCSUser{
+		VcsType:     v1pb.VCSType_BITBUCKET,
+		UserId:      userID,
+		UserName:    author.Nickname,
+		DisplayName: author.DisplayName,
+	}
+}
+
+func buildGitLabMergeRequestURL(apiURL, projectID, mergeRequestIID string) (string, error) {
+	parsedURL, err := url.Parse(apiURL)
+	if err != nil {
+		return "", err
+	}
+	parsedURL.Path = strings.TrimRight(parsedURL.Path, "/") + "/projects/" + url.PathEscape(projectID) + "/merge_requests/" + url.PathEscape(mergeRequestIID)
+	parsedURL.RawQuery = ""
+	parsedURL.Fragment = ""
+	return parsedURL.String(), nil
+}
+
+func getBitbucketRepository() (string, string) {
+	if fullName := os.Getenv("BITBUCKET_REPO_FULL_NAME"); fullName != "" {
+		parts := strings.SplitN(fullName, "/", 2)
+		if len(parts) == 2 {
+			return parts[0], parts[1]
+		}
+	}
+	return firstNonEmpty(os.Getenv("BITBUCKET_WORKSPACE"), os.Getenv("BITBUCKET_REPO_OWNER")), os.Getenv("BITBUCKET_REPO_SLUG")
+}
+
+func getBitbucketAPIBaseURL() string {
+	if apiURL := os.Getenv("BYTEBASE_BITBUCKET_API_BASE_URL"); apiURL != "" {
+		return apiURL
+	}
+	return defaultBitbucketAPIBaseURL
+}
+
+func buildBitbucketPullRequestURL(apiURL, workspace, repoSlug, pullRequestID string) (string, error) {
+	parsedURL, err := url.Parse(apiURL)
+	if err != nil {
+		return "", err
+	}
+	parsedURL.Path = strings.TrimRight(parsedURL.Path, "/") + "/repositories/" + url.PathEscape(workspace) + "/" + url.PathEscape(repoSlug) + "/pullrequests/" + url.PathEscape(pullRequestID)
+	parsedURL.RawQuery = ""
+	parsedURL.Fragment = ""
+	return parsedURL.String(), nil
+}
+
+func newBitbucketHTTPClient(apiURL string) *http.Client {
+	if apiURL != defaultBitbucketAPIBaseURL {
+		return http.DefaultClient
+	}
+	proxyURL, err := url.Parse("http://localhost:29418")
+	if err != nil {
+		return http.DefaultClient
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		},
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func isGitLabBotUser(userName string) bool {
+	lowerUserName := strings.ToLower(userName)
+	return isBotUser("", lowerUserName) || gitLabBotUserNameRE.MatchString(lowerUserName)
+}
+
+func isBitbucketBotUser(userType, userName string) bool {
+	return isBotUser(userType, userName) || strings.EqualFold(userType, "app")
 }
 
 func isBotUser(userType, userName string) bool {
