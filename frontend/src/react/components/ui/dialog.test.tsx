@@ -112,4 +112,70 @@ describe("Dialog", () => {
       root.unmount();
     });
   });
+
+  test("keeps the agent layer visible when watermark content is mounted", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const agentRoot = getLayerRoot("agent");
+    const watermarkRoot = getLayerRoot("watermark");
+    const agentButton = document.createElement("button");
+    const watermarkLayer = document.createElement("div");
+
+    agentButton.textContent = "Agent action";
+    watermarkLayer.setAttribute("aria-hidden", "true");
+    agentRoot.appendChild(agentButton);
+    watermarkRoot.appendChild(watermarkLayer);
+
+    await act(async () => {
+      root.render(
+        <Dialog open>
+          <DialogContent>App dialog</DialogContent>
+        </Dialog>
+      );
+    });
+
+    await vi.waitFor(() => {
+      expect(agentRoot.getAttribute("aria-hidden")).toBeNull();
+      expect(agentRoot.getAttribute("inert")).toBeNull();
+      expect(agentRoot.getAttribute("data-base-ui-inert")).toBeNull();
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  test("keeps the critical layer visible when watermark content is mounted", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const criticalRoot = getLayerRoot("critical");
+    const watermarkRoot = getLayerRoot("watermark");
+    const criticalButton = document.createElement("button");
+    const watermarkLayer = document.createElement("div");
+
+    criticalButton.textContent = "Critical action";
+    watermarkLayer.setAttribute("aria-hidden", "true");
+    criticalRoot.appendChild(criticalButton);
+    watermarkRoot.appendChild(watermarkLayer);
+
+    await act(async () => {
+      root.render(
+        <Dialog open>
+          <DialogContent>App dialog</DialogContent>
+        </Dialog>
+      );
+    });
+
+    await vi.waitFor(() => {
+      expect(criticalRoot.getAttribute("aria-hidden")).toBeNull();
+      expect(criticalRoot.getAttribute("inert")).toBeNull();
+      expect(criticalRoot.getAttribute("data-base-ui-inert")).toBeNull();
+    });
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

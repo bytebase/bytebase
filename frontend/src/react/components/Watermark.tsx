@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   useCurrentUser,
   usePlanFeature,
@@ -9,6 +10,7 @@ import {
 import { extractUserEmail } from "@/store/modules/v1/common";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { getLayerRoot } from "./ui/layer";
 
 const USER_LAYER_CELL_W = 320;
 const USER_LAYER_CELL_H = 200;
@@ -107,14 +109,20 @@ export function Watermark() {
     [userLines]
   );
 
-  return (
+  if (
+    typeof document === "undefined" ||
+    (!versionDataURL && userDataURLs.length === 0)
+  ) {
+    return null;
+  }
+
+  return createPortal(
     <>
       {versionDataURL && (
         <div
           aria-hidden="true"
           style={{
             ...baseLayerStyle,
-            zIndex: 10000000,
             backgroundImage: `url(${versionDataURL})`,
             backgroundSize: `${VERSION_LAYER_CELL}px ${VERSION_LAYER_CELL}px`,
             backgroundPosition: "24px 80px",
@@ -130,7 +138,6 @@ export function Watermark() {
             aria-hidden="true"
             style={{
               ...baseLayerStyle,
-              zIndex: 10000001,
               backgroundImage: `url(${url})`,
               backgroundSize: `${USER_LAYER_CELL_W}px ${USER_LAYER_CELL_H}px`,
               backgroundPosition: `0px ${yOffset}px`,
@@ -138,6 +145,7 @@ export function Watermark() {
           />
         );
       })}
-    </>
+    </>,
+    getLayerRoot("watermark")
   );
 }

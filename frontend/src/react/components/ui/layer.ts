@@ -4,17 +4,24 @@ export const LAYER_ROOT_ID = {
   overlay: "bb-react-layer-overlay",
   agent: "bb-react-layer-agent",
   critical: "bb-react-layer-critical",
+  watermark: "bb-react-layer-watermark",
 } as const;
 
 export const LAYER_Z_INDEX = {
   overlay: 2500,
   agent: 2600,
   critical: 7000,
+  watermark: 7100,
 } as const;
 
 export type LayerFamily = keyof typeof LAYER_ROOT_ID;
 
-const ORDERED_FAMILIES: LayerFamily[] = ["overlay", "agent", "critical"];
+const ORDERED_FAMILIES: LayerFamily[] = [
+  "overlay",
+  "agent",
+  "critical",
+  "watermark",
+];
 const LAYER_ACCESSIBLE_ATTRIBUTES = [
   "aria-hidden",
   "inert",
@@ -24,6 +31,7 @@ const HIGHER_LAYER_FAMILIES: Record<LayerFamily, LayerFamily[]> = {
   overlay: ["agent", "critical"],
   agent: ["critical"],
   critical: [],
+  watermark: [],
 };
 
 const getExistingLayerRoot = (family: LayerFamily) =>
