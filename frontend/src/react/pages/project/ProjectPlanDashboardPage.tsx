@@ -125,6 +125,9 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const planStore = usePlanStore();
   const projectStore = useProjectV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const uiStateStore = useUIStateStore();
   const currentUser = useCurrentUserV1();
 
@@ -243,6 +246,13 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     sessionKey: `bb.${projectName}.plan-table`,
     fetchList: fetchPlanList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((plan) => plan.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   // Handle spec created from AddSpecDrawer
   const handleSpecCreated = useCallback(

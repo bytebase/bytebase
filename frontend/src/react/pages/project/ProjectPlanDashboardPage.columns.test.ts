@@ -74,4 +74,13 @@ describe("plan list column composition", () => {
     expect(source).not.toContain("checkSummary");
     expect(source).not.toContain("hasAnyCheck");
   });
+
+  test("plan row creators are fetched before rendering fallback names", () => {
+    expect(source).toMatch(
+      /const batchGetOrFetchUsers = useAppStore\(\s*\(state\) => state\.batchGetOrFetchUsers\s*\)/
+    );
+    expect(source).toMatch(
+      /batchGetOrFetchUsers\(paged\.dataList\.map\(\(plan\) => plan\.creator\)\)/
+    );
+  });
 });
