@@ -1,8 +1,8 @@
 import { ChevronLeft, Table as TableIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useDBSchemaV1Store } from "@/store";
 import { PanelSearchBox } from "../common/PanelSearchBox";
 import { ColumnsTable } from "../common/tables/ColumnsTable";
@@ -17,9 +17,9 @@ import { ExternalTablesTable } from "./ExternalTablesTable";
 export function ExternalTablesPanel() {
   const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
-  const databaseName = useVueState(() => database.value.name);
-  const db = useVueState(() => database.value);
-  const databaseMetadata = useVueState(
+  const databaseName = database.name;
+  const db = database;
+  const databaseMetadata = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
     { deep: true }
   );

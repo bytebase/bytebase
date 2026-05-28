@@ -1,5 +1,4 @@
 import type Emittery from "emittery";
-import type { ComputedRef, Ref } from "vue";
 import type { SQLEditorQueryParams, SQLEditorTab } from "../sqlEditor";
 import type { SQLResultSetV1 } from "./sql";
 
@@ -29,8 +28,8 @@ export type WebTerminalQueryItemV1 = {
 type QueryTimer = {
   start(): void;
   stop(): void;
-  elapsedMS: ComputedRef<number>;
-  expired: ComputedRef<boolean>;
+  elapsedMS(): number;
+  expired(): boolean;
 };
 
 type QueryEvents = Emittery<{
@@ -39,14 +38,15 @@ type QueryEvents = Emittery<{
 }>;
 
 export type StreamingQueryController = {
-  status: Ref<"CONNECTED" | "DISCONNECTED">;
+  /** Read the current connection status. Updated in place by the impl. */
+  getStatus(): "CONNECTED" | "DISCONNECTED";
   events: QueryEvents;
   abort(reason?: unknown): void;
 };
 
 export type WebTerminalQueryState = {
   tab: SQLEditorTab;
-  queryItemList: Ref<WebTerminalQueryItemV1[]>;
+  getQueryItemList(): WebTerminalQueryItemV1[];
   controller: StreamingQueryController;
   timer: QueryTimer;
 };

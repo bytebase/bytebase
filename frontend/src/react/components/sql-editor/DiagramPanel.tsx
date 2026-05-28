@@ -1,6 +1,6 @@
 import { SchemaDiagram } from "@/react/components/SchemaDiagram";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { useDBSchemaV1Store } from "@/store";
 
 /**
@@ -12,9 +12,8 @@ import { useDBSchemaV1Store } from "@/store";
  */
 export function DiagramPanel() {
   const dbSchemaStore = useDBSchemaV1Store();
-  const { database: databaseRef } = useConnectionOfCurrentSQLEditorTab();
-  const database = useVueState(() => databaseRef.value);
-  const databaseMetadata = useVueState(
+  const { database } = useConnectionOfCurrentSQLEditorTab();
+  const databaseMetadata = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(database.name),
     { deep: true }
   );

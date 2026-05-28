@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import type { WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 
@@ -28,13 +30,14 @@ interface HistoryState {
  * meaning the prior tail's statement is locked in).
  */
 export function useHistory() {
-  const tabStore = useSQLEditorTabStore();
   const updateWebTerminalQueryItem = useSQLEditorStore(
     (s) => s.updateWebTerminalQueryItem
   );
   const historyByTabIdRef = useRef(new Map<string, HistoryState>());
 
-  const currentTabId = useVueState(() => tabStore.currentTab?.id);
+  const currentTabId = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.id
+  );
   // Subscribe to the tail item's id. The id changes only when a new tail is
   // appended (the slice patches statement updates in place by id, preserving
   // it). Tracking the id — not the list length — lets detection survive
@@ -47,7 +50,8 @@ export function useHistory() {
   });
 
   const currentStack = (): HistoryState | undefined => {
-    const tab = tabStore.currentTab;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
     if (!tab) return undefined;
     if (tab.mode !== "ADMIN") return undefined;
     const map = historyByTabIdRef.current;
@@ -84,7 +88,8 @@ export function useHistory() {
       return;
     }
     if (currentTailId && currentTailId !== lastSeenTailIdRef.current) {
-      const tab = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (tab && tab.mode === "ADMIN") {
         const items =
           useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tab.id];
@@ -95,7 +100,7 @@ export function useHistory() {
       }
     }
     lastSeenTailIdRef.current = currentTailId;
-  }, [currentTailId, currentTabId, tabStore]);
+  }, [currentTailId, currentTabId]);
 
   const move = (direction: "up" | "down") => {
     const stack = currentStack();
@@ -106,7 +111,8 @@ export function useHistory() {
     const nextIndex = minmax(index + delta, 0, list.length);
     if (nextIndex === index) return;
 
-    const tab = tabStore.currentTab;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(tabsState.currentTabId);
     if (!tab) return;
     const tabItems =
       useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tab.id];

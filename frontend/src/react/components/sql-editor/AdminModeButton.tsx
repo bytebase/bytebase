@@ -2,10 +2,14 @@ import { Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorAllowAdmin } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import {
+  getSQLEditorTabsState,
+  useIsDisconnected,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 
 type AdminModeButtonProps = {
   readonly size?: "sm" | "default";
@@ -24,12 +28,12 @@ export function AdminModeButton({
   onEnter,
 }: AdminModeButtonProps) {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorVueState();
-  const tabStore = useSQLEditorTabStore();
-
-  const allowAdmin = useVueState(() => editorStore.allowAdmin);
-  const currentTabMode = useVueState(() => tabStore.currentTab?.mode);
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
+  const project = useSQLEditorEditorState((s) => s.project);
+  const allowAdmin = useSQLEditorAllowAdmin(project);
+  const currentTabMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
+  );
+  const isDisconnected = useIsDisconnected();
 
   if (!allowAdmin || currentTabMode !== "WORKSHEET") {
     return null;
@@ -38,7 +42,7 @@ export function AdminModeButton({
   const label = t("sql-editor.admin-mode.self");
 
   const handleClick = () => {
-    tabStore.updateCurrentTab({ mode: "ADMIN" });
+    getSQLEditorTabsState().updateCurrentTab({ mode: "ADMIN" });
     onEnter?.();
   };
 

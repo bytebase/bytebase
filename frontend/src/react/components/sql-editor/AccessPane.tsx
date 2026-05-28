@@ -16,9 +16,8 @@ import { AdvancedSearch } from "@/react/components/AdvancedSearch";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   hasFeature,
   useAccessGrantStore,
@@ -48,7 +47,6 @@ export function AccessPane() {
   const { t } = useTranslation();
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorVueState();
   const accessGrantStore = useAccessGrantStore();
   const issueStore = useIssueV1Store();
   const databaseStore = useDatabaseV1Store();
@@ -80,7 +78,7 @@ export function AccessPane() {
     scopes: DEFAULT_SCOPES,
   });
 
-  const projectName = useVueState(() => editorStore.project);
+  const projectName = useSQLEditorEditorState((s) => s.project);
 
   const project = useMemo(() => {
     if (!projectName) return undefined;

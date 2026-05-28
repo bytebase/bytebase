@@ -9,15 +9,15 @@ import { useShallow } from "zustand/react/shallow";
 import { AIChatToSQL, AIContextProvider } from "@/plugins/ai/react";
 import { resizeHandleClass } from "@/react/components/SchemaEditorLite/resize";
 import { ResultPanel } from "@/react/components/sql-editor/ResultPanel/ResultPanel";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
   selectEditorPanelSize,
   useSQLEditorStore,
 } from "@/react/stores/sqlEditor";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  useCurrentSQLEditorTab,
+  useIsDisconnected,
+} from "@/react/stores/sqlEditor/tab";
 import { instanceV1HasReadonlyMode } from "@/utils";
 import { EditorMain } from "./EditorMain";
 
@@ -45,12 +45,11 @@ const AIPaneFallback = () => (
  *      state — the Vue `<VueMount component={AIChatToSQLBridgeHost}>`
  *      bridge is gone.
  *
- * State source: `useSQLEditorTabStore` for tab + disconnect state,
+ * State source: tab Zustand selectors for tab + disconnect state,
  * `useConnectionOfCurrentSQLEditorTab` for the current instance,
  * `useSQLEditorStore` (zustand) for AI-panel visibility / sizing.
  */
 export function StandardPanel() {
-  const tabStore = useSQLEditorTabStore();
   const handleEditorPanelResize = useSQLEditorStore(
     (s) => s.handleEditorPanelResize
   );
@@ -58,15 +57,13 @@ export function StandardPanel() {
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );
-  const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
-  const tab = useVueState(() => tabStore.currentTab);
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
+  const tab = useCurrentSQLEditorTab();
+  const isDisconnected = useIsDisconnected();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
-  const instanceHasReadonly = useVueState(() =>
-    instanceV1HasReadonlyMode(instanceRef.value)
-  );
+  const instanceHasReadonly = instanceV1HasReadonlyMode(instance);
 
   if (tab && tab.mode !== "WORKSHEET") {
     return null;

@@ -9,10 +9,6 @@ import {
   useState,
 } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
@@ -22,6 +18,10 @@ import {
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { wrapRefAsPromise } from "@/utils";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/views/sql-editor/tab-vue-state";
 import { aiContextEvents, useChatByTab } from "../logic";
 import { useConversationStore } from "../store";
 import type { AIContextEvents, Conversation } from "../types";

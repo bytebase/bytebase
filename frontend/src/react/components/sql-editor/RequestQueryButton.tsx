@@ -4,10 +4,10 @@ import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { PermissionGuard } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
 import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
   hasFeature,
   useProjectV1Store,
@@ -81,16 +81,17 @@ export function RequestQueryButton({
   const [showJITDrawer, setShowJITDrawer] = useState(false);
 
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorVueState();
   const roleStore = useRoleStore();
   const subscriptionStore = useSubscriptionV1Store();
 
-  const projectName = useVueState(() => editorStore.project);
-  const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const hasCustomRoleFeature = useVueState(() =>
+  const projectName = useSQLEditorEditorState((s) => s.project);
+  const project = usePiniaBridge(() =>
+    projectStore.getProjectByName(projectName)
+  );
+  const hasCustomRoleFeature = usePiniaBridge(() =>
     subscriptionStore.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
   );
-  const defaultQueryRole = useVueState(() =>
+  const defaultQueryRole = usePiniaBridge(() =>
     getDefaultQueryRole(
       roleStore.roleList,
       permissionDeniedDetail.requiredPermissions,

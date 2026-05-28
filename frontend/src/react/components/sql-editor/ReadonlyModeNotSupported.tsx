@@ -1,8 +1,7 @@
 import { ShieldAlert } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { AdminModeButton } from "./AdminModeButton";
 
 /**
@@ -12,8 +11,7 @@ import { AdminModeButton } from "./AdminModeButton";
  */
 export function ReadonlyModeNotSupported() {
   const { t } = useTranslation();
-  const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
-  const instance = useVueState(() => instanceRef.value);
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-y-2 p-4">

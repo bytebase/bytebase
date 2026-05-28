@@ -29,10 +29,13 @@ import {
   AlertDialogTitle,
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorTabsState,
+  useOpenTabList,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import { tabListEvents } from "@/views/sql-editor/TabList/events";
 import { TabContextMenu, type TabContextMenuHandle } from "./TabContextMenu";
@@ -58,17 +61,13 @@ type PendingClose = {
  */
 export function TabList() {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
   const createWorksheet = useSQLEditorStore((s) => s.createWorksheet);
 
-  // `deep: true` so React re-renders when a tab's nested fields change
-  // (e.g. `tab.connection` after setConnection, or `tab.status` after
-  // auto-save). `tabStore.updateTab` mutates tabs in place via
-  // `Object.assign`, so the tab references stay the same and a shallow
-  // watcher would miss the change — visible symptom: the tab keeps the
-  // disconnect icon until the user hovers (which forces a re-render).
-  const tabs = useVueState(() => [...tabStore.openTabList], { deep: true });
-  const currentTabId = useVueState(() => tabStore.currentTabId);
+  // Zustand's selector subscribes to in-place tab mutations because
+  // `updateTab` reassigns / triggers an immer produce on `tabsById`,
+  // bumping the slice identity.
+  const tabs = useOpenTabList();
+  const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<TabContextMenuHandle>(null);
@@ -143,18 +142,19 @@ export function TabList() {
 
   const removeTab = useCallback(
     async (tab: SQLEditorTab, focusWhenConfirm = false) => {
+      const tabsState = getSQLEditorTabsState();
       if (tab.mode === "WORKSHEET" && tab.status !== "CLEAN") {
         if (focusWhenConfirm) {
-          tabStore.setCurrentTabId(tab.id);
+          tabsState.setCurrentTabId(tab.id);
         }
         const confirmed = await confirmCloseUnsaved(tab);
         if (!confirmed) return false;
       }
-      tabStore.closeTab(tab.id);
+      tabsState.closeTab(tab.id);
       requestAnimationFrame(recalculateScrollState);
       return true;
     },
-    [tabStore, confirmCloseUnsaved, recalculateScrollState]
+    [confirmCloseUnsaved, recalculateScrollState]
   );
 
   const handleAddTab = async () => {
@@ -173,7 +173,7 @@ export function TabList() {
   };
 
   const handleSelect = (tab: SQLEditorTab) => {
-    tabStore.setCurrentTabId(tab.id);
+    getSQLEditorTabsState().setCurrentTabId(tab.id);
   };
 
   const handleClose = (tab: SQLEditorTab) => {
@@ -202,9 +202,17 @@ export function TabList() {
     const next = [...tabs];
     const [moved] = next.splice(oldIndex, 1);
     next.splice(newIndex, 0, moved);
-    // The store exposes `openTabList` as a writable computed. Assigning to
-    // it reorders the underlying tmp list.
-    tabStore.openTabList = next;
+    // Rewrite the persisted tab order without touching individual tabs.
+    getSQLEditorTabsState().setOpenTabListOrder(
+      next.map((tab) => ({
+        id: tab.id,
+        worksheet: tab.worksheet,
+        mode: tab.mode,
+        batchQueryContext: tab.batchQueryContext,
+        treeState: tab.treeState,
+        viewState: tab.viewState,
+      }))
+    );
   };
 
   // Listen for close-tab events from the context menu (batch actions).
@@ -212,7 +220,10 @@ export function TabList() {
     const unsubscribe = tabListEvents.on(
       "close-tab",
       async ({ tab, index, action }) => {
-        const snapshot = [...tabStore.openTabList];
+        const tabsState = getSQLEditorTabsState();
+        const snapshot = tabsState.openTmpTabList
+          .map((persisted) => tabsState.tabsById.get(persisted.id))
+          .filter((t): t is SQLEditorTab => !!t);
         const max = snapshot.length - 1;
         const remove = async (t: SQLEditorTab) => {
           await removeTab(t, true);
@@ -248,7 +259,7 @@ export function TabList() {
     return () => {
       unsubscribe();
     };
-  }, [tabStore, removeTab]);
+  }, [removeTab]);
 
   return (
     <div

@@ -8,13 +8,16 @@ import {
   PopoverTrigger,
 } from "@/react/components/ui/popover";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  getSQLEditorTabsState,
+  useCurrentSQLEditorTab,
+  useIsDisconnected,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import {
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -44,36 +47,36 @@ type Props = {
  */
 export function EditorAction({ onExecute }: Props) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const uiStateStore = useUIStateStore();
   const worksheetStore = useWorkSheetStore();
   const sheetAndTabStore = useWorkSheetAndTabStore();
-  const { instance: instanceRef } = useConnectionOfCurrentSQLEditorTab();
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const [shareOpen, setShareOpen] = useState(false);
 
-  // Track each tab field as a separate primitive reactive subscription
-  // — Pinia mutates the tab proxy in place via `Object.assign`, so a
-  // getter that just returns `tabStore.currentTab` would only fire on
-  // tab switches (the proxy reference changing), not on `statement` /
-  // `status` / `connection.*` field flips that happen within the same
-  // tab. Splitting into one `useVueState` per field gives Vue a clean
-  // primitive value to compare on each change, so each individual
-  // mutation fires its own re-render (Run button enables as soon as
-  // the user types, Save button enables on `status` → DIRTY, etc.).
-  const currentTab = useVueState(() => tabStore.currentTab);
-  const tabStatement = useVueState(() => tabStore.currentTab?.statement ?? "");
-  const tabStatus = useVueState(() => tabStore.currentTab?.status);
-  const tabMode = useVueState(() => tabStore.currentTab?.mode);
-  const tabWorksheet = useVueState(() => tabStore.currentTab?.worksheet ?? "");
-  const tabConnectionTable = useVueState(
-    () => tabStore.currentTab?.connection.table ?? ""
+  // Zustand selectors read fields directly off the active tab, so
+  // in-place mutations (statement / status / connection.* via immer
+  // produce) emit fresh slices and propagate through React without a
+  // per-field workaround.
+  const currentTab = useCurrentSQLEditorTab();
+  const tabStatement = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.statement ?? ""
   );
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
-  const instance = useVueState(() => instanceRef.value);
-  const resultRowsLimit = useVueState(() => editorStore.resultRowsLimit);
-  const currentWorksheet = useVueState(() => sheetAndTabStore.currentSheet);
+  const tabStatus = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.status
+  );
+  const tabMode = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.mode
+  );
+  const tabWorksheet = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.worksheet ?? ""
+  );
+  const tabConnectionTable = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.table ?? ""
+  );
+  const isDisconnected = useIsDisconnected();
+  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
+  const currentWorksheet = usePiniaBridge(() => sheetAndTabStore.currentSheet);
 
   const isAdminMode = tabMode === "ADMIN";
   const showSheetsFeature = tabMode === "WORKSHEET";
@@ -143,7 +146,7 @@ export function EditorAction({ onExecute }: Props) {
   const exitAdminMode = () => {
     // Inlined to avoid pulling `@/types` (monaco-editor transitive) into the
     // React bundle. Matches `DEFAULT_SQL_EDITOR_TAB_MODE` in `@/types/sqlEditor/tab`.
-    tabStore.updateCurrentTab({ mode: "WORKSHEET" });
+    getSQLEditorTabsState().updateCurrentTab({ mode: "WORKSHEET" });
   };
 
   const handleClickSave = () => {

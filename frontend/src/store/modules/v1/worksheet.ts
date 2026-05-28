@@ -5,7 +5,6 @@ import { defineStore } from "pinia";
 import { computed } from "vue";
 import { worksheetServiceClientConnect } from "@/connect";
 import { silentContextKey } from "@/connect/context-key";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import type {
@@ -29,6 +28,7 @@ import {
   getStatementSize,
   isWorksheetWritableV1,
 } from "@/utils";
+import { useSQLEditorTabStore } from "@/views/sql-editor/tab-vue-state";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
 import { extractUserEmail } from "./common";

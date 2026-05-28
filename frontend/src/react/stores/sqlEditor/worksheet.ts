@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
-import { nextTick } from "vue";
 import { isValidProjectName } from "@/types";
 import {
   type Worksheet,
@@ -10,13 +9,14 @@ import {
 import { extractWorksheetConnection } from "@/utils";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
+import { getSQLEditorEditorState } from "./editor";
+import { getSQLEditorTabsState } from "./tab";
 import type { SQLEditorSliceCreator, WorksheetSaveSlice } from "./types";
 
-// Avoid static imports of Pinia stores (`useSQLEditorVueState`,
-// `useSQLEditorTabStore`, `useProjectV1Store`, ...) because the Pinia
-// store barrel transitively re-imports `@/react/stores/sqlEditor` —
-// loading them at module evaluation creates a TDZ cycle. The slice
-// pulls them in at call time via the helper below.
+// Pinia store barrel transitively re-imports `@/react/stores/sqlEditor`,
+// so we still pull the Pinia bits in at call time via the helpers below
+// to avoid a TDZ cycle. The new Zustand editor / tab stores are local
+// to this module's directory and safe to import statically.
 const importStores = () => import("@/store");
 const importProjectIamPolicyStore = () =>
   import("@/store/modules/v1/projectIamPolicy");
@@ -40,12 +40,11 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
   maybeSwitchProject: async (projectName) => {
     const { useProjectV1Store } = await importStores();
     const { useProjectIamPolicyStore } = await importProjectIamPolicyStore();
-    const { useSQLEditorVueState } = await import("./editor-vue-state");
-    const editorStore = useSQLEditorVueState();
+    const editorStore = getSQLEditorEditorState();
     const projectStore = useProjectV1Store();
     const projectIamPolicyStore = useProjectIamPolicyStore();
 
-    editorStore.projectContextReady = false;
+    editorStore.setProjectContextReady(false);
     try {
       if (!isValidProjectName(projectName)) {
         return;
@@ -61,7 +60,7 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     } catch {
       // ignore
     } finally {
-      editorStore.projectContextReady = true;
+      getSQLEditorEditorState().setProjectContextReady(true);
     }
   },
 
@@ -75,8 +74,7 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     signal,
   }) => {
     const { useWorkSheetStore } = await importStores();
-    const { useSQLEditorTabStore } = await import("./tab-vue-state");
-    const tabStore = useSQLEditorTabStore();
+    const tabStore = getSQLEditorTabsState();
     const worksheetStore = useWorkSheetStore();
 
     const connection = await extractWorksheetConnection({ database });
@@ -134,10 +132,8 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
     database = "",
   }) => {
     const { useWorkSheetStore } = await importStores();
-    const { useSQLEditorVueState } = await import("./editor-vue-state");
-    const { useSQLEditorTabStore } = await import("./tab-vue-state");
-    const editorStore = useSQLEditorVueState();
-    const tabStore = useSQLEditorTabStore();
+    const editorStore = getSQLEditorEditorState();
+    const tabStore = getSQLEditorTabsState();
     const worksheetStore = useWorkSheetStore();
 
     const worksheetTitle = title ?? "";
@@ -177,7 +173,7 @@ export const createWorksheetSaveSlice: SQLEditorSliceCreator<
       worksheet: newWorksheet.name,
       forceNewTab: true,
     });
-    nextTick(() => {
+    queueMicrotask(() => {
       if (tab && !tab.connection?.database) {
         // The zustand store itself owns the UI-state slice, so we can
         // call the action directly through `get()` (avoids the

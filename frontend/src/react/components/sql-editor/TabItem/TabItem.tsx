@@ -1,9 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { UNKNOWN_ID } from "@/types/const";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
 import {
@@ -41,8 +41,7 @@ export function TabItem({
   onClose,
   onContextMenu,
 }: Props) {
-  const tabStore = useSQLEditorTabStore();
-  const currentTabId = useVueState(() => tabStore.currentTabId);
+  const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   const [hovering, setHovering] = useState(false);
 
   const {
@@ -57,12 +56,12 @@ export function TabItem({
   const isCurrentTab = tab.id === currentTabId;
 
   // Derive the environment tint (used as the top border on the current tab).
-  // Wrapped in `useVueState` so the tab re-renders when the Pinia
+  // Wrapped in `usePiniaBridge` so the tab re-renders when the Pinia
   // database/environment state hydrates async — without this the tab
   // sticks on the fallback `#4f46e5` indigo even after the environment
   // resolves, which is what made the React tabs look more saturated
   // than the Vue version.
-  const environmentTintColor = useVueState(() => {
+  const environmentTintColor = usePiniaBridge(() => {
     const { database } = getConnectionForSQLEditorTab(tab);
     if (!database) return undefined;
     const environment = getDatabaseEnvironment(database);

@@ -18,10 +18,10 @@ import {
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { isDisallowChangeDatabaseError } from "@/react/hooks/useExecuteSQL";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorQueryDataPolicy } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -77,16 +77,13 @@ export function ResultView({
 }: ResultViewProps) {
   const { t } = useTranslation();
   const policyStore = usePolicyV1Store();
-  // Hoist the editor state singleton so the useVueState getters below don't
-  // appear to call a React Hook inside a callback (Sonar S6440).
-  const editorState = useSQLEditorVueState();
-  const queryDataPolicy = useVueState(() => editorState.queryDataPolicy);
+  const project = useSQLEditorEditorState((s) => s.project);
+  const queryDataPolicy = useSQLEditorQueryDataPolicy(project);
   // The editor's per-execution row limit. A result whose .rows.length
   // exactly equals this is probably truncated; fewer rows is probably
   // complete. Used by the dev-path export to WARN only when the user's
   // requested limit can't be satisfied from the cached result.
-  const resultRowsLimit = useVueState(() => editorState.resultRowsLimit);
-  const tabStore = useSQLEditorTabStore();
+  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
 
   const permissionDeniedError = useMemo<
     PermissionDeniedDetail | undefined
@@ -274,7 +271,9 @@ export function ResultView({
     }
 
     // === Prod path: backend Export RPC ===
-    const admin = tabStore.currentTab?.mode === "ADMIN";
+    const tabsState = getSQLEditorTabsState();
+    const admin =
+      tabsState.tabsById.get(tabsState.currentTabId)?.mode === "ADMIN";
     try {
       const content = await useSQLStore().exportData(
         create(ExportRequestSchema, {

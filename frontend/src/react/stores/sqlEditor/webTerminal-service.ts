@@ -4,13 +4,11 @@ import Emittery from "emittery";
 import { cloneDeep } from "lodash-es";
 import type { Subscription } from "rxjs";
 import { fromEventPattern, Observable } from "rxjs";
-import { markRaw, ref } from "vue";
 import { refreshTokens } from "@/connect/refreshToken";
 import {
   type CancelableTimer,
   createCancelableTimer,
 } from "@/react/lib/cancelableTimer";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import type {
   SQLEditorQueryParams,
@@ -34,6 +32,7 @@ import {
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/connect";
 import { sqlEditorEvents } from "@/views/sql-editor/events";
+import { getSQLEditorEditorState } from "./editor";
 import { useSQLEditorStore as useSQLEditorReactStore } from "./index";
 
 const ENDPOINT = "/v1:adminExecute";
@@ -45,7 +44,7 @@ const QUERY_TIMEOUT_MS = 5000;
  * fields are framework-agnostic mutable services (Emittery / RxJS /
  * `createCancelableTimer`); the query items themselves live in the zustand
  * `webTerminalQueryItemsByTabId` slice so React consumers re-render via
- * selectors instead of `useVueState` on a Vue ref.
+ * selectors instead of a Vue-bridge call on a Vue ref.
  */
 export interface WebTerminalQuerySession {
   tab: SQLEditorTab;
@@ -77,17 +76,24 @@ export const disposeWebTerminalQuerySession = (tabId: string): void => {
 };
 
 const createStreamingQueryController = () => {
-  const status: StreamingQueryController["status"] = ref("DISCONNECTED");
-  const events: StreamingQueryController["events"] = markRaw(new Emittery());
+  // Plain string status — no external consumer subscribes to changes;
+  // the impl reads it synchronously and the events emitter carries the
+  // user-visible state transitions.
+  let status: "CONNECTED" | "DISCONNECTED" = "DISCONNECTED";
+  const events: StreamingQueryController["events"] = new Emittery();
   const input$ = fromEventPattern<SQLEditorQueryParams>(
     (handler) => events.on("query", handler),
     (handler) => events.off("query", handler)
   );
 
-  const $ws = ref<WebSocket>();
+  // Holds the active WebSocket reference. Only written, never read —
+  // the subscriptions inside `connect()` are what keep the socket alive
+  // and reactive. Kept as a named binding to match the historical
+  // pattern and make the lifecycle obvious to readers.
+  let _ws: WebSocket | undefined;
 
   const controller: StreamingQueryController = {
-    status,
+    getStatus: () => status,
     events,
     abort() {
       // noop here. will be overwritten after connected
@@ -98,11 +104,11 @@ const createStreamingQueryController = () => {
     const request = mapRequest(params);
     console.debug("query", request);
 
-    if (status.value === "DISCONNECTED") {
+    if (status === "DISCONNECTED") {
       // Refresh the access-token cookie before opening a new WebSocket.
       // The cookie may have expired since the last connection closed.
       await refreshTokens().catch(() => {});
-      $ws.value = connect(request);
+      _ws = connect(request);
     }
   });
 
@@ -114,7 +120,7 @@ const createStreamingQueryController = () => {
     const url = new URL(`${window.location.origin}${ENDPOINT}`);
     url.protocol = url.protocol.replace(/^http/, "ws");
     const ws = new WebSocket(url);
-    status.value = "CONNECTED";
+    status = "CONNECTED";
 
     const send = (request: AdminExecuteRequest) => {
       const payload = toJson(AdminExecuteRequestSchema, request);
@@ -209,7 +215,7 @@ const createStreamingQueryController = () => {
         }
 
         events.emit("result", result);
-        status.value = "DISCONNECTED";
+        status = "DISCONNECTED";
       },
     });
 
@@ -272,7 +278,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
       useSQLEditorReactStore
         .getState()
         .mergeLatest({
-          project: useSQLEditorVueState().project,
+          project: getSQLEditorEditorState().project,
           database,
         })
         .catch(() => {

@@ -24,7 +24,7 @@ export type SQLEditorEvents = {
   // worksheet (`useExecuteSQL`) and admin/terminal (`webTerminal`)
   // paths. `HistoryPane` listens and refetches. Bypasses store
   // reactivity that doesn't reliably propagate the post-exec
-  // mutations into the React `useVueState` subscriber.
+  // mutations into React selector subscribers.
   "query-executed": undefined;
 };
 

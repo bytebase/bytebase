@@ -3,14 +3,14 @@ import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/react/components/EngineIcon";
 import { EnvironmentLabel } from "@/react/components/EnvironmentLabel";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  useCurrentSQLEditorTab,
+  useIsInBatchMode,
+} from "@/react/stores/sqlEditor/tab";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -29,19 +29,16 @@ type DatabaseChooserProps = {
  */
 export function DatabaseChooser({ disabled = false }: DatabaseChooserProps) {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
-  const editorStore = useSQLEditorVueState();
   const setShowConnectionPanel = useSQLEditorStore(
     (s) => s.setShowConnectionPanel
   );
-  const connection = useConnectionOfCurrentSQLEditorTab();
+  const { database } = useConnectionOfCurrentSQLEditorTab();
 
-  const currentTab = useVueState(() => tabStore.currentTab);
-  const isInBatchMode = useVueState(() => tabStore.isInBatchMode);
-  const projectContextReady = useVueState(
-    () => editorStore.projectContextReady
+  const currentTab = useCurrentSQLEditorTab();
+  const isInBatchMode = useIsInBatchMode();
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
   );
-  const database = useVueState(() => connection.database.value);
 
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);

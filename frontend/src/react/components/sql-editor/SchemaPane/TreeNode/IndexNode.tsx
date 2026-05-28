@@ -1,4 +1,3 @@
-import { useVueState } from "@/react/hooks/useVueState";
 import { useDBSchemaV1Store } from "@/store";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
@@ -17,7 +16,7 @@ export function IndexNode({ node, keyword }: Props) {
   const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"index">).meta.target;
 
-  const isPrimaryKey = useVueState(() => {
+  const isPrimaryKey = (() => {
     const { database, schema, table, index } = target;
     const tableMetadata = dbSchema.getTableMetadata({
       database,
@@ -25,7 +24,7 @@ export function IndexNode({ node, keyword }: Props) {
       table,
     });
     return !!tableMetadata.indexes.find((i) => i.name === index)?.primary;
-  });
+  })();
 
   return (
     <CommonNode

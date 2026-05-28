@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { useDBSchemaV1Store } from "@/store";
 import { instanceAllowsSchemaScopedQuery } from "@/utils";
@@ -19,14 +20,15 @@ const SchemaOptionValueUnspecified = "-1";
  */
 export function SchemaChooser() {
   const { t } = useTranslation();
-  const tabStore = useSQLEditorTabStore();
   const dbSchemaStore = useDBSchemaV1Store();
-  const connection = useConnectionOfCurrentSQLEditorTab();
+  const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
-  const engine = useVueState(() => connection.instance.value.engine);
-  const databaseName = useVueState(() => connection.database.value.name);
-  const tabSchema = useVueState(() => tabStore.currentTab?.connection.schema);
-  const schemas = useVueState(
+  const engine = instance.engine;
+  const databaseName = database.name;
+  const tabSchema = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.schema
+  );
+  const schemas = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(databaseName).schemas
   );
 
@@ -51,9 +53,15 @@ export function SchemaChooser() {
   const isChosen = value !== SchemaOptionValueUnspecified;
 
   const handleChange = (next: string) => {
-    if (!tabStore.currentTab) return;
-    tabStore.currentTab.connection.schema =
-      next === SchemaOptionValueUnspecified ? undefined : next;
+    const tabsState = getSQLEditorTabsState();
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+    if (!currentTab) return;
+    tabsState.updateCurrentTab({
+      connection: {
+        ...currentTab.connection,
+        schema: next === SchemaOptionValueUnspecified ? undefined : next,
+      },
+    });
   };
 
   // Seed from URL query parameter on mount and whenever the query param OR
@@ -61,10 +69,10 @@ export function SchemaChooser() {
   // tracked both `route.query.schema` and `tab.value` (the latter via the
   // setter's reactive reads) so that switching to a new tab with the URL
   // query still present re-seeded the new tab's connection.schema.
-  const queryParam = useVueState(
+  const queryParam = usePiniaBridge(
     () => router.currentRoute.value.query.schema as string | undefined
   );
-  const currentTabId = useVueState(() => tabStore.currentTab?.id);
+  const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   useEffect(() => {
     if (queryParam) handleChange(queryParam);
   }, [queryParam, currentTabId]);

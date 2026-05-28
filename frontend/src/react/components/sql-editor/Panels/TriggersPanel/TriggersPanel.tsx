@@ -1,12 +1,12 @@
 import { ChevronLeft, Zap } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
   extractKeyWithPosition,
   keyWithPosition,
 } from "@/react/lib/keyWithPosition";
-import { useConnectionOfCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab-vue-state";
 import { useDBSchemaV1Store } from "@/store";
 import { CodeViewer } from "../common/CodeViewer";
 import { PanelSearchBox } from "../common/PanelSearchBox";
@@ -21,9 +21,9 @@ import { TriggersTable } from "./TriggersTable";
 export function TriggersPanel() {
   const dbSchemaStore = useDBSchemaV1Store();
   const { database } = useConnectionOfCurrentSQLEditorTab();
-  const databaseName = useVueState(() => database.value.name);
-  const db = useVueState(() => database.value);
-  const databaseMetadata = useVueState(
+  const databaseName = database.name;
+  const db = database;
+  const databaseMetadata = usePiniaBridge(
     () => dbSchemaStore.getDatabaseMetadata(databaseName ?? ""),
     { deep: true }
   );

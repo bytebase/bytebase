@@ -2,8 +2,8 @@ import { LayersIcon, LinkIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { BytebaseLogo } from "@/react/components/BytebaseLogo";
 import { usePermissionCheck } from "@/react/components/PermissionGuard";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { router } from "@/router";
 import { INSTANCE_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
@@ -20,11 +20,10 @@ export type WelcomeProps = {
 
 export function Welcome({ onChangeConnection }: WelcomeProps) {
   const { t } = useTranslation();
-  const sqlEditorStore = useSQLEditorVueState();
   const projectV1Store = useProjectV1Store();
+  const projectName = useSQLEditorEditorState((s) => s.project);
 
-  const project = useVueState(() => {
-    const projectName = sqlEditorStore.project;
+  const project = usePiniaBridge(() => {
     return projectName
       ? projectV1Store.getProjectByName(projectName)
       : undefined;

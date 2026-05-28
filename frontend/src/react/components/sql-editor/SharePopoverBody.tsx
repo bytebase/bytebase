@@ -13,9 +13,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/react/components/ui/popover";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
@@ -48,13 +48,14 @@ export function SharePopoverBody({ worksheet }: Props) {
   const actuatorStore = useActuatorV1Store();
   const currentUserStore = useCurrentUserV1();
   const worksheetStore = useWorkSheetStore();
-  const tabStore = useSQLEditorTabStore();
 
-  const workspaceExternalURL = useVueState(
+  const workspaceExternalURL = usePiniaBridge(
     () => actuatorStore.serverInfo?.externalUrl
   );
-  const currentUser = useVueState(() => currentUserStore.value);
-  const tabStatus = useVueState(() => tabStore.currentTab?.status);
+  const currentUser = usePiniaBridge(() => currentUserStore.value);
+  const tabStatus = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.status
+  );
 
   const accessOptions = useMemo<AccessOption[]>(
     () => [

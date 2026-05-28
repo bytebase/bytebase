@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useCurrentUserV1, useWorkSheetStore } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
@@ -66,9 +66,9 @@ export function useDropdown(
   // ------------------------------------------------------------------
   // Reactive reads from Pinia / Vue stores
   // ------------------------------------------------------------------
-  const me = useVueState(() => meRef.value);
+  const me = usePiniaBridge(() => meRef.value);
 
-  const worksheetEntity = useVueState(() => {
+  const worksheetEntity = usePiniaBridge(() => {
     if (viewMode === "draft" || !currentNode?.worksheet) {
       return undefined;
     }

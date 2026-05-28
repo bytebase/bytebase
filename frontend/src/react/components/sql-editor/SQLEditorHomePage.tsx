@@ -19,13 +19,17 @@ import {
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/react/components/ui/layer";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
 import { useNavigate } from "@/react/router";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
+import {
+  getSQLEditorTabsState,
+  useCurrentSQLEditorTab,
+  useIsDisconnected,
+} from "@/react/stores/sqlEditor/tab";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import { unknownProject } from "@/types";
@@ -59,24 +63,23 @@ import { sqlEditorEvents } from "@/views/sql-editor/events";
 export function SQLEditorHomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const tabStore = useSQLEditorTabStore();
   const setPendingInsertAtCaret = useSQLEditorStore(
     (s) => s.setPendingInsertAtCaret
   );
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
-  const editorStore = useSQLEditorVueState();
 
-  const projectContextReady = useVueState(
-    () => editorStore.projectContextReady
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
   );
-  const project = useVueState(() => {
-    if (!editorStore.project) return undefined;
-    const proj = projectStore.getProjectByName(editorStore.project);
-    return proj.name === editorStore.project ? proj : undefined;
+  const projectName = useSQLEditorEditorState((s) => s.project);
+  const project = usePiniaBridge(() => {
+    if (!projectName) return undefined;
+    const proj = projectStore.getProjectByName(projectName);
+    return proj.name === projectName ? proj : undefined;
   });
-  const tab = useVueState(() => tabStore.currentTab);
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
+  const tab = useCurrentSQLEditorTab();
+  const isDisconnected = useIsDisconnected();
 
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   useEffect(() => {
@@ -140,9 +143,10 @@ export function SQLEditorHomePage() {
   // ref and inserts at the cursor.
   useEffect(() => {
     const off = sqlEditorEvents.on("insert-at-caret", ({ content }) => {
-      const t = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const t = tabsState.tabsById.get(tabsState.currentTabId);
       if (!t) return;
-      tabStore.updateTab(t.id, {
+      tabsState.updateTab(t.id, {
         viewState: { ...(t.viewState ?? {}), view: "CODE" },
       });
       requestAnimationFrame(() => {
@@ -152,7 +156,7 @@ export function SQLEditorHomePage() {
     return () => {
       off();
     };
-  }, [tabStore, setPendingInsertAtCaret]);
+  }, [setPendingInsertAtCaret]);
 
   const mobileToggle = hideSidebar
     ? createPortal(

@@ -8,11 +8,8 @@ import type {
   MonacoModule,
 } from "@/react/components/monaco/types";
 import { formatEditorContent } from "@/react/components/monaco/utils";
-import { useVueState } from "@/react/hooks/useVueState";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
+import { useSQLEditorTabState } from "@/react/stores/sqlEditor/tab";
 import type { SQLEditorQueryParams } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -57,11 +54,10 @@ export function CompactSQLEditor({
   onHistory,
   onClearScreen,
 }: CompactSQLEditorProps) {
-  const tabStore = useSQLEditorTabStore();
   const { connection, instance, database } =
     useConnectionOfCurrentSQLEditorTab();
 
-  const engine = useVueState(() => instance.value.engine);
+  const engine = instance.engine;
   const language = useMemo(
     () => languageOfEngineV1(engine ?? Engine.MYSQL),
     [engine]
@@ -71,11 +67,11 @@ export function CompactSQLEditor({
     [engine]
   );
 
-  const databaseName = useVueState(() => database.value.name);
-  const instanceName = useVueState(() => instance.value.name);
-  const schema = useVueState(() => tabStore.currentTab?.connection.schema, {
-    deep: true,
-  });
+  const databaseName = database.name;
+  const instanceName = instance.name;
+  const schema = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.schema
+  );
 
   // Latest-prop refs so Monaco actions registered once can read live values.
   const propsRef = useRef({
@@ -142,7 +138,7 @@ export function CompactSQLEditor({
       const execute = (explain = false) => {
         const c = connectionRef.current;
         propsRef.current.onExecute({
-          connection: { ...c.value },
+          connection: { ...c },
           statement: propsRef.current.content,
           engine: engineRef.current ?? Engine.MYSQL,
           explain,
@@ -283,7 +279,7 @@ export function CompactSQLEditor({
       run: () => {
         const c = connectionRef.current;
         propsRef.current.onExecute({
-          connection: { ...c.value },
+          connection: { ...c },
           statement: propsRef.current.content,
           engine,
           explain: true,

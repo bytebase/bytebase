@@ -6,10 +6,11 @@ import { LAYER_ROOT_ID } from "@/react/components/ui/layer";
 import { Popover, PopoverContent } from "@/react/components/ui/popover";
 import type { TreeDataNode } from "@/react/components/ui/tree";
 import { Tree } from "@/react/components/ui/tree";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
-import type { WorksheetFolderNode } from "@/views/sql-editor/Sheet";
-import { useSheetContextByView } from "@/views/sql-editor/Sheet";
+import {
+  useSheetContextByView,
+  type WorksheetFolderNode,
+} from "@/views/sql-editor/Sheet";
 import { TreeNodePrefix } from "./TreeNodePrefix";
 
 type Props = {
@@ -30,10 +31,8 @@ function toTreeData(
 export function FolderForm({ folder, onFolderChange }: Props) {
   const { t } = useTranslation();
 
-  const viewContext = useSheetContextByView("my");
-
-  const folderTree = useVueState(() => viewContext.folderTree.value);
-  const rootPath = useVueState(() => viewContext.folderContext.rootPath.value);
+  const { folderTree, folderContext } = useSheetContextByView("my");
+  const rootPath = folderContext.rootPath;
 
   const [folderPath, setFolderPath] = useState(folder);
   const [showPopover, setShowPopover] = useState(false);

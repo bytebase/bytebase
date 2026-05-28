@@ -39,12 +39,12 @@ function findColumn(parent: { columns: ColumnMetadata[] }, name: string) {
  *  - The trailing type-tag (`int`, `varchar(255)`, …) is rendered when
  *    the metadata fetch has resolved.
  *
- * Lookups use `useMemo` (not `useVueState`). The schema tree is rebuilt
- * by `SchemaPane` whenever the database metadata changes, which produces
- * fresh `target` objects and remounts these rows with current metadata —
- * a Vue watch per ColumnNode is unnecessary subscription overhead, and
- * `flush: "sync"` watch setup was the dominant cost of expanding a
- * Columns folder with hundreds of children.
+ * Lookups use `useMemo`. The schema tree is rebuilt by `SchemaPane`
+ * whenever the database metadata changes, which produces fresh `target`
+ * objects and remounts these rows with current metadata — a per-row
+ * subscription would be unnecessary overhead, and synchronous watch
+ * setup was the dominant cost of expanding a Columns folder with
+ * hundreds of children.
  */
 export function ColumnNode({ node, keyword }: Props) {
   const dbSchema = useDBSchemaV1Store();

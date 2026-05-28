@@ -1,11 +1,12 @@
 import { useCallback, useEffect } from "react";
 import { ReadonlyModeNotSupported } from "@/react/components/sql-editor/ReadonlyModeNotSupported";
 import { useExecuteSQL } from "@/react/hooks/useExecuteSQL";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useConnectionOfCurrentSQLEditorTab } from "@/react/hooks/useSQLEditorBridge";
 import {
-  useConnectionOfCurrentSQLEditorTab,
-  useSQLEditorTabStore,
-} from "@/react/stores/sqlEditor/tab-vue-state";
+  getSQLEditorTabsState,
+  useIsDisconnected,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { useDatabaseV1Store } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -35,13 +36,12 @@ interface EditorMainProps {
  * the cross-framework boundary stays clean — see Stage 17 design.
  */
 export function EditorMain({ onChangeConnection }: EditorMainProps) {
-  const tabStore = useSQLEditorTabStore();
   const databaseStore = useDatabaseV1Store();
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
-  const tabId = useVueState(() => tabStore.currentTab?.id);
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
-  const engine = useVueState(() => instance.value.engine);
+  const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
+  const isDisconnected = useIsDisconnected();
+  const engine = instance.engine;
 
   const allowReadonlyMode =
     !isDisconnected && instanceV1HasReadonlyMode(engine ?? Engine.MYSQL);
@@ -51,7 +51,8 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
   const handleExecute = useCallback(
     ({ params, newTab }: { params: SQLEditorQueryParams; newTab: boolean }) => {
       if (newTab) {
-        tabStore.cloneTab(tabStore.currentTabId, {
+        const tabsState = getSQLEditorTabsState();
+        tabsState.cloneTab(tabsState.currentTabId, {
           statement: params.statement,
         });
       }
@@ -59,20 +60,21 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
         void execute(params);
       });
     },
-    [tabStore, execute]
+    [execute]
   );
 
   // Run-from-toolbar: pull the active statement that the React
   // `SQLEditor` published to the shared shallowRef.
   const handleExecuteFromActionBar = useCallback(
     (params: SQLEditorQueryParams) => {
-      const tab = tabStore.currentTab;
+      const tabsState = getSQLEditorTabsState();
+      const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) return;
       const statement =
         activeStatementRef.value || tab.statement || params.statement;
       handleExecute({ params: { ...params, statement }, newTab: false });
     },
-    [tabStore, handleExecute]
+    [handleExecute]
   );
 
   // execute-sql event (fired e.g. from the schema-pane "run" affordance)
@@ -83,7 +85,7 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
         const database = await databaseStore.getOrFetchDatabaseByName(
           connection.database
         );
-        const newTab = tabStore.addTab(
+        const newTab = getSQLEditorTabsState().addTab(
           { connection, statement, batchQueryContext },
           /* beside */ true
         );
@@ -101,7 +103,7 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
     return () => {
       off();
     };
-  }, [databaseStore, tabStore, execute]);
+  }, [databaseStore, execute]);
 
   if (!isDisconnected && !allowReadonlyMode) {
     // Connected to an instance without a read-only data source —

@@ -1,16 +1,16 @@
 import { MoreHorizontal, Star, Users, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/react/components/ui/tooltip";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { cn } from "@/react/lib/utils";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { useUserStore, useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
-import type {
-  SheetViewMode,
-  WorksheetFolderNode,
+import {
+  type SheetViewMode,
+  useSheetContext,
+  type WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
-import { useSheetContext } from "@/views/sql-editor/Sheet";
 
 type Props = {
   readonly node: WorksheetFolderNode;
@@ -39,11 +39,10 @@ export function TreeNodeSuffix({
   const { t } = useTranslation();
 
   const worksheetStore = useWorkSheetStore();
-  const tabStore = useSQLEditorTabStore();
   const userStore = useUserStore();
   const { isWorksheetCreator } = useSheetContext();
 
-  const worksheetLite = useVueState(() => {
+  const worksheetLite = usePiniaBridge(() => {
     if (!node.worksheet) {
       return undefined;
     }
@@ -88,7 +87,8 @@ export function TreeNodeSuffix({
           e.stopPropagation();
           if (!node.worksheet?.name) return;
           // Draft nodes use tab.id as worksheet.name (drafts have no worksheet field).
-          const tab = tabStore.getTabById(node.worksheet.name);
+          const tabsState = getSQLEditorTabsState();
+          const tab = tabsState.tabsById.get(node.worksheet.name);
           if (tab && tab.status !== "CLEAN") {
             if (
               !window.confirm(
@@ -98,7 +98,7 @@ export function TreeNodeSuffix({
               return;
             }
           }
-          tabStore.closeTab(node.worksheet.name);
+          tabsState.closeTab(node.worksheet.name);
         }}
       />
     );

@@ -1,4 +1,3 @@
-import { useVueState } from "@/react/hooks/useVueState";
 import { useDBSchemaV1Store } from "@/store";
 import type { TreeNode } from "../schemaTree";
 import { CommonNode } from "./CommonNode";
@@ -17,7 +16,7 @@ export function CheckNode({ node, keyword }: Props) {
   const dbSchema = useDBSchemaV1Store();
   const target = (node as TreeNode<"check">).meta.target;
 
-  const checkMetadata = useVueState(() => {
+  const checkMetadata = (() => {
     if ("table" in target) {
       const { database, schema, table, check } = target;
       const tableMetadata = dbSchema.getTableMetadata({
@@ -28,7 +27,7 @@ export function CheckNode({ node, keyword }: Props) {
       return tableMetadata?.checkConstraints.find((c) => c.name === check);
     }
     return undefined;
-  });
+  })();
 
   return (
     <CommonNode

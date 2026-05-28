@@ -1,6 +1,8 @@
 import { useCallback } from "react";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorTabsState,
+  useSQLEditorTabState,
+} from "@/react/stores/sqlEditor/tab";
 import { defaultViewState } from "@/types";
 import type { EditorPanelViewState } from "@/types/sqlEditor/tabViewState";
 
@@ -12,37 +14,40 @@ import type { EditorPanelViewState } from "@/types/sqlEditor/tabViewState";
  * because that file remains the Vue host through Stage 16.
  */
 export function useViewStateNav() {
-  const tabStore = useSQLEditorTabStore();
-  const viewState = useVueState(() => tabStore.currentTab?.viewState, {
-    deep: true,
-  });
-  const tabId = useVueState(() => tabStore.currentTab?.id);
+  const viewState = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.viewState
+  );
+  const tabId = useSQLEditorTabState((s) => s.tabsById.get(s.currentTabId)?.id);
 
   const updateViewState = useCallback(
     (patch: Partial<EditorPanelViewState>) => {
-      const id = tabStore.currentTab?.id;
+      const tabsState = getSQLEditorTabsState();
+      const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+      const id = currentTab?.id;
       if (!id) return;
-      tabStore.updateTab(id, {
+      tabsState.updateTab(id, {
         viewState: {
           ...defaultViewState(),
-          ...tabStore.currentTab?.viewState,
+          ...currentTab?.viewState,
           ...patch,
         },
       });
     },
-    [tabStore]
+    []
   );
 
   const setDetail = useCallback(
     (patch: Partial<EditorPanelViewState["detail"]>) => {
+      const tabsState = getSQLEditorTabsState();
+      const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
       updateViewState({
         detail: {
-          ...(tabStore.currentTab?.viewState.detail ?? {}),
+          ...(currentTab?.viewState.detail ?? {}),
           ...patch,
         },
       });
     },
-    [tabStore, updateViewState]
+    [updateViewState]
   );
 
   const clearDetail = useCallback(() => {

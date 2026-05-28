@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
 import { SearchInput } from "@/react/components/ui/search-input";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import type {
   SheetViewMode,
@@ -38,9 +37,8 @@ export function WorksheetPane() {
   const { t } = useTranslation();
 
   const sheetContext = useSheetContext();
-  const { filter: filterRef, batchUpdateWorksheetFolders } = sheetContext;
-  const filterChanged = useVueState(() => sheetContext.filterChanged.value);
-  const filter = useVueState(() => filterRef.value);
+  const { filter, filterChanged, batchUpdateWorksheetFolders, setFilter } =
+    sheetContext;
 
   const { getFoldersForWorksheet } = useSheetContextByView("my");
 
@@ -76,7 +74,7 @@ export function WorksheetPane() {
   );
 
   const updateFilter = (patch: Partial<typeof filter>) => {
-    filterRef.value = { ...filterRef.value, ...patch };
+    setFilter((prev) => ({ ...prev, ...patch }));
   };
 
   const handleKeywordChange = (keyword: string) => {

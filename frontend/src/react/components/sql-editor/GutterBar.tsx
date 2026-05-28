@@ -1,9 +1,9 @@
 import logoIcon from "@/assets/logo-icon.svg";
 import { Separator } from "@/react/components/ui/separator";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import type { AsidePanelTab } from "@/react/stores/sqlEditor";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
+import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
@@ -18,16 +18,15 @@ import { TabItem } from "./TabItem";
  * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
  */
 export function GutterBar() {
-  const editorStore = useSQLEditorVueState();
   const projectStore = useProjectV1Store();
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
+  const projectName = useSQLEditorEditorState((s) => s.project);
 
-  const project = useVueState(() => {
-    const name = editorStore.project;
-    return name ? projectStore.getProjectByName(name) : undefined;
+  const project = usePiniaBridge(() => {
+    return projectName ? projectStore.getProjectByName(projectName) : undefined;
   });
 
-  const routeProjectParam = useVueState(
+  const routeProjectParam = usePiniaBridge(
     () => router.currentRoute.value.params.project as string | undefined
   );
 

@@ -1,9 +1,8 @@
 import { ShieldAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/react/components/HighlightLabelText";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
-import { featureToRef } from "@/store";
 import type { SQLEditorTreeNode } from "@/types";
 import { NULL_ENVIRONMENT_NAME, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -71,8 +70,8 @@ function EnvironmentLabel({
   const isUnset =
     environment.name === UNKNOWN_ENVIRONMENT_NAME ||
     environment.name === NULL_ENVIRONMENT_NAME;
-  const hasEnvTierFeature = useVueState(
-    () => featureToRef(PlanFeature.FEATURE_ENVIRONMENT_TIERS).value
+  const hasEnvTierFeature = useSQLEditorFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
   );
   const isProtected =
     hasEnvTierFeature && environment.tags?.protected === "protected";

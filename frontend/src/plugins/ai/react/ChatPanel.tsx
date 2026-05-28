@@ -4,13 +4,13 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sqlServiceClientConnect } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
 import {
   type AICompletionRequest_Message,
   AICompletionRequest_MessageSchema,
   AICompletionRequestSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { nextAnimationFrame } from "@/utils";
+import { useSQLEditorTabStore } from "@/views/sql-editor/tab-vue-state";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import { ActionBar } from "./ActionBar";

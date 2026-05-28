@@ -1,10 +1,13 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ProjectSelect } from "@/react/components/ProjectSelect";
-import { useVueState } from "@/react/hooks/useVueState";
+import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
-import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import { useSQLEditorTabStore } from "@/react/stores/sqlEditor/tab-vue-state";
+import {
+  getSQLEditorEditorState,
+  useSQLEditorEditorState,
+} from "@/react/stores/sqlEditor/editor";
+import { useIsDisconnected } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store } from "@/store";
@@ -33,35 +36,33 @@ import { WorksheetPane } from "./WorksheetPane";
  */
 export function AsidePanel() {
   const { t } = useTranslation();
-  const editorStore = useSQLEditorVueState();
   const actuatorStore = useActuatorV1Store();
-  const tabStore = useSQLEditorTabStore();
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
   const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);
-  const isDisconnected = useVueState(() => tabStore.isDisconnected);
-  const project = useVueState(() => editorStore.project);
-  const projectContextReady = useVueState(
-    () => editorStore.projectContextReady
+  const isDisconnected = useIsDisconnected();
+  const project = useSQLEditorEditorState((s) => s.project);
+  const projectContextReady = useSQLEditorEditorState(
+    (s) => s.projectContextReady
   );
 
-  const allowAccessDefaultProject = useVueState(() => {
+  const allowAccessDefaultProject = usePiniaBridge(() => {
     const name = actuatorStore.serverInfo?.defaultProject ?? "";
     return hasProjectPermissionV2(defaultProject(name), "bb.projects.get");
   });
-  const allowCreateProject = useVueState(() =>
+  const allowCreateProject = usePiniaBridge(() =>
     hasWorkspacePermissionV2("bb.projects.create")
   );
 
   const handleSwitchProject = useCallback(
     (name: string) => {
       if (!name || !isValidProjectName(name)) {
-        editorStore.setProject("");
+        getSQLEditorEditorState().setProject("");
       } else {
         void maybeSwitchProject(name);
       }
     },
-    [editorStore, maybeSwitchProject]
+    [maybeSwitchProject]
   );
 
   // Vue's `<template #empty>` — rich empty state when the user is not

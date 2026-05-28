@@ -1,5 +1,4 @@
 import { EngineIcon } from "@/react/components/EngineIcon";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useDatabaseV1Store } from "@/store";
 import { extractDatabaseResourceName, getInstanceResource } from "@/utils";
 import type { TreeNode } from "../schemaTree";
@@ -18,9 +17,7 @@ export function DatabaseNode({ node, keyword }: Props) {
   const databaseStore = useDatabaseV1Store();
   const target = (node as TreeNode<"database">).meta.target;
 
-  const database = useVueState(() =>
-    databaseStore.getDatabaseByName(target.database)
-  );
+  const database = databaseStore.getDatabaseByName(target.database);
 
   const databaseName = extractDatabaseResourceName(database.name).databaseName;
   const instance = getInstanceResource(database);
