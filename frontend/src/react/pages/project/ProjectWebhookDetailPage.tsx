@@ -1,7 +1,8 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { useMemo } from "react";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { WebhookSchema } from "@/types/proto-es/v1/project_service_pb";
@@ -16,17 +17,16 @@ export function ProjectWebhookDetailPage({
   webhookResourceId: string;
 }) {
   const projectStore = useProjectV1Store();
-  const projectWebhookV1Store = useProjectWebhookV1Store();
+  const getProjectWebhookFromProjectById = useAppStore(
+    (state) => state.getProjectWebhookFromProjectById
+  );
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 
-  const webhook = useVueState(() => {
+  const webhook = useMemo(() => {
     if (!project) return undefined;
-    return projectWebhookV1Store.getProjectWebhookFromProjectById(
-      project,
-      webhookResourceId
-    );
-  });
+    return getProjectWebhookFromProjectById(project, webhookResourceId);
+  }, [project, getProjectWebhookFromProjectById, webhookResourceId]);
 
   const allowEdit = useMemo(() => {
     if (!project) return false;

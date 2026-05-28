@@ -24,16 +24,13 @@ import {
 } from "@/react/components/ui/table";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useProjectV1Store,
-  useProjectWebhookV1Store,
-} from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { projectWebhookV1ActivityItemList } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -44,7 +41,9 @@ import { extractProjectWebhookID, hasProjectPermissionV2 } from "@/utils";
 export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
-  const projectWebhookV1Store = useProjectWebhookV1Store();
+  const deleteProjectWebhook = useAppStore(
+    (state) => state.deleteProjectWebhook
+  );
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
@@ -84,8 +83,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
     if (!deleteTarget || !project) return;
     try {
       const name = deleteTarget.title;
-      const updatedProject =
-        await projectWebhookV1Store.deleteProjectWebhook(deleteTarget);
+      const updatedProject = await deleteProjectWebhook(deleteTarget);
       projectStore.updateProjectCache({
         ...project,
         ...updatedProject,
@@ -103,7 +101,7 @@ export function ProjectWebhooksPage({ projectId }: { projectId: string }) {
       });
     }
     setDeleteTarget(null);
-  }, [deleteTarget, project, projectWebhookV1Store, projectStore, t]);
+  }, [deleteTarget, project, deleteProjectWebhook, projectStore, t]);
 
   return (
     <div className="py-4 flex flex-col">

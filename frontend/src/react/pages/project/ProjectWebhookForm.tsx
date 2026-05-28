@@ -20,6 +20,7 @@ import { Input } from "@/react/components/ui/input";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { WebhookTypeIcon } from "@/react/components/WebhookTypeIcon";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
@@ -31,7 +32,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useProjectV1Store,
-  useProjectWebhookV1Store,
   useSettingV1Store,
 } from "@/store";
 import {
@@ -63,8 +63,17 @@ export function ProjectWebhookForm({
   const { t } = useTranslation();
   const settingStore = useSettingV1Store();
   const projectStore = useProjectV1Store();
-  const projectWebhookV1Store = useProjectWebhookV1Store();
   const actuatorStore = useActuatorV1Store();
+  const createProjectWebhook = useAppStore(
+    (state) => state.createProjectWebhook
+  );
+  const updateProjectWebhook = useAppStore(
+    (state) => state.updateProjectWebhook
+  );
+  const deleteProjectWebhook = useAppStore(
+    (state) => state.deleteProjectWebhook
+  );
+  const testProjectWebhook = useAppStore((state) => state.testProjectWebhook);
 
   const [state, setState] = useState<Webhook>(() =>
     clone(WebhookSchema, webhook)
@@ -208,10 +217,7 @@ export function ProjectWebhookForm({
 
   const createWebhook = useCallback(() => {
     withLoading(async () => {
-      const updatedProject = await projectWebhookV1Store.createProjectWebhook(
-        project.name,
-        state
-      );
+      const updatedProject = await createProjectWebhook(project.name, state);
       projectStore.updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
@@ -235,7 +241,7 @@ export function ProjectWebhookForm({
         });
       }
     });
-  }, [project, state, projectStore, projectWebhookV1Store, t, withLoading]);
+  }, [project, state, projectStore, createProjectWebhook, t, withLoading]);
 
   const updateWebhook = useCallback(() => {
     withLoading(async () => {
@@ -247,10 +253,7 @@ export function ProjectWebhookForm({
       if (!isEqual(state.notificationTypes, webhook.notificationTypes))
         updateMask.push("notification_type");
 
-      const updatedProject = await projectWebhookV1Store.updateProjectWebhook(
-        state,
-        updateMask
-      );
+      const updatedProject = await updateProjectWebhook(state, updateMask);
       projectStore.updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
@@ -265,7 +268,7 @@ export function ProjectWebhookForm({
     state,
     webhook,
     projectStore,
-    projectWebhookV1Store,
+    updateProjectWebhook,
     t,
     withLoading,
   ]);
@@ -273,8 +276,7 @@ export function ProjectWebhookForm({
   const deleteWebhook = useCallback(() => {
     withLoading(async () => {
       const name = state.title;
-      const updatedProject =
-        await projectWebhookV1Store.deleteProjectWebhook(state);
+      const updatedProject = await deleteProjectWebhook(state);
       projectStore.updateProjectCache({ ...project, ...updatedProject });
       pushNotification({
         module: "bytebase",
@@ -287,7 +289,7 @@ export function ProjectWebhookForm({
     project,
     state,
     projectStore,
-    projectWebhookV1Store,
+    deleteProjectWebhook,
     t,
     withLoading,
     cancel,
@@ -295,10 +297,7 @@ export function ProjectWebhookForm({
 
   const testWebhook = useCallback(() => {
     withLoading(async () => {
-      const result = await projectWebhookV1Store.testProjectWebhook(
-        project,
-        state
-      );
+      const result = await testProjectWebhook(project, state);
       if (result.error) {
         pushNotification({
           module: "bytebase",
@@ -315,7 +314,7 @@ export function ProjectWebhookForm({
         });
       }
     });
-  }, [project, state, projectWebhookV1Store, t, withLoading]);
+  }, [project, state, testProjectWebhook, t, withLoading]);
 
   const imSettingsUrl = useMemo(() => {
     return router.resolve({ name: WORKSPACE_ROUTE_IM }).fullPath;
