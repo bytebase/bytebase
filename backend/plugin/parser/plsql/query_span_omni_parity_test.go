@@ -229,6 +229,21 @@ func TestOracleOmniUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
 				{Name: "D", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T2", Column: "D"}})},
 			},
 		},
+		{
+			name:      "natural join",
+			statement: "SELECT * FROM T NATURAL JOIN T2",
+			want: []base.QuerySpanResult{
+				{Name: "A", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "A"}})},
+				{Name: "B", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "B"}})},
+				{Name: "C", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{
+					{Database: "PUBLIC", Table: "T", Column: "C"},
+					{Database: "PUBLIC", Table: "T2", Column: "C"},
+				})},
+				{Name: "J", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "J"}})},
+				{Name: "X", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T", Column: "X"}})},
+				{Name: "D", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T2", Column: "D"}})},
+			},
+		},
 	}
 
 	for _, test := range tests {

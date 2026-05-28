@@ -578,6 +578,21 @@ func mergeOmniJoinTableSource(join *oracleast.JoinClause, left, right base.Table
 		rightIndex[field.Name] = i
 	}
 
+	if isOmniNaturalJoin(join.Type) {
+		for _, field := range leftResults {
+			if rightIdx, ok := rightIndex[field.Name]; ok {
+				field.SourceColumns, _ = base.MergeSourceColumnSet(field.SourceColumns, rightResults[rightIdx].SourceColumns)
+			}
+			result.Columns = append(result.Columns, field)
+		}
+		for _, field := range rightResults {
+			if _, ok := leftIndex[field.Name]; !ok {
+				result.Columns = append(result.Columns, field)
+			}
+		}
+		return result, nil
+	}
+
 	if len(listItems(join.Using)) != 0 {
 		usingMap := make(map[string]bool)
 		for _, node := range listItems(join.Using) {
@@ -608,6 +623,15 @@ func mergeOmniJoinTableSource(join *oracleast.JoinClause, left, right base.Table
 	result.Columns = append(result.Columns, leftResults...)
 	result.Columns = append(result.Columns, rightResults...)
 	return result, nil
+}
+
+func isOmniNaturalJoin(joinType oracleast.JoinType) bool {
+	switch joinType {
+	case oracleast.JOIN_NATURAL_INNER, oracleast.JOIN_NATURAL_LEFT, oracleast.JOIN_NATURAL_RIGHT, oracleast.JOIN_NATURAL_FULL:
+		return true
+	default:
+		return false
+	}
 }
 
 func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (string, base.SourceColumnSet, error) {
