@@ -120,8 +120,19 @@ vi.mock("@/react/components/ui/dropdown-menu", () => ({
 }));
 
 vi.mock("@/react/components/ui/search-input", () => ({
-  SearchInput: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} />
+  SearchInput: ({
+    wrapperClassName,
+    ...props
+  }: React.InputHTMLAttributes<HTMLInputElement> & {
+    wrapperClassName?: string;
+  }) => (
+    <div
+      className={`relative flex-1 ${wrapperClassName ?? ""}`}
+      data-testid="targets-search-wrapper"
+      data-wrapper-class-name={wrapperClassName}
+    >
+      <input {...props} />
+    </div>
   ),
 }));
 
@@ -164,7 +175,20 @@ vi.mock("@/react/components/ui/select", () => ({
 vi.mock("@/react/components/ui/sheet", () => ({
   Sheet: ({ children, open }: { children: ReactNode; open: boolean }) =>
     open ? <div>{children}</div> : null,
-  SheetBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SheetBody: ({
+    children,
+    className,
+  }: {
+    children: ReactNode;
+    className?: string;
+  }) => (
+    <div
+      className={`flex flex-1 flex-col overflow-y-auto px-6 py-4 ${className ?? ""}`}
+      data-testid="targets-sheet-body"
+    >
+      {children}
+    </div>
+  ),
   SheetContent: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
@@ -586,6 +610,79 @@ async function flush() {
 }
 
 describe("PlanDetailChangesBranch", () => {
+  it("renders all targets in a single scrollable sheet list", async () => {
+    const page = buildPageState();
+    const targets = Array.from(
+      { length: 21 },
+      (_, index) => `instances/test/databases/db_${index}`
+    );
+    page.plan.specs = [
+      {
+        id: "spec-1",
+        config: {
+          case: "changeDatabaseConfig",
+          value: {
+            targets,
+          },
+        },
+      },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch
+            selectedSpecId="spec-1"
+            onSelectedSpecIdChange={vi.fn()}
+          />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    const viewAllButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "plan.targets.view-all"
+    );
+    expect(viewAllButton).toBeTruthy();
+
+    await act(async () => {
+      viewAllButton?.click();
+    });
+    await flush();
+
+    const sheetBody = container.querySelector(
+      "[data-testid='targets-sheet-body']"
+    );
+    const elements = Array.from(sheetBody?.querySelectorAll("*") ?? []);
+    const scrollArea = elements.find(
+      (element) =>
+        element.className.includes("min-h-0") &&
+        element.className.includes("flex-1") &&
+        element.className.includes("overflow-y-auto")
+    );
+    const targetList = scrollArea
+      ? Array.from(scrollArea.querySelectorAll("*")).find(
+          (element) =>
+            element.className.includes("flex") &&
+            element.className.includes("flex-col") &&
+            element.className.includes("gap-2")
+        )
+      : undefined;
+    const searchWrapper = container.querySelector(
+      "[data-testid='targets-search-wrapper']"
+    );
+    const targetRows =
+      targetList?.querySelectorAll(".w-full.rounded-lg.border") ?? [];
+
+    expect(sheetBody?.className).toContain("overflow-hidden");
+    expect(searchWrapper?.getAttribute("data-wrapper-class-name")).toContain(
+      "flex-none"
+    );
+    expect(scrollArea).toBeTruthy();
+    expect(targetList).toBeTruthy();
+    expect(targetRows.length).toBe(targets.length);
+  });
+
   it("renders database group overflow as a popover action", async () => {
     mocks.dbGroupStore.getDBGroupByName.mockReturnValue({
       name: "projects/foo/databaseGroups/group-a",
