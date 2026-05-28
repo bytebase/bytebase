@@ -40,6 +40,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	segments := oracleparser.Split(statement)
 
 	result := make([]base.Statement, 0, len(segments))
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, seg := range segments {
 		if seg.Kind == oracleparser.SegmentSQLPlusCommand {
 			continue
@@ -48,8 +49,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		text := statement[seg.ByteStart:byteEnd]
 		result = append(result, base.Statement{
 			Text:  text,
-			Start: ByteOffsetToRunePosition(statement, seg.ByteStart),
-			End:   ByteOffsetToRunePosition(statement, byteEnd),
+			Start: positionMapper.Position(seg.ByteStart),
+			End:   positionMapper.Position(byteEnd),
 			Empty: seg.Empty(),
 			Range: &storepb.Range{
 				Start: int32(seg.ByteStart),
