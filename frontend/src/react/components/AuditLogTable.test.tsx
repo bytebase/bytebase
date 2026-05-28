@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   pushNotification: vi.fn(),
   usePlanFeature: vi.fn(() => true),
-  useUserStore: vi.fn(() => ({ fetchUserList: vi.fn() })),
+  listUsers: vi.fn(async () => ({ users: [] })),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -37,7 +37,13 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useUserStore: mocks.useUserStore,
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      listUsers: mocks.listUsers,
+    }),
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({

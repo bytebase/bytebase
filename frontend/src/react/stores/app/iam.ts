@@ -28,7 +28,11 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       roleServiceClientConnect
         .listRoles(createProto(ListRolesRequestSchema, {}))
         .then((response) => {
-          set({ roles: response.roles, rolesRequest: undefined });
+          set({
+            roles: response.roles,
+            roleList: response.roles,
+            rolesRequest: undefined,
+          });
           return response.roles;
         })
         .catch(() => {

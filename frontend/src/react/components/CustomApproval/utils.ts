@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { ExprType, type Factor, SQLTypeList, wrapAsGroup } from "@/plugins/cel";
 import i18n from "@/react/i18n";
-import { useRoleStore } from "@/store";
+import { displayRoleTitleFromList } from "@/react/lib/role";
+import { useAppStore } from "@/react/stores/app";
 import type { LocalApprovalRule } from "@/types";
 import { PRESET_WORKSPACE_ROLES, PresetRoleType } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
@@ -11,7 +12,6 @@ import { ApprovalFlowSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import type { ResourceSelectOption } from "@/types/v2-shared";
 import {
-  displayRoleTitle,
   engineNameV1,
   getEnvironmentIdOptions,
   getInstanceIdOptionConfig,
@@ -212,10 +212,11 @@ const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
 };
 
 const getRoleOptions = () => {
-  return useRoleStore()
-    .roleList.filter((role) => !PRESET_WORKSPACE_ROLES.includes(role.name))
+  const roleList = useAppStore.getState().roleList;
+  return roleList
+    .filter((role) => !PRESET_WORKSPACE_ROLES.includes(role.name))
     .map((role) => ({
-      label: displayRoleTitle(role.name),
+      label: displayRoleTitleFromList(role.name, roleList),
       value: role.name,
     }));
 };

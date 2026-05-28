@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   routerIsReady: vi.fn(async () => {}),
   routerPush: vi.fn(),
-  fetchRoleList: vi.fn(async () => {}),
+  listRoles: vi.fn(async () => {}),
   fetchIamPolicy: vi.fn(async () => {}),
   getOrFetchProjectByName: vi.fn(async () => {
     throw new ConnectError("not found", Code.NotFound);
@@ -43,15 +43,26 @@ vi.mock("@/store", () => ({
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
     createProject: mocks.createProject,
   }),
-  useRoleStore: () => ({
-    fetchRoleList: mocks.fetchRoleList,
-  }),
   useSettingV1Store: () => ({
     updateWorkspaceProfile: mocks.updateWorkspaceProfile,
   }),
   useWorkspaceV1Store: () => ({
     fetchIamPolicy: mocks.fetchIamPolicy,
   }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        listRoles: mocks.listRoles,
+      }),
+    {
+      getState: () => ({
+        listRoles: mocks.listRoles,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/react/hooks/useVueState", () => ({

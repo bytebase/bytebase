@@ -295,9 +295,6 @@ vi.mock("@/store", () => ({
       state: 1,
     }),
   }),
-  useRoleStore: () => ({
-    roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
-  }),
   useSettingV1Store: () => ({
     getOrFetchSettingByName: vi.fn(),
     getSettingByName: () => undefined,
@@ -306,12 +303,19 @@ vi.mock("@/store", () => ({
     hasFeature: () => true,
     userCountLimit: 10,
   }),
-  useUserStore: () => ({}),
   useWorkspaceV1Store: () => ({
     findRolesByMember: () => [],
     patchIamPolicy: vi.fn(),
     workspaceIamPolicy: { bindings: [] },
   }),
+}));
+
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      batchGetOrFetchUsers: vi.fn(async () => []),
+      roleList: [{ name: "roles/sqlEditorUser", permissions: [] }],
+    }),
 }));
 
 vi.mock("./MemberBindingEnvironmentBanner", () => ({

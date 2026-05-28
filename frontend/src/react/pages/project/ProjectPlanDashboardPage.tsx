@@ -51,6 +51,7 @@ import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { applyPlanTitleToQuery } from "@/react/lib/plan/title";
 import { cn } from "@/react/lib/utils";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -64,7 +65,6 @@ import {
   useEnvironmentV1Store,
   useProjectV1Store,
   useUIStateStore,
-  useUserStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -124,7 +124,10 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const planStore = usePlanStore();
   const projectStore = useProjectV1Store();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const uiStateStore = useUIStateStore();
   const currentUser = useCurrentUserV1();
 
@@ -187,7 +190,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         title: t("issue.advanced-search.scope.creator.title"),
         description: t("issue.advanced-search.scope.creator.description"),
         onSearch: async (keyword: string) => {
-          const resp = await userStore.fetchUserList({
+          const resp = await listUsers({
             pageSize: getDefaultPagination(),
             filter: { query: keyword },
           });
@@ -208,7 +211,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
         },
       },
     ],
-    [t, userStore, me]
+    [t, listUsers, me]
   );
 
   const [canCreate] = usePermissionCheck(["bb.plans.create"], project);
@@ -243,6 +246,13 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     sessionKey: `bb.${projectName}.plan-table`,
     fetchList: fetchPlanList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((plan) => plan.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   // Handle spec created from AddSpecDrawer
   const handleSpecCreated = useCallback(
@@ -570,15 +580,16 @@ function PlanRow({
   projectId: string;
   columns: PlanColumn[];
 }>) {
-  const userStore = useUserStore();
   const environmentStore = useEnvironmentV1Store();
   const { t } = useTranslation();
 
   const isDeleted = plan.state === State.DELETED;
   const showDraftTag = plan.issue === "" && !plan.hasRollout;
 
-  const creator =
-    userStore.getUserByIdentifier(plan.creator) || unknownUser(plan.creator);
+  const creatorUser = useAppStore((state) =>
+    state.getUserByIdentifier(plan.creator)
+  );
+  const creator = creatorUser || unknownUser(plan.creator);
 
   const updateTimeTs = Math.floor(
     getTimeForPbTimestampProtoEs(plan.updateTime, 0) / 1000

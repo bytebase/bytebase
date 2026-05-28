@@ -14,13 +14,13 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/react/components/ui/radio-group";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useAppFeature,
   useProjectV1Store,
-  useRoleStore,
   useSettingV1Store,
   useWorkspaceV1Store,
 } from "@/store";
@@ -56,7 +56,7 @@ export function SetupPage() {
       await router.isReady();
       try {
         await Promise.all([
-          useRoleStore().fetchRoleList(),
+          useAppStore.getState().listRoles(),
           useWorkspaceV1Store().fetchIamPolicy(),
         ]);
       } catch (error) {

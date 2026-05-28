@@ -7,13 +7,9 @@ import { Button } from "@/react/components/ui/button";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { RequestRoleSheet } from "@/react/pages/settings/RequestRoleSheet";
+import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorVueState } from "@/react/stores/sqlEditor/editor-vue-state";
-import {
-  hasFeature,
-  useProjectV1Store,
-  useRoleStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { hasFeature, useProjectV1Store, useSubscriptionV1Store } from "@/store";
 import type { DatabaseResource, Permission } from "@/types";
 import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
@@ -70,6 +66,7 @@ export function RequestQueryButton({
   permissionDeniedDetail,
 }: Props) {
   const { t } = useTranslation();
+  const roleList = useAppStore((state) => state.roleList);
 
   // When the layout-level host is mounted (typical case inside the SQL
   // Editor), opening the drawer dispatches up to the host so it survives
@@ -82,7 +79,7 @@ export function RequestQueryButton({
 
   const projectStore = useProjectV1Store();
   const editorStore = useSQLEditorVueState();
-  const roleStore = useRoleStore();
+
   const subscriptionStore = useSubscriptionV1Store();
 
   const projectName = useVueState(() => editorStore.project);
@@ -92,7 +89,7 @@ export function RequestQueryButton({
   );
   const defaultQueryRole = useVueState(() =>
     getDefaultQueryRole(
-      roleStore.roleList,
+      roleList,
       permissionDeniedDetail.requiredPermissions,
       hasCustomRoleFeature
     )

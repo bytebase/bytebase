@@ -1,6 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ReactShellBridgeEvent } from "@/react/shell-bridge";
+import { UNKNOWN_PROJECT_NAME } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
   AccessGrant_Status,
@@ -9,7 +10,11 @@ import {
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupSchema } from "@/types/proto-es/v1/database_group_service_pb";
-import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
+import {
+  ChangelogSchema,
+  ChangelogView,
+  DatabaseSchema$,
+} from "@/types/proto-es/v1/database_service_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import {
   BindingSchema,
@@ -18,7 +23,12 @@ import {
 import { IdentityProviderSchema } from "@/types/proto-es/v1/idp_service_pb";
 import { InstanceRoleSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { InstanceSchema } from "@/types/proto-es/v1/instance_service_pb";
-import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
+import {
+  ProjectSchema,
+  WebhookSchema,
+} from "@/types/proto-es/v1/project_service_pb";
+import { ReleaseSchema } from "@/types/proto-es/v1/release_service_pb";
+import { RevisionSchema } from "@/types/proto-es/v1/revision_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { ServiceAccountSchema } from "@/types/proto-es/v1/service_account_service_pb";
 import {
@@ -35,7 +45,10 @@ import {
   PlanType,
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
-import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  UpdateUserRequestSchema,
+  UserSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
   storageKeyIntroState,
@@ -64,6 +77,8 @@ const mocks = vi.hoisted(() => ({
   getWorkspace: vi.fn(),
   getIamPolicy: vi.fn(),
   listRoles: vi.fn(),
+  updateRole: vi.fn(),
+  deleteRole: vi.fn(),
   getSubscription: vi.fn(),
   uploadLicense: vi.fn(),
   getSetting: vi.fn(),
@@ -72,10 +87,24 @@ const mocks = vi.hoisted(() => ({
   batchGetProjects: vi.fn(),
   searchProjects: vi.fn(),
   createProject: vi.fn(),
+  addWebhook: vi.fn(),
+  updateWebhook: vi.fn(),
+  removeWebhook: vi.fn(),
+  testWebhook: vi.fn(),
   getInstance: vi.fn(),
+  listReleases: vi.fn(),
+  getRelease: vi.fn(),
+  updateRelease: vi.fn(),
+  deleteRelease: vi.fn(),
+  undeleteRelease: vi.fn(),
+  listRevisions: vi.fn(),
+  getRevision: vi.fn(),
+  deleteRevision: vi.fn(),
   getDatabase: vi.fn(),
   batchGetDatabases: vi.fn(),
   listDatabases: vi.fn(),
+  listChangelogs: vi.fn(),
+  getChangelog: vi.fn(),
   getDatabaseGroup: vi.fn(),
   listDatabaseGroups: vi.fn(),
   getSheet: vi.fn(),
@@ -104,6 +133,14 @@ const mocks = vi.hoisted(() => ({
   createIdentityProvider: vi.fn(),
   updateIdentityProvider: vi.fn(),
   deleteIdentityProvider: vi.fn(),
+  listUsers: vi.fn(),
+  getUser: vi.fn(),
+  batchGetUsers: vi.fn(),
+  createUser: vi.fn(),
+  updateUser: vi.fn(),
+  updateEmail: vi.fn(),
+  deleteUser: vi.fn(),
+  undeleteUser: vi.fn(),
   getAccessGrant: vi.fn(),
   searchMyAccessGrants: vi.fn(),
   createAccessGrant: vi.fn(),
@@ -125,6 +162,22 @@ vi.mock("@/connect", () => ({
     batchGetProjects: mocks.batchGetProjects,
     searchProjects: mocks.searchProjects,
     createProject: mocks.createProject,
+    addWebhook: mocks.addWebhook,
+    updateWebhook: mocks.updateWebhook,
+    removeWebhook: mocks.removeWebhook,
+    testWebhook: mocks.testWebhook,
+  },
+  releaseServiceClientConnect: {
+    listReleases: mocks.listReleases,
+    getRelease: mocks.getRelease,
+    updateRelease: mocks.updateRelease,
+    deleteRelease: mocks.deleteRelease,
+    undeleteRelease: mocks.undeleteRelease,
+  },
+  revisionServiceClientConnect: {
+    listRevisions: mocks.listRevisions,
+    getRevision: mocks.getRevision,
+    deleteRevision: mocks.deleteRevision,
   },
   instanceServiceClientConnect: {
     getInstance: mocks.getInstance,
@@ -133,6 +186,8 @@ vi.mock("@/connect", () => ({
     getDatabase: mocks.getDatabase,
     batchGetDatabases: mocks.batchGetDatabases,
     listDatabases: mocks.listDatabases,
+    listChangelogs: mocks.listChangelogs,
+    getChangelog: mocks.getChangelog,
   },
   databaseGroupServiceClientConnect: {
     getDatabaseGroup: mocks.getDatabaseGroup,
@@ -186,6 +241,8 @@ vi.mock("@/connect", () => ({
   },
   roleServiceClientConnect: {
     listRoles: mocks.listRoles,
+    updateRole: mocks.updateRole,
+    deleteRole: mocks.deleteRole,
   },
   settingServiceClientConnect: {
     getSetting: mocks.getSetting,
@@ -196,6 +253,14 @@ vi.mock("@/connect", () => ({
   },
   userServiceClientConnect: {
     getCurrentUser: mocks.getCurrentUser,
+    listUsers: mocks.listUsers,
+    getUser: mocks.getUser,
+    batchGetUsers: mocks.batchGetUsers,
+    createUser: mocks.createUser,
+    updateUser: mocks.updateUser,
+    updateEmail: mocks.updateEmail,
+    deleteUser: mocks.deleteUser,
+    undeleteUser: mocks.undeleteUser,
   },
   workspaceServiceClientConnect: {
     getWorkspace: mocks.getWorkspace,
@@ -234,6 +299,32 @@ const groupB = createProto(GroupSchema, {
   title: "Dev",
 });
 
+const userA = createProto(UserSchema, {
+  name: "users/bob@example.com",
+  email: "bob@example.com",
+  title: "Bob",
+  state: State.ACTIVE,
+});
+
+const userB = createProto(UserSchema, {
+  name: "users/carol@example.com",
+  email: "carol@example.com",
+  title: "Carol",
+  state: State.ACTIVE,
+});
+
+const roleA = createProto(RoleSchema, {
+  name: "roles/sql-reviewer",
+  title: "SQL Reviewer",
+  permissions: ["bb.plans.get"],
+});
+
+const roleB = createProto(RoleSchema, {
+  name: "roles/sql-admin",
+  title: "SQL Admin",
+  permissions: ["bb.plans.get", "bb.plans.update"],
+});
+
 const serviceAccountA = createProto(ServiceAccountSchema, {
   name: "serviceAccounts/robot@example.com",
   email: "robot@example.com",
@@ -257,6 +348,39 @@ const identityProviderA = createProto(IdentityProviderSchema, {
 const accessGrantA = createProto(AccessGrantSchema, {
   name: "projects/a/accessGrants/ag1",
   status: AccessGrant_Status.ACTIVE,
+});
+
+const releaseA = createProto(ReleaseSchema, {
+  name: "projects/a/releases/rel-a",
+  state: State.ACTIVE,
+});
+
+const releaseB = createProto(ReleaseSchema, {
+  name: "projects/a/releases/rel-b",
+  state: State.ACTIVE,
+});
+
+const revisionA = createProto(RevisionSchema, {
+  name: "instances/i1/databases/db1/revisions/1",
+});
+
+const revisionB = createProto(RevisionSchema, {
+  name: "instances/i1/databases/db1/revisions/2",
+});
+
+const changelogA = createProto(ChangelogSchema, {
+  name: "instances/i1/databases/db1/changelogs/1",
+});
+
+const changelogB = createProto(ChangelogSchema, {
+  name: "instances/i1/databases/db1/changelogs/2",
+  schema: "full",
+});
+
+const webhookA = createProto(WebhookSchema, {
+  name: "projects/a/webhooks/hook-a",
+  title: "Hook A",
+  url: "https://example.com/hook-a",
 });
 
 const timestampSeconds = (seconds: number) => ({
@@ -314,6 +438,498 @@ describe("useAppStore", () => {
     expect(result.nextPageToken).toBe("next");
     expect(store.getState().groupsByName[groupA.name]).toBe(groupA);
     expect(store.getState().groupsByName[groupB.name]).toBe(groupB);
+  });
+
+  test("lists users and populates the user cache", async () => {
+    mocks.listUsers.mockResolvedValue({
+      users: [userA, userB],
+      nextPageToken: "next-user",
+    });
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      roles: [
+        createProto(RoleSchema, {
+          name: "roles/user-viewer",
+          permissions: ["bb.users.list"],
+        }),
+      ],
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/user-viewer",
+            members: [`user:${user.email}`],
+          }),
+        ],
+      }),
+    });
+
+    const result = await store.getState().listUsers({
+      pageSize: 50,
+      filter: { query: "BO", state: State.DELETED },
+    });
+
+    expect(result.users).toEqual([userA, userB]);
+    expect(result.nextPageToken).toBe("next-user");
+    expect(store.getState().usersByName[userA.name]).toBe(userA);
+    expect(store.getState().usersByName[userB.name]).toBe(userB);
+    expect(mocks.listUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter:
+          '(name.contains("bo") || email.contains("bo")) && state == "DELETED"',
+        showDeleted: true,
+      })
+    );
+  });
+
+  test("listUsers omits the project filter for unknown project sentinels", async () => {
+    mocks.listUsers.mockResolvedValue({
+      users: [userA],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      roles: [
+        createProto(RoleSchema, {
+          name: "roles/user-viewer",
+          permissions: ["bb.users.list"],
+        }),
+      ],
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/user-viewer",
+            members: [`user:${user.email}`],
+          }),
+        ],
+      }),
+    });
+
+    for (const project of [UNKNOWN_PROJECT_NAME, "projects/-"]) {
+      await store.getState().listUsers({
+        pageSize: 50,
+        filter: { project, query: "BO" },
+      });
+    }
+
+    expect(
+      mocks.listUsers.mock.calls.map(([request]) => request.filter)
+    ).toEqual([
+      '(name.contains("bo") || email.contains("bo"))',
+      '(name.contains("bo") || email.contains("bo"))',
+    ]);
+  });
+
+  test("batchGetOrFetchUsers fetches missing users and returns unknown fallback", async () => {
+    mocks.batchGetUsers.mockResolvedValue({ users: [userB] });
+    const store = createAppStore();
+    store.setState({ usersByName: { [userA.name]: userA } });
+
+    const result = await store
+      .getState()
+      .batchGetOrFetchUsers([userA.name, "user:carol@example.com"]);
+
+    expect(mocks.batchGetUsers).toHaveBeenCalledWith(
+      expect.objectContaining({ names: [userB.name] }),
+      expect.anything()
+    );
+    expect(result.map((u) => u.name)).toEqual([userA.name, userB.name]);
+
+    mocks.batchGetUsers.mockResolvedValueOnce({ users: [] });
+    const missing = await store
+      .getState()
+      .batchGetOrFetchUsers(["users/missing@example.com"]);
+
+    expect(missing[0]).toMatchObject({
+      name: "users/missing@example.com",
+      email: "missing@example.com",
+    });
+  });
+
+  test("updateEmail removes the old user cache key and stores the updated user", async () => {
+    const updated = createProto(UserSchema, {
+      ...userA,
+      name: "users/robert@example.com",
+      email: "robert@example.com",
+    });
+    mocks.updateEmail.mockResolvedValue(updated);
+    const store = createAppStore();
+    store.setState({ usersByName: { [userA.name]: userA } });
+
+    const result = await store
+      .getState()
+      .updateEmail("bob@example.com", "robert@example.com");
+
+    expect(result).toBe(updated);
+    expect(store.getState().usersByName[userA.name]).toBeUndefined();
+    expect(store.getState().usersByName[updated.name]).toBe(updated);
+  });
+
+  test("updateUser passes allowMissing through without requiring an existing user", async () => {
+    mocks.updateUser.mockResolvedValue(userA);
+    const store = createAppStore();
+
+    const result = await store.getState().updateUser(
+      createProto(UpdateUserRequestSchema, {
+        user: userA,
+        allowMissing: true,
+      })
+    );
+
+    expect(result).toBe(userA);
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user: userA,
+        allowMissing: true,
+      })
+    );
+    expect(store.getState().usersByName[userA.name]).toBe(userA);
+  });
+
+  test("create archive and restore update activated user count when server info is loaded", async () => {
+    mocks.createUser.mockResolvedValue(userA);
+    mocks.deleteUser.mockResolvedValue({});
+    mocks.undeleteUser.mockResolvedValue(userA);
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        activatedUserCount: 2,
+      }),
+    });
+
+    await store.getState().createUser(userA);
+    expect(store.getState().serverInfo?.activatedUserCount).toBe(3);
+
+    await store.getState().archiveUser(userA.name);
+    expect(store.getState().serverInfo?.activatedUserCount).toBe(2);
+
+    await store.getState().restoreUser(userA.name);
+    expect(store.getState().serverInfo?.activatedUserCount).toBe(3);
+
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, {
+        activatedUserCount: 0,
+      }),
+    });
+
+    await store.getState().archiveUser(userA.name);
+    expect(store.getState().serverInfo?.activatedUserCount).toBe(0);
+  });
+
+  test("lists, upserts, and deletes roles", async () => {
+    mocks.listRoles.mockResolvedValue({ roles: [roleA] });
+    mocks.updateRole.mockResolvedValue(roleB);
+    mocks.deleteRole.mockResolvedValue({});
+    const store = createAppStore();
+
+    const roles = await store.getState().listRoles();
+    expect(roles).toEqual([roleA]);
+    expect(store.getState().getRoleByName(roleA.name)).toBe(roleA);
+
+    const upserted = await store.getState().upsertRole(roleB);
+    expect(upserted).toBe(roleB);
+    expect(store.getState().roleList).toEqual([roleA, roleB]);
+    expect(mocks.updateRole).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: roleB,
+        updateMask: expect.objectContaining({
+          paths: ["title", "description", "permissions"],
+        }),
+        allowMissing: true,
+      })
+    );
+
+    await store.getState().deleteRole(roleA);
+    expect(store.getState().roleList).toEqual([roleB]);
+    expect(mocks.deleteRole).toHaveBeenCalledWith(
+      expect.objectContaining({ name: roleA.name })
+    );
+  });
+
+  test("loads workspace permission roles into the role display cache", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: "workspaces/default",
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: "workspaces/default" });
+    mocks.listRoles.mockResolvedValue({ roles: [roleA, roleB] });
+    mocks.getIamPolicy.mockResolvedValue(createProto(IamPolicySchema, {}));
+    const store = createAppStore();
+
+    await store.getState().loadWorkspacePermissionState();
+
+    expect(store.getState().roles).toEqual([roleA, roleB]);
+    expect(store.getState().roleList).toEqual([roleA, roleB]);
+  });
+
+  test("lists releases and marks cached release deleted", async () => {
+    mocks.listReleases.mockResolvedValue({
+      releases: [releaseA, releaseB],
+      nextPageToken: "next-release",
+    });
+    mocks.deleteRelease.mockResolvedValue({});
+    const store = createAppStore();
+
+    const result = await store
+      .getState()
+      .listReleasesByProject("projects/a", { pageSize: 20 }, true, "x");
+
+    expect(result.releases).toEqual([releaseA, releaseB]);
+    expect(result.nextPageToken).toBe("next-release");
+    expect(store.getState().releasesByName[releaseA.name]).toBe(releaseA);
+    expect(store.getState().getReleasesByProject("projects/a")).toEqual([
+      releaseA,
+      releaseB,
+    ]);
+    expect(mocks.listReleases).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: "projects/a",
+        pageSize: 20,
+        showDeleted: true,
+        filter: "x",
+      })
+    );
+
+    await store.getState().deleteRelease(releaseA.name);
+
+    expect(store.getState().releasesByName[releaseA.name].state).toBe(
+      State.DELETED
+    );
+  });
+
+  test("deduplicates release fetches and clears failed requests", async () => {
+    mocks.getRelease.mockResolvedValueOnce(releaseA);
+    const store = createAppStore();
+
+    const [first, second] = await Promise.all([
+      store.getState().fetchRelease(releaseA.name),
+      store.getState().fetchRelease(releaseA.name),
+    ]);
+
+    expect(first).toBe(releaseA);
+    expect(second).toBe(releaseA);
+    expect(mocks.getRelease).toHaveBeenCalledTimes(1);
+    expect(store.getState().releaseRequests[releaseA.name]).toBeUndefined();
+
+    const failedName = "projects/a/releases/fail";
+    mocks.getRelease.mockRejectedValueOnce(new Error("failed"));
+    await expect(store.getState().fetchRelease(failedName)).rejects.toThrow(
+      "failed"
+    );
+    expect(store.getState().releaseRequests[failedName]).toBeUndefined();
+  });
+
+  test("paginates all revisions by database and caches results", async () => {
+    mocks.listRevisions
+      .mockResolvedValueOnce({
+        revisions: [revisionA],
+        nextPageToken: "next-revision",
+      })
+      .mockResolvedValueOnce({
+        revisions: [revisionB],
+        nextPageToken: "",
+      });
+    const store = createAppStore();
+
+    const result = await store
+      .getState()
+      .listAllRevisionsByDatabase("instances/i1/databases/db1", {
+        pageSize: 1,
+      });
+
+    expect(result).toEqual([revisionA, revisionB]);
+    expect(mocks.listRevisions.mock.calls.map(([request]) => request)).toEqual([
+      expect.objectContaining({
+        parent: "instances/i1/databases/db1",
+        pageSize: 1,
+        pageToken: "",
+      }),
+      expect.objectContaining({
+        parent: "instances/i1/databases/db1",
+        pageSize: 1,
+        pageToken: "next-revision",
+      }),
+    ]);
+    expect(
+      store.getState().getRevisionsByDatabase("instances/i1/databases/db1")
+    ).toEqual([revisionA, revisionB]);
+  });
+
+  test("deleteRevision removes the cached revision", async () => {
+    mocks.deleteRevision.mockResolvedValue({});
+    const store = createAppStore();
+    store.setState({ revisionsByName: { [revisionA.name]: revisionA } });
+
+    await store.getState().deleteRevision(revisionA.name);
+
+    expect(store.getState().revisionsByName[revisionA.name]).toBeUndefined();
+  });
+
+  test("caches changelog list by database and view preference", async () => {
+    mocks.listChangelogs.mockResolvedValue({ changelogs: [changelogA] });
+    const fullChangelog = createProto(ChangelogSchema, {
+      ...changelogA,
+      schema: "full",
+    });
+    const store = createAppStore();
+
+    const changelogs = await store.getState().listChangelogs({
+      parent: "instances/i1/databases/db1",
+      pageSize: 20,
+      view: ChangelogView.BASIC,
+    });
+
+    expect(changelogs.changelogs).toEqual([changelogA]);
+    expect(
+      store.getState().changelogListByDatabase("instances/i1/databases/db1")
+    ).toEqual([changelogA]);
+    expect(store.getState().getChangelogByName(changelogA.name)).toBe(
+      changelogA
+    );
+
+    store.setState({
+      changelogsByCacheKey: {
+        ...store.getState().changelogsByCacheKey,
+        [`${changelogA.name}|${ChangelogView.FULL}`]: fullChangelog,
+      },
+    });
+
+    expect(store.getState().getChangelogByName(changelogA.name)).toBe(
+      fullChangelog
+    );
+  });
+
+  test("keeps changelog list cache isolated by request dimensions", async () => {
+    mocks.listChangelogs
+      .mockResolvedValueOnce({ changelogs: [changelogA] })
+      .mockResolvedValueOnce({ changelogs: [changelogB] });
+    const store = createAppStore();
+
+    await store.getState().listChangelogs({
+      parent: "instances/i1/databases/db1",
+      pageSize: 20,
+      view: ChangelogView.BASIC,
+    });
+    const full = await store
+      .getState()
+      .getOrFetchChangelogListOfDatabase(
+        "instances/i1/databases/db1",
+        20,
+        ChangelogView.FULL
+      );
+
+    expect(full).toEqual([changelogB]);
+    expect(mocks.listChangelogs).toHaveBeenCalledTimes(2);
+    expect(
+      store.getState().changelogListByDatabase("instances/i1/databases/db1")
+    ).toEqual([changelogA]);
+
+    mocks.listChangelogs.mockReset();
+    mocks.listChangelogs
+      .mockResolvedValueOnce({ changelogs: [changelogB] })
+      .mockResolvedValueOnce({ changelogs: [changelogA, changelogB] });
+    const filteredStore = createAppStore();
+
+    await filteredStore.getState().listChangelogs({
+      parent: "instances/i1/databases/db1",
+      pageSize: 20,
+      view: ChangelogView.BASIC,
+      filter: 'status == "DONE"',
+    });
+    const unfiltered = await filteredStore
+      .getState()
+      .getOrFetchChangelogListOfDatabase("instances/i1/databases/db1", 20);
+
+    expect(unfiltered).toEqual([changelogA, changelogB]);
+    expect(mocks.listChangelogs).toHaveBeenCalledTimes(2);
+    expect(
+      filteredStore
+        .getState()
+        .changelogListByDatabase("instances/i1/databases/db1")
+    ).toEqual([changelogA, changelogB]);
+  });
+
+  test("deduplicates changelog fetches and skips unknown changelog names", async () => {
+    mocks.getChangelog.mockResolvedValue(changelogA);
+    const store = createAppStore();
+
+    const missing = await store
+      .getState()
+      .getOrFetchChangelogByName("instances/i1/databases/db1/changelogs/-1");
+    expect(missing).toBeUndefined();
+
+    const [first, second] = await Promise.all([
+      store.getState().getOrFetchChangelogByName(changelogA.name),
+      store.getState().getOrFetchChangelogByName(changelogA.name),
+    ]);
+
+    expect(first).toBe(changelogA);
+    expect(second).toBe(changelogA);
+    expect(mocks.getChangelog).toHaveBeenCalledTimes(1);
+    expect(
+      store.getState().changelogRequests[
+        `${changelogA.name}|${ChangelogView.BASIC}`
+      ]
+    ).toBeUndefined();
+  });
+
+  test("project webhook operations call through and lookup by id", async () => {
+    const projectWithWebhook = createProto(ProjectSchema, {
+      ...projectA,
+      webhooks: [webhookA],
+    });
+    mocks.addWebhook.mockResolvedValue(projectWithWebhook);
+    mocks.updateWebhook.mockResolvedValue(projectWithWebhook);
+    mocks.removeWebhook.mockResolvedValue(projectA);
+    mocks.testWebhook.mockResolvedValue({ error: "no route" });
+    const store = createAppStore();
+
+    expect(
+      store
+        .getState()
+        .getProjectWebhookFromProjectById(projectWithWebhook, "hook-a")
+    ).toBe(webhookA);
+
+    await expect(
+      store.getState().createProjectWebhook(projectA.name, webhookA)
+    ).resolves.toBe(projectWithWebhook);
+    expect(store.getState().projectsByName[projectWithWebhook.name]).toBe(
+      projectWithWebhook
+    );
+
+    await expect(
+      store.getState().updateProjectWebhook(webhookA, ["title"])
+    ).resolves.toBe(projectWithWebhook);
+    expect(store.getState().projectsByName[projectWithWebhook.name]).toBe(
+      projectWithWebhook
+    );
+
+    await expect(store.getState().deleteProjectWebhook(webhookA)).resolves.toBe(
+      projectA
+    );
+    expect(store.getState().projectsByName[projectA.name]).toBe(projectA);
+
+    await expect(
+      store.getState().testProjectWebhook(projectWithWebhook, webhookA)
+    ).resolves.toEqual({ error: "no route" });
+
+    expect(mocks.addWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({ project: projectA.name, webhook: webhookA })
+    );
+    expect(mocks.updateWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        webhook: webhookA,
+        updateMask: expect.objectContaining({ paths: ["title"] }),
+      })
+    );
+    expect(mocks.removeWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({ webhook: webhookA })
+    );
+    expect(mocks.testWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({ project: projectA.name, webhook: webhookA })
+    );
   });
 
   test("batchGetOrFetchGroups skips cached groups and preserves order", async () => {

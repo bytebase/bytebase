@@ -5,7 +5,8 @@ import {
   sheetServiceClientConnect,
 } from "@/connect";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useReleaseStore, useRolloutStore } from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { useRolloutStore } from "@/store";
 import {
   GetTaskRunLogRequestSchema,
   type Task,
@@ -156,7 +157,7 @@ export const useTaskRunLogData = (
   taskRunName?: string
 ): UseTaskRunLogDataResult => {
   const rolloutStore = useRolloutStore();
-  const releaseStore = useReleaseStore();
+  const fetchRelease = useAppStore((state) => state.fetchRelease);
 
   const [entries, setEntries] = useState<TaskRunLogEntry[]>([]);
   const [sheet, setSheet] = useState<Sheet | undefined>(undefined);
@@ -285,11 +286,10 @@ export const useTaskRunLogData = (
         return;
       }
 
-      void releaseStore
-        .fetchReleaseByName(releaseName, true)
+      void fetchRelease(releaseName, true)
         .then(async (release) => {
           const fileSheets = await Promise.all(
-            release.files
+            (release?.files ?? [])
               .filter((file) => file.sheet && file.version)
               .map(async (file) => {
                 try {
@@ -361,7 +361,7 @@ export const useTaskRunLogData = (
         });
       });
   }, [
-    releaseStore,
+    fetchRelease,
     task,
     taskRunName,
     sheetFetchTaskKey,

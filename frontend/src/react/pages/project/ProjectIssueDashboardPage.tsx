@@ -13,6 +13,7 @@ import {
 import { Alert } from "@/react/components/ui/alert";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import {
   refreshIssueList,
@@ -42,6 +43,9 @@ export function ProjectIssueDashboardPage({
   const issueStore = useIssueV1Store();
   const uiStateStore = useUIStateStore();
   const currentUser = useCurrentUserV1();
+  const batchGetOrFetchUsers = useAppStore(
+    (state) => state.batchGetOrFetchUsers
+  );
   const me = useVueState(() => currentUser.value);
 
   const projectName = `${projectNamePrefix}${projectId}`;
@@ -174,6 +178,13 @@ export function ProjectIssueDashboardPage({
     sessionKey: "bb.issue-table.project-issues",
     fetchList: fetchIssueList,
   });
+
+  useEffect(() => {
+    if (paged.dataList.length === 0) {
+      return;
+    }
+    void batchGetOrFetchUsers(paged.dataList.map((issue) => issue.creator));
+  }, [batchGetOrFetchUsers, paged.dataList]);
 
   // Scope options
   const scopeOptions = useIssueSearchScopeOptions(projectName);

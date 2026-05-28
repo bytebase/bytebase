@@ -10,6 +10,7 @@ import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
 import { useVueState } from "@/react/hooks/useVueState";
+import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
@@ -17,7 +18,6 @@ import {
   useActuatorV1Store,
   useAuthStore,
   useCurrentUserV1,
-  useUserStore,
 } from "@/store";
 import {
   LoginRequestSchema,
@@ -157,7 +157,7 @@ export function PasswordResetPage() {
     // Forced-reset mode
     if (!currentUser) return;
     const patch = { ...currentUser, password };
-    await useUserStore().updateUser(
+    await useAppStore.getState().updateUser(
       create(UpdateUserRequestSchema, {
         user: patch,
         updateMask: create(FieldMaskSchema, { paths: ["password"] }),

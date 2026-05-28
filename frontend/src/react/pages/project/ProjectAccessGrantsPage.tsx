@@ -41,7 +41,6 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
-  useUserStore,
 } from "@/store";
 import { extractUserEmail, projectNamePrefix } from "@/store/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -114,7 +113,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const userStore = useUserStore();
+  const listUsers = useAppStore((state) => state.listUsers);
   const listAccessGrants = useAppStore((state) => state.listAccessGrants);
   const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
   const revokeAccessGrant = useAppStore((state) => state.revokeAccessGrant);
@@ -202,7 +201,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   // Server-side search for creator filter options
   const searchUsers = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const result = await userStore.fetchUserList({
+      const result = await listUsers({
         pageSize: getDefaultPagination(),
         filter: keyword ? { query: keyword } : undefined,
       });
@@ -231,7 +230,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         ),
       }));
     },
-    [userStore, currentUser, t]
+    [listUsers, currentUser, t]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(

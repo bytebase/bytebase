@@ -23,12 +23,8 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { cn } from "@/react/lib/utils";
-import {
-  pushNotification,
-  useReleaseStore,
-  useRevisionStore,
-  useSheetV1Store,
-} from "@/store";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification, useSheetV1Store } from "@/store";
 import type {
   Release,
   Release_File,
@@ -73,8 +69,12 @@ export function ImportRevisionSheet({
   onCreated: (revisions: Revision[]) => void;
 }) {
   const { t } = useTranslation();
-  const releaseStore = useReleaseStore();
-  const revisionStore = useRevisionStore();
+  const listReleasesByProject = useAppStore(
+    (state) => state.listReleasesByProject
+  );
+  const listAllRevisionsByDatabase = useAppStore(
+    (state) => state.listAllRevisionsByDatabase
+  );
   const sheetStore = useSheetV1Store();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,25 +94,23 @@ export function ImportRevisionSheet({
 
   const loadExistingRevisions = useCallback(async () => {
     try {
-      const revisions = await revisionStore.fetchAllRevisionsByDatabase(
-        databaseName,
-        { pageSize: 1000 }
-      );
+      const revisions = await listAllRevisionsByDatabase(databaseName, {
+        pageSize: 1000,
+      });
       setExistingVersions(
         new Set(revisions.map((revision) => revision.version).filter(Boolean))
       );
     } catch (error) {
       console.error("Failed to load existing revisions:", error);
     }
-  }, [databaseName, revisionStore]);
+  }, [databaseName, listAllRevisionsByDatabase]);
 
   const loadReleases = useCallback(async () => {
     setLoadingReleases(true);
     try {
-      const { releases } = await releaseStore.fetchReleasesByProject(
-        projectName,
-        { pageSize: 100 }
-      );
+      const { releases } = await listReleasesByProject(projectName, {
+        pageSize: 100,
+      });
       setReleaseList(releases);
     } catch (error) {
       pushNotification({
@@ -124,7 +122,7 @@ export function ImportRevisionSheet({
     } finally {
       setLoadingReleases(false);
     }
-  }, [projectName, releaseStore, t]);
+  }, [listReleasesByProject, projectName, t]);
 
   useEffect(() => {
     if (!open) {

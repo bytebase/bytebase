@@ -8,13 +8,24 @@ const fixtures: Record<string, string[]> = {
   "roles/queryOnly": ["bb.sql.select"],
   "roles/projectViewer": [],
 };
-vi.mock("@/store", () => ({
-  useRoleStore: () => ({
-    getRoleByName: (role: string) =>
-      fixtures[role] === undefined
-        ? undefined
-        : { name: role, permissions: fixtures[role] },
-  }),
+vi.mock("@/react/stores/app", () => ({
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        getRoleByName: (role: string) =>
+          fixtures[role] === undefined
+            ? undefined
+            : { name: role, permissions: fixtures[role] },
+      }),
+    {
+      getState: () => ({
+        getRoleByName: (role: string) =>
+          fixtures[role] === undefined
+            ? undefined
+            : { name: role, permissions: fixtures[role] },
+      }),
+    }
+  ),
 }));
 vi.mock("@/utils", () => ({
   displayRoleTitle: (r: string) => r,
