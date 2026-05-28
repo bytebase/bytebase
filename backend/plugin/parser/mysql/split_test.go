@@ -1,7 +1,10 @@
 package mysql
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -12,6 +15,23 @@ func TestMySQLSplitSQL(t *testing.T) {
 	base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
 		SplitFunc: SplitSQL,
 	})
+}
+
+func TestMySQLSplitSQLLargeInsertScriptScalesLinearly(t *testing.T) {
+	const rowCount = 2000
+	padding := strings.Repeat("x", 1024)
+	var builder strings.Builder
+	for i := 0; i < rowCount; i++ {
+		fmt.Fprintf(&builder, "INSERT INTO perf_omni_mysql (id, payload) VALUES (%d, '%s');\n", i, padding)
+	}
+
+	started := time.Now()
+	statements, err := SplitSQL(builder.String())
+	elapsed := time.Since(started)
+
+	require.NoError(t, err)
+	require.Len(t, base.FilterEmptyStatements(statements), rowCount)
+	require.Less(t, elapsed, time.Second)
 }
 
 func TestSplitMySQLStatements(t *testing.T) {

@@ -1,7 +1,10 @@
 package plsql
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -65,4 +68,24 @@ SELECT 1 FROM dual;`
 	require.Equal(t, "SET TRANSACTION READ ONLY", statements[0].Text)
 	require.Equal(t, "\nSET ROLE app_role", statements[1].Text)
 	require.Equal(t, "\nSELECT 1 FROM dual", statements[2].Text)
+}
+
+func TestPLSQLSplitSQLLargeInsertScriptScalesLinearly(t *testing.T) {
+	const rowCount = 2000
+	padding := strings.Repeat("x", 1024)
+	var builder strings.Builder
+	for i := 0; i < rowCount; i++ {
+		fmt.Fprintf(&builder, "INSERT INTO perf_omni_oracle (id, payload) VALUES (%d, '%s');\n", i, padding)
+	}
+
+	started := time.Now()
+	statements, err := SplitSQL(builder.String())
+	elapsed := time.Since(started)
+
+	require.NoError(t, err)
+	require.Len(t, statements, rowCount)
+	require.Less(t, elapsed, time.Second)
+	require.Equal(t, int32(1), statements[0].Start.Line)
+	require.Equal(t, int32(rowCount-1), statements[rowCount-1].Start.Line)
+	require.Equal(t, int32(rowCount), statements[rowCount-1].End.Line)
 }

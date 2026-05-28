@@ -1,3 +1,4 @@
+//nolint:unused
 package plsql
 
 import (
@@ -1390,8 +1391,8 @@ func (q *querySpanExtractor) getColumnsForView(instanceID, defaultDatabase, defi
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+	newQ := newOmniQuerySpanExtractor(defaultDatabase, newContext)
+	span, err := newQ.getOmniQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
 	}
@@ -1408,8 +1409,8 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDa
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
-	span, err := newQ.getQuerySpan(q.ctx, definition)
+	newQ := newOmniQuerySpanExtractor(defaultDatabase, newContext)
+	span, err := newQ.getOmniQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)
 	}
