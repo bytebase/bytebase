@@ -644,7 +644,7 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (strin
 		if expr.Column == "*" {
 			return "*", base.SourceColumnSet{}, nil
 		}
-		return expr.Column, q.getFieldColumnSource(expr.Schema, expr.Table, expr.Column), nil
+		return expr.Column, q.getOmniFieldColumnSource(expr.Schema, expr.Table, expr.Column), nil
 	case *oracleast.Star:
 		return "*", base.SourceColumnSet{}, nil
 	case *oracleast.NumberLiteral:
@@ -671,6 +671,14 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (strin
 			return "", nil, err
 		}
 		return q.omniExprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
+	case *oracleast.CursorExpr:
+		child := q.clone()
+		child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
+		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		if err != nil {
+			return "", nil, err
+		}
+		return q.omniExprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
 	default:
 		name := q.omniExprName(getOmniExprFullLoc(expr), oracleast.NodeToString(expr))
 		sourceColumns, err := q.extractOmniExprSourceColumns(expr)
@@ -688,7 +696,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumns(expr oracleast.Exp
 		switch node := node.(type) {
 		case *oracleast.ColumnRef:
 			if node.Column != "*" {
-				result, _ = base.MergeSourceColumnSet(result, q.getFieldColumnSource(node.Schema, node.Table, node.Column))
+				result, _ = base.MergeSourceColumnSet(result, q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column))
 			}
 			return false
 		case *oracleast.FuncCallExpr:
@@ -713,11 +721,50 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumns(expr oracleast.Exp
 			}
 			result, _ = base.MergeSourceColumnSet(result, mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()))
 			return false
+		case *oracleast.CursorExpr:
+			child := q.clone()
+			child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
+			tableSource, err := child.extractOmniStmt(node.Subquery)
+			if err != nil {
+				walkErr = err
+				return false
+			}
+			result, _ = base.MergeSourceColumnSet(result, mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()))
+			return false
 		default:
 			return true
 		}
 	})
 	return result, walkErr
+}
+
+func (q *omniQuerySpanExtractor) getOmniFieldColumnSource(schemaName, tableName, columnName string) base.SourceColumnSet {
+	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
+		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
+			return nil, false
+		}
+		if tableName != "" && tableName != tableSource.GetTableName() {
+			return nil, false
+		}
+		for _, field := range tableSource.GetQuerySpanResult() {
+			if field.Name == columnName {
+				return field.SourceColumns, true
+			}
+		}
+		return nil, false
+	}
+
+	for _, tableSource := range q.tableSourcesFrom {
+		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
+			return sourceColumnSet
+		}
+	}
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
+			return sourceColumnSet
+		}
+	}
+	return base.SourceColumnSet{}
 }
 
 func (q *omniQuerySpanExtractor) expandOmniAsterisk(schemaName, tableName string) ([]base.QuerySpanResult, error) {

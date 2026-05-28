@@ -395,6 +395,18 @@ FROM T`,
 			}), span.SourceColumns, statement)
 		}
 	})
+
+	t.Run("cursor expression uses subquery scope", func(t *testing.T) {
+		span, err := newOmniQuerySpanExtractor("PUBLIC", oracleOmniLongTailTestContext(t)).getOmniQuerySpan(
+			context.Background(),
+			"SELECT CURSOR(SELECT C FROM T2) AS CUR FROM T",
+		)
+		require.NoError(t, err)
+		require.NotNil(t, span)
+		require.Equal(t, []base.QuerySpanResult{
+			{Name: "CUR", SourceColumns: sourceColumnSetFromList([]base.ColumnResource{{Database: "PUBLIC", Table: "T2", Column: "C"}})},
+		}, span.Results)
+	})
 }
 
 func TestOracleOmniResourceNotFoundPropagation(t *testing.T) {
