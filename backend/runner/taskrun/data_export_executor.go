@@ -45,7 +45,9 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int64) (*storepb.TaskRunResult, error) {
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
+	ctx = taskRunLogContext(ctx, task.ProjectID, taskRunUID)
+
 	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{task.ProjectID}, PlanUID: &task.PlanID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue")
@@ -112,11 +114,10 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 	bytes, exportErr := exec.executeExport(ctx, instance, database, dataSource, statement, exportConfig.Format, creatorUser)
 	if exportErr != nil {
-		slog.Error("failed to export",
-			log.BBError(err),
+		slog.ErrorContext(ctx, "failed to export",
+			log.BBError(exportErr),
 			slog.String("instance", database.InstanceID),
 			slog.String("database", database.DatabaseName),
-			slog.String("project", database.ProjectID),
 		)
 		return nil, exportErr
 	}
@@ -189,7 +190,7 @@ func (exec *DataExportExecutor) executeExport(
 	queryCtx := ctx
 	if queryContext.Timeout != nil {
 		timeout := queryContext.Timeout.AsDuration()
-		slog.Debug("create query context with timeout", slog.Duration("timeout", timeout))
+		slog.DebugContext(ctx, "create query context with timeout", slog.Duration("timeout", timeout))
 		newCtx, cancelCtx := context.WithTimeout(ctx, timeout)
 		defer cancelCtx()
 		queryCtx = newCtx
@@ -207,7 +208,7 @@ func (exec *DataExportExecutor) executeExport(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute query")
 	}
-	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", time.Since(start)))
+	slog.DebugContext(ctx, "execute success", slog.String("instance", instance.ResourceID), slog.String("statement", statement), slog.Duration("duration", time.Since(start)))
 
 	// 5. Format and zip results (NO MASKING)
 	return exec.formatAndZipResults(ctx, results, instance, database, format, statement)
@@ -220,7 +221,7 @@ func (exec *DataExportExecutor) getSQLResultSizeLimit(
 ) int64 {
 	maximumResultSize, err := exec.store.GetSQLResultSize(ctx, workspace)
 	if err != nil {
-		slog.Error("failed to get the sql result size limit", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to get the sql result size limit", log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	return maximumResultSize
@@ -233,7 +234,7 @@ func (exec *DataExportExecutor) getQueryTimeoutInSeconds(
 ) int64 {
 	timeout, err := exec.store.GetQueryTimeoutInSeconds(ctx, workspace)
 	if err != nil {
-		slog.Error("failed to get the sql timeout limit", log.BBError(err))
+		slog.ErrorContext(ctx, "failed to get the sql timeout limit", log.BBError(err))
 		return math.MaxInt64
 	}
 	return timeout

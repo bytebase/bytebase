@@ -1,6 +1,7 @@
 package ghost
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -8,68 +9,73 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ghostLogger struct{}
-
-func newGhostLogger() *ghostLogger {
-	return &ghostLogger{}
+type ghostLogger struct {
+	ctx context.Context
 }
 
-func (*ghostLogger) Debug(args ...any) {
-	slog.Debug(fmt.Sprintf(args[0].(string), args[1:]))
+func newGhostLogger(ctx context.Context) *ghostLogger {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return &ghostLogger{ctx: ctx}
 }
 
-func (*ghostLogger) Debugf(format string, args ...any) {
-	slog.Debug(format, args...)
+func (l *ghostLogger) Debug(args ...any) {
+	slog.DebugContext(l.ctx, fmt.Sprintf(args[0].(string), args[1:]...))
 }
 
-func (*ghostLogger) Info(args ...any) {
-	slog.Info(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Debugf(format string, args ...any) {
+	slog.DebugContext(l.ctx, fmt.Sprintf(format, args...))
 }
 
-func (*ghostLogger) Infof(format string, args ...any) {
-	slog.Info(format, args...)
+func (l *ghostLogger) Info(args ...any) {
+	slog.InfoContext(l.ctx, fmt.Sprintf(args[0].(string), args[1:]...))
 }
 
-func (*ghostLogger) Warning(args ...any) error {
-	slog.Warn(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Infof(format string, args ...any) {
+	slog.InfoContext(l.ctx, fmt.Sprintf(format, args...))
+}
+
+func (l *ghostLogger) Warning(args ...any) error {
+	slog.WarnContext(l.ctx, fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Warningf(format string, args ...any) error {
-	slog.Warn(format, args...)
+func (l *ghostLogger) Warningf(format string, args ...any) error {
+	slog.WarnContext(l.ctx, fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Error(args ...any) error {
-	slog.Error(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Error(args ...any) error {
+	slog.ErrorContext(l.ctx, fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Errorf(format string, args ...any) error {
-	slog.Error(format, args...)
+func (l *ghostLogger) Errorf(format string, args ...any) error {
+	slog.ErrorContext(l.ctx, fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Errore(err error) error {
+func (l *ghostLogger) Errore(err error) error {
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(l.ctx, err.Error())
 	}
 	return err
 }
 
-func (*ghostLogger) Fatal(args ...any) error {
-	slog.Error(fmt.Sprintf(args[0].(string), args[1:]))
+func (l *ghostLogger) Fatal(args ...any) error {
+	slog.ErrorContext(l.ctx, fmt.Sprintf(args[0].(string), args[1:]...))
 	return errors.Errorf(args[0].(string), args[1:])
 }
 
-func (*ghostLogger) Fatalf(format string, args ...any) error {
-	slog.Error(format, args...)
+func (l *ghostLogger) Fatalf(format string, args ...any) error {
+	slog.ErrorContext(l.ctx, fmt.Sprintf(format, args...))
 	return errors.Errorf(format, args...)
 }
 
-func (*ghostLogger) Fatale(err error) error {
+func (l *ghostLogger) Fatale(err error) error {
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(l.ctx, err.Error())
 	}
 	return err
 }

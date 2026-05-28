@@ -143,11 +143,14 @@ func checkPort(port int) error {
 }
 
 func start() {
+	handlerOptions := &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace}
+	var handler slog.Handler
 	if flags.saas || flags.enableJSONLogging {
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
+		handler = slog.NewJSONHandler(os.Stdout, handlerOptions)
 	} else {
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
+		handler = slog.NewTextHandler(os.Stdout, handlerOptions)
 	}
+	slog.SetDefault(slog.New(log.NewContextHandler(handler)))
 
 	var err error
 

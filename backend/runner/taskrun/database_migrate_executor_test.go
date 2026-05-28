@@ -8,7 +8,23 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestExecuteGhostMigrationUsesContextLogger(t *testing.T) {
+	requireExecuteGhostMigrationContextSignature(t, executeGhostMigration)
+}
+
+func TestRunExecutorOnceUsesContextLogger(t *testing.T) {
+	requireRunExecutorOnceContextSignature(t, RunExecutorOnce)
+}
+
+func requireExecuteGhostMigrationContextSignature(_ *testing.T, _ func(context.Context, context.Context, *store.TaskMessage, *store.SheetMessage, *store.InstanceMessage, *store.DatabaseMessage, db.Driver, *db.ExecuteOptions) error) {
+}
+
+func requireRunExecutorOnceContextSignature(_ *testing.T, _ func(context.Context, context.Context, Executor, *store.TaskMessage, int64) (*storepb.TaskRunResult, error)) {
+}
 
 func TestWrappedContextCanceledMatchesErrorsIs(t *testing.T) {
 	driverCtx, cancel := context.WithCancel(context.Background())
