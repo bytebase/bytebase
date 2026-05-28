@@ -231,7 +231,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	}
 
 	migrationContext := ghostbase.NewMigrationContext()
-	migrationContext.Log = newGhostLogger()
+	migrationContext.Log = newGhostLogger(ctx)
 	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.GetHost()
 	port := 3306
 	if dataSource.GetPort() != "" {
@@ -311,14 +311,14 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	if maxAuthRetries := os.Getenv("GHOST_MAX_AUTH_RETRIES"); maxAuthRetries != "" {
 		if retries, err := strconv.Atoi(maxAuthRetries); err == nil && retries > 0 {
 			migrationContext.MaxAuthFailures = retries
-			slog.Info("gh-ost auth retry limit set",
+			slog.InfoContext(ctx, "gh-ost auth retry limit set",
 				slog.Int("max_failures", migrationContext.MaxAuthFailures),
 				slog.String("source", "environment"))
 		}
 	} else {
 		// Default to 10 retries to prevent retry storms
 		migrationContext.MaxAuthFailures = 10
-		slog.Info("gh-ost auth retry limit set",
+		slog.InfoContext(ctx, "gh-ost auth retry limit set",
 			slog.Int("max_failures", migrationContext.MaxAuthFailures),
 			slog.String("source", "default"))
 	}

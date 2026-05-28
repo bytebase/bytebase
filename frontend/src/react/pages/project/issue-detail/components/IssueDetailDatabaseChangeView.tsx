@@ -1,15 +1,9 @@
 import { create } from "@bufbuild/protobuf";
-import { ChevronRight, ExternalLink, FolderTree, X } from "lucide-react";
+import { ChevronRight, ExternalLink, FolderTree } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { instanceRoleServiceClientConnect } from "@/connect";
 import { EngineIcon } from "@/react/components/EngineIcon";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-} from "@/react/components/ui/dialog";
 import { SearchInput } from "@/react/components/ui/search-input";
 import {
   Select,
@@ -18,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/react/components/ui/select";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
 import { useVueState } from "@/react/hooks/useVueState";
@@ -694,62 +695,49 @@ function IssueDetailDatabaseChangeTargets({
         )}
       </div>
 
-      <Dialog
+      <Sheet
         open={showAllTargetsDialog}
         onOpenChange={(open) => setShowAllTargetsDialog(open)}
       >
-        <DialogContent className="relative max-w-[100vw] p-0 md:w-[50rem]">
-          <div className="flex h-full max-h-[calc(100vh-10rem)] flex-col gap-y-4">
-            <div className="flex items-center justify-between border-b px-4 py-4">
-              <DialogTitle>
-                {t("plan.targets.title")} ({targets.length})
-              </DialogTitle>
-              <DialogClose
-                render={
-                  <button
-                    className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-control transition-colors hover:bg-control-bg"
-                    type="button"
-                  />
-                }
-              >
-                <X className="h-4 w-4" />
-              </DialogClose>
-            </div>
+        <SheetContent width="wide">
+          <SheetHeader>
+            <SheetTitle>
+              {t("plan.targets.title")} ({targets.length})
+            </SheetTitle>
+          </SheetHeader>
 
-            <div className="px-4">
-              <SearchInput
-                placeholder={t("common.search")}
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-              />
-            </div>
+          <SheetBody className="gap-y-4 overflow-hidden px-4 pb-4">
+            <SearchInput
+              placeholder={t("common.search")}
+              value={searchText}
+              wrapperClassName="flex-none"
+              onChange={(event) => setSearchText(event.target.value)}
+            />
 
-            <div className="flex-1 overflow-hidden px-4 pb-4">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {isLoadingAllTargets ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-control-border border-t-accent" />
                 </div>
               ) : filteredTargets.length > 0 ? (
-                <div className="h-full overflow-y-auto">
-                  <div className="flex flex-wrap gap-2">
-                    {filteredTargets.map((target) => (
-                      <div
-                        key={target}
-                        className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1 transition-all"
-                      >
-                        {isValidDatabaseName(target) ? (
-                          <IssueDetailDatabaseTarget
-                            showEnvironment
-                            target={target}
-                          />
-                        ) : isValidDatabaseGroupName(target) ? (
-                          <IssueDetailDatabaseGroupTarget target={target} />
-                        ) : (
-                          <span className="text-sm">{target}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div className="flex flex-col gap-2">
+                  {filteredTargets.map((target) => (
+                    <div
+                      key={target}
+                      className="w-full rounded-lg border px-2 py-1.5"
+                    >
+                      {isValidDatabaseName(target) ? (
+                        <IssueDetailDatabaseTarget
+                          showEnvironment
+                          target={target}
+                        />
+                      ) : isValidDatabaseGroupName(target) ? (
+                        <IssueDetailDatabaseGroupTarget target={target} />
+                      ) : (
+                        <span className="block truncate text-sm">{target}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-control-light">
@@ -757,9 +745,9 @@ function IssueDetailDatabaseChangeTargets({
                 </div>
               )}
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
@@ -788,21 +776,34 @@ function IssueDetailDatabaseTarget({
     instance?.title ||
     extractInstanceResourceName(target) ||
     t("common.unknown");
+  const title = [
+    showEnvironment ? environment.title : undefined,
+    instanceTitle,
+    databaseName,
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   return (
-    <div className="flex min-w-0 items-center truncate text-sm">
+    <div className="flex min-w-0 max-w-full items-center text-sm" title={title}>
       {instance && (
         <EngineIcon
           engine={instance.engine}
-          className="mr-1 inline-block h-4 w-4"
+          className="mr-1 inline-block h-4 w-4 shrink-0"
         />
       )}
       {showEnvironment && (
-        <span className="mr-1 truncate text-gray-400">{environment.title}</span>
+        <span className="mr-1 max-w-24 shrink truncate text-control-placeholder">
+          {environment.title}
+        </span>
       )}
-      <span className="truncate text-gray-600">{instanceTitle}</span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 opacity-60" />
-      <span className="truncate text-gray-800">{databaseName}</span>
+      <span className="min-w-0 shrink-[2] truncate text-control-light">
+        {instanceTitle}
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-control-light/80" />
+      <span className="min-w-12 flex-1 truncate text-control">
+        {databaseName}
+      </span>
     </div>
   );
 }

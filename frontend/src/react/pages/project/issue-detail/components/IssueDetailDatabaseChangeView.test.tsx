@@ -17,21 +17,50 @@ const mocks = vi.hoisted(() => {
   const onSelectedSpecIdChange = vi.fn();
 
   return {
-    Dialog: vi.fn(({ children }: { children: React.ReactNode }) => (
+    Sheet: vi.fn(({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     )),
-    DialogClose: vi.fn(({ children }: { children: React.ReactNode }) => (
+    SheetBody: vi.fn(
+      ({
+        children,
+        className,
+      }: {
+        children: React.ReactNode;
+        className?: string;
+      }) => (
+        <div
+          className={`flex flex-1 flex-col overflow-y-auto px-6 py-4 ${className ?? ""}`}
+          data-testid="targets-sheet-body"
+        >
+          {children}
+        </div>
+      )
+    ),
+    SheetContent: vi.fn(({ children }: { children: React.ReactNode }) => (
+      <div data-testid="targets-sheet-content">{children}</div>
+    )),
+    SheetHeader: vi.fn(({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     )),
-    DialogContent: vi.fn(({ children }: { children: React.ReactNode }) => (
+    SheetTitle: vi.fn(({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     )),
-    DialogTitle: vi.fn(({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    )),
-    SearchInput: vi.fn((props: React.InputHTMLAttributes<HTMLInputElement>) => (
-      <input {...props} />
-    )),
+    SearchInput: vi.fn(
+      ({
+        wrapperClassName,
+        ...props
+      }: React.InputHTMLAttributes<HTMLInputElement> & {
+        wrapperClassName?: string;
+      }) => (
+        <div
+          className={`relative flex-1 ${wrapperClassName ?? ""}`}
+          data-testid="targets-search-wrapper"
+          data-wrapper-class-name={wrapperClassName}
+        >
+          <input {...props} />
+        </div>
+      )
+    ),
     Select: vi.fn(({ children }: { children: React.ReactNode }) => (
       <div>{children}</div>
     )),
@@ -63,7 +92,6 @@ const mocks = vi.hoisted(() => {
     ChevronRight: vi.fn(() => <div />),
     ExternalLink: vi.fn(() => <div />),
     FolderTree: vi.fn(() => <div />),
-    X: vi.fn(() => <div />),
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
@@ -128,7 +156,6 @@ vi.mock("lucide-react", () => ({
   ChevronRight: mocks.ChevronRight,
   ExternalLink: mocks.ExternalLink,
   FolderTree: mocks.FolderTree,
-  X: mocks.X,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -145,11 +172,12 @@ vi.mock("@/react/components/instance/constants", () => ({
   EngineIconPath: {},
 }));
 
-vi.mock("@/react/components/ui/dialog", () => ({
-  Dialog: mocks.Dialog,
-  DialogClose: mocks.DialogClose,
-  DialogContent: mocks.DialogContent,
-  DialogTitle: mocks.DialogTitle,
+vi.mock("@/react/components/ui/sheet", () => ({
+  Sheet: mocks.Sheet,
+  SheetBody: mocks.SheetBody,
+  SheetContent: mocks.SheetContent,
+  SheetHeader: mocks.SheetHeader,
+  SheetTitle: mocks.SheetTitle,
 }));
 
 vi.mock("@/react/components/ui/search-input", () => ({
@@ -274,9 +302,11 @@ vi.mock("./IssueDetailStatementSection", () => ({
 
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const container = document.createElement("div");
+  document.body.append(container);
   const root = createRoot(container);
 
   return {
+    container,
     render: (nextElement = element) => {
       act(() => {
         root.render(nextElement);
@@ -286,6 +316,7 @@ const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
       act(() => {
         root.unmount();
       });
+      container.remove();
     },
   };
 };
@@ -359,6 +390,75 @@ describe("IssueDetailDatabaseChangeView", () => {
 
     expect(() => render()).not.toThrow();
     expect(mocks.listInstanceRoles).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("renders all targets in a single scrollable sheet list", () => {
+    const targets = Array.from(
+      { length: 21 },
+      (_, index) => `instances/inst1/databases/db${index}`
+    );
+    mocks.useIssueDetailContext.mockReturnValue({
+      plan: {
+        hasRollout: false,
+        name: "projects/db333/plans/123",
+        specs: [
+          {
+            id: "spec-1",
+            config: {
+              case: "changeDatabaseConfig",
+              value: {
+                enablePriorBackup: false,
+                release: false,
+                targets,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <IssueDetailDatabaseChangeView
+        onSelectedSpecIdChange={mocks.onSelectedSpecIdChange}
+        selectedSpecId="spec-1"
+      />
+    );
+
+    render();
+
+    const sheetBody = container.querySelector(
+      "[data-testid='targets-sheet-body']"
+    );
+    const elements = Array.from(sheetBody?.querySelectorAll("*") ?? []);
+    const scrollArea = elements.find(
+      (element) =>
+        element.className.includes("min-h-0") &&
+        element.className.includes("flex-1") &&
+        element.className.includes("overflow-y-auto")
+    );
+    const targetList = scrollArea
+      ? Array.from(scrollArea.querySelectorAll("*")).find(
+          (element) =>
+            element.className.includes("flex") &&
+            element.className.includes("flex-col") &&
+            element.className.includes("gap-2")
+        )
+      : undefined;
+    const searchWrapper = container.querySelector(
+      "[data-testid='targets-search-wrapper']"
+    );
+    const targetRows =
+      targetList?.querySelectorAll(".w-full.rounded-lg.border") ?? [];
+
+    expect(sheetBody?.className).toContain("overflow-hidden");
+    expect(searchWrapper?.getAttribute("data-wrapper-class-name")).toContain(
+      "flex-none"
+    );
+    expect(scrollArea).toBeTruthy();
+    expect(targetList).toBeTruthy();
+    expect(targetRows.length).toBe(targets.length);
 
     unmount();
   });

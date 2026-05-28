@@ -33,7 +33,9 @@ type DatabaseCreateExecutor struct {
 }
 
 // RunOnce will run the database create task executor once.
-func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int64) (*storepb.TaskRunResult, error) {
+func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int64) (*storepb.TaskRunResult, error) {
+	ctx = taskRunLogContext(ctx, task.ProjectID, taskRunUID)
+
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())
@@ -75,7 +77,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	// Create database.
-	slog.Debug("Start creating database...",
+	slog.DebugContext(ctx, "Start creating database...",
 		slog.String("instance", instance.Metadata.GetTitle()),
 		slog.String("database", createConfig.Database),
 		slog.String("statement", statement),
@@ -122,7 +124,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-		slog.Error("failed to sync database schema",
+		slog.ErrorContext(ctx, "failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
 			slog.String("databaseName", database.DatabaseName),
 			log.BBError(err),

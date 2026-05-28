@@ -28,7 +28,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
+			slog.ErrorContext(ctx, "TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 			result = nil
 			err = errors.Errorf("TaskExecutor PANIC RECOVER, err: %v", panicErr)
 		}

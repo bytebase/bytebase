@@ -1393,45 +1393,34 @@ function TargetsSection({
               {t("plan.targets.title")} ({targets.length})
             </SheetTitle>
           </SheetHeader>
-          <SheetBody className="gap-y-4 px-4 pb-4">
+          <SheetBody className="gap-y-4 overflow-hidden px-4 pb-4">
             <SearchInput
               placeholder={t("common.search")}
               value={searchText}
+              wrapperClassName="flex-none"
               onChange={(event) => setSearchText(event.target.value)}
             />
-            <div className="flex-1 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {isLoadingAllTargets ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-control-border border-t-accent" />
                 </div>
               ) : filteredTargets.length > 0 ? (
-                <div className="h-full overflow-y-auto">
-                  <div className="flex flex-wrap gap-2">
-                    {filteredTargets.map((target) =>
-                      isValidDatabaseName(target) ? (
-                        <div
-                          key={target}
-                          className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1 transition-all"
-                        >
-                          <PlanTargetDisplay showEnvironment target={target} />
-                        </div>
+                <div className="flex flex-col gap-2">
+                  {filteredTargets.map((target) => (
+                    <div
+                      key={target}
+                      className="w-full rounded-lg border px-2 py-1.5"
+                    >
+                      {isValidDatabaseName(target) ? (
+                        <PlanTargetDisplay showEnvironment target={target} />
                       ) : isValidDatabaseGroupName(target) ? (
-                        <div
-                          key={target}
-                          className="rounded-lg border px-2 py-1 transition-all"
-                        >
-                          <DatabaseGroupTarget target={target} />
-                        </div>
+                        <DatabaseGroupTarget target={target} />
                       ) : (
-                        <div
-                          key={target}
-                          className="inline-flex cursor-default items-center gap-x-1 rounded-lg border px-2 py-1 transition-all"
-                        >
-                          <span className="text-sm">{target}</span>
-                        </div>
-                      )
-                    )}
-                  </div>
+                        <span className="block truncate text-sm">{target}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-control-light">
