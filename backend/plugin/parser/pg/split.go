@@ -19,12 +19,13 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	segments := omnipg.Split(statement)
 
 	result := make([]base.Statement, 0, len(segments))
+	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, seg := range segments {
 		result = append(result, base.Statement{
 			Text:  seg.Text,
 			Empty: seg.Empty(),
-			Start: ByteOffsetToRunePosition(statement, seg.ByteStart),
-			End:   ByteOffsetToRunePosition(statement, seg.ByteEnd),
+			Start: positionMapper.Position(seg.ByteStart),
+			End:   positionMapper.Position(seg.ByteEnd),
 			Range: &storepb.Range{
 				Start: int32(seg.ByteStart),
 				End:   int32(seg.ByteEnd),
