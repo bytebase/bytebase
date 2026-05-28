@@ -33,7 +33,8 @@ interface TwoFactorSetupPageProps {
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
   const updateUser = useAppStore((state) => state.updateUser);
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const legacyCurrentUser = useVueState(() => useCurrentUserV1().value);
+  const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
 
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);
   const [showSecretModal, setShowSecretModal] = useState(false);
@@ -47,6 +48,10 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   // Keep a ref to currentUser so the interval callback always reads fresh state
   const currentUserRef = useRef(currentUser);
   currentUserRef.current = currentUser;
+
+  useEffect(() => {
+    setCurrentUser(legacyCurrentUser);
+  }, [legacyCurrentUser]);
 
   const stopCountdown = useCallback(() => {
     if (countdownRef.current) {
@@ -87,7 +92,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, [updateCountdown, stopCountdown]);
 
   const regenerateTempMfaSecret = useCallback(async () => {
-    await updateUser(
+    const user = await updateUser(
       create(UpdateUserRequestSchema, {
         user: {
           name: currentUser.name,
@@ -98,6 +103,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
         regenerateTempMfaSecret: true,
       })
     );
+    setCurrentUser(user);
   }, [currentUser.name, updateUser]);
 
   // On mount: regenerate secret and start countdown
@@ -113,7 +119,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const verifyOTPCode = useCallback(
     async (codes: string[]) => {
       try {
-        await updateUser(
+        const user = await updateUser(
           create(UpdateUserRequestSchema, {
             user: {
               name: currentUser.name,
@@ -124,6 +130,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
             otpCode: codes.join(""),
           })
         );
+        setCurrentUser(user);
       } catch (error) {
         pushNotification({
           module: "bytebase",
