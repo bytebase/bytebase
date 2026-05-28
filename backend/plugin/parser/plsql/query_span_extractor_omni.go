@@ -130,7 +130,8 @@ func omniQueryType(stmt oracleast.StmtNode, allSystem bool) base.QueryType {
 			return base.SelectInfoSchema
 		}
 		return base.Select
-	case *oracleast.InsertStmt, *oracleast.UpdateStmt, *oracleast.DeleteStmt, *oracleast.MergeStmt, *oracleast.CallStmt:
+	case *oracleast.InsertStmt, *oracleast.UpdateStmt, *oracleast.DeleteStmt, *oracleast.MergeStmt,
+		*oracleast.CallStmt, *oracleast.LockTableStmt:
 		return base.DML
 	case *oracleast.CreateTableStmt, *oracleast.AlterTableStmt, *oracleast.DropStmt,
 		*oracleast.CreateIndexStmt, *oracleast.CreateViewStmt,

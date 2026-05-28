@@ -36,6 +36,11 @@ func TestOracleOmniQueryTypeDDLClassification(t *testing.T) {
 			want:      base.DDL,
 		},
 		{
+			name:      "lock table is dml",
+			statement: "LOCK TABLE T IN EXCLUSIVE MODE",
+			want:      base.DML,
+		},
+		{
 			name:      "transaction remains unknown",
 			statement: "COMMIT",
 			want:      base.QueryTypeUnknown,
