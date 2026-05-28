@@ -1,6 +1,7 @@
 package plsql
 
 import (
+	"reflect"
 	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -73,7 +74,70 @@ func parseSinglePLSQLLenient(statement string) (antlr.Tree, *antlr.CommonTokenSt
 // ParsePLSQLOmni parses SQL using omni's parser and returns an ast.List.
 // This is the recommended entry point for new Oracle code that needs omni AST nodes.
 func ParsePLSQLOmni(sql string) (*ast.List, error) {
-	return oracleparser.Parse(sql)
+	statements, err := SplitSQL(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	list := &ast.List{}
+	for _, statement := range statements {
+		if statement.Empty {
+			continue
+		}
+		parsed, err := oracleparser.Parse(statement.Text)
+		if err != nil {
+			return nil, err
+		}
+		if parsed == nil {
+			continue
+		}
+		if statement.Range != nil {
+			offsetOmniLocs(parsed, int(statement.Range.Start))
+		}
+		list.Items = append(list.Items, parsed.Items...)
+	}
+	return list, nil
+}
+
+type omniLocOffsetter int
+
+func offsetOmniLocs(node ast.Node, offset int) {
+	if offset == 0 {
+		return
+	}
+	ast.Walk(omniLocOffsetter(offset), node)
+}
+
+func (o omniLocOffsetter) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		return nil
+	}
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return o
+	}
+	elem := value.Elem()
+	if elem.Kind() != reflect.Struct {
+		return o
+	}
+	locField := elem.FieldByName("Loc")
+	if !locField.IsValid() || !locField.CanSet() || locField.Type() != reflect.TypeOf(ast.Loc{}) {
+		return o
+	}
+
+	loc, ok := locField.Interface().(ast.Loc)
+	if !ok {
+		return o
+	}
+	offset := int(o)
+	if loc.Start >= 0 {
+		loc.Start += offset
+	}
+	if loc.End >= 0 {
+		loc.End += offset
+	}
+	locField.Set(reflect.ValueOf(loc))
+	return o
 }
 
 // GetOmniNode extracts the omni AST node from a base.AST interface.

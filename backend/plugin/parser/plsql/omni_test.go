@@ -1,6 +1,7 @@
 package plsql
 
 import (
+	"strings"
 	"testing"
 
 	parser "github.com/bytebase/parser/plsql"
@@ -25,6 +26,87 @@ func TestParsePLSQLOmni(t *testing.T) {
 	second, ok := list.Items[1].(*ast.RawStmt)
 	require.True(t, ok)
 	require.IsType(t, &ast.InsertStmt{}, second.Stmt)
+}
+
+func TestParsePLSQLOmniSplitsSlashTerminatedPLSQLScript(t *testing.T) {
+	list, err := ParsePLSQLOmni(`
+CREATE TABLE AUDIT_LOG (
+  LOG_ID NUMBER PRIMARY KEY
+);
+
+CREATE OR REPLACE TRIGGER audit_log_trigger
+BEFORE INSERT ON AUDIT_LOG
+FOR EACH ROW
+BEGIN
+  NULL;
+END;
+/
+`)
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	require.Len(t, list.Items, 2)
+
+	first, ok := list.Items[0].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.CreateTableStmt{}, first.Stmt)
+
+	second, ok := list.Items[1].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
+}
+
+func TestParsePLSQLOmniSkipsSQLPlusCommands(t *testing.T) {
+	list, err := ParsePLSQLOmni(`
+SET DEFINE OFF
+PROMPT setup
+
+CREATE TABLE AUDIT_LOG (
+  LOG_ID NUMBER PRIMARY KEY
+);
+
+SPOOL out.log
+CREATE OR REPLACE TRIGGER audit_log_trigger
+BEFORE INSERT ON AUDIT_LOG
+FOR EACH ROW
+BEGIN
+  NULL;
+END;
+/
+SPOOL OFF
+`)
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	require.Len(t, list.Items, 2)
+
+	first, ok := list.Items[0].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.CreateTableStmt{}, first.Stmt)
+
+	second, ok := list.Items[1].(*ast.RawStmt)
+	require.True(t, ok)
+	require.IsType(t, &ast.CreateTriggerStmt{}, second.Stmt)
+}
+
+func TestParsePLSQLOmniPreservesScriptOffsets(t *testing.T) {
+	sql := `PROMPT setup
+SELECT 1 FROM DUAL;
+
+SELECT name FROM users;
+`
+	list, err := ParsePLSQLOmni(sql)
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	require.Len(t, list.Items, 2)
+
+	first, ok := list.Items[0].(*ast.RawStmt)
+	require.True(t, ok)
+	require.Equal(t, strings.Index(sql, "SELECT 1"), first.Loc.Start)
+	require.Equal(t, strings.Index(sql, ";"), first.Loc.End)
+
+	second, ok := list.Items[1].(*ast.RawStmt)
+	require.True(t, ok)
+	require.Equal(t, strings.Index(sql, "SELECT name"), second.Loc.Start)
+	require.Equal(t, strings.LastIndex(sql, ";"), second.Loc.End)
 }
 
 func TestParsePLSQLOmniReturnsParseError(t *testing.T) {
