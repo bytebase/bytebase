@@ -486,12 +486,22 @@ func TestVCSProviderUserActuatorAndExport(t *testing.T) {
 	a.NoError(err)
 	a.Equal(int32(1), info.Msg.ActiveVcsUserCount)
 
+	_, err = stores.GetDB().ExecContext(ctx, `
+		INSERT INTO vcs_provider_user (workspace, vcs_type, user_id, last_seen_at, payload)
+		VALUES ($1, $2, '1002', now(), '{"userName":"bob"}'::jsonb)
+	`, workspaceID, v1pb.VCSType_GITHUB.String())
+	a.NoError(err)
+	info, err = ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	a.Equal(int32(1), info.Msg.ActiveVcsUserCount)
+
 	body, err := ctl.subscriptionServiceClient.ExportVCSProviderUsers(ctx, connect.NewRequest(&v1pb.ExportVCSProviderUsersRequest{}))
 	a.NoError(err)
 	a.Equal("text/csv; charset=utf-8", body.Msg.ContentType)
 	csv := string(body.Msg.Data)
 	a.Contains(csv, "vcs_type,user_id,user_name,display_name,last_seen_at")
 	a.Contains(csv, "GITHUB,1001,alice,Alice,")
+	a.Contains(csv, "GITHUB,1002,bob,,")
 	a.NotContains(csv, "inactive-1")
 }
 

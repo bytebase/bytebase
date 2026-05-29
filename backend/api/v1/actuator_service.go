@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -32,7 +33,11 @@ type ActuatorService struct {
 	licenseService        *enterprise.LicenseService
 	schemaSyncer          *schemasync.Syncer
 	sampleInstanceManager *sampleinstance.Manager
+
+	activeVCSUserCountSnapshot *expirable.LRU[string, int]
 }
+
+const activeVCSUserCountSnapshotTTL = time.Minute
 
 // NewActuatorService creates a new ActuatorService.
 func NewActuatorService(
@@ -43,11 +48,12 @@ func NewActuatorService(
 	sampleInstanceManager *sampleinstance.Manager,
 ) *ActuatorService {
 	return &ActuatorService{
-		store:                 store,
-		profile:               profile,
-		licenseService:        licenseService,
-		schemaSyncer:          schemaSyncer,
-		sampleInstanceManager: sampleInstanceManager,
+		store:                      store,
+		profile:                    profile,
+		licenseService:             licenseService,
+		schemaSyncer:               schemaSyncer,
+		sampleInstanceManager:      sampleInstanceManager,
+		activeVCSUserCountSnapshot: expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
 	}
 }
 
@@ -179,7 +185,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		}
 		serverInfo.UserCountInIam = int32(userCountInIam)
 
-		activeVCSUserCount, err := s.store.CountActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
+		activeVCSUserCount, err := s.getActiveVCSUserCount(ctx, workspaceID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count active VCS users"))
 		}
@@ -218,6 +224,19 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	}
 
 	return &serverInfo, nil
+}
+
+func (s *ActuatorService) getActiveVCSUserCount(ctx context.Context, workspaceID string) (int, error) {
+	if count, ok := s.activeVCSUserCountSnapshot.Get(workspaceID); ok {
+		return count, nil
+	}
+
+	count, err := s.store.CountActiveVCSProviderUsers(ctx, workspaceID, vcsProviderUserActiveWindow)
+	if err != nil {
+		return 0, err
+	}
+	s.activeVCSUserCountSnapshot.Add(workspaceID, count)
+	return count, nil
 }
 
 func (s *ActuatorService) getUsedFeatures(ctx context.Context, workspaceID string) ([]v1pb.PlanFeature, error) {
