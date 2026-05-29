@@ -50,6 +50,22 @@ func (s *Store) TouchVCSProviderUser(ctx context.Context, workspace string, user
 		return false, errors.Wrapf(err, "failed to marshal VCS provider user payload")
 	}
 
+	vcsType := user.VCSType.String()
+	var refreshed bool
+	if err := s.GetDB().QueryRowContext(ctx, `
+		UPDATE vcs_provider_user
+		SET last_seen_at = now(), payload = $4
+		WHERE workspace = $1 AND vcs_type = $2 AND user_id = $3
+			AND last_seen_at >= now() - make_interval(secs => $5)
+		RETURNING true
+	`, workspace, vcsType, user.UserID, payloadBytes, activeWindow.Seconds()).Scan(&refreshed); err != nil {
+		if err != sql.ErrNoRows {
+			return false, errors.Wrapf(err, "failed to update active VCS provider user")
+		}
+	} else {
+		return true, nil
+	}
+
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to begin transaction")
@@ -60,7 +76,6 @@ func (s *Store) TouchVCSProviderUser(ctx context.Context, workspace string, user
 		return false, errors.Wrapf(err, "failed to acquire VCS provider user lock")
 	}
 
-	vcsType := user.VCSType.String()
 	var active bool
 	if err := tx.QueryRowContext(ctx, `
 		SELECT last_seen_at >= now() - make_interval(secs => $4)
