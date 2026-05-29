@@ -77,6 +77,34 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 			},
 		},
 		{
+			name: "instead_of_trigger_on_view",
+			ddl: `
+CREATE TABLE EMPLOYEES (
+    EMP_ID NUMBER PRIMARY KEY,
+    EMAIL VARCHAR2(100)
+);
+
+CREATE VIEW EMPLOYEE_VIEW AS
+SELECT EMP_ID, EMAIL
+FROM EMPLOYEES;
+
+CREATE OR REPLACE TRIGGER employee_view_insert_trg
+INSTEAD OF INSERT ON EMPLOYEE_VIEW
+FOR EACH ROW
+BEGIN
+    NULL;
+END;
+/
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				schemaMetadata := requireSingleSchema(t, metadata)
+				view := requireView(t, schemaMetadata, "EMPLOYEE_VIEW")
+				require.Len(t, view.Triggers, 1)
+				require.Equal(t, "EMPLOYEE_VIEW_INSERT_TRG", view.Triggers[0].Name)
+				require.Nil(t, findTable(schemaMetadata, "EMPLOYEE_VIEW"))
+			},
+		},
+		{
 			name: "materialized_view_with_index",
 			ddl: `
 CREATE TABLE PRODUCT_SALES (
@@ -274,6 +302,17 @@ func requireTable(t *testing.T, schemaMetadata *storepb.SchemaMetadata, name str
 	table := findTable(schemaMetadata, name)
 	require.NotNil(t, table)
 	return table
+}
+
+func requireView(t *testing.T, schemaMetadata *storepb.SchemaMetadata, name string) *storepb.ViewMetadata {
+	t.Helper()
+	for _, view := range schemaMetadata.Views {
+		if view.Name == name {
+			return view
+		}
+	}
+	t.Fatalf("view %q not found", name)
+	return nil
 }
 
 func findTable(schemaMetadata *storepb.SchemaMetadata, name string) *storepb.TableMetadata {

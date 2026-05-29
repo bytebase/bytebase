@@ -479,21 +479,30 @@ func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 
 	definition := e.nodeText(n.Query)
 	if n.Materialized {
-		if definition != "" && !strings.HasSuffix(definition, "\n") {
-			definition += "\n"
-		}
-		e.materializedViews[viewName] = &storepb.MaterializedViewMetadata{
+		materializedView := &storepb.MaterializedViewMetadata{
 			Name:       viewName,
 			Definition: definition,
 		}
+		if table := e.tables[viewName]; table != nil {
+			materializedView.Triggers = append(materializedView.Triggers, table.Triggers...)
+		}
+		if definition != "" && !strings.HasSuffix(definition, "\n") {
+			materializedView.Definition += "\n"
+		}
+		e.materializedViews[viewName] = materializedView
 		delete(e.tables, viewName)
 		return
 	}
 
-	e.views[viewName] = &storepb.ViewMetadata{
+	view := &storepb.ViewMetadata{
 		Name:       viewName,
 		Definition: definition,
 	}
+	if table := e.tables[viewName]; table != nil {
+		view.Triggers = append(view.Triggers, table.Triggers...)
+		delete(e.tables, viewName)
+	}
+	e.views[viewName] = view
 }
 
 func (e *oracleOmniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
@@ -522,6 +531,14 @@ func (e *oracleOmniMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerS
 		Body: e.definitionText(n),
 	}
 	e.triggers[triggerName] = trigger
+	if view := e.views[tableName]; view != nil {
+		view.Triggers = append(view.Triggers, trigger)
+		return
+	}
+	if materializedView := e.materializedViews[tableName]; materializedView != nil {
+		materializedView.Triggers = append(materializedView.Triggers, trigger)
+		return
+	}
 	table := e.getOrCreateTable(tableName)
 	table.Triggers = append(table.Triggers, trigger)
 }
