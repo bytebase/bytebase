@@ -80,6 +80,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
 			}
 			targetDatabases = append(targetDatabases, database)
+			continue
 		}
 
 		// Handle database group target. Extract all matched databases in the database group.
@@ -120,7 +121,14 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 				return nil, err
 			}
 			targetDatabases = append(targetDatabases, matches...)
+			continue
 		}
+
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported target %q", target))
+	}
+
+	if len(targetDatabases) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets must resolve to at least one database"))
 	}
 
 	if project.Setting.GetCiSamplingSize() > 0 && len(targetDatabases) > int(project.Setting.GetCiSamplingSize()) {
@@ -168,12 +176,14 @@ func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID s
 	if vcsUser == nil {
 		return nil
 	}
+	userName := truncateVCSProviderUserMetadata(vcsUser.GetUserName())
+	displayName := truncateVCSProviderUserMetadata(vcsUser.GetDisplayName())
 	ok, err := s.store.TouchVCSProviderUser(ctx, workspaceID, &store.VCSProviderUserMessage{
 		VCSType: vcsUser.GetVcsType(),
 		UserID:  vcsUser.GetUserId(),
 		Payload: &storepb.VCSProviderUserPayload{
-			UserName:    vcsUser.GetUserName(),
-			DisplayName: vcsUser.GetDisplayName(),
+			UserName:    userName,
+			DisplayName: displayName,
 		},
 	}, vcsProviderUserActiveWindow, s.license.GetUserLimit(ctx, workspaceID))
 	if err != nil {
@@ -200,6 +210,9 @@ func validateVCSProviderUser(vcsUser *v1pb.VCSUser) error {
 	if vcsUser.GetUserId() == "" {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.user_id is required"))
 	}
+	if utf8.RuneCountInString(vcsUser.GetUserId()) > maxVCSProviderUserFieldLength {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.user_id exceeds maximum length %d", maxVCSProviderUserFieldLength))
+	}
 	for _, field := range []struct {
 		name  string
 		value string
@@ -208,14 +221,18 @@ func validateVCSProviderUser(vcsUser *v1pb.VCSUser) error {
 		{name: "user_name", value: vcsUser.GetUserName()},
 		{name: "display_name", value: vcsUser.GetDisplayName()},
 	} {
-		if utf8.RuneCountInString(field.value) > maxVCSProviderUserFieldLength {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.%s exceeds maximum length %d", field.name, maxVCSProviderUserFieldLength))
-		}
 		if strings.ContainsFunc(field.value, unicode.IsControl) {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.%s contains control characters", field.name))
 		}
 	}
 	return nil
+}
+
+func truncateVCSProviderUserMetadata(value string) string {
+	if utf8.RuneCountInString(value) <= maxVCSProviderUserFieldLength {
+		return value
+	}
+	return string([]rune(value)[:maxVCSProviderUserFieldLength])
 }
 
 func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *store.ProjectMessage, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
