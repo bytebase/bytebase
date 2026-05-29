@@ -1,6 +1,6 @@
 # Starts the github-runner GCE VM, which hosts this repo's self-hosted Actions
 # runner (used by jobs with `runs-on: self-hosted`, e.g. backend-tests,
-# golangci-lint, test_link). Previously bundled into trigger-oncall-sync.yml.
+# golangci-lint, test_link).
 name: Start github-runner VM
 
 on:
