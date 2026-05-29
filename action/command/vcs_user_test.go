@@ -3,6 +3,7 @@ package command
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -134,6 +135,19 @@ func TestGetVCSUserFromBitbucketPullRequestAuthor(t *testing.T) {
 	require.Equal(t, "Alice", user.DisplayName)
 }
 
+func TestBitbucketDefaultAPIUsesPipelinesProxy(t *testing.T) {
+	requestURL, err := buildBitbucketPullRequestURL(getBitbucketAPIBaseURL(), "bytebase", "example", "10")
+	require.NoError(t, err)
+	require.Equal(t, "http://api.bitbucket.org/2.0/repositories/bytebase/example/pullrequests/10", requestURL)
+
+	client := newBitbucketHTTPClient(getBitbucketAPIBaseURL())
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok)
+	proxyURL, err := transport.Proxy(&http.Request{URL: mustParseURL(t, requestURL)})
+	require.NoError(t, err)
+	require.Equal(t, "http://localhost:29418", proxyURL.String())
+}
+
 func TestGetVCSUserSkipsBitbucketBotAuthor(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -177,4 +191,11 @@ func TestBuildCheckReleaseRequestIncludesVCSUser(t *testing.T) {
 	require.NotNil(t, req.VcsUser)
 	require.Equal(t, v1pb.VCSType_GITHUB, req.VcsUser.VcsType)
 	require.Equal(t, "1001", req.VcsUser.UserId)
+}
+
+func mustParseURL(t *testing.T, rawURL string) *url.URL {
+	t.Helper()
+	parsedURL, err := url.Parse(rawURL)
+	require.NoError(t, err)
+	return parsedURL
 }

@@ -11,6 +11,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -408,6 +409,47 @@ func TestGitOpsCheckReleaseVCSUserMetadataTruncation(t *testing.T) {
 	a.Equal("long-metadata-user", users[0].UserID)
 	a.Equal(strings.Repeat("n", 256), users[0].Payload.GetUserName())
 	a.Equal(strings.Repeat("d", 256), users[0].Payload.GetDisplayName())
+}
+
+func TestGitOpsCheckReleaseVCSUserEmptyDatabaseGroup(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
+	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
+		Parent:          project.Name,
+		DatabaseGroupId: "empty-vcs-user-group",
+		DatabaseGroup: &v1pb.DatabaseGroup{
+			Title:        "empty VCS user group",
+			DatabaseExpr: &expr.Expr{Expression: "false"},
+		},
+	}))
+	a.NoError(err)
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: []string{databaseGroup.Msg.Name},
+		VcsUser: &v1pb.VCSUser{
+			VcsType:  v1pb.VCSType_GITHUB,
+			UserId:   "empty-group-user",
+			UserName: "empty-group-user",
+		},
+	}))
+	a.NoError(err)
+
+	stores := getStore(t, ctl.server)
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	a.NoError(err)
+	users, err := stores.ListActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
+	a.NoError(err)
+	a.Len(users, 1)
+	a.Equal("empty-group-user", users[0].UserID)
 }
 
 func TestVCSProviderUserActuatorAndExport(t *testing.T) {

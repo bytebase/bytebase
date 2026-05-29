@@ -18,7 +18,8 @@ import (
 
 var gitLabBotUserNameRE = regexp.MustCompile(`^(project|group)_\d+_bot_[a-z0-9]+$`)
 
-const defaultBitbucketAPIBaseURL = "https://api.bitbucket.org/2.0"
+// Bitbucket Pipelines reaches the public API through the localhost proxy below.
+const defaultBitbucketAPIBaseURL = "http://api.bitbucket.org/2.0" //nolint:revive
 
 func getVCSUser(platform world.JobPlatform) *v1pb.VCSUser {
 	switch platform {

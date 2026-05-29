@@ -127,10 +127,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported target %q", target))
 	}
 
-	if len(targetDatabases) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("targets must resolve to at least one database"))
-	}
-
 	if project.Setting.GetCiSamplingSize() > 0 && len(targetDatabases) > int(project.Setting.GetCiSamplingSize()) {
 		targetDatabases = targetDatabases[:project.Setting.GetCiSamplingSize()]
 	}
