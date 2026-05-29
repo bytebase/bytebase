@@ -223,6 +223,10 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
       );
       set((state) => ({
         usersByName: { ...state.usersByName, [response.name]: response },
+        currentUser:
+          state.currentUser?.name === response.name
+            ? response
+            : state.currentUser,
       }));
       return response;
     },
@@ -249,7 +253,11 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
           delete usersByName[oldName];
         }
         usersByName[response.name] = response;
-        return { usersByName };
+        return {
+          usersByName,
+          currentUser:
+            state.currentUser?.name === oldName ? response : state.currentUser,
+        };
       });
       return response;
     },

@@ -7,14 +7,13 @@ import { MonacoEditor, ReadonlyMonaco } from "@/react/components/monaco";
 import { ReleaseInfoCard } from "@/react/components/release/ReleaseInfoCard";
 import { Alert } from "@/react/components/ui/alert";
 import { Button } from "@/react/components/ui/button";
-import { useReleaseByName } from "@/react/hooks/useAppState";
+import { useCurrentUser, useReleaseByName } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import {
   projectNamePrefix,
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
   useSheetV1Store,
@@ -65,7 +64,7 @@ export function IssueDetailStatementSection({
   const fetchRelease = useAppStore((state) => state.fetchRelease);
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const project = useVueState(() =>
     projectStore.getProjectByName(`${projectNamePrefix}${page.projectId}`)
   );

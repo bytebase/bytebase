@@ -18,10 +18,10 @@ import {
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { cn } from "@/react/lib/utils";
 import {
   pushNotification,
-  useCurrentUserV1,
   useEnvironmentV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -79,7 +79,7 @@ export function PlanDetailTaskRolloutActionPanel({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const projectStore = useProjectV1Store();
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = projectStore.getProjectByName(projectName);
   const [loading, setLoading] = useState(false);

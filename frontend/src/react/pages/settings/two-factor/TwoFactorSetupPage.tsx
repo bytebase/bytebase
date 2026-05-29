@@ -8,12 +8,12 @@ import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/react/components/LearnMoreLink";
 import { Button } from "@/react/components/ui/button";
 import { OtpInput } from "@/react/components/ui/otp-input";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 import { TwoFactorSecretModal } from "./TwoFactorSecretModal";
@@ -33,7 +33,7 @@ interface TwoFactorSetupPageProps {
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
   const updateUser = useAppStore((state) => state.updateUser);
-  const legacyCurrentUser = useVueState(() => useCurrentUserV1().value);
+  const legacyCurrentUser = useCurrentUser();
   const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
 
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);

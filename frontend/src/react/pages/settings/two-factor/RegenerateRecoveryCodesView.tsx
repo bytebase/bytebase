@@ -3,9 +3,9 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
-import { useVueState } from "@/react/hooks/useVueState";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 
@@ -20,7 +20,7 @@ export function RegenerateRecoveryCodesView({
 }: RegenerateRecoveryCodesViewProps) {
   const { t } = useTranslation();
   const updateUser = useAppStore((state) => state.updateUser);
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const [recoveryCodesDownloaded, setRecoveryCodesDownloaded] = useState(false);
 
   useEffect(() => {

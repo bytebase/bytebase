@@ -11,16 +11,12 @@ import {
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
 import { Alert } from "@/react/components/ui/alert";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import {
-  refreshIssueList,
-  useCurrentUserV1,
-  useIssueV1Store,
-  useUIStateStore,
-} from "@/store";
+import { refreshIssueList, useIssueV1Store, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
@@ -42,11 +38,10 @@ export function ProjectIssueDashboardPage({
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
   const uiStateStore = useUIStateStore();
-  const currentUser = useCurrentUserV1();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
-  const me = useVueState(() => currentUser.value);
+  const me = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
 

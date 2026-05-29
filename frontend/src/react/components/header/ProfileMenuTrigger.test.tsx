@@ -106,7 +106,7 @@ vi.mock("@/react/router", () => ({
 }));
 
 vi.mock("@/react/hooks/useAppState", () => ({
-  useCurrentUser: () => ({
+  useOptionalCurrentUser: () => ({
     title: "Alice",
     email: "alice@example.com",
   }),

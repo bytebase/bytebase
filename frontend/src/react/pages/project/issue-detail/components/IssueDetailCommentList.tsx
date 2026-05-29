@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/react/components/ui/dialog";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -38,7 +39,6 @@ import {
   getIssueCommentType,
   IssueCommentType,
   pushNotification,
-  useCurrentUserV1,
   useIssueCommentStore,
   useProjectV1Store,
   useSheetV1Store,
@@ -108,7 +108,7 @@ export function IssueDetailCommentList() {
     (state) => state.batchGetOrFetchUsers
   );
   const issueCommentStore = useIssueCommentStore();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const routeHash = useVueState(() => router.currentRoute.value.hash);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));

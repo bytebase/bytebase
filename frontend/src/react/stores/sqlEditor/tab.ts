@@ -4,7 +4,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "@/react/stores/app";
-import { hasFeature, useCurrentUserV1 } from "@/store";
+import { hasFeature } from "@/store";
 import {
   migrateDraftsFromCache,
   migrateTabViewState,
@@ -122,13 +122,11 @@ const isPersistentTabArray = (v: unknown): v is PersistentTab[] =>
 const currentScope = (): { project: string; email: string } | null => {
   const project = getSQLEditorEditorState().project;
   if (!project) return null;
-  try {
-    const me = useCurrentUserV1();
-    const email = me?.value?.email ?? "";
-    return { project, email };
-  } catch {
-    return null;
-  }
+  // The current user is loaded into the app store during tab hydration
+  // (see hydrateProjectTabs), so it's available by the time tabs are
+  // persisted on user actions.
+  const email = useAppStore.getState().currentUser?.email ?? "";
+  return { project, email };
 };
 
 const persistOpenTabs = (openTabs: PersistentTab[]) => {
@@ -394,12 +392,10 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
   await migrateDraftsFromCache(project);
   migrateTabViewState(project);
 
-  let email = "";
-  try {
-    email = useCurrentUserV1()?.value?.email ?? "";
-  } catch {
-    email = "";
-  }
+  // Ensure the current user is loaded so tab storage is scoped to the
+  // right email — the SQL editor route doesn't otherwise populate it.
+  await useAppStore.getState().loadCurrentUser();
+  const email = useAppStore.getState().currentUser?.email ?? "";
 
   const storedTabs = readOpenTabs(project, email);
 

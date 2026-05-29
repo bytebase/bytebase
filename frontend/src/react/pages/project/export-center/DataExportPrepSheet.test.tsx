@@ -229,9 +229,12 @@ vi.mock("@/store", () => ({
   useDBGroupStore: () => stableDBGroupStore,
   useSheetV1Store: () => stableSheetStore,
   useSettingV1Store: () => stableSettingStore,
-  useCurrentUserV1: () => ({ value: mocks.currentUser }),
   experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => mocks.currentUser,
 }));
 
 import { nativeChange } from "@/react/test-utils/nativeChange";

@@ -26,7 +26,7 @@ const updatedCurrentUser = {
 
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
-  useCurrentUserV1: vi.fn(() => ({ value: legacyCurrentUser })),
+  useCurrentUser: vi.fn(() => legacyCurrentUser),
   useAuthStore: vi.fn(() => ({
     updateCurrentUserNameForEmailChange: vi.fn(),
   })),
@@ -59,6 +59,10 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: mocks.useCurrentUser,
+}));
+
 vi.mock("@/react/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: vi.fn(),
 }));
@@ -79,7 +83,6 @@ vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
   useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
-  useCurrentUserV1: mocks.useCurrentUserV1,
   useSettingV1Store: mocks.useSettingV1Store,
   useWorkspaceV1Store: mocks.useWorkspaceV1Store,
 }));

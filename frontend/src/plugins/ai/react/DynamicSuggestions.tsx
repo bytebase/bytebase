@@ -2,8 +2,8 @@ import { Loader2, RefreshCwIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/react/components/ui/button";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
-import { useCurrentUserV1 } from "@/store";
 import { storageKeySqlEditorAiSuggestion } from "@/utils";
 import { useDynamicSuggestions } from "../logic";
 import { useAIContext } from "./context";
@@ -46,8 +46,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
     engine: () => engine,
     schema: () => schema,
   });
-  const currentUserRef = useCurrentUserV1();
-  const currentUserEmail = useVueState(() => currentUserRef.value.email);
+  const currentUserEmail = useCurrentUser().email;
 
   const ready = useVueState(() => suggestionsRef.value?.ready ?? false);
   const state = useVueState<"LOADING" | "IDLE" | "ENDED">(

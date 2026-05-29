@@ -141,9 +141,12 @@ vi.mock("@/store", () => ({
   useProjectV1Store: () => stableProjectStore,
   useInstanceV1Store: () => stableInstanceStore,
   useEnvironmentV1Store: () => ({ environmentList: [] }),
-  useCurrentUserV1: () => ({ value: mocks.currentUser }),
   experimentalCreateIssueByPlan: mocks.experimentalCreateIssueByPlan,
   pushNotification: vi.fn(),
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => mocks.currentUser,
 }));
 
 vi.mock("@/react/hooks/useVueState", () => ({

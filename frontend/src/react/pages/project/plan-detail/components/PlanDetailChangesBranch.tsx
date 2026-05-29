@@ -57,6 +57,7 @@ import {
 } from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -68,7 +69,6 @@ import {
 import {
   getProjectNameAndDatabaseGroupName,
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
   useProjectV1Store,
@@ -192,7 +192,7 @@ export function PlanDetailChangesBranch({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState } = page;
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
   const project = useVueState(() =>
     projectStore.getProjectByName(`projects/${page.projectId}`)
@@ -712,7 +712,7 @@ function OptionsSection({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { patchState, refreshState } = page;
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
   const project = useVueState(() =>
     projectStore.getProjectByName(`projects/${page.projectId}`)

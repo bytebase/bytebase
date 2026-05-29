@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
-  useCurrentUser,
+  useOptionalCurrentUser,
   usePlanFeature,
   useServerInfo,
   useWorkspaceProfile,
@@ -55,7 +55,7 @@ function makeWatermarkDataURL(opts: {
 }
 
 export function Watermark() {
-  const currentUser = useCurrentUser();
+  const currentUser = useOptionalCurrentUser();
   const hasWatermarkFeature = usePlanFeature(PlanFeature.FEATURE_WATERMARK);
   const serverInfo = useServerInfo();
   const workspaceProfile = useWorkspaceProfile();

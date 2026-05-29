@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(),
   fetchEnvironments: vi.fn(),
+  loadCurrentUser: vi.fn(),
   loadEnvironmentList: vi.fn(),
   loadWorkspaceProfile: vi.fn(),
   useAppStore: vi.fn(),
@@ -36,14 +37,17 @@ let DashboardFrameShell: typeof import("./DashboardFrameShell").DashboardFrameSh
 beforeEach(async () => {
   mocks.getOrFetchSettingByName.mockReset();
   mocks.fetchEnvironments.mockReset();
+  mocks.loadCurrentUser.mockReset();
   mocks.loadEnvironmentList.mockReset();
   mocks.loadWorkspaceProfile.mockReset();
   mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
   mocks.fetchEnvironments.mockResolvedValue([]);
+  mocks.loadCurrentUser.mockResolvedValue(undefined);
   mocks.loadEnvironmentList.mockResolvedValue([]);
   mocks.loadWorkspaceProfile.mockResolvedValue(undefined);
   mocks.useAppStore.mockImplementation((selector) =>
     selector({
+      loadCurrentUser: mocks.loadCurrentUser,
       loadEnvironmentList: mocks.loadEnvironmentList,
       loadWorkspaceProfile: mocks.loadWorkspaceProfile,
     })
@@ -70,6 +74,7 @@ describe("DashboardFrameShell", () => {
     });
 
     expect(onReady).toHaveBeenCalled();
+    expect(mocks.loadCurrentUser).toHaveBeenCalled();
     expect(mocks.fetchEnvironments).toHaveBeenCalled();
     expect(mocks.getOrFetchSettingByName).toHaveBeenCalled();
     const targets = onReady.mock.lastCall?.[0];
@@ -89,6 +94,7 @@ describe("DashboardFrameShell", () => {
 
   test("keeps body target hidden while bootstrap requests are pending", () => {
     let resolveEnvironmentList: (value: []) => void = () => {};
+    mocks.loadCurrentUser.mockResolvedValue(undefined);
     mocks.loadEnvironmentList.mockReturnValue(
       new Promise((resolve) => {
         resolveEnvironmentList = resolve;

@@ -22,7 +22,6 @@ const mocks = vi.hoisted(() => ({
     setRequireResetPassword: vi.fn(),
     login: vi.fn(async () => {}),
   })),
-  useCurrentUserV1: vi.fn(() => ({ value: { name: "users/1", email: "u@e" } })),
   updateUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
@@ -39,10 +38,13 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({ name: "users/1", email: "u@e" }),
+}));
+
 vi.mock("@/store", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
   useAuthStore: mocks.useAuthStore,
-  useCurrentUserV1: mocks.useCurrentUserV1,
   pushNotification: mocks.pushNotification,
 }));
 

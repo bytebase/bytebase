@@ -14,7 +14,7 @@ import {
 } from "@/react/components/ui/dropdown-menu";
 import {
   useAppFeature,
-  useCurrentUser,
+  useOptionalCurrentUser,
   useQuickstartReset,
   useServerInfo,
   useSubscription,
@@ -45,7 +45,7 @@ export function ProfileMenuTrigger({
   link = true,
 }: ProfileMenuProps) {
   const { t, i18n } = useTranslation();
-  const currentUser = useCurrentUser();
+  const currentUser = useOptionalCurrentUser();
   const serverInfo = useServerInfo();
   const { subscription, uploadLicense } = useSubscription();
   const workspace = useWorkspace();

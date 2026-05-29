@@ -30,7 +30,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
-import { useCurrentUser, useServerState } from "@/react/hooks/useAppState";
+import {
+  useOptionalCurrentUser,
+  useServerState,
+} from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -432,7 +435,7 @@ export function LandingPage(_: Record<string, never> = {}) {
   const [showConfigDrawer, setShowConfigDrawer] = useState(false);
   const [showProjectSwitchDialog, setShowProjectSwitchDialog] = useState(false);
 
-  const email = useCurrentUser()?.email ?? "";
+  const email = useOptionalCurrentUser()?.email ?? "";
   const { version, changelogURL } = useServerState();
 
   const fullList = useFullQuickLinkList();

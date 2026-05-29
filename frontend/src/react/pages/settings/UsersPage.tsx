@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -51,7 +52,6 @@ import {
 import {
   pushNotification,
   useActuatorV1Store,
-  useCurrentUserV1,
   useSettingV1Store,
   useSubscriptionV1Store,
   useWorkspaceV1Store,
@@ -90,7 +90,7 @@ function UserTable({
   onGroupSelected?: (group: Group) => void;
 }) {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const archiveUser = useAppStore((state) => state.archiveUser);
   const restoreUser = useAppStore((state) => state.restoreUser);
   const batchGetOrFetchGroups = useAppStore(
