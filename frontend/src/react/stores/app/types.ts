@@ -135,6 +135,10 @@ export type WorkspaceSlice = {
   refreshServerInfo: () => Promise<ActuatorInfo | undefined>;
   loadWorkspace: () => Promise<Workspace | undefined>;
   loadWorkspaceList: () => Promise<Workspace[]>;
+  updateWorkspace: (
+    workspace: Workspace,
+    updateMask: string[]
+  ) => Promise<Workspace>;
   switchWorkspace: (workspaceName: string) => Promise<void>;
   loadWorkspaceProfile: (
     force?: boolean

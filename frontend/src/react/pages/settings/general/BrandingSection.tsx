@@ -17,9 +17,9 @@ import {
 } from "@/react/components/PermissionGuard";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { usePlanFeature } from "@/react/hooks/useAppState";
-import { useVueState } from "@/react/hooks/useVueState";
-import { pushNotification, useWorkspaceV1Store } from "@/store";
+import { usePlanFeature, useWorkspace } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
+import { pushNotification } from "@/store";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import type { SectionHandle } from "./useSettingSection";
@@ -43,9 +43,8 @@ const convertFileToBase64 = (file: File): Promise<string> =>
 export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
   function BrandingSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
-    const workspaceStore = useWorkspaceV1Store();
-
-    const workspace = useVueState(() => workspaceStore.currentWorkspace);
+    const workspace = useWorkspace();
+    const updateWorkspace = useAppStore((state) => state.updateWorkspace);
     const hasBrandingFeature = usePlanFeature(PlanFeature.FEATURE_CUSTOM_LOGO);
 
     const [canEdit] = usePermissionCheck(["bb.workspaces.update"]);
@@ -92,11 +91,11 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
           updateMasks.push("logo");
         }
 
-        await workspaceStore.updateWorkspace(ws, updateMasks);
+        await updateWorkspace(ws, updateMasks);
       } finally {
         setLoading(false);
       }
-    }, [loading, workspace, localTitle, logoUrl, workspaceStore]);
+    }, [loading, workspace, localTitle, logoUrl, updateWorkspace]);
 
     // Re-sync state when workspace loads asynchronously, only if not dirty
     useEffect(() => {

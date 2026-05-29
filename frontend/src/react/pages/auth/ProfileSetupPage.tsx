@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useCurrentUser } from "@/react/hooks/useAppState";
+import { useCurrentUser, useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
@@ -18,8 +18,9 @@ export function ProfileSetupPage() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
+  const updateWorkspace = useAppStore((state) => state.updateWorkspace);
   const workspaceStore = useWorkspaceV1Store();
-  const workspace = useVueState(() => workspaceStore.currentWorkspace);
+  const workspace = useWorkspace();
   const workspacePolicy = useVueState(() => workspaceStore.workspaceIamPolicy);
 
   // Show workspace name field only if the user is the sole member of the
@@ -64,7 +65,7 @@ export function ProfileSetupPage() {
         })
       );
       if (canRenameWorkspace && workspaceTitle.trim() && workspace?.name) {
-        await workspaceStore.updateWorkspace(
+        await updateWorkspace(
           create(WorkspaceSchema, {
             name: workspace.name,
             title: workspaceTitle.trim(),
