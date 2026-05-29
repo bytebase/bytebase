@@ -291,6 +291,22 @@ CREATE TABLE ORDER_ITEMS (
 			},
 		},
 		{
+			name: "escaped_string_literals_in_expressions",
+			ddl: `
+CREATE TABLE AUTHORS (
+    NAME VARCHAR2(100),
+    IS_REILLY AS (CASE WHEN NAME = 'O''Reilly' THEN 1 ELSE 0 END),
+    CONSTRAINT chk_author_name CHECK (NAME <> 'O''Reilly')
+);
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				authors := requireTable(t, requireSingleSchema(t, metadata), "AUTHORS")
+				require.Len(t, authors.Columns, 2)
+				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].Default)
+				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME<>'O''Reilly'")
+			},
+		},
+		{
 			name: "default_on_null_column",
 			ddl: `
 CREATE TABLE ORDERS (

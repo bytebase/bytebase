@@ -752,7 +752,7 @@ func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 		if n.IsNChar {
 			prefix = "N"
 		}
-		return prefix + "'" + n.Val + "'"
+		return prefix + "'" + strings.ReplaceAll(n.Val, "'", "''") + "'"
 	case *ast.NumberLiteral:
 		return n.Val
 	case *ast.NullLiteral:
