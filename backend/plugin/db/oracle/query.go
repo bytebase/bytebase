@@ -9,11 +9,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/antlr4-go/antlr/v4"
+	oracleast "github.com/bytebase/omni/oracle/ast"
+	oracleparser "github.com/bytebase/omni/oracle/parser"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/bytebase/parser/plsql"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -224,96 +223,121 @@ func addLimitFor12cAndLater(statement string, limit int) string {
 // addFetchNextClause adds a FETCH NEXT clause to a SELECT statement using AST parsing.
 // This provides more precise placement of the limit clause compared to simple string wrapping.
 func addFetchNextClause(statement string, limitCount int) (string, error) {
-	results, err := plsqlparser.ParsePLSQL(statement)
+	list, err := plsqlparser.ParsePLSQLOmni(statement)
 	if err != nil {
 		return "", err
 	}
-	if len(results) == 0 {
+	if list == nil || len(list.Items) == 0 {
 		return "", errors.New("no parse results")
 	}
-	if len(results) > 1 {
-		return "", errors.Errorf("expected single statement, got %d statements", len(results))
+	if len(list.Items) > 1 {
+		return "", errors.Errorf("expected single statement, got %d statements", len(list.Items))
 	}
-	tree := results[0].Tree
-	stream := results[0].Tokens
-
-	listener := &plsqlRewriter{
-		limitCount:        limitCount,
-		selectFetch:       false,
-		outerMostSubQuery: true,
+	raw, ok := list.Items[0].(*oracleast.RawStmt)
+	if !ok {
+		return "", errors.Errorf("expected raw statement, got %T", list.Items[0])
 	}
-
-	listener.rewriter = *antlr.NewTokenStreamRewriter(stream)
-	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	if listener.err != nil {
-		return "", errors.Wrapf(listener.err, "statement: %s", statement)
+	selectStmt, ok := raw.Stmt.(*oracleast.SelectStmt)
+	if !ok {
+		return statement, nil
 	}
 
-	res := listener.rewriter.GetTextDefault()
+	res, err := rewriteOracleSelectFetch(statement, selectStmt, limitCount)
+	if err != nil {
+		return "", err
+	}
 	// https://stackoverflow.com/questions/27987882/how-can-i-solve-ora-00911-invalid-character-error
 	res = strings.TrimRightFunc(res, utils.IsSpaceOrSemicolon)
 
 	return res, nil
 }
 
-// ========== PLSQL AST Walker and Rewriter ==========
+func rewriteOracleSelectFetch(sql string, selectStmt *oracleast.SelectStmt, limitCount int) (string, error) {
+	target := rightmostOracleSetSelect(selectStmt)
+	if target.FetchFirst != nil {
+		return rewriteOracleFetchClause(sql, target.FetchFirst, limitCount)
+	}
+	if target.ForUpdate != nil && target.ForUpdate.Loc.Start > 0 && target.ForUpdate.Loc.Start <= len(sql) {
+		return sql[:target.ForUpdate.Loc.Start] + fmt.Sprintf("FETCH NEXT %d ROWS ONLY ", limitCount) + sql[target.ForUpdate.Loc.Start:], nil
+	}
 
-type plsqlRewriter struct {
-	*plsql.BasePlSqlParserListener
-
-	rewriter antlr.TokenStreamRewriter
-	err      error
-	// fetch in select_statement
-	selectFetch bool
-	// fetch in subquery
-	outerMostSubQuery bool
-	limitCount        int
+	loc := oracleast.NodeLoc(target)
+	if loc.End < 0 || loc.End > len(sql) {
+		return "", errors.Errorf("invalid SELECT end position %d", loc.End)
+	}
+	return sql[:loc.End] + fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limitCount) + sql[loc.End:], nil
 }
 
-func (r *plsqlRewriter) EnterSelect_statement(ctx *plsql.Select_statementContext) {
-	if ctx.AllFetch_clause() != nil && len(ctx.AllFetch_clause()) > 0 {
-		r.selectFetch = true
-		return
+func rightmostOracleSetSelect(selectStmt *oracleast.SelectStmt) *oracleast.SelectStmt {
+	if selectStmt.Op != oracleast.SETOP_NONE && selectStmt.Rarg != nil {
+		return rightmostOracleSetSelect(selectStmt.Rarg)
+	}
+	return selectStmt
+}
+
+func rewriteOracleFetchClause(sql string, fetch *oracleast.FetchFirstClause, limitCount int) (string, error) {
+	if fetch.Count == nil {
+		if fetch.Loc.Start < 0 || fetch.Loc.End < fetch.Loc.Start || fetch.Loc.End > len(sql) {
+			return "", errors.Errorf("invalid FETCH position %d:%d", fetch.Loc.Start, fetch.Loc.End)
+		}
+		if hasOracleFetchKeyword(sql, fetch.Loc) {
+			return sql, nil
+		}
+		return sql[:fetch.Loc.End] + fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", limitCount) + sql[fetch.Loc.End:], nil
+	}
+	if fetch.Percent {
+		return "", errors.Errorf("cannot rewrite PERCENT FETCH expression")
+	}
+
+	existingLimit := extractOracleFetchCount(fetch.Count)
+	if existingLimit > 0 && existingLimit <= limitCount {
+		return sql, nil
+	}
+
+	loc := oracleast.NodeLoc(fetch.Count)
+	loc = trimOracleLocSpace(sql, loc)
+	if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
+		if existingLimit <= 0 {
+			return "", errors.Errorf("cannot rewrite non-constant FETCH expression")
+		}
+		return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
+	}
+	return "", errors.Errorf("cannot rewrite FETCH expression")
+}
+
+func hasOracleFetchKeyword(sql string, loc oracleast.Loc) bool {
+	segment := sql[loc.Start:loc.End]
+	lexer := oracleparser.NewLexer(segment)
+	for {
+		tok := lexer.NextToken()
+		if tok.Loc == tok.End && tok.End >= len(segment) {
+			return false
+		}
+		if tok.Loc < 0 || tok.End > len(segment) || tok.End <= tok.Loc {
+			return false
+		}
+		if strings.EqualFold(segment[tok.Loc:tok.End], "FETCH") {
+			return true
+		}
 	}
 }
 
-func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
-	if !r.outerMostSubQuery || r.selectFetch {
-		return
+func extractOracleFetchCount(node oracleast.Node) int {
+	limit, ok := node.(*oracleast.NumberLiteral)
+	if !ok || limit.IsFloat || limit.Ival <= 0 {
+		return 0
 	}
-	r.outerMostSubQuery = false
-	// union | intersect | minus
-	if ctx.AllSubquery_operation_part() != nil && len(ctx.AllSubquery_operation_part()) > 0 {
-		lastPart := ctx.Subquery_operation_part(len(ctx.AllSubquery_operation_part()) - 1)
-		if lastPart.Subquery_basic_elements().Query_block().Fetch_clause() != nil {
-			r.overrideFetchClause(lastPart.Subquery_basic_elements().Query_block().Fetch_clause())
-			return
-		}
-		if subqueryOp, ok := lastPart.(*plsql.Subquery_operation_partContext); ok {
-			r.rewriter.InsertAfterDefault(subqueryOp.GetStop().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
-			return
-		}
-	}
-
-	// otherwise (subquery and normally)
-	basicElements := ctx.Subquery_basic_elements()
-	if basicElements.Query_block().Fetch_clause() != nil {
-		r.overrideFetchClause(basicElements.Query_block().Fetch_clause())
-		return
-	}
-	r.rewriter.InsertAfterDefault(basicElements.GetStop().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
+	return int(limit.Ival)
 }
 
-func (r *plsqlRewriter) overrideFetchClause(fetchClause plsql.IFetch_clauseContext) {
-	expression := fetchClause.Expression()
-	if expression != nil {
-		userLimitText := expression.GetText()
-		limit, _ := strconv.Atoi(userLimitText)
-		if limit == 0 || r.limitCount < limit {
-			limit = r.limitCount
-		}
-		r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+func trimOracleLocSpace(sql string, loc oracleast.Loc) oracleast.Loc {
+	for loc.Start < loc.End && loc.Start < len(sql) && unicode.IsSpace(rune(sql[loc.Start])) {
+		loc.Start++
 	}
+	for loc.End > loc.Start && loc.End <= len(sql) && unicode.IsSpace(rune(sql[loc.End-1])) {
+		loc.End--
+	}
+	return loc
 }
 
 // ========== Skip Limit Logic for DUAL Queries ==========
@@ -322,159 +346,93 @@ func (r *plsqlRewriter) overrideFetchClause(fetchClause plsql.IFetch_clauseConte
 // For Oracle, we think the statement like "SELECT xxx FROM DUAL" does not need a limit clause.
 // More details, xxx can not be a subquery.
 func skipAddLimit(stmt string) (bool, error) {
-	results, err := plsqlparser.ParsePLSQL(stmt)
+	list, err := plsqlparser.ParsePLSQLOmni(stmt)
 	if err != nil {
 		return false, err
 	}
-	if len(results) == 0 {
+	if list == nil || len(list.Items) == 0 {
 		return false, nil
 	}
 	// Multiple statements should not skip limit
-	if len(results) > 1 {
+	if len(list.Items) > 1 {
 		return false, nil
 	}
-	tree := results[0].Tree
-
-	selectStatement := extractSimpleSelectStatement(tree)
-	if selectStatement == nil {
-		return false, nil
-	}
-
-	// Check if select has additional clauses that prevent skipping limit
-	if hasAdditionalClauses(selectStatement) {
-		return false, nil
-	}
-
-	queryBlock := extractQueryBlock(selectStatement)
-	if queryBlock == nil {
-		return false, nil
-	}
-
-	// Check if query block has complex features
-	if hasComplexQueryFeatures(queryBlock) {
-		return false, nil
-	}
-
-	// Must be a simple SELECT FROM DUAL
-	if !isFromDual(queryBlock) {
-		return false, nil
-	}
-
-	// Check selected elements don't contain subqueries
-	return !hasSubqueriesInSelection(queryBlock), nil
-}
-
-// extractSimpleSelectStatement extracts a simple SELECT statement from the parse tree.
-// Returns nil if the tree doesn't represent a simple SELECT.
-func extractSimpleSelectStatement(tree antlr.Tree) *plsql.Select_statementContext {
-	sqlScript, ok := tree.(*plsql.Sql_scriptContext)
+	raw, ok := list.Items[0].(*oracleast.RawStmt)
 	if !ok {
-		return nil
+		return false, nil
 	}
-
-	if len(sqlScript.AllSql_plus_command()) > 0 || len(sqlScript.AllUnit_statement()) != 1 {
-		return nil
+	selectStmt, ok := raw.Stmt.(*oracleast.SelectStmt)
+	if !ok {
+		return false, nil
 	}
-
-	unitStatement := sqlScript.Unit_statement(0)
-	if unitStatement == nil {
-		return nil
+	if !isSimpleOracleSelect(selectStmt) {
+		return false, nil
 	}
-
-	dml := unitStatement.Data_manipulation_language_statements()
-	if dml == nil {
-		return nil
+	if !isOracleSelectFromDual(selectStmt) {
+		return false, nil
 	}
-
-	if selectStmt := dml.Select_statement(); selectStmt != nil {
-		if stmt, ok := selectStmt.(*plsql.Select_statementContext); ok {
-			return stmt
-		}
-	}
-	return nil
+	return !hasOracleSubqueriesInSelection(selectStmt), nil
 }
 
-// hasAdditionalClauses checks if a SELECT statement has clauses that prevent limit skipping.
-func hasAdditionalClauses(selectStatement *plsql.Select_statementContext) bool {
-	return len(selectStatement.AllFor_update_clause()) != 0 ||
-		len(selectStatement.AllOrder_by_clause()) != 0 ||
-		len(selectStatement.AllOffset_clause()) != 0 ||
-		len(selectStatement.AllFetch_clause()) != 0
+func isSimpleOracleSelect(selectStmt *oracleast.SelectStmt) bool {
+	return selectStmt.WithClause == nil &&
+		!selectStmt.Distinct &&
+		!selectStmt.UniqueKw &&
+		!selectStmt.All &&
+		selectStmt.Into == nil &&
+		selectStmt.IntoVars == nil &&
+		selectStmt.WhereClause == nil &&
+		selectStmt.Hierarchical == nil &&
+		selectStmt.GroupClause == nil &&
+		selectStmt.HavingClause == nil &&
+		selectStmt.ModelClause == nil &&
+		len(selectStmt.WindowDefs) == 0 &&
+		selectStmt.QualifyClause == nil &&
+		selectStmt.OrderBy == nil &&
+		selectStmt.ForUpdate == nil &&
+		selectStmt.FetchFirst == nil &&
+		selectStmt.Pivot == nil &&
+		selectStmt.Unpivot == nil &&
+		selectStmt.Op == oracleast.SETOP_NONE
 }
 
-// extractQueryBlock extracts the query block from a SELECT statement.
-func extractQueryBlock(selectStatement *plsql.Select_statementContext) *plsql.Query_blockContext {
-	selectOnly := selectStatement.Select_only_statement()
-	if selectOnly == nil {
-		return nil
+func isOracleSelectFromDual(selectStmt *oracleast.SelectStmt) bool {
+	if selectStmt.FromClause == nil || len(selectStmt.FromClause.Items) != 1 {
+		return false
 	}
-
-	subquery := selectOnly.Subquery()
-	if subquery == nil || len(subquery.AllSubquery_operation_part()) != 0 {
-		return nil
+	tableRef, ok := selectStmt.FromClause.Items[0].(*oracleast.TableRef)
+	if !ok || tableRef.Name == nil {
+		return false
 	}
-
-	subqueryBasicElements := subquery.Subquery_basic_elements()
-	if subqueryBasicElements == nil || subqueryBasicElements.Subquery() != nil {
-		return nil
-	}
-
-	if queryBlock := subqueryBasicElements.Query_block(); queryBlock != nil {
-		if block, ok := queryBlock.(*plsql.Query_blockContext); ok {
-			return block
-		}
-	}
-	return nil
+	return tableRef.Alias == nil &&
+		tableRef.Name.Schema == "" &&
+		tableRef.Name.DBLink == "" &&
+		strings.EqualFold(tableRef.Name.Name, "DUAL")
 }
 
-// hasComplexQueryFeatures checks if a query block has complex features.
-func hasComplexQueryFeatures(queryBlock *plsql.Query_blockContext) bool {
-	return queryBlock.Subquery_factoring_clause() != nil ||
-		queryBlock.DISTINCT() != nil ||
-		queryBlock.ALL() != nil ||
-		queryBlock.UNIQUE() != nil ||
-		queryBlock.Into_clause() != nil ||
-		queryBlock.Where_clause() != nil ||
-		queryBlock.Hierarchical_query_clause() != nil ||
-		queryBlock.Group_by_clause() != nil ||
-		queryBlock.Model_clause() != nil ||
-		queryBlock.Order_by_clause() != nil ||
-		queryBlock.Fetch_clause() != nil
-}
-
-// isFromDual checks if the query is selecting from DUAL table.
-func isFromDual(queryBlock *plsql.Query_blockContext) bool {
-	from := queryBlock.From_clause()
-	return from != nil && strings.EqualFold(from.GetText(), "FROMDUAL")
-}
-
-// hasSubqueriesInSelection checks if the selected elements contain subqueries.
-func hasSubqueriesInSelection(queryBlock *plsql.Query_blockContext) bool {
-	selectedList := queryBlock.Selected_list()
-	if selectedList == nil || selectedList.ASTERISK() != nil {
+func hasOracleSubqueriesInSelection(selectStmt *oracleast.SelectStmt) bool {
+	if selectStmt.TargetList == nil || len(selectStmt.TargetList.Items) == 0 {
 		return true
 	}
-
-	for _, selectedElement := range selectedList.AllSelect_list_elements() {
-		if selectedElement.Table_wild() != nil {
+	for _, item := range selectStmt.TargetList.Items {
+		target, ok := item.(*oracleast.ResTarget)
+		if !ok || target.Expr == nil {
 			return true
 		}
-
-		l := subqueryListener{}
-		antlr.ParseTreeWalkerDefault.Walk(&l, selectedElement)
-		if l.hasSubquery {
+		if _, ok := target.Expr.(*oracleast.Star); ok {
+			return true
+		}
+		hasSubquery := false
+		oracleast.Inspect(target.Expr, func(node oracleast.Node) bool {
+			if _, ok := node.(*oracleast.SubqueryExpr); ok {
+				hasSubquery = true
+				return false
+			}
+			return true
+		})
+		if hasSubquery {
 			return true
 		}
 	}
-
 	return false
-}
-
-type subqueryListener struct {
-	*plsql.BasePlSqlParserListener
-	hasSubquery bool
-}
-
-func (l *subqueryListener) EnterSubquery(*plsql.SubqueryContext) {
-	l.hasSubquery = true
 }
