@@ -1295,9 +1295,20 @@ func compareMaterializedViews(t *testing.T, dbMViews, parsedMViews []*storepb.Ma
 		require.Equal(t, dbMV.Name, parsedMV.Name, "materialized view names should match")
 		require.NotEmpty(t, parsedMV.Definition, "parsed materialized view definition should not be empty")
 		require.NotEmpty(t, dbMV.Definition, "database materialized view definition should not be empty")
+		if dbMV.Comment != "" || parsedMV.Comment != "" {
+			if parsedMV.Comment == "" && isOracleAutoMaterializedViewComment(dbMV.Comment) {
+				t.Logf("Info: materialized view %s has Oracle-generated comment %q", mvName, dbMV.Comment)
+				continue
+			}
+			require.Equal(t, dbMV.Comment, parsedMV.Comment, "materialized view comments should match for %s", mvName)
+		}
 
 		t.Logf("✓ Materialized View %s: definition length=%d", mvName, len(parsedMV.Definition))
 	}
+}
+
+func isOracleAutoMaterializedViewComment(comment string) bool {
+	return strings.HasPrefix(comment, "snapshot table for snapshot ")
 }
 
 // compareSequences compares sequence metadata
