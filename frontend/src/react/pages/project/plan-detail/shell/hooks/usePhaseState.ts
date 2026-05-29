@@ -4,10 +4,9 @@ import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 
 export function usePhaseState() {
   const activePhases = usePlanDetailStore((s) => s.activePhases);
+  const setActivePhases = usePlanDetailStore((s) => s.setActivePhases);
   const togglePhase = usePlanDetailStore((s) => s.togglePhase);
   const expandPhase = usePlanDetailStore((s) => s.expandPhase);
-  const focusPhase = usePlanDetailStore((s) => s.focusPhase);
-  const collapsePhase = usePlanDetailStore((s) => s.collapsePhase);
 
   const isActive = useCallback(
     (phase: PlanDetailPhase) => activePhases.has(phase),
@@ -17,9 +16,8 @@ export function usePhaseState() {
   return {
     activePhases,
     isActive,
+    setActivePhases,
     togglePhase,
     expandPhase,
-    focusPhase,
-    collapsePhase,
   };
 }

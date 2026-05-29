@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/router";
 import {
@@ -68,6 +75,55 @@ const applyDerivedState = (
   };
 };
 
+const getDefaultActivePhases = (phase: PlanDetailPhase): PlanDetailPhase[] => {
+  if (phase === PLAN_DETAIL_PHASE_REVIEW) {
+    return [PLAN_DETAIL_PHASE_CHANGES, PLAN_DETAIL_PHASE_REVIEW];
+  }
+  return [phase];
+};
+
+type PhaseSelection = {
+  routeName?: string;
+  routePhase?: PlanDetailPhase;
+  routeStageId?: string;
+  routeTaskId?: string;
+};
+
+const getCurrentPhase = (
+  snapshot: PlanDetailPageSnapshot,
+  selection: PhaseSelection
+): PlanDetailPhase => {
+  const { routeName, routePhase, routeStageId, routeTaskId } = selection;
+  if (
+    routePhase === PLAN_DETAIL_PHASE_CHANGES ||
+    routePhase === PLAN_DETAIL_PHASE_REVIEW ||
+    routePhase === PLAN_DETAIL_PHASE_DEPLOY
+  ) {
+    return routePhase;
+  }
+  if (routeStageId || routeTaskId) {
+    return PLAN_DETAIL_PHASE_DEPLOY;
+  }
+  // An explicit specs / spec-detail route always defaults to the spec section,
+  // even once the plan has a rollout, so shared/bookmarked spec links stay
+  // usable. A plan under review additionally expands the review section.
+  if (
+    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
+    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
+  ) {
+    return snapshot.issue
+      ? PLAN_DETAIL_PHASE_REVIEW
+      : PLAN_DETAIL_PHASE_CHANGES;
+  }
+  if (snapshot.rollout) {
+    return PLAN_DETAIL_PHASE_DEPLOY;
+  }
+  if (snapshot.issue) {
+    return PLAN_DETAIL_PHASE_REVIEW;
+  }
+  return PLAN_DETAIL_PHASE_CHANGES;
+};
+
 export const usePlanDetailPage = ({
   projectId,
   planId,
@@ -107,48 +163,56 @@ export const usePlanDetailPage = ({
   const routePhase = route.phase;
   const routeStageId = route.stageId;
   const routeTaskId = route.taskId;
-  const focusPhase = phase.focusPhase;
+  const setActivePhases = phase.setActivePhases;
   const pageIdentityKey = `${projectId}/${planId}`;
-  const currentPhase = useMemo<PlanDetailPhase>(() => {
-    if (
-      routePhase === PLAN_DETAIL_PHASE_CHANGES ||
-      routePhase === PLAN_DETAIL_PHASE_REVIEW ||
-      routePhase === PLAN_DETAIL_PHASE_DEPLOY
-    ) {
-      return routePhase;
-    }
-    if (routeStageId || routeTaskId) {
-      return PLAN_DETAIL_PHASE_DEPLOY;
-    }
-    if (
-      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
-      routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
-    ) {
-      return PLAN_DETAIL_PHASE_CHANGES;
-    }
-    if (snapshot.rollout) {
-      return PLAN_DETAIL_PHASE_DEPLOY;
-    }
-    if (snapshot.issue) {
-      return PLAN_DETAIL_PHASE_REVIEW;
-    }
-    return PLAN_DETAIL_PHASE_CHANGES;
-  }, [
+  const phaseSelectionRef = useRef<PhaseSelection>({});
+  phaseSelectionRef.current = {
     routeName,
     routePhase,
     routeStageId,
     routeTaskId,
-    snapshot.issue,
-    snapshot.rollout,
-  ]);
+  };
+  const syncedDefaultPhaseRef = useRef<
+    | {
+        pageIdentityKey: string;
+        phase: PlanDetailPhase;
+      }
+    | undefined
+  >(undefined);
+  const syncDefaultActivePhases = useCallback(
+    (nextSnapshot: PlanDetailPageSnapshot) => {
+      const nextPhase = getCurrentPhase(
+        nextSnapshot,
+        phaseSelectionRef.current
+      );
+      const synced = syncedDefaultPhaseRef.current;
+      if (
+        synced?.pageIdentityKey === pageIdentityKey &&
+        synced.phase === nextPhase
+      ) {
+        return;
+      }
+      setActivePhases(getDefaultActivePhases(nextPhase));
+      syncedDefaultPhaseRef.current = {
+        pageIdentityKey,
+        phase: nextPhase,
+      };
+    },
+    [pageIdentityKey, setActivePhases]
+  );
 
-  useEffect(() => {
-    latestSnapshotRef.current = snapshot;
-  }, [snapshot]);
-
-  const patchState = useCallback((patch: Partial<PlanDetailPageSnapshot>) => {
-    setSnapshot((prev) => applyDerivedState({ ...prev, ...patch }));
-  }, []);
+  const patchState = useCallback(
+    (patch: Partial<PlanDetailPageSnapshot>) => {
+      const nextSnapshot = applyDerivedState({
+        ...latestSnapshotRef.current,
+        ...patch,
+      });
+      syncDefaultActivePhases(nextSnapshot);
+      latestSnapshotRef.current = nextSnapshot;
+      setSnapshot(nextSnapshot);
+    },
+    [syncDefaultActivePhases]
+  );
 
   const refreshState = useCallback(async () => {
     try {
@@ -204,9 +268,16 @@ export const usePlanDetailPage = ({
     issue: snapshot.issue,
   });
 
-  useEffect(() => {
-    focusPhase(currentPhase);
-  }, [currentPhase, focusPhase, pageIdentityKey]);
+  useLayoutEffect(() => {
+    syncDefaultActivePhases(latestSnapshotRef.current);
+  }, [
+    pageIdentityKey,
+    routeName,
+    routePhase,
+    routeStageId,
+    routeTaskId,
+    syncDefaultActivePhases,
+  ]);
 
   const isPlanDone = useMemo(() => {
     if (!snapshot.rollout) {
