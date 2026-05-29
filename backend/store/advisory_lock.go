@@ -19,8 +19,8 @@ const (
 	// AdvisoryLockKeySchemaSyncer is used by the schema syncer to ensure only
 	// one replica runs periodic schema sync at a time.
 	AdvisoryLockKeySchemaSyncer AdvisoryLockKey = 1003
-	// AdvisoryLockKeyVCSProviderUser is used to serialize active VCS provider
-	// user limit checks and upserts.
+	// AdvisoryLockKeyVCSProviderUser is used as the namespace for active VCS
+	// provider user limit checks and upserts.
 	AdvisoryLockKeyVCSProviderUser AdvisoryLockKey = 1004
 )
 
@@ -64,11 +64,31 @@ func TryAdvisoryXactLock(ctx context.Context, tx *sql.Tx, key AdvisoryLockKey) (
 	return acquired, nil
 }
 
+// TryAdvisoryXactLockWithStringKey attempts to acquire a transaction-level
+// advisory lock scoped by namespace and string key. Returns true if acquired,
+// false if already held by another transaction. The lock is automatically
+// released when the transaction ends.
+func TryAdvisoryXactLockWithStringKey(ctx context.Context, tx *sql.Tx, namespace AdvisoryLockKey, key string) (bool, error) {
+	var acquired bool
+	if err := tx.QueryRowContext(ctx, "SELECT pg_try_advisory_xact_lock($1, hashtext($2))", int32(namespace), key).Scan(&acquired); err != nil {
+		return false, err
+	}
+	return acquired, nil
+}
+
 // AcquireAdvisoryXactLock acquires a transaction-level advisory lock, blocking
 // until the lock is available. The lock is automatically released when the
 // transaction ends.
 func AcquireAdvisoryXactLock(ctx context.Context, tx *sql.Tx, key AdvisoryLockKey) error {
 	_, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1)", int64(key))
+	return err
+}
+
+// AcquireAdvisoryXactLockWithStringKey acquires a transaction-level advisory
+// lock scoped by namespace and string key, blocking until the lock is available.
+// The lock is automatically released when the transaction ends.
+func AcquireAdvisoryXactLockWithStringKey(ctx context.Context, tx *sql.Tx, namespace AdvisoryLockKey, key string) error {
+	_, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1, hashtext($2))", int32(namespace), key)
 	return err
 }
 
