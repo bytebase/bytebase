@@ -374,6 +374,35 @@ func TestCompletion_ViewWithBareSelectDefinitionSurfaces(t *testing.T) {
 		"view with a bare SELECT definition should surface as a VIEW candidate; got %v", got)
 }
 
+// Regression for BYT-9599 gap #5: in a multi-table query, a qualified column
+// reference must be scoped to the qualifier's table (relies on the omni resolver
+// honoring the qualifier — pulled in via the go.mod bump).
+func TestCompletion_QualifiedColumnScopedInJoin(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		}}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	for _, tc := range []struct {
+		stmt, at, want, notWant string
+	}{
+		{"SELECT a. FROM t1 AS a JOIN t2 AS b", "SELECT a.", "a1", "b1"}, // alias for t1
+		{"SELECT b. FROM t1 AS a JOIN t2 AS b", "SELECT b.", "b1", "a1"}, // alias for t2
+		{"SELECT t1. FROM t1 JOIN t2", "SELECT t1.", "a1", "b1"},         // by table name
+	} {
+		got, err := Completion(context.Background(), cCtx, tc.stmt, 1, len(tc.at))
+		require.NoError(t, err)
+		require.True(t, hasCandidate(got, base.CandidateTypeColumn, tc.want),
+			"%q should offer column %s; got %v", tc.stmt, tc.want, got)
+		require.False(t, hasCandidate(got, base.CandidateTypeColumn, tc.notWant),
+			"%q must not offer the other table's column %s; got %v", tc.stmt, tc.notWant, got)
+	}
+}
+
 // Function candidates carry a "()" suffix, matching the mysql completer, so the
 // completion text inserts a call site.
 func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
