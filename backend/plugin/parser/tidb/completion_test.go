@@ -431,6 +431,8 @@ func TestStatementReferencesDatabase(t *testing.T) {
 		{"SELECT 1 -- otherdb.\n FROM t", "otherdb", false},  // inside a line comment
 		{"SELECT nototherdb.t FROM x", "otherdb", false},     // not at an identifier boundary
 		{"SELECT a FROM t", "otherdb", false},                // not referenced
+		{"SELECT * FROM otherdb . t2", "otherdb", true},      // whitespace around the dot (TiDB allows it)
+		{"SELECT * FROM `otherdb` . t2", "otherdb", true},    // backtick-quoted + whitespace
 	}
 	for _, tc := range cases {
 		require.Equal(t, tc.want, statementReferencesDatabase(tc.statement, tc.db),

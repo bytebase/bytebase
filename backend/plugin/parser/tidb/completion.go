@@ -213,7 +213,10 @@ func statementReferencesDatabase(statement, dbName string) bool {
 	}
 	s := strings.ToLower(stripStringsAndComments(statement))
 	name := strings.ToLower(dbName)
-	for _, q := range []string{name + ".", "`" + name + "`."} {
+	// Match the database name (bare or backtick-quoted) at an identifier
+	// boundary, followed by optional whitespace and a dot. TiDB allows whitespace
+	// around the qualifier dot (e.g. `db . table`).
+	for _, q := range []string{name, "`" + name + "`"} {
 		from := 0
 		for {
 			i := strings.Index(s[from:], q)
@@ -221,10 +224,19 @@ func statementReferencesDatabase(statement, dbName string) bool {
 				break
 			}
 			at := from + i
-			if at == 0 || !isIdentByte(s[at-1]) {
+			from = at + 1
+			// The bare form must start at an identifier boundary so `mydb`
+			// doesn't match inside `notmydb`.
+			if q[0] != '`' && at > 0 && isIdentByte(s[at-1]) {
+				continue
+			}
+			j := at + len(q)
+			for j < len(s) && isSpaceByte(s[j]) {
+				j++
+			}
+			if j < len(s) && s[j] == '.' {
 				return true
 			}
-			from = at + 1
 		}
 	}
 	return false
