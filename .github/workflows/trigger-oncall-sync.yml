@@ -16,24 +16,6 @@ jobs:
   dispatch:
     runs-on: ubuntu-24.04
     steps:
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Start github-runner VM if stopped
-        run: |
-          STATUS=$(gcloud compute instances describe github-runner \
-            --zone southamerica-east1-b --project bytebase-dev \
-            --format='value(status)')
-          if [ "$STATUS" != "RUNNING" ]; then
-            gcloud compute instances start github-runner \
-              --zone southamerica-east1-b --project bytebase-dev
-          fi
-
       - name: Trigger sync-oncall workflow on bytebase/oncall
         env:
           GH_TOKEN: ${{ secrets.GHA_DISPATCH_TOKEN }}
