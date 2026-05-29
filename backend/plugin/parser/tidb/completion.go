@@ -76,10 +76,12 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		}
 	}
 
-	// In the read-only query scene, drop keywords that initiate writes
-	// (DML/DDL/transaction/admin statements) so the editor only suggests
-	// read statements.
-	if cCtx.Scene == base.SceneTypeQuery {
+	// In the read-only query scene, drop keywords that *initiate* writes
+	// (DML/DDL/transaction/admin statements) so the editor doesn't offer to start
+	// a write statement. This only applies at a statement-start position: the same
+	// keywords are valid sub-keywords inside read statements (e.g. CREATE in SHOW
+	// CREATE TABLE, UPDATE in SELECT ... FOR UPDATE) and must be preserved there.
+	if cCtx.Scene == base.SceneTypeQuery && caretAtStatementStart(stmt, pos) {
 		for key, c := range candidateMap {
 			if c.Type == base.CandidateTypeKeyword && writeStatementKeywords[strings.ToUpper(c.Text)] {
 				delete(candidateMap, key)
@@ -393,6 +395,18 @@ func isReservedKeyword(name string) bool {
 // caretInsideBacktickIdentifier reports whether the caret sits inside an open
 // backtick-quoted identifier (an odd number of backticks precede it), in which
 // case completed identifiers must not add their own quotes.
+// caretAtStatementStart reports whether the caret is at a statement-start
+// position — only whitespace and comments precede it, or it directly follows a
+// ';'. Write keywords are filtered only here (in the query scene) so keywords
+// valid inside read statements are preserved in other positions.
+func caretAtStatementStart(statement string, pos int) bool {
+	if pos > len(statement) {
+		pos = len(statement)
+	}
+	before := strings.TrimRight(stripStringsAndComments(statement)[:pos], " \t\r\n")
+	return before == "" || before[len(before)-1] == ';'
+}
+
 func caretInsideBacktickIdentifier(statement string, pos int) bool {
 	if pos > len(statement) {
 		pos = len(statement)

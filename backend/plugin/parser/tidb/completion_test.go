@@ -188,6 +188,27 @@ func TestCompletion_QuerySceneFiltersWriteKeywords(t *testing.T) {
 	require.False(t, hasKeyword(query, "BATCH"), "BATCH must be dropped in QUERY; got %v", query)
 }
 
+// In the query scene, write keywords are only filtered at a statement-start
+// position. Context-specific keywords that are valid inside read statements must
+// survive — e.g. CREATE in SHOW CREATE TABLE, UPDATE in SELECT ... FOR UPDATE.
+func TestCompletion_QuerySceneKeepsReadSubkeywords(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name:    "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+	})
+	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
+
+	for _, tc := range []struct{ stmt, keep string }{
+		{"SHOW ", "CREATE"},         // SHOW CREATE TABLE ... (read-only)
+		{"SELECT 1 FOR ", "UPDATE"}, // SELECT ... FOR UPDATE (locking read)
+	} {
+		got, err := Completion(context.Background(), q, tc.stmt, 1, len(tc.stmt))
+		require.NoError(t, err)
+		require.True(t, hasKeyword(got, tc.keep),
+			"%q must be kept after %q in the query scene; got %v", tc.keep, tc.stmt, got)
+	}
+}
+
 // BATCH is TiDB-only grammar (added to omni in #157); the mysql ANTLR grammar
 // cannot produce it. Its presence for Engine_TIDB and absence for Engine_MYSQL
 // proves Engine_TIDB now routes through the omni shim, not the mysql completer.
