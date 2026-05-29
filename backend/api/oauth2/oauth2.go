@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -206,6 +207,13 @@ func isAllowedHostedRedirectURI(u *url.URL) bool {
 	// Only the default https port is the real vendor callback; reject any other
 	// port so a code can't be steered to a non-OAuth service on the vendor host.
 	if port := u.Port(); port != "" && port != "443" {
+		return false
+	}
+	// Reject "."/".." path segments (u.Path is already percent-decoded, so this
+	// also covers %2e%2e). Otherwise a prefix match like /connector/oauth/../evil
+	// passes here, but the browser normalizes it and delivers the code to a
+	// different path on the vendor host than the pinned callback.
+	if u.Path != path.Clean(u.Path) {
 		return false
 	}
 	// Hosts are case-insensitive (RFC 3986); normalize via Hostname()+ToLower so

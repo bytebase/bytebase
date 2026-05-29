@@ -41,6 +41,9 @@ func TestIsAllowedDynamicClientRedirectURI(t *testing.T) {
 		{name: "chatgpt connector prefix", uri: "https://chatgpt.com/connector/oauth/abc123", want: true},
 		{name: "chatgpt legacy exact", uri: "https://chatgpt.com/connector_platform_oauth_redirect", want: true},
 		{name: "chatgpt wrong path", uri: "https://chatgpt.com/evil", want: false},
+		{name: "chatgpt dot-segment traversal", uri: "https://chatgpt.com/connector/oauth/../evil", want: false},
+		{name: "chatgpt encoded traversal", uri: "https://chatgpt.com/connector/oauth/%2e%2e/evil", want: false},
+		{name: "chatgpt empty connector id", uri: "https://chatgpt.com/connector/oauth/", want: false},
 
 		// VS Code for the Web.
 		{name: "vscode.dev redirect", uri: "https://vscode.dev/redirect", want: true},
