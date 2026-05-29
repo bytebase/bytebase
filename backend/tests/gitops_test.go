@@ -2,7 +2,9 @@ package tests
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -159,7 +161,6 @@ func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	a.NoError(ctl.removeLicense(ctx))
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	stores := getStore(t, ctl.server)
@@ -195,11 +196,7 @@ func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 
 	users, err := stores.ListActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
 	a.NoError(err)
-	a.Len(users, 1)
-	a.Equal(v1pb.VCSType_GITHUB, users[0].VCSType)
-	a.Equal("1001", users[0].UserID)
-	a.Equal("alice", users[0].Payload.GetUserName())
-	a.Equal("Alice", users[0].Payload.GetDisplayName())
+	a.Empty(users)
 
 	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
@@ -215,7 +212,29 @@ func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 
 	count, err = stores.CountActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
 	a.NoError(err)
-	a.Equal(2, count)
+	a.Zero(count)
+
+	validTarget := createGitOpsVCSUserTestTarget(ctx, t, ctl, project)
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: []string{validTarget},
+		VcsUser: &v1pb.VCSUser{
+			VcsType:     v1pb.VCSType_GITHUB,
+			UserId:      "1001",
+			UserName:    "alice",
+			DisplayName: "Alice",
+		},
+	}))
+	a.NoError(err)
+
+	users, err = stores.ListActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
+	a.NoError(err)
+	a.Len(users, 1)
+	a.Equal(v1pb.VCSType_GITHUB, users[0].VCSType)
+	a.Equal("1001", users[0].UserID)
+	a.Equal("alice", users[0].Payload.GetUserName())
+	a.Equal("Alice", users[0].Payload.GetDisplayName())
 }
 
 func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
@@ -226,7 +245,6 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	ctx, err := ctl.StartServerWithExternalPg(ctx)
 	a.NoError(err)
 	defer ctl.Close(ctx)
-	a.NoError(ctl.removeLicense(ctx))
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	stores := getStore(t, ctl.server)
@@ -279,10 +297,65 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType: v1pb.VCSType_GITHUB,
+			UserId:  strings.Repeat("u", 257),
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType:  v1pb.VCSType_GITHUB,
+			UserId:   "1001",
+			UserName: strings.Repeat("n", 257),
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent:  project.Name,
+		Release: gitOpsVCSUserTestRelease(),
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType:     v1pb.VCSType_GITHUB,
+			UserId:      "1001",
+			DisplayName: strings.Repeat("d", 257),
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+		Parent: project.Name,
+		Release: &v1pb.Release{
+			Type:  v1pb.Release_Type(999),
+			Files: gitOpsVCSUserTestRelease().Files,
+		},
+		Targets: targets,
+		VcsUser: &v1pb.VCSUser{
+			VcsType: v1pb.VCSType_GITHUB,
+			UserId:  "1001",
+		},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
 	count, err := stores.CountActiveVCSProviderUsers(ctx, workspaceID, 90*24*time.Hour)
 	a.NoError(err)
 	a.Zero(count)
 
+	validTarget := createGitOpsVCSUserTestTarget(ctx, t, ctl, project)
+	a.NoError(ctl.removeLicense(ctx))
 	const freeUserLimit = 20
 	for i := 0; i < freeUserLimit; i++ {
 		_, err := stores.GetDB().ExecContext(ctx, `
@@ -295,7 +368,7 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
 		Release: gitOpsVCSUserTestRelease(),
-		Targets: targets,
+		Targets: []string{validTarget},
 		VcsUser: &v1pb.VCSUser{
 			VcsType:  v1pb.VCSType_GITLAB,
 			UserId:   "limit-user",
@@ -353,6 +426,42 @@ func TestVCSProviderUserActuatorAndExport(t *testing.T) {
 	a.NotContains(csv, "inactive-1")
 }
 
+func TestVCSProviderUserExportEscapesSpreadsheetFormulas(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	stores := getStore(t, ctl.server)
+	workspaceID, err := stores.GetWorkspaceID(ctx)
+	a.NoError(err)
+
+	ok, err := stores.TouchVCSProviderUser(ctx, workspaceID, &store.VCSProviderUserMessage{
+		VCSType: v1pb.VCSType_GITHUB,
+		UserID:  "=1001",
+		Payload: &storepb.VCSProviderUserPayload{
+			UserName:    "+alice",
+			DisplayName: "-Alice",
+		},
+	}, 90*24*time.Hour, 20)
+	a.NoError(err)
+	a.True(ok)
+
+	body, err := ctl.subscriptionServiceClient.ExportVCSProviderUsers(ctx, connect.NewRequest(&v1pb.ExportVCSProviderUsersRequest{}))
+	a.NoError(err)
+	rows, err := csv.NewReader(strings.NewReader(string(body.Msg.Data))).ReadAll()
+	a.NoError(err)
+	a.Len(rows, 2)
+	a.Equal([]string{"vcs_type", "user_id", "user_name", "display_name", "last_seen_at"}, rows[0])
+	a.Equal("GITHUB", rows[1][0])
+	a.Equal("'=1001", rows[1][1])
+	a.Equal("'+alice", rows[1][2])
+	a.Equal("'-Alice", rows[1][3])
+}
+
 func createGitOpsVCSUserTestProject(ctx context.Context, t *testing.T, ctl *controller) *v1pb.Project {
 	t.Helper()
 	projectID := generateRandomString("gitops-vcs-user")
@@ -366,6 +475,14 @@ func createGitOpsVCSUserTestProject(ctx context.Context, t *testing.T, ctl *cont
 	}))
 	require.NoError(t, err)
 	return projectResp.Msg
+}
+
+func createGitOpsVCSUserTestTarget(ctx context.Context, t *testing.T, ctl *controller, project *v1pb.Project) string {
+	t.Helper()
+	instance := createSQLiteInstance(ctx, t, ctl, "gitops-vcs-user")
+	databaseName := generateRandomString("gitops_vcs_user")
+	require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, databaseName, ""))
+	return fmt.Sprintf("%s/databases/%s", instance.Name, databaseName)
 }
 
 func gitOpsVCSUserTestRelease() *v1pb.Release {

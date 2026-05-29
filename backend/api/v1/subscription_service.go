@@ -75,9 +75,9 @@ func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *con
 	for _, user := range users {
 		if err := writer.Write([]string{
 			user.VCSType.String(),
-			user.UserID,
-			user.Payload.GetUserName(),
-			user.Payload.GetDisplayName(),
+			escapeCSVFormula(user.UserID),
+			escapeCSVFormula(user.Payload.GetUserName()),
+			escapeCSVFormula(user.Payload.GetDisplayName()),
 			user.LastSeenAt.UTC().Format(time.RFC3339),
 		}); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
@@ -92,6 +92,18 @@ func (s *SubscriptionService) ExportVCSProviderUsers(ctx context.Context, _ *con
 		ContentType: "text/csv; charset=utf-8",
 		Data:        buf.Bytes(),
 	}), nil
+}
+
+func escapeCSVFormula(value string) string {
+	if value == "" {
+		return value
+	}
+	switch value[0] {
+	case '=', '+', '-', '@', '\t', '\r', '\n':
+		return "'" + value
+	default:
+		return value
+	}
 }
 
 // UploadLicense uploads an enterprise license (self-hosted only).

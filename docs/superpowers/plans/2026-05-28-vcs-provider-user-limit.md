@@ -4,7 +4,7 @@
 
 **Goal:** Track VCS PR/MR creators from bytebase-release, enforce the active VCS user pool against the license seat limit, show the active count on the Subscription page, and export active VCS users as CSV.
 
-**Architecture:** Add a workspace-scoped `vcs_provider_user` table keyed by `(workspace, vcs_type, user_id)` with display metadata in JSONB payload. `CheckRelease` touches attributed users at request intake, `ActuatorInfo` exposes the active count, `SubscriptionService` exports active users as `google.api.HttpBody`, and bytebase-release submits optional VCS attribution for non-bot PR/MR creators.
+**Architecture:** Add a workspace-scoped `vcs_provider_user` table keyed by `(workspace, vcs_type, user_id)` with display metadata in JSONB payload. `CheckRelease` validates attribution early and touches attributed users after target and release-file validation, `ActuatorInfo` exposes the active count, `SubscriptionService` exports active users as `google.api.HttpBody`, and bytebase-release submits optional VCS attribution for non-bot PR/MR creators.
 
 **Tech Stack:** Go, PostgreSQL migrations, Connect/gRPC + grpc-gateway annotations, protobuf + buf, React, Tailwind, Vitest, Go test, bytebase-action CLI.
 
@@ -23,7 +23,7 @@
 - Create `backend/store/vcs_provider_user_test.go`: store tests for touch, active window, limit rejection, and export ordering.
 - Modify `backend/api/v1/release_service.go`: add `licenseService` dependency to `ReleaseService`.
 - Modify `backend/server/grpc_routes.go`: pass `licenseService` into `NewReleaseService`.
-- Modify `backend/api/v1/release_service_check.go`: validate and touch VCS attribution early.
+- Modify `backend/api/v1/release_service_check.go`: validate VCS attribution early and touch it after target and release-file validation.
 - Create `backend/api/v1/vcs_provider_user.go`: active-window constant shared by release, actuator, and subscription services.
 - Modify `backend/api/v1/actuator_service.go`: populate `active_vcs_user_count`.
 - Modify `backend/api/v1/subscription_service.go`: implement CSV export.
@@ -653,7 +653,15 @@ func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID s
 }
 ```
 
-Call it in `CheckRelease` immediately after the project exists check:
+Validate attribution in `CheckRelease` immediately after the project exists check:
+
+```go
+if err := validateVCSProviderUser(request.VcsUser); err != nil {
+	return nil, err
+}
+```
+
+Call the touch helper after target resolution and release-file validation, before SQL review and database-heavy checks:
 
 ```go
 if err := s.touchVCSProviderUser(ctx, workspaceID, request.VcsUser); err != nil {
@@ -1359,6 +1367,6 @@ git commit -m "feat: track vcs provider users"
 
 ## Self-Review
 
-- Spec coverage: Tasks cover schema, JSONB payload, request attribution, request-intake touch behavior, active limit enforcement, actuator count, `HttpBody` CSV export, Subscription UI count/download, bytebase-release provider attribution, bot omission, and required tests.
+- Spec coverage: Tasks cover schema, JSONB payload, request attribution, validated-request touch behavior, active limit enforcement, actuator count, `HttpBody` CSV export, Subscription UI count/download, bytebase-release provider attribution, bot omission, and required tests.
 - Placeholder scan: This plan uses concrete filenames, commands, field names, messages, and test names. It does not leave open implementation markers.
 - Type consistency: The plan consistently uses `VCSUser`, `vcs_user`, `vcs_provider_user`, `user_id`, `user_name`, `display_name`, `last_seen_at`, and `active_vcs_user_count`.

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -49,8 +51,12 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	if request.GetRelease() == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release is required"))
 	}
+	releaseType := request.Release.Type
+	if releaseType != v1pb.Release_DECLARATIVE && releaseType != v1pb.Release_VERSIONED {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected release type %q", releaseType.String()))
+	}
 
-	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
+	if err := validateVCSProviderUser(request.GetVcsUser()); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +136,9 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("release files cannot be empty"))
 	}
 
-	releaseType := request.Release.Type
+	if err := s.touchVCSProviderUser(ctx, workspaceID, request.GetVcsUser()); err != nil {
+		return nil, err
+	}
 
 	var response *v1pb.CheckReleaseResponse
 	switch releaseType {
@@ -154,19 +162,12 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 }
 
 func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID string, vcsUser *v1pb.VCSUser) error {
+	if err := validateVCSProviderUser(vcsUser); err != nil {
+		return err
+	}
 	if vcsUser == nil {
 		return nil
 	}
-	if vcsUser.GetVcsType() == v1pb.VCSType_VCS_TYPE_UNSPECIFIED {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.vcs_type is required"))
-	}
-	if _, ok := v1pb.VCSType_name[int32(vcsUser.GetVcsType())]; !ok {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.vcs_type %d is invalid", vcsUser.GetVcsType()))
-	}
-	if vcsUser.GetUserId() == "" {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.user_id is required"))
-	}
-
 	ok, err := s.store.TouchVCSProviderUser(ctx, workspaceID, &store.VCSProviderUserMessage{
 		VCSType: vcsUser.GetVcsType(),
 		UserID:  vcsUser.GetUserId(),
@@ -180,6 +181,39 @@ func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID s
 	}
 	if !ok {
 		return connect.NewError(connect.CodeResourceExhausted, errors.New("new VCS user would exceed the license user limit; increase the license user limit or wait for inactive VCS users to age out of the 90-day window"))
+	}
+	return nil
+}
+
+const maxVCSProviderUserFieldLength = 256
+
+func validateVCSProviderUser(vcsUser *v1pb.VCSUser) error {
+	if vcsUser == nil {
+		return nil
+	}
+	if vcsUser.GetVcsType() == v1pb.VCSType_VCS_TYPE_UNSPECIFIED {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.vcs_type is required"))
+	}
+	if _, ok := v1pb.VCSType_name[int32(vcsUser.GetVcsType())]; !ok {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.vcs_type %d is invalid", vcsUser.GetVcsType()))
+	}
+	if vcsUser.GetUserId() == "" {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("vcs_user.user_id is required"))
+	}
+	for _, field := range []struct {
+		name  string
+		value string
+	}{
+		{name: "user_id", value: vcsUser.GetUserId()},
+		{name: "user_name", value: vcsUser.GetUserName()},
+		{name: "display_name", value: vcsUser.GetDisplayName()},
+	} {
+		if utf8.RuneCountInString(field.value) > maxVCSProviderUserFieldLength {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.%s exceeds maximum length %d", field.name, maxVCSProviderUserFieldLength))
+		}
+		if strings.ContainsFunc(field.value, unicode.IsControl) {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("vcs_user.%s contains control characters", field.name))
+		}
 	}
 	return nil
 }

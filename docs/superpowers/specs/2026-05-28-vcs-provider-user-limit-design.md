@@ -4,7 +4,7 @@
 
 Bytebase license seats currently count Bytebase IAM users. In GitOps workflows, one Bytebase automation identity can represent many GitHub, GitLab, or Bitbucket users. The product needs to track VCS pull request or merge request creators, enforce a VCS user pool against the same license user limit, and show workspace admins the active VCS usage count.
 
-This design follows the linked "GitOps User Limit Check" document with one explicit lifecycle change: Bytebase records VCS activity when it receives a valid attributed `CheckRelease` request, not after all release checks complete.
+This design follows the linked "GitOps User Limit Check" document with one explicit lifecycle change: Bytebase records VCS activity after a `CheckRelease` request has valid attribution, valid targets, and valid release files, before running the heavier release checks.
 
 ## Goals
 
@@ -123,9 +123,11 @@ For an attributed request:
 1. Parse workspace and project from the request.
 2. Validate the project exists.
 3. Validate `vcs_user.vcs_type != VCS_TYPE_UNSPECIFIED` and `vcs_user.user_id != ""`.
-4. Touch the VCS user before target database and file-heavy release checks.
-5. If touch succeeds, continue with existing `CheckRelease`.
-6. If touch rejects because the active VCS user limit is reached, return `ResourceExhausted`.
+4. Validate target databases or database groups exist.
+5. Validate and sanitize release files.
+6. Touch the VCS user before SQL review and database-heavy release checks.
+7. If touch succeeds, continue with existing `CheckRelease`.
+8. If touch rejects because the active VCS user limit is reached, return `ResourceExhausted`.
 
 Touch behavior:
 
@@ -134,7 +136,7 @@ Touch behavior:
 - If the active count is below `LicenseService.GetUserLimit`, insert or update the row with `last_seen_at = now()`.
 - If the active count is at or above the limit, reject and leave the row unchanged.
 
-This intentionally records activity when Bytebase receives a valid attributed request. Here, valid means the project exists and the attribution fields pass validation. Later target validation failures, release file validation failures, SQL review failures, or internal check failures do not roll back `last_seen_at`.
+This intentionally records activity only after Bytebase verifies the project exists, attribution fields pass validation, targets exist, and release files are valid. Invalid targets, empty targets, missing releases, malformed attribution, and invalid release files do not consume VCS seats. Later SQL review failures or internal check failures do not roll back `last_seen_at`.
 
 For an unattributed request:
 
@@ -210,9 +212,11 @@ Backend store tests:
 Backend service tests:
 
 - `CheckRelease` without `vcs_user` preserves existing behavior.
-- valid `vcs_user` records activity at request intake.
+- valid `vcs_user` records activity after request target and release-file validation.
+- invalid targets and empty targets do not record VCS activity.
 - limit rejection returns `ResourceExhausted`.
 - malformed attribution returns `InvalidArgument`.
+- oversized or control-character attribution fields return `InvalidArgument`.
 - `ActuatorInfo.active_vcs_user_count` reflects the active window.
 
 Frontend tests:
