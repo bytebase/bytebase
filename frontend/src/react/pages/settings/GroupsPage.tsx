@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -53,7 +54,6 @@ import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSet
 import {
   pushNotification,
   useActuatorV1Store,
-  useCurrentUserV1,
   useSettingV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -116,7 +116,7 @@ function GroupTable({
   onGroupDeleted: (group: Group) => void;
 }) {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
@@ -484,7 +484,7 @@ function GroupForm({
   const { t } = useTranslation();
   const settingV1Store = useSettingV1Store();
   const actuatorStore = useActuatorV1Store();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const getOrFetchUserByIdentifier = useAppStore(
     (state) => state.getOrFetchUserByIdentifier

@@ -14,6 +14,7 @@ import { FeatureBadge } from "@/react/components/FeatureBadge";
 import { getAvatarColor, getInitials } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
@@ -23,7 +24,6 @@ import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useCurrentUserV1,
   useProjectIamPolicyStore,
   useProjectV1Store,
 } from "@/store";
@@ -561,7 +561,7 @@ function ApprovalCandidateRow({
   user: UserMessage;
 }) {
   const { t } = useTranslation();
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const displayName = user.title || user.email.split("@")[0];
   const isCurrentUser = currentUser?.name === user.name;
 
@@ -665,7 +665,7 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
   const roleList = useAppStore((state) => state.roleList);
   const page = usePlanDetailContext();
   const { patchState } = page;
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
   const batchGetOrFetchUsers = useAppStore(

@@ -221,9 +221,12 @@ vi.mock("@/connect", () => ({
 }));
 
 vi.mock("@/store", () => ({
-  useCurrentUserV1: () => ({ value: mocks.currentUser }),
   useSettingV1Store: () => stableSettingStore,
   pushNotification: (...args: unknown[]) => mocks.pushNotification(...args),
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => mocks.currentUser,
 }));
 
 vi.mock("@/react/stores/app", () => ({

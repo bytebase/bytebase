@@ -30,6 +30,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   getRoleEnvironmentLimitationKind,
@@ -39,7 +40,7 @@ import { displayRoleTitleFromList } from "@/react/lib/role";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useCurrentUserV1, useSettingV1Store } from "@/store";
+import { pushNotification, useSettingV1Store } from "@/store";
 import type { Permission } from "@/types";
 import { type DatabaseResource, PresetRoleType } from "@/types";
 import { ExprSchema as ConditionExprSchema } from "@/types/proto-es/google/type/expr_pb";
@@ -132,13 +133,7 @@ function RequestRoleForm({
   onClose,
 }: Readonly<Omit<RequestRoleSheetProps, "open">>) {
   const { t } = useTranslation();
-  // Call the Pinia store accessor at the top level of the component so
-  // SonarCloud's React-hook-rule doesn't flag the `use*` call inside
-  // a subscription getter. `useCurrentUserV1()` returns a cached Pinia
-  // computed ref, so calling it once and reading `.value` inside the
-  // getter produces identical reactive semantics.
-  const currentUserRef = useCurrentUserV1();
-  const currentUser = useVueState(() => currentUserRef.value);
+  const currentUser = useCurrentUser();
   const [role, setRole] = useState(initialRole);
   const [reason, setReason] = useState("");
   const [expirationTimestamp, setExpirationTimestamp] = useState<

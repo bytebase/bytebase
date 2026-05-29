@@ -279,9 +279,6 @@ vi.mock("@/store", () => ({
     isSaaSMode: false,
     userCountInIam: 1,
   }),
-  useCurrentUserV1: () => ({
-    value: { email: "me@example.com", name: "users/me@example.com" },
-  }),
   useProjectIamPolicyStore: () => ({
     getOrFetchProjectIamPolicy: vi.fn(),
     getProjectIamPolicy: () => projectIamPolicy,
@@ -307,6 +304,13 @@ vi.mock("@/store", () => ({
     findRolesByMember: () => [],
     patchIamPolicy: vi.fn(),
     workspaceIamPolicy: { bindings: [] },
+  }),
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    email: "me@example.com",
+    name: "users/me@example.com",
   }),
 }));
 

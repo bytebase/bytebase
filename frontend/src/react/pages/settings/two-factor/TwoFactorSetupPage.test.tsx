@@ -28,7 +28,7 @@ const regeneratedCurrentUser = {
 
 const mocks = vi.hoisted(() => ({
   useVueState: vi.fn<(getter: () => unknown) => unknown>((getter) => getter()),
-  useCurrentUserV1: vi.fn(() => ({ value: legacyCurrentUser })),
+  useCurrentUser: vi.fn(() => legacyCurrentUser),
   updateUser: vi.fn(async () => regeneratedCurrentUser),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
@@ -41,6 +41,10 @@ vi.mock("@/react/hooks/useVueState", () => ({
   useVueState: mocks.useVueState,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: mocks.useCurrentUser,
+}));
+
 vi.mock("@/react/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
@@ -50,7 +54,6 @@ vi.mock("@/react/stores/app", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useCurrentUserV1: mocks.useCurrentUserV1,
 }));
 
 vi.mock("@/router", () => ({

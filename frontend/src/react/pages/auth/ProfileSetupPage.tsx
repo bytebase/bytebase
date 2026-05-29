@@ -1,25 +1,22 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserAvatar } from "@/react/components/UserAvatar";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useWorkspaceV1Store,
-} from "@/store";
+import { pushNotification, useWorkspaceV1Store } from "@/store";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export function ProfileSetupPage() {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
   const workspaceStore = useWorkspaceV1Store();
   const workspace = useVueState(() => workspaceStore.currentWorkspace);
@@ -34,7 +31,20 @@ export function ProfileSetupPage() {
       0
     ) === 1;
 
-  const [name, setName] = useState(currentUser?.title ?? "");
+  // `currentUser` loads asynchronously (unknownUser with an empty email until
+  // then), so seed the name field once the real user is known rather than
+  // freezing on the placeholder title. The ref keeps it a one-shot seed so
+  // later edits aren't clobbered.
+  const [name, setName] = useState(
+    currentUser.email ? (currentUser.title ?? "") : ""
+  );
+  const nameSeededRef = useRef(Boolean(currentUser.email));
+  useEffect(() => {
+    if (!nameSeededRef.current && currentUser.email) {
+      nameSeededRef.current = true;
+      setName(currentUser.title ?? "");
+    }
+  }, [currentUser.email, currentUser.title]);
   const [workspaceTitle, setWorkspaceTitle] = useState(workspace?.title ?? "");
   const [saving, setSaving] = useState(false);
 

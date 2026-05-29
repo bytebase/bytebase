@@ -1,5 +1,5 @@
 import type { RouteLocationNormalizedLoaded } from "vue-router";
-import { useCurrentUserV1 } from "@/store";
+import { useAppStore } from "@/react/stores/app";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 
@@ -18,12 +18,14 @@ export async function extractRouteContext(
 
   // Current user — always available
   try {
-    const user = useCurrentUserV1();
-    if (user.value?.name) {
+    const user =
+      useAppStore.getState().currentUser ??
+      (await useAppStore.getState().loadCurrentUser());
+    if (user?.name) {
       ctx.user = {
-        name: user.value.name,
-        email: user.value.email,
-        title: user.value.title,
+        name: user.name,
+        email: user.email,
+        title: user.title,
       };
     }
   } catch {

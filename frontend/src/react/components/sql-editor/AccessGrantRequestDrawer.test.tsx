@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   // Pinia bridge — resolves the current user's email from the Pinia ref.
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
-  useCurrentUserV1: vi.fn(),
   // Zustand editor store project read.
   project: "projects/proj1" as string,
   // Current tab connection database used to derive default targets.
@@ -33,8 +32,14 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
   usePiniaBridge: mocks.usePiniaBridge,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    name: "users/me",
+    email: "me@example.com",
+  }),
+}));
+
 vi.mock("@/store", () => ({
-  useCurrentUserV1: mocks.useCurrentUserV1,
   pushNotification: mocks.pushNotification,
   useDatabaseV1Store: mocks.useDatabaseV1Store,
 }));
@@ -304,10 +309,6 @@ const renderIntoContainer = (element: ReactElement) => {
 
 const setupMocks = () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-
-  mocks.useCurrentUserV1.mockReturnValue({
-    value: { email: "user@example.com" },
-  });
 
   mocks.project = "projects/proj1";
   mocks.currentTabDatabase = "instances/inst1/databases/db1";

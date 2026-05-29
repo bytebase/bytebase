@@ -266,14 +266,18 @@ vi.mock("@/store", () => ({
   getProjectNameAndDatabaseGroupName: (name: string) =>
     name.split("/databaseGroups/"),
   pushNotification: vi.fn(),
-  useCurrentUserV1: () => ({
-    value: { name: "users/me@example.com", email: "me@example.com" },
-  }),
   useDatabaseV1Store: () => mocks.databaseStore,
   useDBGroupStore: () => mocks.dbGroupStore,
   useEnvironmentV1Store: () => mocks.environmentStore,
   useProjectV1Store: () => mocks.projectStore,
   useSheetV1Store: () => mocks.sheetStore,
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => ({
+    name: "users/me@example.com",
+    email: "me@example.com",
+  }),
 }));
 
 vi.mock("@/utils", () => ({

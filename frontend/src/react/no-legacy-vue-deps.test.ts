@@ -27,6 +27,21 @@ const sources = import.meta.glob(
   }
 ) as Record<string, string>;
 
+const currentUserMigrationSources = import.meta.glob(
+  [
+    "./**/*.{ts,tsx}",
+    "../plugins/ai/react/**/*.{ts,tsx}",
+    "../connect/middlewares/activeInterceptorMiddleware.ts",
+    "../utils/pagination.ts",
+    "../utils/v1/worksheet.ts",
+  ],
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }
+) as Record<string, string>;
+
 const legacyVueImportPattern =
   /@\/components\/(?:Plan|RolloutV1|IssueV1|PlanCheckRun|DatabaseDetail)\/[^"']+\.vue/g;
 
@@ -160,6 +175,20 @@ describe("React Project and Settings legacy Vue dependencies", () => {
         if (source.includes(bannedImport)) {
           violations.push(`${file}: ${bannedImport}`);
         }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("migrated React and utility surfaces do not use the legacy current-user hook", () => {
+    const legacyCurrentUserHook = ["use", "Current", "User", "V1"].join("");
+    const violations: string[] = [];
+    for (const [file, source] of Object.entries(currentUserMigrationSources)) {
+      if (file.endsWith("/no-legacy-vue-deps.test.ts")) {
+        continue;
+      }
+      if (source.includes(legacyCurrentUserHook)) {
+        violations.push(file);
       }
     }
     expect(violations).toEqual([]);

@@ -65,6 +65,7 @@ import {
   TabsTrigger,
 } from "@/react/components/ui/tabs";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
@@ -82,7 +83,6 @@ import { useAppStore } from "@/react/stores/app";
 import {
   pushNotification,
   useActuatorV1Store,
-  useCurrentUserV1,
   useProjectIamPolicyStore,
   useProjectV1Store,
   useSettingV1Store,
@@ -163,7 +163,7 @@ function MemberTable({
   scope: "workspace" | "project";
 }) {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const batchGetOrFetchUsers = useAppStore(
@@ -622,7 +622,7 @@ function MemberTableByRole({
   scope: "workspace" | "project";
 }) {
   const { t } = useTranslation();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const actuatorStore = useActuatorV1Store();
   const isSaaSMode = useVueState(() => actuatorStore.isSaaSMode);
   const roleList = useAppStore((state) => state.roleList);
@@ -1894,7 +1894,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   const workspaceStore = useWorkspaceV1Store();
   const actuatorStore = useActuatorV1Store();
   const subscriptionStore = useSubscriptionV1Store();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const projectStore = useProjectV1Store();
   const projectIamPolicyStore = useProjectIamPolicyStore();
 

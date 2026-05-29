@@ -9,16 +9,12 @@ import { computePasswordValidation } from "@/react/components/auth/userPasswordV
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
 import { OtpInput } from "@/react/components/ui/otp-input";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useAuthStore,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification, useActuatorV1Store, useAuthStore } from "@/store";
 import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
@@ -49,7 +45,7 @@ export function PasswordResetPage() {
   const requireResetPassword = useVueState(
     () => useAuthStore().requireResetPassword
   );
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
 
   const redirectQuery = () => {
     const q = new URLSearchParams(window.location.search);
