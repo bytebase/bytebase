@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/action/bitbucket"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -140,7 +141,7 @@ func TestBitbucketDefaultAPIUsesPipelinesProxy(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "http://api.bitbucket.org/2.0/repositories/bytebase/example/pullrequests/10", requestURL)
 
-	client := newBitbucketHTTPClient(getBitbucketAPIBaseURL())
+	client := bitbucket.NewHTTPClient(getBitbucketAPIBaseURL())
 	transport, ok := client.Transport.(*http.Transport)
 	require.True(t, ok)
 	proxyURL, err := transport.Proxy(&http.Request{URL: mustParseURL(t, requestURL)})

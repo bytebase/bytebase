@@ -13,6 +13,13 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+const countActiveVCSProviderUsersSQL = `
+	SELECT COUNT(*)
+	FROM vcs_provider_user
+	WHERE workspace = $1
+		AND last_seen_at >= now() - make_interval(secs => $2)
+`
+
 // VCSProviderUserMessage is the store message for a VCS provider user.
 type VCSProviderUserMessage struct {
 	Workspace  string
@@ -25,12 +32,7 @@ type VCSProviderUserMessage struct {
 // CountActiveVCSProviderUsers counts active VCS provider users in the workspace.
 func (s *Store) CountActiveVCSProviderUsers(ctx context.Context, workspace string, activeWindow time.Duration) (int, error) {
 	var count int
-	if err := s.GetDB().QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM vcs_provider_user
-		WHERE workspace = $1
-			AND last_seen_at >= now() - make_interval(secs => $2)
-	`, workspace, activeWindow.Seconds()).Scan(&count); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, countActiveVCSProviderUsersSQL, workspace, activeWindow.Seconds()).Scan(&count); err != nil {
 		return 0, errors.Wrapf(err, "failed to count active VCS provider users")
 	}
 	return count, nil
@@ -82,14 +84,9 @@ func (s *Store) TouchVCSProviderUser(ctx context.Context, workspace string, user
 		return true, nil
 	}
 
-	var count int
-	if err := tx.QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM vcs_provider_user
-		WHERE workspace = $1
-			AND last_seen_at >= now() - make_interval(secs => $2)
-	`, workspace, activeWindow.Seconds()).Scan(&count); err != nil {
-		return false, errors.Wrapf(err, "failed to count active VCS provider users")
+	count, err := countActiveVCSProviderUsersTx(ctx, tx, workspace, activeWindow)
+	if err != nil {
+		return false, err
 	}
 	if count >= limit {
 		if err := tx.Commit(); err != nil {
@@ -112,6 +109,14 @@ func (s *Store) TouchVCSProviderUser(ctx context.Context, workspace string, user
 		return false, errors.Wrapf(err, "failed to commit transaction")
 	}
 	return true, nil
+}
+
+func countActiveVCSProviderUsersTx(ctx context.Context, tx *sql.Tx, workspace string, activeWindow time.Duration) (int, error) {
+	var count int
+	if err := tx.QueryRowContext(ctx, countActiveVCSProviderUsersSQL, workspace, activeWindow.Seconds()).Scan(&count); err != nil {
+		return 0, errors.Wrapf(err, "failed to count active VCS provider users")
+	}
+	return count, nil
 }
 
 // ListActiveVCSProviderUsers lists active VCS provider users in the workspace,

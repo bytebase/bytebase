@@ -166,9 +166,6 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 }
 
 func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID string, vcsUser *v1pb.VCSUser) error {
-	if err := validateVCSProviderUser(vcsUser); err != nil {
-		return err
-	}
 	if vcsUser == nil {
 		return nil
 	}
@@ -186,7 +183,7 @@ func (s *ReleaseService) touchVCSProviderUser(ctx context.Context, workspaceID s
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to touch VCS provider user"))
 	}
 	if !ok {
-		return connect.NewError(connect.CodeResourceExhausted, errors.New("new VCS user would exceed the license user limit; increase the license user limit or wait for inactive VCS users to age out of the 90-day window"))
+		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("new VCS user would exceed the license user limit; increase the license user limit or wait for inactive VCS users to age out of the %d-day window", vcsProviderUserActiveWindowDays))
 	}
 	return nil
 }

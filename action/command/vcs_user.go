@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,14 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytebase/bytebase/action/bitbucket"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 var gitLabBotUserNameRE = regexp.MustCompile(`^(project|group)_\d+_bot_[a-z0-9]+$`)
-
-// Bitbucket Pipelines reaches the public API through the localhost proxy below.
-const defaultBitbucketAPIBaseURL = "http://api.bitbucket.org/2.0" //nolint:revive
 
 func getVCSUser(platform world.JobPlatform) *v1pb.VCSUser {
 	switch platform {
@@ -107,6 +106,7 @@ func getGitLabVCSUser() *v1pb.VCSUser {
 
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
+		slog.Warn("failed to read GitLab merge request for VCS user attribution", "error", err)
 		return nil
 	}
 	var mergeRequest struct {
@@ -117,6 +117,7 @@ func getGitLabVCSUser() *v1pb.VCSUser {
 		} `json:"author"`
 	}
 	if err := json.Unmarshal(data, &mergeRequest); err != nil {
+		slog.Warn("failed to parse GitLab merge request for VCS user attribution", "error", err)
 		return nil
 	}
 
@@ -155,7 +156,7 @@ func getBitbucketVCSUser() *v1pb.VCSUser {
 	}
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := newBitbucketHTTPClient(apiURL).Do(req)
+	resp, err := bitbucket.NewHTTPClient(apiURL).Do(req)
 	if err != nil {
 		return nil
 	}
@@ -166,6 +167,7 @@ func getBitbucketVCSUser() *v1pb.VCSUser {
 
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
+		slog.Warn("failed to read Bitbucket pull request for VCS user attribution", "error", err)
 		return nil
 	}
 	var pullRequest struct {
@@ -178,6 +180,7 @@ func getBitbucketVCSUser() *v1pb.VCSUser {
 		} `json:"author"`
 	}
 	if err := json.Unmarshal(data, &pullRequest); err != nil {
+		slog.Warn("failed to parse Bitbucket pull request for VCS user attribution", "error", err)
 		return nil
 	}
 
@@ -222,7 +225,7 @@ func getBitbucketAPIBaseURL() string {
 	if apiURL := os.Getenv("BYTEBASE_BITBUCKET_API_BASE_URL"); apiURL != "" {
 		return apiURL
 	}
-	return defaultBitbucketAPIBaseURL
+	return bitbucket.APIBaseURL
 }
 
 func buildBitbucketPullRequestURL(apiURL, workspace, repoSlug, pullRequestID string) (string, error) {
@@ -234,21 +237,6 @@ func buildBitbucketPullRequestURL(apiURL, workspace, repoSlug, pullRequestID str
 	parsedURL.RawQuery = ""
 	parsedURL.Fragment = ""
 	return parsedURL.String(), nil
-}
-
-func newBitbucketHTTPClient(apiURL string) *http.Client {
-	if apiURL != defaultBitbucketAPIBaseURL {
-		return http.DefaultClient
-	}
-	proxyURL, err := url.Parse("http://localhost:29418")
-	if err != nil {
-		return http.DefaultClient
-	}
-	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-		},
-	}
 }
 
 func firstNonEmpty(values ...string) string {
