@@ -134,6 +134,7 @@ message CancelPurchaseRequest {
 message GetPaymentInfoRequest {}
 
 message PaymentInfo {
+  // Total amount paid for the current billing period, in the smallest currency unit (e.g. cents).
   string total_price = 1;
   string currency = 2;
   string period_start = 3;
@@ -142,6 +143,9 @@ message PaymentInfo {
   string invoice_url = 5;
   // Whether the subscription is scheduled to cancel at the end of the current billing period.
   bool cancel_at_period_end = 6;
+  // Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).
+  // Empty when the subscription will not renew (e.g. scheduled to cancel at period end).
+  string next_period_price = 7;
 }
 
 enum BillingInterval {

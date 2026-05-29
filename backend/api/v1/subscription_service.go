@@ -244,7 +244,24 @@ func (s *SubscriptionService) CancelPurchase(ctx context.Context, req *connect.R
 	// Annual: cancel at period end.
 	prorate := payload.Interval == storepb.SubscriptionPayload_MONTH
 	if _, err := stripeplugin.CancelSubscription(payload.StripeSubscriptionId, workspaceID, prorate, feedback, comment); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel subscription"))
+		if !stripeplugin.IsResourceMissingError(err) {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to cancel subscription"))
+		}
+		// Stripe no longer has this subscription — a prior cancel succeeded but its
+		// webhook was never delivered, leaving our local status stale. Reconcile to
+		// the same end state the customer.subscription.deleted webhook would produce.
+		slog.Warn("stripe subscription already canceled, reconciling local state",
+			slog.String("workspace", workspaceID),
+			slog.String("stripe_subscription_id", payload.StripeSubscriptionId),
+		)
+		payload.Status = storepb.SubscriptionPayload_CANCELED
+		if _, err := s.store.UpsertSubscription(ctx, workspaceID, payload); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to reconcile subscription status"))
+		}
+		if err := s.licenseService.StoreLicense(ctx, workspaceID, ""); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to clear license"))
+		}
+		return connect.NewResponse(&v1pb.PurchaseResponse{}), nil
 	}
 
 	// Stripe webhook (customer.subscription.deleted) will update the subscription status and clear the license
@@ -286,6 +303,20 @@ func (s *SubscriptionService) GetPaymentInfo(ctx context.Context, _ *connect.Req
 		PeriodStart:       time.Unix(period.Start, 0).Format("2006-01-02"),
 		PeriodEnd:         time.Unix(period.End, 0).Format("2006-01-02"),
 		CancelAtPeriodEnd: sub.CancelAtPeriodEnd,
+	}
+
+	// Preview the next renewal charge. Skip when the subscription won't renew —
+	// Stripe has no upcoming invoice in that state. Degrade gracefully on failure
+	// so the current-period info is still returned.
+	if !sub.CancelAtPeriodEnd {
+		if preview, err := stripeplugin.GetUpcomingInvoice(payload.StripeSubscriptionId, payload.StripeCustomerId); err != nil {
+			slog.Error("failed to preview upcoming invoice",
+				log.BBError(err),
+				slog.String("stripe_subscription_id", payload.StripeSubscriptionId),
+			)
+		} else {
+			info.NextPeriodPrice = strconv.FormatInt(preview.Total, 10)
+		}
 	}
 
 	if payload.StripeCustomerId != "" {

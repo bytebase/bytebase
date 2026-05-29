@@ -368,7 +368,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
               <div className="text-lg font-medium">
                 {t("subscription.purchase.payment-info")}
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="flex flex-wrap gap-x-12 gap-y-4 text-sm">
                 <div>
                   <span className="text-control-placeholder">
                     {t("subscription.purchase.total-price")}
@@ -398,6 +398,17 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                     {paymentInfo.periodStart} - {paymentInfo.periodEnd}
                   </div>
                 </div>
+                {paymentInfo.nextPeriodPrice && (
+                  <div>
+                    <span className="text-control-placeholder">
+                      {t("subscription.purchase.next-period-price")}
+                    </span>
+                    <div className="font-medium">
+                      ${(Number(paymentInfo.nextPeriodPrice) / 100).toFixed(2)}{" "}
+                      {paymentInfo.currency.toUpperCase()}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

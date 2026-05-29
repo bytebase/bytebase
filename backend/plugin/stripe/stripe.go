@@ -129,6 +129,17 @@ func GetCheckoutSessionInfo(sessionID string) (*CheckoutSessionInfo, error) {
 	}, nil
 }
 
+// IsResourceMissingError reports whether err is a Stripe "resource_missing"
+// error — e.g. attempting to cancel a subscription that no longer exists in
+// Stripe (the previous cancel succeeded but its webhook was never delivered).
+func IsResourceMissingError(err error) bool {
+	var stripeErr *stripego.Error
+	if errors.As(err, &stripeErr) {
+		return stripeErr.Code == stripego.ErrorCodeResourceMissing
+	}
+	return false
+}
+
 // CancelSubscription cancels a Stripe subscription.
 // If prorate is true, cancels immediately with proration and processes refund.
 // If prorate is false, schedules cancellation at the end of the current billing period.
@@ -259,6 +270,24 @@ func GetSubscription(stripeSubID string, expand []string) (*stripego.Subscriptio
 		return nil, errors.Wrapf(err, "failed to get stripe subscription %s", stripeSubID)
 	}
 	return sub, nil
+}
+
+// GetUpcomingInvoice previews the next invoice for a subscription — the amount
+// the customer will be charged at the next renewal. The preview reflects expiring
+// discounts, scheduled plan changes, and tax. The caller should skip this when the
+// subscription is set to cancel at period end, as there is no upcoming invoice then.
+func GetUpcomingInvoice(stripeSubID string, customerID string) (*stripego.Invoice, error) {
+	params := &stripego.InvoiceCreatePreviewParams{
+		Subscription: stripego.String(stripeSubID),
+	}
+	if customerID != "" {
+		params.Customer = stripego.String(customerID)
+	}
+	inv, err := invoice.CreatePreview(params)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to preview upcoming invoice for subscription %s", stripeSubID)
+	}
+	return inv, nil
 }
 
 // GetMetadata builds the metadata map for a Stripe subscription.

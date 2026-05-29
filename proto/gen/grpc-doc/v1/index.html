@@ -31475,7 +31475,7 @@ Required. </p></td>
                   <td>total_price</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Total amount paid for the current billing period, in the smallest currency unit (e.g. cents). </p></td>
                 </tr>
               
                 <tr>
@@ -31511,6 +31511,14 @@ Required. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether the subscription is scheduled to cancel at the end of the current billing period. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_period_price</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Amount that will be charged at the next renewal, in the smallest currency unit (e.g. cents).
+Empty when the subscription will not renew (e.g. scheduled to cancel at period end). </p></td>
                 </tr>
               
             </tbody>
