@@ -19,7 +19,6 @@ import (
 func init() {
 	base.RegisterCompleteFunc(storepb.Engine_MYSQL, Completion)
 	base.RegisterCompleteFunc(storepb.Engine_MARIADB, Completion)
-	base.RegisterCompleteFunc(storepb.Engine_TIDB, Completion)
 	base.RegisterCompleteFunc(storepb.Engine_OCEANBASE, Completion)
 	base.RegisterCompleteFunc(storepb.Engine_CLICKHOUSE, Completion)
 	base.RegisterCompleteFunc(storepb.Engine_STARROCKS, Completion)
