@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/bytebase/omni/tidb/catalog"
 	omnicompletion "github.com/bytebase/omni/tidb/completion"
+	tidbparser "github.com/bytebase/omni/tidb/parser"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -51,12 +53,17 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	cat := buildCatalog(ctx, cCtx, statement)
 	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
 
+	caretInBacktick := caretInsideBacktickIdentifier(statement, pos)
 	candidateMap := make(map[string]base.Candidate)
 	for _, c := range omnicompletion.Complete(statement, pos, cat) {
 		t := omniCandidateTypeToBase(c.Type)
-		candidateMap[string(t)+":"+c.Text] = base.Candidate{
+		text := c.Text
+		if isObjectIdentifierCandidate(t) {
+			text = quoteIdentifierIfNeeded(c.Text, caretInBacktick)
+		}
+		candidateMap[string(t)+":"+text] = base.Candidate{
 			Type:       t,
-			Text:       c.Text,
+			Text:       text,
 			Definition: c.Definition,
 			Comment:    c.Comment,
 		}
@@ -281,6 +288,87 @@ func execOK(cat *catalog.Catalog, ddl string) bool {
 // backticks by doubling them.
 func backtickIdentifier(name string) string {
 	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
+}
+
+// isObjectIdentifierCandidate reports whether a candidate type names a schema
+// object referenced as an identifier in SQL (and so must be backtick-quoted
+// when it is a reserved word or a non-bare name). Keywords, builtin functions,
+// and value-like candidates (charset/engine/variable/type) are excluded.
+func isObjectIdentifierCandidate(t base.CandidateType) bool {
+	switch t {
+	case base.CandidateTypeDatabase,
+		base.CandidateTypeTable,
+		base.CandidateTypeView,
+		base.CandidateTypeColumn,
+		base.CandidateTypeIndex,
+		base.CandidateTypeTrigger,
+		base.CandidateTypeEvent,
+		base.CandidateTypeRoutine:
+		return true
+	default:
+		return false
+	}
+}
+
+// quoteIdentifierIfNeeded backtick-quotes an object identifier when it would
+// otherwise be invalid as a bare identifier, so that accepting the completion
+// inserts valid SQL. When the caret already sits inside a backtick-quoted
+// identifier the user is typing, the name is returned unquoted (the user's
+// backticks wrap it).
+func quoteIdentifierIfNeeded(name string, caretInBacktick bool) string {
+	if caretInBacktick || !identifierNeedsQuoting(name) {
+		return name
+	}
+	return backtickIdentifier(name)
+}
+
+// identifierNeedsQuoting reports whether name must be backtick-quoted to be a
+// valid bare identifier: it is empty, contains a character outside
+// [letter,digit,_,$], starts with a digit, or is a reserved keyword.
+func identifierNeedsQuoting(name string) bool {
+	if name == "" {
+		return true
+	}
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+			return true
+		}
+	}
+	if unicode.IsDigit(rune(name[0])) {
+		return true
+	}
+	return isReservedKeyword(name)
+}
+
+// isReservedKeyword reports whether a bare-shaped name is a reserved keyword
+// that cannot be used as an unquoted identifier. omni exposes no reserved-word
+// predicate, so we parse-check only names that lex as a single keyword token
+// (plain identifiers are never reserved), which keeps this cheap for ordinary
+// names. A keyword is reserved iff it cannot stand as a bare table reference.
+func isReservedKeyword(name string) bool {
+	upper := strings.ToUpper(name)
+	toks := tidbparser.Tokenize(upper)
+	if len(toks) != 1 || tidbparser.TokenName(toks[0].Type) == "" {
+		return false
+	}
+	_, err := tidbparser.Parse("SELECT 1 FROM " + upper)
+	return err != nil
+}
+
+// caretInsideBacktickIdentifier reports whether the caret sits inside an open
+// backtick-quoted identifier (an odd number of backticks precede it), in which
+// case completed identifiers must not add their own quotes.
+func caretInsideBacktickIdentifier(statement string, pos int) bool {
+	if pos > len(statement) {
+		pos = len(statement)
+	}
+	count := 0
+	for i := 0; i < pos; i++ {
+		if statement[i] == '`' {
+			count++
+		}
+	}
+	return count%2 == 1
 }
 
 // lineOffsetToBytePos converts a 1-based line number and 0-based character

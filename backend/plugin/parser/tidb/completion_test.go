@@ -82,10 +82,11 @@ func candidateSet(cands []base.Candidate, types ...base.CandidateType) map[strin
 	return m
 }
 
-// Reserved-word identifiers (table "order", columns "select"/"key") must still
-// surface as completion candidates. This proves the synthesized catalog DDL
-// backticks every identifier — without it, the DDL fails to parse and the
-// objects silently vanish from the catalog.
+// Reserved-word identifiers (table "order", columns "select"/"key") must surface
+// as completion candidates AND their completion text must be backtick-quoted so
+// accepting a suggestion inserts valid SQL. Surfacing proves the synthesized
+// catalog DDL backticks identifiers; the quoted candidate text proves the shim
+// quotes reserved object names on the way out.
 func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
 	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
 		Name: "testdb",
@@ -113,16 +114,16 @@ func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
 	stmt := "SELECT * FROM "
 	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
 	require.NoError(t, err)
-	require.True(t, hasCandidate(got, base.CandidateTypeTable, "order"),
-		"reserved-word table 'order' should surface as a TABLE candidate; got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeTable, "`order`"),
+		"reserved-word table 'order' should surface quoted as a TABLE candidate; got %v", got)
 
 	stmt2 := "SELECT  FROM `order`"
 	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len("SELECT "))
 	require.NoError(t, err)
-	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "select"),
-		"reserved-word column 'select' should surface as a COLUMN candidate; got %v", got2)
-	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "key"),
-		"reserved-word column 'key' should surface as a COLUMN candidate; got %v", got2)
+	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "`select`"),
+		"reserved-word column 'select' should surface quoted as a COLUMN candidate; got %v", got2)
+	require.True(t, hasCandidate(got2, base.CandidateTypeColumn, "`key`"),
+		"reserved-word column 'key' should surface quoted as a COLUMN candidate; got %v", got2)
 }
 
 // A column whose stored type cannot be parsed must not silently vanish:
@@ -276,6 +277,47 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 		"SELECT | FROM t1 JOIN t2 ON t1.c1 = t2.c1",
 	} {
 		assertNoLoss(in, base.CandidateTypeColumn)
+	}
+}
+
+func TestQuoteIdentifierIfNeeded(t *testing.T) {
+	cases := []struct {
+		name            string
+		caretInBacktick bool
+		want            string
+	}{
+		{"users", false, "users"},       // bare identifier — unchanged
+		{"t1", false, "t1"},             // bare with digit suffix — unchanged
+		{"comment", false, "comment"},   // non-reserved keyword — stays bare
+		{"order", false, "`order`"},     // reserved keyword
+		{"select", false, "`select`"},   // reserved keyword
+		{"Order", false, "`Order`"},     // reserved (case-insensitive), original case preserved
+		{"foo-bar", false, "`foo-bar`"}, // non-bare character
+		{"1col", false, "`1col`"},       // leading digit
+		{"a`b", false, "`a``b`"},        // embedded backtick is doubled
+		{"order", true, "order"},        // caret already inside a backtick — no extra quotes
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.want, quoteIdentifierIfNeeded(tc.name, tc.caretInBacktick),
+			"quoteIdentifierIfNeeded(%q, %v)", tc.name, tc.caretInBacktick)
+	}
+}
+
+func TestCaretInsideBacktickIdentifier(t *testing.T) {
+	cases := []struct {
+		statement string
+		pos       int
+		want      bool
+	}{
+		{"SELECT * FROM ", 14, false},  // no backticks
+		{"SELECT * FROM `o", 16, true}, // one open backtick before caret
+		{"SELECT `a`, ", 12, false},    // closed pair before caret
+		{"`", 1, true},                 // single backtick
+		{"ab", 99, false},              // pos clamped past end, no backticks
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.want, caretInsideBacktickIdentifier(tc.statement, tc.pos),
+			"caretInsideBacktickIdentifier(%q, %d)", tc.statement, tc.pos)
 	}
 }
 
