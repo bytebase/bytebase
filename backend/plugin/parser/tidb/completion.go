@@ -48,7 +48,7 @@ func init() {
 // Completion provides auto-complete candidates for TiDB statements using the
 // omni TiDB completion engine, replacing the previous mysql ANTLR completer.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	cat := buildCatalog(ctx, cCtx)
+	cat := buildCatalog(ctx, cCtx, statement)
 	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
 
 	candidateMap := make(map[string]base.Candidate)
@@ -96,43 +96,123 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 }
 
 // buildCatalog constructs an omni TiDB catalog from Bytebase metadata by
-// replaying minimal DDL. Every identifier is backticked so reserved words and
-// special characters parse correctly; tables are created one at a time so a
-// single unparseable column type cannot empty the whole catalog.
-func buildCatalog(ctx context.Context, cCtx base.CompletionContext) *catalog.Catalog {
+// replaying minimal DDL. It fully loads the default database plus any database
+// referenced as a qualifier in the statement (so cross-database qualified
+// completion like `other_db.tbl.col` resolves), and registers every other known
+// database name so database-name candidates still surface. Every identifier is
+// backticked so reserved words and special characters parse; tables are created
+// one at a time so a single unparseable column type cannot empty the catalog.
+func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	cat := catalog.New()
 	if cCtx.Metadata == nil || cCtx.DefaultDatabase == "" {
 		return cat
 	}
-	_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, cCtx.DefaultDatabase)
+
+	// Fully load the default database plus any qualifier-referenced database.
+	loadOrder := []string{cCtx.DefaultDatabase}
+	seen := map[string]bool{cCtx.DefaultDatabase: true}
+	allNames := listAllDatabaseNames(ctx, cCtx)
+	for _, name := range allNames {
+		if !seen[name] && statementReferencesDatabase(statement, name) {
+			loadOrder = append(loadOrder, name)
+			seen[name] = true
+		}
+	}
+
+	// Register the remaining known database names (name only) so they surface as
+	// database candidates even when not fully loaded.
+	var reg strings.Builder
+	for _, name := range allNames {
+		if !seen[name] {
+			reg.WriteString("CREATE DATABASE " + backtickIdentifier(name) + "; ")
+		}
+	}
+	if reg.Len() > 0 {
+		_, _ = cat.Exec(reg.String(), &catalog.ExecOptions{ContinueOnError: true})
+	}
+
+	for _, name := range loadOrder {
+		loadDatabaseObjects(ctx, cCtx, cat, name)
+	}
+
+	// Restore the current database to the default so unqualified references
+	// resolve against it.
+	_, _ = cat.Exec("USE "+backtickIdentifier(cCtx.DefaultDatabase)+";", &catalog.ExecOptions{ContinueOnError: true})
+	return cat
+}
+
+// loadDatabaseObjects fully loads one database's tables and views into the
+// catalog, under that database's namespace.
+func loadDatabaseObjects(ctx context.Context, cCtx base.CompletionContext, cat *catalog.Catalog, dbName string) {
+	db := backtickIdentifier(dbName)
+	_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, dbName)
 	if err != nil || dbMeta == nil {
-		return cat
+		// Still register the name so it can be a database candidate.
+		_, _ = cat.Exec("CREATE DATABASE "+db+";", &catalog.ExecOptions{ContinueOnError: true})
+		return
 	}
-
-	db := backtickIdentifier(cCtx.DefaultDatabase)
-	if _, err := cat.Exec(fmt.Sprintf("CREATE DATABASE %s; USE %s;", db, db), &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-		return cat
+	if _, err := cat.Exec("CREATE DATABASE "+db+"; USE "+db+";", &catalog.ExecOptions{ContinueOnError: true}); err != nil {
+		return
 	}
-
 	schema := dbMeta.GetSchemaMetadata("")
 	if schema == nil {
-		return cat
+		return
 	}
 	for _, tableName := range schema.ListTableNames() {
-		table := schema.GetTable(tableName)
-		if table == nil {
-			continue
+		if table := schema.GetTable(tableName); table != nil {
+			defineTable(cat, tableName, table.GetProto().GetColumns())
 		}
-		defineTable(cat, tableName, table.GetProto().GetColumns())
 	}
 	for _, viewName := range schema.ListViewNames() {
-		view := schema.GetView(viewName)
-		if view == nil {
-			continue
+		if view := schema.GetView(viewName); view != nil {
+			defineView(cat, viewName, view.GetDefinition())
 		}
-		defineView(cat, viewName, view.GetDefinition())
 	}
-	return cat
+}
+
+// listAllDatabaseNames returns the instance's database names, or nil if the
+// completion context cannot enumerate them.
+func listAllDatabaseNames(ctx context.Context, cCtx base.CompletionContext) []string {
+	if cCtx.ListDatabaseNames == nil {
+		return nil
+	}
+	names, err := cCtx.ListDatabaseNames(ctx, cCtx.InstanceID)
+	if err != nil {
+		return nil
+	}
+	return names
+}
+
+// statementReferencesDatabase reports whether dbName appears as a database
+// qualifier (`dbName.`) in the statement, at an identifier boundary.
+func statementReferencesDatabase(statement, dbName string) bool {
+	if dbName == "" {
+		return false
+	}
+	s := strings.ToLower(statement)
+	name := strings.ToLower(dbName)
+	for _, q := range []string{name + ".", "`" + name + "`."} {
+		from := 0
+		for {
+			i := strings.Index(s[from:], q)
+			if i < 0 {
+				break
+			}
+			at := from + i
+			if at == 0 || !isIdentByte(s[at-1]) {
+				return true
+			}
+			from = at + 1
+		}
+	}
+	return false
+}
+
+func isIdentByte(b byte) bool {
+	return b == '_' ||
+		(b >= 'a' && b <= 'z') ||
+		(b >= 'A' && b <= 'Z') ||
+		(b >= '0' && b <= '9')
 }
 
 // defineTable installs a table in the catalog, retrying with generic column

@@ -278,3 +278,53 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 		assertNoLoss(in, base.CandidateTypeColumn)
 	}
 }
+
+// Cross-database qualified completion: when a statement references a non-default
+// database as a qualifier, buildCatalog must load that database so
+// `other_db.tbl.col` resolves, and every known database name must surface as a
+// DATABASE candidate. (The `FROM other_db.|` table-list case is a separate
+// omni-side limitation — omni ignores the table qualifier — tracked as a
+// follow-up, not asserted here.)
+func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
+	appMeta := &storepb.DatabaseSchemaMetadata{
+		Name: "appdb",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "c1"}}},
+		}}},
+	}
+	otherMeta := &storepb.DatabaseSchemaMetadata{
+		Name: "otherdb",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "c2"}, {Name: "c3"}}},
+		}}},
+	}
+	metaFn := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
+		m := appMeta
+		if databaseName == "otherdb" {
+			m = otherMeta
+		}
+		return databaseName, model.NewDatabaseMetadata(m, nil, nil, storepb.Engine_TIDB, true), nil
+	}
+	cCtx := base.CompletionContext{
+		Scene:             base.SceneTypeAll,
+		DefaultDatabase:   "appdb",
+		Metadata:          metaFn,
+		ListDatabaseNames: func(_ context.Context, _ string) ([]string, error) { return []string{"appdb", "otherdb"}, nil },
+	}
+
+	// Qualified column from a non-default database resolves.
+	stmt := "SELECT otherdb.t2. FROM otherdb.t2"
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT otherdb.t2."))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c2"),
+		"cross-db column 'c2' should surface; got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "c3"),
+		"cross-db column 'c3' should surface; got %v", got)
+
+	// Every known database name surfaces as a DATABASE candidate.
+	stmt2 := "SELECT * FROM "
+	got2, err := Completion(context.Background(), cCtx, stmt2, 1, len(stmt2))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got2, base.CandidateTypeDatabase, "otherdb"),
+		"non-default database 'otherdb' should surface as a DATABASE candidate; got %v", got2)
+}
