@@ -29,9 +29,11 @@ func TestIsAllowedDynamicClientRedirectURI(t *testing.T) {
 		{name: "claude.ai wrong path", uri: "https://claude.ai/evil", want: false},
 		{name: "claude.ai over http", uri: "http://claude.ai/api/mcp/auth_callback", want: false},
 		{name: "claude.ai subdomain spoof", uri: "https://claude.ai.evil.com/api/mcp/auth_callback", want: false},
-		// Host should match case-insensitively and ignore the default port.
+		// Host should match case-insensitively and allow only the default https port.
 		{name: "claude.ai uppercase host", uri: "https://CLAUDE.AI/api/mcp/auth_callback", want: true},
-		{name: "claude.ai explicit port", uri: "https://claude.ai:443/api/mcp/auth_callback", want: true},
+		{name: "claude.ai explicit port 443", uri: "https://claude.ai:443/api/mcp/auth_callback", want: true},
+		{name: "claude.ai non-default port", uri: "https://claude.ai:8443/api/mcp/auth_callback", want: false},
+		{name: "chatgpt non-default port", uri: "https://chatgpt.com:444/connector/oauth/x", want: false},
 		// Userinfo spoof must resolve to the real (non-allowlisted) host and be rejected.
 		{name: "claude.ai userinfo spoof", uri: "https://claude.ai@evil.com/api/mcp/auth_callback", want: false},
 

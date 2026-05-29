@@ -203,9 +203,13 @@ func isAllowedHostedRedirectURI(u *url.URL) bool {
 	if u.Scheme != "https" {
 		return false
 	}
-	// Hosts are case-insensitive (RFC 3986) and may carry an explicit default
-	// port; normalize via Hostname()+ToLower so the exact-match cases below hold.
-	// Paths stay case-sensitive and are matched verbatim.
+	// Only the default https port is the real vendor callback; reject any other
+	// port so a code can't be steered to a non-OAuth service on the vendor host.
+	if port := u.Port(); port != "" && port != "443" {
+		return false
+	}
+	// Hosts are case-insensitive (RFC 3986); normalize via Hostname()+ToLower so
+	// the exact-match cases below hold. Paths stay case-sensitive (matched verbatim).
 	switch strings.ToLower(u.Hostname()) {
 	case "claude.ai":
 		// Claude.ai web, Claude Desktop, mobile, and Cowork.
