@@ -14,28 +14,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-// TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
-// by comparing its output with the metadata retrieved from a real Oracle instance.
-//
-//nolint:tparallel
-func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
-	ctx := context.Background()
+type oracleMetadataTestCase struct {
+	name string
+	ddl  string
+}
 
-	// Start Oracle container
-	container := testcontainer.GetTestOracleContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	host := container.GetHost()
-	port := container.GetPort()
-
-	// Get SYSTEM database connection for user management
-	systemDB := container.GetDB()
-
-	// Test cases with various Oracle features
-	testCases := []struct {
-		name string
-		ddl  string
-	}{
+func oracleMetadataTestCases() []oracleMetadataTestCase {
+	return []oracleMetadataTestCase{
 		{
 			name: "basic_table",
 			ddl: `
@@ -750,8 +735,26 @@ COMMENT ON COLUMN ORDER_LINE_ITEMS.FULFILLMENT_STATUS IS 'Status: PENDING, PICKE
 `,
 		},
 	}
+}
 
-	for _, tc := range testCases {
+// TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
+// by comparing its output with the metadata retrieved from a real Oracle instance.
+//
+//nolint:tparallel
+func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
+	ctx := context.Background()
+
+	// Start Oracle container
+	container := testcontainer.GetTestOracleContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	host := container.GetHost()
+	port := container.GetPort()
+
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
+
+	for _, tc := range oracleMetadataTestCases() {
 		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
