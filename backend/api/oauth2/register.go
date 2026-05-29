@@ -67,7 +67,7 @@ func (s *Service) handleRegister(c *echo.Context) error {
 			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI is too long")
 		}
 		if !isAllowedDynamicClientRedirectURI(uri) {
-			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL or a whitelisted app scheme (cursor://, vscode://, vscode-insiders://, jetbrains://gateway/...)")
+			return oauth2Error(c, http.StatusBadRequest, "invalid_redirect_uri", "redirect URI must be a localhost URL, a recognized hosted MCP client callback (e.g. claude.ai, chatgpt.com), or a whitelisted app scheme (cursor://, vscode://, vscode-insiders://, jetbrains://gateway/...)")
 		}
 	}
 
