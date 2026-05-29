@@ -54,7 +54,7 @@ func (s *Store) TouchVCSProviderUser(ctx context.Context, workspace string, user
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtext($1))`, workspace); err != nil {
+	if err := AcquireAdvisoryXactLock(ctx, tx, AdvisoryLockKeyVCSProviderUser); err != nil {
 		return false, errors.Wrapf(err, "failed to acquire VCS provider user lock")
 	}
 
