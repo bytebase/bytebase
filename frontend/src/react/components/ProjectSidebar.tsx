@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { effectScope } from "vue";
 import logoFull from "@/assets/logo-full.svg";
+import { useWorkspace } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { router } from "@/router";
 import {
@@ -35,11 +36,7 @@ import {
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/router/dashboard/projectV1";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import {
-  useActuatorV1Store,
-  useProjectV1Store,
-  useWorkspaceV1Store,
-} from "@/store";
+import { useActuatorV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
 // ---------------------------------------------------------------------------
@@ -251,9 +248,7 @@ export function ProjectSidebar() {
       (router.currentRoute.value.params.projectId as string | undefined) ?? ""
   );
 
-  const customLogo = useVueState(
-    () => useWorkspaceV1Store().currentWorkspace?.logo ?? ""
-  );
+  const customLogo = useWorkspace()?.logo ?? "";
 
   const projectStore = useProjectV1Store();
 

@@ -50,6 +50,7 @@ import {
   UserSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import { WorkloadIdentitySchema } from "@/types/proto-es/v1/workload_identity_service_pb";
+import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
 import {
   storageKeyIntroState,
   storageKeyRecentProjects,
@@ -75,6 +76,7 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
+  updateWorkspace: vi.fn(),
   getIamPolicy: vi.fn(),
   listRoles: vi.fn(),
   updateRole: vi.fn(),
@@ -264,6 +266,7 @@ vi.mock("@/connect", () => ({
   },
   workspaceServiceClientConnect: {
     getWorkspace: mocks.getWorkspace,
+    updateWorkspace: mocks.updateWorkspace,
     getIamPolicy: mocks.getIamPolicy,
   },
 }));
@@ -625,6 +628,47 @@ describe("useAppStore", () => {
     );
 
     expect(store.getState().currentUser).toBe(updated);
+  });
+
+  test("updateWorkspace refreshes the current workspace and list entry", async () => {
+    const existing = createProto(WorkspaceSchema, {
+      name: "workspaces/default",
+      title: "Old",
+      logo: "old-logo",
+    });
+    const updated = createProto(WorkspaceSchema, {
+      name: "workspaces/default",
+      title: "Old",
+      logo: "new-logo",
+    });
+    mocks.updateWorkspace.mockResolvedValue(updated);
+    const store = createAppStore();
+    store.setState({ workspace: existing, workspaceList: [existing] });
+
+    const result = await store.getState().updateWorkspace(updated, ["logo"]);
+
+    expect(result).toBe(updated);
+    expect(store.getState().workspace).toBe(updated);
+    expect(store.getState().workspaceList[0]).toBe(updated);
+  });
+
+  test("updateWorkspace leaves workspace untouched when a different workspace is active", async () => {
+    const active = createProto(WorkspaceSchema, {
+      name: "workspaces/other",
+      title: "Other",
+    });
+    const updated = createProto(WorkspaceSchema, {
+      name: "workspaces/default",
+      title: "Default",
+      logo: "new-logo",
+    });
+    mocks.updateWorkspace.mockResolvedValue(updated);
+    const store = createAppStore();
+    store.setState({ workspace: active, workspaceList: [active] });
+
+    await store.getState().updateWorkspace(updated, ["logo"]);
+
+    expect(store.getState().workspace).toBe(active);
   });
 
   test("create archive and restore update activated user count when server info is loaded", async () => {
