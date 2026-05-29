@@ -256,6 +256,12 @@ func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *sto
 	if n.Default != nil {
 		column.Default = e.nodeText(n.Default)
 	}
+	if n.Virtual != nil {
+		if n.TypeName == nil && n.Domain == nil {
+			column.Type = "NUMBER"
+		}
+		column.Default = e.exprText(n.Virtual)
+	}
 	column.DefaultOnNull = n.DefaultOnNull
 	if n.Collation != "" {
 		column.Collation = n.Collation

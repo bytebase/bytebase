@@ -274,6 +274,23 @@ CREATE TABLE EMPLOYEES (
 			},
 		},
 		{
+			name: "virtual_column",
+			ddl: `
+CREATE TABLE ORDER_ITEMS (
+    QTY NUMBER,
+    PRICE NUMBER,
+    TOTAL AS (QTY * PRICE)
+);
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				orderItems := requireTable(t, requireSingleSchema(t, metadata), "ORDER_ITEMS")
+				require.Len(t, orderItems.Columns, 3)
+				require.Equal(t, "TOTAL", orderItems.Columns[2].Name)
+				require.Equal(t, "NUMBER", orderItems.Columns[2].Type)
+				require.Equal(t, "QTY*PRICE", orderItems.Columns[2].Default)
+			},
+		},
+		{
 			name: "default_on_null_column",
 			ddl: `
 CREATE TABLE ORDERS (
