@@ -172,6 +172,8 @@ func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 		e.extractCreateIndex(n)
 	case *ast.CreateViewStmt:
 		e.extractCreateView(n)
+	case *ast.CreateSchemaStmt:
+		e.extractCreateSchema(n)
 	case *ast.CreateSequenceStmt:
 		e.extractCreateSequence(n)
 	case *ast.CreateProcedureStmt:
@@ -193,6 +195,19 @@ func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 	case *ast.CommentStmt:
 		e.extractComment(n)
 	default:
+	}
+}
+
+func (e *oracleOmniMetadataExtractor) extractCreateSchema(n *ast.CreateSchemaStmt) {
+	if n.SchemaName != "" {
+		e.currentSchema = n.SchemaName
+	}
+	for _, item := range listItems(n.Stmts) {
+		stmt, ok := item.(ast.StmtNode)
+		if !ok {
+			continue
+		}
+		e.extractStatement(stmt)
 	}
 }
 

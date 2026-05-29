@@ -77,6 +77,27 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 			},
 		},
 		{
+			name: "create_schema_wrapper",
+			ddl: `
+CREATE SCHEMA AUTHORIZATION HR
+CREATE TABLE EMPLOYEES (
+    EMP_ID NUMBER PRIMARY KEY,
+    EMAIL VARCHAR2(100)
+)
+CREATE VIEW EMPLOYEE_VIEW AS
+SELECT EMP_ID, EMAIL FROM EMPLOYEES;
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				schemaMetadata := requireSingleSchema(t, metadata)
+				require.Equal(t, "HR", schemaMetadata.Name)
+				employees := requireTable(t, schemaMetadata, "EMPLOYEES")
+				require.Len(t, employees.Columns, 2)
+				requireIndex(t, employees, "PK_EMPLOYEES", []string{"EMP_ID"}, true, true)
+				view := requireView(t, schemaMetadata, "EMPLOYEE_VIEW")
+				require.Contains(t, view.Definition, "SELECT EMP_ID, EMAIL FROM EMPLOYEES")
+			},
+		},
+		{
 			name: "instead_of_trigger_on_view",
 			ddl: `
 CREATE TABLE EMPLOYEES (
