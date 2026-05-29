@@ -6,14 +6,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/react/components/ui/dropdown-menu";
-import { useVueState } from "@/react/hooks/useVueState";
-import { useWorkspaceV1Store } from "@/store";
+import { useWorkspace, useWorkspaceList } from "@/react/hooks/useAppState";
+import { useAppStore } from "@/react/stores/app";
 
 export function WorkspaceSwitcher() {
-  const workspaceStore = useWorkspaceV1Store();
-
-  const workspaceList = useVueState(() => workspaceStore.workspaceList);
-  const currentWorkspace = useVueState(() => workspaceStore.currentWorkspace);
+  const workspaceList = useWorkspaceList();
+  const currentWorkspace = useWorkspace();
+  const switchWorkspace = useAppStore((state) => state.switchWorkspace);
   const currentWorkspaceName = currentWorkspace?.name ?? "";
 
   const [open, setOpen] = useState(false);
@@ -25,7 +24,7 @@ export function WorkspaceSwitcher() {
   const onSwitch = (workspaceName: string) => {
     if (workspaceName === currentWorkspaceName) return;
     setOpen(false);
-    workspaceStore.switchWorkspace(workspaceName);
+    switchWorkspace(workspaceName);
   };
 
   return (

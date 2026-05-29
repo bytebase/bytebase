@@ -1,4 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import semver from "semver";
 import {
@@ -41,6 +42,10 @@ import {
   PlanType,
   UploadLicenseRequestSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  UpdateWorkspaceRequestSchema,
+  type Workspace,
+} from "@/types/proto-es/v1/workspace_service_pb";
 import {
   getDateForPbTimestampProtoEs,
   getTimeForPbTimestampProtoEs,
@@ -209,6 +214,23 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     const resp = await workspaceServiceClientConnect.listWorkspaces({});
     set({ workspaceList: resp.workspaces });
     return resp.workspaces;
+  },
+
+  updateWorkspace: async (workspace: Workspace, updateMask: string[]) => {
+    const updated = await workspaceServiceClientConnect.updateWorkspace(
+      createProto(UpdateWorkspaceRequestSchema, {
+        workspace,
+        updateMask: createProto(FieldMaskSchema, { paths: updateMask }),
+      })
+    );
+    set((state) => ({
+      workspace:
+        state.workspace?.name === updated.name ? updated : state.workspace,
+      workspaceList: state.workspaceList.map((ws) =>
+        ws.name === updated.name ? updated : ws
+      ),
+    }));
+    return updated;
   },
 
   switchWorkspace: async (workspaceName: string) => {

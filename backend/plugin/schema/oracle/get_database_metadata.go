@@ -21,6 +21,10 @@ func init() {
 
 // GetDatabaseMetadata parses the Oracle schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+	return GetDatabaseMetadataOmni(schemaText)
+}
+
+func getDatabaseMetadataANTLR(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
 	results, err := oracleparser.ParsePLSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Oracle schema")
