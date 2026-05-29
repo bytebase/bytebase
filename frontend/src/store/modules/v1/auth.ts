@@ -252,15 +252,16 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 });
 
-export const useCurrentUserV1 = () => {
+export const getCurrentUserV1 = () => {
   const authStore = useAuthStore();
   const userStore = useUserStore();
-  return computed(
-    () =>
-      userStore.getUserByIdentifier(authStore.currentUserName || "") ||
-      unknownUser()
+  return (
+    userStore.getUserByIdentifier(authStore.currentUserName || "") ||
+    unknownUser()
   );
 };
+
+export const useCurrentUserV1 = () => computed(() => getCurrentUserV1());
 
 /**
  * Returns true if the user should be prompted to set up their profile.

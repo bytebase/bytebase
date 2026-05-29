@@ -17,13 +17,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/react/components/ui/sheet";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { router } from "@/router";
 import {
   experimentalCreateIssueByPlan,
   pushNotification,
-  useCurrentUserV1,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -67,7 +67,7 @@ export function CreateDatabaseSheet({
   const projectStore = useProjectV1Store();
   const instanceStore = useInstanceV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const currentUser = useCurrentUserV1();
+  const currentUser = useCurrentUser();
 
   const [projectName, setProjectName] = useState("");
   const [instanceName, setInstanceName] = useState("");
@@ -280,12 +280,12 @@ export function CreateDatabaseSheet({
       const planCreate = create(PlanSchema, {
         title: effectiveTitle,
         specs: [spec],
-        creator: currentUser.value.name,
+        creator: currentUser.name,
       });
       const issueCreate = create(IssueSchema, {
         title: effectiveTitle,
         type: Issue_Type.DATABASE_CHANGE,
-        creator: `users/${currentUser.value.email}`,
+        creator: `users/${currentUser.email}`,
         labels: issueLabels,
       });
       const { createdIssue } = await experimentalCreateIssueByPlan(

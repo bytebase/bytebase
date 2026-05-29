@@ -16,17 +16,27 @@ import {
   nullEnvironment,
   unknownEnvironment,
 } from "@/types/v1/environment";
+import { unknownUser } from "@/types/v1/user";
 import { storageKeyRecentProjects } from "@/utils/storage-keys";
 
 export { isConnectAlreadyExists };
 
-export function useCurrentUser() {
+export function useOptionalCurrentUser() {
   const user = useAppStore((state) => state.currentUser);
   const loadCurrentUser = useAppStore((state) => state.loadCurrentUser);
   useEffect(() => {
     void loadCurrentUser();
   }, [loadCurrentUser]);
   return user;
+}
+
+export function useCurrentUser() {
+  const user = useOptionalCurrentUser();
+  // Stabilize the fallback identity: a fresh unknownUser() each render would
+  // change identity while the user is unresolved, retriggering identity-keyed
+  // effects in callers (e.g. ProfilePage, TwoFactorSetupPage) and risking a
+  // render loop.
+  return useMemo(() => user ?? unknownUser(), [user]);
 }
 
 export function useWorkspace() {
@@ -414,7 +424,7 @@ function readRecentProjectNames(email: string) {
 }
 
 export function useRecentProjects() {
-  const currentUser = useCurrentUser();
+  const currentUser = useOptionalCurrentUser();
   const batchFetchProjects = useAppStore((state) => state.batchFetchProjects);
   const projectsByName = useAppStore((state) => state.projectsByName);
   const [projectNames, setProjectNames] = useState<string[]>([]);
@@ -444,7 +454,7 @@ export function useRecentProjects() {
 }
 
 export function useRecentVisit() {
-  useCurrentUser();
+  useOptionalCurrentUser();
   const recordRecentVisit = useAppStore((state) => state.recordRecentVisit);
   const removeRecentVisit = useAppStore((state) => state.removeRecentVisit);
   return {

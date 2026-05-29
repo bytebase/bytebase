@@ -34,9 +34,7 @@ const mocks = vi.hoisted(() => ({
   batchGetOrFetchUsers: vi.fn(async () => []),
   getOrFetchUserByIdentifier: vi.fn(async () => undefined),
   pushNotification: vi.fn(),
-  currentUserStore: {
-    value: { email: "me@example.com", name: "users/me" },
-  },
+  currentUser: { email: "me@example.com", name: "users/me" },
   projectIamPolicyStore: {
     getOrFetchProjectIamPolicy: vi.fn(async () => ({})),
     getProjectIamPolicy: vi.fn(() => ({ bindings: [] })),
@@ -82,10 +80,13 @@ vi.mock("@/connect", () => ({
 
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useCurrentUserV1: () => mocks.currentUserStore,
   useProjectIamPolicyStore: () => mocks.projectIamPolicyStore,
   useProjectV1Store: () => mocks.projectStore,
   useWorkspaceV1Store: () => mocks.workspaceStore,
+}));
+
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => mocks.currentUser,
 }));
 
 vi.mock("@/react/stores/app", () => ({

@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/react/components/ui/tabs";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   buildMemberSummary,
@@ -51,7 +52,6 @@ import {
   extractUserEmail,
   hasFeature,
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   usePolicyV1Store,
   useProjectV1Store,
@@ -99,7 +99,7 @@ export function ProjectMaskingExemptionPage({
   const projectStore = useProjectV1Store();
   const databaseStore = useDatabaseV1Store();
   const listUsers = useAppStore((state) => state.listUsers);
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));

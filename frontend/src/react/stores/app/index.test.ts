@@ -566,6 +566,24 @@ describe("useAppStore", () => {
     expect(store.getState().usersByName[updated.name]).toBe(updated);
   });
 
+  test("updateEmail refreshes currentUser when the signed-in user changes email", async () => {
+    const updated = createProto(UserSchema, {
+      ...user,
+      name: "users/alice-updated@example.com",
+      email: "alice-updated@example.com",
+    });
+    mocks.updateEmail.mockResolvedValue(updated);
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      usersByName: { [user.name]: user },
+    });
+
+    await store.getState().updateEmail(user.email, updated.email);
+
+    expect(store.getState().currentUser).toBe(updated);
+  });
+
   test("updateUser passes allowMissing through without requiring an existing user", async () => {
     mocks.updateUser.mockResolvedValue(userA);
     const store = createAppStore();
@@ -586,6 +604,27 @@ describe("useAppStore", () => {
       })
     );
     expect(store.getState().usersByName[userA.name]).toBe(userA);
+  });
+
+  test("updateUser refreshes currentUser when the signed-in user is updated", async () => {
+    const updated = createProto(UserSchema, {
+      ...user,
+      title: "Alice Updated",
+    });
+    mocks.updateUser.mockResolvedValue(updated);
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      usersByName: { [user.name]: user },
+    });
+
+    await store.getState().updateUser(
+      createProto(UpdateUserRequestSchema, {
+        user: updated,
+      })
+    );
+
+    expect(store.getState().currentUser).toBe(updated);
   });
 
   test("create archive and restore update activated user count when server info is loaded", async () => {

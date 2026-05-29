@@ -19,14 +19,14 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Textarea } from "@/react/components/ui/textarea";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { useSQLEditorStore } from "@/react/stores/sqlEditor";
 import { useSQLEditorEditorState } from "@/react/stores/sqlEditor/editor";
 import { getSQLEditorTabsState } from "@/react/stores/sqlEditor/tab";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import {
   AccessGrant_Status,
   AccessGrantSchema,
@@ -106,13 +106,12 @@ function AccessGrantRequestDrawerInner({
   onClose,
 }: AccessGrantRequestDrawerInnerProps) {
   const { t } = useTranslation();
-  const currentUser = useCurrentUserV1();
+  const currentUserEmail = useCurrentUser().email;
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const setHighlightAccessGrantName = useSQLEditorStore(
     (s) => s.setHighlightAccessGrantName
   );
 
-  const currentUserEmail = usePiniaBridge(() => currentUser.value.email);
   const project = useSQLEditorEditorState((s) => s.project);
 
   const defaultTargets = useMemo(() => {

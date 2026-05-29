@@ -23,6 +23,7 @@ import {
 } from "@/react/components/ui/dropdown-menu";
 import { FeatureModal } from "@/react/components/ui/feature-modal";
 import { Input } from "@/react/components/ui/input";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/react/hooks/useUnsavedChangesGuard";
 import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
@@ -42,7 +43,6 @@ import {
   pushNotification,
   useActuatorV1Store,
   useAuthStore,
-  useCurrentUserV1,
   useSettingV1Store,
   useWorkspaceV1Store,
 } from "@/store";
@@ -81,7 +81,7 @@ export function ProfilePage({ principalEmail }: ProfilePageProps) {
   const actuatorStore = useActuatorV1Store();
 
   // --- Reactive Vue state ---
-  const legacyCurrentUser = useVueState(() => useCurrentUserV1().value);
+  const legacyCurrentUser = useCurrentUser();
   const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
   const principalUser = useAppStore((state) =>
     principalEmail ? state.getUserByIdentifier(principalEmail) : undefined

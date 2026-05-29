@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
 import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
@@ -38,7 +39,6 @@ import { router } from "@/router";
 import {
   featureToRef,
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -117,7 +117,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const listAccessGrants = useAppStore((state) => state.listAccessGrants);
   const activateAccessGrant = useAppStore((state) => state.activateAccessGrant);
   const revokeAccessGrant = useAppStore((state) => state.revokeAccessGrant);
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));

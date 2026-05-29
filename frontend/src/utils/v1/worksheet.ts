@@ -1,5 +1,5 @@
 import {
-  useCurrentUserV1,
+  getCurrentUserV1,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -25,9 +25,9 @@ export const extractWorksheetID = (name: string) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and all members in the project.
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
-  const currentUser = useCurrentUserV1();
+  const currentUser = getCurrentUserV1();
 
-  if (extractUserEmail(sheet.creator) === currentUser.value.email) {
+  if (extractUserEmail(sheet.creator) === currentUser.email) {
     // Always readable to the creator
     return true;
   }
@@ -56,9 +56,9 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and project owner.
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
-  const currentUser = useCurrentUserV1();
+  const currentUser = getCurrentUserV1();
 
-  if (extractUserEmail(sheet.creator) === currentUser.value.email) {
+  if (extractUserEmail(sheet.creator) === currentUser.email) {
     // Always writable to the creator
     return true;
   }

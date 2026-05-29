@@ -10,7 +10,10 @@ import {
 } from "@/react/components/ui/alert-dialog";
 import { Button } from "@/react/components/ui/button";
 import { Input } from "@/react/components/ui/input";
-import { useCurrentUser, useWorkspace } from "@/react/hooks/useAppState";
+import {
+  useOptionalCurrentUser,
+  useWorkspace,
+} from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import { pushNotification, useWorkspaceV1Store } from "@/store";
 import { PresetRoleType } from "@/types/iam/role";
@@ -20,7 +23,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 export function DangerZoneSection() {
   const { t } = useTranslation();
   const workspace = useWorkspace();
-  const currentUser = useCurrentUser()!;
+  const currentUser = useOptionalCurrentUser()!;
   const workspaceStore = useWorkspaceV1Store();
   const workspacePolicy = useVueState(() => workspaceStore.workspaceIamPolicy);
 

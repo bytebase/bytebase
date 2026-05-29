@@ -26,7 +26,7 @@ import { countVisibleRows } from "@/react/components/ui/tree-utils";
 import { useCommonSearchScopeOptions } from "@/react/components/useCommonSearchScopeOptions";
 import { useAppDatabase } from "@/react/hooks/useAppDatabase";
 import { useAppProject } from "@/react/hooks/useAppProject";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSQLEditorFeature } from "@/react/hooks/useSQLEditorBridge";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
@@ -38,7 +38,7 @@ import {
   useIsInBatchMode,
   useSupportBatchMode,
 } from "@/react/stores/sqlEditor/tab";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type { DatabaseFilter } from "@/store/modules/v1/database";
 import type {
@@ -151,13 +151,12 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const fetchDBGroup = useAppStore((s) => s.fetchDBGroup);
   const setTreeState = useSQLEditorStore((s) => s.setTreeState);
   const treeNodeKeysByTarget = useSQLEditorStore((s) => s.treeNodeKeysByTarget);
-  const currentUser = useCurrentUserV1();
+  const currentUserEmail = useCurrentUser().email;
 
   const supportBatchMode = useSupportBatchMode();
   const isInBatchMode = useIsInBatchMode();
   const treeStoreState = useSQLEditorStore((s) => s.treeState);
   const currentTab = useCurrentSQLEditorTab();
-  const currentUserEmail = usePiniaBridge(() => currentUser.value.email);
   const projectName = useSQLEditorEditorState((s) => s.project);
   const projectContextReady = useSQLEditorEditorState(
     (s) => s.projectContextReady

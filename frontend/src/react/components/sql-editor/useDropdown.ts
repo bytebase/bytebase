@@ -9,9 +9,8 @@
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { usePiniaBridge } from "@/react/hooks/usePiniaBridge";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
-import { useCurrentUserV1 } from "@/store";
 import { isWorksheetWritableV1 } from "@/utils";
 import type {
   SheetViewMode,
@@ -52,8 +51,7 @@ export function useDropdown(
 ) {
   const { t } = useTranslation();
 
-  // Call Pinia store factories at hook top level (React Hooks rule).
-  const meRef = useCurrentUserV1();
+  const me = useCurrentUser();
 
   // ------------------------------------------------------------------
   // Context state — current right-click target
@@ -66,8 +64,6 @@ export function useDropdown(
   // ------------------------------------------------------------------
   // Reactive reads from Pinia / Vue stores
   // ------------------------------------------------------------------
-  const me = usePiniaBridge(() => meRef.value);
-
   const worksheetEntity = useAppStore((s) =>
     viewMode === "draft" || !currentNode?.worksheet
       ? undefined

@@ -1,6 +1,6 @@
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useAppStore } from "@/react/stores/app";
 import { useCurrentSQLEditorTab } from "@/react/stores/sqlEditor/tab";
-import { useCurrentUserV1 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
 import type { Worksheet } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
@@ -25,14 +25,14 @@ export interface WorksheetAndTab {
 export const useWorksheetAndTab = (): WorksheetAndTab => {
   const currentTab = useCurrentSQLEditorTab();
   const worksheetName = currentTab?.worksheet;
-  const me = useCurrentUserV1();
+  const me = useCurrentUser();
 
   const currentSheet = useAppStore((s) =>
     worksheetName ? s.getWorksheetByName(worksheetName) : undefined
   );
 
   const isCreator = currentSheet
-    ? extractUserEmail(currentSheet.creator) === me.value.email
+    ? extractUserEmail(currentSheet.creator) === me.email
     : false;
 
   let isReadOnly = false;

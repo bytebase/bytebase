@@ -26,16 +26,16 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
-import { useVueState } from "@/react/hooks/useVueState";
 import { displayRoleTitleFromList } from "@/react/lib/role";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useCurrentUserV1, useProjectV1Store } from "@/store";
+import { pushNotification, useProjectV1Store } from "@/store";
 import {
   getTimeForPbTimestampProtoEs,
   isValidProjectName,
@@ -198,8 +198,7 @@ export function PresetButtons({
   onParamsChange: (p: SearchParams) => void;
 }) {
   const { t } = useTranslation();
-  const currentUser = useCurrentUserV1();
-  const me = useVueState(() => currentUser.value);
+  const me = useCurrentUser();
 
   type PresetValue = "WAITING_APPROVAL" | "OPEN" | "CLOSED" | "ALL";
 
@@ -324,8 +323,7 @@ export function useIssueSearchScopeOptions(
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
   const projectStore = useProjectV1Store();
-  const currentUser = useCurrentUserV1();
-  const me = useVueState(() => currentUser.value);
+  const me = useCurrentUser();
 
   const [projectLabels, setProjectLabels] = useState<Label[]>([]);
 

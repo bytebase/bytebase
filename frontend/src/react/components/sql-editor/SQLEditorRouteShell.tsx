@@ -238,7 +238,13 @@ export function SQLEditorRouteShell() {
     const database = await useAppStore
       .getState()
       .getOrFetchDatabaseByName(databaseName);
-    await maybeSwitchProject(database.project);
+    // The app-store getter returns the `unknownDatabase` fallback (rather
+    // than throwing) when the database can't be resolved — e.g. a bookmarked
+    // URL to a deleted or no-longer-readable database. Bail so bootstrap
+    // falls back to the default project instead of opening a bogus
+    // `instances/-1/databases/-1` connection.
+    if (!isValidDatabaseName(database.name)) return false;
+    if (!(await maybeSwitchProject(database.project))) return false;
     const { instance } = extractDatabaseResourceName(database.name);
     const connection = { instance, database: database.name };
     getSQLEditorTabsState().addTab({

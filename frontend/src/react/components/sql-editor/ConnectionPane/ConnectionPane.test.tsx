@@ -104,7 +104,7 @@ const mocks = vi.hoisted(() => {
       .mockResolvedValue({ databases: [], nextPageToken: "" }),
     databasesByName: {} as Record<string, unknown>,
   };
-  const currentUser = { value: { email: "u@b.com" } };
+  const currentUser = { email: "u@b.com" };
   return {
     tabStore,
     editorStore,
@@ -137,9 +137,12 @@ vi.mock("@/react/hooks/useSQLEditorBridge", () => ({
     feature === 1 ? mocks.features.batchQuery : mocks.features.databaseGroups,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: () => mocks.currentUser,
+}));
+
 vi.mock("@/store", () => ({
   pushNotification: mocks.pushNotification,
-  useCurrentUserV1: () => mocks.currentUser,
   useDatabaseV1Store: () => mocks.databaseStore,
   useDBGroupStore: () => mocks.dbGroupStore,
   useInstanceV1Store: () => mocks.instanceStore,

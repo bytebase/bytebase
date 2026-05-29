@@ -10,11 +10,11 @@ import {
   PresetButtons,
   useIssueSearchScopeOptions,
 } from "@/react/components/IssueTable";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
-import { useVueState } from "@/react/hooks/useVueState";
 import { useAppStore } from "@/react/stores/app";
 import { router } from "@/router";
-import { refreshIssueList, useCurrentUserV1, useIssueV1Store } from "@/store";
+import { refreshIssueList, useIssueV1Store } from "@/store";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
@@ -28,11 +28,10 @@ import {
 export function MyIssuesPage() {
   const { t } = useTranslation();
   const issueStore = useIssueV1Store();
-  const currentUser = useCurrentUserV1();
   const batchGetOrFetchUsers = useAppStore(
     (state) => state.batchGetOrFetchUsers
   );
-  const me = useVueState(() => currentUser.value);
+  const me = useCurrentUser();
 
   const defaultSearchParams = useCallback((): SearchParams => {
     const myEmail = me?.email ?? "";

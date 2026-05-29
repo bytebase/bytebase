@@ -19,6 +19,7 @@ export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
+  const loadCurrentUser = useAppStore((state) => state.loadCurrentUser);
   const loadEnvironmentList = useAppStore((state) => state.loadEnvironmentList);
   const loadWorkspaceProfile = useAppStore(
     (state) => state.loadWorkspaceProfile
@@ -27,6 +28,7 @@ export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
   useEffect(() => {
     let mounted = true;
     void Promise.all([
+      loadCurrentUser(),
       loadEnvironmentList(),
       loadWorkspaceProfile(),
       loadLegacyDashboardState(),
@@ -40,7 +42,7 @@ export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
     return () => {
       mounted = false;
     };
-  }, [loadEnvironmentList, loadWorkspaceProfile]);
+  }, [loadCurrentUser, loadEnvironmentList, loadWorkspaceProfile]);
 
   useEffect(() => {
     if (!initialized) return;

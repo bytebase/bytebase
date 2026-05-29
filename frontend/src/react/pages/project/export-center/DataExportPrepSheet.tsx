@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Switch } from "@/react/components/ui/switch";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useSessionPageSize } from "@/react/hooks/useSessionPageSize";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -28,7 +29,6 @@ import {
   DEFAULT_MAX_RESULT_SIZE_IN_MB,
   experimentalCreateIssueByPlan,
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
   useProjectV1Store,
@@ -93,7 +93,7 @@ export function DataExportPrepSheet({
   seed,
 }: DataExportPrepSheetProps) {
   const { t } = useTranslation();
-  const currentUser = useCurrentUserV1();
+  const currentUser = useCurrentUser();
   const sheetStore = useSheetV1Store();
   const dbStore = useDatabaseV1Store();
   const dbGroupStore = useDBGroupStore();
@@ -258,13 +258,13 @@ export function DataExportPrepSheet({
         title: effectiveTitle,
         description,
         specs: [spec],
-        creator: currentUser.value.name,
+        creator: currentUser.name,
       });
 
       const issueCreate = create(IssueSchema, {
         title: effectiveTitle,
         description,
-        creator: `users/${currentUser.value.email}`,
+        creator: `users/${currentUser.email}`,
         labels,
         type: Issue_Type.DATABASE_EXPORT,
       });

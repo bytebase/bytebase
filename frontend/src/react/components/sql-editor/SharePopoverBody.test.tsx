@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   usePiniaBridge: vi.fn<(getter: () => unknown) => unknown>(),
   useActuatorV1Store: vi.fn(),
-  useCurrentUserV1: vi.fn(),
+  useCurrentUser: vi.fn(),
   patchWorksheet: vi.fn().mockResolvedValue({}),
   // `useSQLEditorTabState(selector)` runs `selector` against this stub
   // state; the component selects `tabsById.get(currentTabId)?.status`.
@@ -32,9 +32,12 @@ vi.mock("@/react/hooks/usePiniaBridge", () => ({
   usePiniaBridge: mocks.usePiniaBridge,
 }));
 
+vi.mock("@/react/hooks/useAppState", () => ({
+  useCurrentUser: mocks.useCurrentUser,
+}));
+
 vi.mock("@/store", () => ({
   useActuatorV1Store: mocks.useActuatorV1Store,
-  useCurrentUserV1: mocks.useCurrentUserV1,
   pushNotification: mocks.pushNotification,
 }));
 
@@ -135,8 +138,9 @@ beforeEach(async () => {
   mocks.useActuatorV1Store.mockReturnValue({
     serverInfo: { externalUrl: "https://example.com" },
   });
-  mocks.useCurrentUserV1.mockReturnValue({
-    value: { email: "test@example.com", name: "users/test@example.com" },
+  mocks.useCurrentUser.mockReturnValue({
+    email: "test@example.com",
+    name: "users/test@example.com",
   });
   mocks.patchWorksheet.mockResolvedValue({});
   mocks.tabStatus = "CLEAN";
@@ -187,8 +191,9 @@ describe("SharePopoverBody", () => {
   });
 
   test("visibility selector disabled when user is not creator", () => {
-    mocks.useCurrentUserV1.mockReturnValue({
-      value: { email: "other@example.com", name: "users/other@example.com" },
+    mocks.useCurrentUser.mockReturnValue({
+      email: "other@example.com",
+      name: "users/other@example.com",
     });
     mocks.usePiniaBridge.mockImplementation((getter: () => unknown) =>
       getter()

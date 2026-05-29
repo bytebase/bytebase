@@ -2,11 +2,11 @@ import { create } from "@bufbuild/protobuf";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect } from "@/connect";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useVueState } from "@/react/hooks/useVueState";
 import {
   projectNamePrefix,
   pushNotification,
-  useCurrentUserV1,
   useProjectV1Store,
 } from "@/store";
 import { extractUserEmail } from "@/store/modules/v1/common";
@@ -26,7 +26,7 @@ export function usePlanCheckActions() {
   const page = usePlanDetailContext();
   const { patchState, isRunningChecks, setIsRunningChecks } = page;
   const projectStore = useProjectV1Store();
-  const currentUser = useCurrentUserV1().value;
+  const currentUser = useCurrentUser();
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
 

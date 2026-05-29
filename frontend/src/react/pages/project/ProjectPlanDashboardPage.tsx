@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/react/components/ui/table";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useColumnWidths } from "@/react/hooks/useColumnWidths";
 import { useEscapeKey } from "@/react/hooks/useEscapeKey";
 import { PagedTableFooter, usePagedData } from "@/react/hooks/usePagedData";
@@ -59,7 +60,6 @@ import {
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useDBGroupStore,
   useEnvironmentV1Store,
@@ -129,11 +129,10 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
     (state) => state.batchGetOrFetchUsers
   );
   const uiStateStore = useUIStateStore();
-  const currentUser = useCurrentUserV1();
 
   const projectName = `${projectNamePrefix}${projectId}`;
   const project = useVueState(() => projectStore.getProjectByName(projectName));
-  const me = useVueState(() => currentUser.value);
+  const me = useCurrentUser();
 
   const [showAddSpecDrawer, setShowAddSpecDrawer] = useState(false);
 

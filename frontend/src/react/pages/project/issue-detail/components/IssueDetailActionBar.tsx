@@ -40,6 +40,7 @@ import {
   SheetTitle,
 } from "@/react/components/ui/sheet";
 import { Tooltip } from "@/react/components/ui/tooltip";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
 import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
@@ -54,7 +55,6 @@ import {
 } from "@/router/dashboard/projectV1RouteHelpers";
 import {
   pushNotification,
-  useCurrentUserV1,
   useIssueCommentStore,
   useProjectV1Store,
   useSQLStore,
@@ -102,7 +102,7 @@ export function IssueDetailActionBar() {
   const projectStore = useProjectV1Store();
   const issueCommentStore = useIssueCommentStore();
   const sqlStore = useSQLStore();
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
   const [pendingConfirmAction, setPendingConfirmAction] =
     useState<ActionDefinition>();
   const [pendingReviewOpen, setPendingReviewOpen] = useState(false);

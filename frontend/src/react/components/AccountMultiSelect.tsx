@@ -3,11 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LAYER_SURFACE_CLASS } from "@/react/components/ui/layer";
 import { SearchInput } from "@/react/components/ui/search-input";
+import { useCurrentUser } from "@/react/hooks/useAppState";
 import { useClickOutside } from "@/react/hooks/useClickOutside";
-import { useVueState } from "@/react/hooks/useVueState";
 import { cn } from "@/react/lib/utils";
 import { useAppStore } from "@/react/stores/app";
-import { useCurrentUserV1 } from "@/store";
 import {
   extractUserEmail,
   groupNamePrefix,
@@ -194,7 +193,7 @@ export function AccountMultiSelect({
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
   const listGroups = useAppStore((state) => state.listGroups);
-  const currentUser = useVueState(() => useCurrentUserV1().value);
+  const currentUser = useCurrentUser();
 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
