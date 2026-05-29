@@ -60,8 +60,13 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	for _, c := range omnicompletion.Complete(stmt, pos, cat) {
 		t := omniCandidateTypeToBase(c.Type)
 		text := c.Text
-		if isObjectIdentifierCandidate(t) {
+		switch {
+		case isObjectIdentifierCandidate(t):
 			text = quoteIdentifierIfNeeded(c.Text, caretInBacktick)
+		case t == base.CandidateTypeFunction:
+			text = c.Text + "()"
+		default:
+			// Keywords and value-like candidates pass through unchanged.
 		}
 		candidateMap[string(t)+":"+text] = base.Candidate{
 			Type:       t,

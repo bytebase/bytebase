@@ -331,6 +331,26 @@ func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
 	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a2"), "t1.a2 must not leak into the 2nd statement; got %v", got)
 }
 
+// Function candidates carry a "()" suffix, matching the mysql completer, so the
+// completion text inserts a call site.
+func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "id"}}},
+		}}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	stmt := "SELECT  FROM t1"
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len("SELECT "))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeFunction, "COUNT()"),
+		"function candidates should carry () like the mysql completer; got %v", got)
+	require.False(t, hasCandidate(got, base.CandidateTypeFunction, "COUNT"),
+		"bare function name without () should not appear; got %v", got)
+}
+
 func TestQuoteIdentifierIfNeeded(t *testing.T) {
 	cases := []struct {
 		name            string
