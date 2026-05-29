@@ -234,7 +234,7 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 					{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "c1"}, {Name: "c2"}}},
 				},
 				Views: []*storepb.ViewMetadata{
-					{Name: "v1", Definition: "CREATE VIEW v1 AS SELECT c1 FROM t1"},
+					{Name: "v1", Definition: "SELECT c1 FROM t1"}, // bare SELECT, as TiDB sync stores it
 				},
 			},
 		},
@@ -329,6 +329,28 @@ func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
 	// t1's columns must NOT leak from the earlier statement.
 	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a1"), "t1.a1 must not leak into the 2nd statement; got %v", got)
 	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a2"), "t1.a2 must not leak into the 2nd statement; got %v", got)
+}
+
+// TiDB sync stores information_schema.VIEWS.VIEW_DEFINITION as a bare SELECT
+// body (not a CREATE VIEW statement). A bare SELECT is skipped by catalog.Exec,
+// so the view must still be installed (and surface as a candidate) via the
+// wrapped CREATE VIEW form rather than being treated as already created.
+func TestCompletion_ViewWithBareSelectDefinitionSurfaces(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name:   "",
+			Tables: []*storepb.TableMetadata{{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "id"}}}},
+			Views:  []*storepb.ViewMetadata{{Name: "v1", Definition: "SELECT id FROM t1"}},
+		}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	stmt := "SELECT * FROM "
+	got, err := Completion(context.Background(), cCtx, stmt, 1, len(stmt))
+	require.NoError(t, err)
+	require.True(t, hasCandidate(got, base.CandidateTypeView, "v1"),
+		"view with a bare SELECT definition should surface as a VIEW candidate; got %v", got)
 }
 
 // Function candidates carry a "()" suffix, matching the mysql completer, so the

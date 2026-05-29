@@ -284,19 +284,27 @@ func defineView(cat *catalog.Catalog, name, definition string) {
 	}
 }
 
-// execOK runs DDL against the catalog and reports whether every statement
-// applied without error.
+// execOK runs DDL against the catalog and reports whether it actually installed
+// a schema object: every statement parsed without error AND at least one was a
+// non-DML (utility) statement that mutated the catalog. A definition that
+// reduces to only skipped DML — e.g. a bare SELECT view body, which TiDB sync
+// stores in information_schema.VIEWS.VIEW_DEFINITION — is NOT a success, so the
+// caller falls through to the wrapped CREATE VIEW form.
 func execOK(cat *catalog.Catalog, ddl string) bool {
 	results, err := cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true})
 	if err != nil {
 		return false
 	}
+	applied := false
 	for _, r := range results {
 		if r.Error != nil {
 			return false
 		}
+		if !r.Skipped {
+			applied = true
+		}
 	}
-	return true
+	return applied
 }
 
 // backtickIdentifier quotes an identifier for TiDB DDL, escaping embedded
