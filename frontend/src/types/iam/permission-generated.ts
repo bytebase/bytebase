@@ -116,7 +116,6 @@ export type Permission =
   | "bb.sheets.create"
   | "bb.sheets.get"
   | "bb.sheets.update"
-  | "bb.subscription.get"
   | "bb.subscription.manage"
   | "bb.sql.select"
   | "bb.sql.ddl"

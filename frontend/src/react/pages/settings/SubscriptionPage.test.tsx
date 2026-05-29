@@ -209,7 +209,7 @@ describe("SubscriptionPage", () => {
 
   test("hides active VCS users download without subscription permission", () => {
     mocks.hasWorkspacePermissionV2.mockImplementation(
-      (permission) => permission !== "bb.subscription.get"
+      (permission) => permission !== "bb.subscription.manage"
     );
 
     act(() => {

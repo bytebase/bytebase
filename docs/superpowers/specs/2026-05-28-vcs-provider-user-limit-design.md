@@ -96,7 +96,7 @@ rpc ExportVCSProviderUsers(ExportVCSProviderUsersRequest) returns (google.api.Ht
   option (google.api.http) = {
     get: "/v1/subscription:vcsProviderUsersExport"
   };
-  option (bytebase.v1.permission) = "bb.subscription.get";
+  option (bytebase.v1.permission) = "bb.subscription.manage";
   option (bytebase.v1.auth_method) = IAM;
 }
 
@@ -171,7 +171,7 @@ N / user limit
 
 The value comes from `ActuatorInfo.active_vcs_user_count` and the existing subscription user limit computation.
 
-Next to the stat, show a download action for users with `bb.subscription.get`. The action calls `ExportVCSProviderUsers`, creates a CSV file from the `HttpBody` data, and downloads it as:
+Next to the stat, show a download action for users with `bb.subscription.manage`. The action calls `ExportVCSProviderUsers`, creates a CSV file from the `HttpBody` data, and downloads it as:
 
 ```text
 active-vcs-users.<timestamp>.csv

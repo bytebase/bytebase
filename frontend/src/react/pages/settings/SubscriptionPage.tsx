@@ -250,7 +250,7 @@ export function SubscriptionPage({
         <div className="flex flex-col text-left">
           <div className="flex items-center gap-x-2 text-main">
             {t("subscription.vcs-users.active")}
-            {hasWorkspacePermissionV2("bb.subscription.get") && (
+            {allowManage && (
               <Button
                 variant="ghost"
                 size="sm"

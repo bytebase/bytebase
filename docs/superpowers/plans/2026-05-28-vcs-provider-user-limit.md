@@ -114,7 +114,7 @@ Add this service method after `GetSubscription`:
   // Exports active VCS users as CSV.
   rpc ExportVCSProviderUsers(ExportVCSProviderUsersRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {get: "/v1/subscription:vcsProviderUsersExport"};
-    option (bytebase.v1.permission) = "bb.subscription.get";
+    option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
   }
 ```
