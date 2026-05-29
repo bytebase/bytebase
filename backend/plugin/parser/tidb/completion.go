@@ -50,12 +50,14 @@ func init() {
 // Completion provides auto-complete candidates for TiDB statements using the
 // omni TiDB completion engine, replacing the previous mysql ANTLR completer.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
-	cat := buildCatalog(ctx, cCtx, statement)
-	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
+	// Limit completion to the statement containing the caret so table refs from
+	// earlier statements in the buffer don't leak into the candidate set.
+	stmt, pos := currentStatement(statement, lineOffsetToBytePos(statement, caretLine, caretOffset))
 
-	caretInBacktick := caretInsideBacktickIdentifier(statement, pos)
+	cat := buildCatalog(ctx, cCtx, stmt)
+	caretInBacktick := caretInsideBacktickIdentifier(stmt, pos)
 	candidateMap := make(map[string]base.Candidate)
-	for _, c := range omnicompletion.Complete(statement, pos, cat) {
+	for _, c := range omnicompletion.Complete(stmt, pos, cat) {
 		t := omniCandidateTypeToBase(c.Type)
 		text := c.Text
 		if isObjectIdentifierCandidate(t) {
@@ -390,6 +392,19 @@ func lineOffsetToBytePos(s string, line, offset int) int {
 		return len(s)
 	}
 	return pos
+}
+
+// currentStatement returns the statement containing byte position pos within
+// statement, along with pos translated to an offset within that statement. It
+// uses omni's splitter so completion sees only the caret's statement, not table
+// references from earlier statements in the buffer.
+func currentStatement(statement string, pos int) (string, int) {
+	for _, seg := range tidbparser.Split(statement) {
+		if pos >= seg.ByteStart && pos <= seg.ByteEnd {
+			return seg.Text, pos - seg.ByteStart
+		}
+	}
+	return statement, pos
 }
 
 // omniCandidateTypeToBase maps omni TiDB completion candidate types to the

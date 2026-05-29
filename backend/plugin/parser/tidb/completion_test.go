@@ -280,6 +280,31 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 	}
 }
 
+// Completion must be limited to the statement containing the caret: table refs
+// from earlier statements in the buffer must not leak into the candidate set.
+func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		}}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	stmt := "SELECT * FROM t1; SELECT  FROM t2"
+	caret := len("SELECT * FROM t1; SELECT ") // projection of the 2nd statement
+	got, err := Completion(context.Background(), cCtx, stmt, 1, caret)
+	require.NoError(t, err)
+
+	// t2's columns are in scope for the 2nd statement.
+	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "b1"), "t2.b1 should be in scope; got %v", got)
+	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "b2"), "t2.b2 should be in scope; got %v", got)
+	// t1's columns must NOT leak from the earlier statement.
+	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a1"), "t1.a1 must not leak into the 2nd statement; got %v", got)
+	require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a2"), "t1.a2 must not leak into the 2nd statement; got %v", got)
+}
+
 func TestQuoteIdentifierIfNeeded(t *testing.T) {
 	cases := []struct {
 		name            string
