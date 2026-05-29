@@ -184,7 +184,7 @@ func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 		}
 	case *ast.CreatePackageStmt:
 		if name := objectName(n.Name); name != "" {
-			e.packages[name] = &storepb.PackageMetadata{Name: name, Definition: e.definitionText(n)}
+			e.extractCreatePackage(name, n)
 		}
 	case *ast.CreateTriggerStmt:
 		e.extractCreateTrigger(n)
@@ -464,6 +464,10 @@ func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt)
 		index.Type = "FUNCTION-BASED NORMAL"
 	}
 
+	if materializedView := e.materializedViews[tableName]; materializedView != nil {
+		materializedView.Indexes = append(materializedView.Indexes, index)
+		return
+	}
 	table := e.getOrCreateTable(tableName)
 	table.Indexes = append(table.Indexes, index)
 }
@@ -485,6 +489,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 		}
 		if table := e.tables[viewName]; table != nil {
 			materializedView.Triggers = append(materializedView.Triggers, table.Triggers...)
+			materializedView.Indexes = append(materializedView.Indexes, table.Indexes...)
 		}
 		if definition != "" && !strings.HasSuffix(definition, "\n") {
 			materializedView.Definition += "\n"
@@ -518,6 +523,23 @@ func (e *oracleOmniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenc
 		sequence.Increment = increment
 	}
 	e.sequences[sequenceName] = sequence
+}
+
+func (e *oracleOmniMetadataExtractor) extractCreatePackage(name string, n *ast.CreatePackageStmt) {
+	definition := e.definitionText(n)
+	if definition == "" {
+		return
+	}
+	pkg := e.packages[name]
+	if pkg == nil {
+		e.packages[name] = &storepb.PackageMetadata{Name: name, Definition: definition}
+		return
+	}
+	if pkg.Definition == "" {
+		pkg.Definition = definition
+		return
+	}
+	pkg.Definition += "\n\n" + definition
 }
 
 func (e *oracleOmniMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerStmt) {

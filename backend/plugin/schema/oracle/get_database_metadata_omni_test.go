@@ -129,6 +129,7 @@ CREATE INDEX idx_mv_category ON PRODUCT_SALES_MV(CATEGORY);
 				require.Len(t, schemaMetadata.MaterializedViews, 1)
 				require.Equal(t, "PRODUCT_SALES_MV", schemaMetadata.MaterializedViews[0].Name)
 				require.Contains(t, schemaMetadata.MaterializedViews[0].Definition, "SUM(SALES_AMOUNT)")
+				requireMaterializedViewIndex(t, schemaMetadata.MaterializedViews[0], "IDX_MV_CATEGORY", []string{"CATEGORY"}, false, false)
 				require.Nil(t, findTable(schemaMetadata, "PRODUCT_SALES_MV"))
 			},
 		},
@@ -218,7 +219,16 @@ CREATE TABLE ORDERS (
 			name: "package_metadata",
 			ddl: `
 CREATE OR REPLACE PACKAGE financial_utils AS
+    c_default_currency CONSTANT VARCHAR2(3) := 'USD';
     FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2;
+END financial_utils;
+/
+
+CREATE OR REPLACE PACKAGE BODY financial_utils AS
+    FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2 IS
+    BEGIN
+        RETURN TO_CHAR(p_amount, 'FM9999990.00');
+    END format_currency;
 END financial_utils;
 /
 `,
@@ -226,7 +236,10 @@ END financial_utils;
 				schemaMetadata := requireSingleSchema(t, metadata)
 				require.Len(t, schemaMetadata.Packages, 1)
 				require.Equal(t, "FINANCIAL_UTILS", schemaMetadata.Packages[0].Name)
+				require.Contains(t, schemaMetadata.Packages[0].Definition, "c_default_currency")
 				require.Contains(t, schemaMetadata.Packages[0].Definition, "FUNCTION format_currency")
+				require.Contains(t, schemaMetadata.Packages[0].Definition, "PACKAGE BODY financial_utils")
+				require.Contains(t, schemaMetadata.Packages[0].Definition, "RETURN TO_CHAR")
 			},
 		},
 	}
@@ -336,6 +349,20 @@ func requireIndex(t *testing.T, table *storepb.TableMetadata, name string, expre
 		return
 	}
 	t.Fatalf("index %q not found in table %q", name, table.Name)
+}
+
+func requireMaterializedViewIndex(t *testing.T, materializedView *storepb.MaterializedViewMetadata, name string, expressions []string, primary bool, unique bool) {
+	t.Helper()
+	for _, index := range materializedView.Indexes {
+		if index.Name != name {
+			continue
+		}
+		require.Equal(t, expressions, index.Expressions)
+		require.Equal(t, primary, index.Primary)
+		require.Equal(t, unique, index.Unique)
+		return
+	}
+	t.Fatalf("index %q not found in materialized view %q", name, materializedView.Name)
 }
 
 func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name string, expression string) {
