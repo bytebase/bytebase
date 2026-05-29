@@ -22,7 +22,6 @@ import {
   useAppFeature,
   useProjectV1Store,
   useSettingV1Store,
-  useWorkspaceV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
@@ -57,7 +56,7 @@ export function SetupPage() {
       try {
         await Promise.all([
           useAppStore.getState().listRoles(),
-          useWorkspaceV1Store().fetchIamPolicy(),
+          useAppStore.getState().fetchWorkspaceIamPolicy(),
         ]);
       } catch (error) {
         // Roles/IAM pre-fetch failed — proceed to render the wizard anyway.
