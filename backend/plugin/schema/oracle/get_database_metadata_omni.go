@@ -61,6 +61,8 @@ type oracleOmniMetadataExtractor struct {
 }
 
 func (e *oracleOmniMetadataExtractor) databaseMetadata() *storepb.DatabaseSchemaMetadata {
+	e.resolveForeignKeyReferencedColumns()
+
 	schemaMetadata := &storepb.DatabaseSchemaMetadata{
 		Name:    e.currentDatabase,
 		Schemas: []*storepb.SchemaMetadata{},
@@ -297,9 +299,9 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 			})
 		}
 	case ast.CONSTRAINT_CHECK:
-		e.appendCheckConstraint(table, n.Name, n.Expr)
+		e.appendCheckConstraint(table, fallbackName(n.Name, fmt.Sprintf("CHK_%s_%s", table.Name, column.Name)), n.Expr)
 	case ast.CONSTRAINT_FOREIGN:
-		e.appendForeignKey(table, n.Name, []string{column.Name}, n.RefTable, n.RefColumns, n.OnDelete)
+		e.appendForeignKey(table, fallbackName(n.Name, fmt.Sprintf("FK_%s_%s", table.Name, column.Name)), []string{column.Name}, n.RefTable, n.RefColumns, n.OnDelete)
 	default:
 	}
 }
@@ -386,7 +388,7 @@ func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *storepb.Table
 func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, _ string) {
 	referencedTable := objectName(refTable)
 	referencedColumns := stringList(refColumns)
-	if len(columns) == 0 || referencedTable == "" || len(referencedColumns) == 0 {
+	if len(columns) == 0 || referencedTable == "" {
 		return
 	}
 	foreignKey := &storepb.ForeignKeyMetadata{
@@ -396,6 +398,23 @@ func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadat
 		ReferencedColumns: referencedColumns,
 	}
 	table.ForeignKeys = append(table.ForeignKeys, foreignKey)
+}
+
+func (e *oracleOmniMetadataExtractor) resolveForeignKeyReferencedColumns() {
+	for _, table := range e.tables {
+		var foreignKeys []*storepb.ForeignKeyMetadata
+		for _, foreignKey := range table.ForeignKeys {
+			if len(foreignKey.ReferencedColumns) == 0 {
+				referencedTable := e.tables[foreignKey.ReferencedTable]
+				foreignKey.ReferencedColumns = primaryKeyColumns(referencedTable)
+			}
+			if len(foreignKey.ReferencedColumns) == 0 {
+				continue
+			}
+			foreignKeys = append(foreignKeys, foreignKey)
+		}
+		table.ForeignKeys = foreignKeys
+	}
 }
 
 func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
@@ -711,6 +730,18 @@ func hasPrimaryIndex(table *storepb.TableMetadata) bool {
 		}
 	}
 	return false
+}
+
+func primaryKeyColumns(table *storepb.TableMetadata) []string {
+	if table == nil {
+		return nil
+	}
+	for _, index := range table.Indexes {
+		if index.Primary {
+			return append([]string(nil), index.Expressions...)
+		}
+	}
+	return nil
 }
 
 func hasUniqueIndex(table *storepb.TableMetadata, columns []string) bool {

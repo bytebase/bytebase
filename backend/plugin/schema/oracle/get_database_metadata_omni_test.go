@@ -65,7 +65,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				requireIndex(t, employees, "UK_EMPLOYEES_EMAIL", []string{"EMAIL"}, false, true)
 				requireIndex(t, employees, "IDX_EMP_DEPT", []string{"DEPT_ID"}, false, false)
 				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY>=0")
-				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
+				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
 
 				require.Len(t, schemaMetadata.Views, 1)
 				require.Equal(t, "ACTIVE_EMPLOYEES", schemaMetadata.Views[0].Name)
@@ -122,7 +122,7 @@ ALTER TABLE DEPARTMENTS ADD CONSTRAINT fk_dept_manager
 			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				departments := requireTable(t, schemaMetadata, "DEPARTMENTS")
-				requireForeignKey(t, departments, "FK_DEPT_MANAGER", []string{"MANAGER_ID"}, "EMPLOYEES", []string{"EMP_ID"}, "")
+				requireForeignKey(t, departments, "FK_DEPT_MANAGER", []string{"MANAGER_ID"}, "EMPLOYEES", []string{"EMP_ID"})
 			},
 		},
 		{
@@ -146,6 +146,28 @@ ALTER TABLE EMPLOYEES ADD (
 				require.Equal(t, "STATUS", employees.Columns[2].Name)
 				require.Equal(t, "VARCHAR2(20 BYTE)", employees.Columns[2].Type)
 				require.Equal(t, "'ACTIVE'", employees.Columns[2].Default)
+			},
+		},
+		{
+			name: "inline_constraints_and_omitted_reference_columns",
+			ddl: `
+CREATE TABLE DEPARTMENTS (
+    DEPT_ID NUMBER PRIMARY KEY
+);
+
+CREATE TABLE EMPLOYEES (
+    EMP_ID NUMBER PRIMARY KEY,
+    SALARY NUMBER CHECK (SALARY > 0),
+    DEPT_ID NUMBER REFERENCES DEPARTMENTS,
+    MANAGER_DEPT_ID NUMBER,
+    CONSTRAINT fk_manager_dept FOREIGN KEY (MANAGER_DEPT_ID) REFERENCES DEPARTMENTS
+);
+`,
+			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
+				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
+				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"})
 			},
 		},
 		{
@@ -289,7 +311,7 @@ func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name str
 	t.Fatalf("check constraint %q not found in table %q", name, table.Name)
 }
 
-func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string, onDelete string) {
+func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string) {
 	t.Helper()
 	for _, fk := range table.ForeignKeys {
 		if fk.Name != name {
@@ -298,7 +320,7 @@ func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, 
 		require.Equal(t, columns, fk.Columns)
 		require.Equal(t, referencedTable, fk.ReferencedTable)
 		require.Equal(t, referencedColumns, fk.ReferencedColumns)
-		require.Equal(t, onDelete, fk.OnDelete)
+		require.Empty(t, fk.OnDelete)
 		return
 	}
 	t.Fatalf("foreign key %q not found in table %q", name, table.Name)
