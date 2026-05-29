@@ -403,6 +403,31 @@ func TestCompletion_QualifiedColumnScopedInJoin(t *testing.T) {
 	}
 }
 
+// An unknown column qualifier narrows to no columns rather than broadening to
+// all in-scope columns (relies on the omni resolver fix pulled in via the bump).
+func TestCompletion_UnknownQualifierOffersNoColumns(t *testing.T) {
+	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		}}},
+	})
+	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
+
+	for _, tc := range []struct{ stmt, at string }{
+		{"SELECT x. FROM t1 AS a JOIN t2 AS b", "SELECT x."}, // unknown alias
+		{"SELECT t3. FROM t1 JOIN t2", "SELECT t3."},         // unknown table
+	} {
+		got, err := Completion(context.Background(), cCtx, tc.stmt, 1, len(tc.at))
+		require.NoError(t, err)
+		require.False(t, hasCandidate(got, base.CandidateTypeColumn, "a1"),
+			"%q must not offer columns; got %v", tc.stmt, got)
+		require.False(t, hasCandidate(got, base.CandidateTypeColumn, "b1"),
+			"%q must not offer columns; got %v", tc.stmt, got)
+	}
+}
+
 // Function candidates carry a "()" suffix, matching the mysql completer, so the
 // completion text inserts a call site.
 func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
