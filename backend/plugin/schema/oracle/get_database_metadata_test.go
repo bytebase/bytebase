@@ -14,28 +14,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-// TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
-// by comparing its output with the metadata retrieved from a real Oracle instance.
-//
-//nolint:tparallel
-func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
-	ctx := context.Background()
+type oracleMetadataTestCase struct {
+	name string
+	ddl  string
+}
 
-	// Start Oracle container
-	container := testcontainer.GetTestOracleContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	host := container.GetHost()
-	port := container.GetPort()
-
-	// Get SYSTEM database connection for user management
-	systemDB := container.GetDB()
-
-	// Test cases with various Oracle features
-	testCases := []struct {
-		name string
-		ddl  string
-	}{
+func oracleMetadataTestCases() []oracleMetadataTestCase {
+	return []oracleMetadataTestCase{
 		{
 			name: "basic_table",
 			ddl: `
@@ -750,8 +735,26 @@ COMMENT ON COLUMN ORDER_LINE_ITEMS.FULFILLMENT_STATUS IS 'Status: PENDING, PICKE
 `,
 		},
 	}
+}
 
-	for _, tc := range testCases {
+// TestGetDatabaseMetadataWithTestcontainer tests the get_database_metadata function
+// by comparing its output with the metadata retrieved from a real Oracle instance.
+//
+//nolint:tparallel
+func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
+	ctx := context.Background()
+
+	// Start Oracle container
+	container := testcontainer.GetTestOracleContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	host := container.GetHost()
+	port := container.GetPort()
+
+	// Get SYSTEM database connection for user management
+	systemDB := container.GetDB()
+
+	for _, tc := range oracleMetadataTestCases() {
 		tc := tc // Capture range variable
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -1292,9 +1295,20 @@ func compareMaterializedViews(t *testing.T, dbMViews, parsedMViews []*storepb.Ma
 		require.Equal(t, dbMV.Name, parsedMV.Name, "materialized view names should match")
 		require.NotEmpty(t, parsedMV.Definition, "parsed materialized view definition should not be empty")
 		require.NotEmpty(t, dbMV.Definition, "database materialized view definition should not be empty")
+		if dbMV.Comment != "" || parsedMV.Comment != "" {
+			if parsedMV.Comment == "" && isOracleAutoMaterializedViewComment(dbMV.Comment) {
+				t.Logf("Info: materialized view %s has Oracle-generated comment %q", mvName, dbMV.Comment)
+				continue
+			}
+			require.Equal(t, dbMV.Comment, parsedMV.Comment, "materialized view comments should match for %s", mvName)
+		}
 
 		t.Logf("✓ Materialized View %s: definition length=%d", mvName, len(parsedMV.Definition))
 	}
+}
+
+func isOracleAutoMaterializedViewComment(comment string) bool {
+	return strings.HasPrefix(comment, "snapshot table for snapshot ")
 }
 
 // compareSequences compares sequence metadata
