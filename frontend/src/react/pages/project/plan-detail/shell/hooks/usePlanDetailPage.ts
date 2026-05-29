@@ -104,17 +104,22 @@ const getCurrentPhase = (
   if (routeStageId || routeTaskId) {
     return PLAN_DETAIL_PHASE_DEPLOY;
   }
+  // An explicit specs / spec-detail route always defaults to the spec section,
+  // even once the plan has a rollout, so shared/bookmarked spec links stay
+  // usable. A plan under review additionally expands the review section.
+  if (
+    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
+    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
+  ) {
+    return snapshot.issue
+      ? PLAN_DETAIL_PHASE_REVIEW
+      : PLAN_DETAIL_PHASE_CHANGES;
+  }
   if (snapshot.rollout) {
     return PLAN_DETAIL_PHASE_DEPLOY;
   }
   if (snapshot.issue) {
     return PLAN_DETAIL_PHASE_REVIEW;
-  }
-  if (
-    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS ||
-    routeName === PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL
-  ) {
-    return PLAN_DETAIL_PHASE_CHANGES;
   }
   return PLAN_DETAIL_PHASE_CHANGES;
 };
@@ -195,10 +200,6 @@ export const usePlanDetailPage = ({
     },
     [pageIdentityKey, setActivePhases]
   );
-
-  useEffect(() => {
-    latestSnapshotRef.current = snapshot;
-  }, [snapshot]);
 
   const patchState = useCallback(
     (patch: Partial<PlanDetailPageSnapshot>) => {
